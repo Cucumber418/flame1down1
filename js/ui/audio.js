@@ -18,7 +18,7 @@
  * ========================================================== */
 (function () {
   'use strict';
-  var V = '?v=1';
+  var V = '?v=2';
   var TRACKS = {
     normal: 'audio/bgm_normal.mp3', boss: 'audio/bgm_boss.mp3', boss2: 'audio/bgm_boss2.mp3', pvp: 'audio/bgm_pvp.mp3',
     ui: 'audio/bgm_ui.mp3', arena: 'audio/bgm_arena.mp3', earth: 'audio/bgm_earth.mp3', flora: 'audio/bgm_flora.mp3'
@@ -36,7 +36,8 @@
   var ctx = null, gain = null, level = 0, fadeT = null, unlocked = false;
   var battle = null, scene = null, cur = null, pos = {}, switching;   // switching：正在淡出、准备换成的曲目（undefined 表示没有在换）
   // 用 Web Audio 的增益来调音量（iPhone 上直接改 audio.volume 没有效果）
-  function setLevel(v) { level = v; if (gain) gain.gain.value = v; else el.volume = Math.max(0, Math.min(1, v)); }
+  // 有 Web Audio 时音量只由增益控制，播放器自身的音量固定为 1（否则页面刚打开时设的 0 会一直留着，导致完全没声音）
+  function setLevel(v) { level = v; if (gain) { gain.gain.value = v; if (el.volume !== 1) el.volume = 1; } else el.volume = Math.max(0, Math.min(1, v)); }
   function allowed(k) { return !!k && (SCENES[k] ? cfg.ui : cfg.music); }
   function target() { return allowed(cur) ? cfg.vol / 100 : 0; }
   function fadeTo(to, ms, done) {
@@ -81,10 +82,18 @@
   function unlock() {
     if (!ctx) {
       var AC = window.AudioContext || window.webkitAudioContext;
-      if (AC) { try { ctx = new AC(); gain = ctx.createGain(); ctx.createMediaElementSource(el).connect(gain); gain.connect(ctx.destination); gain.gain.value = level; } catch (e) { ctx = null; gain = null; } }
+      if (AC) { try { ctx = new AC(); gain = ctx.createGain(); ctx.createMediaElementSource(el).connect(gain); gain.connect(ctx.destination); el.volume = 1; gain.gain.value = level; } catch (e) { ctx = null; gain = null; } }
     }
     if (ctx && ctx.state === 'suspended') ctx.resume().catch(function () {});
-    if (!unlocked) { unlocked = true; if (cur) startTrack(cur, false); else sync(); }
+    if (!unlocked) {
+      unlocked = true;
+      if (cur) startTrack(cur, false);
+      else {   // 现在没有要放的曲子（比如关了音乐）：也在这次点击里静音播放一下，让 Safari 之后允许它出声
+        if (!el.src) { el.src = TRACKS.ui + V; el.dataset.k = 'ui'; }
+        setLevel(0); var p = el.play(); if (p) p.then(function () { if (!cur) el.pause(); }).catch(function () {});
+        sync();
+      }
+    }
   }
   document.addEventListener('pointerdown', unlock, true);
   document.addEventListener('keydown', unlock, true);
