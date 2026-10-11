@@ -32,6 +32,12 @@ jobs:
             echo "ok=yes" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: 记下这台部署机器的公网 IP（腾讯云会把它报成「异地登录」，方便核对）
+        if: steps.cfg.outputs.ok == 'yes'
+        run: |
+          IP=$(curl -fsS --max-time 10 https://api.ipify.org || curl -fsS --max-time 10 https://ifconfig.me || echo 未知)
+          echo "::notice title=部署机器 IP::这次部署从 $IP 登录服务器（$(date -u -d '+8 hours' '+%H:%M:%S') 北京时间）。腾讯云「可疑登录」告警里的来源 IP 和这个一致，就是自动部署。"
+
       - uses: actions/checkout@v5
         if: steps.cfg.outputs.ok == 'yes'
 
