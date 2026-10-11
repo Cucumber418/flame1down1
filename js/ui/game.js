@@ -167,7 +167,8 @@
   var TITLES = [
     { id: 'trainee', n: '见习做题家', d: '在黄冈秘鉴中点亮 3 类精灵', ok: function () { return litCount() >= 3; } },
     { id: 'collector', n: '见习收藏家', d: '捕捉一种稀有精灵，并在学院部汇报', ok: function () { return !!(acc.story && acc.story.rare_r && acc.story.rare_r.done); } },
-    { id: 'senior', n: '资深做题家', d: '在黄冈秘鉴中点亮 10 类精灵', ok: function () { return litCount() >= 10; } }
+    { id: 'senior', n: '资深做题家', d: '在黄冈秘鉴中点亮 10 类精灵', ok: function () { return litCount() >= 10; } },
+    { id: 'purifier', n: '芙罗拉净化者', d: '完成芙罗拉星的星球任务「祛除瘴气」', ok: function () { return !!(acc.purge && acc.purge.n >= 30); } }
   ];
   function checkTitles() {
     if (!acc.titles) acc.titles = [];
@@ -852,7 +853,7 @@
   function floraPage() {
     var part = ex.fpart || 'catch';
     var head = '<div class="flora-hero"><span class="tape l"></span>' + floraSvg(150) + '<div><h3>芙罗拉星 <span class="chip ptype">草系星球</span></h3><p class="hint">地表分为丛林、草甸、盐碱地三片区域。星球立绘还在绘制中，这里先用示意图。</p>' +
-      '<div class="fparts" role="tablist"><button type="button" role="tab" class="tab' + (part === 'challenge' ? ' on' : '') + '" data-fpart="challenge" aria-selected="' + (part === 'challenge') + '">挑战</button><button type="button" role="tab" class="tab' + (part === 'catch' ? ' on' : '') + '" data-fpart="catch" aria-selected="' + (part === 'catch') + '">捕捉</button></div></div></div>';
+      '<div class="fparts" role="tablist"><button type="button" role="tab" class="tab' + (part === 'challenge' ? ' on' : '') + '" data-fpart="challenge" aria-selected="' + (part === 'challenge') + '">挑战</button><button type="button" role="tab" class="tab' + (part === 'catch' ? ' on' : '') + '" data-fpart="catch" aria-selected="' + (part === 'catch') + '">捕捉</button>' + taskTab('flora', part) + '</div></div></div>';
     var sp = PLANETS.filter(function (p) { return p.id === 'flora'; })[0].sites.map(function (id) {
       var S = SITES[id], pr = prog(id), started = pr.at > 0 && !pr.done;
       return '<article class="site fl-story"><span class="tape r"></span><div class="site-img"><img src="' + BG[S.bg] + '" alt=""></div><div class="site-txt"><span class="sc-tag">' + S.chapter + '</span><h3>' + S.name + '</h3><p class="hint">' + S.d + '</p>' +
@@ -863,6 +864,7 @@
     head = head + (prog('flora1').done ? '' : sp);
     if (prog('flora1').done) head = head.replace('<div class="fparts" role="tablist">', '<div class="fparts" role="tablist"><button type="button" class="tab' + (part === 'story' ? ' on' : '') + '" data-fpart="story">剧情</button>');
     if (part === 'story') return head + sp;
+    if (part === 'task') return head + planetTasks('flora');
     if (part === 'challenge') return head + '<div class="fl-soon"><span class="tape r"></span><b>挑战 · 关卡副本</b><p>按关卡推进的副本，每一关都会根据表现给出星级评价。</p><p class="stars3" aria-hidden="true">☆ ☆ ☆</p><p class="hint">即将开放，敬请期待。</p></div>';
     var regs = REGIONS.map(function (R) {
       var locked = !!R.boss;
@@ -909,19 +911,21 @@
   function regionOpen(R) { return R.planet === 'flora' ? prog('flora1').done : planetOpen(planetOf(R.planet)); }
   function startWild(rid) {
     var R = WILD_REGIONS.filter(function (x) { return x.id === rid; })[0]; if (!R || R.boss || !regionOpen(R)) return;
-    var hit = rollWild(R.pool), P = planetOf(R.planet);
-    startWildBattle({ sid: hit.w.sid, lv: hit.lv, rate: hit.w.rate, bg: R.bgs ? BG[R.bgs[Math.floor(Math.random() * R.bgs.length)]] : null, back: P.name, where: P.name + ' · ' + R.name });
+    var hit = rollWild(R.pool), P = planetOf(R.planet), o = { sid: hit.w.sid, lv: hit.lv, rate: hit.w.rate, bg: R.bgs ? BG[R.bgs[Math.floor(Math.random() * R.bgs.length)]] : null, back: P.name, where: P.name + ' · ' + R.name };
+    if (R.planet === 'flora' && purgeActive() && Math.random() < PURGE.chance) { o.taint = true; o.miasma = 5; o.noCatch = true; o.foe = '被瘴气污染的野生精灵'; o.where += ' · 瘴气精灵'; }
+    startWildBattle(o);
   }
   function startWildBattle(o) {
     var team = (acc.teams[acc.active] || []).map(mon).filter(Boolean);
     if (!team.length) team = acc.mons.slice(0, 1);
     team = team.slice(0, TEAM_SIZE);
     var p = team.map(storyMon), a = [storyMon({ sid: o.sid, lv: o.lv, moves: [] })];
+    if (o.taint) { a[0].miasma = o.miasma; a[0].nick = '被污染的' + a[0].nick; }
     seeMon(o.sid, o.lv);
     stopTimers(); ex.fighting = true; document.body.classList.add('story-fight'); syncBattle();
     $('pg-explore').hidden = true; $('pg-arena').hidden = false;
     window.HSBATTLE.start({ p: p, a: a, foe: o.foe || '野生精灵', items: invCopy(), bg: o.bg || null,
-      wild: { rate: o.rate, back: o.back, where: o.where },
+      wild: { rate: o.rate, back: o.back, where: o.where, noCatch: !!o.noCatch },
       onItem: useInv,
       onEnd: function (res, seen, downs) {
         var msg = [];
@@ -932,6 +936,7 @@
           dailyHit('catch');
         }
         if (downs && downs.length) { if (!acc.stats) acc.stats = {}; acc.stats.wildWins = (acc.stats.wildWins || 0) + downs.length; dailyHit('wildWin', downs.length); }
+        if (o.taint && downs && downs.length) msg = msg.concat(purgeHit());
         dailyHit('pve');
         msg = msg.concat(battleRewards(team, seen, downs));
         save();
@@ -944,7 +949,10 @@
   // 其他星球的探索页（只有捕捉）
   function wildPage(P) {
     var regs = regionsOf(P.id);
-    var head = '<div class="flora-hero"><span class="tape l"></span>' + planetSvgC(P, 150) + '<div><h3 style="color:' + P.color[1] + '">' + P.name + ' <span class="chip ptype">' + P.ptype + '</span></h3><p class="hint">' + P.d + '星球立绘还在绘制中，这里先用示意图。</p></div></div>';
+    var part = ex.fpart === 'task' ? 'task' : 'catch';
+    var head = '<div class="flora-hero"><span class="tape l"></span>' + planetSvgC(P, 150) + '<div><h3 style="color:' + P.color[1] + '">' + P.name + ' <span class="chip ptype">' + P.ptype + '</span></h3><p class="hint">' + P.d + '星球立绘还在绘制中，这里先用示意图。</p>' +
+      '<div class="fparts" role="tablist"><button type="button" role="tab" class="tab' + (part === 'catch' ? ' on' : '') + '" data-fpart="catch" aria-selected="' + (part === 'catch') + '">捕捉</button>' + taskTab(P.id, part) + '</div></div></div>';
+    if (part === 'task') return head + planetTasks(P.id);
     var cards = regs.map(function (R) {
       return '<article class="region"><div class="rg-art">' + regionArt(R.id) + '</div><div class="rg-txt"><h4>' + R.name + ' <small>' + R.en + '</small></h4><p class="hint">' + R.d + '</p>' +
         '<button type="button" class="btn primary" data-wild="' + R.id + '">寻找野生精灵</button></div></article>';
@@ -958,6 +966,43 @@
     }); });
     return head + invLine() + '<div class="regions">' + cards + '</div>' +
       '<div class="wild-list"><h4>' + P.name + '的野生精灵</h4><ul>' + list.join('') + '</ul><p class="hint">点「寻找野生精灵」会随机遇到一只并直接开战。捕捉、经验和学习力的规则和芙罗拉星一样。</p></div>';
+  }
+
+  /* ---------- 星球任务：每颗星球的专属任务 ---------- */
+  // 芙罗拉星 · 祛除瘴气：任务完成前，在芙罗拉星作战有 10% 概率遇到瘴气精灵（自带 5 层瘴气，无法捕捉），击败它们累计计数
+  var PURGE = { chance: 0.1, goal: 30, steps: [{ n: 1, exp: 300 }, { n: 5, exp: 1000 }, { n: 10, exp: 2000 }, { n: 20, exp: 4000 }, { n: 30, exp: 12000, title: 'purifier' }] };
+  function purgeRec() { if (!acc.purge) acc.purge = { n: 0, got: {} }; return acc.purge; }
+  function purgeActive() { return prog('flora1').done && purgeRec().n < PURGE.goal; }
+  function purgeHit() {
+    var P = purgeRec(), out = []; P.n++;
+    out.push('祛除了一只瘴气精灵（' + P.n + ' / ' + PURGE.goal + '）。');
+    PURGE.steps.forEach(function (s) {
+      if (P.n >= s.n && !P.got[s.n]) {
+        P.got[s.n] = Date.now(); acc.exp += s.exp;
+        out.push('星球任务「祛除瘴气」：累计击败 ' + s.n + ' 只，经验背包 +' + fmt(s.exp) + '。');
+        if (s.title) { if (acc.titles.indexOf(s.title) < 0) acc.titles.push(s.title); out.push('任务完成！获得称号「' + titleName(s.title) + '」，芙罗拉星的瘴气被彻底祛除了。'); renderTitle(); }
+      }
+    });
+    save(); return out;
+  }
+  function planetTaskList(pid) { return pid === 'flora' ? ['purge'] : []; }
+  function taskTab(pid, part) {
+    var n = pid === 'flora' && prog('flora1').done && purgeRec().n < PURGE.goal ? 1 : 0;
+    return '<button type="button" role="tab" class="tab' + (part === 'task' ? ' on' : '') + '" data-fpart="task" aria-selected="' + (part === 'task') + '">星球任务' + (n ? '<i class="q-badge">' + n + '</i>' : '') + '</button>';
+  }
+  function planetTasks(pid) {
+    if (!planetTaskList(pid).length) return '<div class="fl-soon"><span class="tape r"></span><b>星球任务</b><p>这颗星球暂时还没有专属任务。</p><p class="hint">敬请期待。</p></div>';
+    var P = purgeRec(), open = prog('flora1').done, done = P.n >= PURGE.goal;
+    var steps = PURGE.steps.map(function (s) {
+      var got = P.got[s.n];
+      return '<li class="pt-step' + (got ? ' got' : '') + '"><span class="pt-n">' + s.n + ' 只</span><span>经验背包 +' + fmt(s.exp) + (s.title ? '，称号「' + titleName(s.title) + '」' : '') + '</span><span class="pt-st">' + (got ? '已获得' : P.n + ' / ' + s.n) + '</span></li>';
+    }).join('');
+    return '<article class="pt-card"><span class="tape l"></span><span class="chip log-tag">剧情任务</span><h3>祛除瘴气</h3>' +
+      '<p>盐碱地的瘴气正慢慢渗进丛林和草甸，有些野生精灵已经被侵染了。击败这些瘴气精灵，就能把它们身上的瘴气祛除。</p>' +
+      '<p class="hint">' + (done ? '任务已完成，芙罗拉星不会再出现瘴气精灵。' : open ? '在芙罗拉星的丛林、草甸作战时，有 10% 的概率遇到瘴气精灵。它们自带 5 层瘴气，无法捕捉，只能击败。' : '读完主线「降临芙罗拉」后开始。') + '</p>' +
+      '<div class="pt-bar"><i style="width:' + Math.min(100, P.n / PURGE.goal * 100) + '%"></i><em>已祛除 ' + Math.min(P.n, PURGE.goal) + ' / ' + PURGE.goal + '</em></div>' +
+      '<ol class="pt-steps">' + steps + '</ol>' +
+      (open && !done ? '<p class="hint">去「捕捉」页的丛林或草甸作战即可。</p><button type="button" class="btn primary" data-fpart="catch">去丛林 / 草甸</button>' : '') + '</article>';
   }
 
   /* ---------- 神秘精灵：每天 16:00–24:00，切换场景时有 3% 概率出现（真身是 LV10 幽灵鱼） ---------- */

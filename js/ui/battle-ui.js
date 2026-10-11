@@ -587,8 +587,8 @@
     $('tab-items').hidden = !its;
     if (!its && tab === 'items') showTab('moves');
     if (its) $('igrid').innerHTML = ITEM_ORDER.map(function (k) {
-      var it = ITEMS[k], n = its[k] || 0, cap = !!it.cap, dis = lock || S.needSwitch || n <= 0 || (cap && !S.wild) || (!cap && me.hp >= me.maxhp);
-      var rate = cap && S.wild && n > 0 ? '<span class="rate">当前成功率约 ' + Math.round(catchChance(S, k) * 100) + '%</span>' : cap && !S.wild ? '<span class="rate">只能对野生精灵使用</span>' : '';
+      var it = ITEMS[k], n = its[k] || 0, cap = !!it.cap, dis = lock || S.needSwitch || n <= 0 || (cap && (!S.wild || S.wild.noCatch)) || (!cap && me.hp >= me.maxhp);
+      var rate = cap && S.wild && S.wild.noCatch ? '<span class="rate">被瘴气污染，无法捕捉</span>' : cap && S.wild && n > 0 ? '<span class="rate">当前成功率约 ' + Math.round(catchChance(S, k) * 100) + '%</span>' : cap && !S.wild ? '<span class="rate">只能对野生精灵使用</span>' : '';
       return '<button type="button" class="tm it" data-it="' + k + '"' + (dis ? ' disabled' : '') + ' title="' + esc(it.d) + '">' + itemIcon(k) +
         '<span class="it-t"><b>' + it.name + '</b><span class="cnt">持有 ' + n + '</span>' + rate + '</span></button>';
     }).join('');

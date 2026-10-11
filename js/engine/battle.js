@@ -515,7 +515,7 @@ var ITEM_ORDER = ['cap1', 'cap2', 'cap3', 'pot1', 'pot2'];
 function hasStatus(m) { for (var k in m.st) if (m.st[k] > 0 && ST_DESC[k]) return true; return false; }
 // 捕捉成功率 = 精灵捕捉率 × 装置倍率 × (1 − 剩余体力比例 × 0.5) × (有异常状态 ×1.25)
 function catchChance(S, key) {
-  var it = ITEMS[key], f = act(S, 1); if (!it || !it.cap || !S.wild || f.fainted) return 0;
+  var it = ITEMS[key], f = act(S, 1); if (!it || !it.cap || !S.wild || S.wild.noCatch || f.fainted) return 0;
   if (it.cap === 'sure') return 1;
   return Math.min(1, S.wild.rate * it.cap * (1 - 0.5 * f.hp / f.maxhp) * (hasStatus(f) ? 1.25 : 1));
 }
