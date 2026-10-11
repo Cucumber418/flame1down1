@@ -1026,4 +1026,6 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .end-hid { margin: 4px 0 0; padding: 6px 12px; border: 1.5px dashed #6b3f8f; border-radius: 10px; color: #6b3f8f; font-weight: 700; text-align: center; background: #f3ecfa; }
 
 /* ---- 黄冈秘鉴：完全没见过的精灵显示全黑剪影 ---- */
-.card.hg.unseen img { filter: brightness(0); opacity: .85; }
+/* 灰色实心剪影：剪影文件本身就是灰色，不再叠加滤镜 */
+.card.hg.off img.sil, .hg-forms li.unk img.sil, .wl.unk img.sil { filter: none; opacity: 1; }
+.card.hg.off img.sil.fb, .hg-forms li.unk img.sil.fb, .wl.unk img.sil.fb { filter: brightness(0) invert(.64); }

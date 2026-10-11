@@ -494,6 +494,11 @@
 
   /* ---------- 黄冈秘鉴：按进化系点亮 ---------- */
   var DEX_ALL = SP.concat(EXTRA_SP);
+  // 没见过的精灵 / 形态：灰色实心剪影，只看得出轮廓。占位图（svg）没有剪影文件时用滤镜压成灰色
+  function silTag(sid, i) {
+    var p = SILHOUETTES[sid + '_' + (i || 0)];
+    return p ? '<img class="sil" src="' + p + '" alt="">' : '<img class="sil fb" src="' + formImg(SPMAP[sid], i || 0) + '" alt="">';
+  }
   function owned(sid) { return acc.mons.some(function (m) { return m.sid === sid; }); }
   function litCount() { return acc ? DEX_ALL.filter(function (s) { return owned(s.id); }).length : 0; }
   // 见过：剧情里出现过立绘、或在剧情对战中交过手（竞技对战不算）。只解锁名字，图仍是黑白的
@@ -548,10 +553,10 @@
         acc.mons.forEach(function (m) { if (m.sid === s.id) best = Math.max(best, stageOf(s, m.lv)); });
         var seen = !on && acc.seen && acc.seen[s.id] !== undefined, sf = seen ? seenForm(s) : null;
         // 完全没见过的精灵：只显示一阶形态的全黑剪影
-        var img = on ? form({ sid: s.id, lv: s.evo[best].lv }).img : seen ? sf.img : (SILHOUETTES[s.id] || (s.evo ? formImg(s, 0) : SPRITES[s.id]));
+        var img = on ? form({ sid: s.id, lv: s.evo[best].lv }).img : seen ? sf.img : null;
         var no = s.evo && s.evo[0].no ? 'No.' + s.evo[0].no + '–' + s.evo[evoLast(s)].no : '';
         return '<button type="button" class="card hg' + (on ? ' on' : seen ? ' off seen' : ' off unseen') + (dexSel === s.id ? ' sel' : '') + '" data-hg="' + s.id + '"' + (on ? '' : ' aria-disabled="true"') + '>' +
-          (no ? '<span class="hgno">' + no + '</span>' : '') + '<img src="' + img + '" alt=""><span class="nm">' + (on ? esc(topName(s)) + '系' : seen ? esc(sf.name) : '？？？') + '</span>' +
+          (no ? '<span class="hgno">' + no + '</span>' : '') + (img ? '<img src="' + img + '" alt="">' : silTag(s.id, 0)) + '<span class="nm">' + (on ? esc(topName(s)) + '系' : seen ? esc(sf.name) : '？？？') + '</span>' +
           '<span class="meta">' + (on ? tchips(s.types) : '<span>' + (seen ? '见过 · 未获得' : '未获得') + '</span>') + '</span></button>';
       }).join('') + '</div><article class="detail" id="hg-detail">' + hgDetail(dexSel) + '</article></div>';
     $('pg-dex').innerHTML = html;
@@ -562,7 +567,7 @@
     var forms = s.evo.map(function (e, i) {
       var n = formRawName(s, i); n = n ? n.replace('?', '') : s.name + '·' + stageLabel(s, i); if (s.placeholder && i > 0) n = '？';
       var img = formImg(s, i), kn = formKnown(s.id, i);
-      if (!kn) return '<li class="unk"><span class="hgf"><img src="' + img + '" alt=""></span><b>' + (e.no ? '<span class="dexno">No.' + e.no + '</span>' : '') + '？？？</b><small>' + stageLabel(s, i) + ' · ' + (i === 0 ? 'LV1 起' : 'LV' + e.lv + ' 进化') + '</small><p class="hint">还没有见过这一形态。</p></li>';
+      if (!kn) return '<li class="unk"><span class="hgf">' + silTag(s.id, i) + '</span><b>' + (e.no ? '<span class="dexno">No.' + e.no + '</span>' : '') + '？？？</b><small>' + stageLabel(s, i) + ' · ' + (i === 0 ? 'LV1 起' : 'LV' + e.lv + ' 进化') + '</small><p class="hint">还没有见过这一形态。</p></li>';
       return '<li><button type="button" class="hgf" data-abig="' + s.id + '|' + i + '"><img src="' + img + '" alt=""></button><b>' + (e.no ? '<span class="dexno">No.' + e.no + '</span>' : '') + esc(n) + '</b><small>' + stageLabel(s, i) + ' · ' + (i === 0 ? 'LV1 起' : 'LV' + e.lv + ' 进化') + '</small>' + (e.d ? '<p>' + esc(e.d) + '</p>' : '') + '</li>';
     }).join('');
     var stats = ['hp', 'atk', 'def', 'spa', 'spd', 'spe'].map(function (k) { var b = s.base[k]; return '<span>' + BASE_NAME[k] + '</span><span>' + b + '</span><span class="bar"><i style="width:' + Math.min(100, b / 150 * 100) + '%"></i></span><span></span>'; }).join('');
@@ -890,8 +895,8 @@
     var list = sids.map(function (sid) {
       var w, where = [];
       REGIONS.forEach(function (R) { (WILD[R.pool] || []).forEach(function (x) { if (x.sid === sid) { w = x; where.push(R.name + ' ' + x.w + '%'); } }); });
-      var k = wildKnown(sid), f = form({ sid: sid, lv: w.lv[0] });
-      return '<li class="wl ' + (k || 'unk') + '"><img src="' + f.img + '" alt=""><span><b>' + (k ? esc(f.name) : '？？？') + '</b>' + (w.rare ? '<span class="chip rare">稀有</span>' : '') +
+      var k = wildKnown(sid), f = form({ sid: sid, lv: w.lv[0] }), sid_ = sid;
+      return '<li class="wl ' + (k || 'unk') + '">' + (k ? '<img src="' + f.img + '" alt="">' : silTag(sid_, f.stage)) + '<span><b>' + (k ? esc(f.name) : '？？？') + '</b>' + (w.rare ? '<span class="chip rare">稀有</span>' : '') +
         '<small>LV' + (w.lv[0] === w.lv[1] ? w.lv[0] + '（固定）' : w.lv[0] + '–' + w.lv[1]) + ' · 捕捉率' + w.tag + '</small><small>出现：' + where.join('，') + '</small>' +
         '<small class="wk">' + (k === 'own' ? '已捕捉' : k === 'seen' ? '见过 · 未捕捉' : '未遇见') + '</small></span></li>';
     }).join('');
@@ -973,8 +978,8 @@
     }).join('');
     var list = [];
     regs.forEach(function (R) { (WILD[R.pool] || []).forEach(function (w) {
-      var k = wildKnown(w.sid), f = form({ sid: w.sid, lv: w.lv[0] });
-      list.push('<li class="wl ' + (k || 'unk') + '"><img src="' + f.img + '" alt=""><span><b>' + (k ? esc(f.name) : '？？？') + '</b>' + (w.rare ? '<span class="chip rare">稀有</span>' : '') +
+      var k = wildKnown(w.sid), f = form({ sid: w.sid, lv: w.lv[0] }), sid_ = w.sid;
+      list.push('<li class="wl ' + (k || 'unk') + '">' + (k ? '<img src="' + f.img + '" alt="">' : silTag(sid_, f.stage)) + '<span><b>' + (k ? esc(f.name) : '？？？') + '</b>' + (w.rare ? '<span class="chip rare">稀有</span>' : '') +
         '<small>LV' + (w.lv[0] === w.lv[1] ? w.lv[0] + '（固定）' : w.lv[0] + '–' + w.lv[1]) + ' · 捕捉率' + w.tag + '</small><small>出现：' + R.name + ' ' + w.w + '%</small>' +
         '<small class="wk">' + (k === 'own' ? '已捕捉' : k === 'seen' ? '见过 · 未捕捉' : '未遇见') + '</small></span></li>');
     }); });
