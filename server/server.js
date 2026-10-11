@@ -95,13 +95,22 @@ function serveFile(req, res) {
   });
 }
 
+// 存档备份情况（备份由 backup.sh 定时生成，见 README「存档备份」），在 /status 里能看到
+var BACKUP_DIR = process.env.BACKUP_DIR || '/opt/flame1down-backups';
+function backupInfo() {
+  try {
+    var f = fs.readdirSync(BACKUP_DIR).filter(function (x) { return /^saves-.*\.tar\.gz$/.test(x); }).sort();
+    return { count: f.length, latest: f.length ? f[f.length - 1] : null };
+  } catch (e) { return { count: 0, latest: null }; }
+}
+
 var server = http.createServer(function (req, res) {
   if (accounts.handle(req, res)) return;
   if (req.method !== 'GET' && req.method !== 'HEAD') return send(res, 405, 'text/plain; charset=utf-8', '不支持');
   if (req.url === '/ping') return send(res, 200, 'text/plain; charset=utf-8', 'ok');
   if (req.url === '/status') {
     return send(res, 200, 'application/json; charset=utf-8', JSON.stringify({
-      ok: true, since: STARTED.toISOString(), users: accounts.userCount(), players: social.onlineCount(), online: wss.clients.size, rooms: Object.keys(rooms).length
+      ok: true, since: STARTED.toISOString(), users: accounts.userCount(), players: social.onlineCount(), online: wss.clients.size, rooms: Object.keys(rooms).length, backups: backupInfo()
     }));
   }
   serveFile(req, res);

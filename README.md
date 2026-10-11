@@ -240,7 +240,7 @@ ffmpeg -i 原曲.mp3 -vn -map_metadata -1 -af loudnorm=I=-16:TP=-1.5:LRA=11 -ar 
 - **每次自动部署前一次**（文件名带 `deploy`）
 - 每份是一个 `saves-日期-时间-标记.tar.gz`，**保留 30 天**，更早的自动删掉
 
-这些都由自动部署装好，不用手动设置。在服务器上可以用：
+这些都由自动部署装好，不用手动设置。打开 `http://服务器IP:8080/status` 能看到 `backups`：一共有几份备份、最新一份的文件名。在服务器上可以用：
 
 ```
 sudo bash /opt/flame1down1/server/backup.sh manual      # 立刻手动备份一次
