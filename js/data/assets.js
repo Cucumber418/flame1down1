@@ -80,7 +80,7 @@ var PRE_SPRITES = {
   "tagore_s2": "images/pre_sprites/tagore_s2.png",
   "hauris_s1": "images/pre_sprites/hauris_s1.png",
   "hauris_s2": "images/pre_sprites/hauris_s2.png",
-  "faraday_s1": "images/pre_sprites/faraday_s1.png",
+  "faraday_s1": "images/pre_sprites/faraday_s1.webp",
   "faraday_s2": "images/pre_sprites/faraday_s2.png",
   "moon_s1": "images/pre_sprites/moon_s1.png",
   "moon_s2": "images/pre_sprites/moon_s2.png",
