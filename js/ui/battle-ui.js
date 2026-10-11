@@ -7,6 +7,24 @@
   var $ = function (id) { return document.getElementById(id); };
   var app = { loadout: {}, bag: ['dragon', 'leaf', 'squid', 'pluto', 'tagore'], sel: 'dragon', screen: 'builder', S: null, logHTML: '', fast: false, lastP: null, lastA: null };
   SP.forEach(function (s) { app.loadout[s.id] = s.def.slice(); });
+  // 竞技对战里给每只精灵选好的技能：记在存档里（跟着云存档同步），下次再用同一只精灵时沿用这套
+  var LOADOUT_KEY = 'hs-loadout-v1';
+  try {
+    var savedL = JSON.parse(localStorage.getItem(LOADOUT_KEY) || 'null');
+    if (savedL && typeof savedL === 'object') Object.keys(savedL).forEach(function (id) {
+      var s = SPMAP[id], lo = savedL[id];
+      if (!s || !app.loadout[id] || !Array.isArray(lo)) return;
+      var own = s.moves.concat(s.hidden);
+      lo = lo.filter(function (n, i) { return M[n] && own.indexOf(n) >= 0 && lo.indexOf(n) === i; }).slice(0, 4);
+      if (lo.length) app.loadout[id] = lo;
+    });
+  } catch (e) {}
+  function saveLoadout() {
+    // 只记和默认配招不一样的，存档小一点
+    var o = {};
+    SP.forEach(function (s) { var lo = app.loadout[s.id]; if (lo && lo.join('|') !== s.def.join('|')) o[s.id] = lo.slice(); });
+    try { localStorage.setItem(LOADOUT_KEY, JSON.stringify(o)); } catch (e) {}
+  }
   var busy = false, quitArmed = 0;
   app.mode = 'sandbox';
   app.rank = { r: 0, stars: 0, w: 0, l: 0, best: 0 };
@@ -376,6 +394,7 @@
     var lo = app.loadout[app.sel], n = cb.dataset.move;
     if (cb.checked) { if (lo.length >= 4) { cb.checked = false; flashMsg('最多带 4 个技能，先取消一个'); return; } lo.push(n); }
     else lo.splice(lo.indexOf(n), 1);
+    saveLoadout();
     renderBag(); renderDetail();
   });
   $('detail').addEventListener('click', function (e) {

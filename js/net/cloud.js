@@ -9,8 +9,8 @@
  * ========================================================== */
 (function () {
   'use strict';
-  // 要同步到服务器的本地存档键（游戏主存档、竞技段位、选将记录、沙盒设置）
-  var KEYS = ['hs-account-v1', 'hs-rank-v1', 'hs-draft-v1', 'hs-train-v1'];
+  // 要同步到服务器的本地存档键（游戏主存档、竞技段位、选将记录、沙盒设置、竞技对战里每只精灵的配招）
+  var KEYS = ['hs-account-v1', 'hs-rank-v1', 'hs-draft-v1', 'hs-train-v1', 'hs-loadout-v1'];
   var TOK = 'hs-cloud-token', OWNER = 'hs-cloud-owner', REV = 'hs-cloud-rev', DIRTY = 'hs-cloud-dirty', LEGACY = 'hs-legacy-backup', LAST = 'hs-cloud-lastuser';
   var LS = window.localStorage;
   // 登录凭证：勾了「自动登录」存在 localStorage（关掉浏览器也记得，60 天内免登录）；
