@@ -120,7 +120,7 @@ function aliveIdx(S, i) { var r = []; S.sides[i].team.forEach(function (m, k) { 
 /* ---------- 快照：给界面逐帧播放 ---------- */
 var ST_DESC = {
   害怕: '无法行动', 石化: '无法行动', 睡眠: '无法行动，受到攻击伤害时会醒来', 麻痹: '无法行动', 冰冻: '无法行动',
-  疲惫: '无法行动', 寄生: '每回合结束损失1/8最大体力，被对方吸走（草系精灵免疫）', 溺水: '每回合结束损失1/8最大体力；攻击造成的伤害变为30%',
+  疲惫: '无法行动', 寄生: '每回合结束损失1/10最大体力，被对方吸走（草系精灵免疫）', 溺水: '每回合结束损失1/8最大体力；攻击造成的伤害变为30%',
   流血: '每回合结束损失60点体力（机械系免疫）', 中毒: '每回合结束损失1/16最大体力×层数；可无限叠加，叠加时回合数取较长的一方', 烧伤: '每回合结束损失1/8最大体力',
   失明: '攻击时有50%概率落空'
 };
@@ -192,7 +192,7 @@ function abilityLive(m, foe) {
       on = f.hp <= f.maxhp / 3; return on ? '生效中：对手体力已低于1/3，造成伤害 +25%' : '未生效：对手体力降到 ' + Math.floor(f.maxhp / 3) + ' 以下时，造成伤害 +25%';
     case '踏浪': return m.tm.prio > 0 && !(m.tm.prio > 1 && false) ? '生效中：本回合技能先制 +1' : '已结束：出场时的先制 +1 已用完';
     case '盾甲': return '持续生效：受到伤害 -10%';
-    case '幻叶': return lowSelf ? '生效中：体力已低于1/3，受到伤害 -30%' : '未生效：体力降到 ' + Math.floor(m.maxhp / 3) + ' 以下时，受到伤害 -30%';
+    case '幻叶': return lowSelf ? '生效中：体力已低于1/3，受到伤害 -15%' : '未生效：体力降到 ' + Math.floor(m.maxhp / 3) + ' 以下时，受到伤害 -15%';
   }
   return sp(m).ability ? sp(m).ability.d : '';
 }
@@ -220,7 +220,7 @@ function chipsOf(m, foe) {
   if (m.fx.flash) c.push({ t: '闪光', k: 'st', h: '闪光飞叶', d: '下一次受到攻击时，额外降低1级命中' });
   if (m.fx.earMark) c.push({ t: '被听穿', k: 'st', h: '灵耳谛听', d: '试图闪避被识破：下一次受到的攻击威力翻倍' });
   if (miaN(m)) c.push({ t: '瘴气 ×' + miaN(m), k: 'st', h: '瘴气 · ' + miaN(m) + ' 层', d: '物攻、特攻 +' + (miaN(m) * 5) + '%，物防、特防 −' + Math.min(90, miaN(m) * 5) + '%（每层 ±5%，防御最低降到 10%）。持续到战斗结束，换下场也不会消失；在瘴气环境中每回合结束时再获得 1 层。' });
-  if (m.perm && m.perm.wither) c.push({ t: '凋零之蚀' + (witherN(m) > 1 ? ' ×' + witherN(m) : ''), k: 'st', h: '凋零之蚀 · ' + witherN(m) + ' 层', d: '每回合结束损失 ' + witherN(m) + '/20 最大体力（每层 1/20，可以无限叠加），持续到战斗结束。当前每回合损失 ' + witherDot(m) + ' 点' });
+  if (m.perm && m.perm.wither) c.push({ t: '凋零之蚀' + (witherN(m) > 1 ? ' ×' + witherN(m) : ''), k: 'st', h: '凋零之蚀 · ' + witherN(m) + ' 层', d: '每回合结束损失 ' + witherN(m) + '/' + WITHER_DIV + ' 最大体力（每层 1/' + WITHER_DIV + '，可以无限叠加），持续到战斗结束。当前每回合损失 ' + witherDot(m) + ' 点' });
   if (m.fx.boostNext) c.push({ t: '潜水蓄力', k: 'fx', h: '潜水蓄力', d: '下一次攻击伤害提升50%' });
   if (m.fx.moon) c.push({ t: '月升 ×' + m.fx.moon, k: 'fx', h: '月升 · ' + m.fx.moon + ' / 5', d: '达到5层时转化为光影之月。下场时清空。' });
   if (m.fx.moonNext) c.push({ t: '月蚀 · 下次攻击+15%', k: 'fx', h: '月蚀', d: '刚转换过属性，下一次攻击伤害提升15%' });
@@ -261,7 +261,7 @@ function statSheet(m, foe) {
   if (m.st['溺水'] > 0) dmgOut *= 0.3;
   if (f && ability(f) === '枯萎') dmgOut *= Math.max(0.7, 1 - 0.05 * (f.fx.fieldT || 0));
   if (m.fx.boostNext) dmgOut *= 1.5;
-  if (ab === '幻叶' && m.hp <= m.maxhp / 3) dmgIn *= 0.7;
+  if (ab === '幻叶' && m.hp <= m.maxhp / 3) dmgIn *= 0.85;
   if (ab === '盾甲') dmgIn *= 0.9;
   if (ab === '水形' && STG.some(function (k) { return m.stages[k] > 0; })) dmgIn *= 0.9;
   if (m.tm.soul > 0) dmgIn *= 1.2;
@@ -446,7 +446,7 @@ function calcDamage(me, foe, mv, firstMover, est) {
   if (me.fx.moonNext) mod *= 1.15;
   if (me.perm.moonFull) mod *= 1.15;
   if (fab === '枯萎') mod *= Math.max(0.7, 1 - 0.05 * (foe.fx.fieldT || 0));
-  if (fab === '幻叶' && foe.hp <= foe.maxhp / 3) mod *= 0.7;
+  if (fab === '幻叶' && foe.hp <= foe.maxhp / 3) mod *= 0.85;
   if (fab === '盾甲') mod *= 0.9;
   if (fab === '水形' && STG.some(function (k) { return foe.stages[k] > 0; })) mod *= 0.9;
   switch (mv.custom) {
@@ -714,7 +714,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
       case 'blastSlash': if (firstMover && statusRoll(me, 0.5)) addStatus(S, evs, j, '烧伤', rint(2, 5), i); break;
       case 'poisonHeart': foe.st['中毒'] += 1; foe.fx.poison = (foe.fx.poison || 1) + 1; E(S, evs, 'stage', { side: j }); log(S, evs, nm(foe) + '的中毒叠加到 ' + foe.fx.poison + ' 层，并延长了1回合（剩 ' + foe.st['中毒'] + ' 回合）', 'fxl'); break;
       case 'lifeSqueeze':
-        if (foe.st['寄生'] > 0) { var ls = loseHp(S, evs, j, foe.maxhp / 6, '额外吸取了' + nm(foe) + '的体力'); heal(S, evs, i, ls); } break;
+        if (foe.st['寄生'] > 0) { var ls = loseHp(S, evs, j, foe.hp / 6, '额外吸取了' + nm(foe) + '的体力'); heal(S, evs, i, ls); } break;   // 按对方当前体力的 1/6
     }
   }
   switch (mv.custom) {
@@ -863,7 +863,7 @@ function doStatus(S, evs, i, mv) {
     case 'halfPhys5': timer('halfPhys', 5, nm(me) + '展开幽冥结界：5回合内物理伤害减半'); break;
     case 'halfPhys3': timer('halfPhys', 3, nm(me) + '竖起盾墙：3回合内物理伤害减半'); break;
     case 'chaosWater': if (!foe.fainted) { var cw = loseHp(S, evs, j, foe.hp / 5, '混沌水域吸取了' + nm(foe) + '的体力'); heal(S, evs, i, cw); } break;
-    case 'wither': foe.perm.wither = witherN(foe) + 1; foe.hqWither = me; E(S, evs, 'stage', { side: j }); log(S, evs, nm(foe) + '被凋零之蚀侵蚀（' + foe.perm.wither + ' 层），每回合损失 ' + foe.perm.wither + '/20 最大体力，直到战斗结束', 'bad'); break;
+    case 'wither': foe.perm.wither = witherN(foe) + 1; foe.hqWither = me; E(S, evs, 'stage', { side: j }); log(S, evs, nm(foe) + '被凋零之蚀侵蚀（' + foe.perm.wither + ' 层），每回合损失 ' + foe.perm.wither + '/' + WITHER_DIV + ' 最大体力，直到战斗结束', 'bad'); break;
     case 'swamp': timer('swamp', 5, nm(me) + '展开孢子沼泽：5回合内异常状态成功率×1.5'); break;
     case 'purge':
       loseHp(S, evs, i, Math.floor(me.hp / 2), nm(me) + '损失了一半现有体力');
@@ -1018,9 +1018,10 @@ function miasmaField(S, evs) {
 }
 
 /* ---------- 瘴气：每层使物攻、特攻 +5%，物防、特防 −5%（最低降到 10%），换下场也不消失 ---------- */
-// 凋零之蚀：每层每回合损失 1/20 最大体力，可以无限叠加（旧存档里的 true 算 1 层）
+// 凋零之蚀：每层每回合损失 1/24 最大体力，可以无限叠加（旧存档里的 true 算 1 层）
+var WITHER_DIV = 24;
 function witherN(m) { var w = m.perm && m.perm.wither; return w === true ? 1 : w > 0 ? w : 0; }
-function witherDot(m) { return Math.max(1, Math.floor(m.maxhp * witherN(m) / 20)); }
+function witherDot(m) { return Math.max(1, Math.floor(m.maxhp * witherN(m) / WITHER_DIV)); }
 function miaN(m) { return (m.perm && m.perm.miasma) || 0; }
 function miaAtk(m) { return 1 + 0.05 * miaN(m); }
 function miaDef(m) { return Math.max(0.1, 1 - 0.05 * miaN(m)); }
@@ -1040,7 +1041,7 @@ function endOfTurn(S, evs) {
     var m = act(S, i); if (m.fainted) return;
     var o = act(S, 1 - i);
     var e8 = Math.max(1, Math.floor(m.maxhp / 8)), e10 = Math.max(1, Math.floor(m.maxhp / 10));
-    if (m.st['寄生'] > 0) { var got = loseHp(S, evs, i, e8, nm(m) + '被寄生之种吸取了体力'); if (!o.fainted) heal(S, evs, 1 - i, got); }
+    if (m.st['寄生'] > 0) { var got = loseHp(S, evs, i, e10, nm(m) + '被寄生之种吸取了体力'); if (!o.fainted) heal(S, evs, 1 - i, got); }
     if (!m.fainted && m.st['溺水'] > 0) loseHp(S, evs, i, e8, nm(m) + '因溺水受到伤害');
     if (!m.fainted && m.st['流血'] > 0) loseHp(S, evs, i, 60, nm(m) + '因流血受到伤害');
     if (!m.fainted && m.st['中毒'] > 0) { var pz = m.fx.poison || 1; loseHp(S, evs, i, Math.max(1, Math.floor(m.maxhp * pz / 16)), nm(m) + '因中毒受到伤害' + (pz > 1 ? '（' + pz + ' 层）' : '')); }

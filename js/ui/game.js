@@ -1352,6 +1352,15 @@
   }
 
   /* ---------- 航行日志：活动、每日任务、排位奖励、下期预告 ---------- */
+  // 「近期改动」专栏：内容写在 js/data/changelog.js，最新一条展开，更早的折叠
+  function changelogHTML() {
+    var L = typeof CHANGELOG !== 'undefined' ? CHANGELOG : [];
+    if (!L.length) return '';
+    var one = function (c) { return '<div class="cl-entry"><p class="cl-h"><b>' + esc(c.title) + '</b><span>' + esc(c.date) + '</span></p><ul>' + c.items.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul></div>'; };
+    return '<article class="log-card wide changelog"><span class="tape l"></span><span class="chip log-tag">近期改动</span><h3>更新公告</h3>' +
+      '<p class="hint">技能、数值和玩法的改动都会公布在这里，最新的在最上面。</p>' + L.slice(0, 1).map(one).join('') +
+      (L.length > 1 ? '<details class="cl-more"><summary>更早的改动（' + (L.length - 1) + ' 条）</summary>' + L.slice(1).map(one).join('') + '</details>' : '') + '</article>';
+  }
   function renderLog() {
     var now = new Date(), h = now.getHours(), on = mysteryTime();
     var wait = on ? '' : (function () { var t = new Date(now); t.setHours(MYSTERY.from, 0, 0, 0); var m = Math.max(0, Math.round((t - now) / 60000)); return '距离今天的活动开始还有 ' + Math.floor(m / 60) + ' 小时 ' + (m % 60) + ' 分钟'; })();
@@ -1361,8 +1370,8 @@
       var got = rec.got[r];
       return '<tr class="' + (got ? 'got' : r <= best ? 'ok' : '') + (R.gift ? ' big' : '') + '"><td>' + RANKS[r] + '</td><td>累积经验 ×' + fmt(R.exp) + '，能量 ×' + fmt(R.energy) + (R.gift ? '，<b class="red">' + R.gift.map(function (g) { return form(g).name + ' LV' + g.lv; }).join('、') + '</b>' : '') + '</td><td>' + (got ? '已领取' : '未达成') + '</td></tr>';
     }).join('');
-    $('pg-log').innerHTML = '<div class="page-head"><h2 class="sec">航行日志</h2><p class="hint">荆楚号的公告板：限时活动、每日任务、排位奖励和下期预告。</p></div>' +
-      '<div class="log-grid">' +
+    $('pg-log').innerHTML = '<div class="page-head"><h2 class="sec">航行日志</h2><p class="hint">荆楚号的公告板：更新公告、限时活动、每日任务、排位奖励和新首领。</p></div>' +
+      '<div class="log-grid">' + changelogHTML() +
       '<article class="log-card ev"><span class="tape l"></span><span class="chip log-tag">限时活动</span><h3>神秘精灵出没</h3>' +
         '<p>每天 <b>16:00–24:00</b>，在星际探索的任何场景，都有 <b>3%</b> 的概率刷出一只神秘精灵！</p><p class="hint">它是什么？只有遇到过的人才知道。</p>' +
         '<p class="log-st ' + (on ? 'on' : '') + '">' + (on ? '活动进行中，今天 24:00 结束' : wait) + '</p></article>' +

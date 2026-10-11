@@ -25,12 +25,12 @@ var M = {
   // —— 叶粒之果（草）
   飞叶刀: { type: '草', cat: '物攻', power: 35, d: '威力35' },
   木叶庇护: { type: '草', cat: '变化', selfStage: { def: 1, spd: 1 }, d: '提升1级物防、特防' },
-  寄生之种: { type: '草', cat: '变化', status: { k: '寄生', min: 5, max: 5, chance: 1 }, d: '使对方寄生5回合（每回合吸取对方1/8体力）' },
+  寄生之种: { type: '草', cat: '变化', status: { k: '寄生', min: 5, max: 5, chance: 1 }, d: '使对方寄生5回合（每回合吸取对方1/10体力）' },
   猛冲击: { type: '普通', cat: '物攻', power: 60, custom: 'halfHpBoost', d: '威力60，对体力低于1/2者伤害提升50%' },
   吸取: { type: '草', cat: '特攻', power: 60, drain: 0.5, d: '威力60，造成伤害的一半转化为体力回复' },
   花粉: { type: '草', cat: '变化', tgtStage: { acc: -2 }, d: '降低对方2级命中' },
   强力吸取: { type: '草', cat: '特攻', power: 80, drain: 0.5, d: '威力80，造成伤害的一半转化为体力回复' },
-  光合作用: { type: '草', cat: '变化', heal: 1 / 4, selfStage: { spa: 1 }, pp: 10, d: '恢复1/4体力，提升1级特攻' },
+  光合作用: { type: '草', cat: '变化', heal: 1 / 5, selfStage: { spa: 1 }, pp: 10, d: '恢复1/5体力，提升1级特攻' },
   软化粉: { type: '草', cat: '特攻', power: 50, tgtStage: { atk: -2 }, d: '威力50，降低对方2级物攻' },
   飞叶风暴: { type: '草', cat: '特攻', power: 90, hidden: true, selfStage: { spa: 1 }, selfChance: 0.4, d: '威力90，40%概率提升1级特攻' },
   超级吸取: { type: '草', cat: '特攻', power: 95, hidden: true, drain: 0.5, d: '威力95，造成伤害的一半转化为体力回复' },
@@ -215,12 +215,12 @@ var M = {
   缠绕: { type: '草', cat: '变化', tgtStage: { spe: -2 }, d: '降低对方2级速度' },
   生长: { type: '草', cat: '变化', selfStage: { spa: 1 }, d: '提升1级特攻' },
   绿色射线: { type: '草', cat: '特攻', power: 65, d: '威力65' },
-  凋零之蚀: { type: '草', cat: '变化', custom: 'wither', pp: 10, d: '使对方每回合损失1/20最大体力，持续到战斗结束；可以无限叠加，每层再多损失1/20' },
+  凋零之蚀: { type: '草', cat: '变化', custom: 'wither', pp: 10, d: '使对方每回合损失1/24最大体力，持续到战斗结束；可以无限叠加，每层再多损失1/24' },
   荒芜之触: { type: '草', cat: '特攻', power: 75, custom: 'weak3', d: '威力75，使对方伤害降低30%，持续3回合' },
   寄生种子: { type: '草', cat: '变化', status: { k: '寄生', min: 5, max: 5, chance: 1 }, d: '使对方寄生5回合' },
   枯萎之壤: { type: '草', cat: '变化', tgtStage: { atk: -1, spa: -1, acc: -1 }, d: '降低对方1级物攻、特攻、命中' },
   腐败枷锁: { type: '草', cat: '变化', tgtStage: { spe: -1 }, custom: 'noBoostFoe', pp: 10, d: '降低对方1级速度，使对方5回合内无法提升能力等级' },
-  灭却: { type: '普通', cat: '特攻', power: 1, hidden: true, custom: 'annihilate', pp: 2, d: '威力1，PP 2，秒杀成功后恢复本技能全部 PP；5%概率秒杀对方，对方存在的不利状态越多，成功率越高（试验版：每多1种不利状态 +10%，最高60%）' },
+  灭却: { type: '普通', cat: '特攻', power: 1, hidden: true, custom: 'annihilate', pp: 2, d: '威力1，PP 2，秒杀成功后恢复本技能全部 PP；5%概率秒杀对方，对方存在的不利状态越多，成功率越高（每多1种不利状态 +10%，最高60%）' },
 
   // —— 玛西露姆（草）
   毒孢子: { type: '草', cat: '特攻', power: 30, status: { k: '中毒', min: 2, max: 4, chance: 0.5 }, d: '威力30，50%概率使对方中毒2-4回合' },
@@ -277,8 +277,8 @@ var M = {
   // —— 幻境叶果（草/超能）
   盛放: { type: '草', cat: '特攻', power: 75, d: '威力75' },
   幻境汲取: { type: '超能', cat: '特攻', power: 90, drain: 0.5, d: '威力90，造成伤害的一半转化为体力回复' },
-  生命遁迹: { type: '草', cat: '变化', selfStage: { def: 1, spd: 1, spa: 1 }, heal: 1 / 8, lowHeal: 1 / 4, pp: 10, d: '提升1级物防、特防、特攻，恢复1/8体力，体力低于1/4时改为恢复1/4' },
-  生命榨取: { type: '草', cat: '特攻', power: 100, drain: 0.5, hidden: true, custom: 'lifeSqueeze', d: '威力100，造成伤害的一半转化为体力回复，若对方寄生则额外吸取对方1/6最大体力值' },
+  生命遁迹: { type: '草', cat: '变化', selfStage: { def: 1, spd: 1, spa: 1 }, heal: 1 / 8, lowHeal: 1 / 6, pp: 10, d: '提升1级物防、特防、特攻，恢复1/8体力，体力低于1/4时改为恢复1/6' },
+  生命榨取: { type: '草', cat: '特攻', power: 100, drain: 0.5, hidden: true, custom: 'lifeSqueeze', d: '威力100，造成伤害的一半转化为体力回复，若对方寄生则额外吸取对方1/6当前体力值' },
   万灵封印: { type: '超能', cat: '变化', hidden: true, custom: 'seal', pp: 5, d: '5回合内禁止对方提升能力等级，若对方尝试提升能力等级，则使之损失1/4当前体力值' },
   // —— 叶子喵（草 · 光）
   光束: { type: '光', cat: '特攻', power: 45, d: '威力45' },

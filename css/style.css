@@ -1310,3 +1310,13 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .it-mon small { font-size: 12px; color: var(--pencil); }
 .it-mon.on { border-color: var(--ink); box-shadow: 2px 2px 0 var(--ink); background: #fffdf4; }
 .it-mon:focus-within { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+/* ============ 航行日志 · 近期改动 ============ */
+.changelog { display: grid; gap: 10px; }
+.cl-entry { border-top: 1px dashed var(--rule); padding-top: 8px; }
+.cl-h { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin: 0 0 4px; }
+.cl-h b { font-size: 16px; }
+.cl-h span { font-size: 12.5px; color: var(--pencil); font-variant-numeric: tabular-nums; }
+.cl-entry ul { margin: 0; padding-left: 1.3em; display: grid; gap: 2px; font-size: 14px; line-height: 1.55; }
+.cl-more summary { cursor: pointer; color: var(--blue); font-size: 13.5px; padding: 4px 0; }
+.cl-more[open] summary { margin-bottom: 4px; }
