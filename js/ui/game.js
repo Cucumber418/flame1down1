@@ -1708,11 +1708,11 @@
    * 胜利奖励 3000 累积经验，每个人每天最多领一次。 */
   var NPC_WIN_EXP = 3000, NPC_HOURS = 3, NPC_FROM = 9, NPC_TO = 24, NPC_AI_RANK = 2;
   var NPC = {
-    t: { name: 'Threego', img: 'threego', fixed: [{ slot: 0, sid: 'leafcat' }], away: '她每天会在某个时间回房间待一阵子。',
+    t: { name: 'Threego', pron: '她', img: 'threego', fixed: [{ slot: 0, sid: 'leafcat' }], away: '她每天会在某个时间回房间待一阵子。',
       lines: [['', '哟，{name}！我的叶子喵最近可厉害了，要不要来试试？'], ['laugh', '嘿嘿，今天我状态超好，输了可别哭鼻子哦！'], ['smile', '点点的消息还没查到……先陪我打一场散散心吧。']] },
-    h: { name: 'Dr.黄', img: 'drh', fixed: [{ slot: -1, sid: 'aegis' }], away: '他每天会在某个时间回房间待一阵子。',
+    h: { name: 'Dr.黄', pron: '他', img: 'drh', fixed: [{ slot: -1, sid: 'aegis' }], away: '他每天会在某个时间回房间待一阵子。',
       lines: [['', '哦？你来得正好。至高之盾的防御，你破得了吗？'], ['grin', '我在孝感大厅打了很久很久……今天换你陪我练练。'], ['oh', '哦！是{name}啊。来都来了，切磋一下？']] },
-    b: { name: 'Bttp', img: 'bttp', fixed: [{ slot: 2, sid: 'bone' }], away: '他每天会在某个时间回房间待一阵子。',
+    b: { name: 'Bttp', pron: '他', img: 'bttp', fixed: [{ slot: 2, sid: 'bone' }], away: '他每天会在某个时间回房间待一阵子。',
       lines: [['god', '神已经算到你会来了。'], ['', '我的精灵排序是有讲究的，尤其是第三只。'], ['smile', '要不要验证一下你最近的进步？来吧。']] }
   };
   // 随机池：竞技对战的 24 只，去掉剧情里还没揭晓的首领「荒芜」和神秘精灵「豪瑞希德」（避免提前在黄冈秘鉴里解锁名字）
@@ -1809,7 +1809,7 @@
       (inside ? '<button type="button" class="npc-stand" data-npctalk="' + R.k + '" aria-label="和 ' + esc(N.name) + ' 对话"><img src="' + npcArt(R.k) + '" alt=""><span class="npc-bubble">！</span></button>' : '') +
       (list.length || inside ? '' : '<p class="home-empty">房间的主人不在，这里还没有展示精灵。</p>') + '</div>' +
       (N ? '<div class="tea-bar npc-bar"><span class="tape l"></span><div class="tea-txt"><b>' + (inside ? esc(N.name) + ' 在家' : esc(N.name) + ' 不在房间里') + '</b>' +
-        '<p class="hint">' + (inside ? '点房间里的 ' + esc(N.name) + ' 或右边的按钮和 TA 说话，会进入对战。胜利奖励 ' + fmt(NPC_WIN_EXP) + ' 累积经验，每天一次。' : esc(N.away) + '所有船员看到的时间都一样。') + '</p>' +
+        '<p class="hint">' + (inside ? '点房间里的 ' + esc(N.name) + ' 或右边的按钮和 TA 说话，会进入对战。胜利奖励 ' + fmt(NPC_WIN_EXP) + ' 累积经验，每天一次。快去通知其他船员来拜访' + N.pron + '吧！' : esc(N.away) + N.pron + '会在什么时候回来呢？不妨问问其他船员吧。') + '</p>' +
         '<p class="tea-left">今天的胜利奖励：<b>' + (won ? '已领取' : '未领取') + '</b></p></div>' +
         '<button type="button" class="btn primary" data-npctalk="' + R.k + '"' + (inside ? '' : ' disabled') + '>' + (inside ? '对话' : '不在家') + '</button></div>' : '') +
       (list.length ? '<p class="hint" style="margin-top:8px">' + (N ? esc(N.name) : '主人') + ' 在房间里展示着' + (R.k === 't' ? '她' : '他') + '的伙伴。点它们可以摸摸。</p>' : '');
