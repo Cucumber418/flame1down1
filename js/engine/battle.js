@@ -67,7 +67,14 @@ function makeMon(id, moveNames, mult, lv, ev, nat) {
 }
 
 // 剧情对战可以给精灵起显示名（如进化前的形态名）和换图
-function mkFrom(t) { var m = makeMon(t.id, t.moves, t.mult, t.lv, t.ev, t.nat); if (t.nick) m.nick = t.nick; if (t.img) m.img = t.img; if (t.miasma) m.perm.miasma = t.miasma; return m; }
+function mkFrom(t) {
+  var m = makeMon(t.id, t.moves, t.mult, t.lv, t.ev, t.nat);
+  if (t.nick) m.nick = t.nick; if (t.img) m.img = t.img; if (t.miasma) m.perm.miasma = t.miasma;
+  if (t.maxhp) m.maxhp = m.hp = t.maxhp;          // 首领：固定体力
+  if (t.onlyHit) m.onlyHit = t.onlyHit;           // 首领：只有这些属性的技能能命中它
+  return m;
+}
+function hitBlocked(foe, t) { return !!(foe.onlyHit && foe.onlyHit.indexOf(t) < 0); }
 function newBattle0(pTeam, aTeam) {
   return { turn: 1, over: null, needSwitch: false, order: [], turnActed: [false, false], silenced: [false, false],
     sides: [
@@ -197,6 +204,7 @@ function chipsOf(m, foe) {
   if (m.fx.leiyin) c.push({ t: '引雷', k: 'st', h: '引雷', d: '下一次受到的伤害提升20%' });
   if (m.fx.sureHit && !m.fx.sureCrit) c.push({ t: '下次必中', k: 'fx', h: '下次必中', d: '下一次攻击必定命中' });
   if (m.perm && m.perm.melt) c.push({ t: '熔化 ×' + m.perm.melt, k: 'st', h: '熔化 · ' + m.perm.melt + ' 层', d: '受到的伤害提升 ' + m.perm.melt * 20 + '%（每层20%，最多5层），持续到战斗结束，换下场也不会消失' });
+  if (m.onlyHit) c.push({ t: '首领 · 只受' + m.onlyHit.join('/') + '系', k: 'fx', h: '首领', d: '只有' + m.onlyHit.join('、') + '系技能才能命中它，其他属性的技能都会被挡下' });
   if (m.perm && m.perm.star) c.push({ t: '星星魔法 ×' + m.perm.star, k: 'fx', h: '星星魔法 · 已使用 ' + m.perm.star + ' 次', d: '下一次星星魔法威力 ' + Math.min(200, 25 * (m.perm.star + 1)) + '（换下场也会保留）' });
   if (m.fx.flash) c.push({ t: '闪光', k: 'st', h: '闪光飞叶', d: '下一次受到攻击时，额外降低1级命中' });
   if (m.fx.earMark) c.push({ t: '被听穿', k: 'st', h: '灵耳谛听', d: '试图闪避被识破：下一次受到的攻击威力翻倍' });
@@ -589,6 +597,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   if (mv.cat === '变化') { doStatus(S, evs, i, mv); return; }
 
   if (foe.fainted) { log(S, evs, '但是没有目标'); return; }
+  if (hitBlocked(foe, mt)) { log(S, evs, nm(foe) + '毫发无伤！只有' + foe.onlyHit.join('、') + '系技能才能命中它', 'bad'); me.fx.boostNext = 0; return; }
   if (mv.custom === 'poisonHeart' && !(foe.st['中毒'] > 0)) { log(S, evs, '但是没有命中！（渗透孢子只能命中中毒的敌人）'); me.fx.boostNext = 0; return; }
   var sure = me.fx.sureHit; if (sure) me.fx.sureHit = 0;
   if (me.tm.sure3 > 0 || me.tm.ear > 0) sure = 1;
@@ -717,6 +726,7 @@ function doStatus(S, evs, i, mv) {
   if (c === 'burnout' && !(foe.perm && foe.perm.melt > 0)) { log(S, evs, '但是对方没有熔化状态，技能失败了'); return; }
   if (targetsFoe(mv)) {
     if (foe.fainted) { log(S, evs, '但是没有目标'); return; }
+    if (hitBlocked(foe, mvType(me, mv))) { log(S, evs, nm(foe) + '毫发无伤！只有' + foe.onlyHit.join('、') + '系技能才能命中它', 'bad'); return; }
     if (RNG() >= hitChance(me, foe, mv)) { log(S, evs, '但是没有命中！'); return; }
     if (mv.tgtStage) {
       var ts = mv.tgtStage;

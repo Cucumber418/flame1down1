@@ -588,6 +588,7 @@
     academy: { name: '学院部', planet: 'jingchu', dept: '黄冈', chapter: '支线 · 黄冈秘鉴', side: true, bg: 'pod_p', d: '学院部里收着一本记录所有精灵的「黄冈秘鉴」。读完后开放「黄冈秘鉴」。', after: 'board', pos: [50, 72], reward: { exp: 0, energy: 100 } },
     flora1: { name: '盐碱地', planet: 'flora', chapter: '第五段 · 降临芙罗拉', bg: 'fl_salt', d: '第一支地面探索小队降落在了芙罗拉星。可着陆舱偏离了坐标，落进了弥漫着瘴气的盐碱地……', after: 'board', reward: { exp: 1000, energy: 500 } },
     tea: { name: '陆羽茶室', planet: 'jingchu', dept: '天门', chapter: '支线 · 陆羽茶室', side: true, bg: 'tea_p', d: '从芙罗拉星回来后，舰上要给第一支地面小队分配休息舱。读完后开放你自己的「茶室」（家园）。', after: 'flora1', pos: [50, 84] },
+    tiger: { name: '古城防卫部', planet: 'jingchu', dept: '襄阳', chapter: '支线 · 东北来的泰戈尔', side: true, bg: 'bridge_p', d: '古城防卫部来了一只从东北招募的特殊虎系精灵，专门辅助乘员训练。读完后开放首领「泰戈尔」的挑战。', after: 'board', pos: [30, 70] },
     rare: { name: '学院部', planet: 'jingchu', dept: '黄冈', chapter: '支线 · 稀有精灵', side: true, bg: 'pod_p', d: 'Bttp 在黄冈秘鉴里发现了几页几乎空白的记录，想请你帮学院部找一只稀有精灵。', after: 'flora1', pos: [26, 58] },
     rare_r: { name: '学院部', planet: 'jingchu', dept: '黄冈', chapter: '支线 · 稀有精灵（汇报）', side: true, bg: 'pod_p', d: '把捕捉到的稀有精灵带回学院部，向 Bttp 汇报。', after: 'rare', pos: [74, 58], need: function () { return !!rareOwned(); }, needText: '捕捉一种稀有精灵后来汇报', reward: { title: 'collector' } },
     storage: { name: '物资仓储', planet: 'jingchu', dept: '荆门', chapter: '支线 · 物资仓储', side: true, bg: 'storage_p', d: '荆楚号即将抵达芙罗拉星，新乘员要去物资仓储领取探索物资。读完后，物资仓储里的「商城」开放。', after: 'board', pos: [50, 62], reward: { exp: 0, energy: 300, items: { cap1: 10 } } },
@@ -649,7 +650,7 @@
     if (add.exp || add.energy) { save(); setTimeout(function () { toast('主线奖励调整：已为读完的主线补发累积经验 ×' + fmt(add.exp) + '、能量 ×' + fmt(add.energy) + '。'); }, 600); }
   }
   function giveItems(o) { if (!o) return; if (!acc.items) acc.items = {}; for (var k in o) acc.items[k] = (acc.items[k] || 0) + o[k]; }
-  function rwList(R) { var a = [R.exp ? '累积经验 ×' + fmt(R.exp) : '', R.energy ? '能量 ×' + fmt(R.energy) : '']; if (R.items) for (var k in R.items) a.push(ITEMS[k].name + ' ×' + R.items[k]); if (R.title) a.push('称号「' + TITLES.filter(function (x) { return x.id === R.title; })[0].n + '」'); return a.filter(Boolean); }
+  function rwList(R) { var a = [R.exp ? '累积经验 ×' + fmt(R.exp) : '', R.energy ? '能量 ×' + fmt(R.energy) : '']; if (R.items) for (var k in R.items) a.push(ITEMS[k].name + ' ×' + R.items[k]); if (R.title) a.push('称号「' + TITLES.filter(function (x) { return x.id === R.title; })[0].n + '」'); if (R.mon) a.push(R.mon); return a.filter(Boolean); }
   var ex = { view: 'planets', planet: 'earth', site: null, mode: null, host: null, i: 0, typing: false, auto: false, skip: false, timer: null, tick: null, full: '', log: [], pickSel: null };
   function story() { if (!acc.story) acc.story = {}; return acc.story; }
   function prog(site) { var st = story(); if (!st[site]) st[site] = { at: 0, done: false, ch: null }; return st[site]; }
@@ -708,6 +709,7 @@
     if (ex.view === 'area') { renderArea(); return; }
     if (ex.view === 'quests') { renderQuests(); return; }
     if (ex.view === 'home') { if (homeOpen()) { renderHome(); return; } ex.view = 'area'; renderArea(); return; }
+    if (ex.view === 'boss') { if (bossOpen(ex.boss)) { renderBoss(); return; } ex.view = 'area'; renderArea(); return; }
     if (ex.view === 'room') { if (homeOpen()) { renderRoom(); return; } ex.view = 'area'; renderArea(); return; }
     if (ex.view === 'shop') { if (shopOpen()) { renderShop(); return; } ex.view = 'area'; renderArea(); return; }
     var Pp = ex.view === 'sites' && PLANETS.filter(function (p) { return p.id === ex.planet; })[0];
@@ -775,7 +777,7 @@
       '<div class="crumb"><button type="button" class="btn ghost" id="ex-ship">‹ 返回舰体图</button><b>荆楚号 · ' + d[0] + '</b><span class="hint">' + n + ' · ' + d[1] + '</span></div>' +
       '<div class="area' + (ex.tp ? ' tp' : '') + '"><div class="area-scene">' +
       (bg ? '<img src="' + BG[bg] + '" alt="' + d[0] + '">' : '<div class="area-ph"><img src="' + CHARS.ship_icon + '" alt=""><b>' + d[0] + '</b><span>这片区域的具体样子还在建造中</span></div>') +
-      mk + (n === '天门' ? hallSpots() : '') +
+      mk + (n === '天门' ? hallSpots() : '') + bossSpots(n) +
       (n === '荆门' ? '<button type="button" class="mk shop' + (shopOpen() ? '' : ' locked') + '"' + (shopOpen() ? ' data-shop="1"' : ' disabled') + ' style="left:74%;top:40%"><span class="mk-dot">' + (shopOpen() ? '商' : '锁') + '</span><span class="mk-lab"><b>商城 · 物资兑换</b><small>' + (shopOpen() ? '用能量兑换捕捉装置和补药' : '读完「物资仓储」支线后开放') + '</small></span></button>' : '') +
       (ids.length ? '' : '<p class="area-empty">这里暂时没有剧情。</p>') +
       '<div class="tp-fx" aria-hidden="true"><span>传送至 ' + d[0] + '……</span></div></div>' +
@@ -905,6 +907,65 @@
       } });
   }
 
+  /* ---------- 首领：常驻在舰上部门里，可反复挑战 ---------- */
+  var BOSSES = {
+    tiger: { name: '泰戈尔', sid: 'tagore', lv: 25, hp: 500, only: ['水', '火', '草'], diff: '简单', dept: '襄阳', bg: 'bridge_p', story: 'tiger', pos: [66, 52],
+      d: '从东北招募的特殊虎系精灵，常驻古城防卫部，辅助乘员们训练。', reward: { sid: 'tagore', lv: 10 } }
+  };
+  function bossOpen(k) { var B = BOSSES[k]; return !!(B && prog(B.story).done); }
+  function bossWon(k) { return !!(acc.bosses && acc.bosses[k] && acc.bosses[k].wins > 0); }
+  function bossSpots(n) {
+    return Object.keys(BOSSES).filter(function (k) { return BOSSES[k].dept === n; }).map(function (k) {
+      var B = BOSSES[k], open = bossOpen(k);
+      return '<button type="button" class="mk shop boss' + (open ? '' : ' locked') + '"' + (open ? ' data-boss="' + k + '"' : ' disabled') + ' style="left:' + B.pos[0] + '%;top:' + B.pos[1] + '%"><span class="mk-dot">' + (open ? '首' : '锁') + '</span><span class="mk-lab"><b>首领 · ' + B.name + '</b><small>' + (open ? B.diff + ' · LV' + B.lv + (bossWon(k) ? ' · 已击败' : '') : '读完「' + SITES[B.story].chapter.split(' · ')[1] + '」后开放') + '</small></span></button>';
+    }).join('');
+  }
+  function renderBoss() {
+    var k = ex.boss, B = BOSSES[k], rec = (acc.bosses && acc.bosses[k]) || {}, rf = form({ sid: B.reward.sid, lv: B.reward.lv });
+    $('pg-explore').innerHTML = exHead('舰上部门里常驻的首领，可以反复挑战。') +
+      '<div class="crumb"><button type="button" class="btn ghost" id="boss-back">‹ 返回' + DEPTS[B.dept][0] + '</button><b>首领 · ' + B.name + '</b></div>' +
+      '<article class="boss-card"><span class="tape l"></span><div class="boss-art"><img src="' + BG[B.bg] + '" alt="" class="boss-bg"><img src="' + SPRITES[B.sid] + '" alt="' + B.name + '" class="boss-mon"></div>' +
+      '<div class="boss-txt"><span class="chip boss-diff">' + B.diff + '难度</span><h3>' + B.name + '</h3><p class="hint">' + esc(B.d) + '</p>' +
+      '<ul class="boss-rules"><li><b>等级</b>LV' + B.lv + '</li><li><b>体力</b>' + B.hp + '</li><li><b>特殊</b>只有' + B.only.join('、') + '系技能才能命中它</li>' +
+      '<li><b>奖励</b>' + (rec.wins ? '已领取（首次击败获得 ' + esc(rf.name) + ' LV' + B.reward.lv + '）；再次击败只获得经验和学习力' : '首次击败获得 ' + esc(rf.name) + ' LV' + B.reward.lv + '，另有经验和学习力') + '</li>' +
+      '<li><b>战绩</b>' + (rec.wins || 0) + ' 胜 / ' + (rec.tries || 0) + ' 次挑战</li></ul>' +
+      '<p class="hint">会使用你当前的出战配队（' + TEAM_NAME[acc.active] + '）。记得带上会水、火、草系技能的精灵。</p>' +
+      '<button type="button" class="btn primary" data-bossgo="' + k + '">开始挑战</button></div></article>';
+  }
+  function startBoss(k) {
+    var B = BOSSES[k]; if (!bossOpen(k)) return;
+    var team = (acc.teams[acc.active] || []).map(mon).filter(Boolean);
+    if (!team.length) team = acc.mons.slice(0, 1);
+    team = team.slice(0, TEAM_SIZE);
+    var p = team.map(storyMon);
+    var a = [{ id: B.sid, lv: B.lv, moves: defaultMoves(B.sid, B.lv), nick: B.name, img: SPRITES[B.sid], maxhp: B.hp, onlyHit: B.only }];
+    seeMon(B.sid, B.lv);
+    if (!acc.bosses) acc.bosses = {}; if (!acc.bosses[k]) acc.bosses[k] = { wins: 0, tries: 0 };
+    acc.bosses[k].tries++; save();
+    stopTimers(); ex.fighting = true; document.body.classList.add('story-fight'); syncBattle();
+    $('pg-explore').hidden = true; $('pg-arena').hidden = false;
+    window.HSBATTLE.start({ p: p, a: a, foe: '首领', items: invCopy(), onItem: useInv, bg: BG[B.bg], back: DEPTS[B.dept][0],
+      onEnd: function (res, seen, downs) {
+        var msg = [], rec = acc.bosses[k];
+        if (res === 'win') {
+          var first = !rec.wins; rec.wins++;
+          msg.push('击败了首领「' + B.name + '」！');
+          if (first) {
+            var m = newMon(B.reward.sid, B.reward.lv), T = acc.teams[acc.active], added = T.length < TEAM_SIZE;
+            if (added) T.push(m.u);
+            msg.push('获得了 ' + form(m).name + '（LV' + B.reward.lv + '，' + m.nat + '）！' + (added ? '已加入' + TEAM_NAME[acc.active] + '。' : '已收入精灵仓库。'));
+          }
+        }
+        msg = msg.concat(battleRewards(team, seen, downs));
+        save();
+        ex.fighting = false; document.body.classList.remove('story-fight');
+        ex.view = 'boss'; ex.boss = k;
+        $('pg-arena').hidden = page !== 'arena'; $('pg-explore').hidden = page !== 'explore';
+        renderTop(); syncBattle(); window.scrollTo(0, $('pg-explore').offsetTop - 8);
+        if (msg.length) setTimeout(function () { toast(msg.join('')); }, 300);
+      } });
+  }
+
   /* ---------- 商城：荆门 · 物资仓储 ---------- */
   var shopQty = {};
   function renderShop() {
@@ -1021,7 +1082,7 @@
   $('pg-explore').addEventListener('keydown', function (e) { if (e.target.id === 'home-name') { if (e.key === 'Enter') { e.preventDefault(); saveHomeName(); } else if (e.key === 'Escape') { ex.homeEdit = false; renderHome(); } } });
 
   /* ---------- 任务：主线 / 支线 / 世界 ---------- */
-  var MAIN_Q = ['school', 'river', 'jiuquan', 'board', 'flora1'], SIDE_Q = ['academy', 'xiaogan', 'storage', 'tea', 'rare'];
+  var MAIN_Q = ['school', 'river', 'jiuquan', 'board', 'flora1'], SIDE_Q = ['academy', 'xiaogan', 'storage', 'tiger', 'tea', 'rare'];
   // 世界任务（奖励暂定）
   var WQ = [
     { id: 'w_first', n: '初到芙罗拉', d: '荆楚号已经抵达芙罗拉星。去丛林或草甸，和那里的野生精灵过过招吧。', where: '芙罗拉星 · 丛林 / 草甸', steps: [{ t: '在芙罗拉星击败 1 只野生精灵', k: 'wins', n: 1 }], reward: { energy: 100 }, after: 'flora1', go: 'flora' },
@@ -1048,6 +1109,7 @@
       return W.steps.every(function (x) { return qStat(x.k) >= x.n; }) ? 'claim' : 'doing';
     }
     var pr = prog(id); if (!unlocked(id)) return 'lock';
+    if (id === 'tiger') return bossWon('tiger') ? 'done' : pr.done || pr.at > 0 ? 'doing' : 'todo';
     if (id === 'rare') return prog('rare_r').done ? 'done' : pr.done || pr.at > 0 ? 'doing' : 'todo';
     return pr.done ? 'done' : pr.at > 0 ? 'doing' : 'todo';
   }
@@ -1076,6 +1138,7 @@
       var S = SITES[id], pr = prog(id); desc = S.d; R = S.reward;
       steps = [{ t: '前往 ' + qWhere(id), ok: pr.done || pr.at > 0 }, { t: '读完剧情「' + qName(id) + '」', ok: pr.done }];
       if (S.chapter.indexOf('准备发射') >= 0) steps.splice(1, 0, { t: '和 Threego 进行剧情对战', ok: pr.done || !!pr.bt });
+      if (id === 'tiger') { steps = [{ t: '在古城防卫部听舰载广播介绍泰戈尔', ok: pr.done }, { t: '挑战并击败首领「泰戈尔」（只有水、火、草系技能能命中它）', ok: bossWon('tiger') }]; R = { mon: '小胖虎 LV10（首次击败）' }; }
       if (id === 'rare') { var rr = prog('rare_r'); steps = [{ t: '在学院部听 Bttp 说明任务', ok: pr.done }, { t: '捕捉一种稀有精灵（芙罗拉星的丛林深处可能会有）', ok: rr.done || !!rareOwned() }, { t: '回到学院部，向 Bttp 汇报', ok: rr.done }]; R = SITES.rare_r.reward; desc = S.d; }
       if (st === 'lock') need = '先读完「' + SITES[S.after].chapter.split(' · ')[1] + '」。';
     }
@@ -1139,6 +1202,9 @@
     if (b.dataset.qclaim) { claimQuest(b.dataset.qclaim); return; }
     if (b.dataset.room) { ex.view = 'room'; ex.room = b.dataset.room; ex.area = '天门'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
     if (b.dataset.home) { ex.view = 'home'; ex.area = '天门'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
+    if (b.dataset.boss) { ex.view = 'boss'; ex.boss = b.dataset.boss; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
+    if (b.dataset.bossgo) { startBoss(b.dataset.bossgo); return; }
+    if (b.id === 'boss-back') { ex.view = 'area'; ex.area = BOSSES[ex.boss].dept; renderExplore(); return; }
     if (b.id === 'home-back') { ex.view = 'area'; ex.area = '天门'; renderExplore(); return; }
     if (b.id === 'home-rn') { ex.homeEdit = true; renderHome(); var ip = $('home-name'); if (ip) { ip.focus(); ip.select(); } return; }
     if (b.id === 'home-ok') { saveHomeName(); return; }

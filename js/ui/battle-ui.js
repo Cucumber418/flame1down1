@@ -445,7 +445,7 @@
   function setFieldBg(src) { var f = $('field'); f.classList.toggle('scene', !!src); f.style.backgroundImage = src ? 'linear-gradient(rgba(251,250,243,.32), rgba(251,250,243,.18)), url(' + src + ')' : ''; }
   function startStory(opt) {
     setFieldBg(opt.bg || null);
-    app.S = newBattle(opt.p, opt.a); app.S.story = { foe: opt.foe };
+    app.S = newBattle(opt.p, opt.a); app.S.story = { foe: opt.foe, back: opt.back || null };
     if (opt.items) app.S.items = opt.items;
     if (opt.env) app.S.env = opt.env;
     if (opt.wild) app.S.wild = opt.wild;
@@ -571,7 +571,7 @@
       html += '<button type="button" class="mv" data-mi="' + i + '"' + (lock || S.needSwitch || slot.pp <= 0 || moveBlocked(me, slot) ? ' disabled' : '') + ' style="--tc:' + TYPE_COLOR[mt] + '" title="' + esc(m.d) + '">' +
         '<span class="t1"><span class="mn">' + (i + 1) + '. ' + m.name + (moveBlocked(me, slot) ? '（光影之月中不可用）' : '') + '</span><span class="pp">PP ' + slot.pp + '/' + slot.max + '</span></span>' +
         '<span class="t2">' + tchip(mt) + '<span>' + m.cat + (m.power ? ' · 威力' + m.power : '') + (m.pri ? ' · 先制+' + m.pri : '') + '</span>' +
-        (e > 1 ? '<span class="eff2">克制 ×' + e + '</span>' : e < 1 ? '<span class="eff0">被抵抗 ×' + e + '</span>' : '') + '</span>' +
+        (hitBlocked(foe, mt) && (m.cat !== '变化' || targetsFoe(m)) ? '<span class="eff0">无法命中</span>' : e > 1 ? '<span class="eff2">克制 ×' + e + '</span>' : e < 1 ? '<span class="eff0">被抵抗 ×' + e + '</span>' : '') + '</span>' +
         '<span class="md">' + esc(m.d) + '</span></button>';
     });
     $('mgrid').innerHTML = html;
@@ -643,7 +643,7 @@
       $('btn-again').textContent = '重新开始训练'; $('btn-back').textContent = '回到训练设置'; $('btn-again').hidden = false;
       $('endcard').hidden = false; refreshCmd(); return;
     }
-    $('btn-back').textContent = S.wild ? '返回' + S.wild.back : S.story ? '继续剧情' : '回到背包'; $('btn-again').hidden = !!S.story;
+    $('btn-back').textContent = S.wild ? '返回' + S.wild.back : S.story ? (S.story.back ? '返回' + S.story.back : '继续剧情') : '回到背包'; $('btn-again').hidden = !!S.story;
     $('end-title').textContent = r === 'caught' ? '捕捉成功！' : r === 'flee' ? '顺利逃走了' : r === 'win' ? '胜利！' : r === 'lose' ? '失败了' : '平局';
     var left = aliveIdx(S, 0).length;
     var wf = S.wild && act(S, 1);
