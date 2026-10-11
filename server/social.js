@@ -52,11 +52,12 @@ function parseSave(u) {
 }
 function int(v, lo, hi) { v = Math.round(+v || 0); return Math.max(lo, Math.min(hi, v)); }
 function str(v, n) { return typeof v === 'string' ? v.slice(0, n) : ''; }
-function monOut(m) {
+function monOut(m, acc) {
   var ev = {};
   if (m.ev && typeof m.ev === 'object') ['hp', 'atk', 'def', 'spa', 'spd', 'spe'].forEach(function (k) { if (m.ev[k]) ev[k] = int(m.ev[k], 0, 300); });
   return {
     sid: str(m.sid, 32), lv: int(m.lv, 1, 100), nat: str(m.nat, 8) || null, ev: ev,
+    emblem: !!(acc && acc.emblems && acc.emblems[m.sid]),   // 击败普通难度泰戈尔得到的纹章（按精灵种类）
     moves: Array.isArray(m.moves) ? m.moves.filter(function (x) { return typeof x === 'string'; }).slice(0, 4).map(function (x) { return x.slice(0, 32); }) : []
   };
 }
@@ -100,13 +101,13 @@ function card(u, me) {
   acc.mons.forEach(function (m) { if (m && m.sid) species[m.sid] = 1; });
   o.created = acc.created || u.created; o.speciesN = Object.keys(species).length;
   o.motto = acc.card ? str(acc.card.motto, 200) : '';
-  o.show = showMons(acc).map(monOut);
+  o.show = showMons(acc).map(function (m) { return monOut(m, acc); });
   o.rankInfo = rankOut(parseSave(u).rank);
   o.titles = Array.isArray(acc.titles) ? acc.titles.filter(function (x) { return typeof x === 'string'; }).slice(0, 20) : [];
   return o;
 }
 function gameName(name) { var u = A.loadUser(name), acc = u && parseSave(u).acc; return acc ? str(acc.name, 20) : name; }
-function teamSpec(name, n) { var u = A.loadUser(name), acc = u && parseSave(u).acc; return acc ? activeTeam(acc).slice(0, n).map(monOut) : []; }
+function teamSpec(name, n) { var u = A.loadUser(name), acc = u && parseSave(u).acc; return acc ? activeTeam(acc).slice(0, n).map(function (m) { return monOut(m, acc); }) : []; }
 
 /* ---------- 在线状态 ---------- */
 var online = {};      // 账号名 -> [ws, ...]
@@ -315,7 +316,7 @@ A.use(function (req, res, url) {
     var ha = parseSave(hu).acc;
     if (!ha || !ha.introDone) { A.reply(res, 200, { user: hu.name, noChar: true }); return true; }
     var hm = homeOf(ha);
-    A.reply(res, 200, { user: hu.name, name: str(ha.name, 20), me: hu.name === me.name, open: hm.open, homeName: hm.name, mons: hm.mons.map(monOut), online: isOnline(hu.name) });
+    A.reply(res, 200, { user: hu.name, name: str(ha.name, 20), me: hu.name === me.name, open: hm.open, homeName: hm.name, mons: hm.mons.map(function (m) { return monOut(m, ha); }), online: isOnline(hu.name) });
     return true;
   }
   if (url === '/api/friends' && req.method === 'POST') {

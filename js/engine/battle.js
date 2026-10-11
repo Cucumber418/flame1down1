@@ -39,7 +39,11 @@ function calcStat(b, k, lv) { lv = lv || LV; var v = Math.floor((2 * b + 31) * l
 function blankStages() { var o = {}; STG.forEach(function (k) { o[k] = 0; }); return o; }
 function sp(m) { return m.id === 'dummy' ? (m.dummySpec || DUMMY) : SPMAP[m.id]; }
 function ability(m) { return sp(m).ability ? sp(m).ability.n : '无'; }
-function hasEmblem(m, mv) { return sp(m).emblem && sp(m).emblem.m === mv; }
+// 纹章：账号里获得过某类精灵的纹章后，带进战斗的这类精灵会带上 emblem（见 EMBLEMS）
+var EMBLEMS = {
+  tagore: { m: '普通拳', n: '普通拳纹章', d: '每场战斗第一次使用普通拳时，不会降低自身命中，并解除自身的能力下降和异常状态' }
+};
+function hasEmblem(m, mv) { return (m.emblem && m.emblem === mv) || !!(sp(m).emblem && sp(m).emblem.m === mv); }
 
 /* 性格（参照赛尔号）：一项能力 ×1.1，另一项 ×0.9；五种性格无修正 */
 var NATURES = {
@@ -72,6 +76,9 @@ function mkFrom(t) {
   if (t.nick) m.nick = t.nick; if (t.img) m.img = t.img; if (t.miasma) m.perm.miasma = t.miasma;
   if (t.maxhp) m.maxhp = m.hp = t.maxhp;          // 首领：固定体力
   if (t.onlyHit) m.onlyHit = t.onlyHit;           // 首领：只有这些属性的技能能命中它
+  if (t.emblem && EMBLEMS[t.id] && EMBLEMS[t.id].m === t.emblem) m.emblem = t.emblem;
+  // 首领的特殊能力（见 BOSS_FX）；pp：首领技能的 PP（长时间战斗不会用光）
+  if (t.boss) { m.boss = JSON.parse(JSON.stringify(t.boss)); if (m.boss.pp) m.moves.forEach(function (x) { x.pp = x.max = m.boss.pp; }); }
   if (t.u != null) { m.u = t.u; m.hl = t.hl || []; }   // 账号里的精灵：可以在战斗中领悟隐藏技能
   return m;
 }
@@ -206,6 +213,9 @@ function chipsOf(m, foe) {
   if (m.fx.sureHit && !m.fx.sureCrit) c.push({ t: '下次必中', k: 'fx', h: '下次必中', d: '下一次攻击必定命中' });
   if (m.perm && m.perm.melt) c.push({ t: '熔化 ×' + m.perm.melt, k: 'st', h: '熔化 · ' + m.perm.melt + ' 层', d: '受到的伤害提升 ' + m.perm.melt * 20 + '%（每层20%，最多5层），持续到战斗结束，换下场也不会消失' });
   if (m.onlyHit) c.push({ t: '首领 · 只受' + m.onlyHit.join('/') + '系', k: 'fx', h: '首领', d: '只有' + m.onlyHit.join('、') + '系技能才能命中它，其他属性的技能都会被挡下' });
+  if (m.boss) BOSS_FX.forEach(function (f) { if (m.boss[f.k]) c.push({ t: f.t, k: 'fx', h: f.h, d: f.d(m) }); });
+  if (m.puppet) c.push({ t: '瘴毒傀儡', k: 'st', h: '瘴毒傀儡', d: '荒芜召唤出来的傀儡，只会使用攻击技能。被击败后荒芜会重新上场。' });
+  if (m.emblem && EMBLEMS[m.id]) c.push({ t: '纹章 · ' + m.emblem, k: 'fx' + (m.flags.punch ? '' : ' on'), h: EMBLEMS[m.id].n, d: EMBLEMS[m.id].d + (m.flags.punch ? '（本场已经生效过）' : '') });
   if (m.perm && m.perm.star) c.push({ t: '星星魔法 ×' + m.perm.star, k: 'fx', h: '星星魔法 · 已使用 ' + m.perm.star + ' 次', d: '下一次星星魔法威力 ' + Math.min(200, 25 * (m.perm.star + 1)) + '（换下场也会保留）' });
   if (m.fx.flash) c.push({ t: '闪光', k: 'st', h: '闪光飞叶', d: '下一次受到攻击时，额外降低1级命中' });
   if (m.fx.earMark) c.push({ t: '被听穿', k: 'st', h: '灵耳谛听', d: '试图闪避被识破：下一次受到的攻击威力翻倍' });
@@ -259,6 +269,7 @@ function statSheet(m, foe) {
   if (m.perm && m.perm.melt) dmgIn *= 1 + 0.2 * m.perm.melt;
   if (m.fx.leiyin) dmgIn *= 1.2;
   if (m.tm.dr40 > 0) dmgIn *= 0.6;
+  if (m.boss && m.boss.dr) dmgIn *= 1 - m.boss.dr;
   rows.push({ k: '造成伤害', v: '×' + (Math.round(dmgOut * 100) / 100), note: '特性与场上效果合计（不含属性克制）' });
   rows.push({ k: '受到伤害', v: '×' + (Math.round(dmgIn * 100) / 100), note: m.tm.halfPhys > 0 ? '另外物理伤害减半' : '' });
   var pri = m.tm.prio > 0 ? '+1' : '0';
@@ -351,6 +362,7 @@ var CONTROL = { 害怕: 1, 石化: 1, 睡眠: 1, 麻痹: 1, 冰冻: 1, 疲惫: 1
 var CANT_ACT = { 害怕: '害怕得无法行动', 石化: '被石化了，无法行动', 睡眠: '正在睡觉', 麻痹: '身体麻痹，无法行动', 冰冻: '被冻住了，无法行动', 疲惫: '疲惫得无法行动' };
 function addStatus(S, evs, j, k, turns, src, noReflect) {
   var t = act(S, j); if (t.fainted) return;
+  if (t.boss && t.boss.noStatus) { log(S, evs, nm(t) + '免疫异常状态，「' + k + '」没有效果'); return; }
   if (k === '寄生' && typesOf(t).indexOf('草') >= 0) { log(S, evs, nm(t) + '是草系精灵，不会被寄生'); return; }
   if (t.tm.reflect > 0) {
     if (!noReflect && src != null && !act(S, src).fainted) {
@@ -452,6 +464,7 @@ function calcDamage(me, foe, mv, firstMover, est) {
   if (foe.fx.leiyin) { mod *= 1.2; if (!est) foe.fx.leiyin = 0; }
   if (phys && foe.tm.halfPhys > 0) mod *= 0.5;
   if (foe.tm.dr40 > 0) mod *= 0.6;
+  if (foe.boss && foe.boss.dr) mod *= 1 - foe.boss.dr;   // 首领「星球聚能」
   return { dmg: Math.max(1, Math.floor(base * mod)), crit: crit, eff: e };
 }
 function hitChance(me, foe, mv) {
@@ -482,6 +495,8 @@ function resolveTurn(S, acts) {
   log(S, evs, '第 ' + S.turn + ' 回合', 'turn');
   if (acts[0].kind === 'item') { useItem(S, evs, 0, acts[0].key); S.turnActed[0] = true; if (S.over) { S.turn++; return evs; } }
   [0, 1].forEach(function (i) { if (acts[i].kind === 'switch') doSwitch(S, evs, i, acts[i].to, true); });
+  // 首领「瘴毒傀儡」：占用首领这一回合，下场并召唤傀儡
+  if (!S.pvp && acts[1].kind === 'move' && puppetRoll(S)) { summonPuppet(S, evs); acts = [acts[0], { kind: 'pass' }]; S.turnActed[1] = true; }
   var info = [0, 1].filter(function (i) { return acts[i].kind === 'move'; }).map(function (i) {
     var m = act(S, i), mv = moveFor(m, acts[i].i);
     return { i: i, mv: mv, slot: acts[i].i, pri: mv.pri + (m.tm.prio > 0 ? 1 : 0), spe: speedOf(m), r: RNG() };
@@ -544,6 +559,10 @@ function useItem(S, evs, i, key) {
 var MAX_TURNS = 60;   // 每场最多 60 回合
 function timeUp(S, evs) {
   var p = aliveIdx(S, 0).length, a = aliveIdx(S, 1).length;
+  if (bossOf(S)) {   // 首领战：60 回合内没有击败首领，算失败
+    log(S, evs, '已达到 ' + MAX_TURNS + ' 回合上限，没能在时限内击败首领，挑战失败', 'turn');
+    S.over = 'lose'; S.timeUp = true; E(S, evs, 'over', { result: 'lose' }); return;
+  }
   log(S, evs, '已达到 ' + MAX_TURNS + ' 回合上限，对战强制结束：' + (S.pvp ? S.sides[0].name + '剩 ' + p + ' 只，' + S.sides[1].name : '你剩 ' + p + ' 只，对手') + '剩 ' + a + ' 只', 'turn');
   S.over = p > a ? 'win' : p < a ? 'lose' : 'draw'; S.timeUp = true;
   E(S, evs, 'over', { result: S.over });
@@ -708,7 +727,11 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
     if (any) { log(S, evs, nm(me) + '把自身的能力下降转移给了对方', 'fxl'); if (!foe.fainted) changeStages(S, evs, j, moved, i); else E(S, evs, 'stage', { side: i }); }
   }
   if (mv.custom === 'normalPunch') {
-    if (hasEmblem(me, '普通拳') && !me.flags.punch) {
+    if (me.boss && me.boss.ne) {
+      var anyN = false; STG.forEach(function (k) { if (me.stages[k] < 0) { me.stages[k] = 0; anyN = true; } });
+      E(S, evs, 'stage', { side: i });
+      log(S, evs, nm(me) + '的「来东北试试」：普通拳没有降低命中' + (anyN ? '，还甩掉了身上的能力下降！' : ''), 'fxl');
+    } else if (hasEmblem(me, '普通拳') && !me.flags.punch) {
       me.flags.punch = true;
       STG.forEach(function (k) { if (me.stages[k] < 0) me.stages[k] = 0; });
       me.st = {};
@@ -949,6 +972,47 @@ function hqKO(S, evs, me, foe, mv) {
   for (var k in R) if (R[k]) hqGet(S, evs, me, k);
 }
 
+/* ---------- 首领的特殊能力 ----------
+ * 首领精灵带 boss：{ noStatus 免疫异常状态, ne 来东北试试, dr 星球聚能减伤比例, mia 瘴气领域, puppet 瘴毒傀儡, pp 技能 PP }
+ * 写在 js/ui/game.js 的 BOSSES 里，开战时随精灵传进来 */
+var BOSS_FX = [
+  { k: 'noStatus', t: '免疫异常', h: '免疫异常状态', d: function () { return '不会陷入任何异常状态（睡眠、麻痹、中毒、寄生等）'; } },
+  { k: 'ne', t: '来东北试试', h: '来东北试试', d: function () { return '使用普通拳时不会降低自身命中，并解除自身的能力下降状态'; } },
+  { k: 'dr', t: '星球聚能', h: '星球聚能', d: function (m) { return '受到的伤害减少 ' + Math.round(m.boss.dr * 100) + '%'; } },
+  { k: 'mia', t: '瘴气领域', h: '瘴气领域', d: function () { return '只要它还没倒下，每回合结束时为对手在场的精灵添加 1 层瘴气'; } },
+  { k: 'puppet', t: '瘴毒傀儡', h: '瘴毒傀儡', d: function (m) { var cd = puppetCd(m), left = m.boss.last == null ? 0 : Math.max(0, cd - (m.boss.now - m.boss.last));
+    return '每回合有 30% 的几率下场，召唤一只 LV50 的瘴毒傀儡（芙罗拉星的草系精灵，带 10 层瘴气，只会用攻击技能）。召唤后冷却 15 回合，体力低于 1000 后冷却缩短为 7 回合。' + (left ? '\n当前冷却：还剩 ' + left + ' 回合' : '\n当前：可以召唤'); } }
+];
+function bossOf(S) { var t = S.sides[1].team; for (var i = 0; i < t.length; i++) if (t[i].boss) return t[i]; return null; }
+var PUPPETS = ['mush', 'wind', 'kaleo'];
+function puppetCd(m) { return m.hp < 1000 ? 7 : 15; }
+function puppetRoll(S) {
+  var b = act(S, 1); if (!b.boss || !b.boss.puppet || b.fainted) return false;
+  b.boss.now = S.turn;
+  if (S.turn < 2 || (b.boss.last != null && S.turn - b.boss.last < puppetCd(b))) return false;
+  return RNG() < 0.3;
+}
+// 傀儡只会攻击技能：从技能表里挑威力最高的 4 个（去掉只能命中中毒对手的渗透孢子）
+function puppetMoves(id) {
+  var s = SPMAP[id];
+  return s.moves.concat(s.hidden).filter(function (n, i, a) { var m = M[n]; return m && a.indexOf(n) === i && m.cat !== '变化' && m.power > 1 && m.custom !== 'poisonHeart'; })
+    .sort(function (a, b) { return (M[b].power || 0) - (M[a].power || 0); }).slice(0, 4);
+}
+function summonPuppet(S, evs) {
+  var side = S.sides[1], b = act(S, 1), id = PUPPETS[Math.floor(RNG() * PUPPETS.length)];
+  var m = mkFrom({ id: id, lv: 50, moves: puppetMoves(id), nick: '瘴毒傀儡·' + SPMAP[id].name, miasma: 10 });
+  m.puppet = true; side.team.push(m);
+  b.boss.last = S.turn;
+  log(S, evs, nm(b) + '沉入地底，召唤出了瘴毒傀儡！', 'crit');
+  doSwitch(S, evs, 1, side.team.length - 1, true);
+}
+function miasmaField(S, evs) {
+  var b = bossOf(S); if (!b || !b.boss.mia || b.fainted) return;
+  var m = act(S, 0); if (m.fainted) return;
+  m.perm.miasma = miaN(m) + 1; E(S, evs, 'stage', { side: 0 });
+  log(S, evs, nm(b) + '的「瘴气领域」：' + nm(m) + '受到瘴气侵染（瘴气 ×' + m.perm.miasma + '）', 'bad');
+}
+
 /* ---------- 瘴气：每层使物攻、特攻 +5%，物防、特防 −5%（最低降到 10%），换下场也不消失 ---------- */
 function miaN(m) { return (m.perm && m.perm.miasma) || 0; }
 function miaAtk(m) { return 1 + 0.05 * miaN(m); }
@@ -964,6 +1028,7 @@ function miasmaTick(S, evs) {
 function endOfTurn(S, evs) {
   S.curMove = null;
   miasmaTick(S, evs);
+  miasmaField(S, evs);
   [0, 1].forEach(function (i) {
     var m = act(S, i); if (m.fainted) return;
     var o = act(S, 1 - i);

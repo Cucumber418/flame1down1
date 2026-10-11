@@ -177,7 +177,8 @@
     { id: 'trainee', n: '见习做题家', d: '在黄冈秘鉴中点亮 3 类精灵', ok: function () { return litCount() >= 3; } },
     { id: 'collector', n: '见习收藏家', d: '捕捉一种稀有精灵，并在学院部汇报', ok: function () { return !!(acc.story && acc.story.rare_r && acc.story.rare_r.done); } },
     { id: 'senior', n: '资深做题家', d: '在黄冈秘鉴中点亮 10 类精灵', ok: function () { return litCount() >= 10; } },
-    { id: 'purifier', n: '芙罗拉净化者', d: '完成芙罗拉星的星球任务「祛除瘴气」', ok: function () { return !!(acc.purge && acc.purge.n >= 30); } }
+    { id: 'purifier', n: '芙罗拉净化者', d: '完成芙罗拉星的星球任务「祛除瘴气」', ok: function () { return !!(acc.purge && acc.purge.n >= 30); } },
+    { id: 'force', n: '原力掌控者', d: '击败困难难度的首领「泰戈尔」', ok: function () { return bossWon('tiger', 2); } }
   ];
   function checkTitles() {
     if (!acc.titles) acc.titles = [];
@@ -326,7 +327,8 @@
       (ts.length ? ' · ' + ts.map(function (x) { return TEAM_NAME[x.t] + (x.lead ? '首发' : ''); }).join('、') : ' · 未加入配队') + '</p>' +
       (f.d ? '<p class="formdesc">' + esc(f.d) + '</p>' : '') + evoLine(m) + (s.placeholder ? '<p class="placeholder-note" style="margin-top:6px">还没画出来，形象、数值和技能均为占位</p>' : '') + '</div></div>' +
       expBox(m) + stats +
-      '<div class="trait"><p><b>特性 · ' + esc(s.ability.n) + '</b>　<span class="blue">' + esc(s.ability.d) + '</span></p>' + (s.ability.extra ? '<p class="blue" style="font-size:13px">' + esc(s.ability.extra) + '</p>' : '') + '</div>' +
+      '<div class="trait"><p><b>特性 · ' + esc(s.ability.n) + '</b>　<span class="blue">' + esc(s.ability.d) + '</span></p>' + (s.ability.extra ? '<p class="blue" style="font-size:13px">' + esc(s.ability.extra) + '</p>' : '') +
+      (acc.emblems && acc.emblems[m.sid] && EMBLEMS[m.sid] ? '<p><b>纹章 · ' + EMBLEMS[m.sid].m + '</b>　<span class="blue">' + esc(EMBLEMS[m.sid].d) + '</span></p>' : '') + '</div>' +
       '<div><div class="moves-head"><h4>出战技能 <span class="' + (n === 4 ? 'blue' : 'red') + '">' + n + '/4</span></h4>' +
       '<span class="hint">普通技能 LV1 学会第 1 个，之后每 5 级学会一个；隐藏技能要在战斗中满足特定条件才能领悟</span></div>' +
       '<div class="mlist">' + s.moves.concat(s.hidden).filter(function (mv) { return a.indexOf(mv) >= 0; }).map(row).join('') + '</div>' + nextMoveHint(m) + '</div>' +
@@ -385,6 +387,69 @@
   }
   function flash(t) { var el = document.querySelector('.page:not([hidden]) .flash'); if (el) { el.textContent = t; el.classList.add('red'); } }
 
+  /* ---------- 道具：精灵背包里的「道具」板块 ----------
+   * 可以在这里直接使用的道具写在 USE_ITEMS（kind：nat 改性格，ev 加学习力）；对战道具（ITEMS）和改名卡在这里只显示说明 */
+  var USE_ITEMS = {
+    natTagore: { name: '泰戈尔性格药剂', sid: 'tagore', kind: 'nat', d: '把你的一只泰戈尔（小胖虎、胖虎也可以）的性格改成你指定的性格。' },
+    evTagore: { name: '泰戈尔学习力合剂', sid: 'tagore', kind: 'ev', d: '为你的一只泰戈尔（小胖虎、胖虎也可以）直接增加 100 点学习力。加进「可分配学习力」，再在精灵资料里自己分配；学习力总量最多 ' + EV_TOTAL + '。' }
+  };
+  var BAG_ORDER = ['natTagore', 'evTagore', 'rename', 'cap1', 'cap2', 'cap3', 'pot1', 'pot2'];
+  function itemName(k) { var it = ITEMS[k] || USE_ITEMS[k] || SHOP_X[k]; return it ? it.name : k; }
+  function evRoom(m) { return Math.max(0, EV_TOTAL - evSum(m) - (m.evFree || 0)); }
+  function itemsHTML() {
+    var have = BAG_ORDER.filter(function (k) { return acc.items[k] > 0; }), wk = weeklyOpen(), pn = wk ? permits() : 0;
+    if (ui.itSel && ui.itSel !== 'permit' && have.indexOf(ui.itSel) < 0) ui.itSel = null;
+    if (ui.itSel === 'permit' && !wk) ui.itSel = null;
+    var cells = have.map(function (k) {
+      var use = !!USE_ITEMS[k] || k === 'rename';
+      return '<button type="button" class="ib-it' + (ui.itSel === k ? ' sel' : '') + (use ? ' use' : '') + '" data-itsel="' + k + '"><b>' + itemName(k) + '</b><span class="cnt">×' + acc.items[k] + '</span>' + (use ? '<small>可使用</small>' : '<small>对战中使用</small>') + '</button>';
+    });
+    if (wk) cells.unshift('<button type="button" class="ib-it permit' + (ui.itSel === 'permit' ? ' sel' : '') + '" data-itsel="permit"><b>挑战许可</b><span class="cnt">' + pn + ' / ' + PERMIT.max + '</span><small>每周挑战用</small></button>');
+    var html = '<section class="itembox"><span class="tape r"></span><div class="ib-head"><h3>道具</h3><span class="hint">点道具查看说明。药剂、改名卡可以在这里使用；捕捉装置和补药在对战的「道具」页使用。</span></div>' +
+      (cells.length ? '<div class="ib-grid">' + cells.join('') + '</div>' : '<p class="empty-note">还没有道具。在荆楚号 · 荆门 · 物资仓储的商城可以兑换，击败首领也会获得。</p>');
+    var k = ui.itSel;
+    if (k) {
+      var it = USE_ITEMS[k], body = '';
+      if (k === 'permit') body = '<p>进行「每周挑战」时消耗 1 枚。每 12 小时恢复 1 枚，最多同时持有 ' + PERMIT.max + ' 枚。</p><p class="hint">当前 ' + pn + ' 枚 · ' + permitNext() + '</p><button type="button" class="btn" data-itgo="weekly">去每周挑战</button>';
+      else if (k === 'rename') body = '<p>' + esc(SHOP_X.rename.d) + '</p><button type="button" class="btn primary" data-ituse="rename">使用改名卡</button>';
+      else if (ITEMS[k]) body = '<p>' + esc(ITEMS[k].d) + '</p><p class="hint">在剧情、野外和首领对战的「道具」页使用，会占用一回合。</p>';
+      else if (it) {
+        var mons = acc.mons.filter(function (m) { return m.sid === it.sid; }).sort(function (a, b) { return b.lv - a.lv; });
+        if (!mons.some(function (m) { return m.u === ui.itTarget; })) ui.itTarget = mons.length ? mons[0].u : null;
+        var tm = mon(ui.itTarget);
+        body = '<p>' + esc(it.d) + '</p>' + (mons.length ? '<div class="it-step"><b>1. 选择精灵</b><div class="it-mons">' + mons.map(function (m) {
+          var f = form(m), sub = it.kind === 'nat' ? '性格 ' + m.nat : '可再加 ' + evRoom(m) + ' 点';
+          return '<label class="it-mon' + (m.u === ui.itTarget ? ' on' : '') + '"><input type="radio" name="it-t" value="' + m.u + '"' + (m.u === ui.itTarget ? ' checked' : '') + '><img src="' + f.img + '" alt=""><span><b>' + esc(f.name) + '</b><small>LV' + m.lv + ' · ' + sub + '</small></span></label>';
+        }).join('') + '</div></div>' +
+          (it.kind === 'nat' ? '<div class="it-step"><b>2. 选择性格</b><select id="it-nat" aria-label="新的性格">' + NAT_KEYS.map(function (n) { var cur = tm && tm.nat === n, pick = ui.itNat && (!tm || ui.itNat !== tm.nat) ? ui.itNat : NAT_KEYS.filter(function (x) { return !tm || x !== tm.nat; })[0]; return '<option value="' + n + '"' + (pick === n ? ' selected' : '') + (cur ? ' disabled' : '') + '>' + n + '（' + natText(n) + '）' + (cur ? ' · 当前' : '') + '</option>'; }).join('') + '</select></div>'
+            : '<p class="hint">' + (tm ? esc(form(tm).name) + ' 学习力：已分配 ' + evSum(tm) + '，可分配 ' + (tm.evFree || 0) + '，还能再加 ' + evRoom(tm) + ' 点。' : '') + '</p>') +
+          '<button type="button" class="btn primary" data-ituse="' + k + '"' + (it.kind === 'ev' && tm && !evRoom(tm) ? ' disabled' : '') + '>使用 1 个' + itemName(k) + '</button>'
+          : '<p class="hint red">你还没有' + SPMAP[it.sid].name + '（小胖虎、胖虎也算）。击败简单难度的首领「泰戈尔」可以领养一只小胖虎。</p>');
+      }
+      html += '<div class="ib-detail"><h4>' + (k === 'permit' ? '挑战许可' : itemName(k)) + '</h4>' + body + (ui.itMsg ? '<p class="exp-msg">' + esc(ui.itMsg) + '</p>' : '') + '</div>';
+    }
+    return html + '</section>';
+  }
+  function useBagItem(k) {
+    if (k === 'rename') { setTimeout(function () { renaming = true; renderRename(); $('who-menu').hidden = false; $('who-btn').setAttribute('aria-expanded', true); window.scrollTo(0, 0); }, 0); return; }   // 等这次点击处理完再打开名字菜单，免得被「点别处关闭」立刻关上
+    var it = USE_ITEMS[k], m = mon(ui.itTarget), msg;
+    if (!it || !(acc.items[k] > 0)) return;
+    if (!m || m.sid !== it.sid) { ui.itMsg = '先选一只' + SPMAP[it.sid].name + '。'; renderBag(); return; }
+    if (it.kind === 'nat') {
+      var sel = $('it-nat'), nat = sel && sel.value;
+      if (!nat || !(nat in NATURES)) return;
+      if (nat === m.nat) { ui.itMsg = '它已经是「' + nat + '」性格了，换一个吧。'; renderBag(); return; }
+      var old = m.nat; m.nat = nat; acc.items[k]--; ui.itNat = null;
+      msg = form(m).name + ' 的性格从「' + old + '」变成了「' + nat + '」（' + natText(nat) + '）。';
+    } else {
+      var add = Math.min(100, evRoom(m));
+      if (!add) { ui.itMsg = '这只的学习力已经到上限了。'; renderBag(); return; }
+      m.evFree = (m.evFree || 0) + add; acc.items[k]--;
+      msg = form(m).name + ' 获得了 ' + add + ' 点可分配学习力' + (add < 100 ? '（已到 ' + EV_TOTAL + ' 上限）' : '') + '，点它在「精灵资料」里分配。';
+    }
+    ui.itMsg = msg; save(); renderBag(); toast(msg);
+  }
+
   /* ---------- 精灵背包 ---------- */
   function renderBag() {
     var el = $('pg-bag'), m = mon(ui.sel);
@@ -393,6 +458,7 @@
     html += '<div class="expbag"><span class="tape l"></span><div class="eb-item"><span class="eb-lab">经验背包</span><b>' + fmt(acc.exp) + '</b><span class="hint">累积经验，可分配给任意精灵</span></div>' +
       '<div class="eb-item"><span class="eb-lab">能量</span><b class="en">' + fmt(acc.energy) + '</b><span class="hint">通用货币</span></div>' +
       '<p class="hint eb-tip">点击配队中的精灵，在下方「精灵资料」的经验一栏里分配。升到 LV' + 25 + ' / LV50 时精灵会进化。隐藏技能要靠精灵在战斗中自己领悟。</p></div>';
+    html += itemsHTML();
     html += '<div class="teams">' + acc.teams.map(function (t, i) {
       var on = acc.active === i, body = '';
       for (var k = 0; k < TEAM_SIZE; k++) {
@@ -425,6 +491,9 @@
     if (t.id === 'wel-x') { ui.welcome = false; renderBag(); return; }
     var b = t.closest('button'); if (!b) return;
     if (b.closest('#bag-detail')) { onDetailClick(e); return; }
+    if (b.dataset.itsel) { ui.itSel = ui.itSel === b.dataset.itsel ? null : b.dataset.itsel; ui.itMsg = ''; renderBag(); return; }
+    if (b.dataset.ituse) { useBagItem(b.dataset.ituse); return; }
+    if (b.dataset.itgo === 'weekly') { ex.view = 'weekly'; go('explore'); return; }
     if (b.dataset.rmt != null) { var tm = acc.teams[+b.dataset.rmt]; tm.splice(tm.indexOf(+b.dataset.u), 1); if (!tm.length && acc.active === +b.dataset.rmt) acc.active = acc.teams[0].length ? 0 : acc.teams[1].length ? 1 : acc.active; save(); renderBag(); return; }
     if (b.dataset.pickt != null) { ui.pick = ui.pick === +b.dataset.pickt ? -1 : +b.dataset.pickt; renderBag(); return; }
     if (b.dataset.pickx) { ui.pick = -1; renderBag(); return; }
@@ -432,7 +501,11 @@
     if (b.dataset.active != null) { acc.active = +b.dataset.active; save(); renderBag(); return; }
     if (b.classList.contains('filled')) { ui.sel = +b.dataset.u; renderBag(); }
   });
-  $('pg-bag').addEventListener('change', function (e) { if (e.target.closest('#bag-detail')) onDetailChange(e); });
+  $('pg-bag').addEventListener('change', function (e) {
+    if (e.target.closest('#bag-detail')) { onDetailChange(e); return; }
+    if (e.target.name === 'it-t') { ui.itTarget = +e.target.value; ui.itMsg = ''; renderBag(); return; }
+    if (e.target.id === 'it-nat') ui.itNat = e.target.value;
+  });
 
   // 配队内拖动排序（鼠标直接拖；触屏长按后拖）
   var drag = null, dragJust = false;
@@ -652,6 +725,7 @@
     tea: { name: '陆羽茶室', planet: 'jingchu', dept: '天门', chapter: '支线 · 陆羽茶室', side: true, bg: 'tea_p', d: '从芙罗拉星回来后，舰上要给第一支地面小队分配休息舱。读完后开放你自己的「茶室」（家园）。', after: 'flora1', pos: [50, 84] },
     mingming: { name: '古城防卫部', planet: 'jingchu', dept: '襄阳', chapter: '支线 · 明明教官的礼物', side: true, bg: 'bridge_p', d: '古城防卫部的明明教官听说你在黄冈秘鉴里点亮了十类精灵，想见见你。', after: 'board', pos: [48, 82], need: function () { return litCount() >= 10; }, needText: '在黄冈秘鉴中点亮 10 类精灵后开放', reward: { gift: [{ sid: 'aegis', lv: 10 }] } },
     tiger: { name: '古城防卫部', planet: 'jingchu', dept: '襄阳', chapter: '支线 · 东北来的泰戈尔', side: true, bg: 'bridge_p', d: '古城防卫部来了一只从东北招募的特殊虎系精灵，专门辅助乘员训练。读完后开放首领「泰戈尔」的挑战。', after: 'board', pos: [30, 70] },
+    tiger2: { name: '古城防卫部', planet: 'jingchu', dept: '襄阳', chapter: '支线 · 来东北试试', side: true, bg: 'bridge_p', d: '被你打败的泰戈尔一屁股坐在地上，好像有话要说……读完后开放首领「泰戈尔」的普通难度。', after: 'tiger', pos: [84, 72], need: function () { return bossWon('tiger'); }, needText: '击败简单难度的泰戈尔后开放' },
     rare: { name: '学院部', planet: 'jingchu', dept: '黄冈', chapter: '支线 · 稀有精灵', side: true, bg: 'pod_p', d: 'Bttp 在黄冈秘鉴里发现了几页几乎空白的记录，想请你帮学院部找一只稀有精灵。', after: 'flora1', pos: [26, 58] },
     rare_r: { name: '学院部', planet: 'jingchu', dept: '黄冈', chapter: '支线 · 稀有精灵（汇报）', side: true, bg: 'pod_p', d: '把捕捉到的稀有精灵带回学院部，向 Bttp 汇报。', after: 'rare', pos: [74, 58], need: function () { return !!rareOwned(); }, needText: '捕捉一种稀有精灵后来汇报', reward: { title: 'collector' } },
     storage: { name: '物资仓储', planet: 'jingchu', dept: '荆门', chapter: '支线 · 物资仓储', side: true, bg: 'storage_p', d: '荆楚号即将抵达芙罗拉星，新乘员要去物资仓储领取探索物资。读完后，物资仓储里的「商城」开放。', after: 'board', pos: [50, 62], reward: { exp: 0, energy: 300, items: { cap1: 10 } } },
@@ -672,14 +746,15 @@
     b: { name: function () { return 'Bttp'; }, color: '#7a5a7e', tall: 1.0, img: 'bttp' },
     h: { name: function () { return 'Dr.黄'; }, color: '#a8841f', tall: 1.0, img: 'drh' },
     ai: { name: function () { return '舰载广播'; }, color: '#2a7bd8' },
-    mm: { name: function () { return '明明教官'; }, color: '#4a6a8a', tall: 1.0 }
+    mm: { name: function () { return '明明教官'; }, color: '#4a6a8a', tall: 1.0 },
+    tg: { name: function () { return '泰戈尔'; }, color: '#b0702a', tall: 0.92, spr: 'tagore' }
   };
   var SCRIPT = STORY_SCRIPT;   // 剧本内容见 js/data/story.js
   function unlocked(id) { var S = SITES[id], a = S.after; return (!a || prog(a).done) && (!S.need || S.need()); }
   // 稀有精灵：野外精灵表里标了 rare 的种类
   function rareOwned() { var R = []; for (var k in WILD) WILD[k].forEach(function (w) { if (w.rare && R.indexOf(w.sid) < 0) R.push(w.sid); }); return acc.mons.filter(function (m) { return R.indexOf(m.sid) >= 0; })[0] || null; }
   function planetOpen(P) { return !P.after || prog(P.after).done; }
-  var UNLOCK = { xiaogan: '竞技对战', academy: '黄冈秘鉴', storage: '商城', tea: '茶室', brawl: '精灵大乱斗' };
+  var UNLOCK = { xiaogan: '竞技对战', academy: '黄冈秘鉴', storage: '商城', tea: '茶室', brawl: '精灵大乱斗', tiger2: '泰戈尔 · 普通难度' };
   function brawlOpen() { return !!(acc && acc.story && acc.story.brawl && acc.story.brawl.done); }
   function brawlPlayed() { return !!(acc && acc.stats && acc.stats.brawls > 0); }
   function homeOpen() { return !!(acc && acc.story && acc.story.tea && acc.story.tea.done); }
@@ -719,7 +794,7 @@
     if (add.exp || add.energy) { save(); setTimeout(function () { toast('主线奖励调整：已为读完的主线补发累积经验 ×' + fmt(add.exp) + '、能量 ×' + fmt(add.energy) + '。'); }, 600); }
   }
   function giveItems(o) { if (!o) return; if (!acc.items) acc.items = {}; for (var k in o) acc.items[k] = (acc.items[k] || 0) + o[k]; }
-  function rwList(R) { var a = [R.exp ? '累积经验 ×' + fmt(R.exp) : '', R.energy ? '能量 ×' + fmt(R.energy) : '']; if (R.items) for (var k in R.items) a.push(ITEMS[k].name + ' ×' + R.items[k]); if (R.title) a.push('称号「' + TITLES.filter(function (x) { return x.id === R.title; })[0].n + '」'); if (R.mon) a.push(R.mon); (R.gift || []).forEach(function (g) { a.push(form(g).name + ' LV' + g.lv); }); return a.filter(Boolean); }
+  function rwList(R) { var a = [R.exp ? '累积经验 ×' + fmt(R.exp) : '', R.energy ? '能量 ×' + fmt(R.energy) : '']; if (R.items) for (var k in R.items) a.push(itemName(k) + ' ×' + R.items[k]); if (R.title) a.push('称号「' + TITLES.filter(function (x) { return x.id === R.title; })[0].n + '」'); if (R.mon) a.push(R.mon); (R.gift || []).forEach(function (g) { a.push(form(g).name + ' LV' + g.lv); }); return a.filter(Boolean); }
   var ex = { view: 'planets', planet: 'earth', site: null, mode: null, host: null, i: 0, typing: false, auto: false, skip: false, timer: null, tick: null, full: '', log: [], pickSel: null };
   function story() { if (!acc.story) acc.story = {}; return acc.story; }
   function prog(site) { var st = story(); if (!st[site]) st[site] = { at: 0, done: false, ch: null }; return st[site]; }
@@ -734,6 +809,7 @@
   // 立绘差分：剧本某一句写 f: { t: 'smile' }，就换成 CHARS['threego_shy']；没有这张图时用默认立绘
   var FACE_KEY = { t: 'threego', y: 'dd', b: 'bttp', h: 'drh' };
   function standee(k, face) {
+    if (CAST[k].spr) return '<img class="vn-art vn-mon" src="' + SPRITES[CAST[k].spr] + '" alt="" style="height:' + (CAST[k].tall * 100) + '%">';   // 精灵出场：直接用精灵立绘
     if (CAST[k].img) { var src = (face && CHARS[(FACE_KEY[k] || CAST[k].img) + '_' + face]) || CHARS[CAST[k].img]; return '<img class="vn-art" src="' + src + '" alt="" style="height:' + (CAST[k].tall * 100) + '%">'; }
     var c = CAST[k], col = c.color, head = 'M100 18c34 0 52 26 52 58s-20 60-52 60-52-28-52-60 18-58 52-58z', body = 'M40 420c-6-80 -8-150 14-200 14-32 34-50 46-54 12 4 32 22 46 54 22 50 20 120 14 200z';
     return '<svg viewBox="0 0 200 420" aria-hidden="true" style="height:' + (c.tall * 100) + '%"><g stroke="#23222b" stroke-width="4" stroke-linejoin="round">' +
@@ -748,7 +824,7 @@
     threego: { foe: 'Threego', team: [{ sid: 'tagore', lv: 3 }] },
     karo: { foe: '被瘴气污染的野生精灵', team: [{ sid: 'wind', lv: 3, miasma: 5 }], env: 'miasma', bg: 'fl_salt', desc: '被瘴气污染的卡罗（LV3）' }
   };
-  function storyMon(m) { var f = form(m), hl = m.u != null ? (m.hl || []) : undefined, mv = m.moves.length ? m.moves.slice() : defaultMoves(m.sid, m.lv, hl); return { id: m.sid, lv: m.lv, moves: mv, nick: f.name, img: f.img, ev: m.ev || null, nat: m.nat || null, u: m.u, hl: hl }; }
+  function storyMon(m) { var f = form(m), hl = m.u != null ? (m.hl || []) : undefined, mv = m.moves.length ? m.moves.slice() : defaultMoves(m.sid, m.lv, hl); return { id: m.sid, lv: m.lv, moves: mv, nick: f.name, img: f.img, ev: m.ev || null, nat: m.nat || null, u: m.u, hl: hl, emblem: m.u != null && acc.emblems && acc.emblems[m.sid] && EMBLEMS[m.sid] ? EMBLEMS[m.sid].m : null }; }
   function startFight(key) {
     var F = FIGHTS[key], team = (acc.teams[acc.active] || []).map(mon).filter(Boolean);
     if (!team.length) team = acc.mons.slice(0, 1);
@@ -779,12 +855,18 @@
     if (ex.view === 'area') { renderArea(); return; }
     if (ex.view === 'quests') { renderQuests(); return; }
     if (ex.view === 'home') { if (homeOpen()) { renderHome(); return; } ex.view = 'area'; renderArea(); return; }
-    if (ex.view === 'boss') { if (bossOpen(ex.boss)) { renderBoss(); return; } ex.view = 'area'; renderArea(); return; }
+    if (ex.view === 'boss') { if (bossOpen(ex.boss)) { renderBoss(); return; } ex.view = 'planets'; }
+    if (ex.view === 'weekly') { if (weeklyOpen()) { ex.boss = WEEKLY.boss; renderBoss(true); return; } ex.view = 'planets'; }
     if (ex.view === 'room') { if (homeOpen()) { renderRoom(); return; } ex.view = 'area'; renderArea(); return; }
     if (ex.view === 'shop') { if (shopOpen()) { renderShop(); return; } ex.view = 'area'; renderArea(); return; }
     var Pp = ex.view === 'sites' && PLANETS.filter(function (p) { return p.id === ex.planet; })[0];
     var html = exHead(ex.view === 'planets' ? '选择要前往的星球。' : Pp && Pp.ship ? '点击舰上的区域，即可传送过去。' : '选择要前往的地点。');
     if (ex.view === 'planets') {
+      if (weeklyOpen()) {
+        var WB = BOSSES[WEEKLY.boss], pn = permits();
+        html += '<button type="button" class="weekly-card" data-weekly="1"><span class="tape l"></span><img src="' + SPRITES[WB.sid] + '" alt=""><span class="wk-txt"><span class="chip boss-diff d2">每周挑战</span><b>' + WB.name + ' · ' + WB.lv[WEEKLY.d].diff + '难度</b>' +
+          '<small>每次消耗 1 枚挑战许可 · 击败得累积经验 ×' + fmt(WEEKLY.exp) + ' 和随机掉落</small></span><span class="wk-pm"><b>' + pn + '</b> / ' + PERMIT.max + '<small>挑战许可</small></span></button>';
+      }
       html += '<div class="planets">' + PLANETS.filter(planetOpen).map(function (p) {
         var n = p.sites.length, done = p.sites.filter(function (s) { return prog(s).done; }).length, open = planetOpen(p);
         return '<button type="button" class="planet' + (open ? '' : ' locked') + '" data-planet="' + p.id + '"' + (open ? '' : ' disabled') + '><span class="tape l"></span>' + (p.ship ? '<img class="ship-ic" src="' + CHARS.ship_icon + '" alt="">' : planetSvg(p.id)) +
@@ -922,9 +1004,11 @@
     if (part === 'task') return head + planetTasks('flora');
     if (part === 'challenge') return head + '<div class="fl-soon"><span class="tape r"></span><b>挑战 · 关卡副本</b><p>按关卡推进的副本，每一关都会根据表现给出星级评价。</p><p class="stars3" aria-hidden="true">☆ ☆ ☆</p><p class="hint">即将开放，敬请期待。</p></div>';
     var regs = REGIONS.map(function (R) {
-      var locked = !!R.boss;
+      var BK = Object.keys(BOSSES).filter(function (k) { return BOSSES[k].region === R.id; })[0], locked = !!R.boss && !(BK && bossOpen(BK));
       return '<article class="region' + (locked ? ' locked' : '') + '"><div class="rg-art">' + (R.bgs && BG[R.bgs[0]] ? '<img src="' + BG[R.bgs[0]] + '" alt="' + R.name + '">' + (R.bgs.length > 1 ? '<span class="rg-more">' + R.bgs.slice(1).map(function (k) { return '<img src="' + BG[k] + '" alt="">'; }).join('') + '</span>' : '') : regionArt(R.id)) + '</div><div class="rg-txt"><h4>' + R.name + ' <small>' + R.en + '</small></h4><p class="hint">' + R.d + '</p>' +
-        (locked ? '<p class="rg-boss">首领 · ' + R.boss + '　<span>暂未开放</span></p>' : prog('flora1').done ? '<button type="button" class="btn primary" data-wild="' + R.id + '">寻找野生精灵</button>' : '<button type="button" class="btn" disabled>读完主线「降临芙罗拉」后开放</button>') + '</div></article>';
+        (BK ? '<p class="rg-boss">首领 · ' + BOSSES[BK].name + '　<span>' + (bossOpen(BK) ? BOSSES[BK].lv.filter(function (L, i) { return levelOpen(BK, i); }).map(function (L) { return L.diff; }).join(' / ') + ' 难度可挑战' : '暂未开放') + '</span></p>' +
+          (bossOpen(BK) ? '<button type="button" class="btn primary" data-boss="' + BK + '">挑战首领 · ' + BOSSES[BK].name + '</button>' : '<button type="button" class="btn" disabled>' + BOSSES[BK].lv[0].lockText + '</button>') :
+          locked ? '<p class="rg-boss">首领 · ' + R.boss + '　<span>暂未开放</span></p>' : prog('flora1').done ? '<button type="button" class="btn primary" data-wild="' + R.id + '">寻找野生精灵</button>' : '<button type="button" class="btn" disabled>读完主线「降临芙罗拉」后开放</button>') + '</div></article>';
     }).join('');
     var sids = [];
     REGIONS.forEach(function (R) { (WILD[R.pool] || []).forEach(function (w) { if (sids.indexOf(w.sid) < 0) sids.push(w.sid); }); });
@@ -1212,7 +1296,7 @@
     ar_sand1: { t: '在沙盒模式完成 1 场对战', kind: 'sandbox', n: 1, rw: { exp: 200, energy: 80 }, arena: 1 },
     wd_win5: { t: '击败 5 只野生精灵', kind: 'wildWin', n: 5, rw: { exp: 400, energy: 120 }, need: function () { return prog('flora1').done; } },
     wd_catch1: { t: '捕捉 1 只野生精灵', kind: 'catch', n: 1, rw: { exp: 300, energy: 150 }, need: function () { return prog('flora1').done; } },
-    bs_1: { t: '挑战 1 次首领（胜负都算）', kind: 'boss', n: 1, rw: { exp: 300, energy: 100 }, need: function () { return bossOpen('tiger'); } },
+    bs_1: { t: '挑战 1 次首领（胜负都算）', kind: 'boss', n: 1, rw: { exp: 300, energy: 100 }, need: function () { return bossOpen('tiger') || bossOpen('barren'); } },
     hm_1: { t: '从茶室收回 1 只展示满 1 小时的精灵', kind: 'home', n: 1, rw: { exp: 300, energy: 100 }, need: function () { return homeOpen(); } },
     pve_2: { t: '完成 2 场剧情、野外或首领对战', kind: 'pve', n: 2, rw: { exp: 300, energy: 100 } }
   };
@@ -1281,8 +1365,9 @@
       '<article class="log-card ev"><span class="tape l"></span><span class="chip log-tag">限时活动</span><h3>神秘精灵出没</h3>' +
         '<p>每天 <b>16:00–24:00</b>，在星际探索的任何场景，都有 <b>3%</b> 的概率刷出一只神秘精灵！</p><p class="hint">它是什么？只有遇到过的人才知道。</p>' +
         '<p class="log-st ' + (on ? 'on' : '') + '">' + (on ? '活动进行中，今天 24:00 结束' : wait) + '</p></article>' +
-      '<article class="log-card next"><span class="tape r"></span><span class="chip log-tag">下期预告</span><h3>草系首领「荒芜」即将登场</h3>' +
-        '<div class="next-art"><img src="' + SPRITES.barren + '" alt=""></div><p>芙罗拉星盐碱地深处的瘴气，似乎和它有关……</p><p class="hint">剧情正在推进中，敬请期待。</p></article>' +
+      '<article class="log-card next"><span class="tape r"></span><span class="chip log-tag">新首领</span><h3>草系首领「荒芜」现身盐碱地</h3>' +
+        '<div class="next-art"><img src="' + SPRITES.barren + '" alt=""></div><p>芙罗拉星盐碱地深处的瘴气，源头就是它。简单难度击败可以领养一只枯叶灵。</p><p class="hint">' + (bossOpen('barren') ? '在星际探索 · 芙罗拉星 · 盐碱地挑战。' : '读完主线「降临芙罗拉」后可以挑战。') + '</p>' +
+        (bossOpen('barren') ? '<button type="button" class="btn" data-golog="boss-barren">去挑战</button>' : '') + '</article>' +
       '<article class="log-card wide"><span class="tape l"></span><span class="chip log-tag">每日任务</span><h3>今天的任务</h3>' + dailyHTML() + '</article>' +
       '<article class="log-card wide"><span class="tape r"></span><span class="chip log-tag">排位赛季 ' + SEASON + '</span><h3>首次达到段位的奖励</h3>' +
         '<p>本赛季最高段位：<b>' + RANKS[best] + '</b>。每个段位第一次达到时发放一次；<b>达到铂金送 LV10 的' + form({ sid: 'moon', lv: 10 }).name + '</b>。</p>' +
@@ -1293,65 +1378,163 @@
   }
   $('pg-log').addEventListener('click', function (e) {
     var c = e.target.closest('[data-dclaim]'); if (c) { claimDaily(+c.dataset.dclaim); renderLog(); return; }
-    var g = e.target.closest('[data-golog]'); if (g) { go(g.dataset.golog); }
+    var g = e.target.closest('[data-golog]'); if (g) { if (g.dataset.golog === 'boss-barren') { ex.view = 'boss'; ex.boss = 'barren'; go('explore'); return; } go(g.dataset.golog); }
   });
 
-  /* ---------- 首领：常驻在舰上部门里，可反复挑战 ---------- */
+  /* ---------- 首领：常驻在舰上部门或星球上，可反复挑战；每个首领分几档难度 ----------
+   * lv：各档难度，按顺序解锁（open 返回是否开放）。boss 是首领的特殊能力，规则写在 js/engine/battle.js 的 BOSS_FX 里：
+   *   noStatus 免疫异常状态 · ne 来东北试试 · dr 星球聚能（减伤比例） · mia 瘴气领域 · puppet 瘴毒傀儡 · pp 首领技能的 PP
+   * 战绩存在 acc.bosses[记录名]：简单难度沿用首领 id（兼容旧存档），其他难度是「id:序号」，每周挑战是「id:w」 */
+  var ONLY3 = ['水', '火', '草'];
   var BOSSES = {
-    tiger: { name: '泰戈尔', sid: 'tagore', lv: 25, hp: 500, only: ['水', '火', '草'], diff: '简单', dept: '襄阳', bg: 'bridge_p', story: 'tiger', pos: [66, 52],
-      d: '从东北招募的特殊虎系精灵，常驻古城防卫部，辅助乘员们训练。', reward: { sid: 'tagore', lv: 10 } }
+    tiger: { name: '泰戈尔', sid: 'tagore', dept: '襄阳', bg: 'bridge_p', pos: [66, 52],
+      d: '从东北招募的特殊虎系精灵，常驻古城防卫部，辅助乘员们训练。',
+      lv: [
+        { diff: '简单', lv: 25, hp: 500, only: ONLY3, bgm: 'boss', open: function () { return prog('tiger').done; }, lockText: '读完支线「东北来的泰戈尔」后开放', reward: { mon: { sid: 'tagore', lv: 10 } } },
+        { diff: '普通', lv: 40, hp: 1500, only: ONLY3, boss: { noStatus: 1, ne: 1, pp: 99 }, bgm: 'boss2', open: function () { return prog('tiger2').done; }, lockText: '击败简单难度，再听泰戈尔介绍后开放', reward: { emblem: 'tagore', exp: 20000 } },
+        { diff: '困难', lv: 60, hp: 5000, only: ONLY3, boss: { noStatus: 1, ne: 1, pp: 99 }, bgm: 'boss2', open: function () { return bossWon('tiger', 1); }, lockText: '击败普通难度后开放', reward: { title: 'force', items: { natTagore: 3 }, exp: 50000 } }
+      ] },
+    barren: { name: '荒芜', sid: 'barren', planet: 'flora', region: 'salt', bg: 'fl_salt',
+      d: '潜伏在芙罗拉星盐碱地地底的草系首领。盐碱地里的瘴气，就是从它身上散出来的。',
+      lv: [
+        { diff: '简单', lv: 40, hp: 1000, boss: { dr: 0.15, mia: 1, pp: 99 }, bgm: 'boss', open: function () { return prog('flora1').done; }, lockText: '读完主线「降临芙罗拉」后开放', reward: { mon: { sid: 'barren', lv: 10 } } },
+        { diff: '普通', lv: 65, hp: 3000, boss: { dr: 0.15, mia: 1, puppet: 1, pp: 99 }, bgm: 'boss2', open: function () { return bossWon('barren', 0); }, lockText: '击败简单难度后开放', reward: { later: true } }
+      ] }
   };
-  function bossOpen(k) { var B = BOSSES[k]; return !!(B && prog(B.story).done); }
-  function bossWon(k) { return !!(acc.bosses && acc.bosses[k] && acc.bosses[k].wins > 0); }
+  // 每周挑战：击败困难难度的泰戈尔后开放，规则和困难难度一样，每次消耗 1 枚挑战许可
+  var WEEKLY = { boss: 'tiger', d: 2, exp: 5000, drops: [{ items: { natTagore: 1 } }, { items: { evTagore: 1 } }, { energy: 2000 }, { exp: 2000 }] };
+  var PERMIT = { max: 24, every: 12 * 3600 * 1000 };   // 每 12 小时恢复 1 枚，最多 24 枚
+  function recKey(k, d) { return d === 'w' ? k + ':w' : d ? k + ':' + d : k; }
+  function bossRec(k, d) { if (!acc.bosses) acc.bosses = {}; var rk = recKey(k, d); if (!acc.bosses[rk]) acc.bosses[rk] = { wins: 0, tries: 0 }; return acc.bosses[rk]; }
+  function bossWon(k, d) { var r = acc.bosses && acc.bosses[recKey(k, d || 0)]; return !!(r && r.wins > 0); }
+  function bossOpen(k) { var B = BOSSES[k]; return !!(B && B.lv[0].open()); }
+  function levelOpen(k, d) { var L = BOSSES[k] && BOSSES[k].lv[d]; return !!(L && L.open()); }
+  // 默认选中：已开放的难度里第一档还没击败的；都击败了就选最高档
+  function bossSel(k) {
+    var B = BOSSES[k], d = ex.bossK === k ? ex.bossD : -1;
+    if (d >= 0 && d < B.lv.length && levelOpen(k, d)) return d;
+    for (var i = 0; i < B.lv.length; i++) if (levelOpen(k, i) && !bossWon(k, i)) return i;
+    for (var j = B.lv.length - 1; j >= 0; j--) if (levelOpen(k, j)) return j;
+    return 0;
+  }
+  function bossWhere(B) { return B.dept ? DEPTS[B.dept][0] : planetOf(B.planet).name + ' · ' + WILD_REGIONS.filter(function (R) { return R.id === B.region; })[0].name; }
+  function weeklyOpen() { return !!acc && bossWon(WEEKLY.boss, WEEKLY.d); }
+  // 挑战许可：第一次开放每周挑战时送 1 枚，之后每 12 小时恢复 1 枚
+  function permits() {
+    if (!weeklyOpen()) return 0;
+    var p = acc.permit, now = Date.now();
+    if (!p || !(p.n >= 0)) { p = acc.permit = { n: 1, t: now }; save(); }
+    if (p.n >= PERMIT.max) p.t = now;
+    else { var k = Math.floor((now - p.t) / PERMIT.every); if (k > 0) { p.n = Math.min(PERMIT.max, p.n + k); p.t = p.n >= PERMIT.max ? now : p.t + k * PERMIT.every; save(); } }
+    return p.n;
+  }
+  function permitNext() { var n = permits(); if (n >= PERMIT.max) return '已满'; var ms = Math.max(0, acc.permit.t + PERMIT.every - Date.now()), m = Math.ceil(ms / 60000); return '下一枚 ' + Math.floor(m / 60) + ' 小时 ' + (m % 60) + ' 分后恢复'; }
   function bossSpots(n) {
     return Object.keys(BOSSES).filter(function (k) { return BOSSES[k].dept === n; }).map(function (k) {
-      var B = BOSSES[k], open = bossOpen(k);
-      return '<button type="button" class="mk shop boss' + (open ? '' : ' locked') + '"' + (open ? ' data-boss="' + k + '"' : ' disabled') + ' style="left:' + B.pos[0] + '%;top:' + B.pos[1] + '%"><span class="mk-dot">' + (open ? '首' : '锁') + '</span><span class="mk-lab"><b>首领 · ' + B.name + '</b><small>' + (open ? B.diff + ' · LV' + B.lv + (bossWon(k) ? ' · 已击败' : '') : '读完「' + SITES[B.story].chapter.split(' · ')[1] + '」后开放') + '</small></span></button>';
+      var B = BOSSES[k], open = bossOpen(k), won = B.lv.filter(function (L, i) { return bossWon(k, i); }).length;
+      var opened = B.lv.filter(function (L, i) { return levelOpen(k, i); }).length;
+      return '<button type="button" class="mk shop boss' + (open ? '' : ' locked') + '"' + (open ? ' data-boss="' + k + '"' : ' disabled') + ' style="left:' + B.pos[0] + '%;top:' + B.pos[1] + '%"><span class="mk-dot">' + (open ? '首' : '锁') + '</span><span class="mk-lab"><b>首领 · ' + B.name + '</b><small>' +
+        (open ? B.lv.slice(0, opened).map(function (L) { return L.diff; }).join(' / ') + (won ? ' · 已击败 ' + won + ' 档' : '') : B.lv[0].lockText) + '</small></span></button>';
     }).join('');
   }
-  function renderBoss() {
-    var k = ex.boss, B = BOSSES[k], rec = (acc.bosses && acc.bosses[k]) || {}, rf = form({ sid: B.reward.sid, lv: B.reward.lv });
-    $('pg-explore').innerHTML = exHead('舰上部门里常驻的首领，可以反复挑战。') +
-      '<div class="crumb"><button type="button" class="btn ghost" id="boss-back">‹ 返回' + DEPTS[B.dept][0] + '</button><b>首领 · ' + B.name + '</b></div>' +
-      '<article class="boss-card"><span class="tape l"></span><div class="boss-art"><img src="' + BG[B.bg] + '" alt="" class="boss-bg"><img src="' + SPRITES[B.sid] + '" alt="' + B.name + '" class="boss-mon"></div>' +
-      '<div class="boss-txt"><span class="chip boss-diff">' + B.diff + '难度</span><h3>' + B.name + '</h3><p class="hint">' + esc(B.d) + '</p>' +
-      '<ul class="boss-rules"><li><b>等级</b>LV' + B.lv + '</li><li><b>体力</b>' + B.hp + '</li><li><b>特殊</b>只有' + B.only.join('、') + '系技能才能命中它</li>' +
-      '<li><b>奖励</b>' + (rec.wins ? '已领取（首次击败获得 ' + esc(rf.name) + ' LV' + B.reward.lv + '）；再次击败只获得经验和学习力' : '首次击败获得 ' + esc(rf.name) + ' LV' + B.reward.lv + '，另有经验和学习力') + '</li>' +
-      '<li><b>战绩</b>' + (rec.wins || 0) + ' 胜 / ' + (rec.tries || 0) + ' 次挑战</li></ul>' +
-      '<p class="hint">会使用你当前的出战配队（' + TEAM_NAME[acc.active] + '）。记得带上会水、火、草系技能的精灵。</p>' +
-      '<button type="button" class="btn primary" data-bossgo="' + k + '">开始挑战</button></div></article>';
+  function fxRules(L) {
+    var fake = { boss: L.boss || {}, hp: L.hp }, out = [];
+    if (L.only) out.push(['只受' + L.only.join('、') + '系', '只有' + L.only.join('、') + '系技能才能命中它']);
+    if (L.boss) BOSS_FX.forEach(function (f) { if (L.boss[f.k]) out.push(['【' + f.h + '】', f.d(fake).split('\n')[0]]); });
+    return out;
   }
-  function startBoss(k) {
-    var B = BOSSES[k]; if (!bossOpen(k)) return;
+  function rewardText(R) {
+    var a = [];
+    if (R.mon) a.push(form(R.mon).name + ' LV' + R.mon.lv);
+    if (R.emblem) a.push(EMBLEMS[R.emblem].n);
+    if (R.title) a.push('称号「' + titleName(R.title) + '」');
+    if (R.items) for (var k in R.items) a.push(itemName(k) + ' ×' + R.items[k]);
+    if (R.exp) a.push('累积经验 ×' + fmt(R.exp));
+    if (R.later) a.push('奖励将在之后添加');
+    return a.join('、');
+  }
+  function renderBoss(weekly) {
+    var k = ex.boss, B = BOSSES[k], d = weekly ? WEEKLY.d : bossSel(k), L = B.lv[d], won = bossWon(k, d);
+    var rec = (acc.bosses && acc.bosses[recKey(k, weekly ? 'w' : d)]) || {}, open = weekly ? weeklyOpen() : levelOpen(k, d), pn = weekly ? permits() : 0;
+    var tabs = weekly ? '' : '<div class="fparts boss-tabs" role="tablist">' + B.lv.map(function (x, i) {
+      var op = levelOpen(k, i);
+      return '<button type="button" role="tab" class="tab' + (i === d ? ' on' : '') + (op ? '' : ' lock') + '" aria-selected="' + (i === d) + '"' + (op ? ' data-bossd="' + i + '"' : ' disabled title="' + esc(x.lockText) + '"') + '>' + (op ? '' : '🔒 ') + x.diff + (bossWon(k, i) ? ' ✓' : '') + '</button>';
+    }).join('') + '</div>';
+    var rules = fxRules(L).map(function (r) { return '<li><b>特殊</b>' + esc(r[0]) + '：' + esc(r[1]) + '</li>'; }).join('');
+    var rw = weekly ? '每次击败获得累积经验 ×' + fmt(WEEKLY.exp) + '，并随机掉落 ' + WEEKLY.drops.map(dropName).join(' / ') + ' 之一'
+      : (won ? '已领取（首次击败：' + rewardText(L.reward) + '）；再次击败只获得经验和学习力' : '首次击败：' + rewardText(L.reward) + '；另有经验和学习力');
+    var btn = weekly ? '<button type="button" class="btn primary" data-weeklygo="1"' + (pn > 0 ? '' : ' disabled') + '>开始挑战（消耗 1 枚挑战许可）</button><p class="hint permit-line">挑战许可 <b>' + pn + '</b> / ' + PERMIT.max + ' · ' + permitNext() + '</p>'
+      : open ? '<button type="button" class="btn primary" data-bossgo="' + k + '" data-d="' + d + '">开始挑战</button>' : '<button type="button" class="btn" disabled>' + esc(L.lockText) + '</button>';
+    $('pg-explore').innerHTML = exHead(weekly ? '每周挑战：和困难难度的泰戈尔一模一样，每次挑战消耗 1 枚挑战许可。' : '首领可以反复挑战。难度依次开放，每档难度第一次击败都有奖励。') +
+      '<div class="crumb"><button type="button" class="btn ghost" id="boss-back">‹ 返回' + (weekly ? '星际探索' : bossWhere(B)) + '</button><b>' + (weekly ? '每周挑战 · ' : '首领 · ') + B.name + '</b></div>' + tabs +
+      '<article class="boss-card"><span class="tape l"></span><div class="boss-art"><img src="' + BG[B.bg] + '" alt="" class="boss-bg"><img src="' + SPRITES[B.sid] + '" alt="' + B.name + '" class="boss-mon"></div>' +
+      '<div class="boss-txt"><span class="chip boss-diff d' + d + '">' + (weekly ? '每周挑战 · ' : '') + L.diff + '难度</span><h3>' + B.name + '</h3><p class="hint">' + esc(B.d) + '</p>' +
+      '<ul class="boss-rules"><li><b>等级</b>LV' + L.lv + '</li><li><b>体力</b>' + fmt(L.hp) + '</li>' + rules +
+      '<li><b>时限</b>' + MAX_TURNS + ' 回合内没有击败首领，算挑战失败</li>' +
+      '<li><b>奖励</b>' + rw + '</li><li><b>战绩</b>' + (rec.wins || 0) + ' 胜 / ' + (rec.tries || 0) + ' 次挑战</li></ul>' +
+      '<p class="hint">会使用你当前的出战配队（' + TEAM_NAME[acc.active] + '）。' + (L.only ? '记得带上会' + L.only.join('、') + '系技能的精灵。' : '') + '对战中可以使用补药。</p>' +
+      btn + '</div></article>';
+  }
+  function dropName(D) { return D.items ? Object.keys(D.items).map(function (k) { return itemName(k) + (D.items[k] > 1 ? ' ×' + D.items[k] : ''); }).join('、') : D.energy ? '能量 ×' + fmt(D.energy) : '累积经验 ×' + fmt(D.exp); }
+  // 每档难度第一次击败的奖励
+  function firstReward(L) {
+    var R = L.reward, out = [];
+    if (R.mon) {
+      var m = newMon(R.mon.sid, R.mon.lv), T = acc.teams[acc.active], added = T.length < TEAM_SIZE;
+      if (added) T.push(m.u);
+      out.push('获得了 ' + form(m).name + '（LV' + R.mon.lv + '，' + m.nat + '）！' + (added ? '已加入' + TEAM_NAME[acc.active] + '。' : '已收入精灵仓库。'));
+    }
+    if (R.emblem) { if (!acc.emblems) acc.emblems = {}; acc.emblems[R.emblem] = 1; out.push('获得了「' + EMBLEMS[R.emblem].n + '」！以后你的' + SPMAP[R.emblem].name + '（包括还没进化的）都会带着它：' + EMBLEMS[R.emblem].d + '。'); }
+    if (R.title && acc.titles.indexOf(R.title) < 0) { acc.titles.push(R.title); out.push('获得称号「' + titleName(R.title) + '」！点右上角的名字即可佩戴。'); }
+    if (R.items) { giveItems(R.items); out.push('获得 ' + Object.keys(R.items).map(function (k) { return itemName(k) + ' ×' + R.items[k]; }).join('、') + '，在「精灵背包」的道具栏里使用。'); }
+    if (R.exp) { acc.exp = (acc.exp || 0) + R.exp; out.push('累积经验 +' + fmt(R.exp) + '，已放进经验背包。'); }
+    if (R.later) out.push('这一档难度的首次击败奖励将在之后添加，到时会通过邮箱补发给已经击败过的乘员。');
+    return out;
+  }
+  function weeklyReward() {
+    var D = WEEKLY.drops[Math.floor(Math.random() * WEEKLY.drops.length)];
+    acc.exp = (acc.exp || 0) + WEEKLY.exp + (D.exp || 0); acc.energy = (acc.energy || 0) + (D.energy || 0); giveItems(D.items);
+    return ['每周挑战奖励：累积经验 +' + fmt(WEEKLY.exp) + '；掉落了「' + dropName(D) + '」！'];
+  }
+  function startBoss(k, d, weekly) {
+    var B = BOSSES[k]; if (weekly) d = WEEKLY.d;
+    var L = B.lv[d]; if (!L || !(weekly ? weeklyOpen() : L.open())) return;
+    if (weekly) { if (permits() < 1) { toast('挑战许可用完了。' + permitNext() + '。'); return; } acc.permit.n--; }
     var team = (acc.teams[acc.active] || []).map(mon).filter(Boolean);
     if (!team.length) team = acc.mons.slice(0, 1);
     team = team.slice(0, TEAM_SIZE);
     var p = team.map(storyMon);
-    var a = [{ id: B.sid, lv: B.lv, moves: defaultMoves(B.sid, B.lv), nick: B.name, img: SPRITES[B.sid], maxhp: B.hp, onlyHit: B.only }];
-    seeMon(B.sid, B.lv);
-    if (!acc.bosses) acc.bosses = {}; if (!acc.bosses[k]) acc.bosses[k] = { wins: 0, tries: 0 };
-    acc.bosses[k].tries++; save();
+    var a = [{ id: B.sid, lv: L.lv, moves: defaultMoves(B.sid, L.lv), nick: B.name, img: SPRITES[B.sid], maxhp: L.hp, onlyHit: L.only, boss: L.boss }];
+    seeMon(B.sid, L.lv);
+    var rec = bossRec(k, weekly ? 'w' : d); rec.tries++; save();
     stopTimers(); ex.fighting = true; document.body.classList.add('story-fight'); syncBattle();
     $('pg-explore').hidden = true; $('pg-arena').hidden = false;
-    window.HSBATTLE.start({ p: p, a: a, foe: '首领', bgm: 'boss', items: invCopy(), onItem: useInv, bg: BG[B.bg], back: DEPTS[B.dept][0],
+    window.HSBATTLE.start({ p: p, a: a, foe: '首领', bgm: L.bgm, items: invCopy(), onItem: useInv, bg: BG[B.bg], back: weekly ? '每周挑战' : bossWhere(B),
       onEnd: function (res, seen, downs) {
-        var msg = [], rec = acc.bosses[k];
+        var msg = [], first = false, wasWeekly = weeklyOpen();
         dailyHit('boss'); dailyHit('pve');
         if (res === 'win') {
-          var first = !rec.wins; rec.wins++;
-          msg.push('击败了首领「' + B.name + '」！');
-          if (first) {
-            var m = newMon(B.reward.sid, B.reward.lv), T = acc.teams[acc.active], added = T.length < TEAM_SIZE;
-            if (added) T.push(m.u);
-            msg.push('获得了 ' + form(m).name + '（LV' + B.reward.lv + '，' + m.nat + '）！' + (added ? '已加入' + TEAM_NAME[acc.active] + '。' : '已收入精灵仓库。'));
+          first = !rec.wins; rec.wins++;
+          msg.push(weekly ? '每周挑战：击败了首领「' + B.name + '」！' : '击败了' + L.diff + '难度的首领「' + B.name + '」！');
+          if (weekly) msg = msg.concat(weeklyReward());
+          else if (first) {
+            msg = msg.concat(firstReward(L));
+            if (B.lv[d + 1] && levelOpen(k, d + 1)) msg.push(B.lv[d + 1].diff + '难度已开放。');
+            if (!wasWeekly && weeklyOpen()) msg.push('「每周挑战」已开放：在星际探索的星球列表上方进入，每次消耗 1 枚挑战许可（已送你 1 枚）。');
           }
         }
         msg = msg.concat(battleRewards(team, seen, downs));
+        if (weeklyOpen()) permits();
         save();
         ex.fighting = false; document.body.classList.remove('story-fight');
-        ex.view = 'boss'; ex.boss = k;
+        ex.view = weekly ? 'weekly' : 'boss'; ex.boss = k; ex.bossK = k; ex.bossD = first && !weekly && levelOpen(k, d + 1) ? d + 1 : d;   // 第一次打赢后自动切到下一档
         $('pg-arena').hidden = page !== 'arena'; $('pg-explore').hidden = page !== 'explore';
         renderTop(); syncBattle(); window.scrollTo(0, $('pg-explore').offsetTop - 8);
+        // 第一次打赢简单难度的泰戈尔：它有话要说（小剧情，介绍普通难度）
+        if (first && !weekly && k === 'tiger' && d === 0 && page === 'explore' && unlocked('tiger2') && !prog('tiger2').done) {
+          msg.push('泰戈尔好像有话要说……');
+          startVN('tiger2', 'replay', $('pg-explore'), true);
+        }
         if (msg.length) setTimeout(function () { toast(msg.join('')); }, 300);
       } });
   }
@@ -1575,7 +1758,7 @@
   $('pg-explore').addEventListener('keydown', function (e) { if (e.target.id === 'home-name') { if (e.key === 'Enter') { e.preventDefault(); saveHomeName(); } else if (e.key === 'Escape') { ex.homeEdit = false; renderHome(); } } });
 
   /* ---------- 任务：主线 / 支线 / 世界 ---------- */
-  var MAIN_Q = ['school', 'river', 'jiuquan', 'board', 'flora1'], SIDE_Q = ['academy', 'xiaogan', 'brawl', 'storage', 'tiger', 'tea', 'rare', 'mingming'];
+  var MAIN_Q = ['school', 'river', 'jiuquan', 'board', 'flora1'], SIDE_Q = ['academy', 'xiaogan', 'brawl', 'storage', 'tiger', 'tiger2', 'tea', 'rare', 'mingming'];
   // 世界任务（奖励暂定）
   var WQ = [
     { id: 'w_first', n: '初到芙罗拉', d: '荆楚号已经抵达芙罗拉星。去丛林或草甸，和那里的野生精灵过过招吧。', where: '芙罗拉星 · 丛林 / 草甸', steps: [{ t: '在芙罗拉星击败 1 只野生精灵', k: 'wins', n: 1 }], reward: { energy: 100 }, after: 'flora1', go: 'flora' },
@@ -1603,6 +1786,7 @@
     }
     var pr = prog(id); if (!unlocked(id)) return 'lock';
     if (id === 'tiger') return bossWon('tiger') ? 'done' : pr.done || pr.at > 0 ? 'doing' : 'todo';
+    if (id === 'tiger2') return bossWon('tiger', 1) ? 'done' : pr.done || pr.at > 0 ? 'doing' : 'todo';
     if (id === 'brawl') return brawlPlayed() ? 'done' : pr.done || pr.at > 0 ? 'doing' : 'todo';
     if (id === 'rare') return prog('rare_r').done ? 'done' : pr.done || pr.at > 0 ? 'doing' : 'todo';
     return pr.done ? 'done' : pr.at > 0 ? 'doing' : 'todo';
@@ -1634,6 +1818,7 @@
       if (S.chapter.indexOf('准备发射') >= 0) steps.splice(1, 0, { t: '和 Threego 进行剧情对战', ok: pr.done || !!pr.bt });
       if (id === 'brawl') steps = [{ t: '在孝感大厅听 Dr.黄 介绍精灵大乱斗', ok: pr.done }, { t: '打一场精灵大乱斗（竞技对战 → 精灵大乱斗，需要有其他乘员在线）', ok: brawlPlayed() }];
       if (id === 'tiger') { steps = [{ t: '在古城防卫部听舰载广播介绍泰戈尔', ok: pr.done }, { t: '挑战并击败首领「泰戈尔」（只有水、火、草系技能能命中它）', ok: bossWon('tiger') }]; R = { mon: '小胖虎 LV10（首次击败）' }; }
+      if (id === 'tiger2') { steps = [{ t: '在古城防卫部听泰戈尔介绍普通难度', ok: pr.done }, { t: '挑战并击败普通难度的「泰戈尔」（LV40，体力 1500，免疫异常状态）', ok: bossWon('tiger', 1) }]; R = { mon: '普通拳纹章、累积经验 ×20,000（首次击败普通难度）' }; }
       if (id === 'rare') { var rr = prog('rare_r'); steps = [{ t: '在学院部听 Bttp 说明任务', ok: pr.done }, { t: '捕捉一种稀有精灵（芙罗拉星的丛林深处可能会有）', ok: rr.done || !!rareOwned() }, { t: '回到学院部，向 Bttp 汇报', ok: rr.done }]; R = SITES.rare_r.reward; desc = S.d; }
       if (st === 'lock') need = S.need && prog(S.after).done && !S.need() ? S.needText + (id === 'mingming' ? '（当前 ' + litCount() + ' / 10）' : id === 'brawl' ? '（当前持有 ' + acc.mons.length + ' 只）' : '') + '。' : '先读完「' + SITES[S.after].chapter.split(' · ')[1] + '」。';
     }
@@ -1705,9 +1890,18 @@
     if (b.dataset.npctalk) { npcTalk(b.dataset.npctalk); return; }
     if (b.dataset.room) { ex.view = 'room'; ex.room = b.dataset.room; ex.area = '天门'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); mysteryRoll('荆楚号 · 陆羽茶室'); return; }
     if (b.dataset.home) { ex.view = 'home'; ex.area = '天门'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); mysteryRoll('荆楚号 · 陆羽茶室'); return; }
-    if (b.dataset.boss) { ex.view = 'boss'; ex.boss = b.dataset.boss; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); mysteryRoll('荆楚号 · ' + DEPTS[BOSSES[b.dataset.boss].dept][0]); return; }
-    if (b.dataset.bossgo) { startBoss(b.dataset.bossgo); return; }
-    if (b.id === 'boss-back') { ex.view = 'area'; ex.area = BOSSES[ex.boss].dept; renderExplore(); return; }
+    if (b.dataset.boss) { var BB = BOSSES[b.dataset.boss]; ex.view = 'boss'; ex.boss = b.dataset.boss; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); mysteryRoll(BB.dept ? '荆楚号 · ' + DEPTS[BB.dept][0] : bossWhere(BB)); return; }
+    if (b.dataset.bossd) { ex.bossK = ex.boss; ex.bossD = +b.dataset.bossd; renderBoss(); return; }
+    if (b.dataset.bossgo) { startBoss(b.dataset.bossgo, +b.dataset.d || 0); return; }
+    if (b.dataset.weekly) { ex.view = 'weekly'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
+    if (b.dataset.weeklygo) { startBoss(WEEKLY.boss, WEEKLY.d, true); return; }
+    if (b.id === 'boss-back') {
+      var BK2 = BOSSES[ex.boss];
+      if (ex.view === 'weekly') ex.view = 'planets';
+      else if (BK2.dept) { ex.view = 'area'; ex.area = BK2.dept; }
+      else { ex.view = 'sites'; ex.planet = BK2.planet; ex.fpart = 'catch'; }
+      renderExplore(); return;
+    }
     if (b.id === 'home-back') { ex.view = 'area'; ex.area = '天门'; renderExplore(); return; }
     if (b.id === 'home-rn') { ex.homeEdit = true; renderHome(); var ip = $('home-name'); if (ip) { ip.focus(); ip.select(); } return; }
     if (b.id === 'home-ok') { saveHomeName(); return; }
@@ -1783,7 +1977,7 @@
     var monsH = monsHTML(mons); if ($('vn-mons').dataset.k !== mons + acc.starter) { $('vn-mons').innerHTML = monsH; $('vn-mons').dataset.k = mons + acc.starter; }
     $('vn-chars').innerHTML = on.map(function (o) {
       var k = o[0], pos = o[1], speak = st.s === k;
-      return '<div class="vn-fig ' + pos + (CAST[k].img ? ' art' : '') + (CAST[k].full ? ' full' : '') + (speak ? ' speak' : st.s && st.s !== 'n' && !st.choice ? ' dim' : '') + '" style="--cc:' + CAST[k].color + '">' + standee(k, st.f && st.f[k]) + '<span class="vn-tag">' + esc(CAST[k].name()) + '</span></div>';
+      return '<div class="vn-fig ' + pos + (CAST[k].img || CAST[k].spr ? ' art' : '') + (CAST[k].full ? ' full' : '') + (speak ? ' speak' : st.s && st.s !== 'n' && !st.choice ? ' dim' : '') + '" style="--cc:' + CAST[k].color + '">' + standee(k, st.f && st.f[k]) + '<span class="vn-tag">' + esc(CAST[k].name()) + '</span></div>';
     }).join('');
     $('vn-choices').hidden = true; $('vn-pick').hidden = true; $('vn-box').classList.remove('wait');
     if (st.choice) {
@@ -1968,7 +2162,7 @@
       if (!mv.length) mv = defaultMoves(raw.sid, lv, []);
       var ev = {}; STAT_KEYS.forEach(function (k) { var v = raw.ev && +raw.ev[k]; if (v > 0) ev[k] = Math.min(300, Math.round(v)); });
       var f = form({ sid: raw.sid, lv: lv });
-      return { id: raw.sid, lv: lv, moves: mv, nick: f.name, img: f.img, ev: ev, nat: raw.nat && NATURES[raw.nat] ? raw.nat : null };
+      return { id: raw.sid, lv: lv, moves: mv, nick: f.name, img: f.img, ev: ev, nat: raw.nat && NATURES[raw.nat] ? raw.nat : null, emblem: raw.emblem && EMBLEMS[raw.sid] ? EMBLEMS[raw.sid].m : null };
     },
     inBattle: function () { return !$('battle').hidden; },
     // 联网切磋：像剧情对战一样切到对战画面，锁住其他大栏

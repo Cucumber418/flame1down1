@@ -3,7 +3,8 @@
  *
  * 三首曲子都已经调成同样的响度（约 -16 LUFS），切换时不会忽大忽小：
  *   normal  寻常：野外对战、剧情对战、茶室和朋友家的对战
- *   boss    首领战
+ *   boss    首领战（简单难度）
+ *   boss2   首领战（普通、困难难度和每周挑战）
  *   pvp     竞技对战、切磋、精灵大乱斗
  * 对战开始时淡入、结束时淡出，切到别的标签页会暂停。
  * 声音设置（开关、音量）存在这台设备的浏览器里，不跟账号同步（手机和电脑可以设得不一样）。
@@ -11,7 +12,7 @@
  * ========================================================== */
 (function () {
   'use strict';
-  var TRACKS = { normal: 'audio/bgm_normal.mp3?v=1', boss: 'audio/bgm_boss.mp3?v=1', pvp: 'audio/bgm_pvp.mp3?v=1' };
+  var TRACKS = { normal: 'audio/bgm_normal.mp3?v=1', boss: 'audio/bgm_boss.mp3?v=1', boss2: 'audio/bgm_boss2.mp3?v=1', pvp: 'audio/bgm_pvp.mp3?v=1' };
   var KEY = 'hs-sound-v1';
   var cfg = { music: true, vol: 60 };
   try { var sv = JSON.parse(localStorage.getItem(KEY) || 'null'); if (sv) { cfg.music = sv.music !== false; if (sv.vol >= 0 && sv.vol <= 100) cfg.vol = sv.vol; } } catch (e) {}
@@ -76,7 +77,7 @@
       '<label class="snd-row"><input type="checkbox" id="snd-music"' + (cfg.music ? ' checked' : '') + '> 战斗背景音乐</label>' +
       '<label class="snd-row snd-vol' + (cfg.music ? '' : ' off') + '">音量 <input type="range" id="snd-vol" min="0" max="100" step="5" value="' + cfg.vol + '"' + (cfg.music ? '' : ' disabled') + '><output id="snd-out">' + cfg.vol + '</output></label>' +
       '<button type="button" class="btn ghost" id="snd-test">' + (cur ? '正在播放' : '试听') + '</button>' +
-      '<p>野外、剧情对战播放「寻常」，首领战播放「Boss」，竞技对战、切磋和大乱斗播放「PVP」。设置只保存在这台设备上。</p>';
+      '<p>野外、剧情对战播放「寻常」，简单首领战播放「Boss」，普通及以上的首领战播放「Boss2」，竞技对战、切磋和大乱斗播放「PVP」。设置只保存在这台设备上。</p>';
   }
   var testing = false;
   if (btn && menu) {
