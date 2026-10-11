@@ -25,7 +25,7 @@ var WILD_POOLS = {
   ],
   // 莱汀陨石带（电系）
   lt_belt: [
-    { sid: 'leigong', lv: [10, 15], w: 55, rate: 0.6, tag: '较高' },
+    { sid: 'leigong', lv: [10, 15], w: 55, rate: 0.6, tag: '较高', shiny: 0.03 },   // 3% 是异色（红色）
     { sid: 'faraday', lv: [10, 15], w: 45, rate: 0.55, tag: '中等' }
   ],
   // 白之星（冰系）

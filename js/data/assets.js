@@ -90,7 +90,7 @@ var PRE_SPRITES = {
   "wild_s2": "images/pre_sprites/wild_s2.png",
   "hephaestus_s1": "images/pre_sprites/hephaestus_s1.png",
   "hephaestus_s2": "images/pre_sprites/hephaestus_s2.png",
-  "leigong_s1": "images/pre_sprites/leigong_s1.png",
+  "leigong_s1": "images/pre_sprites/leigong_s1.webp",
   "leigong_s2": "images/pre_sprites/leigong_s2.png",
   "inkarm_s1": "images/pre_sprites/inkarm_s1.png",
   "inkarm_s2": "images/pre_sprites/inkarm_s2.png",
@@ -246,4 +246,9 @@ var SILHOUETTES = {
   "phantom_0": "images/silhouettes/phantom_0.png",
   "phantom_1": "images/silhouettes/phantom_1.png",
   "phantom_2": "images/silhouettes/phantom_2.png"
+};
+
+// 异色精灵的立绘（只有部分形态有）：键名规则和 PRE_SPRITES 一样，最终形态用精灵 id
+var SHINY_SPRITES = {
+  "leigong_s1": "images/shiny/leigong_s1.webp"
 };

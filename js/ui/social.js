@@ -41,7 +41,7 @@
   }
   function monThumb(m) {
     var s = SPMAP[m.sid]; if (!s) return '';
-    var v = A.view({ sid: m.sid, lv: m.lv });
+    var v = A.view({ sid: m.sid, lv: m.lv, shiny: m.shiny });
     return '<span class="mth" title="' + esc(v.name) + ' LV' + m.lv + '"><img src="' + v.img + '" alt="' + esc(v.name) + '"><small>' + m.lv + '</small></span>';
   }
   function dialog(cls, html, wire) {
@@ -94,8 +94,8 @@
     for (var i = 0; i < SHOW_MAX; i++) {
       var m = c.show[i], s = m && SPMAP[m.sid];
       if (!s) { slots += '<li class="pc-mon empty"><span>空位</span></li>'; continue; }
-      var v = A.view({ sid: m.sid, lv: m.lv });
-      slots += '<li class="pc-mon"><img src="' + v.img + '" alt="' + esc(v.name) + '"><b>' + esc(v.name) + '</b><span class="pc-lv">LV' + m.lv + (m.nat ? ' · ' + esc(m.nat) : '') + '</span>' +
+      var v = A.view({ sid: m.sid, lv: m.lv, shiny: m.shiny });
+      slots += '<li class="pc-mon"><img src="' + v.img + '" alt="' + esc(v.name) + '"><b>' + esc(v.name) + (m.shiny ? '<span class="shiny-tag">异色</span>' : '') + '</b><span class="pc-lv">LV' + m.lv + (m.nat ? ' · ' + esc(m.nat) : '') + '</span>' +
         '<span class="tc">' + tchips(s.types) + '</span>' +
         (m.moves && m.moves.length ? '<span class="pc-mv">' + m.moves.map(function (n) { return esc(n); }).join('、') + '</span>' : '') + '</li>';
     }
@@ -155,7 +155,7 @@
     if (d.noChar) return back + '</div><div class="soc-empty"><p>@' + esc(d.user) + ' 还没有创建游戏角色。</p></div>';
     if (!d.open) return back + '<b class="home-name">' + esc(d.name) + ' 的休息舱</b></div><div class="soc-empty"><p>' + esc(d.name) + ' 还没有读完「陆羽茶室」支线，茶室还没开放。</p></div>';
     var pos = A.homePos, figs = d.mons.map(function (m, i) {
-      var v = A.view({ sid: m.sid, lv: m.lv }), p = pos[i] || pos[0];
+      var v = A.view({ sid: m.sid, lv: m.lv, shiny: m.shiny }), p = pos[i] || pos[0];
       return '<div class="hm-fig' + (d.mons.length > 3 ? ' many' : '') + '" style="left:' + p[0] + '%;top:' + p[1] + '%"><button type="button" class="hm-poke" data-poke="1" aria-label="摸摸' + esc(v.name) + '"><img src="' + v.img + '" alt=""></button><span class="hm-tag">' + esc(v.name) + ' · LV' + m.lv + '</span></div>';
     }).join('');
     var left = A.teaLeft(), mine = (A.acc().teams[A.acc().active] || []).map(A.mon).filter(Boolean);
@@ -179,7 +179,7 @@
     var ed = st.edit;
     return { user: st.me || (C.user && C.user()), name: acc.name, title: acc.title && (acc.titles || []).indexOf(acc.title) >= 0 ? acc.title : null, monsN: acc.mons.length, speciesN: Object.keys(species).length,
       created: acc.created, motto: ed.motto, rankInfo: R,
-      show: ed.show.map(function (u) { var m = A.mon(u); return m && { sid: m.sid, lv: m.lv, nat: m.nat, moves: m.moves }; }).filter(Boolean) };
+      show: ed.show.map(function (u) { var m = A.mon(u); return m && { sid: m.sid, lv: m.lv, nat: m.nat, moves: m.moves, shiny: !!m.shiny }; }).filter(Boolean) };
   }
   function startEdit() {
     var cd = A.acc().card || {};

@@ -1401,3 +1401,9 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .md-act select { font: inherit; font-size: 13px; padding: 4px 6px; border: 1.5px solid var(--ink); border-radius: 8px; background: var(--paper); max-width: 220px; }
 .md-act .btn { padding: 4px 10px; font-size: 13px; }
 @media (max-width: 640px) { .md-it { grid-template-columns: minmax(0, 1fr); } .md-act { grid-column: 1; grid-row: auto; justify-content: flex-start; } }
+
+/* ============ 异色精灵 ============ */
+.shiny-tag { display: inline-block; vertical-align: middle; margin-left: 4px; padding: 0 6px; border-radius: 999px; background: linear-gradient(90deg, #e8834f, #d9a43a); color: #fff; font-size: 11px; font-weight: 700; font-family: var(--f-ui, inherit); line-height: 1.6; letter-spacing: .05em; }
+.shiny-tag.big { font-size: 13px; margin-left: 8px; }
+.cimg { position: relative; }
+.cimg .shiny-tag { position: absolute; left: 2px; bottom: 2px; margin: 0; }

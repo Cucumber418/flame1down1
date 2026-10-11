@@ -166,6 +166,10 @@ sudo git clone --depth 1 https://github.com/Cucumber418/flame1down1 /opt/flame1d
 
 规则常量在 `js/ui/game.js` 搜「精灵大乱斗」；匹配和发牌在 `server/social.js`。
 
+## 异色精灵
+
+野外精灵表（`js/data/wild.js`）里给某种精灵写 `shiny: 0.03`，遇到的这只就有 3% 概率是异色。异色的立绘放在 `images/shiny/`，在 `js/data/assets.js` 的 `SHINY_SPRITES` 里登记（键名和 `PRE_SPRITES` 一样，最终形态用精灵 id）。抓到后精灵身上记 `shiny: true`，卡片、资料、名片、对战里都标「异色」；某个形态没有异色立绘时显示普通立绘。目前：锰怪（雷公一阶）3%，红色。
+
 ## 茶室商店（陆羽茶室大厅）
 
 - **7日自律训练装置**：1500 能量。在「我的房间」给展示中的精灵装上，它每训练满 1 天就自动结算经验（24 小时的量）并重新计时，一共 7 天；离线也算，下次打开游戏时补上。中途收回精灵，剩下的天数作废（收回时要点两次确认）。

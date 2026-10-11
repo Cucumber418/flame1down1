@@ -69,7 +69,8 @@ function monOut(m, acc) {
   if (m.ev && typeof m.ev === 'object') ['hp', 'atk', 'def', 'spa', 'spd', 'spe'].forEach(function (k) { if (m.ev[k]) ev[k] = int(m.ev[k], 0, 300); });
   return {
     sid: str(m.sid, 32), lv: int(m.lv, 1, 100), nat: str(m.nat, 8) || null, ev: ev,
-    emblem: !!(acc && acc.emblems && acc.emblems[m.sid]),   // 击败普通难度泰戈尔得到的纹章（按精灵种类）
+    emblem: !!(acc && acc.emblems && acc.emblems[m.sid]),
+    shiny: !!m.shiny,   // 击败普通难度泰戈尔得到的纹章（按精灵种类）
     moves: Array.isArray(m.moves) ? m.moves.filter(function (x) { return typeof x === 'string'; }).slice(0, 4).map(function (x) { return x.slice(0, 32); }) : []
   };
 }

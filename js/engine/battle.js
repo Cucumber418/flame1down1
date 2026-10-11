@@ -76,6 +76,7 @@ function mkFrom(t) {
   if (t.nick) m.nick = t.nick; if (t.img) m.img = t.img; if (t.miasma) m.perm.miasma = t.miasma;
   if (t.maxhp) m.maxhp = m.hp = t.maxhp;          // 首领：固定体力
   if (t.onlyHit) m.onlyHit = t.onlyHit;           // 首领：只有这些属性的技能能命中它
+  if (t.shiny) m.shiny = true;   // 异色精灵（只是配色不同，能力一样）
   if (t.emblem && EMBLEMS[t.id] && EMBLEMS[t.id].m === t.emblem) m.emblem = t.emblem;
   // 首领的特殊能力（见 BOSS_FX）；pp：首领技能的 PP（长时间战斗不会用光）
   if (t.boss) { m.boss = JSON.parse(JSON.stringify(t.boss)); if (m.boss.pp) m.moves.forEach(function (x) { if (M[x.n].custom !== 'annihilate') x.pp = x.max = m.boss.pp; }); }   // 灭却除外，仍按原本的 PP
@@ -214,6 +215,7 @@ function chipsOf(m, foe) {
   if (m.perm && m.perm.melt) c.push({ t: '熔化 ×' + m.perm.melt, k: 'st', h: '熔化 · ' + m.perm.melt + ' 层', d: '受到的伤害提升 ' + m.perm.melt * 20 + '%（每层20%，最多5层），持续到战斗结束，换下场也不会消失' });
   if (m.onlyHit) c.push({ t: '首领 · 只受' + m.onlyHit.join('/') + '系', k: 'fx', h: '首领', d: '只有' + m.onlyHit.join('、') + '系技能才能命中它，其他属性的技能都会被挡下' });
   if (m.boss) BOSS_FX.forEach(function (f) { if (m.boss[f.k]) c.push({ t: f.t, k: 'fx', h: f.h, d: f.d(m) }); });
+  if (m.shiny) c.push({ t: '异色', k: 'fx', h: '异色精灵', d: '和同类长得不一样的稀有配色，能力和普通的一样' });
   if (m.puppet) c.push({ t: '瘴毒傀儡', k: 'st', h: '瘴毒傀儡', d: '荒芜召唤出来的傀儡，只会使用攻击技能。被击败后荒芜会重新上场。' });
   if (m.emblem && EMBLEMS[m.id]) c.push({ t: '纹章 · ' + m.emblem, k: 'fx' + (m.flags.punch ? '' : ' on'), h: EMBLEMS[m.id].n, d: EMBLEMS[m.id].d + (m.flags.punch ? '（本场已经生效过）' : '') });
   if (m.perm && m.perm.star) c.push({ t: '星星魔法 ×' + m.perm.star, k: 'fx', h: '星星魔法 · 已使用 ' + m.perm.star + ' 次', d: '下一次星星魔法威力 ' + Math.min(200, 25 * (m.perm.star + 1)) + '（换下场也会保留）' });
