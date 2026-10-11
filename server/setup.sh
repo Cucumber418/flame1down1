@@ -35,9 +35,10 @@ ok "Node.js $("$NODE_BIN" -v)"
 # ---------- 2. 下载 / 更新游戏代码 ----------
 say "下载游戏代码到 $APP_DIR"
 if [ -d "$APP_DIR/.git" ]; then
+  git -C "$APP_DIR" config http.version HTTP/1.1   # 国内连 GitHub 用 HTTP/2 容易卡住
   git -C "$APP_DIR" pull --ff-only || fail "更新代码失败（可能是连 GitHub 不稳定，过几分钟再试一次）"
 else
-  git clone --depth 1 "$REPO" "$APP_DIR" || fail "从 GitHub 下载失败（国内服务器连 GitHub 有时不稳定，过几分钟再试一次）"
+  git -c http.version=HTTP/1.1 clone --depth 1 "$REPO" "$APP_DIR" || fail "从 GitHub 下载失败（国内服务器连 GitHub 有时不稳定，过几分钟再试一次）"
 fi
 [ -f "$APP_DIR/server/node_modules/ws/package.json" ] || fail "缺少 server/node_modules/ws，请告诉 Claude"
 ok "代码已就位"
