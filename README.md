@@ -85,6 +85,30 @@ images/
 2. 改之前先拉取仓库里的最新版本。
 3. 提交时写清楚改了什么，例如"新增精灵：狐火"、"修复换精灵时血条不刷新"。
 
+## 服务器（联网版）
+
+游戏也部署在一台腾讯云轻量服务器上，用浏览器打开 `http://服务器IP` 就能玩，联网对战也走这台服务器。
+
+```
+server/
+  server.js           服务器程序：发网页 + 在 /ws 上给联网对战传话
+  setup.sh            第一次安装用（装 Node.js、注册成开机自启的服务）
+  update.sh           以后更新用
+  node_modules/ws     WebSocket 库，直接放进仓库，服务器上不用再 npm install
+```
+
+**第一次安装**：在腾讯云控制台登录服务器的网页终端，粘贴运行：
+
+```
+sudo git clone --depth 1 https://github.com/Cucumber418/flame1down1 /opt/flame1down1 && sudo bash /opt/flame1down1/server/setup.sh
+```
+
+**更新**：代码推到 GitHub 之后，在服务器终端运行 `sudo bash /opt/flame1down1/server/update.sh`。
+
+**检查是否在运行**：浏览器打开 `http://服务器IP/ping`，显示 `ok` 就正常；`http://服务器IP/status` 能看到在线人数和房间数。
+
 ## 存档
 
 账号、精灵、段位等进度保存在浏览器本地，换电脑或换浏览器不会同步。
+
+注意：浏览器按「网址」分开保存存档。双击 `index.html` 打开的本地版和 `http://服务器IP` 打开的联网版是两份独立的存档，互相看不到。

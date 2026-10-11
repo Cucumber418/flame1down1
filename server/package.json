@@ -1,0 +1,9 @@
+{
+  "name": "flame1down-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Flame1Down - 1 的服务器：提供游戏网页，并给联网对战传话",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "dependencies": { "ws": "^8.18.0" }
+}
