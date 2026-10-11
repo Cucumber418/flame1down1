@@ -72,6 +72,7 @@ function mkFrom(t) {
   if (t.nick) m.nick = t.nick; if (t.img) m.img = t.img; if (t.miasma) m.perm.miasma = t.miasma;
   if (t.maxhp) m.maxhp = m.hp = t.maxhp;          // 首领：固定体力
   if (t.onlyHit) m.onlyHit = t.onlyHit;           // 首领：只有这些属性的技能能命中它
+  if (t.u != null) { m.u = t.u; m.hl = t.hl || []; }   // 账号里的精灵：可以在战斗中领悟隐藏技能
   return m;
 }
 function hitBlocked(foe, t) { return !!(foe.onlyHit && foe.onlyHit.indexOf(t) < 0); }
@@ -289,6 +290,7 @@ function loseHp(S, evs, j, amt, why) {
   amt = Math.min(t.hp, Math.floor(amt)); t.hp -= amt;
   E(S, evs, 'hit', { side: j, amount: amt });
   if (why) log(S, evs, why);
+  if (t.hp <= 0 && why) hqDot(S, evs, t, why);
   if (t.hp <= 0) faint(S, evs, j);
   return amt;
 }
@@ -302,7 +304,7 @@ function applyDamage(S, evs, j, amount, src, o) {
     if (ab) log(S, evs, nm(t) + '的护盾吸收了 ' + ab + ' 点伤害');
   }
   if (t.fx.endure && src != null && amt >= t.hp && t.hp > 1) {
-    amt = t.hp - 1; t.fx.endure = 0; log(S, evs, nm(t) + '的不灭之躯撑住了，残留 1 点体力！', 'fxl');
+    amt = t.hp - 1; t.fx.endure = 0; log(S, evs, nm(t) + '的不灭之躯撑住了，残留 1 点体力！', 'fxl'); hqGet(S, evs, t, '寂灭幽映');
   }
   if (t.id === 'dummy') { recordDummy(S, amt, src == null ? (S.dotSrc || '持续/附加效果') : null); E(S, evs, 'hit', { side: j, amount: amt, crit: o.crit, eff: o.eff }); return amt; }
   amt = Math.min(t.hp, amt); t.hp -= amt;
@@ -357,7 +359,7 @@ function addStatus(S, evs, j, k, turns, src, noReflect) {
     } else log(S, evs, nm(t) + '免疫了「' + k + '」');
     return;
   }
-  if (t.tm.immune > 0) { log(S, evs, nm(t) + '免疫了「' + k + '」'); return; }
+  if (t.tm.immune > 0) { hqR(t).blk = 1; log(S, evs, nm(t) + '免疫了「' + k + '」'); return; }
   if (k === '流血' && typesOf(t).indexOf('机械') >= 0) { log(S, evs, nm(t) + '是机械系精灵，不会流血'); return; }
   if (k === '中毒') {
     if (t.st['中毒'] > 0) {
@@ -370,6 +372,7 @@ function addStatus(S, evs, j, k, turns, src, noReflect) {
   if (t.st[k] > 0) { log(S, evs, nm(t) + '已经处于' + k + '状态'); return; }
   // 控制类状态：如果对方本回合已经行动过，额外+1回合，保证真的能控住
   t.st[k] = turns + (CONTROL[k] && S.turnActed[j] ? 1 : 0);
+  if (src != null && src !== j) hqStatus(S, evs, t, k, act(S, src));
   E(S, evs, 'stage', { side: j });
   log(S, evs, nm(t) + '陷入了「' + k + '」状态（' + turns + '回合）', 'bad');
   if (k === '冰冻' && src != null && ability(act(S, src)) === '冰刺') { log(S, evs, nm(act(S, src)) + '的「冰刺」发动了', 'fxl'); clearUps(S, evs, j); }
@@ -586,6 +589,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   var mt = mvType(me, mv);
   S.curMove = i === 0 ? mv.name : null;
   E(S, evs, 'use', { side: i, move: mv.name, type: mt });
+  S.hqMv = mv.name; if (!extra) hqUse(me, mv.name);
   log(S, evs, nm(me) + (extra ? '额外发动了「' : '使用了「') + mv.name + '」！', 'use');
   if (!extra && me.perm.moonFull && slotIdx >= 0) {
     var got = 0; me.moves.forEach(function (sl, k) { if (k !== slotIdx && sl.pp < sl.max) { sl.pp++; got++; } });
@@ -641,6 +645,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   }
   if (mv.custom === 'originBlade' && !foe.fainted && foe.stages.spe <= -6) { log(S, evs, '起源巨刃斩断了速度降到最低的敌人！', 'crit'); applyDamage(S, evs, j, foe.hp + (foe.fx.shield || 0), i, {}); }
   if (total > 0) {
+    hqLand(me, foe, mv.name, i);
     if (foe.fx.earMark) foe.fx.earMark = 0;
     if (foe.fx.flash && !foe.fainted) { foe.fx.flash = 0; log(S, evs, '闪光飞叶的光芒刺痛了' + nm(foe) + '的眼睛', 'fxl'); changeStages(S, evs, j, { acc: -1 }, i); }
   }
@@ -652,10 +657,11 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   }
   if (mv.fixedOnly === 'selfBlast' && !me.fainted) { log(S, evs, nm(me) + '舍身爆破，牺牲了自己'); me.hp = 0; faint(S, evs, i); }
   if (me.fainted) return;
-  if (mv.drain && total > 0) heal(S, evs, i, total * mv.drain);
+  if (mv.drain && total > 0) { var dh = heal(S, evs, i, total * mv.drain); hqR(me).h[mv.name] = (hqR(me).h[mv.name] || 0) + dh; }
   if (mv.struggle && total > 0) loseHp(S, evs, i, Math.max(1, Math.floor(total / 4)), nm(me) + '受到了反作用伤害');
   if (total > 0 && me.tm.induct > 0) { log(S, evs, '电磁感应生效', 'fxl'); changeStages(S, evs, i, { spa: 1 }); }
   if (foe.fainted) {
+    if (i === 0) hqKO(S, evs, me, foe, mv);
     if (mv.koHeal) heal(S, evs, i, me.maxhp * mv.koHeal);
     moonStack(S, evs, i, '击败敌人');
     if (ability(me) === '收魂' && aliveIdx(S, j).length) { S.sides[j].soulMark = true; log(S, evs, nm(me) + '的「收魂」发动了，对方下一只精灵会更脆弱', 'fxl'); }
@@ -680,7 +686,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   }
   switch (mv.custom) {
     case 'moonBlade': if (total < 180) changeStages(S, evs, i, { atk: 1 }); break;
-    case 'boneCut': if (total > 200) changeStages(S, evs, i, { spe: 1 }); break;
+    case 'boneCut': if (total > 200) { changeStages(S, evs, i, { spe: 1 }); hqGet(S, evs, me, '骨斩肉断'); } break;
     case 'vortex': if (!extra) { me.tm.vortex = 3; E(S, evs, 'stage', { side: i }); log(S, evs, '闪电漩涡缠住了战场（3回合）', 'fxl'); } break;
     case 'liuhuo': me.tm.liuhuo = 5; E(S, evs, 'stage', { side: i }); log(S, evs, nm(me) + '的火系技能威力提升5点（5回合）', 'fxl'); break;
     case 'tide': if (!extra) { me.tm.tide = 5; me.fx.tideWait = 1; E(S, evs, 'stage', { side: i }); log(S, evs, '黑雾潮汐涌起，从下回合起连续4回合，每回合结束时会再发动一次', 'fxl'); } break;
@@ -728,6 +734,7 @@ function doStatus(S, evs, i, mv) {
     if (foe.fainted) { log(S, evs, '但是没有目标'); return; }
     if (hitBlocked(foe, mvType(me, mv))) { log(S, evs, nm(foe) + '毫发无伤！只有' + foe.onlyHit.join('、') + '系技能才能命中它', 'bad'); return; }
     if (RNG() >= hitChance(me, foe, mv)) { log(S, evs, '但是没有命中！'); return; }
+    hqLand(me, foe, mv.name, i);
     if (mv.tgtStage) {
       var ts = mv.tgtStage;
       if (c === 'dielectric' && foe.st['麻痹'] > 0) { ts = {}; for (var kk in mv.tgtStage) ts[kk] = mv.tgtStage[kk] * 2; log(S, evs, '对方处于麻痹，效果翻倍！', 'fxl'); }
@@ -797,15 +804,15 @@ function doStatus(S, evs, i, mv) {
       break;
     case 'hail': timer('hail', 5, '下起了冰雹（5回合）'); break;
     case 'mystic':
-      if (RNG() < 0.6) changeStages(S, evs, i, { spa: 1, def: 1, spd: 1, spe: 1, acc: 1, eva: 1 });
+      if (RNG() < 0.6) { changeStages(S, evs, i, { spa: 1, def: 1, spd: 1, spe: 1, acc: 1, eva: 1 }); hqR(me).n['神秘之力'] = (hqR(me).n['神秘之力'] || 0) + 1; }
       else log(S, evs, '但是神秘之力没有回应');
       break;
     case 'noBoostFoe': foeTimer('noBoost', 5, nm(foe) + '被封印，5回合内无法提升能力等级'); break;
     case 'seal': foeTimer('seal', 5, nm(foe) + '被万灵封印：5回合内禁止提升能力等级，强行提升会受反噬'); break;
     case 'melt':
-      foe.perm.melt = Math.min(5, (foe.perm.melt || 0) + 1); E(S, evs, 'stage', { side: j });
+      foe.perm.melt = Math.min(5, (foe.perm.melt || 0) + 1); foe.hqMelt = me; E(S, evs, 'stage', { side: j });
       log(S, evs, nm(foe) + '熔化 ' + foe.perm.melt + ' 层，受到的伤害提升 ' + foe.perm.melt * 20 + '%（持续到战斗结束）', 'bad'); break;
-    case 'burnout': foe.perm.melt = 5; E(S, evs, 'stage', { side: j }); log(S, evs, nm(foe) + '的熔化直接叠到了 5 层！', 'bad'); break;
+    case 'burnout': foe.perm.melt = 5; foe.hqMelt = me; E(S, evs, 'stage', { side: j }); log(S, evs, nm(foe) + '的熔化直接叠到了 5 层！', 'bad'); break;
     case 'capacitor':
       if (hasEmblem(me, '恐怖电容')) { me.fx.shield = (me.fx.shield || 0) + 150; flag('纹章生效：' + nm(me) + '额外获得 150 点护盾'); }
       break;
@@ -819,7 +826,7 @@ function doStatus(S, evs, i, mv) {
     case 'halfPhys5': timer('halfPhys', 5, nm(me) + '展开幽冥结界：5回合内物理伤害减半'); break;
     case 'halfPhys3': timer('halfPhys', 3, nm(me) + '竖起盾墙：3回合内物理伤害减半'); break;
     case 'chaosWater': if (!foe.fainted) { var cw = loseHp(S, evs, j, foe.hp / 5, '混沌水域吸取了' + nm(foe) + '的体力'); heal(S, evs, i, cw); } break;
-    case 'wither': foe.perm.wither = true; E(S, evs, 'stage', { side: j }); log(S, evs, nm(foe) + '被凋零之蚀侵蚀，每回合损失1/10最大体力，直到战斗结束', 'bad'); break;
+    case 'wither': foe.perm.wither = true; foe.hqWither = me; E(S, evs, 'stage', { side: j }); log(S, evs, nm(foe) + '被凋零之蚀侵蚀，每回合损失1/10最大体力，直到战斗结束', 'bad'); break;
     case 'swamp': timer('swamp', 5, nm(me) + '展开孢子沼泽：5回合内异常状态成功率×1.5'); break;
     case 'purge':
       loseHp(S, evs, i, Math.floor(me.hp / 2), nm(me) + '损失了一半现有体力');
@@ -842,6 +849,94 @@ function doStatus(S, evs, i, mv) {
     case 'block100': me.fx.shield = Math.max(me.fx.shield || 0, 100); timer('block', 3, nm(me) + '坚不可摧：3回合内每回合抵挡100点伤害'); break;
     case 'recoilQ': timer('recoil', 4, nm(me) + '充能磁暴反冲（4回合）'); break;
   }
+  if (i === 0) hqAfterStatus(S, evs, me, foe, mv);
+}
+
+/* ---------- 隐藏技能的领悟 ----------
+ * 只有账号里的精灵（带 u）能在剧情 / 野外 / 首领战中领悟；条件不在界面上公开，
+ * 达成时战斗记录里只会出现「似乎领悟了什么……」，结算时才写出领悟了哪个技能。
+ * 没有写领悟条件的隐藏技能（叶子喵）仍然是 LV50 自动习得，不走这里。 */
+function hqR(m) { if (!m.hq) m.hq = { u: {}, n: {}, h: {} }; return m.hq; }
+function hqGet(S, evs, m, name) {
+  if (!m || m.u == null || !LEARN[name]) return;
+  var s = SPMAP[m.id]; if (!s || s.hidden.indexOf(name) < 0) return;
+  if (m.hl && m.hl.indexOf(name) >= 0) return;
+  if (!m.hqGot) m.hqGot = []; if (m.hqGot.indexOf(name) >= 0) return;
+  m.hqGot.push(name);
+  log(S, evs, nm(m) + '似乎领悟了什么……', 'crit');
+}
+// 本场使用次数（u）、本次出场使用次数（fx.hqU）、上一个使用的技能（fx.hqPrev）
+function hqUse(me, n) {
+  var q = hqR(me); q.u[n] = (q.u[n] || 0) + 1;
+  if (!me.fx.hqU) me.fx.hqU = {}; me.fx.hqU[n] = (me.fx.hqU[n] || 0) + 1;
+  me.fx.hqPrev = me.fx.hqLast; me.fx.hqLast = n;
+}
+// 技能命中对方（攻击造成了伤害，或变化技能命中）
+function hqLand(me, foe, n, i) {
+  var q = hqR(me); q.n[n] = (q.n[n] || 0) + 1;
+  if (i === 0) { if (!foe.hqBy) foe.hqBy = {}; foe.hqBy[n] = 1; }
+}
+function hqStatus(S, evs, t, k, by) {
+  if (!t.hqSt) t.hqSt = {}; t.hqSt[k] = { mv: S.hqMv, by: by };
+  if (k === '冰冻' && S.hqMv === '冰冻打击' && by.u != null) { var q = hqR(by); q.n['冻结'] = (q.n['冻结'] || 0) + 1; if (q.n['冻结'] >= 2) hqGet(S, evs, by, '急冻打击'); }
+}
+function hqFrom(x, mv, me) { return !!(x && x.mv === mv && x.by === me); }
+function hqStN(m) { var n = 0; for (var k in m.st) if (m.st[k] > 0 && ST_DESC[k]) n++; return n; }
+function hqEff(m, k) { return m.stats[k] * stageMult(m.stages[k]); }
+function hqDot(S, evs, t, why) {
+  var b = t.hqSt && t.hqSt['烧伤'];
+  if (why.indexOf('烧伤') >= 0 && b && b.mv === '爆炎斩') hqGet(S, evs, b.by, '火山突堑');
+  if (why.indexOf('凋零之蚀') >= 0 && t.hqWither) hqGet(S, evs, t.hqWither, '灭却');
+}
+function hqAfterStatus(S, evs, me, foe, mv) {
+  if (me.u == null) return;
+  var q = hqR(me);
+  if (mv.name === '逆流' && !foe.fainted && foe.stages.spe <= -6 && foe.stages.acc <= -6) hqGet(S, evs, me, '混沌海流');
+  if ((q.n['雷暴'] || 0) >= 4) hqGet(S, evs, me, '介电崩坏');
+  if (mv.custom === 'selfDestruct' && !foe.fainted && foe.st['疲惫'] > 0 && foe.stages.def < 0 && foe.stages.spd < 0) hqGet(S, evs, me, '舍身爆破');
+}
+// 用攻击技能击败对方时检查
+function hqKO(S, evs, me, foe, mv) {
+  if (me.u == null) return;
+  var q = hqR(me), fu = me.fx.hqU || {}, prev = me.fx.hqPrev, n = mv.name, st = foe.hqSt || {}, by = foe.hqBy || {};
+  var R = {
+    亘古恒压: (me.fx.fieldT || 0) >= 6,
+    巨龙湮灭破: foe.st['害怕'] > 0 && hqFrom(st['害怕'], '龙吟崩山震', me),
+    飞叶风暴: n === '飞叶刀',
+    超级吸取: (n === '吸取' || n === '强力吸取') && me.hp >= me.maxhp,
+    灭生之潮: n === '海啸' && prev === '海啸',
+    创生之潮: prev === '灵光' && me.stages.spa >= 6,
+    溺毙: n === '贯穿水枪' && foe.st['溺水'] > 0,
+    风王结界: !!q.blk,
+    木叶飓风: n === '木叶旋风',
+    饮血刀光: n === '灵魂之刃' && me.stages.atk >= 6 && q.u['黑月刀光'] > 0,
+    黑暗收割: n === '收割',
+    狂涛疾刃: hqFrom(st['流血'], '怒海疾刺', me),
+    水纹震击: n === '水打击',
+    元神崩坏: prev === '自我崩坏',
+    三相归元: q.u['修竹拳'] > 0 && q.u['若水拳'] > 0 && q.u['燎燃拳'] > 0,
+    贪能暴涨: prev === '驱使念力',
+    虚空裂变: n === '灵光冲击',
+    闪电漩涡: hqFrom(st['麻痹'], '闪电烙印', me),
+    残月之痕: prev === '朔月' && me.stages.def >= 3,
+    月之暗面: (q.u['月神降临'] || 0) >= 3,
+    零度冰破: foe.st['冰冻'] > 0,
+    神秘灵核: (q.n['神秘之力'] || 0) >= 3,
+    起源巨刃: foe.stages.spe <= -6 && q.u['起源暴风'] > 0,
+    烧却: (foe.perm.melt || 0) >= 5 && foe.hqMelt === me,
+    雷击: hqFrom(st['麻痹'], '电磁脉冲', me),
+    黑雾潮汐: prev === '恶魔触手' && foe.tm.vuln > 0,
+    混沌水域: (q.h['静谧水域'] || 0) >= me.maxhp * 0.5,
+    以毒攻毒: me.hp <= me.maxhp / 4 && negCount(me) >= 2,
+    渗透孢子: hqStN(foe) >= 2 || (foe.fx.poison || 0) >= 3,
+    盛宴: n === '进食' && hqEff(foe, 'def') > hqEff(me, 'atk'),
+    丛林法则: (q.n['草木皆兵'] || 0) >= 3,
+    唤潮之佑: !!(by['浪花'] && by['海浪']) && foe.stages.acc <= -3,
+    戳刺: n === '至高剑锋' && !!(fu['盾墙'] || fu['坚不可摧'] || fu['勇猛盾击']),
+    生命榨取: (q.h['幻境汲取'] || 0) >= me.maxhp * 0.5,
+    万灵封印: fu['生命遁迹'] > 0 && me.stages.spa >= 3 && me.stages.def >= 3 && me.stages.spd >= 3
+  };
+  for (var k in R) if (R[k]) hqGet(S, evs, me, k);
 }
 
 /* ---------- 瘴气：每层使物攻、特攻 +5%，物防、特防 −5%（最低降到 10%），换下场也不消失 ---------- */
@@ -873,7 +968,7 @@ function endOfTurn(S, evs) {
     if (!m.fainted && m.tm.hail > 0 && !o.fainted) { log(S, evs, '冰雹砸向' + nm(o), 'fxl'); S.dotSrc = '冰雹'; applyDamage(S, evs, 1 - i, Math.floor(o.maxhp / 10), null, {}); S.dotSrc = null; }
     if (!m.fainted && m.tm.genggu > 0) { changeStages(S, evs, i, { spa: 1 }); heal(S, evs, i, m.maxhp / 6); }
     if (!m.fainted && m.tm.green > 0) heal(S, evs, i, m.maxhp / 4);
-    if (!m.fainted && m.tm.calm > 0) heal(S, evs, i, m.maxhp / 5);
+    if (!m.fainted && m.tm.calm > 0) { var ch = heal(S, evs, i, m.maxhp / 5), cq = hqR(m); cq.h['静谧水域'] = (cq.h['静谧水域'] || 0) + ch; if (cq.h['静谧水域'] >= m.maxhp * 0.6) hqGet(S, evs, m, '寂静之海'); }
     if (!m.fainted && m.tm.vortex > 0 && !o.fainted) { log(S, evs, '闪电漩涡干扰了' + nm(o) + '的视线', 'fxl'); changeStages(S, evs, 1 - i, { acc: -1 }, i); }
     if (!m.fainted && m.tm.tide > 0 && m.fx.tideWait) delete m.fx.tideWait;   // 使用当回合不触发，从下回合末开始
     else if (!m.fainted && m.tm.tide > 0 && !o.fainted && !S.over) useMove(S, evs, i, M['黑雾潮汐'], -1, true);

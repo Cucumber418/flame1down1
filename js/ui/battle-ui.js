@@ -210,7 +210,7 @@
     return '<label class="mrow' + (on ? ' on' : '') + (m.hidden ? ' hid' : '') + '" for="' + id + '">' +
       '<input type="checkbox" id="' + id + '" data-move="' + n + '"' + (on ? ' checked' : '') + '>' +
       '<span class="l1"><span class="mn">' + m.name + '</span>' + atkTip(m.type) + '<span class="mm">' + meta + '</span>' +
-      (m.hidden ? '<span class="tag sc hidtag" tabindex="0">隐藏<span class="tip" role="tooltip"><b>学习条件</b>' + esc(LEARN[n] || '图鉴里没写') + '，且达到 LV50 习得<span class="tipx">试验版里可以直接选用</span></span></span>' : '') + emb + '</span>' +
+      (m.hidden ? '<span class="tag sc hidtag" tabindex="0">隐藏<span class="tip" role="tooltip"><b>隐藏技能</b>' + (LEARN[n] ? '要在战斗中满足特定条件才能领悟' : '达到 LV50 时习得') + '<span class="tipx">试验版里可以直接选用</span></span></span>' : '') + emb + '</span>' +
       '<span class="md">' + esc(m.d) + '</span></label>';
   }
   function renderDetail() {
@@ -648,6 +648,13 @@
     var left = aliveIdx(S, 0).length;
     var wf = S.wild && act(S, 1);
     $('end-sub').textContent = S.wild ? (r === 'caught' ? '【' + (wf.nick || SPMAP[wf.id].name) + '】LV' + wf.lv + ' 已收入精灵仓库' : r === 'flee' ? '你带着精灵们离开了。' : r === 'win' ? '野生的' + (wf.nick || SPMAP[wf.id].name) + '倒下了，没能捕捉到它' : '你的精灵们都倒下了，先回去休整吧') + ' · 共 ' + (S.turn - 1) + ' 回合' : (S.story ? '与 ' + S.story.foe + ' 的对战 · 共 ' + (S.turn - 1) + ' 回合' : S.timeUp ? '达到 ' + MAX_TURNS + ' 回合上限，按剩余精灵数判定 · 你剩 ' + left + ' 只，对手剩 ' + aliveIdx(S, 1).length + ' 只' : '共 ' + (S.turn - 1) + ' 回合 · 你的背包还剩 ' + left + ' 只精灵能战斗');
+    // 账号精灵在这场战斗中领悟的隐藏技能
+    var eh = $('end-hid'), got = []; eh.hidden = true; eh.innerHTML = '';
+    if (S.story) S.sides[0].team.forEach(function (x) { (x.hqGot || []).forEach(function (n) { got.push({ u: x.u, mv: n, who: x.nick || SPMAP[x.id].name }); }); });
+    if (got.length) {
+      eh.hidden = false; eh.innerHTML = got.map(function (g) { return '【' + esc(g.who) + '】领悟了隐藏技能「' + esc(g.mv) + '」！'; }).join('<br>');
+      if (!S.hidSent) { S.hidSent = 1; if (window.HSEV) window.HSEV('hidden', got); }
+    }
     var rr = $('end-rank'); rr.hidden = !rankOn(); rr.innerHTML = '';
     if (rankOn()) {
       if (!S.rankApplied) { S.rankApplied = applyRank(r); }

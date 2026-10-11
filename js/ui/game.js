@@ -31,8 +31,10 @@
       if (!m.nat || !(m.nat in NATURES)) m.nat = NAT_KEYS[Math.floor(Math.random() * NAT_KEYS.length)];
       if (!m.ev) m.ev = {}; if (!(m.evFree >= 0)) m.evFree = 0;
       if (!(m.exp >= expAt(m.lv))) m.exp = expAt(m.lv);
-      var a = avail(m.sid, m.lv); m.moves = (m.moves || []).filter(function (n) { return a.indexOf(n) >= 0; });
-      if (!m.moves.length) m.moves = defaultMoves(m.sid, m.lv);
+      // 隐藏技能改为战斗中领悟：旧存档里已经装备着的隐藏技能视为已领悟
+      if (!Array.isArray(m.hl)) m.hl = (m.moves || []).filter(function (n) { return M[n] && M[n].hidden && LEARN[n]; });
+      var a = avail(m.sid, m.lv, m.hl); m.moves = (m.moves || []).filter(function (n) { return a.indexOf(n) >= 0; });
+      if (!m.moves.length) m.moves = defaultMoves(m.sid, m.lv, m.hl);
     });
     if (!(acc.exp >= 0)) acc.exp = 0; if (!(acc.energy >= 0)) acc.energy = 0;
     if (!acc.items || typeof acc.items !== 'object') acc.items = {};
@@ -54,14 +56,17 @@
   // 普通技能：第 1 个 LV1 习得，之后每 5 级学会下一个（LV5、LV10、LV15……）；隐藏技能暂按 LV50
   function learnLv(i) { return i === 0 ? 1 : i * 5; }
   function moveLv(sid, mv) { var s = SPMAP[sid], i = s.moves.indexOf(mv); return i >= 0 ? learnLv(i) : 50; }
-  function avail(sid, lv) { var s = SPMAP[sid]; return s.moves.filter(function (n, i) { return lv >= learnLv(i); }).concat(lv >= 50 ? s.hidden : []); }
-  function defaultMoves(sid, lv) {
-    var s = SPMAP[sid], a = avail(sid, lv), out = s.def.filter(function (n) { return a.indexOf(n) >= 0; });
+  // hl：这只精灵已领悟的隐藏技能。有领悟条件的隐藏技能只能在战斗中领悟；没写条件的仍然 LV50 习得。
+  // 不传 hl（剧情里的对手）时沿用旧规则：LV50 起隐藏技能全部可用。
+  function hidOk(lv, hl, n) { return hl && LEARN[n] ? hl.indexOf(n) >= 0 : lv >= 50; }
+  function avail(sid, lv, hl) { var s = SPMAP[sid]; return s.moves.filter(function (n, i) { return lv >= learnLv(i); }).concat(s.hidden.filter(function (n) { return hidOk(lv, hl, n); })); }
+  function defaultMoves(sid, lv, hl) {
+    var s = SPMAP[sid], a = avail(sid, lv, hl), out = s.def.filter(function (n) { return a.indexOf(n) >= 0; });
     a.forEach(function (n) { if (out.length < 4 && out.indexOf(n) < 0) out.push(n); });
     return out;
   }
   function randNat() { return NAT_KEYS[Math.floor(Math.random() * NAT_KEYS.length)]; }
-  function newMon(sid, lv) { var m = { u: acc.next++, sid: sid, lv: lv, exp: expAt(lv), moves: defaultMoves(sid, lv), got: Date.now(), nat: randNat(), ev: {}, evFree: 0 }; acc.mons.push(m); markForm(sid, stageOf(SPMAP[sid], lv)); return m; }
+  function newMon(sid, lv) { var m = { u: acc.next++, sid: sid, lv: lv, exp: expAt(lv), moves: defaultMoves(sid, lv, []), got: Date.now(), nat: randNat(), ev: {}, evFree: 0, hl: [] }; acc.mons.push(m); markForm(sid, stageOf(SPMAP[sid], lv)); return m; }
   function evSum(m) { return STAT_KEYS.reduce(function (a, k) { return a + ((m.ev && m.ev[k]) || 0); }, 0); }
   function natText(nat) { var n = NATURES[nat]; return n ? BASE_NAME[n[0]] + ' +10%，' + BASE_NAME[n[1]] + ' −10%' : '各项能力无修正'; }
   // 胜利后，出战过的精灵各得 1 点可分配学习力（总量不超过 750）
@@ -86,14 +91,15 @@
     if (m.lv > before.lv) msg += '，升到了 LV' + m.lv + '！';
     else msg += '。';
     if (after.stage > before.stage) msg += before.name + ' 进化成了 ' + after.name + '！';
-    var was = avail(m.sid, before.lv), now = avail(m.sid, m.lv).filter(function (n) { return was.indexOf(n) < 0; });
+    var was = avail(m.sid, before.lv, m.hl || []), now = avail(m.sid, m.lv, m.hl || []).filter(function (n) { return was.indexOf(n) < 0; });
     var regular = now.filter(function (n) { return !M[n].hidden; });
     if (regular.length) {
       var eq = [];
       regular.forEach(function (n) { if (m.moves.length < 4 && m.moves.indexOf(n) < 0) { m.moves.push(n); eq.push(n); } });
       msg += '学会了新技能：' + regular.map(function (n) { return '「' + n + '」'; }).join('、') + (eq.length ? (eq.length === regular.length ? '，已自动装备。' : '，其中' + eq.map(function (n) { return '「' + n + '」'; }).join('、') + '已自动装备。') : '。出战技能已满，可在下方替换。');
     }
-    if (before.lv < 50 && m.lv >= 50 && SPMAP[m.sid].hidden.length) msg += '隐藏技能现在可以选用了。';
+    var hid = now.filter(function (n) { return M[n].hidden; });
+    if (hid.length) msg += '领悟了隐藏技能：' + hid.map(function (n) { return '「' + n + '」'; }).join('、') + '。';
     return msg;
   }
   function teamsOf(u) { var r = []; acc.teams.forEach(function (t, i) { var k = t.indexOf(u); if (k >= 0) r.push({ t: i, lead: k === 0 }); }); return r; }
@@ -251,7 +257,7 @@
   }
   function monDetail(m) {
     if (!m) return '<p class="empty-note">点击一只精灵查看资料、配置技能。</p>';
-    var s = SPMAP[m.sid], f = form(m), a = avail(m.sid, m.lv), n = m.moves.length, ts = teamsOf(m.u);
+    var s = SPMAP[m.sid], f = form(m), a = avail(m.sid, m.lv, m.hl || []), n = m.moves.length, ts = teamsOf(m.u);
     var free = m.evFree || 0, sum = evSum(m), stats = '';
     STAT_KEYS.forEach(function (k) {
       var b = s.base[k], v = stat(m, k), ev = (m.ev && m.ev[k]) || 0, nm = natureMult(m.nat, k), room = Math.min(free, EV_MAX - ev, EV_TOTAL - sum);
@@ -271,7 +277,7 @@
       return '<label class="mrow' + (on ? ' on' : '') + (M_.hidden ? ' hid' : '') + (ok ? '' : ' locked') + '" for="' + id + '">' +
         '<input type="checkbox" id="' + id + '" data-amove="' + mv + '"' + (on ? ' checked' : '') + (ok ? '' : ' disabled') + '>' +
         '<span class="l1"><span class="mn">' + M_.name + '</span>' + atkTip(M_.type) + '<span class="mm">' + meta + '</span>' +
-        (M_.hidden ? '<span class="tag sc hidtag" tabindex="0">隐藏<span class="tip" role="tooltip"><b>学习条件</b>' + esc(LEARN[mv] || '图鉴里没写') + '，且达到 LV50 习得</span></span>' : '') +
+        (M_.hidden ? '<span class="tag sc hidtag" tabindex="0">隐藏<span class="tip" role="tooltip"><b>隐藏技能</b>' + (LEARN[mv] ? '在战斗中领悟的特殊技能' : '达到 LV50 时习得') + '</span></span>' : '') +
         (ok ? '' : '<span class="lock">LV' + moveLv(m.sid, mv) + ' 习得</span>') + '</span><span class="md">' + esc(M_.d) + '</span></label>';
     };
     var acts = acc.teams.map(function (t, i) {
@@ -289,7 +295,7 @@
       expBox(m) + stats +
       '<div class="trait"><p><b>特性 · ' + esc(s.ability.n) + '</b>　<span class="blue">' + esc(s.ability.d) + '</span></p>' + (s.ability.extra ? '<p class="blue" style="font-size:13px">' + esc(s.ability.extra) + '</p>' : '') + '</div>' +
       '<div><div class="moves-head"><h4>出战技能 <span class="' + (n === 4 ? 'blue' : 'red') + '">' + n + '/4</span></h4>' +
-      '<span class="hint">普通技能 LV1 学会第 1 个，之后每 5 级学会一个；隐藏技能需达到 LV50</span></div>' +
+      '<span class="hint">普通技能 LV1 学会第 1 个，之后每 5 级学会一个；隐藏技能要在战斗中满足特定条件才能领悟</span></div>' +
       '<div class="mlist">' + s.moves.concat(s.hidden).filter(function (mv) { return a.indexOf(mv) >= 0; }).map(row).join('') + '</div>' + nextMoveHint(m) + '</div>' +
       '<div class="d-actions">' + acts + '</div>';
   }
@@ -297,7 +303,7 @@
   function nextMoveHint(m) {
     var s = SPMAP[m.sid], nx = 0;
     for (var i = 0; i < s.moves.length; i++) if (m.lv < learnLv(i)) { nx = learnLv(i); break; }
-    if (!nx && m.lv < 50 && s.hidden.length) nx = 50;
+    if (!nx && m.lv < 50 && s.hidden.some(function (n) { return !LEARN[n]; })) nx = 50;
     return nx ? '<p class="hint" style="margin-top:6px">下一个技能将在 LV' + nx + ' 学会。</p>' : '';
   }
   function onDetailChange(e) {
@@ -353,7 +359,7 @@
     if (ui.welcome) html += '<div class="welcome"><p><b>欢迎，' + esc(acc.name) + '！</b>你的初始精灵 ' + esc(form(acc.mons[0]).name) + ' 已经放进配队一，并设为当前出战配队。序章奖励的经验已存进经验背包，点击精灵即可分配。下一段剧情「江边出发」已在星际探索中解锁。</p><button class="btn" type="button" id="wel-x">知道了</button></div>';
     html += '<div class="expbag"><span class="tape l"></span><div class="eb-item"><span class="eb-lab">经验背包</span><b>' + fmt(acc.exp) + '</b><span class="hint">累积经验，可分配给任意精灵</span></div>' +
       '<div class="eb-item"><span class="eb-lab">能量</span><b class="en">' + fmt(acc.energy) + '</b><span class="hint">通用货币</span></div>' +
-      '<p class="hint eb-tip">点击配队中的精灵，在下方「精灵资料」的经验一栏里分配。升到 LV' + 25 + ' / LV50 时精灵会进化，LV50 起可以选用隐藏技能。</p></div>';
+      '<p class="hint eb-tip">点击配队中的精灵，在下方「精灵资料」的经验一栏里分配。升到 LV' + 25 + ' / LV50 时精灵会进化。隐藏技能要靠精灵在战斗中自己领悟。</p></div>';
     html += '<div class="teams">' + acc.teams.map(function (t, i) {
       var on = acc.active === i, body = '';
       for (var k = 0; k < TEAM_SIZE; k++) {
@@ -700,7 +706,7 @@
     threego: { foe: 'Threego', team: [{ sid: 'tagore', lv: 3 }] },
     karo: { foe: '被瘴气污染的野生精灵', team: [{ sid: 'wind', lv: 3, miasma: 5 }], env: 'miasma', bg: 'fl_salt', desc: '被瘴气污染的卡罗（LV3）' }
   };
-  function storyMon(m) { var f = form(m), mv = m.moves.length ? m.moves.slice() : defaultMoves(m.sid, m.lv); return { id: m.sid, lv: m.lv, moves: mv, nick: f.name, img: f.img, ev: m.ev || null, nat: m.nat || null }; }
+  function storyMon(m) { var f = form(m), hl = m.u != null ? (m.hl || []) : undefined, mv = m.moves.length ? m.moves.slice() : defaultMoves(m.sid, m.lv, hl); return { id: m.sid, lv: m.lv, moves: mv, nick: f.name, img: f.img, ev: m.ev || null, nat: m.nat || null, u: m.u, hl: hl }; }
   function startFight(key) {
     var F = FIGHTS[key], team = (acc.teams[acc.active] || []).map(mon).filter(Boolean);
     if (!team.length) team = acc.mons.slice(0, 1);
@@ -1092,7 +1098,12 @@
     toast('领取了每日任务奖励：累积经验 +' + fmt(R.exp) + '，能量 +' + fmt(R.energy) + '。');
   }
   window.HSEV = function (type, d) {
-    if (!ready() || type !== 'arena') return;
+    if (!ready()) return;
+    if (type === 'hidden') {   // 战斗中领悟了隐藏技能
+      d.forEach(function (g) { var m = mon(g.u); if (!m) return; if (!m.hl) m.hl = []; if (m.hl.indexOf(g.mv) < 0) m.hl.push(g.mv); });
+      save(); return;
+    }
+    if (type !== 'arena') return;
     dailyHit('arena');
     if (d.rank) { dailyHit('rankPlay'); if (d.result === 'win') dailyHit('rankWin'); } else dailyHit('sandbox');
   };
