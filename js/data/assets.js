@@ -19,7 +19,7 @@ var SPRITES = {
   "frost": "images/sprites/frost.png",
   "wild": "images/sprites/wild.png",
   "hephaestus": "images/sprites/hephaestus.png",
-  "leigong": "images/sprites/leigong.png",
+  "leigong": "images/sprites/leigong.webp",
   "inkarm": "images/sprites/inkarm.png",
   "barren": "images/sprites/barren.png",
   "mush": "images/sprites/mush.png",
@@ -251,5 +251,6 @@ var SILHOUETTES = {
 // 异色精灵的立绘（只有部分形态有）：键名规则和 PRE_SPRITES 一样，最终形态用精灵 id
 var SHINY_SPRITES = {
   "leigong_s1": "images/shiny/leigong_s1.webp",
-  "leigong_s2": "images/shiny/leigong_s2.webp"
+  "leigong_s2": "images/shiny/leigong_s2.webp",
+  "leigong": "images/shiny/leigong.webp"
 };

@@ -168,7 +168,7 @@ sudo git clone --depth 1 https://github.com/Cucumber418/flame1down1 /opt/flame1d
 
 ## 异色精灵
 
-野外精灵表（`js/data/wild.js`）里给某种精灵写 `shiny: 0.03`，遇到的这只就有 3% 概率是异色。异色的立绘放在 `images/shiny/`，在 `js/data/assets.js` 的 `SHINY_SPRITES` 里登记（键名和 `PRE_SPRITES` 一样，最终形态用精灵 id）。抓到后精灵身上记 `shiny: true`，卡片、资料、名片、对战里都标「异色」；某个形态没有异色立绘时显示普通立绘。目前：锰怪（雷公一阶）3%，红色；一阶、二阶（三合一锰怪）都有异色立绘，最终形态雷公还没有。
+野外精灵表（`js/data/wild.js`）里给某种精灵写 `shiny: 0.03`，遇到的这只就有 3% 概率是异色。异色的立绘放在 `images/shiny/`，在 `js/data/assets.js` 的 `SHINY_SPRITES` 里登记（键名和 `PRE_SPRITES` 一样，最终形态用精灵 id）。抓到后精灵身上记 `shiny: true`，卡片、资料、名片、对战里都标「异色」；某个形态没有异色立绘时显示普通立绘。目前：锰怪（雷公一阶）3%；锰怪、三合一锰怪是红色异色，最终形态雷公是橙色异色，三个形态都有异色立绘。
 
 ## 茶室商店（陆羽茶室大厅）
 
