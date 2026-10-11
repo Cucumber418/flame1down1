@@ -143,7 +143,7 @@ var nextId = 1;
 var MAX_MSG = 1024 * 1024;   // 单条消息上限 1MB（联网切磋每回合要传完整战况，最多一百多 KB）
 
 function out(ws, obj) { if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj)); }
-function cleanName(n) { return String(n || '').replace(/[\u0000-\u001f<>]/g, '').slice(0, 20) || '无名乘员'; }
+function cleanName(n) { return String(n || '').replace(/[\u0000-\u001f<>]/g, '').slice(0, 20) || '无名船员'; }
 function newCode() {
   for (var i = 0; i < 1000; i++) {
     var c = String(1000 + Math.floor(Math.random() * 9000));

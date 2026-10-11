@@ -518,7 +518,7 @@
     $('builder').hidden = true; $('battle').hidden = false; $('endcard').hidden = true;
     shownIds = [null, null]; ['plate0', 'plate1'].forEach(function (id) { $(id).dataset.ready = ''; });
     var me = app.S.sides[PV], foe = app.S.sides[1 - PV], nn = function (x) { return x.nick || SPMAP[x.id].name; };
-    addLog(opt.brawl ? '与 ' + opt.foe + ' 的精灵大乱斗开始！' : '与 ' + opt.foe + ' 的 ' + opt.mode + 'v' + opt.mode + ' 切磋开始！', 'turn');
+    addLog(opt.brawl ? '与 ' + opt.foe + ' 的精灵大乱斗开始！' : '与 ' + opt.foe + ' 的 ' + (opt.label || opt.mode + 'v' + opt.mode) + ' 切磋开始！', 'turn');
     addLog(foe.name + '派出了【' + nn(foe.team[0]) + '】，你派出了【' + nn(me.team[0]) + '】！', '');
     addLog('对手阵容：' + foe.team.map(function (x) { return nn(x) + ' LV' + x.lv; }).join('、'), 'dmg');
     (opt.notes || []).forEach(function (t) { addLog(t, 'dmg'); });
@@ -552,7 +552,10 @@
       addLog(note, 'bad'); showEnd();
     });
   }
-  window.HSBATTLE = { renderMode: function () { renderMode(); if (app.mode !== 'brawl') renderBuilder(); }, start: startStory, startPvp: startPvp, pvpApply: pvpApply, pvpAbort: pvpAbort, pvpActive: function () { return !!pvp; } };
+  window.HSBATTLE = { renderMode: function () { renderMode(); if (app.mode !== 'brawl') renderBuilder(); }, start: startStory, startPvp: startPvp, pvpApply: pvpApply, pvpAbort: pvpAbort, pvpActive: function () { return !!pvp; },
+    // 竞技对战里给每只精灵记住的配招（平衡模式切磋选技能时沿用，改了也会记回来）
+    loadout: function (id) { return app.loadout[id] ? app.loadout[id].slice() : []; },
+    setLoadout: function (id, mv) { if (!SPMAP[id] || !Array.isArray(mv) || !mv.length) return; app.loadout[id] = mv.slice(0, 4); saveLoadout(); } };
   var shownIds = [null, null];
   /* ---------- 联网切磋：PV 是「我」在对战里的位置（0 发起方 / 1 应战方），画面始终把自己放在下方 ---------- */
   var PV = 0, pvp = null;
@@ -741,7 +744,7 @@
     if (pvp) {
       var mine = r === 'draw' ? 'draw' : (r === 'win') === (PV === 0) ? 'win' : 'lose';
       $('end-title').textContent = mine === 'win' ? '胜利！' : mine === 'lose' ? '失败了' : '平局';
-      $('end-sub').textContent = '与 ' + pvp.foe + (pvp.brawl ? ' 的精灵大乱斗' : ' 的 ' + pvp.mode + 'v' + pvp.mode + ' 切磋') + ' · 共 ' + (S.turn - 1) + ' 回合' + (pvp.endNote ? ' · ' + pvp.endNote : '') + (pvp.brawl ? '' : ' · 切磋不影响经验和段位');
+      $('end-sub').textContent = '与 ' + pvp.foe + (pvp.brawl ? ' 的精灵大乱斗' : ' 的 ' + (pvp.label || pvp.mode + 'v' + pvp.mode) + ' 切磋') + ' · 共 ' + (S.turn - 1) + ' 回合' + (pvp.endNote ? ' · ' + pvp.endNote : '') + (pvp.brawl ? '' : ' · 切磋不影响经验和段位');
       $('btn-back').textContent = pvp.brawl ? '返回竞技对战' : '返回社交';
       $('end-rank').hidden = true; $('end-hid').hidden = true;
       $('btn-again').hidden = true;

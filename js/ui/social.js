@@ -5,7 +5,9 @@
  * - 好友：自己加过的人（单向，像「关注」）
  * - 我的名片：最多 5 只展示精灵 + 200 字个人宣言，存在游戏存档里，跟着云存档同步
  *
- * 联网切磋：服务器从双方存档里取出出战配队的前 N 只精灵。
+ * 联网切磋：
+ *   常规模式：服务器从双方存档里取出出战配队的前 N 只精灵，按背包里的练度对战。
+ *   平衡模式：接受后先进入选人阶段（普通盲选 / 5v5 才有的竞技征召），服务器当裁判；精灵统一 LV60、技能自选、性格无修正、无学习力和纹章。
  * 发起方（0 号位）的浏览器负责结算每一回合，把结果和战况发给应战方（1 号位），双方各自播放。
  * 依赖：game.js 提供的 window.HSACC、battle-ui.js 提供的 window.HSBATTLE、cloud.js 提供的 window.CLOUD
  * ========================================================== */
@@ -17,7 +19,7 @@
   var esc = H.esc, tchips = H.tchips;
   var SHOW_MAX = 5, MOTTO_MAX = 200, TURN_SEC = 90;
   var online = !!(C && C.user && C.user());   // 用服务器打开并登录了才有社交功能
-  var st = { bw: { picks: null, wait: null, inv: null }, view: null, tab: 'players', players: null, me: null, err: '', ws: null, wsOk: false, retry: 0, pend: null, inc: null, match: null, edit: null };
+  var st = { prep: null, bw: { picks: null, wait: null, inv: null }, view: null, tab: 'players', players: null, me: null, err: '', ws: null, wsOk: false, retry: 0, pend: null, inc: null, match: null, edit: null };
 
   /* ---------- 小工具 ---------- */
   function api(method, url, body) { return C.api(method, url, body); }
@@ -104,7 +106,7 @@
       '<p class="pc-stats"><span>精灵 <b>' + (c.monsN || 0) + '</b> 只</span><span>收集 <b>' + (c.speciesN || 0) + '</b> 种</span>' +
       '<span>最高段位 <b>' + (rankLabel(R.best, R.best === RANKS.length - 1 ? R.kingBest || 0 : null) || '—') + '</b>' + (R.r === RANKS.length - 1 && (R.stars || 0) !== (R.kingBest || 0) ? '（当前 ' + R.stars + ' 星）' : '') + '</span><span>竞技 <b>' + R.w + '</b> 胜 <b>' + R.l + '</b> 负</span>' +
       (c.created ? '<span>' + new Date(c.created).toLocaleDateString('zh-CN') + ' 登船</span>' : '') + '</p>' +
-      '<blockquote class="pc-motto' + (c.motto ? '' : ' empty') + '">' + (c.motto ? esc(c.motto) : '这位乘员还没有写个人宣言。') + '</blockquote>' +
+      '<blockquote class="pc-motto' + (c.motto ? '' : ' empty') + '">' + (c.motto ? esc(c.motto) : '这位船员还没有写个人宣言。') + '</blockquote>' +
       '<h4 class="pc-h">展示精灵</h4><ol class="pc-show">' + slots + '</ol></div>';
   }
   function openCard(user) {
@@ -154,7 +156,7 @@
     if (!d.open) return back + '<b class="home-name">' + esc(d.name) + ' 的休息舱</b></div><div class="soc-empty"><p>' + esc(d.name) + ' 还没有读完「陆羽茶室」支线，茶室还没开放。</p></div>';
     var pos = A.homePos, figs = d.mons.map(function (m, i) {
       var v = A.view({ sid: m.sid, lv: m.lv }), p = pos[i] || pos[0];
-      return '<div class="hm-fig" style="left:' + p[0] + '%;top:' + p[1] + '%"><button type="button" class="hm-poke" data-poke="1" aria-label="摸摸' + esc(v.name) + '"><img src="' + v.img + '" alt=""></button><span class="hm-tag">' + esc(v.name) + ' · LV' + m.lv + '</span></div>';
+      return '<div class="hm-fig' + (d.mons.length > 3 ? ' many' : '') + '" style="left:' + p[0] + '%;top:' + p[1] + '%"><button type="button" class="hm-poke" data-poke="1" aria-label="摸摸' + esc(v.name) + '"><img src="' + v.img + '" alt=""></button><span class="hm-tag">' + esc(v.name) + ' · LV' + m.lv + '</span></div>';
     }).join('');
     var left = A.teaLeft(), mine = (A.acc().teams[A.acc().active] || []).map(A.mon).filter(Boolean);
     return back + '<b class="home-name">' + esc(d.homeName) + '</b><span class="hint">' + esc(d.name) + ' 的茶室' + (d.online ? ' · 主人在线' : '') + '</span></div>' +
@@ -190,7 +192,7 @@
       '<section class="mine-prev"><h3 class="shop-h">名片预览</h3>' + cardHTML(myCard(), { preview: true }) + '</section>' +
       '<section class="mine-edit"><h3 class="shop-h">编辑名片</h3>' +
       '<label class="me-lab" for="me-motto">个人宣言 <span class="hint" id="me-cnt">' + Array.from(ed.motto).length + ' / ' + MOTTO_MAX + '</span></label>' +
-      '<textarea id="me-motto" rows="4" maxlength="' + MOTTO_MAX + '" placeholder="写点什么给其他乘员看，比如你的目标、最喜欢的精灵……">' + esc(ed.motto) + '</textarea>' +
+      '<textarea id="me-motto" rows="4" maxlength="' + MOTTO_MAX + '" placeholder="写点什么给其他船员看，比如你的目标、最喜欢的精灵……">' + esc(ed.motto) + '</textarea>' +
       '<p class="me-lab">展示精灵 <span class="hint">已选 ' + ed.show.length + ' / ' + SHOW_MAX + '，按点选顺序排列</span></p>' +
       '<div class="me-pick">' + mons.map(function (m) {
         var k = ed.show.indexOf(m.u), v = A.view(m), full = k < 0 && ed.show.length >= SHOW_MAX;
@@ -204,14 +206,14 @@
     var acc = A.acc();
     acc.card = { show: st.edit.show.slice(0, SHOW_MAX), motto: Array.from(st.edit.motto).slice(0, MOTTO_MAX).join('') };
     st.edit.dirty = false; A.save(); render();
-    A.toast('名片已保存。同步到服务器后，其他乘员就能看到。');
+    A.toast('名片已保存。同步到服务器后，其他船员就能看到。');
   }
 
   /* ---------- 页面 ---------- */
   function render() {
     var pg = $('pg-social'); if (!pg || A.page() !== 'social' || !A.ready()) return;
     if (!online) {
-      pg.innerHTML = '<div class="soc-head"><h2 class="sec">社交</h2></div><div class="soc-empty"><span class="tape l"></span><p>社交功能需要联网：用服务器网址打开游戏并登录账号后，就能看到其他乘员、加好友和切磋。</p><p class="hint">现在是双击 index.html 打开的本地版，存档只在这台电脑上。</p></div>';
+      pg.innerHTML = '<div class="soc-head"><h2 class="sec">社交</h2></div><div class="soc-empty"><span class="tape l"></span><p>社交功能需要联网：用服务器网址打开游戏并登录账号后，就能看到其他船员、加好友和切磋。</p><p class="hint">现在是双击 index.html 打开的本地版，存档只在这台电脑上。</p></div>';
       return;
     }
     var P = st.players || [], friends = P.filter(function (p) { return p.friend; }), on = P.filter(function (p) { return p.online; }).length;
@@ -219,17 +221,18 @@
     if (st.view) { pg.innerHTML = '<div class="soc-head"><h2 class="sec">拜访茶室</h2></div>' + homeHTML(); return; }
     var body;
     if (st.tab === 'mine') body = mineHTML();
-    else if (!st.players) body = '<p class="hint soc-load">' + (st.err ? esc(st.err) + ' · <button type="button" class="btn ghost" data-reload="1">重试</button>' : '读取乘员名单中……') + '</p>';
+    else if (!st.players) body = '<p class="hint soc-load">' + (st.err ? esc(st.err) + ' · <button type="button" class="btn ghost" data-reload="1">重试</button>' : '读取船员名单中……') + '</p>';
     else {
       var list = st.tab === 'friends' ? friends : P;
       body = list.length ? '<div class="plist">' + list.map(playerRow).join('') + '</div>' :
-        '<div class="soc-empty"><p>' + (st.tab === 'friends' ? '还没有好友。去「玩家」里找到想关注的人，点「加好友」。' : '还没有其他乘员。') + '</p></div>';
+        '<div class="soc-empty"><p>' + (st.tab === 'friends' ? '还没有好友。去「玩家」里找到想关注的人，点「加好友」。' : '还没有其他船员。') + '</p></div>';
     }
-    pg.innerHTML = '<div class="soc-head"><h2 class="sec">社交</h2><p class="hint">荆楚号上的所有乘员都在这里。点一位乘员可以看他的名片；对方在线时可以直接发起切磋，切磋不消耗体力，也不影响经验和段位。</p></div>' +
+    pg.innerHTML = '<div class="soc-head"><h2 class="sec">社交</h2><p class="hint">荆楚号上的所有船员都在这里。点一位船员可以看他的名片；对方在线时可以直接发起切磋，切磋不消耗体力，也不影响经验和段位。</p></div>' +
       '<div class="subbar soc-tabs" role="tablist">' +
       '<button type="button" class="sub' + (st.tab === 'players' ? ' on' : '') + '" data-tab="players" role="tab" aria-selected="' + (st.tab === 'players') + '">玩家 ' + (st.players ? P.length : '') + '</button>' +
       '<button type="button" class="sub' + (st.tab === 'friends' ? ' on' : '') + '" data-tab="friends" role="tab" aria-selected="' + (st.tab === 'friends') + '">好友 ' + (st.players ? friends.length : '') + '</button>' +
       '<button type="button" class="sub' + (st.tab === 'mine' ? ' on' : '') + '" data-tab="mine" role="tab" aria-selected="' + (st.tab === 'mine') + '">我的名片</button>' +
+      '<button type="button" class="sub sub-go" data-myhome="1" title="' + (A.homeOpen() ? '直接去我的茶室' : '读完「陆羽茶室」支线后开放') + '">我的茶室 ›</button>' +
       '<span class="soc-on">' + (st.wsOk ? '<span class="dot on"></span>' + on + ' 人在线' : '<span class="dot"></span>正在连接服务器……') + '</span></div>' +
       body;
     if (focus != null && $('me-motto')) { var ta = $('me-motto'); ta.focus(); ta.setSelectionRange(focus, focus); }
@@ -238,6 +241,7 @@
     $('pg-social').addEventListener('click', function (e) {
       var t;
       if ((t = e.target.closest('[data-tab]'))) { st.tab = t.dataset.tab; if (st.tab === 'mine' && !st.edit) startEdit(); render(); if (st.tab !== 'mine') load(); return; }
+      if ((t = e.target.closest('[data-myhome]'))) { A.goHome(); return; }
       if ((t = e.target.closest('[data-reload]'))) { load(); return; }
       if ((t = e.target.closest('[data-back]'))) { st.view = null; render(); load(); return; }
       if ((t = e.target.closest('[data-home]'))) { if (!t.disabled) openHome(t.dataset.home); return; }
@@ -265,7 +269,7 @@
       $('me-cnt').textContent = Array.from(st.edit.motto).length + ' / ' + MOTTO_MAX;
       $('me-save').disabled = false; $('me-reset').disabled = false; $('me-msg').textContent = '有修改还没保存';
       var pm = document.querySelector('.mine-prev .pc-motto');
-      if (pm) { pm.textContent = st.edit.motto || '这位乘员还没有写个人宣言。'; pm.classList.toggle('empty', !st.edit.motto); }
+      if (pm) { pm.textContent = st.edit.motto || '这位船员还没有写个人宣言。'; pm.classList.toggle('empty', !st.edit.motto); }
     });
   }
 
@@ -313,45 +317,63 @@
       case 'ch-end': chEnd(m); break;
       case 'challenged': challenged(m); break;
       case 'match': startMatch(m); break;
+      case 'prep': onPrep(m); break;
+      case 'prep-err': A.toast(m.msg || '选择不符合要求'); break;
       case 'mm': mmMsg(m.data || {}); break;
       case 'mm-end':
+        if (st.prep && st.prep.id === m.id) { var pn = st.prep.v.peerName || '对方'; closePrep(); A.toast(m.reason === 'quit' ? pn + ' 退出了选人，这场切磋取消了。' : pn + ' 离开了，这场切磋取消了。'); load(); break; }
         if (st.match && m.reason === 'left') { st.match.aborted = 'peer'; HB.pvpAbort(st.match.foe + ' 离开了对战，你获胜', 'win'); stopHost(); }
         break;
     }
   }
 
-  /* ---------- 发起切磋 ---------- */
+  /* ---------- 发起切磋 ----------
+   * 规模 1v1 / 3v3 / 5v5；规则「常规」（背包里的练度）或「平衡」（统一 LV60、自选技能）；
+   * 5v5 平衡模式还可以选「普通盲选」或「竞技征召」。 */
+  var DRAFT_MIN = 8;
+  function fightLabel(mode, rule, pick) { return mode + 'v' + mode + (rule === 'balance' ? ' · 平衡' + (pick === 'draft' ? ' · 竞技征召' : mode === 5 ? ' · 普通盲选' : '') : ' · 常规'); }
+  function ruleNote(mode, rule, pick) {
+    if (rule !== 'balance') return '常规模式：双方各派出当前出战配队的前 ' + mode + ' 只精灵（不足就全部上场），按背包里的等级、性格、学习力和技能对战，按配队顺序出场。';
+    var bal = '所有精灵统一 LV' + A.BAL_LV + '，技能库全部开放（自己挑 4 个），性格无修正，没有学习力和纹章。';
+    if (pick === 'draft') return '竞技征召：接受后双方各从自己拥有的精灵里带 8~10 种 → 各禁用对方 3 种 → 从自己剩下的里选 5 只并配技能，然后开打。' + bal;
+    return '平衡模式 · 盲选：接受后双方各从自己拥有的精灵里选 ' + mode + ' 只并配技能，看不到对方选了什么。' + bal;
+  }
   function askFight(user) {
     if (!st.wsOk) { A.toast('还没连上服务器，请稍后再试'); return; }
     if (st.pend) { A.toast('你已经在等待别人回应了'); return; }
     var p = (st.players || []).filter(function (x) { return x.user === user; })[0] || { user: user, name: user, teamN: 0 };
-    var acc = A.acc(), mine = (acc.teams[acc.active] || []).map(A.mon).filter(Boolean);
+    var acc = A.acc(), mine = (acc.teams[acc.active] || []).map(A.mon).filter(Boolean), nSp = A.speciesN();
     if (!mine.length) { A.toast('你的出战配队里还没有精灵，先去「精灵背包」配队'); return; }
     var mode = Math.min(3, Math.max(1, mine.length >= 3 ? 3 : 1));
+    var seg = function (name, list, cur) { return '<div class="seg fm-seg" role="radiogroup">' + list.map(function (o) { return '<label' + (o.dis ? ' class="dis" title="' + esc(o.dis) + '"' : '') + '><input type="radio" name="' + name + '" value="' + o.v + '"' + (o.v === cur ? ' checked' : '') + (o.dis ? ' disabled' : '') + '><span>' + o.t + '</span></label>'; }).join('') + '</div>'; };
     dialog('fight', '<span class="step">切磋</span><h2>向 ' + esc(p.name || user) + ' 宣战</h2>' +
-      '<div class="seg fm-seg" role="radiogroup" aria-label="对战规模">' + [1, 3, 5].map(function (n) {
-        return '<label><input type="radio" name="fm" value="' + n + '"' + (n === mode ? ' checked' : '') + '><span>' + n + 'v' + n + '</span></label>';
-      }).join('') + '</div>' +
+      '<div class="fm-row"><b>规模</b>' + seg('fm', [{ v: '1', t: '1v1' }, { v: '3', t: '3v3' }, { v: '5', t: '5v5' }], String(mode)) + '</div>' +
+      '<div class="fm-row"><b>规则</b>' + seg('fr', [{ v: 'normal', t: '常规模式' }, { v: 'balance', t: '平衡模式' }], 'normal') + '</div>' +
+      '<div class="fm-row" id="fm-pick-row"><b>选人</b>' + seg('fp', [{ v: 'blind', t: '普通盲选' }, { v: 'draft', t: '竞技征召', dis: nSp < DRAFT_MIN ? '你只有 ' + nSp + ' 种精灵，竞技征召至少要 ' + DRAFT_MIN + ' 种' : '' }], 'blind') + '</div>' +
       '<p class="hint" id="fm-note"></p>' +
       '<div class="fm-team" id="fm-team"></div>' +
       '<div class="soc-foot"><button type="button" class="btn ghost" data-x="1">取消</button><button type="button" class="btn primary" id="fm-go">宣战</button></div>',
       function (el, close) {
+        function val(n) { var i = el.querySelector('input[name=' + n + ']:checked'); return i ? i.value : null; }
+        function cur() { var n = +val('fm'), r = val('fr'); return { mode: n, rule: r, pick: r === 'balance' && n === 5 ? val('fp') : r === 'balance' ? 'blind' : null }; }
         function upd() {
-          var n = +el.querySelector('input[name=fm]:checked').value;
-          el.querySelector('#fm-note').textContent = '双方各派出当前出战配队的前 ' + n + ' 只精灵（不足 ' + n + ' 只就全部上场），按配队顺序出场。对方的配队里有 ' + (p.teamN || '?') + ' 只。';
-          el.querySelector('#fm-team').innerHTML = '<b>你的出场精灵</b>' + mine.slice(0, n).map(function (m) { return monThumb(m); }).join('');
+          var c = cur();
+          el.querySelector('#fm-pick-row').hidden = !(c.rule === 'balance' && c.mode === 5);
+          el.querySelector('#fm-note').textContent = ruleNote(c.mode, c.rule, c.pick) + (c.rule === 'balance' ? '' : ' 对方的配队里有 ' + (p.teamN || '?') + ' 只。') + (c.pick === 'draft' ? ' 对方也要拥有至少 ' + DRAFT_MIN + ' 种精灵。' : '');
+          el.querySelector('#fm-team').innerHTML = c.rule === 'balance' ? '<b>你拥有 ' + nSp + ' 种精灵</b><span class="hint">对方接受后再挑选出战精灵和技能</span>' : '<b>你的出场精灵</b>' + mine.slice(0, c.mode).map(function (m) { return monThumb(m); }).join('');
         }
         upd();
         el.addEventListener('change', upd);
         el.addEventListener('click', function (e) {
           if (e.target.closest('[data-x]')) return close();
           if (e.target.id !== 'fm-go') return;
-          var n = +el.querySelector('input[name=fm]:checked').value;
+          var c = cur();
+          if (c.pick === 'draft' && nSp < DRAFT_MIN) { A.toast('竞技征召至少要拥有 ' + DRAFT_MIN + ' 种精灵'); return; }
           e.target.disabled = true; e.target.textContent = '正在同步存档……';
           C.flush().then(function () {
             close();
-            st.pend = { to: user, toName: p.name || user, mode: n, id: null, deadline: Date.now() + 30000 };
-            if (!send({ type: 'challenge', to: user, mode: n })) { st.pend = null; A.toast('连接断开了，请稍后再试'); return; }
+            st.pend = { to: user, toName: p.name || user, mode: c.mode, label: fightLabel(c.mode, c.rule, c.pick), id: null, deadline: Date.now() + 30000 };
+            if (!send({ type: 'challenge', to: user, mode: c.mode, rule: c.rule, pick: c.pick })) { st.pend = null; A.toast('连接断开了，请稍后再试'); return; }
             drawPend();
           });
         });
@@ -360,7 +382,7 @@
   function drawPend() {
     var P = st.pend; if (!P) return;
     if (!P.dlg) {
-      P.dlg = dialog('wait', '<span class="step">切磋 · ' + P.mode + 'v' + P.mode + '</span><h2>等待 ' + esc(P.toName) + ' 回应</h2><p class="hint" id="pd-left"></p>' +
+      P.dlg = dialog('wait', '<span class="step">切磋 · ' + esc(P.label || P.mode + 'v' + P.mode) + '</span><h2>等待 ' + esc(P.toName) + ' 回应</h2><p class="hint" id="pd-left"></p>' +
         '<div class="soc-foot"><button type="button" class="btn ghost" id="pd-x">取消宣战</button></div>', function (el) {
           el.dataset.sticky = '1';
           el.querySelector('#pd-x').addEventListener('click', function () { if (P.id) send({ type: 'ch-cancel', id: P.id }); closePend(); });
@@ -387,11 +409,11 @@
   /* ---------- 被宣战：直接弹窗 ---------- */
   function challenged(m) {
     if (!A.ready() || A.inBattle() || st.match || st.pend || st.inc || st.bw.wait) { send({ type: 'ch-reply', id: m.id, ok: false, reason: 'busy' }); return; }
-    var acc = A.acc(), mine = (acc.teams[acc.active] || []).map(A.mon).filter(Boolean).slice(0, m.mode);
+    var acc = A.acc(), mine = (acc.teams[acc.active] || []).map(A.mon).filter(Boolean).slice(0, m.mode), bal = m.rule === 'balance';
     var deadline = Date.now() + m.seconds * 1000, iv;
     var d = dialog('incoming', '<span class="step">⚔ 宣战</span><h2>' + esc(m.fromName) + ' 向你发起切磋！</h2>' +
-      '<p><b>' + m.mode + 'v' + m.mode + '</b> · 双方各派出出战配队的前 ' + m.mode + ' 只精灵。切磋不影响经验和段位。</p>' +
-      '<div class="fm-team"><b>你的出场精灵</b>' + (mine.length ? mine.map(monThumb).join('') : '<span class="hint">出战配队是空的</span>') + '</div>' +
+      '<p><b>' + esc(fightLabel(m.mode, m.rule, m.pick)) + '</b></p><p class="hint">' + esc(ruleNote(m.mode, m.rule, m.pick)) + '切磋不影响经验和段位。</p>' +
+      (bal ? '' : '<div class="fm-team"><b>你的出场精灵</b>' + (mine.length ? mine.map(monThumb).join('') : '<span class="hint">出战配队是空的</span>') + '</div>') +
       '<p class="hint" id="in-left"></p>' +
       '<div class="soc-foot"><button type="button" class="btn ghost" data-card="1">看看对方名片</button><button type="button" class="btn" id="in-no">拒绝</button><button type="button" class="btn primary" id="in-yes">接受</button></div>',
       function (el, close) {
@@ -416,13 +438,15 @@
     closePend(); if (st.inc) { st.inc.close(); st.inc = null; }
     st.bw.wait = null; closeBwInvite();
     [].forEach.call(document.querySelectorAll('.soc-dlg'), function (d) { d.remove(); });
-    st.match = { id: m.id, side: m.side, mode: m.mode, foe: m.peerName, names: m.names, brawl: !!m.brawl };
+    closePrep();
+    st.match = { id: m.id, side: m.side, mode: m.mode, foe: m.peerName, names: m.names, brawl: !!m.brawl, bal: !!m.bal, pick: m.pick || null, label: m.brawl ? null : fightLabel(m.mode, m.rule, m.pick) };
     if (m.brawl) st.match.notes = brawlNotes(m);
+    if (m.bal) st.match.notes = balNotes(m);
     if (m.side === 0) {
-      var mk = m.brawl ? A.brawlSpec : A.spec;
+      var mk = m.brawl ? A.brawlSpec : m.bal ? A.balSpec : A.spec;
       var p = (m.teams[0] || []).map(mk).filter(Boolean), a = (m.teams[1] || []).map(mk).filter(Boolean);
       var S = newBattle(p, a);
-      S.pvp = { mode: m.mode, brawl: !!m.brawl }; S.sides[0].name = m.names[0]; S.sides[1].name = m.names[1];
+      S.pvp = { mode: m.mode, brawl: !!m.brawl, bal: !!m.bal, pick: m.pick || null }; S.sides[0].name = m.names[0]; S.sides[1].name = m.names[1];
       st.match.S = S;
       send({ type: 'mm', id: m.id, data: { k: 'init', S: S } });
       begin(S);
@@ -433,12 +457,13 @@
   function begin(S) {
     var M0 = st.match;
     A.enterBattle();
-    HB.startPvp({ S: S, side: M0.side, foe: M0.foe, mode: M0.mode, seconds: TURN_SEC, notes: M0.notes, brawl: M0.brawl,
+    HB.startPvp({ S: S, side: M0.side, foe: M0.foe, mode: M0.mode, label: M0.label, seconds: TURN_SEC, notes: M0.notes, brawl: M0.brawl,
       onAct: function (a) { if (M0.side === 0) hostGot(0, 'act', a); else send({ type: 'mm', id: M0.id, data: { k: 'act', a: a } }); },
       onRepl: function (k) { if (M0.side === 0) hostGot(0, 'repl', k); else send({ type: 'mm', id: M0.id, data: { k: 'repl', i: k } }); },
       onQuit: function () { if (M0.side === 0) hostQuit(0); else send({ type: 'mm', id: M0.id, data: { k: 'quit' } }); },
       onOver: function (mine) {
         stopHost(); send({ type: 'mm-over', id: M0.id });
+        if (M0.pick === 'draft') A.noteDraft();   // 支线任务「竞技征召」：打完一场就算（胜负都算）
         if (M0.brawl) {
           var none = M0.quitSide === M0.side || M0.aborted === 'self';
           var r = A.brawlReward(mine, none);
@@ -529,6 +554,124 @@
     HB.pvpApply(evs, S, TURN_SEC);
   }
 
+  /* ---------- 平衡模式的选人阶段（盲选 / 竞技征召） ---------- */
+  function balNotes(m) {
+    var out = ['平衡模式：双方精灵统一 LV' + A.BAL_LV + '，性格无修正，没有学习力和纹章，技能由双方自选。'];
+    if (m.draft && m.draft.bans) {
+      var sn = function (a) { return (a || []).map(function (sid) { return SPMAP[sid] ? SPMAP[sid].name : sid; }).join('、') || '无'; };
+      out.push('竞技征召：你禁用了对方的 ' + sn(m.draft.bans[m.side]) + '；对方禁用了你的 ' + sn(m.draft.bans[1 - m.side]) + '。');
+    }
+    if (m.auto && m.auto[m.side]) out.push('你选人超时，由系统代选了出战精灵。');
+    if (m.auto && m.auto[1 - m.side]) out.push('对方选人超时，由系统代选。');
+    return out;
+  }
+  var PHASE_T = { pool: '带精灵', ban: '禁用对方精灵', pick: '选出战精灵、配技能' };
+  function spName(sid) { return SPMAP[sid] ? SPMAP[sid].name : sid; }
+  function spImg(sid) { return A.view({ sid: sid, lv: A.BAL_LV }).img; }
+  function onPrep(v) {
+    var P = st.prep;
+    if (!P || P.id !== v.id) {
+      closePend(); if (st.inc) { st.inc.close(); st.inc = null; }
+      [].forEach.call(document.querySelectorAll('.soc-dlg'), function (d) { d.remove(); });
+      P = st.prep = { id: v.id, v: null, phase: null, sel: [], moves: {}, focus: null };
+      P.dlg = dialog('prep', '<div class="pp-body"></div>', function (el) { el.dataset.sticky = '1'; el.addEventListener('click', prepClick); });
+      P.iv = setInterval(prepTick, 500);
+    }
+    if (P.phase !== v.phase) { P.sel = []; P.focus = null; P.phase = v.phase; P.sent = false; }
+    if (v.mine) { P.sel = v.mine.slice(); P.sent = true; }
+    P.v = v; P.deadline = Date.now() + v.left * 1000;
+    // 选不了的（比如被禁用的）从已选里去掉
+    P.sel = P.sel.filter(function (sid) { return v.allowed.indexOf(sid) >= 0; });
+    renderPrep();
+  }
+  function closePrep() { var P = st.prep; if (!P) return; clearInterval(P.iv); if (P.dlg) P.dlg.close(); st.prep = null; }
+  function prepTick() { var P = st.prep; if (!P) return; var l = P.dlg.el.querySelector('#pp-left'); if (l) l.textContent = Math.max(0, Math.ceil((P.deadline - Date.now()) / 1000)) + ' 秒'; }
+  function movesOf(sid) {
+    var P = st.prep;
+    if (!P.moves[sid]) P.moves[sid] = HB.loadout ? HB.loadout(sid) : SPMAP[sid].def.slice();
+    return P.moves[sid];
+  }
+  function spGrid(list, opt) {
+    var P = st.prep;
+    return '<div class="me-pick pp-grid">' + list.map(function (sid) {
+      var s = SPMAP[sid]; if (!s) return '';
+      var k = P.sel.indexOf(sid), full = k < 0 && P.sel.length >= P.v.need[1];
+      var ro = opt.ro, cls = 'me-mon' + (k >= 0 && !ro ? ' on' : '') + (opt.ban && k >= 0 ? ' ban' : '') + (opt.mark && opt.mark.indexOf(sid) >= 0 ? ' banned' : '');
+      return '<button type="button" class="' + cls + '"' + (ro ? ' disabled' : ' data-pp="' + sid + '"') + (!ro && (full || P.sent) ? ' disabled' : '') + ' aria-pressed="' + (k >= 0) + '">' +
+        (k >= 0 && !ro ? '<span class="me-no">' + (opt.ban ? '禁' : k + 1) + '</span>' : '') + '<img src="' + spImg(sid) + '" alt=""><b>' + esc(s.name) + '</b><small>' + s.types.join(' / ') + '</small></button>';
+    }).join('') + '</div>';
+  }
+  function moveEditor(sid) {
+    var s = SPMAP[sid], cur = movesOf(sid), P = st.prep;
+    var list = s.moves.concat(s.hidden).filter(function (n, i, a) { return M[n] && a.indexOf(n) === i; });
+    return '<div class="pp-moves"><p class="pp-mh"><b>' + esc(s.name) + ' 的技能</b><span class="' + (cur.length === 4 ? 'blue' : 'red') + '">' + cur.length + ' / 4</span><span class="hint">技能库全部开放，选好的会记成这只精灵的默认配招</span></p><div class="pp-mlist">' +
+      list.map(function (n) {
+        var m = M[n], on = cur.indexOf(n) >= 0;
+        return '<button type="button" class="pp-mv' + (on ? ' on' : '') + '" data-mv="' + esc(n) + '"' + (P.sent || (!on && cur.length >= 4) ? ' disabled' : '') + ' title="' + esc(m.d) + '" style="--tc:' + (TYPE_COLOR[m.type] || '#888') + '">' +
+          '<b>' + esc(m.name) + (m.hidden ? '<i>隐藏</i>' : '') + '</b><small>' + m.type + ' · ' + m.cat + (m.power ? ' · ' + m.power : '') + '</small></button>';
+      }).join('') + '</div></div>';
+  }
+  function renderPrep() {
+    var P = st.prep, v = P.v, draft = v.kind === 'draft', body = P.dlg.el.querySelector('.pp-body');
+    var steps = draft ? '<ol class="pp-steps">' + ['pool', 'ban', 'pick'].map(function (k, i) { var at = ['pool', 'ban', 'pick'].indexOf(v.phase); return '<li class="' + (i < at ? 'done' : i === at ? 'cur' : '') + '">' + (i + 1) + '. ' + PHASE_T[k] + '</li>'; }).join('') + '</ol>' : '';
+    var need = v.need, n = P.sel.length, okN = n >= need[0] && n <= need[1];
+    var cnt = need[0] === need[1] ? need[0] : need[0] + '~' + need[1];
+    var head = '<span class="step">切磋 · ' + esc(fightLabel(v.mode, 'balance', v.kind)) + ' · 对手 ' + esc(v.peerName || '') + '</span><h2>' + PHASE_T[v.phase] + '</h2>' + steps +
+      '<p class="pp-st"><span>剩余 <b id="pp-left"></b></span><span>' + (v.done[1] ? '<b class="blue">对方已选好</b>' : '对方还在选……') + '</span></p>';
+    var main = '', side = '';
+    if (v.phase === 'pool') main = '<p>从你拥有的 ' + v.allowed.length + ' 种精灵里，带 <b>' + cnt + '</b> 种进入征召（已选 ' + n + '）。下一步才会公开给对方。</p>' + spGrid(v.allowed, {});
+    else if (v.phase === 'ban') {
+      main = '<p>对方带来了 ' + v.allowed.length + ' 种精灵。选 <b>' + cnt + '</b> 种禁用（已选 ' + n + '），它们不能出战。</p>' + spGrid(v.allowed, { ban: true });
+      side = '<h4 class="pp-h">你带来的 ' + v.pools[0].length + ' 种（对方正在从里面禁用 3 种）</h4>' + spGrid(v.pools[0], { ro: true });
+    } else {
+      main = '<p>选 <b>' + cnt + '</b> 只出战（已选 ' + n + '，按选的顺序出场，第 1 只首发），点已选的精灵可以改它的技能。' + (draft ? '' : '对方看不到你选了什么。') + '</p>' + spGrid(v.allowed, {});
+      if (draft) {
+        var foeLeft = v.pools[1].filter(function (sid) { return v.bans[0].indexOf(sid) < 0; });
+        side = '<p class="pp-bans">你禁用了：<b>' + v.bans[0].map(spName).join('、') + '</b>　对方禁用了你的：<b class="red">' + v.bans[1].map(spName).join('、') + '</b></p>' +
+          '<h4 class="pp-h">对方可以从这 ' + foeLeft.length + ' 种里选 5 只</h4>' + spGrid(foeLeft, { ro: true });
+      }
+      if (P.sel.length) {
+        if (!P.focus || P.sel.indexOf(P.focus) < 0) P.focus = P.sel[0];
+        main += '<div class="pp-chosen">' + P.sel.map(function (sid, i) { return '<button type="button" class="pp-ch' + (sid === P.focus ? ' on' : '') + '" data-pf="' + sid + '"><span>' + (i + 1) + '</span>' + esc(spName(sid)) + '<small>' + movesOf(sid).length + '/4</small></button>'; }).join('') + '</div>' + moveEditor(P.focus);
+      }
+    }
+    var badMv = v.phase === 'pick' && P.sel.some(function (sid) { return !movesOf(sid).length; });
+    var foot = '<div class="soc-foot"><button type="button" class="btn ghost" id="pp-quit">退出</button>' +
+      (P.sent ? '<button type="button" class="btn" disabled>已提交，等待对方……</button>' : '<button type="button" class="btn primary" id="pp-go"' + (okN && !badMv ? '' : ' disabled') + '>' + (v.phase === 'ban' ? '确认禁用' : v.phase === 'pool' ? '确认携带' : '确定出战') + '</button>') + '</div>';
+    var y = body.parentNode ? body.parentNode.scrollTop : 0;
+    body.innerHTML = head + main + side + foot;
+    if (body.parentNode) body.parentNode.scrollTop = y;
+    prepTick();
+  }
+  function prepClick(e) {
+    var P = st.prep; if (!P) return;
+    var b = e.target.closest('button'); if (!b || b.disabled) return;
+    if (b.id === 'pp-quit') {
+      if (!P.quitArmed || Date.now() - P.quitArmed > 3000) { P.quitArmed = Date.now(); b.textContent = '再点一次确认退出'; return; }
+      send({ type: 'prep-quit', id: P.id }); closePrep(); A.toast('你退出了这场切磋。'); load(); return;
+    }
+    if (P.sent) return;
+    if (b.dataset.pp) {
+      var sid = b.dataset.pp, k = P.sel.indexOf(sid);
+      if (k >= 0) P.sel.splice(k, 1); else if (P.sel.length < P.v.need[1]) { P.sel.push(sid); P.focus = sid; }
+      renderPrep(); return;
+    }
+    if (b.dataset.pf) { P.focus = b.dataset.pf; renderPrep(); return; }
+    if (b.dataset.mv && P.focus) {
+      var cur = movesOf(P.focus), n = b.dataset.mv, i = cur.indexOf(n);
+      if (i >= 0) cur.splice(i, 1); else if (cur.length < 4) cur.push(n);
+      renderPrep(); return;
+    }
+    if (b.id === 'pp-go') {
+      var msg = { type: 'prep', id: P.id, phase: P.v.phase, picks: P.sel.slice() };
+      if (P.v.phase === 'pick') {
+        msg.moves = {};
+        P.sel.forEach(function (sid) { msg.moves[sid] = movesOf(sid).slice(); if (HB.setLoadout) HB.setLoadout(sid, msg.moves[sid]); });
+      }
+      if (send(msg)) { P.sent = true; renderPrep(); } else A.toast('连接断开了');
+    }
+  }
+
   /* ---------- 精灵大乱斗 ----------
    * 竞技对战的第三种模式。选 3 只开始匹配，其他在线玩家收到小弹窗，先接受的人和你对战。 */
   function myTeam() { var a = A.acc(); return a ? (a.teams[a.active] || []).map(A.mon).filter(Boolean) : []; }
@@ -557,11 +700,11 @@
       '<div class="bw-prog"><span>今天的大乱斗经验</span><b>' + A.fmt(today) + ' / ' + A.fmt(B.cap) + '</b><span class="pbar"><i style="width:' + Math.min(100, today / B.cap * 100) + '%"></i></span></div>';
     if (!online) { el.innerHTML = '<div class="bw-card"><span class="tape l"></span><h2 class="sec">精灵大乱斗</h2>' + rules + '<p class="hint">大乱斗需要联网：用服务器网址打开游戏并登录后才能匹配。</p></div>'; return; }
     var team = myTeam(), picks = validPicks(team), n = matchable(), W = st.bw.wait;
-    var sub = $('brawl-sub'); if (sub && A.brawlOpen()) sub.textContent = st.wsOk ? (n ? '现在有 ' + n + ' 位玩家可以匹配' : '暂时没有可以匹配的乘员') : '正在连接服务器……';
+    var sub = $('brawl-sub'); if (sub && A.brawlOpen()) sub.textContent = st.wsOk ? (n ? '现在有 ' + n + ' 位玩家可以匹配' : '暂时没有可以匹配的船员') : '正在连接服务器……';
     var foot;
     if (W) foot = '<div class="bw-wait"><span class="dot busy"></span><span>正在匹配……已邀请 ' + (W.n || '?') + ' 位在线玩家，<b id="bw-left">' + Math.max(0, Math.ceil((W.deadline - Date.now()) / 1000)) + '</b> 秒后没人接受就自动取消</span><button type="button" class="btn ghost" id="bw-cancel">取消匹配</button></div>';
     else {
-      var why = !st.wsOk ? '正在连接服务器……' : team.length < 3 ? '出战配队里至少要有 3 只精灵，先去「精灵背包」配队' : picks.length !== 3 ? '还要选 ' + (3 - picks.length) + ' 只' : !n ? '现在没有可以匹配的乘员（对方要在线，并且也在孝感大厅开放了大乱斗）' : '';
+      var why = !st.wsOk ? '正在连接服务器……' : team.length < 3 ? '出战配队里至少要有 3 只精灵，先去「精灵背包」配队' : picks.length !== 3 ? '还要选 ' + (3 - picks.length) + ' 只' : !n ? '现在没有可以匹配的船员（对方要在线，并且也在孝感大厅开放了大乱斗）' : '';
       foot = '<div class="soc-foot"><span class="hint' + (why ? ' red' : '') + '">' + (why || '准备就绪') + '</span><button type="button" class="btn primary" id="bw-go"' + (why ? ' disabled' : '') + '>开始匹配</button></div>';
     }
     el.innerHTML = '<div class="bw-card"><span class="tape l"></span><span class="tape r"></span><div class="bw-head"><h2 class="sec">精灵大乱斗</h2><span class="soc-on">' + (st.wsOk ? '<span class="dot' + (n ? ' on' : '') + '"></span>' + n + ' 人可匹配' : '<span class="dot"></span>连接中') + '</span></div>' + rules +

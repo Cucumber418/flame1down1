@@ -125,7 +125,7 @@
       var on = b.dataset.page === page; b.classList.toggle('on', on); b.setAttribute('aria-selected', on);
     });
     syncBattle();
-    deliverMail(); checkRankRewards(); daily();
+    deliverMail(); checkRankRewards(); daily(); homeSettle();
     ['arena', 'log', 'bag', 'store', 'dex', 'social', 'explore'].forEach(function (p) { $('pg-' + p).hidden = p !== page; });
     renderRename();
     if (page === 'arena' && window.HSBATTLE && window.HSBATTLE.renderMode && $('battle').hidden) window.HSBATTLE.renderMode();
@@ -394,15 +394,15 @@
     natTagore: { name: '泰戈尔性格药剂', sid: 'tagore', kind: 'nat', d: '把你的一只泰戈尔（小胖虎、胖虎也可以）的性格改成你指定的性格。' },
     evTagore: { name: '泰戈尔学习力合剂', sid: 'tagore', kind: 'ev', d: '为你的一只泰戈尔（小胖虎、胖虎也可以）直接增加 100 点学习力。加进「可分配学习力」，再在精灵资料里自己分配；学习力总量最多 ' + EV_TOTAL + '。' }
   };
-  var BAG_ORDER = ['natTagore', 'evTagore', 'rename', 'cap1', 'cap2', 'cap3', 'pot1', 'pot2'];
-  function itemName(k) { var it = ITEMS[k] || USE_ITEMS[k] || SHOP_X[k]; return it ? it.name : k; }
+  var BAG_ORDER = ['natTagore', 'evTagore', 'auto', 'rename', 'cap1', 'cap2', 'cap3', 'pot1', 'pot2'];
+  function itemName(k) { var it = ITEMS[k] || USE_ITEMS[k] || SHOP_X[k] || TEA_SHOP[k]; return it ? it.name : k; }
   function evRoom(m) { return Math.max(0, EV_TOTAL - evSum(m) - (m.evFree || 0)); }
   function itemsHTML() {
     var have = BAG_ORDER.filter(function (k) { return acc.items[k] > 0; }), wk = weeklyOpen(), pn = wk ? permits() : 0;
     if (ui.itSel && ui.itSel !== 'permit' && have.indexOf(ui.itSel) < 0) ui.itSel = null;
     if (ui.itSel === 'permit' && !wk) ui.itSel = null;
     var cells = have.map(function (k) {
-      var use = !!USE_ITEMS[k] || k === 'rename';
+      var use = !!USE_ITEMS[k] || k === 'rename' || k === 'auto';
       return '<button type="button" class="ib-it' + (ui.itSel === k ? ' sel' : '') + (use ? ' use' : '') + '" data-itsel="' + k + '"><b>' + itemName(k) + '</b><span class="cnt">×' + acc.items[k] + '</span>' + (use ? '<small>可使用</small>' : '<small>对战中使用</small>') + '</button>';
     });
     if (wk) cells.unshift('<button type="button" class="ib-it permit' + (ui.itSel === 'permit' ? ' sel' : '') + '" data-itsel="permit"><b>挑战许可</b><span class="cnt">' + pn + ' / ' + PERMIT.max + '</span><small>每周挑战用</small></button>');
@@ -413,6 +413,7 @@
       var it = USE_ITEMS[k], body = '';
       if (k === 'permit') body = '<p>进行「每周挑战」时消耗 1 枚。每 12 小时恢复 1 枚，最多同时持有 ' + PERMIT.max + ' 枚。</p><p class="hint">当前 ' + pn + ' 枚 · ' + permitNext() + '</p><button type="button" class="btn" data-itgo="weekly">去每周挑战</button>';
       else if (k === 'rename') body = '<p>' + esc(SHOP_X.rename.d) + '</p><button type="button" class="btn primary" data-ituse="rename">使用改名卡</button>';
+      else if (k === 'auto') body = '<p>' + esc(TEA_SHOP.auto.d) + '</p><button type="button" class="btn" data-itgo="home">去我的茶室装上</button>';
       else if (ITEMS[k]) body = '<p>' + esc(ITEMS[k].d) + '</p><p class="hint">在剧情、野外和首领对战的「道具」页使用，会占用一回合。</p>';
       else if (it) {
         var mons = acc.mons.filter(function (m) { return m.sid === it.sid; }).sort(function (a, b) { return b.lv - a.lv; });
@@ -495,6 +496,7 @@
     if (b.dataset.itsel) { ui.itSel = ui.itSel === b.dataset.itsel ? null : b.dataset.itsel; ui.itMsg = ''; renderBag(); return; }
     if (b.dataset.ituse) { useBagItem(b.dataset.ituse); return; }
     if (b.dataset.itgo === 'weekly') { ex.view = 'weekly'; go('explore'); return; }
+    if (b.dataset.itgo === 'home') { HSACC.goHome(); return; }
     if (b.dataset.rmt != null) { var tm = acc.teams[+b.dataset.rmt]; tm.splice(tm.indexOf(+b.dataset.u), 1); if (!tm.length && acc.active === +b.dataset.rmt) acc.active = acc.teams[0].length ? 0 : acc.teams[1].length ? 1 : acc.active; save(); renderBag(); return; }
     if (b.dataset.pickt != null) { ui.pick = ui.pick === +b.dataset.pickt ? -1 : +b.dataset.pickt; renderBag(); return; }
     if (b.dataset.pickx) { ui.pick = -1; renderBag(); return; }
@@ -713,7 +715,7 @@
     黄冈: ['学院部', '课堂与做题家培训'], 黄石: ['冶炼工坊', '维修与制造'], 咸宁: ['温泉生活区', '宿舍与休息'],
     随州: ['编钟通讯站', '对外通讯与广播'], 襄阳: ['古城防卫部', '护盾与武备'], 十堰: ['引擎舱', '主引擎与动力'],
     宜昌: ['三峡能源核心', '全舰能源供给'], 恩施: ['生态舱', '种植与氧气循环'], 神农架: ['精灵保育区', '收容与照料野生精灵'],
-    荆州: ['典籍馆', '资料与档案'], 荆门: ['物资仓储', '补给与仓库'], 天门: ['陆羽茶室', '乘员的休息舱（家园）'],
+    荆州: ['典籍馆', '资料与档案'], 荆门: ['物资仓储', '补给与仓库'], 天门: ['陆羽茶室', '船员的休息舱（家园）'],
     潜江: ['食堂', '餐饮补给'], 仙桃: ['体能馆', '体能与失重训练']
   };
   var SITES = {
@@ -725,13 +727,14 @@
     flora1: { name: '盐碱地', planet: 'flora', chapter: '第五段 · 降临芙罗拉', bg: 'fl_salt', d: '第一支地面探索小队降落在了芙罗拉星。可着陆舱偏离了坐标，落进了弥漫着瘴气的盐碱地……', after: 'board', reward: { exp: 1000, energy: 500 } },
     tea: { name: '陆羽茶室', planet: 'jingchu', dept: '天门', chapter: '支线 · 陆羽茶室', side: true, bg: 'tea_p', d: '从芙罗拉星回来后，舰上要给第一支地面小队分配休息舱。读完后开放你自己的「茶室」（家园）。', after: 'flora1', pos: [50, 84] },
     mingming: { name: '古城防卫部', planet: 'jingchu', dept: '襄阳', chapter: '支线 · 明明教官的礼物', side: true, bg: 'bridge_p', d: '古城防卫部的明明教官听说你在黄冈秘鉴里点亮了十类精灵，想见见你。', after: 'board', pos: [48, 82], need: function () { return litCount() >= 10; }, needText: '在黄冈秘鉴中点亮 10 类精灵后开放', reward: { gift: [{ sid: 'aegis', lv: 10 }] } },
-    tiger: { name: '古城防卫部', planet: 'jingchu', dept: '襄阳', chapter: '支线 · 东北来的泰戈尔', side: true, bg: 'bridge_p', d: '古城防卫部来了一只从东北招募的特殊虎系精灵，专门辅助乘员训练。读完后开放首领「泰戈尔」的挑战。', after: 'board', pos: [30, 70] },
+    tiger: { name: '古城防卫部', planet: 'jingchu', dept: '襄阳', chapter: '支线 · 东北来的泰戈尔', side: true, bg: 'bridge_p', d: '古城防卫部来了一只从东北招募的特殊虎系精灵，专门辅助船员训练。读完后开放首领「泰戈尔」的挑战。', after: 'board', pos: [30, 70] },
     tiger2: { name: '古城防卫部', planet: 'jingchu', dept: '襄阳', chapter: '支线 · 来东北试试', side: true, bg: 'bridge_p', d: '被你打败的泰戈尔一屁股坐在地上，好像有话要说……读完后开放首领「泰戈尔」的普通难度。', after: 'tiger', pos: [84, 72], need: function () { return bossWon('tiger'); }, needText: '击败简单难度的泰戈尔后开放' },
     rare: { name: '学院部', planet: 'jingchu', dept: '黄冈', chapter: '支线 · 稀有精灵', side: true, bg: 'pod_p', d: 'Bttp 在黄冈秘鉴里发现了几页几乎空白的记录，想请你帮学院部找一只稀有精灵。', after: 'flora1', pos: [26, 58] },
     rare_r: { name: '学院部', planet: 'jingchu', dept: '黄冈', chapter: '支线 · 稀有精灵（汇报）', side: true, bg: 'pod_p', d: '把捕捉到的稀有精灵带回学院部，向 Bttp 汇报。', after: 'rare', pos: [74, 58], need: function () { return !!rareOwned(); }, needText: '捕捉一种稀有精灵后来汇报', reward: { title: 'collector' } },
-    storage: { name: '物资仓储', planet: 'jingchu', dept: '荆门', chapter: '支线 · 物资仓储', side: true, bg: 'storage_p', d: '荆楚号即将抵达芙罗拉星，新乘员要去物资仓储领取探索物资。读完后，物资仓储里的「商城」开放。', after: 'board', pos: [50, 62], reward: { exp: 0, energy: 300, items: { cap1: 10 } } },
+    storage: { name: '物资仓储', planet: 'jingchu', dept: '荆门', chapter: '支线 · 物资仓储', side: true, bg: 'storage_p', d: '荆楚号即将抵达芙罗拉星，新船员要去物资仓储领取探索物资。读完后，物资仓储里的「商城」开放。', after: 'board', pos: [50, 62], reward: { exp: 0, energy: 300, items: { cap1: 10 } } },
     brawl: { name: '孝感大厅', planet: 'jingchu', dept: '孝感', chapter: '支线 · 精灵大乱斗', side: true, bg: 'xiaogan', d: 'Dr.黄 在孝感大厅里鼓捣着一台新搬来的机器，听说你身边已经有 3 只精灵了，想让你试试。读完后开放「精灵大乱斗」。', after: 'xiaogan', pos: [76, 56], need: function () { return acc.mons.length >= 3; }, needText: '持有 3 只精灵后开放' },
-    xiaogan: { name: '孝感大厅', planet: 'jingchu', dept: '孝感', chapter: '支线 · 孝感大厅', side: true, bg: 'xiaogan', d: '舰上切磋对战的地方。听说那里有个奇怪的家伙在等着新乘员。读完后开放「竞技对战」。', after: 'board', pos: [50, 66], reward: { exp: 0, energy: 200 } }
+    draft: { name: '孝感大厅', planet: 'jingchu', dept: '孝感', chapter: '支线 · 竞技征召', side: true, bg: 'xiaogan', d: 'Dr.黄 听说你已经收集了 10 种精灵，神神秘秘地说要教你一种「真正的切磋」。', after: 'xiaogan', pos: [24, 50], need: function () { return speciesN() >= 10; }, needText: '收集 10 种精灵后开放' },
+    xiaogan: { name: '孝感大厅', planet: 'jingchu', dept: '孝感', chapter: '支线 · 孝感大厅', side: true, bg: 'xiaogan', d: '舰上切磋对战的地方。听说那里有个奇怪的家伙在等着新船员。读完后开放「竞技对战」。', after: 'board', pos: [50, 66], reward: { exp: 0, energy: 200 } }
   };
   // 已有画面的舰内区域；其余区域先用占位画面
   var AREA_BG = { 黄冈: 'pod_p', 鄂州: 'hangar_p', 孝感: 'xiaogan', 武汉: 'cockpit_p', 咸宁: 'cabin_p', 仙桃: 'gym_p', 荆门: 'storage_p', 天门: 'teahall', 随州: 'bridge2_p', 襄阳: 'bridge_p' };
@@ -758,6 +761,10 @@
   var UNLOCK = { xiaogan: '竞技对战', academy: '黄冈秘鉴', storage: '商城', tea: '茶室', brawl: '精灵大乱斗', tiger2: '泰戈尔 · 普通难度' };
   function brawlOpen() { return !!(acc && acc.story && acc.story.brawl && acc.story.brawl.done); }
   function brawlPlayed() { return !!(acc && acc.stats && acc.stats.brawls > 0); }
+  // 平衡模式切磋统一的等级；拥有的精灵种类数（「收集」）；是否参加过竞技征召
+  var BAL_LV = 60;
+  function speciesN() { var o = {}; (acc ? acc.mons : []).forEach(function (m) { o[m.sid] = 1; }); return Object.keys(o).length; }
+  function draftPlayed() { return !!(acc && acc.stats && acc.stats.drafts > 0); }
   function homeOpen() { return !!(acc && acc.story && acc.story.tea && acc.story.tea.done); }
   // 茶室里展示的精灵：[{ u, t: 放出来的时间 }]
   function home() {
@@ -859,6 +866,7 @@
     if (ex.view === 'boss') { if (bossOpen(ex.boss)) { renderBoss(); return; } ex.view = 'planets'; }
     if (ex.view === 'weekly') { if (weeklyOpen()) { ex.boss = WEEKLY.boss; renderBoss(true); return; } ex.view = 'planets'; }
     if (ex.view === 'room') { if (homeOpen()) { renderRoom(); return; } ex.view = 'area'; renderArea(); return; }
+    if (ex.view === 'teashop') { if (homeOpen()) { renderTeaShop(); return; } ex.view = 'area'; renderArea(); return; }
     if (ex.view === 'shop') { if (shopOpen()) { renderShop(); return; } ex.view = 'area'; renderArea(); return; }
     var Pp = ex.view === 'sites' && PLANETS.filter(function (p) { return p.id === ex.planet; })[0];
     var html = exHead(ex.view === 'planets' ? '选择要前往的星球。' : Pp && Pp.ship ? '点击舰上的区域，即可传送过去。' : '选择要前往的地点。');
@@ -1258,7 +1266,7 @@
           (A.length ? '<div class="mb-atts"><b>附件</b>' + A.map(function (x) { return '<span class="chip">' + esc(x) + '</span>'; }).join('') + '</div>' +
             (m.got ? '<p class="hint">附件已领取</p>' : '<button type="button" class="btn primary" data-mbget="' + i + '">领取附件</button>') : '') + '</div>' : '') + '</li>';
     }).join('');
-    return '<span class="tape l"></span><span class="tape r"></span><span class="step">荆楚号 · 乘员邮箱</span><h2>邮箱</h2>' +
+    return '<span class="tape l"></span><span class="tape r"></span><span class="step">荆楚号 · 船员邮箱</span><h2>邮箱</h2>' +
       '<div class="mb-tools"><span class="hint">共 ' + L.length + ' 封' + (left ? '，' + left + ' 封有附件没领' : '') + '</span>' +
       '<button type="button" class="btn ghost" data-mbclean="1"' + (L.some(function (m) { return m.read && m.got; }) ? '' : ' disabled') + '>删除已读已领</button>' +
       '<button type="button" class="btn primary" data-mball="1"' + (left ? '' : ' disabled') + '>一键领取</button></div>' +
@@ -1398,7 +1406,7 @@
   var ONLY3 = ['水', '火', '草'];
   var BOSSES = {
     tiger: { name: '泰戈尔', sid: 'tagore', dept: '襄阳', bg: 'bridge_p', pos: [66, 52],
-      d: '从东北招募的特殊虎系精灵，常驻古城防卫部，辅助乘员们训练。',
+      d: '从东北招募的特殊虎系精灵，常驻古城防卫部，辅助船员们训练。',
       lv: [
         { diff: '简单', lv: 25, hp: 500, only: ONLY3, bgm: 'boss', open: function () { return prog('tiger').done; }, lockText: '读完支线「东北来的泰戈尔」后开放', reward: { mon: { sid: 'tagore', lv: 10 } } },
         { diff: '普通', lv: 40, hp: 1500, only: ONLY3, boss: { noStatus: 1, ne: 1, pp: 99 }, bgm: 'boss2', open: function () { return prog('tiger2').done; }, lockText: '击败简单难度，再听泰戈尔介绍后开放', reward: { emblem: 'tagore', exp: 20000 } },
@@ -1498,7 +1506,7 @@
     if (R.title && acc.titles.indexOf(R.title) < 0) { acc.titles.push(R.title); out.push('获得称号「' + titleName(R.title) + '」！点右上角的名字即可佩戴。'); }
     if (R.items) { giveItems(R.items); out.push('获得 ' + Object.keys(R.items).map(function (k) { return itemName(k) + ' ×' + R.items[k]; }).join('、') + '，在「精灵背包」的道具栏里使用。'); }
     if (R.exp) { acc.exp = (acc.exp || 0) + R.exp; out.push('累积经验 +' + fmt(R.exp) + '，已放进经验背包。'); }
-    if (R.later) out.push('这一档难度的首次击败奖励将在之后添加，到时会通过邮箱补发给已经击败过的乘员。');
+    if (R.later) out.push('这一档难度的首次击败奖励将在之后添加，到时会通过邮箱补发给已经击败过的船员。');
     return out;
   }
   function weeklyReward() {
@@ -1581,15 +1589,43 @@
   }
 
   /* ---------- 茶室（家园）：自定义名字，安排精灵在舱里休息 ---------- */
-  var HOME_MAX = 3, HOME_POS = [[20, 88], [47, 84], [73, 70]], HOME_CAP_H = 24;
+  var HOME_BASE = 3, HOME_POS = [[20, 88], [47, 84], [73, 70], [34, 66], [60, 60], [88, 92], [8, 70]], HOME_CAP_H = 24;
+  // 茶室能同时展示几只：基础 3 只，茶室商店的「茶室精灵容量 +1」每买一次多 1 只（最多买 4 次）
+  function homeMax() { return HOME_BASE + Math.min(4, (acc && acc.home && acc.home.cap) || 0); }
+  /* 茶室商店（茶室大厅）
+   * auto：7日自律训练装置，装在展示中的精灵身上；每满 1 天自动收回结算经验、再开始下一天，一共 7 天
+   * cap：茶室精灵容量 +1，价格依次 2000 / 5000 / 10000 / 20000 能量，最多 4 次 */
+  var AUTO_DAYS = 7, DAY_MS = 24 * 3600 * 1000, CAP_PRICE = [2000, 5000, 10000, 20000];
+  var TEA_SHOP = { auto: { name: '7日自律训练装置', price: 1500, d: '装在茶室里展示中的一只精灵身上。它每训练满 1 天，就自动收回、结算经验，再开始下一天，一共 7 天。7 天里不用每天回来收精灵。' } };
   // 展示经验：每小时 30 + LV × 6 点，按分钟累计，最多累计 24 小时（离线也照样计时）
   function homeRate(m) { return 30 + m.lv * 6; }
   function homeMins(x) { return Math.max(0, Math.min(HOME_CAP_H * 60, Math.floor((Date.now() - x.t) / 60000))); }
   function homeExp(x) { var m = mon(x.u); return m ? Math.floor(homeMins(x) * homeRate(m) / 60) : 0; }
   function durText(min) { var h = Math.floor(min / 60), mm = min % 60; return (h ? h + ' 小时 ' : '') + mm + ' 分钟'; }
-  function homeTag(x) { var m = mon(x.u), f = form(m), min = homeMins(x); return esc(f.name) + ' · LV' + m.lv + '<small>已展示 ' + durText(min) + (min >= HOME_CAP_H * 60 ? '（已满）' : '') + ' · 经验 +' + fmt(homeExp(x)) + '</small>'; }
+  function homeTag(x) { var m = mon(x.u), f = form(m), min = homeMins(x); return esc(f.name) + ' · LV' + m.lv + '<small>已展示 ' + durText(min) + (min >= HOME_CAP_H * 60 ? '（已满）' : '') + ' · 经验 +' + fmt(homeExp(x)) + '</small>' + (x.auto ? '<small class="hm-auto">自律训练 · 还剩 ' + x.auto.left + ' 天' + (x.auto.got ? ' · 已结算 ' + fmt(x.auto.got) : '') + '</small>' : ''); }
+  // 自律训练装置：每满 1 天自动结算一次（离线也算，下次打开游戏时补上）
+  function homeSettle(quiet) {
+    if (!acc || !acc.home || !Array.isArray(acc.home.mons)) return;
+    var out = [];
+    acc.home.mons.forEach(function (x) {
+      if (!x || !x.auto || !(x.auto.left > 0)) return;
+      var m = mon(x.u); if (!m) return;
+      var days = 0, got = 0, lvMsg = null;
+      while (x.auto.left > 0 && Date.now() - x.t >= DAY_MS) {
+        var amt = homeRate(m) * HOME_CAP_H, r = gainExp(m, amt);
+        if (r) lvMsg = r;
+        got += amt; x.t += DAY_MS; x.auto.left--; days++;
+      }
+      if (!days) return;
+      x.auto.got = (x.auto.got || 0) + got;
+      if (x.auto.left <= 0) delete x.auto;
+      out.push(form(m).name + ' 自律训练了 ' + days + ' 天，获得 ' + fmt(got) + ' 经验' + (x.auto ? '（装置还剩 ' + x.auto.left + ' 天）' : '（7 天训练完成，装置用完了）') + '。');
+      dailyHit('home');
+    });
+    if (out.length) { save(); if (!quiet) setTimeout(function () { toast('茶室：' + out.join('')); }, 2500); }   // 晚一点弹，免得被每日任务的提示盖掉
+  }
   function renderHome() {
-    var H = home();
+    homeSettle(); var H = home();
     clearInterval(ex.homeTick);
     ex.homeTick = setInterval(function () {
       if (ex.view !== 'home' || !document.querySelector('.home-room')) { clearInterval(ex.homeTick); return; }
@@ -1597,21 +1633,55 @@
     }, 20000);
     var figs = H.mons.map(function (x, i) {
       var m = mon(x.u), f = form(m), p = HOME_POS[i];
-      return '<div class="hm-fig" style="left:' + p[0] + '%;top:' + p[1] + '%"><button type="button" class="hm-poke" data-hpoke="1" aria-label="摸摸' + esc(f.name) + '"><img src="' + f.img + '" alt=""></button><span class="hm-tag" data-htag="' + i + '">' + homeTag(x) + '</span></div>';
+      return '<div class="hm-fig' + (H.mons.length > 3 ? ' many' : '') + '" style="left:' + p[0] + '%;top:' + p[1] + '%"><button type="button" class="hm-poke" data-hpoke="1" aria-label="摸摸' + esc(f.name) + '"><img src="' + f.img + '" alt=""></button><span class="hm-tag" data-htag="' + i + '">' + homeTag(x) + '</span></div>';
     }).join('');
+    var nAuto = acc.items.auto || 0;
+    var autoBar = '<div class="hm-autobar"><b>7日自律训练装置</b><span class="hint">持有 ' + nAuto + ' 个' + (nAuto ? '，点下面展示中的精灵卡片上的「装上装置」' : '，可以在茶室大厅的茶室商店兑换') + '。装上后每满 1 天自动结算经验并重新开始，一共 7 天；中途收回精灵，剩下的天数作废。</span></div>';
     var title = ex.homeEdit
       ? '<form class="home-edit" onsubmit="return false"><input id="home-name" maxlength="10" value="' + esc(H.name) + '" aria-label="茶室名字"><button type="button" class="btn primary" id="home-ok">保存</button><button type="button" class="btn ghost" id="home-cancel">取消</button><span class="hint">最多 10 个字</span></form>'
       : '<b class="home-name">' + esc(H.name) + '</b><button type="button" class="btn ghost" id="home-rn">改名</button>';
     var ins = H.mons.map(function (x) { return x.u; });
     var cards = acc.mons.map(function (m) {
-      var on = ins.indexOf(m.u) >= 0, f = form(m), full = !on && H.mons.length >= HOME_MAX, x = on ? H.mons[ins.indexOf(m.u)] : null;
-      return '<button type="button" class="card hm-card' + (on ? ' on' : '') + '" data-hm="' + m.u + '"' + (full ? ' disabled' : '') + ' aria-pressed="' + on + '"><img src="' + f.img + '" alt=""><span class="nm">' + esc(f.name) + '</span><span class="meta">LV' + m.lv + (on ? ' · 展示中，点击收回' : ' · 每小时 ' + homeRate(m) + ' 经验') + '</span></button>';
+      var on = ins.indexOf(m.u) >= 0, f = form(m), full = !on && H.mons.length >= homeMax(), x = on ? H.mons[ins.indexOf(m.u)] : null;
+      var armed = on && ex.hmArm === m.u;
+      return '<div class="hm-cell"><button type="button" class="card hm-card' + (on ? ' on' : '') + (armed ? ' armed' : '') + '" data-hm="' + m.u + '"' + (full ? ' disabled' : '') + ' aria-pressed="' + on + '"><img src="' + f.img + '" alt=""><span class="nm">' + esc(f.name) + '</span><span class="meta">LV' + m.lv + (armed ? ' · 再点一次收回（装置剩余天数作废）' : on ? (x.auto ? ' · 自律训练中 · 点击收回' : ' · 展示中，点击收回') : ' · 每小时 ' + homeRate(m) + ' 经验') + '</span></button>' +
+        (on && !x.auto && nAuto ? '<button type="button" class="btn hm-autobtn" data-hauto="' + m.u + '">装上装置</button>' : '') + '</div>';
     }).join('');
     $('pg-explore').innerHTML = exHead('你在荆楚号上的休息舱。放精灵出来展示，收回时会按等级和展示时长获得经验，离开游戏也会照常计时。') +
       '<div class="crumb"><button type="button" class="btn ghost" id="home-back">‹ 返回大厅</button>' + title + '</div>' +
       '<div class="home-room"><img class="home-bg" src="' + BG.tea_p + '" alt="' + esc(H.name) + '">' + figs +
       (H.mons.length ? '' : '<p class="home-empty">茶室里空荡荡的。从下面选几只精灵，放出来展示吧。</p>') + '</div>' +
-      '<div class="home-pick"><h4>展示的精灵 <span class="hint">' + H.mons.length + ' / ' + HOME_MAX + ' · 每小时经验 = 30 + 等级 × 6，最多累计 ' + HOME_CAP_H + ' 小时 · 点击卡片放出或收回，点茶室里的精灵可以摸摸它</span></h4><div class="hm-grid">' + cards + '</div></div>';
+      autoBar + '<div class="home-pick"><h4>展示的精灵 <span class="hint">' + H.mons.length + ' / ' + homeMax() + ' · 每小时经验 = 30 + 等级 × 6，最多累计 ' + HOME_CAP_H + ' 小时 · 点击卡片放出或收回，点茶室里的精灵可以摸摸它</span></h4><div class="hm-grid">' + cards + '</div></div>';
+  }
+  function renderTeaShop() {
+    var nCap = Math.min(4, (acc.home && acc.home.cap) || 0), capPrice = CAP_PRICE[nCap], A0 = TEA_SHOP.auto, q = shopQty.tsauto || 1, cost = A0.price * q, ok = acc.energy >= cost;
+    $('pg-explore').innerHTML = exHead('陆羽茶室大厅里的小商店，卖茶室专用的东西。') +
+      '<div class="crumb"><button type="button" class="btn ghost" id="ts-back">‹ 返回茶室大厅</button><b>陆羽茶室 · 茶室商店</b></div>' +
+      '<div class="shop-bal"><span class="tape l"></span>当前能量 <b>' + fmt(acc.energy) + '</b></div>' +
+      '<div class="shop-grid">' +
+      '<article class="shop-it"><span class="tape r"></span><span class="it-ic ts-ic" aria-hidden="true">⏱</span><div class="si-txt"><b>' + A0.name + '</b><p class="hint">' + esc(A0.d) + '</p>' +
+        '<p class="si-own">持有 <b>' + (acc.items.auto || 0) + '</b></p></div>' +
+        '<div class="si-buy"><span class="si-price">' + fmt(A0.price) + ' <small>能量</small></span>' +
+        '<div class="qty"><button type="button" class="btn ghost" data-tsq="-1" aria-label="减少"' + (q <= 1 ? ' disabled' : '') + '>−</button><span aria-live="polite">' + q + '</span><button type="button" class="btn ghost" data-tsq="1" aria-label="增加"' + (q >= 20 ? ' disabled' : '') + '>+</button></div>' +
+        '<button type="button" class="btn primary" data-tsbuy="auto"' + (ok ? '' : ' disabled') + '>' + (ok ? '兑换 · ' + fmt(cost) : '能量不足') + '</button></div></article>' +
+      '<article class="shop-it"><span class="tape r"></span><span class="it-ic ts-ic" aria-hidden="true">＋</span><div class="si-txt"><b>茶室精灵容量 +1</b><p class="hint">茶室里能同时展示的精灵多 1 只。基础 ' + HOME_BASE + ' 只，最多买 4 次，价格依次 ' + CAP_PRICE.map(fmt).join(' / ') + ' 能量。</p>' +
+        '<p class="si-own">现在能展示 <b>' + homeMax() + '</b> 只 · 已购买 <b>' + nCap + '</b> / 4</p></div>' +
+        '<div class="si-buy">' + (capPrice ? '<span class="si-price">' + fmt(capPrice) + ' <small>能量</small></span><button type="button" class="btn primary" data-tsbuy="cap"' + (acc.energy >= capPrice ? '' : ' disabled') + '>' + (acc.energy >= capPrice ? '扩容' : '能量不足') + '</button>' : '<span class="hint">已经扩到最大（' + homeMax() + ' 只）了</span>') + '</div></article>' +
+      '</div>';
+  }
+  function teaShopBuy(k) {
+    if (k === 'auto') {
+      var q = shopQty.tsauto || 1, cost = TEA_SHOP.auto.price * q;
+      if (acc.energy < cost) return;
+      acc.energy -= cost; acc.items.auto = (acc.items.auto || 0) + q; shopQty.tsauto = 1; save(); renderRes(); renderTeaShop();
+      toast('兑换成功：7日自律训练装置 ×' + q + '，消耗 ' + fmt(cost) + ' 能量。去「我的房间」给展示中的精灵装上。'); return;
+    }
+    if (k === 'cap') {
+      var H = home(), n = Math.min(4, H.cap || 0), price = CAP_PRICE[n];
+      if (!price || acc.energy < price) return;
+      acc.energy -= price; H.cap = n + 1; save(); renderRes(); renderTeaShop();
+      toast('茶室扩容成功！现在可以同时展示 ' + homeMax() + ' 只精灵。');
+    }
   }
   // 大厅：从这里进入自己和朋友们的房间
   var ROOMS = [
@@ -1622,7 +1692,7 @@
   ];
   function hallSpots() {
     var open = homeOpen();
-    return ROOMS.map(function (R) {
+    return '<button type="button" class="mk shop' + (open ? '' : ' locked') + '"' + (open ? ' data-teashop="1"' : ' disabled') + ' style="left:50%;top:72%"><span class="mk-dot">' + (open ? '商' : '锁') + '</span><span class="mk-lab"><b>茶室商店</b><small>' + (open ? '自律训练装置 · 茶室扩容' : '读完「陆羽茶室」支线后开放') + '</small></span></button>' + ROOMS.map(function (R) {
       var me = R.k === 'me', label = me ? (open ? '我的房间 · ' + esc(home().name) : '我的房间') : R.n, inside = !me && open && npcHome(R.k);
       return '<button type="button" class="mk shop home' + (me ? '' : ' fr') + (inside ? ' npc-in' : '') + (open ? '' : ' locked') + '"' + (open ? (me ? ' data-home="1"' : ' data-room="' + R.k + '"') : ' disabled') + ' style="left:' + R.pos[0] + '%;top:' + R.pos[1] + '%"><span class="mk-dot">' + (open ? (me ? '家' : '门') : '锁') + '</span><span class="mk-lab"><b>' + label + '</b><small>' + (open ? (me ? '你的休息舱（家园）' : inside ? '● 主人在家 · 点击拜访' : '点击拜访') : '读完「陆羽茶室」支线后开放') + '</small></span></button>';
     }).join('');
@@ -1739,7 +1809,7 @@
       (inside ? '<button type="button" class="npc-stand" data-npctalk="' + R.k + '" aria-label="和 ' + esc(N.name) + ' 对话"><img src="' + npcArt(R.k) + '" alt=""><span class="npc-bubble">！</span></button>' : '') +
       (list.length || inside ? '' : '<p class="home-empty">房间的主人不在，这里还没有展示精灵。</p>') + '</div>' +
       (N ? '<div class="tea-bar npc-bar"><span class="tape l"></span><div class="tea-txt"><b>' + (inside ? esc(N.name) + ' 在家' : esc(N.name) + ' 不在房间里') + '</b>' +
-        '<p class="hint">' + (inside ? '点房间里的 ' + esc(N.name) + ' 或右边的按钮和 TA 说话，会进入对战。胜利奖励 ' + fmt(NPC_WIN_EXP) + ' 累积经验，每天一次。' : esc(N.away) + '所有乘员看到的时间都一样。') + '</p>' +
+        '<p class="hint">' + (inside ? '点房间里的 ' + esc(N.name) + ' 或右边的按钮和 TA 说话，会进入对战。胜利奖励 ' + fmt(NPC_WIN_EXP) + ' 累积经验，每天一次。' : esc(N.away) + '所有船员看到的时间都一样。') + '</p>' +
         '<p class="tea-left">今天的胜利奖励：<b>' + (won ? '已领取' : '未领取') + '</b></p></div>' +
         '<button type="button" class="btn primary" data-npctalk="' + R.k + '"' + (inside ? '' : ' disabled') + '>' + (inside ? '对话' : '不在家') + '</button></div>' : '') +
       (list.length ? '<p class="hint" style="margin-top:8px">' + (N ? esc(N.name) : '主人') + ' 在房间里展示着' + (R.k === 't' ? '她' : '他') + '的伙伴。点它们可以摸摸。</p>' : '');
@@ -1754,6 +1824,8 @@
     var H = home(), i = -1;
     H.mons.forEach(function (x, k) { if (x.u === u) i = k; });
     if (i >= 0) {
+      if (H.mons[i].auto && ex.hmArm !== u) { ex.hmArm = u; renderHome(); setTimeout(function () { if (ex.hmArm === u) { ex.hmArm = null; if (ex.view === 'home') renderHome(); } }, 4000); return; }
+      ex.hmArm = null;
       var x = H.mons[i], m = mon(u), amt = homeExp(x), min = homeMins(x);
       H.mons.splice(i, 1);
       var msg = amt > 0 ? gainExp(m, amt) : null;
@@ -1762,13 +1834,13 @@
       toast(form(m).name + ' 回来了（展示了 ' + durText(min) + '）。' + (msg || '展示时间太短，还没有获得经验。'));
       return;
     }
-    if (H.mons.length >= HOME_MAX) return;
+    if (H.mons.length >= homeMax()) return;
     H.mons.push({ u: u, t: Date.now() }); save(); renderHome();
   }
   $('pg-explore').addEventListener('keydown', function (e) { if (e.target.id === 'home-name') { if (e.key === 'Enter') { e.preventDefault(); saveHomeName(); } else if (e.key === 'Escape') { ex.homeEdit = false; renderHome(); } } });
 
   /* ---------- 任务：主线 / 支线 / 世界 ---------- */
-  var MAIN_Q = ['school', 'river', 'jiuquan', 'board', 'flora1'], SIDE_Q = ['academy', 'xiaogan', 'brawl', 'storage', 'tiger', 'tiger2', 'tea', 'rare', 'mingming'];
+  var MAIN_Q = ['school', 'river', 'jiuquan', 'board', 'flora1'], SIDE_Q = ['academy', 'xiaogan', 'brawl', 'draft', 'storage', 'tiger', 'tiger2', 'tea', 'rare', 'mingming'];
   // 世界任务（奖励暂定）
   var WQ = [
     { id: 'w_first', n: '初到芙罗拉', d: '荆楚号已经抵达芙罗拉星。去丛林或草甸，和那里的野生精灵过过招吧。', where: '芙罗拉星 · 丛林 / 草甸', steps: [{ t: '在芙罗拉星击败 1 只野生精灵', k: 'wins', n: 1 }], reward: { energy: 100 }, after: 'flora1', go: 'flora' },
@@ -1798,6 +1870,7 @@
     if (id === 'tiger') return bossWon('tiger') ? 'done' : pr.done || pr.at > 0 ? 'doing' : 'todo';
     if (id === 'tiger2') return bossWon('tiger', 1) ? 'done' : pr.done || pr.at > 0 ? 'doing' : 'todo';
     if (id === 'brawl') return brawlPlayed() ? 'done' : pr.done || pr.at > 0 ? 'doing' : 'todo';
+    if (id === 'draft') return pr.done && draftPlayed() ? 'done' : pr.done || pr.at > 0 ? 'doing' : 'todo';
     if (id === 'rare') return prog('rare_r').done ? 'done' : pr.done || pr.at > 0 ? 'doing' : 'todo';
     return pr.done ? 'done' : pr.at > 0 ? 'doing' : 'todo';
   }
@@ -1826,11 +1899,12 @@
       var S = SITES[id], pr = prog(id); desc = S.d; R = S.reward;
       steps = [{ t: '前往 ' + qWhere(id), ok: pr.done || pr.at > 0 }, { t: '读完剧情「' + qName(id) + '」', ok: pr.done }];
       if (S.chapter.indexOf('准备发射') >= 0) steps.splice(1, 0, { t: '和 Threego 进行剧情对战', ok: pr.done || !!pr.bt });
-      if (id === 'brawl') steps = [{ t: '在孝感大厅听 Dr.黄 介绍精灵大乱斗', ok: pr.done }, { t: '打一场精灵大乱斗（竞技对战 → 精灵大乱斗，需要有其他乘员在线）', ok: brawlPlayed() }];
+      if (id === 'brawl') steps = [{ t: '在孝感大厅听 Dr.黄 介绍精灵大乱斗', ok: pr.done }, { t: '打一场精灵大乱斗（竞技对战 → 精灵大乱斗，需要有其他船员在线）', ok: brawlPlayed() }];
       if (id === 'tiger') { steps = [{ t: '在古城防卫部听舰载广播介绍泰戈尔', ok: pr.done }, { t: '挑战并击败首领「泰戈尔」（只有水、火、草系技能能命中它）', ok: bossWon('tiger') }]; R = { mon: '小胖虎 LV10（首次击败）' }; }
+      if (id === 'draft') steps = [{ t: '在孝感大厅听 Dr.黄 介绍竞技征召', ok: pr.done }, { t: '和其他船员打一场竞技征召（社交 → 向在线玩家宣战 → 5v5 · 平衡模式 · 竞技征召，胜负都算）', ok: draftPlayed() }];
       if (id === 'tiger2') { steps = [{ t: '在古城防卫部听泰戈尔介绍普通难度', ok: pr.done }, { t: '挑战并击败普通难度的「泰戈尔」（LV40，体力 1500，免疫异常状态）', ok: bossWon('tiger', 1) }]; R = { mon: '普通拳纹章、累积经验 ×20,000（首次击败普通难度）' }; }
       if (id === 'rare') { var rr = prog('rare_r'); steps = [{ t: '在学院部听 Bttp 说明任务', ok: pr.done }, { t: '捕捉一种稀有精灵（芙罗拉星的丛林深处可能会有）', ok: rr.done || !!rareOwned() }, { t: '回到学院部，向 Bttp 汇报', ok: rr.done }]; R = SITES.rare_r.reward; desc = S.d; }
-      if (st === 'lock') need = S.need && prog(S.after).done && !S.need() ? S.needText + (id === 'mingming' ? '（当前 ' + litCount() + ' / 10）' : id === 'brawl' ? '（当前持有 ' + acc.mons.length + ' 只）' : '') + '。' : '先读完「' + SITES[S.after].chapter.split(' · ')[1] + '」。';
+      if (st === 'lock') need = S.need && prog(S.after).done && !S.need() ? S.needText + (id === 'mingming' ? '（当前 ' + litCount() + ' / 10）' : id === 'brawl' ? '（当前持有 ' + acc.mons.length + ' 只）' : id === 'draft' ? '（当前 ' + speciesN() + ' / 10 种）' : '') + '。' : '先读完「' + SITES[S.after].chapter.split(' · ')[1] + '」。';
     }
     var rw = R ? rwList(R) : []; if (!W && UNLOCK[id]) rw.push('开放「' + UNLOCK[id] + '」');
     var cur = steps.filter(function (x) { return !x.ok; })[0];
@@ -1917,6 +1991,16 @@
     if (b.id === 'home-ok') { saveHomeName(); return; }
     if (b.id === 'home-cancel') { ex.homeEdit = false; renderHome(); return; }
     if (b.dataset.hm) { toggleHomeMon(+b.dataset.hm); return; }
+    if (b.dataset.hauto) {
+      var hx = home().mons.filter(function (x) { return x.u === +b.dataset.hauto; })[0];
+      if (!hx || hx.auto || !(acc.items.auto > 0)) return;
+      acc.items.auto--; hx.auto = { left: AUTO_DAYS, got: 0 }; save(); renderHome();
+      toast('给 ' + form(mon(hx.u)).name + ' 装上了 7日自律训练装置：每满 1 天自动结算经验，一共 7 天。'); return;
+    }
+    if (b.dataset.teashop) { ex.view = 'teashop'; ex.area = '天门'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
+    if (b.dataset.tsbuy) { teaShopBuy(b.dataset.tsbuy); return; }
+    if (b.dataset.tsq) { shopQty.tsauto = Math.max(1, Math.min(20, (shopQty.tsauto || 1) + +b.dataset.tsq)); renderTeaShop(); return; }
+    if (b.id === 'ts-back') { ex.view = 'area'; ex.area = '天门'; renderExplore(); return; }
     if (b.dataset.hpoke) { var f = b.closest('.hm-fig'); f.classList.remove('hop'); void f.offsetWidth; f.classList.add('hop'); return; }
     if (b.dataset.shop) { ex.view = 'shop'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
     if (b.dataset.fpart) { ex.fpart = b.dataset.fpart; renderExplore(); return; }
@@ -2147,7 +2231,7 @@
   function brawlReward(result, noReward) {
     if (!acc.stats) acc.stats = {};
     var first = !brawlPlayed();
-    if (!noReward) { acc.stats.brawls = (acc.stats.brawls || 0) + 1; if (first) setTimeout(function () { toast('支线「精灵大乱斗」完成！随时可以再来和其他乘员打大乱斗。'); }, 4200); }
+    if (!noReward) { acc.stats.brawls = (acc.stats.brawls || 0) + 1; if (first) setTimeout(function () { toast('支线「精灵大乱斗」完成！随时可以再来和其他船员打大乱斗。'); }, 4200); }
     var want = noReward ? 0 : result === 'win' ? BRAWL_WIN : BRAWL_LOSE, had = brawlToday(), give = Math.max(0, Math.min(want, BRAWL_CAP - had));
     if (give > 0) { acc.brawlExp = { d: bjDay(), n: had + give }; acc.exp = (acc.exp || 0) + give; renderRes(); }
     save();
@@ -2161,6 +2245,19 @@
     npcPlan: npcPlan, npcHome: npcHome,
     sendMail: sendMail, openMailbox: openMailbox,
     brawlOpen: brawlOpen, brawlSpec: brawlSpec, brawlReward: brawlReward, brawlToday: brawlToday, BRAWL: { win: BRAWL_WIN, lose: BRAWL_LOSE, cap: BRAWL_CAP, lv: BRAWL_LV },
+    // 平衡模式切磋：LV60、性格无修正、没有学习力和纹章，技能可以从全部技能里选（没选就用竞技对战里记住的配招）
+    balSpec: function (raw) {
+      var s = raw && SPMAP[raw.sid]; if (!s) return null;
+      var own = s.moves.concat(s.hidden);
+      var mv = (raw.moves || []).filter(function (n, i, a) { return M[n] && own.indexOf(n) >= 0 && a.indexOf(n) === i; }).slice(0, 4);
+      if (!mv.length) mv = window.HSBATTLE && HSBATTLE.loadout ? HSBATTLE.loadout(raw.sid) : s.def.slice();
+      var f = form({ sid: raw.sid, lv: BAL_LV });
+      return { id: raw.sid, lv: BAL_LV, moves: mv, nick: f.name, img: f.img, ev: {}, nat: null };
+    },
+    BAL_LV: BAL_LV, speciesN: speciesN, homeOpen: homeOpen,
+    goHome: function () { if (!homeOpen()) { toast('读完星际探索 · 荆楚号 · 天门「陆羽茶室」支线后，才有自己的茶室。'); return; } ex.planet = 'jingchu'; ex.area = '天门'; ex.view = 'home'; go('explore'); },
+    // 参加过一次竞技征召（支线任务「竞技征召」用）
+    noteDraft: function () { if (!acc.stats) acc.stats = {}; acc.stats.drafts = (acc.stats.drafts || 0) + 1; save(); },
     teaFight: teaFight, teaLeft: teaLeft, TEA_DAILY: TEA_DAILY, TEA_EXP: TEA_EXP, homePos: HOME_POS,
     view: function (m) { var f = form(m); return { name: f.name, img: f.img, stage: f.stage }; },
     // 把服务器发来的精灵资料变成对战用的精灵（逐项检查，不信任外来数据）

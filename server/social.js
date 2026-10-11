@@ -13,8 +13,9 @@
  * WebSocket 消息（在 server.js 的 /ws 上）：
  *   → { type:'auth', token }                     用登录凭证认证，之后才算「在线」
  *   ← { type:'presence', user, online, busy }    有人上线 / 下线 / 开始或结束对战
- *   → { type:'challenge', to, mode }             向某人发起切磋（mode = 1、3、5）
- *   ← { type:'challenged', id, from, fromName, mode }   有人向你宣战
+ *   → { type:'challenge', to, mode, rule, pick }  向某人发起切磋（mode = 1、3、5；rule = normal 常规 / balance 平衡；
+ *                                                  pick = blind 普通盲选 / draft 竞技征召，竞技征召只有 5v5 平衡模式能选）
+ *   ← { type:'challenged', id, from, fromName, mode, rule, pick }   有人向你宣战
  *   → { type:'ch-reply', id, ok, reason }        接受 / 拒绝
  *   → { type:'ch-cancel', id }                   发起方取消
  *   ← { type:'ch-end', id, reason }              邀请结束（拒绝、超时、取消、对方忙）
@@ -22,6 +23,14 @@
  *   → { type:'mm', id, data } / ← { type:'mm', data }            对战中双方互发的消息（服务器只转发）
  *   → { type:'mm-over', id }                     对战结束
  *   ← { type:'mm-end', reason }                  对方掉线或离开
+ *
+ * 平衡模式（接受后先进入选人阶段，服务器当裁判，双方看不到对方还没公开的选择）：
+ *   ← { type:'prep', id, side, kind, mode, phase, left, allowed, need, done, pools, bans }   当前阶段的状态（每次有变化都会发）
+ *   → { type:'prep', id, phase, picks:[种类], moves:{种类:[技能]} }   提交这个阶段的选择
+ *   → { type:'prep-quit', id }                   退出（对方收到 mm-end）
+ *   普通盲选：phase = pick，双方各从自己拥有的精灵种类里选 N 只并配技能。
+ *   竞技征召：pool（各带 8~10 种）→ ban（各禁用对方 3 种）→ pick（从自己剩下的里选 5 只并配技能）。
+ *   某个阶段超时，没交的一方由服务器代选。全部选完后照常发 match（带 bal:true），精灵统一 LV60、性格无修正、无学习力、无纹章。
  *
  * 精灵大乱斗：
  *   → { type:'brawl-start', us:[u,u,u] }         从出战配队里选 3 只开始匹配
@@ -41,6 +50,9 @@ var CH_SECONDS = 30;          // 宣战弹窗等待回应的时间
 var BRAWL_SECONDS = 60;       // 大乱斗等待别人接受的时间
 var BRAWL_LV = 60;
 var MODES = [1, 3, 5];
+var BAL_LV = 60;
+var PREP_SEC = { pool: 90, ban: 60, pick: 150 };   // 平衡模式各选人阶段的时间
+var DRAFT_MIN = 8, DRAFT_MAX = 10, DRAFT_BAN = 3;
 
 /* ---------- 从存档里读出名片 ---------- */
 function parseSave(u) {
@@ -67,6 +79,13 @@ function activeTeam(acc) {
   var list = (Array.isArray(t) ? t : []).map(function (u) { return monByU(acc, u); }).filter(Boolean);
   return list.length ? list : acc.mons.slice(0, 1);
 }
+// 拥有的精灵种类（平衡模式只看种类，不看等级）
+function ownedSids(name) {
+  var u = A.loadUser(name), acc = u && parseSave(u).acc, out = [];
+  if (!acc) return out;
+  acc.mons.forEach(function (m) { var s = m && str(m.sid, 32); if (s && out.indexOf(s) < 0) out.push(s); });
+  return out;
+}
 function showMons(acc) {
   var c = acc.card && Array.isArray(acc.card.show) ? acc.card.show : [];
   return c.slice(0, 5).map(function (u) { return monByU(acc, u); }).filter(Boolean);
@@ -76,7 +95,8 @@ function brawlOk(acc) { return !!(acc && acc.story && acc.story.brawl && acc.sto
 // 茶室：读完「陆羽茶室」支线才开放，最多展示 3 只
 function homeOf(acc) {
   var open = !!(acc.story && acc.story.tea && acc.story.tea.done), h = acc.home || {};
-  var mons = (Array.isArray(h.mons) ? h.mons : []).slice(0, 3).map(function (x) { return monByU(acc, x && typeof x === 'object' ? x.u : x); }).filter(Boolean);
+  var cap = 3 + Math.min(4, int(h.cap, 0, 4));   // 茶室商店扩容：最多 7 只
+  var mons = (Array.isArray(h.mons) ? h.mons : []).slice(0, cap).map(function (x) { return monByU(acc, x && typeof x === 'object' ? x.u : x); }).filter(Boolean);
   return { open: open, name: str(h.name, 10) || '陆羽茶室', mons: open ? mons : [] };
 }
 var KING_R = 10;   // 王者（段位表见 js/engine/ranked.js 的 RANKS）
@@ -174,11 +194,89 @@ function endChallenge(c, reason, skip) {
 function endMatch(id, leaver, reason) {
   var m = matches[id]; if (!m) return;
   delete matches[id];
+  if (m.prep) clearTimeout(m.prep.timer);
   m.socks.forEach(function (w) {
     if (w.match === id) w.match = null;
     if (w !== leaver && reason) out(w, { type: 'mm-end', id: id, reason: reason });
   });
   m.users.forEach(presence);
+}
+
+/* ---------- 平衡模式的选人阶段 ---------- */
+function prepStart(m, c) {
+  m.prep = { kind: c.pick, mode: c.mode, owned: [ownedSids(m.users[0]), ownedSids(m.users[1])], pools: null, bans: null, sub: [null, null] };
+  prepPhase(m, c.pick === 'draft' ? 'pool' : 'pick');
+}
+function prepPhase(m, ph) {
+  var P = m.prep; P.phase = ph; P.sub = [null, null]; clearTimeout(P.timer);
+  P.deadline = Date.now() + PREP_SEC[ph] * 1000;
+  P.timer = setTimeout(function () { prepAuto(m); }, PREP_SEC[ph] * 1000 + 3000);   // 多等 3 秒，给网络延迟留余地
+  prepSend(m);
+}
+// 这个阶段 side 可以选的种类
+function prepAllowed(P, side) {
+  if (P.phase === 'pool') return P.owned[side];
+  if (P.phase === 'ban') return P.pools[1 - side];
+  if (P.kind === 'draft') return P.pools[side].filter(function (s) { return P.bans[1 - side].indexOf(s) < 0; });
+  return P.owned[side];
+}
+// 要选几只：[最少, 最多]
+function prepNeed(P, side) {
+  var n = prepAllowed(P, side).length;
+  if (P.phase === 'pool') return [Math.min(DRAFT_MIN, n), Math.min(DRAFT_MAX, n)];
+  if (P.phase === 'ban') return [Math.min(DRAFT_BAN, n), Math.min(DRAFT_BAN, n)];
+  var k = Math.min(P.mode, n); return [k, k];
+}
+function prepSend(m) {
+  var P = m.prep;
+  [0, 1].forEach(function (side) {
+    var v = { type: 'prep', id: m.id, side: side, kind: P.kind, mode: P.mode, phase: P.phase, left: Math.max(0, Math.round((P.deadline - Date.now()) / 1000)),
+      allowed: prepAllowed(P, side), need: prepNeed(P, side), done: [!!P.sub[side], !!P.sub[1 - side]], peerName: m.names[1 - side],
+      mine: P.sub[side] ? P.sub[side].picks : null };
+    if (P.pools) v.pools = [P.pools[side], P.pools[1 - side]];           // [我带的, 对方带的]
+    if (P.bans) v.bans = [P.bans[side], P.bans[1 - side]];               // [我禁的（对方的）, 对方禁的（我的）]
+    out(m.socks[side], v);
+  });
+}
+function cleanMoves(o, picks) {
+  var r = {};
+  if (o && typeof o === 'object') picks.forEach(function (sid) {
+    var a = o[sid]; if (!Array.isArray(a)) return;
+    r[sid] = a.filter(function (x) { return typeof x === 'string'; }).slice(0, 4).map(function (x) { return x.slice(0, 32); });
+  });
+  return r;
+}
+function prepSubmit(m, side, msg) {
+  var P = m.prep;
+  if (msg.phase !== P.phase || P.sub[side]) return;
+  var ok = prepAllowed(P, side), need = prepNeed(P, side), picks = Array.isArray(msg.picks) ? msg.picks.map(function (x) { return String(x).slice(0, 32); }) : [];
+  var bad = picks.some(function (x, i) { return ok.indexOf(x) < 0 || picks.indexOf(x) !== i; });
+  if (bad || picks.length < need[0] || picks.length > need[1]) { out(m.socks[side], { type: 'prep-err', id: m.id, msg: '选择不符合要求，请重新选' }); prepSend(m); return; }
+  P.sub[side] = { picks: picks, moves: P.phase === 'pick' ? cleanMoves(msg.moves, picks) : {} };
+  if (P.sub[0] && P.sub[1]) prepNext(m); else prepSend(m);
+}
+// 超时：没交的一方由服务器代选（带前几种、随机禁用、选前几只并用默认技能）
+function prepAuto(m) {
+  var P = m.prep; if (!P || !matches[m.id]) return;
+  [0, 1].forEach(function (side) {
+    if (P.sub[side]) return;
+    var ok = prepAllowed(P, side).slice(), need = prepNeed(P, side);
+    if (P.phase === 'ban') for (var i = ok.length - 1; i > 0; i--) { var j = crypto.randomInt(i + 1), t = ok[i]; ok[i] = ok[j]; ok[j] = t; }
+    P.sub[side] = { picks: ok.slice(0, need[1]), moves: {}, auto: true };
+  });
+  prepNext(m);
+}
+function prepNext(m) {
+  var P = m.prep;
+  if (P.phase === 'pool') { P.pools = [P.sub[0].picks, P.sub[1].picks]; prepPhase(m, 'ban'); return; }
+  if (P.phase === 'ban') { P.bans = [P.sub[0].picks, P.sub[1].picks]; prepPhase(m, 'pick'); return; }
+  clearTimeout(P.timer);
+  var teams = [0, 1].map(function (side) { var S = P.sub[side]; return S.picks.map(function (sid) { return { sid: sid, lv: BAL_LV, moves: S.moves[sid] || [] }; }); });
+  var auto = [!!P.sub[0].auto, !!P.sub[1].auto], kind = P.kind, mode = P.mode, reveal = { pools: P.pools, bans: P.bans };
+  delete m.prep;
+  var base = { type: 'match', id: m.id, mode: mode, bal: true, rule: 'balance', pick: kind, names: m.names, auto: auto, draft: kind === 'draft' ? reveal : null };
+  out(m.socks[0], Object.assign({}, base, { side: 0, peer: m.users[1], peerName: m.names[1], teams: teams }));
+  out(m.socks[1], Object.assign({}, base, { side: 1, peer: m.users[0], peerName: m.names[0] }));
 }
 
 function onMessage(ws, msg) {
@@ -197,15 +295,17 @@ function onMessage(ws, msg) {
     case 'challenge': {
       if (!ws.user) return true;
       var to = String(msg.to || ''), mode = MODES.indexOf(+msg.mode) >= 0 ? +msg.mode : 1;
+      var rule = msg.rule === 'balance' ? 'balance' : 'normal', pick = rule === 'balance' && mode === 5 && msg.pick === 'draft' ? 'draft' : rule === 'balance' ? 'blind' : null;
       var err = to === ws.user ? '不能向自己宣战' : !A.loadUser(to) ? '没有这个玩家' : !isOnline(to) ? '对方不在线' :
         ws.match ? '你正在对战中' : isBusy(to) ? '对方正在对战中' : !teamSpec(ws.user, 1).length ? '你还没有精灵' : !teamSpec(to, 1).length ? '对方还没有精灵' : '';
+      if (!err && pick === 'draft') err = ownedSids(ws.user).length < DRAFT_MIN ? '竞技征召要求至少拥有 ' + DRAFT_MIN + ' 种精灵' : ownedSids(to).length < DRAFT_MIN ? '对方的精灵不到 ' + DRAFT_MIN + ' 种，不能进行竞技征召' : '';
       Object.keys(challenges).forEach(function (k) { if (challenges[k].from === ws) err = err || '你已经在等待另一个人回应了'; });
       if (err) { out(ws, { type: 'ch-end', id: null, reason: 'error', msg: err, side: 'from' }); return true; }
-      var c = { id: newId(), from: ws, fromUser: ws.user, to: to, mode: mode };
+      var c = { id: newId(), from: ws, fromUser: ws.user, to: to, mode: mode, rule: rule, pick: pick };
       challenges[c.id] = c;
       c.timer = setTimeout(function () { endChallenge(c, 'timeout'); }, CH_SECONDS * 1000);
-      out(ws, { type: 'ch-sent', id: c.id, to: to, toName: gameName(to), mode: mode, seconds: CH_SECONDS });
-      toUser(to, { type: 'challenged', id: c.id, from: ws.user, fromName: gameName(ws.user), mode: mode, seconds: CH_SECONDS });
+      out(ws, { type: 'ch-sent', id: c.id, to: to, toName: gameName(to), mode: mode, rule: rule, pick: pick, seconds: CH_SECONDS });
+      toUser(to, { type: 'challenged', id: c.id, from: ws.user, fromName: gameName(ws.user), mode: mode, rule: rule, pick: pick, seconds: CH_SECONDS });
       return true;
     }
     case 'ch-cancel': {
@@ -221,6 +321,14 @@ function onMessage(ws, msg) {
       delete challenges[c2.id]; clearTimeout(c2.timer);
       (online[c2.to] || []).forEach(function (w) { if (w !== ws) out(w, { type: 'ch-end', id: c2.id, reason: 'taken', side: 'to' }); });
       var id = c2.id, host = c2.from;
+      if (c2.rule === 'balance') {   // 平衡模式：先进入选人阶段
+        if (c2.pick === 'draft' && (ownedSids(c2.fromUser).length < DRAFT_MIN || ownedSids(c2.to).length < DRAFT_MIN)) { out(host, { type: 'ch-end', id: id, reason: 'error', msg: '有一方的精灵不到 ' + DRAFT_MIN + ' 种', side: 'from' }); out(ws, { type: 'ch-end', id: id, reason: 'error', msg: '有一方的精灵不到 ' + DRAFT_MIN + ' 种', side: 'to' }); return true; }
+        matches[id] = { id: id, socks: [host, ws], users: [c2.fromUser, c2.to], names: [gameName(c2.fromUser), gameName(c2.to)] };
+        host.match = id; ws.match = id;
+        prepStart(matches[id], c2);
+        presence(c2.fromUser); presence(c2.to);
+        return true;
+      }
       var teams = [teamSpec(c2.fromUser, c2.mode), teamSpec(c2.to, c2.mode)];
       if (!teams[0].length || !teams[1].length) { out(host, { type: 'ch-end', id: id, reason: 'error', msg: '有一方没有精灵', side: 'from' }); out(ws, { type: 'ch-end', id: id, reason: 'error', msg: '有一方没有精灵', side: 'to' }); return true; }
       matches[id] = { id: id, socks: [host, ws], users: [c2.fromUser, c2.to] };
@@ -265,6 +373,17 @@ function onMessage(ws, msg) {
       out(host2, { type: 'match', id: mid, side: 0, mode: 3, brawl: true, peer: ws.user, peerName: names2[1], names: names2, teams: teams2 });
       out(ws, { type: 'match', id: mid, side: 1, mode: 3, brawl: true, peer: ba.user, peerName: names2[0], names: names2, teams: teams2 });
       presence(ba.user); presence(ws.user);
+      return true;
+    }
+    case 'prep': {
+      var mp = matches[msg.id];
+      if (!mp || !mp.prep || ws.match !== msg.id) return true;
+      prepSubmit(mp, mp.socks[0] === ws ? 0 : 1, msg);
+      return true;
+    }
+    case 'prep-quit': {
+      var mq = matches[msg.id];
+      if (mq && mq.prep && ws.match === msg.id) endMatch(msg.id, ws, 'quit');
       return true;
     }
     case 'mm': {

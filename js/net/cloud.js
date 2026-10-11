@@ -218,7 +218,7 @@
     function draw() {
       var reg = mode === 'register';
       host.innerHTML = '<div class="onboard cl-card"><span class="tape l"></span><span class="tape r"></span>' +
-        '<span class="step">乘员登记</span><h2>' + (reg ? '注册新账号' : '登录荆楚号') + '</h2>' +
+        '<span class="step">船员登记</span><h2>' + (reg ? '注册新账号' : '登录荆楚号') + '</h2>' +
         '<div class="cl-tabs" role="tablist"><button type="button" role="tab" class="sub' + (reg ? '' : ' on') + '" data-m="login" aria-selected="' + !reg + '">登录</button><button type="button" role="tab" class="sub' + (reg ? ' on' : '') + '" data-m="register" aria-selected="' + reg + '">注册</button></div>' +
         (note ? '<p class="cl-note">' + esc(note) + '</p>' : '') +
         '<form id="cl-form" class="cl-form" novalidate>' +
