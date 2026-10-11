@@ -18,7 +18,7 @@
  * ========================================================== */
 (function () {
   'use strict';
-  var V = '?v=2';
+  var V = '?v=3';
   var TRACKS = {
     normal: 'audio/bgm_normal.mp3', boss: 'audio/bgm_boss.mp3', boss2: 'audio/bgm_boss2.mp3', pvp: 'audio/bgm_pvp.mp3',
     ui: 'audio/bgm_ui.mp3', arena: 'audio/bgm_arena.mp3', earth: 'audio/bgm_earth.mp3', flora: 'audio/bgm_flora.mp3'
