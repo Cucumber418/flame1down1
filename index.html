@@ -159,17 +159,23 @@
 </div>
 
 <!-- 脚本按顺序加载：数据 → 对战引擎 → 界面。顺序不能乱 -->
-<script src="js/data/assets.js"></script>
-<script src="js/data/types.js"></script>
-<script src="js/data/moves.js"></script>
-<script src="js/data/creatures.js"></script>
-<script src="js/data/story.js"></script>
-<script src="js/data/wild.js"></script>
-<script src="js/data/ship-map.js"></script>
-<script src="js/engine/battle.js"></script>
-<script src="js/engine/ai.js"></script>
-<script src="js/engine/ranked.js"></script>
-<script src="js/ui/battle-ui.js"></script>
-<script src="js/ui/game.js"></script>
+<!-- cloud.js 先加载：用服务器打开时先登录、取回存档，再按下面的顺序加载游戏脚本（数据 → 引擎 → 界面，顺序不能调换） -->
+<script src="js/net/cloud.js"></script>
+<script>
+CLOUD.boot([
+  'js/data/assets.js',
+  'js/data/types.js',
+  'js/data/moves.js',
+  'js/data/creatures.js',
+  'js/data/story.js',
+  'js/data/wild.js',
+  'js/data/ship-map.js',
+  'js/engine/battle.js',
+  'js/engine/ai.js',
+  'js/engine/ranked.js',
+  'js/ui/battle-ui.js',
+  'js/ui/game.js'
+]);
+</script>
 </body>
 </html>

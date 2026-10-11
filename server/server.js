@@ -3,7 +3,8 @@
  *
  * 做两件事：
  * 1. 把游戏网页（仓库根目录下的 index.html、css、js、images）发给浏览器
- * 2. 在 /ws 上开一个 WebSocket，给联网对战的两个玩家传话（房间制）
+ * 2. 账号和云存档（/api/...，见 accounts.js）
+ * 3. 在 /ws 上开一个 WebSocket，给联网对战的两个玩家传话（房间制）
  *
  * 启动：node server.js        （默认端口 80，可用环境变量 PORT 改）
  * 检查：浏览器打开 http://服务器IP/ping ，看到 ok 就说明在运行
@@ -16,6 +17,7 @@ var http = require('http');
 var fs = require('fs');
 var path = require('path');
 var WebSocket = require('ws');
+var accounts = require('./accounts');
 
 var PORT = parseInt(process.env.PORT, 10) || 80;
 var ROOT = path.resolve(__dirname, '..');           // 仓库根目录
@@ -77,17 +79,18 @@ function serveFile(req, res) {
 }
 
 var server = http.createServer(function (req, res) {
+  if (accounts.handle(req, res)) return;
   if (req.method !== 'GET' && req.method !== 'HEAD') return send(res, 405, 'text/plain; charset=utf-8', '不支持');
   if (req.url === '/ping') return send(res, 200, 'text/plain; charset=utf-8', 'ok');
   if (req.url === '/status') {
     return send(res, 200, 'application/json; charset=utf-8', JSON.stringify({
-      ok: true, since: STARTED.toISOString(), online: wss.clients.size, rooms: Object.keys(rooms).length
+      ok: true, since: STARTED.toISOString(), users: accounts.userCount(), online: wss.clients.size, rooms: Object.keys(rooms).length
     }));
   }
   serveFile(req, res);
 });
 
-/* ---------------- 2. 联网对战传话 ----------------
+/* ---------------- 3. 联网对战传话 ----------------
  *
  * 浏览器和服务器之间互发 JSON 消息，每条都有 type：
  *
@@ -205,7 +208,7 @@ var beat = setInterval(function () {
 wss.on('close', function () { clearInterval(beat); });
 
 server.listen(PORT, function () {
-  console.log('Flame1Down - 1 服务器已启动：端口 ' + PORT + '，网页目录 ' + ROOT);
+  console.log('Flame1Down - 1 服务器已启动：端口 ' + PORT + '，网页目录 ' + ROOT + '，存档目录 ' + accounts.DATA_DIR);
 });
 server.on('error', function (e) {
   if (e.code === 'EADDRINUSE') console.error('端口 ' + PORT + ' 已被别的程序占用（可能装了 nginx / 宝塔）。');
