@@ -126,7 +126,7 @@
     });
     syncBattle();
     deliverMail(); checkRankRewards(); daily(); homeSettle();
-    ['arena', 'log', 'bag', 'store', 'dex', 'social', 'explore'].forEach(function (p) { $('pg-' + p).hidden = p !== page; });
+    ['arena', 'log', 'bag', 'store', 'dex', 'items', 'social', 'explore'].forEach(function (p) { $('pg-' + p).hidden = p !== page; });
     renderRename();
     if (page === 'arena' && window.HSBATTLE && window.HSBATTLE.renderMode && $('battle').hidden) window.HSBATTLE.renderMode();
     if (page === 'social') { if (window.HSSOCIAL) window.HSSOCIAL.render(); }
@@ -134,6 +134,7 @@
     else if (page === 'log') renderLog();
     else if (page === 'dex') renderDex2();
     else if (page === 'store') renderStore();
+    else if (page === 'items') renderItems();
     else if (page === 'explore') renderExplore();
     if (typeof bgmScene === 'function') bgmScene();
   }
@@ -338,6 +339,7 @@
       expBox(m) + stats +
       '<div class="trait"><p><b>特性 · ' + esc(s.ability.n) + '</b>　<span class="blue">' + esc(s.ability.d) + '</span></p>' + (s.ability.extra ? '<p class="blue" style="font-size:13px">' + esc(s.ability.extra) + '</p>' : '') +
       (acc.emblems && acc.emblems[m.sid] && EMBLEMS[m.sid] ? '<p><b>纹章 · ' + EMBLEMS[m.sid].m + '</b>　<span class="blue">' + esc(EMBLEMS[m.sid].d) + '</span></p>' : '') + '</div>' +
+      monItemsHTML(m) +
       '<div><div class="moves-head"><h4>出战技能 <span class="' + (n === 4 ? 'blue' : 'red') + '">' + n + '/4</span></h4>' +
       '<span class="hint">普通技能 LV1 学会第 1 个，之后每 5 级学会一个；隐藏技能要在战斗中满足特定条件才能领悟</span></div>' +
       '<div class="mlist">' + s.moves.concat(s.hidden).filter(function (mv) { return a.indexOf(mv) >= 0; }).map(row).join('') + '</div>' + nextMoveHint(m) + '</div>' +
@@ -368,6 +370,10 @@
       if (d) { m.ev[k] = ev + d; m.evFree = free - d; }
       save(); renderTop(); return;
     }
+    if (b.dataset.muse) {
+      var ns = b.closest('.md-it') && b.closest('.md-it').querySelector('[data-mnat]'), r = applyMonItem(b.dataset.muse, m, ns && ns.value);
+      toast(r.msg); if (r.ok) renderTop(); return;
+    }
     if (b.dataset.evreset) { m.evFree = (m.evFree || 0) + evSum(m); m.ev = {}; save(); renderTop(); return; }
     if (b.dataset.in != null) { var t = acc.teams[+b.dataset.in]; if (t.length < TEAM_SIZE && t.indexOf(m.u) < 0) t.push(m.u); }
     else if (b.dataset.out != null) { var t2 = acc.teams[+b.dataset.out]; t2.splice(t2.indexOf(m.u), 1); }
@@ -396,27 +402,61 @@
   }
   function flash(t) { var el = document.querySelector('.page:not([hidden]) .flash'); if (el) { el.textContent = t; el.classList.add('red'); } }
 
-  /* ---------- 道具：精灵背包里的「道具」板块 ----------
-   * 可以在这里直接使用的道具写在 USE_ITEMS（kind：nat 改性格，ev 加学习力）；对战道具（ITEMS）和改名卡在这里只显示说明 */
+  /* ---------- 道具与储存箱 ----------
+   * 精灵道具：直接用在某只精灵身上的（USE_ITEMS，kind：nat 改性格，ev 加学习力），在精灵资料里就能调出来用，储存箱里也能用
+   * 一般道具：捕捉装置、补药（对战中用）、改名卡、自律训练装置、挑战许可
+   * 储存箱（主菜单，黄冈秘鉴和社交中间）列出所有道具 */
   var USE_ITEMS = {
     natTagore: { name: '泰戈尔性格药剂', sid: 'tagore', kind: 'nat', d: '把你的一只泰戈尔（小胖虎、胖虎也可以）的性格改成你指定的性格。' },
     evAny: { name: '通用学习力合剂', sid: null, kind: 'ev', d: '为你的任意一只精灵直接增加 100 点学习力。加进「可分配学习力」，再在精灵资料里自己分配；学习力总量最多 ' + EV_TOTAL + '。' },
     evTagore: { name: '泰戈尔学习力合剂', sid: 'tagore', kind: 'ev', d: '为你的一只泰戈尔（小胖虎、胖虎也可以）直接增加 100 点学习力。加进「可分配学习力」，再在精灵资料里自己分配；学习力总量最多 ' + EV_TOTAL + '。' }
   };
-  var BAG_ORDER = ['natTagore', 'evTagore', 'evAny', 'auto', 'rename', 'cap1', 'cap2', 'cap3', 'pot1', 'pot2'];
+  var MON_ORDER = ['evAny', 'evTagore', 'natTagore'], GEN_ORDER = ['auto', 'rename', 'cap1', 'cap2', 'cap3', 'pot1', 'pot2'];
+  var BAG_ORDER = MON_ORDER.concat(GEN_ORDER);
+  function itemFits(k, m) { var it = USE_ITEMS[k]; return !!(it && m && (!it.sid || it.sid === m.sid)); }
+  // 把精灵道具用在 m 身上；nat 是性格药剂要改成的性格。返回 { ok, msg }
+  function applyMonItem(k, m, nat) {
+    var it = USE_ITEMS[k];
+    if (!it || !(acc.items[k] > 0)) return { ok: false, msg: '没有这个道具了。' };
+    if (!itemFits(k, m)) return { ok: false, msg: '先选一只' + (it.sid ? SPMAP[it.sid].name : '精灵') + '。' };
+    if (it.kind === 'nat') {
+      if (!nat || !(nat in NATURES)) return { ok: false, msg: '先选一个性格。' };
+      if (nat === m.nat) return { ok: false, msg: '它已经是「' + nat + '」性格了，换一个吧。' };
+      var old = m.nat; m.nat = nat; acc.items[k]--; save();
+      return { ok: true, msg: form(m).name + ' 的性格从「' + old + '」变成了「' + nat + '」（' + natText(nat) + '）。' };
+    }
+    var add = Math.min(100, evRoom(m));
+    if (!add) return { ok: false, msg: '这只的学习力已经到上限了。' };
+    m.evFree = (m.evFree || 0) + add; acc.items[k]--; save();
+    return { ok: true, msg: form(m).name + ' 获得了 ' + add + ' 点可分配学习力' + (add < 100 ? '（已到 ' + EV_TOTAL + ' 上限）' : '') + '，在精灵资料的「学习力」一栏分配。' };
+  }
+  // 精灵资料里的「精灵道具」：只列出能用在这只精灵身上、手里有的
+  function monItemsHTML(m) {
+    var ks = MON_ORDER.filter(function (k) { return acc.items[k] > 0 && itemFits(k, m); });
+    if (!ks.length) return '';
+    return '<div class="md-items"><h4>精灵道具 <span class="hint">直接用在' + esc(form(m).name) + '身上</span></h4>' + ks.map(function (k) {
+      var it = USE_ITEMS[k], act;
+      if (it.kind === 'nat') act = '<select data-mnat="1" aria-label="新的性格">' + NAT_KEYS.filter(function (n) { return n !== m.nat; }).map(function (n) { return '<option value="' + n + '">' + n + '（' + natText(n) + '）</option>'; }).join('') + '</select><button type="button" class="btn" data-muse="' + k + '">改性格</button>';
+      else { var room = evRoom(m); act = '<button type="button" class="btn" data-muse="' + k + '"' + (room ? '' : ' disabled title="学习力已经到上限了"') + '>' + (room ? '使用 · +' + Math.min(100, room) + ' 学习力' : '学习力已满') + '</button>'; }
+      return '<div class="md-it"><b>' + it.name + ' <span class="cnt">×' + acc.items[k] + '</span></b><span class="hint">' + esc(it.kind === 'nat' ? '把性格改成你选的性格' : '直接增加 100 点可分配学习力') + '</span><span class="md-act">' + act + '</span></div>';
+    }).join('') + '</div>';
+  }
   function itemName(k) { var it = ITEMS[k] || USE_ITEMS[k] || SHOP_X[k] || TEA_SHOP[k]; return it ? it.name : k; }
   function evRoom(m) { return Math.max(0, EV_TOTAL - evSum(m) - (m.evFree || 0)); }
   function itemsHTML() {
     var have = BAG_ORDER.filter(function (k) { return acc.items[k] > 0; }), wk = weeklyOpen(), pn = wk ? permits() : 0;
     if (ui.itSel && ui.itSel !== 'permit' && have.indexOf(ui.itSel) < 0) ui.itSel = null;
     if (ui.itSel === 'permit' && !wk) ui.itSel = null;
-    var cells = have.map(function (k) {
+    var cell = function (k) {
       var use = !!USE_ITEMS[k] || k === 'rename' || k === 'auto';
-      return '<button type="button" class="ib-it' + (ui.itSel === k ? ' sel' : '') + (use ? ' use' : '') + '" data-itsel="' + k + '"><b>' + itemName(k) + '</b><span class="cnt">×' + acc.items[k] + '</span>' + (use ? '<small>可使用</small>' : '<small>对战中使用</small>') + '</button>';
-    });
-    if (wk) cells.unshift('<button type="button" class="ib-it permit' + (ui.itSel === 'permit' ? ' sel' : '') + '" data-itsel="permit"><b>挑战许可</b><span class="cnt">' + pn + ' / ' + PERMIT.max + '</span><small>每周挑战用</small></button>');
-    var html = '<section class="itembox"><span class="tape r"></span><div class="ib-head"><h3>道具</h3><span class="hint">点道具查看说明。药剂、改名卡可以在这里使用；捕捉装置和补药在对战的「道具」页使用。</span></div>' +
-      (cells.length ? '<div class="ib-grid">' + cells.join('') + '</div>' : '<p class="empty-note">还没有道具。在荆楚号 · 荆门 · 物资仓储的商城可以兑换，击败首领也会获得。</p>');
+      return '<button type="button" class="ib-it' + (ui.itSel === k ? ' sel' : '') + (use ? ' use' : '') + '" data-itsel="' + k + '"><b>' + itemName(k) + '</b><span class="cnt">×' + acc.items[k] + '</span>' + (USE_ITEMS[k] ? '<small>精灵道具 · 可使用</small>' : use ? '<small>可使用</small>' : '<small>对战中使用</small>') + '</button>';
+    };
+    var monCells = have.filter(function (k) { return USE_ITEMS[k]; }).map(cell), genCells = have.filter(function (k) { return !USE_ITEMS[k]; }).map(cell);
+    if (wk) genCells.unshift('<button type="button" class="ib-it permit' + (ui.itSel === 'permit' ? ' sel' : '') + '" data-itsel="permit"><b>挑战许可</b><span class="cnt">' + pn + ' / ' + PERMIT.max + '</span><small>每周挑战用</small></button>');
+    var html = '<section class="itembox"><span class="tape r"></span><div class="ib-head"><h3>精灵道具</h3><span class="hint">直接用在精灵身上的道具。也可以在精灵背包、精灵仓库里点开一只精灵，在它的资料里直接使用。</span></div>' +
+      (monCells.length ? '<div class="ib-grid">' + monCells.join('') + '</div>' : '<p class="empty-note">还没有精灵道具。排位段位奖励、首领挑战会获得学习力合剂、性格药剂。</p>') +
+      '<div class="ib-head"><h3>一般道具</h3><span class="hint">捕捉装置和补药在剧情、野外、首领对战的「道具」页使用；改名卡、自律训练装置点开后使用。</span></div>' +
+      (genCells.length ? '<div class="ib-grid">' + genCells.join('') + '</div>' : '<p class="empty-note">还没有一般道具。在荆楚号 · 荆门 · 物资仓储的商城可以兑换。</p>');
     var k = ui.itSel;
     if (k) {
       var it = USE_ITEMS[k], body = '';
@@ -439,26 +479,17 @@
       }
       html += '<div class="ib-detail"><h4>' + (k === 'permit' ? '挑战许可' : itemName(k)) + '</h4>' + body + (ui.itMsg ? '<p class="exp-msg">' + esc(ui.itMsg) + '</p>' : '') + '</div>';
     }
+    else if (ui.itMsg) html += '<div class="ib-detail"><p class="exp-msg">' + esc(ui.itMsg) + '</p></div>';   // 道具刚好用完：提示留着
     return html + '</section>';
+  }
+  function renderItems() {
+    $('pg-items').innerHTML = '<div class="page-head"><h2 class="sec">储存箱</h2><p class="hint">你拥有的所有道具。点道具查看说明和使用方法。</p></div>' + itemsHTML();
   }
   function useBagItem(k) {
     if (k === 'rename') { setTimeout(function () { renaming = true; renderRename(); $('who-menu').hidden = false; $('who-btn').setAttribute('aria-expanded', true); window.scrollTo(0, 0); }, 0); return; }   // 等这次点击处理完再打开名字菜单，免得被「点别处关闭」立刻关上
-    var it = USE_ITEMS[k], m = mon(ui.itTarget), msg;
-    if (!it || !(acc.items[k] > 0)) return;
-    if (!m || (it.sid && m.sid !== it.sid)) { ui.itMsg = '先选一只' + (it.sid ? SPMAP[it.sid].name : '精灵') + '。'; renderBag(); return; }
-    if (it.kind === 'nat') {
-      var sel = $('it-nat'), nat = sel && sel.value;
-      if (!nat || !(nat in NATURES)) return;
-      if (nat === m.nat) { ui.itMsg = '它已经是「' + nat + '」性格了，换一个吧。'; renderBag(); return; }
-      var old = m.nat; m.nat = nat; acc.items[k]--; ui.itNat = null;
-      msg = form(m).name + ' 的性格从「' + old + '」变成了「' + nat + '」（' + natText(nat) + '）。';
-    } else {
-      var add = Math.min(100, evRoom(m));
-      if (!add) { ui.itMsg = '这只的学习力已经到上限了。'; renderBag(); return; }
-      m.evFree = (m.evFree || 0) + add; acc.items[k]--;
-      msg = form(m).name + ' 获得了 ' + add + ' 点可分配学习力' + (add < 100 ? '（已到 ' + EV_TOTAL + ' 上限）' : '') + '，点它在「精灵资料」里分配。';
-    }
-    ui.itMsg = msg; save(); renderBag(); toast(msg);
+    var sel = $('it-nat'), r = applyMonItem(k, mon(ui.itTarget), sel && sel.value);
+    ui.itMsg = r.msg; if (r.ok) ui.itNat = null;
+    renderItems(); if (r.ok) toast(r.msg);
   }
 
   /* ---------- 精灵背包 ---------- */
@@ -469,7 +500,6 @@
     html += '<div class="expbag"><span class="tape l"></span><div class="eb-item"><span class="eb-lab">经验背包</span><b>' + fmt(acc.exp) + '</b><span class="hint">累积经验，可分配给任意精灵</span></div>' +
       '<div class="eb-item"><span class="eb-lab">能量</span><b class="en">' + fmt(acc.energy) + '</b><span class="hint">通用货币</span></div>' +
       '<p class="hint eb-tip">点击配队中的精灵，在下方「精灵资料」的经验一栏里分配。升到 LV' + 25 + ' / LV50 时精灵会进化。隐藏技能要靠精灵在战斗中自己领悟。</p></div>';
-    html += itemsHTML();
     html += '<div class="teams">' + acc.teams.map(function (t, i) {
       var on = acc.active === i, body = '';
       for (var k = 0; k < TEAM_SIZE; k++) {
@@ -502,10 +532,6 @@
     if (t.id === 'wel-x') { ui.welcome = false; renderBag(); return; }
     var b = t.closest('button'); if (!b) return;
     if (b.closest('#bag-detail')) { onDetailClick(e); return; }
-    if (b.dataset.itsel) { ui.itSel = ui.itSel === b.dataset.itsel ? null : b.dataset.itsel; ui.itMsg = ''; renderBag(); return; }
-    if (b.dataset.ituse) { useBagItem(b.dataset.ituse); return; }
-    if (b.dataset.itgo === 'weekly') { ex.view = 'weekly'; go('explore'); return; }
-    if (b.dataset.itgo === 'home') { HSACC.goHome(); return; }
     if (b.dataset.rmt != null) { var tm = acc.teams[+b.dataset.rmt]; tm.splice(tm.indexOf(+b.dataset.u), 1); if (!tm.length && acc.active === +b.dataset.rmt) acc.active = acc.teams[0].length ? 0 : acc.teams[1].length ? 1 : acc.active; save(); renderBag(); return; }
     if (b.dataset.pickt != null) { ui.pick = ui.pick === +b.dataset.pickt ? -1 : +b.dataset.pickt; renderBag(); return; }
     if (b.dataset.pickx) { ui.pick = -1; renderBag(); return; }
@@ -513,9 +539,16 @@
     if (b.dataset.active != null) { acc.active = +b.dataset.active; save(); renderBag(); return; }
     if (b.classList.contains('filled')) { ui.sel = +b.dataset.u; renderBag(); }
   });
-  $('pg-bag').addEventListener('change', function (e) {
-    if (e.target.closest('#bag-detail')) { onDetailChange(e); return; }
-    if (e.target.name === 'it-t') { ui.itTarget = +e.target.value; ui.itMsg = ''; renderBag(); return; }
+  $('pg-bag').addEventListener('change', function (e) { if (e.target.closest('#bag-detail')) onDetailChange(e); });
+  $('pg-items').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b || b.disabled) return;
+    if (b.dataset.itsel) { ui.itSel = ui.itSel === b.dataset.itsel ? null : b.dataset.itsel; ui.itMsg = ''; renderItems(); return; }
+    if (b.dataset.ituse) { useBagItem(b.dataset.ituse); return; }
+    if (b.dataset.itgo === 'weekly') { ex.view = 'weekly'; go('explore'); return; }
+    if (b.dataset.itgo === 'home') { HSACC.goHome(); return; }
+  });
+  $('pg-items').addEventListener('change', function (e) {
+    if (e.target.name === 'it-t') { ui.itTarget = +e.target.value; ui.itMsg = ''; renderItems(); return; }
     if (e.target.id === 'it-nat') ui.itNat = e.target.value;
   });
 
@@ -1547,7 +1580,7 @@
     }
     if (R.emblem) { if (!acc.emblems) acc.emblems = {}; acc.emblems[R.emblem] = 1; out.push('获得了「' + EMBLEMS[R.emblem].n + '」！以后你的' + SPMAP[R.emblem].name + '（包括还没进化的）都会带着它：' + EMBLEMS[R.emblem].d + '。'); }
     if (R.title && acc.titles.indexOf(R.title) < 0) { acc.titles.push(R.title); out.push('获得称号「' + titleName(R.title) + '」！点右上角的名字即可佩戴。'); }
-    if (R.items) { giveItems(R.items); out.push('获得 ' + Object.keys(R.items).map(function (k) { return itemName(k) + ' ×' + R.items[k]; }).join('、') + '，在「精灵背包」的道具栏里使用。'); }
+    if (R.items) { giveItems(R.items); out.push('获得 ' + Object.keys(R.items).map(function (k) { return itemName(k) + ' ×' + R.items[k]; }).join('、') + '，可以在精灵资料或「储存箱」里使用。'); }
     if (R.exp) { acc.exp = (acc.exp || 0) + R.exp; out.push('累积经验 +' + fmt(R.exp) + '，已放进经验背包。'); }
     if (R.later) out.push('这一档难度的首次击败奖励将在之后添加，到时会通过邮箱补发给已经击败过的船员。');
     return out;
@@ -2245,7 +2278,7 @@
     if (!team.length) team = acc.mons.slice(0, 1);
     var p = team.slice(0, TEAM_SIZE).map(storyMon);
     stopTimers(); ex.fighting = true; document.body.classList.add('story-fight');
-    ['log', 'bag', 'store', 'dex', 'social', 'explore'].forEach(function (pg) { $('pg-' + pg).hidden = true; });
+    ['log', 'bag', 'store', 'dex', 'items', 'social', 'explore'].forEach(function (pg) { $('pg-' + pg).hidden = true; });
     $('pg-arena').hidden = false; $('who-menu').hidden = true;
     window.HSBATTLE.start({ p: p, a: opt.foe, foe: opt.owner + '的茶室', bg: BG.tea_p, back: '茶室', onEnd: function (res, seen, downs, quit) {
       ex.fighting = false; document.body.classList.remove('story-fight');
@@ -2320,7 +2353,7 @@
     // 联网切磋：像剧情对战一样切到对战画面，锁住其他大栏
     enterBattle: function () {
       stopTimers(); ex.fighting = true; document.body.classList.add('story-fight');
-      ['log', 'bag', 'store', 'dex', 'social', 'explore'].forEach(function (p) { $('pg-' + p).hidden = true; });
+      ['log', 'bag', 'store', 'dex', 'items', 'social', 'explore'].forEach(function (p) { $('pg-' + p).hidden = true; });
       $('pg-arena').hidden = false; $('who-menu').hidden = true;
     },
     leaveBattle: function () { ex.fighting = false; document.body.classList.remove('story-fight'); go('social'); }
