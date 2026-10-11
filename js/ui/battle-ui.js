@@ -452,6 +452,7 @@
     if (opt.items) app.S.items = opt.items;
     if (opt.env) app.S.env = opt.env;
     if (opt.wild) app.S.wild = opt.wild;
+    if (opt.ai) app.S.ai = opt.ai;   // 电脑的操作水平（例如白银段位）
     storyEnd = opt.onEnd; itemUsed = opt.onItem || null;
     app.screen = 'battle'; app.logHTML = ''; $('log').innerHTML = '';
     $('builder').hidden = true; $('battle').hidden = false; $('endcard').hidden = true;

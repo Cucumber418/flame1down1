@@ -1319,14 +1319,106 @@
   function hallSpots() {
     var open = homeOpen();
     return ROOMS.map(function (R) {
-      var me = R.k === 'me', label = me ? (open ? '我的房间 · ' + esc(home().name) : '我的房间') : R.n;
-      return '<button type="button" class="mk shop home' + (me ? '' : ' fr') + (open ? '' : ' locked') + '"' + (open ? (me ? ' data-home="1"' : ' data-room="' + R.k + '"') : ' disabled') + ' style="left:' + R.pos[0] + '%;top:' + R.pos[1] + '%"><span class="mk-dot">' + (open ? (me ? '家' : '门') : '锁') + '</span><span class="mk-lab"><b>' + label + '</b><small>' + (open ? (me ? '你的休息舱（家园）' : '点击拜访') : '读完「陆羽茶室」支线后开放') + '</small></span></button>';
+      var me = R.k === 'me', label = me ? (open ? '我的房间 · ' + esc(home().name) : '我的房间') : R.n, inside = !me && open && npcHome(R.k);
+      return '<button type="button" class="mk shop home' + (me ? '' : ' fr') + (inside ? ' npc-in' : '') + (open ? '' : ' locked') + '"' + (open ? (me ? ' data-home="1"' : ' data-room="' + R.k + '"') : ' disabled') + ' style="left:' + R.pos[0] + '%;top:' + R.pos[1] + '%"><span class="mk-dot">' + (open ? (me ? '家' : '门') : '锁') + '</span><span class="mk-lab"><b>' + label + '</b><small>' + (open ? (me ? '你的休息舱（家园）' : inside ? '● 主人在家 · 点击拜访' : '点击拜访') : '读完「陆羽茶室」支线后开放') + '</small></span></button>';
     }).join('');
   }
   // Threego 房间里固定展示：LV8 小胖虎 + LV7 的「被玩家主宠克制的那只初始精灵」
   function weakStarter() {
     var my = acc.starter && SPMAP[acc.starter].types[0];
     return STARTERS.filter(function (sid) { return sid !== acc.starter && my && eff(my, SPMAP[sid].types[0]) > 1; })[0] || STARTERS.filter(function (sid) { return sid !== acc.starter; })[0];
+  }
+  /* ---------- 朋友回家：Threego / Dr.黄 / Bttp 每天在随机时段回房间，对话后可以对战 ----------
+   * 时段和携带的精灵都用「北京时间的日期」做种子算出来，所有玩家同一天看到的一样（全服共通）。
+   * 精灵等级 = 玩家出战配队平均等级 −5 / 0 / +5（三个等级随机分给三只）。电脑操作为白银段位水平。
+   * 胜利奖励 3000 累积经验，每个人每天最多领一次。 */
+  var NPC_WIN_EXP = 3000, NPC_HOURS = 3, NPC_FROM = 9, NPC_TO = 24, NPC_AI_RANK = 2;
+  var NPC = {
+    t: { name: 'Threego', img: 'threego', fixed: [{ slot: 0, sid: 'leafcat' }], away: '她每天会在某个时间回房间待一阵子。',
+      lines: [['', '哟，{name}！我的叶子喵最近可厉害了，要不要来试试？'], ['laugh', '嘿嘿，今天我状态超好，输了可别哭鼻子哦！'], ['smile', '点点的消息还没查到……先陪我打一场散散心吧。']] },
+    h: { name: 'Dr.黄', img: 'drh', fixed: [{ slot: -1, sid: 'aegis' }], away: '他每天会在某个时间回房间待一阵子。',
+      lines: [['', '哦？你来得正好。至高之盾的防御，你破得了吗？'], ['grin', '我在孝感大厅打了很久很久……今天换你陪我练练。'], ['oh', '哦！是{name}啊。来都来了，切磋一下？']] },
+    b: { name: 'Bttp', img: 'bttp', fixed: [{ slot: 2, sid: 'bone' }], away: '他每天会在某个时间回房间待一阵子。',
+      lines: [['god', '神已经算到你会来了。'], ['', '我的精灵排序是有讲究的，尤其是第三只。'], ['smile', '要不要验证一下你最近的进步？来吧。']] }
+  };
+  // 随机池：竞技对战的 24 只，去掉剧情里还没揭晓的首领「荒芜」和神秘精灵「豪瑞希德」（避免提前在黄冈秘鉴里解锁名字）
+  var NPC_SECRET = ['barren', 'hauris'];
+  var NPC_POOL = SP.map(function (x) { return x.id; }).filter(function (id) { return SPMAP[id] && SPRITES[id] && NPC_SECRET.indexOf(id) < 0; });
+  function bjNow() { return new Date(Date.now() + 8 * 3600e3); }
+  function bjDay() { var d = bjNow(); return d.getUTCFullYear() + '-' + (d.getUTCMonth() + 1) + '-' + d.getUTCDate(); }
+  function seeded(str) {
+    var h = 2166136261;
+    for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return function () { h = (h + 0x6D2B79F5) | 0; var t = Math.imul(h ^ (h >>> 15), 1 | h); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  }
+  function npcPlan(k, day) {
+    var r = seeded('npc|' + (day || bjDay()) + '|' + k), N = NPC[k];
+    var start = NPC_FROM + Math.floor(r() * (NPC_TO - NPC_FROM - NPC_HOURS + 1));
+    var slots = [null, null, null];
+    N.fixed.forEach(function (f) { slots[f.slot >= 0 ? f.slot : Math.floor(r() * 3)] = f.sid; });
+    var pool = NPC_POOL.filter(function (id) { return !N.fixed.some(function (f) { return f.sid === id; }); });
+    slots = slots.map(function (x) {
+      if (x) return x;
+      var id; do { id = pool[Math.floor(r() * pool.length)]; } while (slots.indexOf(id) >= 0);
+      return id;
+    });
+    // 防止随机到同一只：上面的 do/while 只防了已经定下的位置，这里再去重一次
+    slots.forEach(function (x, i) { if (slots.indexOf(x) !== i) { var alt = pool.filter(function (id) { return slots.indexOf(id) < 0; }); slots[i] = alt[Math.floor(r() * alt.length)]; } });
+    var rel = [-5, 0, 5];
+    for (var i = 2; i > 0; i--) { var j = Math.floor(r() * (i + 1)), t = rel[i]; rel[i] = rel[j]; rel[j] = t; }
+    return { start: start, end: start + NPC_HOURS, team: slots.map(function (sid, i) { return { sid: sid, rel: rel[i], nat: NAT_KEYS[Math.floor(r() * NAT_KEYS.length)] }; }) };
+  }
+  function npcHome(k) { if (!NPC[k]) return false; var P = npcPlan(k), d = bjNow(), h = d.getUTCHours() + d.getUTCMinutes() / 60; return h >= P.start && h < P.end; }
+  function npcWon(k) { return !!(acc.npcWin && acc.npcWin.d === bjDay() && acc.npcWin[k]); }
+  function teamAvgLv() {
+    var t = (acc.teams[acc.active] || []).map(mon).filter(Boolean); if (!t.length) t = acc.mons;
+    return t.length ? Math.round(t.reduce(function (a, m) { return a + m.lv; }, 0) / t.length) : START_LV;
+  }
+  function npcTeam(k) {
+    var avg = teamAvgLv();
+    return npcPlan(k).team.map(function (x) { var lv = Math.max(1, Math.min(100, avg + x.rel)); var o = storyMon({ sid: x.sid, lv: lv, moves: [], nat: x.nat }); delete o.u; delete o.hl; return o; });
+  }
+  function npcArt(k, face) { var N = NPC[k]; return CHARS[(face ? N.img + '_' + face : N.img)] || CHARS[N.img]; }
+  function npcTalk(k) {
+    if (!npcHome(k)) { toast(NPC[k].name + ' 刚刚出门了。'); renderRoom(); return; }
+    var N = NPC[k], L = N.lines[Math.floor(Math.random() * N.lines.length)], won = npcWon(k);
+    var d = document.createElement('div'); d.className = 'soc-dlg npc-dlg';
+    d.innerHTML = '<div class="soc-box npc-box" role="dialog" aria-modal="true"><span class="tape l"></span><span class="tape r"></span>' +
+      '<img class="npc-face" src="' + npcArt(k, L[0]) + '" alt="' + esc(N.name) + '"><div class="npc-say"><span class="step">' + esc(N.name) + '</span><p class="npc-line">' + esc(fill(L[1])) + '</p>' +
+      '<p class="hint">' + esc(N.name) + ' 会带 3 只精灵，等级在你出战配队平均等级（LV' + teamAvgLv() + '）的 −5 到 +5 之间。' + (won ? '今天已经领过 ' + esc(N.name) + ' 的胜利奖励了，还可以继续切磋。' : '获胜可得 ' + fmt(NPC_WIN_EXP) + ' 累积经验（每天一次）。') + '</p>' +
+      '<div class="soc-foot"><button type="button" class="btn ghost" data-npcx="1">下次再说</button><button type="button" class="btn primary" data-npcgo="1">开始对战</button></div></div></div>';
+    document.body.appendChild(d);
+    d.addEventListener('click', function (e) {
+      if (e.target === d || e.target.closest('[data-npcx]')) { d.remove(); return; }
+      if (e.target.closest('[data-npcgo]')) { d.remove(); npcFight(k); }
+    });
+  }
+  function npcFight(k) {
+    if (!npcHome(k)) { toast(NPC[k].name + ' 刚刚出门了。'); renderRoom(); return; }
+    var N = NPC[k], team = (acc.teams[acc.active] || []).map(mon).filter(Boolean);
+    if (!team.length) team = acc.mons.slice(0, 1);
+    team = team.slice(0, TEAM_SIZE);
+    var a = npcTeam(k);
+    stopTimers(); ex.fighting = true; document.body.classList.add('story-fight'); syncBattle();
+    $('pg-explore').hidden = true; $('pg-arena').hidden = false;
+    window.HSBATTLE.start({ p: team.map(storyMon), a: a, foe: N.name, bg: BG.tea_p, back: N.name + ' 的房间', ai: rankAI(NPC_AI_RANK),
+      onEnd: function (res, seen, downs) {
+        var msg = '';
+        (downs || []).forEach(function (x) { seeMon(x.id, x.lv); });
+        if (res === 'win') {
+          if (!npcWon(k)) {
+            if (!acc.npcWin || acc.npcWin.d !== bjDay()) acc.npcWin = { d: bjDay() };
+            acc.npcWin[k] = 1; acc.exp = (acc.exp || 0) + NPC_WIN_EXP;
+            msg = '击败了 ' + N.name + '！累积经验 +' + fmt(NPC_WIN_EXP) + '，已放进经验背包。';
+          } else msg = '又赢了 ' + N.name + '！今天的胜利奖励已经领过了，明天再来。';
+        } else if (res === 'lose') msg = N.name + '：嘿嘿，下次再来挑战吧！';
+        save();
+        ex.fighting = false; document.body.classList.remove('story-fight');
+        ex.view = 'room'; ex.room = k; ex.area = '天门';
+        $('pg-arena').hidden = page !== 'arena'; $('pg-explore').hidden = page !== 'explore';
+        renderTop(); syncBattle(); window.scrollTo(0, $('pg-explore').offsetTop - 8);
+        if (msg) setTimeout(function () { toast(msg); }, 300);
+      } });
   }
   function roomShow(k) { return k === 't' ? [{ sid: 'tagore', lv: 8 }, { sid: weakStarter(), lv: 7 }] : []; }
   function renderRoom() {
@@ -1335,10 +1427,16 @@
       var f = form(x), p = HOME_POS[i];
       return '<div class="hm-fig" style="left:' + p[0] + '%;top:' + p[1] + '%"><button type="button" class="hm-poke" data-hpoke="1" aria-label="摸摸' + esc(f.name) + '"><img src="' + f.img + '" alt=""></button><span class="hm-tag">' + esc(f.name) + ' · LV' + x.lv + '</span></div>';
     }).join('');
-    $('pg-explore').innerHTML = exHead('朋友们的房间暂时都长得一样。') +
+    var N = NPC[R.k], inside = N && npcHome(R.k), won = N && npcWon(R.k);
+    $('pg-explore').innerHTML = exHead('朋友们的房间暂时都长得一样。他们每天会在某个时间回来待一阵子，在家时可以找他们对战。') +
       '<div class="crumb"><button type="button" class="btn ghost" id="home-back">‹ 返回大厅</button><b class="home-name">' + R.n + '</b></div>' +
       '<div class="home-room"><img class="home-bg" src="' + BG.tea_p + '" alt="' + R.n + '">' + figs +
-      (list.length ? '' : '<p class="home-empty">房间的主人不在，这里还没有展示精灵。</p>') + '</div>' +
+      (inside ? '<button type="button" class="npc-stand" data-npctalk="' + R.k + '" aria-label="和 ' + esc(N.name) + ' 对话"><img src="' + npcArt(R.k) + '" alt=""><span class="npc-bubble">！</span></button>' : '') +
+      (list.length || inside ? '' : '<p class="home-empty">房间的主人不在，这里还没有展示精灵。</p>') + '</div>' +
+      (N ? '<div class="tea-bar npc-bar"><span class="tape l"></span><div class="tea-txt"><b>' + (inside ? esc(N.name) + ' 在家' : esc(N.name) + ' 不在房间里') + '</b>' +
+        '<p class="hint">' + (inside ? '点房间里的 ' + esc(N.name) + ' 或右边的按钮和 TA 说话，会进入对战。胜利奖励 ' + fmt(NPC_WIN_EXP) + ' 累积经验，每天一次。' : esc(N.away) + '所有乘员看到的时间都一样。') + '</p>' +
+        '<p class="tea-left">今天的胜利奖励：<b>' + (won ? '已领取' : '未领取') + '</b></p></div>' +
+        '<button type="button" class="btn primary" data-npctalk="' + R.k + '"' + (inside ? '' : ' disabled') + '>' + (inside ? '对话' : '不在家') + '</button></div>' : '') +
       (list.length ? '<p class="hint" style="margin-top:8px">Threego 在房间里展示着她的伙伴们。点它们可以摸摸。</p>' : '');
   }
   function saveHomeName() {
@@ -1490,6 +1588,7 @@
     if (b.dataset.qgo) { questGo(b.dataset.qgo); return; }
     if (b.dataset.dclaim) { claimDaily(+b.dataset.dclaim); renderQuests(); return; }
     if (b.dataset.qclaim) { claimQuest(b.dataset.qclaim); return; }
+    if (b.dataset.npctalk) { npcTalk(b.dataset.npctalk); return; }
     if (b.dataset.room) { ex.view = 'room'; ex.room = b.dataset.room; ex.area = '天门'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); mysteryRoll('荆楚号 · 陆羽茶室'); return; }
     if (b.dataset.home) { ex.view = 'home'; ex.area = '天门'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); mysteryRoll('荆楚号 · 陆羽茶室'); return; }
     if (b.dataset.boss) { ex.view = 'boss'; ex.boss = b.dataset.boss; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); mysteryRoll('荆楚号 · ' + DEPTS[BOSSES[b.dataset.boss].dept][0]); return; }
@@ -1720,6 +1819,7 @@
   window.HSACC = {
     acc: function () { return acc; }, ready: ready, save: save, toast: toast, go: go, page: function () { return page; }, renderRes: renderRes,
     titleName: titleName, mon: mon, fmt: fmt,
+    npcPlan: npcPlan, npcHome: npcHome,
     teaFight: teaFight, teaLeft: teaLeft, TEA_DAILY: TEA_DAILY, TEA_EXP: TEA_EXP, homePos: HOME_POS,
     view: function (m) { var f = form(m); return { name: f.name, img: f.img, stage: f.stage }; },
     // 把服务器发来的精灵资料变成对战用的精灵（逐项检查，不信任外来数据）
