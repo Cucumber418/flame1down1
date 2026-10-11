@@ -2,13 +2,14 @@
 # Flame1Down - 1 一键安装（在腾讯云服务器上运行一次即可）
 #
 # 做的事：装 Node.js → 把游戏放到 /opt/flame1down1 → 注册成系统服务（开机自启、崩溃自动重启）→ 自检
-# 用法：sudo bash /opt/flame1down1/server/setup.sh
+# 用法：sudo bash /opt/flame1down1/server/setup.sh        （默认 80 端口）
+#       sudo bash /opt/flame1down1/server/setup.sh 8080   （80 被占用时换个端口）
 set -e
 
 APP_DIR=/opt/flame1down1
 REPO=https://github.com/Cucumber418/flame1down1
 SERVICE=flame1down
-PORT=80
+PORT=${1:-${PORT:-80}}
 
 say()  { printf '\n\033[1;36m==> %s\033[0m\n' "$1"; }
 ok()   { printf '\033[1;32m✔ %s\033[0m\n' "$1"; }
@@ -45,7 +46,7 @@ ok "代码已就位"
 say "检查 $PORT 端口"
 if command -v ss >/dev/null 2>&1 && ss -ltnp 2>/dev/null | grep -q ":$PORT " && ! ss -ltnp 2>/dev/null | grep ":$PORT " | grep -q node; then
   ss -ltnp | grep ":$PORT " || true
-  fail "$PORT 端口被别的程序占着（常见是 nginx 或宝塔面板）。把上面这行发给 Claude"
+  fail "$PORT 端口被别的程序占着（常见是 nginx、caddy 或宝塔面板）。可以换个端口重装：sudo bash $APP_DIR/server/setup.sh 8080"
 fi
 ok "$PORT 端口可用"
 
@@ -83,10 +84,11 @@ fi
 IP=$(curl -fsS --max-time 3 http://metadata.tencentyun.com/latest/meta-data/public-ipv4 2>/dev/null || true)
 echo
 echo "=============================================="
-if [ -n "$IP" ]; then
-  echo "  装好了！用浏览器打开： http://$IP"
-else
-  echo "  装好了！用浏览器打开： http://你的服务器公网IP"
+[ -n "$IP" ] || IP="你的服务器公网IP"
+if [ "$PORT" = "80" ]; then URL="http://$IP"; else URL="http://$IP:$PORT"; fi
+echo "  装好了！用浏览器打开： $URL"
+if [ "$PORT" != "80" ]; then
+  echo "  （打不开的话，去腾讯云控制台 → 这台服务器 → 防火墙，添加一条规则放行 TCP $PORT 端口）"
 fi
 echo "  以后更新游戏只需运行： sudo bash $APP_DIR/server/update.sh"
 echo "=============================================="

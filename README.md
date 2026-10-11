@@ -105,6 +105,8 @@ sudo git clone --depth 1 https://github.com/Cucumber418/flame1down1 /opt/flame1d
 
 **更新**：代码推到 GitHub 之后，在服务器终端运行 `sudo bash /opt/flame1down1/server/update.sh`。
 
+80 端口被占用时（比如镜像自带了 caddy / nginx），可以换端口安装：`sudo bash /opt/flame1down1/server/setup.sh 8080`，然后在腾讯云防火墙里放行这个端口，用 `http://服务器IP:8080` 打开。
+
 **检查是否在运行**：浏览器打开 `http://服务器IP/ping`，显示 `ok` 就正常；`http://服务器IP/status` 能看到在线人数和房间数。
 
 ## 存档
