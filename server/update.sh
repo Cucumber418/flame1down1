@@ -11,7 +11,8 @@ echo "当前版本：$(git -C "$APP_DIR" log -1 --format='%h %s')"
 echo "正在从 GitHub 下载更新（国内连 GitHub 有时较慢，请耐心等待，最多 5 分钟）…"
 # 国内服务器用默认的 HTTP/2 连 GitHub 经常卡住，固定用 HTTP/1.1
 git -C "$APP_DIR" config http.version HTTP/1.1
-if ! timeout 300 git -C "$APP_DIR" pull --ff-only --progress; then
+# 用 fetch + reset：开了自动部署后服务器上的文件可能已经比 git 记录的新，直接 pull 会冲突
+if ! timeout 300 git -C "$APP_DIR" fetch --progress origin main || ! git -C "$APP_DIR" reset --hard origin/main; then
   echo "✘ 下载更新失败或超时。可能是连 GitHub 不稳定，过几分钟再运行一次。"
   exit 1
 fi

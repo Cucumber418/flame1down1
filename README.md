@@ -109,7 +109,9 @@ server/
 sudo git clone --depth 1 https://github.com/Cucumber418/flame1down1 /opt/flame1down1 && sudo bash /opt/flame1down1/server/setup.sh
 ```
 
-**更新**：代码推到 GitHub 之后，在服务器终端运行 `sudo bash /opt/flame1down1/server/update.sh`。
+**自动部署（推荐）**：`.github/workflows/deploy.yml` 会在每次推送到 main 后，由 GitHub 把新版本上传到服务器并重启，不需要服务器去连 GitHub。一次性设置：在服务器上用 ubuntu 账号运行 `bash /opt/flame1down1/server/setup-deploy.sh`，把它打印的 `DEPLOY_HOST` 和 `DEPLOY_KEY` 填进仓库 Settings → Secrets and variables → Actions。部署记录在仓库的 Actions 页面里看。
+
+**手动更新**：在服务器终端运行 `sudo bash /opt/flame1down1/server/update.sh`（国内连 GitHub 不稳定时可能卡住）。
 
 80 端口被占用时（比如镜像自带了 caddy / nginx），可以换端口安装：`sudo bash /opt/flame1down1/server/setup.sh 8080`，然后在腾讯云防火墙里放行这个端口，用 `http://服务器IP:8080` 打开。
 

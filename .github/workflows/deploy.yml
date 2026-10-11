@@ -1,0 +1,66 @@
+# 自动部署：每次有代码推到 main，GitHub 就把新版本送到腾讯云服务器并重启游戏服务。
+# 需要在仓库 Settings → Secrets and variables → Actions 里设置两个 secret：
+#   DEPLOY_HOST  服务器公网 IP
+#   DEPLOY_KEY   服务器上生成的部署私钥（server/setup-deploy.sh 会打印出来）
+# 没设置 secret 时这个流程会直接跳过，不会报错。
+name: 部署到服务器
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: 检查是否已配置服务器
+        id: cfg
+        env:
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          KEY: ${{ secrets.DEPLOY_KEY }}
+        run: |
+          if [ -z "$HOST" ] || [ -z "$KEY" ]; then
+            echo "还没有设置 DEPLOY_HOST / DEPLOY_KEY，跳过部署。"
+            echo "ok=no" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=yes" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.cfg.outputs.ok == 'yes'
+
+      - name: 准备 SSH 钥匙
+        if: steps.cfg.outputs.ok == 'yes'
+        env:
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          KEY: ${{ secrets.DEPLOY_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/deploy && chmod 600 ~/.ssh/deploy
+          ssh-keyscan -T 30 "$HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: 上传新版本
+        if: steps.cfg.outputs.ok == 'yes'
+        env:
+          HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          for i in 1 2 3; do
+            rsync -az --delete --exclude '.git' --exclude '.github' \
+              -e "ssh -i ~/.ssh/deploy -o ServerAliveInterval=15 -o ConnectTimeout=30" \
+              --rsync-path="sudo rsync" ./ "ubuntu@$HOST:/opt/flame1down1/" && break
+            echo "第 $i 次上传失败，10 秒后重试"; sleep 10
+            [ "$i" = 3 ] && exit 1
+          done
+
+      - name: 重启游戏服务并自检
+        if: steps.cfg.outputs.ok == 'yes'
+        env:
+          HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          ssh -i ~/.ssh/deploy -o ConnectTimeout=30 "ubuntu@$HOST" 'sudo systemctl restart flame1down && sleep 2 && P=$(sed -n "s/^Environment=PORT=//p" /etc/systemd/system/flame1down.service); curl -fsS "http://127.0.0.1:${P:-80}/ping" && echo " 服务器已更新到 '"${GITHUB_SHA::7}"'"'
