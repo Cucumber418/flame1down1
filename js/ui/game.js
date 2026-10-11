@@ -1690,10 +1690,37 @@
     } else if (e.key === 'Escape' && !$('vn-log').hidden) $('vn-log').hidden = true;
   });
 
+  /* ---------- 拜访别人的茶室：挑战茶室里展示的精灵 ----------
+   * 每天前 5 场各奖励 1000 累积经验（进经验背包），赢输都算，认输不算；0 点刷新 */
+  var TEA_DAILY = 5, TEA_EXP = 1000;
+  function teaLeft() { var t = acc && acc.teaFight; return t && t.d === todayKey() ? Math.max(0, TEA_DAILY - (t.n || 0)) : TEA_DAILY; }
+  function teaFight(opt) {
+    var team = (acc.teams[acc.active] || []).map(mon).filter(Boolean);
+    if (!team.length) team = acc.mons.slice(0, 1);
+    var p = team.slice(0, TEAM_SIZE).map(storyMon);
+    stopTimers(); ex.fighting = true; document.body.classList.add('story-fight');
+    ['log', 'bag', 'store', 'dex', 'social', 'explore'].forEach(function (pg) { $('pg-' + pg).hidden = true; });
+    $('pg-arena').hidden = false; $('who-menu').hidden = true;
+    window.HSBATTLE.start({ p: p, a: opt.foe, foe: opt.owner + '的茶室', bg: BG.tea_p, back: '茶室', onEnd: function (res, seen, downs, quit) {
+      ex.fighting = false; document.body.classList.remove('story-fight');
+      var msg = '';
+      if (quit) msg = '认输的茶室对战不计入奖励次数。';
+      else if (teaLeft() > 0) {
+        var t = acc.teaFight && acc.teaFight.d === todayKey() ? acc.teaFight : { d: todayKey(), n: 0 };
+        t.n++; acc.teaFight = t; acc.exp = (acc.exp || 0) + TEA_EXP; save();
+        msg = '茶室对战奖励：累积经验 +' + fmt(TEA_EXP) + '，已放进经验背包。今天还能领 ' + teaLeft() + ' 次。';
+      } else msg = '今天的 ' + TEA_DAILY + ' 次茶室对战奖励已经领完了，明天 0 点刷新。';
+      go('social');
+      setTimeout(function () { toast(msg); }, 300);
+      if (opt.onDone) opt.onDone(res);
+    } });
+  }
+
   /* ---------- 给社交页（social.js）用的接口 ---------- */
   window.HSACC = {
     acc: function () { return acc; }, ready: ready, save: save, toast: toast, go: go, page: function () { return page; }, renderRes: renderRes,
     titleName: titleName, mon: mon, fmt: fmt,
+    teaFight: teaFight, teaLeft: teaLeft, TEA_DAILY: TEA_DAILY, TEA_EXP: TEA_EXP, homePos: HOME_POS,
     view: function (m) { var f = form(m); return { name: f.name, img: f.img, stage: f.stage }; },
     // 把服务器发来的精灵资料变成对战用的精灵（逐项检查，不信任外来数据）
     spec: function (raw) {

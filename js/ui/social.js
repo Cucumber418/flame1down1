@@ -17,7 +17,7 @@
   var esc = H.esc, tchips = H.tchips;
   var SHOW_MAX = 5, MOTTO_MAX = 200, TURN_SEC = 90;
   var online = !!(C && C.user && C.user());   // 用服务器打开并登录了才有社交功能
-  var st = { tab: 'players', players: null, me: null, err: '', ws: null, wsOk: false, retry: 0, pend: null, inc: null, match: null, edit: null };
+  var st = { view: null, tab: 'players', players: null, me: null, err: '', ws: null, wsOk: false, retry: 0, pend: null, inc: null, match: null, edit: null };
 
   /* ---------- 小工具 ---------- */
   function api(method, url, body) { return C.api(method, url, body); }
@@ -73,6 +73,7 @@
       '<span class="pr-show">' + (p.show || []).map(monThumb).join('') + '</span></button>' +
       '<span class="pr-acts">' +
       (p.me ? '<button type="button" class="btn" data-tab="mine">编辑名片</button>' :
+        '<button type="button" class="btn ghost" data-home="' + esc(p.user) + '"' + (p.homeOpen ? '' : ' disabled title="对方还没有开放茶室"') + '>茶室' + (p.homeN ? ' · ' + p.homeN : '') + '</button>' +
         '<button type="button" class="btn' + (p.friend ? ' on' : '') + '" data-friend="' + esc(p.user) + '" aria-pressed="' + !!p.friend + '">' + (p.friend ? '★ 好友' : '＋ 加好友') + '</button>' +
         '<button type="button" class="btn primary" data-fight="' + esc(p.user) + '"' + (canFight ? '' : ' disabled title="' + (p.noChar ? '对方还没有创建角色' : p.busy ? '对方正在对战中' : '对方不在线') + '"') + '>切磋</button>') +
       '</span></article>';
@@ -107,7 +108,8 @@
       el.addEventListener('click', function (e) {
         if (e.target.closest('[data-x]')) return close();
         var f = e.target.closest('[data-friend]'); if (f) { toggleFriend(f.dataset.friend).then(function () { close(); openCard(user); }); return; }
-        var g = e.target.closest('[data-fight]'); if (g && !g.disabled) { close(); askFight(g.dataset.fight); }
+        var g = e.target.closest('[data-fight]'); if (g && !g.disabled) { close(); askFight(g.dataset.fight); return; }
+        var h = e.target.closest('[data-home]'); if (h && !h.disabled) { close(); openHome(h.dataset.home); }
       });
     });
     api('GET', '/api/card?user=' + encodeURIComponent(user)).then(function (c) {
@@ -115,7 +117,8 @@
       if (c._code !== 200) { body.innerHTML = '<p class="hint">' + esc(c.error || '读取失败') + '</p>'; return; }
       var canFight = !c.me && !c.noChar && c.online && !c.busy;
       body.innerHTML = cardHTML(c) + '<div class="soc-foot"><button type="button" class="btn ghost" data-x="1">关闭</button>' +
-        (c.me ? '' : '<button type="button" class="btn" data-friend="' + esc(c.user) + '">' + (c.friend ? '取消好友' : '＋ 加好友') + '</button>' +
+        (c.me ? '' : '<button type="button" class="btn ghost" data-home="' + esc(c.user) + '"' + (c.homeOpen ? '' : ' disabled') + '>拜访茶室</button>' +
+          '<button type="button" class="btn" data-friend="' + esc(c.user) + '">' + (c.friend ? '取消好友' : '＋ 加好友') + '</button>' +
           '<button type="button" class="btn primary" data-fight="' + esc(c.user) + '"' + (canFight ? '' : ' disabled') + '>切磋</button>') + '</div>';
     }).catch(function () { var body = d.el.querySelector('.pc-body'); if (body) body.innerHTML = '<p class="hint">连不上服务器</p>'; });
   }
@@ -127,6 +130,38 @@
       A.toast(on ? '已把 @' + user + ' 加为好友。' : '已取消好友 @' + user + '。');
       render();
     }).catch(function () { A.toast('连不上服务器'); });
+  }
+
+  /* ---------- 拜访茶室 ---------- */
+  function openHome(user) {
+    st.view = { user: user, data: null, err: '' };
+    if (A.page() !== 'social') A.go('social'); else render();
+    window.scrollTo(0, 0);
+    api('GET', '/api/home?user=' + encodeURIComponent(user)).then(function (r) {
+      if (!st.view || st.view.user !== user) return;
+      if (r._code !== 200) st.view.err = r.error || '读取失败'; else st.view.data = r;
+      render();
+    }).catch(function () { if (st.view) { st.view.err = '连不上服务器'; render(); } });
+  }
+  function homeHTML() {
+    var V0 = st.view, d = V0.data, back = '<div class="crumb"><button type="button" class="btn ghost" data-back="1">‹ 返回社交</button>';
+    if (!d) return back + '</div><p class="hint soc-load">' + (V0.err ? esc(V0.err) : '正在前往茶室……') + '</p>';
+    if (d.noChar) return back + '</div><div class="soc-empty"><p>@' + esc(d.user) + ' 还没有创建游戏角色。</p></div>';
+    if (!d.open) return back + '<b class="home-name">' + esc(d.name) + ' 的休息舱</b></div><div class="soc-empty"><p>' + esc(d.name) + ' 还没有读完「陆羽茶室」支线，茶室还没开放。</p></div>';
+    var pos = A.homePos, figs = d.mons.map(function (m, i) {
+      var v = A.view({ sid: m.sid, lv: m.lv }), p = pos[i] || pos[0];
+      return '<div class="hm-fig" style="left:' + p[0] + '%;top:' + p[1] + '%"><button type="button" class="hm-poke" data-poke="1" aria-label="摸摸' + esc(v.name) + '"><img src="' + v.img + '" alt=""></button><span class="hm-tag">' + esc(v.name) + ' · LV' + m.lv + '</span></div>';
+    }).join('');
+    var left = A.teaLeft(), mine = (A.acc().teams[A.acc().active] || []).map(A.mon).filter(Boolean);
+    return back + '<b class="home-name">' + esc(d.homeName) + '</b><span class="hint">' + esc(d.name) + ' 的茶室' + (d.online ? ' · 主人在线' : '') + '</span></div>' +
+      '<div class="home-room"><img class="home-bg" src="' + BG.tea_p + '" alt="' + esc(d.homeName) + '">' + figs +
+      (d.mons.length ? '' : '<p class="home-empty">茶室里空荡荡的，主人还没有放精灵出来展示。</p>') + '</div>' +
+      (d.me ? '<p class="hint" style="margin-top:8px">这是你自己的茶室。</p>' :
+      '<div class="tea-bar"><span class="tape l"></span><div class="tea-txt"><b>挑战茶室</b>' +
+      '<p class="hint">用你的出战配队（' + Math.min(5, mine.length) + ' 只）挑战茶室里正在训练的 ' + d.mons.length + ' 只精灵，对手由电脑操控，用的是它们的真实等级和技能。' +
+      '每天前 ' + A.TEA_DAILY + ' 场茶室对战各奖励 ' + A.fmt(A.TEA_EXP) + ' 累积经验（进经验背包），赢输都算，认输不算，0 点刷新。</p>' +
+      '<p class="tea-left">今天还能领奖 <b>' + left + '</b> / ' + A.TEA_DAILY + ' 次</p></div>' +
+      '<button type="button" class="btn primary" data-teafight="1"' + (d.mons.length && mine.length ? '' : ' disabled') + '>' + (d.mons.length ? '挑战茶室' : '没有可挑战的精灵') + '</button></div>');
   }
 
   /* ---------- 我的名片（编辑） ---------- */
@@ -177,6 +212,7 @@
     }
     var P = st.players || [], friends = P.filter(function (p) { return p.friend; }), on = P.filter(function (p) { return p.online; }).length;
     var focus = document.activeElement && document.activeElement.id === 'me-motto' ? $('me-motto').selectionStart : null;
+    if (st.view) { pg.innerHTML = '<div class="soc-head"><h2 class="sec">拜访茶室</h2></div>' + homeHTML(); return; }
     var body;
     if (st.tab === 'mine') body = mineHTML();
     else if (!st.players) body = '<p class="hint soc-load">' + (st.err ? esc(st.err) + ' · <button type="button" class="btn ghost" data-reload="1">重试</button>' : '读取乘员名单中……') + '</p>';
@@ -199,6 +235,15 @@
       var t;
       if ((t = e.target.closest('[data-tab]'))) { st.tab = t.dataset.tab; if (st.tab === 'mine' && !st.edit) startEdit(); render(); if (st.tab !== 'mine') load(); return; }
       if ((t = e.target.closest('[data-reload]'))) { load(); return; }
+      if ((t = e.target.closest('[data-back]'))) { st.view = null; render(); load(); return; }
+      if ((t = e.target.closest('[data-home]'))) { if (!t.disabled) openHome(t.dataset.home); return; }
+      if ((t = e.target.closest('[data-poke]'))) { var fig = t.closest('.hm-fig'); fig.classList.remove('hop'); void fig.offsetWidth; fig.classList.add('hop'); return; }
+      if ((t = e.target.closest('[data-teafight]'))) {
+        var d = st.view && st.view.data; if (!d || !d.mons.length || t.disabled) return;
+        var foe = d.mons.map(A.spec).filter(Boolean);
+        if (foe.length) A.teaFight({ owner: d.name, foe: foe, onDone: function () { render(); } });
+        return;
+      }
       if ((t = e.target.closest('[data-friend]'))) { toggleFriend(t.dataset.friend); return; }
       if ((t = e.target.closest('[data-fight]'))) { if (!t.disabled) askFight(t.dataset.fight); return; }
       if ((t = e.target.closest('[data-card]'))) { openCard(t.dataset.card); return; }

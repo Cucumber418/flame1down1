@@ -774,7 +774,7 @@
     if (app.S.training) { app.S.over = 'train'; showEnd(); return; }
     if (app.S.wild) { app.S.over = 'flee'; addLog('你带着精灵们逃走了。', 'dmg'); showEnd(); return; }
     if (pvp && Date.now() - quitArmed < 3000) { b.textContent = '认输'; quitArmed = 0; pvp.onQuit(); return; }
-    if (Date.now() - quitArmed < 3000) { app.S.over = 'lose'; addLog('你认输了。', 'bad'); b.textContent = '认输'; showEnd(); return; }
+    if (Date.now() - quitArmed < 3000) { app.S.over = 'lose'; app.S.quit = true; addLog('你认输了。', 'bad'); b.textContent = '认输'; showEnd(); return; }
     quitArmed = Date.now(); b.textContent = '再点一次确认';
     setTimeout(function () { b.textContent = '认输'; }, 3000);
   });
@@ -787,9 +787,9 @@
       if (done) done(); return;
     }
     if (app.S && app.S.story) {
-      var res = app.S.over, cb = storyEnd, seen = app.S.sides[0].team.map(function (x) { return !!x.seen; }), downs = app.S.sides[1].team.filter(function (x) { return x.fainted; }).map(function (x) { return { id: x.id, lv: x.lv }; }); storyEnd = null; itemUsed = null;
+      var res = app.S.over, quit = !!app.S.quit, cb = storyEnd, seen = app.S.sides[0].team.map(function (x) { return !!x.seen; }), downs = app.S.sides[1].team.filter(function (x) { return x.fainted; }).map(function (x) { return { id: x.id, lv: x.lv }; }); storyEnd = null; itemUsed = null;
       app.screen = 'builder'; app.S = null; $('battle').hidden = true; $('builder').hidden = false; $('log').innerHTML = ''; $('btn-again').hidden = false; setFieldBg(null);
-      if (cb) cb(res, seen, downs); return;
+      if (cb) cb(res, seen, downs, quit); return;
     }
     app.screen = 'builder'; app.S = null; $('statsbox').hidden = true; $('battle').hidden = true; $('builder').hidden = false; $('log').innerHTML = ''; renderMode(); renderBuilder();
   });

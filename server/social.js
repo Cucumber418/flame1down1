@@ -8,6 +8,7 @@
  *   GET  /api/players            所有玩家的简要信息 + 在线状态 + 是否好友
  *   GET  /api/card?user=账号名    某个玩家的完整名片
  *   POST /api/friends { user, on }   加好友 / 删好友（单向，像「关注」）
+ *   GET  /api/home?user=账号名    拜访某人的茶室：茶室名字、展示中的精灵（用于观看和挑战）
  *
  * WebSocket 消息（在 server.js 的 /ws 上）：
  *   → { type:'auth', token }                     用登录凭证认证，之后才算「在线」
@@ -58,6 +59,12 @@ function showMons(acc) {
   var c = acc.card && Array.isArray(acc.card.show) ? acc.card.show : [];
   return c.slice(0, 5).map(function (u) { return monByU(acc, u); }).filter(Boolean);
 }
+// 茶室：读完「陆羽茶室」支线才开放，最多展示 3 只
+function homeOf(acc) {
+  var open = !!(acc.story && acc.story.tea && acc.story.tea.done), h = acc.home || {};
+  var mons = (Array.isArray(h.mons) ? h.mons : []).slice(0, 3).map(function (x) { return monByU(acc, x && typeof x === 'object' ? x.u : x); }).filter(Boolean);
+  return { open: open, name: str(h.name, 10) || '陆羽茶室', mons: open ? mons : [] };
+}
 function rankOut(r) { return r ? { r: int(r.r, 0, 99), best: int(Math.max(r.best || 0, r.r || 0), 0, 99), w: int(r.w, 0, 1e7), l: int(r.l, 0, 1e7) } : { r: 0, best: 0, w: 0, l: 0 }; }
 
 function summary(u, me) {
@@ -69,6 +76,7 @@ function summary(u, me) {
   o.monsN = acc.mons.length; o.teamN = activeTeam(acc).length;
   o.show = showMons(acc).map(function (m) { return { sid: str(m.sid, 32), lv: int(m.lv, 1, 100) }; });
   o.rank = rankOut(p.rank).best;
+  var hm = homeOf(acc); o.homeOpen = hm.open; o.homeN = hm.mons.length;
   return o;
 }
 function card(u, me) {
@@ -201,7 +209,7 @@ function onClose(ws) {
 
 /* ---------- HTTP 接口 ---------- */
 A.use(function (req, res, url) {
-  if (url !== '/api/players' && url !== '/api/card' && url !== '/api/friends') return false;
+  if (url !== '/api/players' && url !== '/api/card' && url !== '/api/friends' && url !== '/api/home') return false;
   var who = A.whoIs(req), me = who && A.loadUser(who.user);
   if (!me) { A.reply(res, 401, { error: '登录已失效，请重新登录' }); return true; }
 
@@ -215,6 +223,15 @@ A.use(function (req, res, url) {
     var q = /[?&]user=([^&]*)/.exec(req.url), name = q ? decodeURIComponent(q[1]) : '', u = name && A.loadUser(name);
     if (!u) A.reply(res, 404, { error: '没有这个玩家' });
     else A.reply(res, 200, card(u, me));
+    return true;
+  }
+  if (url === '/api/home' && req.method === 'GET') {
+    var qh = /[?&]user=([^&]*)/.exec(req.url), hn = qh ? decodeURIComponent(qh[1]) : '', hu = hn && A.loadUser(hn);
+    if (!hu) { A.reply(res, 404, { error: '没有这个玩家' }); return true; }
+    var ha = parseSave(hu).acc;
+    if (!ha || !ha.introDone) { A.reply(res, 200, { user: hu.name, noChar: true }); return true; }
+    var hm = homeOf(ha);
+    A.reply(res, 200, { user: hu.name, name: str(ha.name, 10), me: hu.name === me.name, open: hm.open, homeName: hm.name, mons: hm.mons.map(monOut), online: isOnline(hu.name) });
     return true;
   }
   if (url === '/api/friends' && req.method === 'POST') {
