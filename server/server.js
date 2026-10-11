@@ -41,7 +41,10 @@ var MIME = {
   '.ico': 'image/x-icon',
   '.woff': 'font/woff',
   '.woff2': 'font/woff2',
-  '.ttf': 'font/ttf'
+  '.ttf': 'font/ttf',
+  '.mp3': 'audio/mpeg',
+  '.ogg': 'audio/ogg',
+  '.m4a': 'audio/mp4'
 };
 // 这些目录和文件不对外提供
 var HIDDEN = ['server', '.git', 'node_modules'];
@@ -72,7 +75,20 @@ function serveFile(req, res) {
       // 每次都向服务器确认有没有更新：没变时只回 304，不会重新下载；换了图刷新就能看到
       'Cache-Control': 'no-cache'
     };
+    headers['Accept-Ranges'] = 'bytes';
     if (req.headers['if-none-match'] === etag) { res.writeHead(304, headers); return res.end(); }
+    // 音乐文件要支持「分段下载」（Range），不然 iPhone / Safari 放不出声音，也没法边下边播
+    var m = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range || '');
+    if (m && (m[1] || m[2])) {
+      var start = m[1] ? parseInt(m[1], 10) : Math.max(0, st.size - parseInt(m[2], 10));
+      var end = m[1] && m[2] ? Math.min(parseInt(m[2], 10), st.size - 1) : st.size - 1;
+      if (start > end || start >= st.size) { res.writeHead(416, { 'Content-Range': 'bytes */' + st.size }); return res.end(); }
+      headers['Content-Range'] = 'bytes ' + start + '-' + end + '/' + st.size;
+      headers['Content-Length'] = end - start + 1;
+      res.writeHead(206, headers);
+      if (req.method === 'HEAD') return res.end();
+      return fs.createReadStream(file, { start: start, end: end }).pipe(res);
+    }
     res.writeHead(200, headers);
     if (req.method === 'HEAD') return res.end();
     fs.createReadStream(file).pipe(res);

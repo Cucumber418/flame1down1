@@ -1333,7 +1333,7 @@
     acc.bosses[k].tries++; save();
     stopTimers(); ex.fighting = true; document.body.classList.add('story-fight'); syncBattle();
     $('pg-explore').hidden = true; $('pg-arena').hidden = false;
-    window.HSBATTLE.start({ p: p, a: a, foe: '首领', items: invCopy(), onItem: useInv, bg: BG[B.bg], back: DEPTS[B.dept][0],
+    window.HSBATTLE.start({ p: p, a: a, foe: '首领', bgm: 'boss', items: invCopy(), onItem: useInv, bg: BG[B.bg], back: DEPTS[B.dept][0],
       onEnd: function (res, seen, downs) {
         var msg = [], rec = acc.bosses[k];
         dailyHit('boss'); dailyHit('pve');

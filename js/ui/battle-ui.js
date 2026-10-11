@@ -427,8 +427,11 @@
   $('btn-start').addEventListener('click', function () { startBattle(); });
 
   /* ---------------- 对战界面 ---------------- */
+  // 战斗背景音乐（见 audio.js）
+  function bgm(k) { if (window.HSAUDIO) HSAUDIO.play(k); }
+  function bgmStop(ms) { if (window.HSAUDIO) HSAUDIO.stop(ms); }
   function startTraining() {
-    var id = app.sel;
+    var id = app.sel; bgm('pvp');
     app.S = newTraining({ id: id, moves: app.loadout[id].slice() }, app.train.lv, app.train.def);
     app.screen = 'battle'; app.logHTML = ''; $('log').innerHTML = '';
     $('builder').hidden = true; $('battle').hidden = false; $('endcard').hidden = true;
@@ -459,6 +462,7 @@
   function startBattle() {
     setFieldBg(null);
     if (training()) return startTraining();
+    bgm('pvp');
     var p = B().map(function (id) { return { id: id, moves: app.loadout[id].slice() }; });
     var rank = app.mode === 'rank';
     var a = rank ? buildAITeam(app.rank.r, B()) : (function () { var ids = shuffle(SP.map(function (s) { return s.id; })).slice(0, 5); return ids.map(function (id) { return { id: id, moves: smartLoadout(id, 6, ids) }; }); })();
@@ -479,7 +483,7 @@
   // 剧情对战（由星际探索调用）：opt = { p, a, foe, onEnd(result) }
   function setFieldBg(src) { var f = $('field'); f.classList.toggle('scene', !!src); f.style.backgroundImage = src ? 'linear-gradient(rgba(251,250,243,.32), rgba(251,250,243,.18)), url(' + src + ')' : ''; }
   function startStory(opt) {
-    setFieldBg(opt.bg || null);
+    setFieldBg(opt.bg || null); bgm(opt.bgm || 'normal');
     app.S = newBattle(opt.p, opt.a); app.S.story = { foe: opt.foe, back: opt.back || null };
     if (opt.items) app.S.items = opt.items;
     if (opt.env) app.S.env = opt.env;
@@ -507,7 +511,7 @@
     return left <= 30 ? '（剩余 ' + left + ' 秒，超时将自动出招）' : '';
   }
   function startPvp(opt) {
-    setFieldBg(null);
+    setFieldBg(null); bgm('pvp');
     PV = opt.side; pvp = opt; pvp.waiting = false; pvp.q = Promise.resolve(); pvp.deadline = Date.now() + opt.seconds * 1000;
     app.S = opt.S; storyEnd = null; itemUsed = null;
     app.screen = 'battle'; app.logHTML = ''; $('log').innerHTML = '';
@@ -732,6 +736,7 @@
   }
   function showEnd() {
     var S = app.S, r = S.over;
+    bgmStop(1500);
     if (pvp) {
       var mine = r === 'draw' ? 'draw' : (r === 'win') === (PV === 0) ? 'win' : 'lose';
       $('end-title').textContent = mine === 'win' ? '胜利！' : mine === 'lose' ? '失败了' : '平局';
@@ -815,6 +820,7 @@
   });
   $('btn-again').addEventListener('click', function () { if (rankOn()) { $('btn-back').click(); return; } $('log').innerHTML = ''; startBattle(); });
   $('btn-back').addEventListener('click', function () {
+    bgmStop(400);
     if (pvp) {
       var done = pvp.onEnd; clearInterval(pvp.clock); pvp = null; PV = 0;
       app.screen = 'builder'; app.S = null; $('battle').hidden = true; $('builder').hidden = false; $('log').innerHTML = ''; $('btn-again').hidden = false; setFieldBg(null);

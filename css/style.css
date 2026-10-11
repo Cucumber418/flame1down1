@@ -1246,3 +1246,20 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .mb-atts b { font-size: 13px; margin-right: 4px; }
 .mb-body .btn { justify-self: start; padding: 6px 14px; }
 .mb-empty { padding: 18px 0; }
+
+/* ============ 声音设置（邮箱旁边） ============ */
+.snd-wrap { position: relative; display: inline-flex; }
+.snd-btn > span { color: var(--ink); }
+.snd-menu { position: absolute; top: calc(100% + 8px); right: 0; z-index: 70; width: 250px; display: grid; gap: 10px; padding: 12px; background: var(--paper-2); border: 1.5px solid var(--ink); border-radius: 12px; box-shadow: 3px 3px 0 var(--ink); }
+.snd-menu[hidden] { display: none; }
+.snd-menu > b { font-size: 14px; }
+.snd-menu p { margin: 0; font-size: 12px; color: var(--pencil); line-height: 1.5; }
+.snd-menu .btn { padding: 5px 10px; font-size: 13px; }
+.snd-row { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.snd-row input[type=range] { flex: 1; min-width: 0; accent-color: var(--blue); }
+.snd-row output { width: 2.2em; text-align: right; font-variant-numeric: tabular-nums; }
+.snd-vol.off { opacity: .45; }
+@media (max-width: 640px) {
+  .snd-btn b { display: none; }
+  .snd-menu { right: auto; left: 50%; transform: translateX(-50%); }
+}
