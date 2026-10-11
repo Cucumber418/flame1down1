@@ -313,5 +313,16 @@
   }
   function start() { watchStorage(); loadGame(); }
 
-  window.CLOUD = { boot: boot, user: function () { return st.user; } };
+  // 等本机还没上传的进度传完（最多等 5 秒）。发起切磋前用，保证服务器拿到的是最新的配队
+  function flush() {
+    return new Promise(function (done) {
+      if (lsGet(DIRTY) !== '1') return done(true);
+      clearTimeout(st.timer); push();
+      var t0 = Date.now(), iv = setInterval(function () {
+        if (lsGet(DIRTY) !== '1' || Date.now() - t0 > 5000) { clearInterval(iv); done(lsGet(DIRTY) !== '1'); }
+        else if (!st.pushing) push();
+      }, 200);
+    });
+  }
+  window.CLOUD = { boot: boot, user: function () { return st.user; }, token: function () { return st.token; }, api: api, flush: flush };
 })();

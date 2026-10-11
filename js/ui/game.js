@@ -126,8 +126,10 @@
     });
     syncBattle();
     checkRankRewards(); daily();
-    ['arena', 'log', 'bag', 'store', 'dex', 'explore'].forEach(function (p) { $('pg-' + p).hidden = p !== page; });
-    if (page === 'bag') renderBag();
+    ['arena', 'log', 'bag', 'store', 'dex', 'social', 'explore'].forEach(function (p) { $('pg-' + p).hidden = p !== page; });
+    renderRename();
+    if (page === 'social') { if (window.HSSOCIAL) window.HSSOCIAL.render(); }
+    else if (page === 'bag') renderBag();
     else if (page === 'log') renderLog();
     else if (page === 'dex') renderDex2();
     else if (page === 'store') renderStore();
@@ -192,6 +194,36 @@
       return '<label class="tt-opt' + (own ? '' : ' lock') + '"><input type="radio" name="title" value="' + T.id + '"' + (cur === T.id ? ' checked' : '') + (own ? '' : ' disabled') + '><span><b>' + T.n + '</b><small>' + (own ? '已获得' : '未获得 · ' + T.d) + '</small></span></label>';
     }).join('') + '<label class="tt-opt"><input type="radio" name="title" value=""' + (cur ? '' : ' checked') + '><span><b>不佩戴</b></span></label>';
   }
+  /* ---------- 改名卡：商城 1000 能量，在名字菜单里使用 ---------- */
+  var renaming = false;
+  function renderRename() {
+    var n = (acc && acc.items && acc.items.rename) || 0, box = $('rename-box');
+    if (!acc) { box.innerHTML = ''; return; }
+    if (renaming && n > 0) {
+      box.innerHTML = '<b>改名</b><form class="rn-form" id="rn-form"><input id="rn-name" type="text" maxlength="' + NAME_MAX + '" autocomplete="off" spellcheck="false" value="' + esc(acc.name) + '" aria-label="新的做题家名字">' +
+        '<div class="rn-btns"><button type="button" class="btn ghost" id="rn-x">取消</button><button type="submit" class="btn primary">确认改名</button></div><p class="hint" id="rn-msg">最多 ' + NAME_MAX + ' 个字，会消耗 1 张改名卡。</p></form>';
+      var inp = $('rn-name'); inp.focus(); inp.select();
+      return;
+    }
+    box.innerHTML = '<b>改名卡</b><p>持有 ' + n + ' 张。' + (n ? '' : '可在荆楚号 · 荆门 · 物资仓储的商城用 1,000 能量兑换。') + '</p>' +
+      '<button type="button" class="btn" id="rn-use"' + (n ? '' : ' disabled') + '>使用改名卡</button>';
+  }
+  $('rename-box').addEventListener('click', function (e) {
+    e.stopPropagation();
+    if (e.target.id === 'rn-use') { renaming = true; renderRename(); }
+    else if (e.target.id === 'rn-x') { renaming = false; renderRename(); }
+  });
+  $('rename-box').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var v = Array.from($('rn-name').value.trim()).slice(0, NAME_MAX).join('');
+    if (!v) { $('rn-msg').textContent = '名字不能为空'; return; }
+    if (v === acc.name) { $('rn-msg').textContent = '和现在的名字一样'; return; }
+    if (!(acc.items.rename > 0)) { renaming = false; renderRename(); return; }
+    var old = acc.name;
+    acc.items.rename--; acc.name = v; renaming = false; save();
+    $('who-menu').hidden = true; renderTop();
+    toast('改名成功：「' + old + '」→「' + v + '」。剧情和名片里都会用新名字。');
+  });
   $('title-box').addEventListener('change', function (e) { if (e.target.name === 'title') { acc.title = e.target.value || null; save(); renderTitle(); } });
   $('title-box').addEventListener('click', function (e) { e.stopPropagation(); });
   $('btn-reset').addEventListener('click', function () {
@@ -1215,14 +1247,17 @@
 
   /* ---------- 商城：荆门 · 物资仓储 ---------- */
   var shopQty = {};
+  // 不在战斗里用的商品
+  var SHOP_X = { rename: { name: '改名卡', price: 1000, d: '使用后可以修改做题家名字（最多 10 个字）。兑换后点右上角的名字，在菜单里使用。' } };
+  function goods(k) { return ITEMS[k] || SHOP_X[k]; }
   function renderShop() {
-    var grp = [['捕捉装置', ['cap1', 'cap2', 'cap3']], ['体力补药', ['pot1', 'pot2']]];
+    var grp = [['捕捉装置', ['cap1', 'cap2', 'cap3']], ['体力补药', ['pot1', 'pot2']], ['其他', ['rename']]];
     $('pg-explore').innerHTML = exHead('荆楚号 · 荆门物资仓储的商城。用能量兑换探索道具，道具在剧情对战和野外对战的「道具」页使用。道具图目前是占位图。') +
       '<div class="crumb"><button type="button" class="btn ghost" id="ex-area">‹ 返回物资仓储</button><b>物资仓储 · 商城</b></div>' +
       '<div class="shop-bal"><span class="tape l"></span>当前能量 <b>' + fmt(acc.energy) + '</b></div>' +
       grp.map(function (g) {
         return '<h3 class="shop-h">' + g[0] + '</h3><div class="shop-grid">' + g[1].map(function (k) {
-          var it = ITEMS[k], q = shopQty[k] || 1, cost = it.price * q, ok = acc.energy >= cost;
+          var it = goods(k), q = shopQty[k] || 1, cost = it.price * q, ok = acc.energy >= cost;
           return '<article class="shop-it"><span class="tape r"></span>' + H.itemIcon(k) + '<div class="si-txt"><b>' + it.name + '</b><p class="hint">' + esc(it.d) + '</p>' +
             '<p class="si-own">持有 <b>' + (acc.items[k] || 0) + '</b></p></div>' +
             '<div class="si-buy"><span class="si-price">' + fmt(it.price) + ' <small>能量</small></span>' +
@@ -1234,10 +1269,10 @@
   function shopClick(e) {
     var q = e.target.closest('[data-q]'); if (q) { if (!q.disabled) { var a = q.dataset.q.split('|'); shopQty[a[0]] = Math.max(1, Math.min(99, (shopQty[a[0]] || 1) + +a[1])); renderShop(); } return true; }
     var b = e.target.closest('[data-buy]'); if (!b) return false; if (b.disabled) return true;
-    var k = b.dataset.buy, n = shopQty[k] || 1, cost = ITEMS[k].price * n;
+    var k = b.dataset.buy, n = shopQty[k] || 1, cost = goods(k).price * n;
     if (acc.energy < cost) return true;
     acc.energy -= cost; acc.items[k] = (acc.items[k] || 0) + n; shopQty[k] = 1; save();
-    renderRes(); renderShop(); toast('兑换成功：' + ITEMS[k].name + ' ×' + n + '，消耗 ' + fmt(cost) + ' 能量。');
+    renderRes(); renderShop(); renderRename(); toast('兑换成功：' + goods(k).name + ' ×' + n + '，消耗 ' + fmt(cost) + ' 能量。' + (k === 'rename' ? '点右上角的名字即可使用。' : ''));
     return true;
   }
 
@@ -1654,6 +1689,32 @@
       e.preventDefault(); if (!$('vn-log').hidden || !$('vn-end').hidden || !$('vn-pick').hidden) return; next();
     } else if (e.key === 'Escape' && !$('vn-log').hidden) $('vn-log').hidden = true;
   });
+
+  /* ---------- 给社交页（social.js）用的接口 ---------- */
+  window.HSACC = {
+    acc: function () { return acc; }, ready: ready, save: save, toast: toast, go: go, page: function () { return page; }, renderRes: renderRes,
+    titleName: titleName, mon: mon, fmt: fmt,
+    view: function (m) { var f = form(m); return { name: f.name, img: f.img, stage: f.stage }; },
+    // 把服务器发来的精灵资料变成对战用的精灵（逐项检查，不信任外来数据）
+    spec: function (raw) {
+      var s = raw && SPMAP[raw.sid]; if (!s) return null;
+      var lv = Math.max(1, Math.min(100, Math.round(+raw.lv || 1)));
+      var own = s.moves.concat(s.hidden);
+      var mv = (raw.moves || []).filter(function (n, i, a) { return M[n] && own.indexOf(n) >= 0 && a.indexOf(n) === i; }).slice(0, 4);
+      if (!mv.length) mv = defaultMoves(raw.sid, lv, []);
+      var ev = {}; STAT_KEYS.forEach(function (k) { var v = raw.ev && +raw.ev[k]; if (v > 0) ev[k] = Math.min(300, Math.round(v)); });
+      var f = form({ sid: raw.sid, lv: lv });
+      return { id: raw.sid, lv: lv, moves: mv, nick: f.name, img: f.img, ev: ev, nat: raw.nat && NATURES[raw.nat] ? raw.nat : null };
+    },
+    inBattle: function () { return !$('battle').hidden; },
+    // 联网切磋：像剧情对战一样切到对战画面，锁住其他大栏
+    enterBattle: function () {
+      stopTimers(); ex.fighting = true; document.body.classList.add('story-fight');
+      ['log', 'bag', 'store', 'dex', 'social', 'explore'].forEach(function (p) { $('pg-' + p).hidden = true; });
+      $('pg-arena').hidden = false; $('who-menu').hidden = true;
+    },
+    leaveBattle: function () { ex.fighting = false; document.body.classList.remove('story-fight'); go('social'); }
+  };
 
   renderTop(); syncBattle();
 })();

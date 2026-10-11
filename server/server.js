@@ -4,7 +4,7 @@
  * 做两件事：
  * 1. 把游戏网页（仓库根目录下的 index.html、css、js、images）发给浏览器
  * 2. 账号和云存档（/api/...，见 accounts.js）
- * 3. 在 /ws 上开一个 WebSocket，给联网对战的两个玩家传话（房间制）
+ * 3. 在 /ws 上开一个 WebSocket：在线状态、好友、切磋邀请、联网对战传话（见 social.js）
  *
  * 启动：node server.js        （默认端口 80，可用环境变量 PORT 改）
  * 检查：浏览器打开 http://服务器IP/ping ，看到 ok 就说明在运行
@@ -18,6 +18,7 @@ var fs = require('fs');
 var path = require('path');
 var WebSocket = require('ws');
 var accounts = require('./accounts');
+var social = require('./social');
 
 var PORT = parseInt(process.env.PORT, 10) || 80;
 var ROOT = path.resolve(__dirname, '..');           // 仓库根目录
@@ -84,7 +85,7 @@ var server = http.createServer(function (req, res) {
   if (req.url === '/ping') return send(res, 200, 'text/plain; charset=utf-8', 'ok');
   if (req.url === '/status') {
     return send(res, 200, 'application/json; charset=utf-8', JSON.stringify({
-      ok: true, since: STARTED.toISOString(), users: accounts.userCount(), online: wss.clients.size, rooms: Object.keys(rooms).length
+      ok: true, since: STARTED.toISOString(), users: accounts.userCount(), players: social.onlineCount(), online: wss.clients.size, rooms: Object.keys(rooms).length
     }));
   }
   serveFile(req, res);
@@ -114,7 +115,7 @@ var server = http.createServer(function (req, res) {
 
 var rooms = {};            // code -> { seats: [ws, ws], created }
 var nextId = 1;
-var MAX_MSG = 64 * 1024;   // 单条消息上限 64KB，防止乱发大包
+var MAX_MSG = 1024 * 1024;   // 单条消息上限 1MB（联网切磋每回合要传完整战况，最多一百多 KB）
 
 function out(ws, obj) { if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj)); }
 function cleanName(n) { return String(n || '').replace(/[\u0000-\u001f<>]/g, '').slice(0, 10) || '无名乘员'; }
@@ -144,11 +145,13 @@ wss.on('connection', function (ws) {
   ws.room = null; ws.seat = null; ws.name = '';
   ws.on('pong', function () { ws.alive = true; });
   out(ws, { type: 'hello', id: ws.id });
+  social.onOpen(ws);
 
   ws.on('message', function (raw) {
     var msg;
     try { msg = JSON.parse(String(raw)); } catch (e) { return out(ws, { type: 'error', msg: '消息格式不对' }); }
     if (!msg || typeof msg.type !== 'string') return;
+    if (social.onMessage(ws, msg)) return;   // 在线状态、切磋邀请、联网对战（见 social.js）
 
     if (msg.type === 'create') {
       leaveRoom(ws);
@@ -184,7 +187,7 @@ wss.on('connection', function (ws) {
     }
   });
 
-  ws.on('close', function () { leaveRoom(ws); });
+  ws.on('close', function () { leaveRoom(ws); social.onClose(ws); });
   ws.on('error', function () {});
 });
 

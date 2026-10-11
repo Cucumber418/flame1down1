@@ -20,6 +20,7 @@
       <button type="button" class="who-btn" id="who-btn" aria-haspopup="true" aria-expanded="false"><span class="av" id="who-av">?</span><span><span class="lab" id="who-title">做题家</span><br><b id="who-name"></b></span></button>
       <div class="who-menu" id="who-menu" hidden>
         <div class="title-box" id="title-box"></div>
+        <div class="rename-box" id="rename-box"></div>
         <p id="who-info"></p>
         <button type="button" class="btn danger" id="btn-reset">重置存档</button>
         <p>重置后将删除账号和所有精灵，回到创建账号的步骤。竞技对战的段位不受影响。</p>
@@ -31,6 +32,7 @@
       <button type="button" class="nav" data-page="bag" role="tab" aria-selected="false">精灵背包<small>配队与首发</small></button>
       <button type="button" class="nav" data-page="store" role="tab" aria-selected="false">精灵仓库<small>全部精灵 · 检索</small></button>
       <button type="button" class="nav" data-page="dex" role="tab" aria-selected="false">黄冈秘鉴<small>精灵图鉴</small></button>
+      <button type="button" class="nav" data-page="social" role="tab" aria-selected="false">社交<small>玩家 · 好友 · 切磋</small></button>
       <button type="button" class="nav" data-page="explore" role="tab" aria-selected="false">星际探索<small>星球 · 剧情</small></button>
     </nav>
   </header>
@@ -146,6 +148,7 @@
   <div class="page" id="pg-store" hidden></div>
   <div class="page" id="pg-dex" hidden></div>
   <div class="page" id="pg-log" hidden></div>
+  <div class="page" id="pg-social" hidden></div>
   <div class="page" id="pg-explore" hidden></div>
 </div>
 
@@ -174,7 +177,8 @@ CLOUD.boot([
   'js/engine/ai.js',
   'js/engine/ranked.js',
   'js/ui/battle-ui.js',
-  'js/ui/game.js'
+  'js/ui/game.js',
+  'js/ui/social.js'
 ]);
 </script>
 </body>

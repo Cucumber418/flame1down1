@@ -78,6 +78,9 @@
   function tchips(ts) { return ts.map(tchip).join(''); }
   // 道具图标（占位，之后换成正式立绘）
   function itemIcon(k) {
+    if (k === 'rename') return '<svg class="it-ic" viewBox="0 0 64 64" aria-hidden="true"><g stroke="#23222b" stroke-width="2.5" stroke-linejoin="round">' +
+      '<rect x="8" y="14" width="48" height="36" rx="6" fill="#fbfaf3"/><path d="M8 24h48" /><rect x="14" y="31" width="14" height="13" rx="3" fill="#e8d080"/>' +
+      '<path d="M33 34h16M33 41h10" stroke-linecap="round"/><path d="M44 50l12-12 4 4-12 12h-4z" fill="#c42f3a" stroke-width="2"/></g></svg>';
     var C = { cap1: ['#7c97b8', '#e8eef6'], cap2: ['#c42f3a', '#f6e4e2'], cap3: ['#2b2a33', '#f3d36b'], pot1: ['#5aa469', '#e4f2e2'], pot2: ['#e08a2e', '#fbead4'] }[k] || ['#999', '#eee'];
     if (k.indexOf('cap') === 0) return '<svg class="it-ic" viewBox="0 0 64 64" aria-hidden="true"><g stroke="#23222b" stroke-width="2.5" stroke-linejoin="round">' +
       '<rect x="18" y="6" width="28" height="52" rx="12" fill="' + C[1] + '"/><path d="M18 26h28v12H18z" fill="' + C[0] + '"/>' +
@@ -462,22 +465,76 @@
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
   var storyEnd = null, itemUsed = null;
-  window.HSBATTLE = { start: startStory };
+  /* 联网切磋（由 social.js 调用）
+   * opt = { S, side, foe, mode, onAct(act), onRepl(k), onQuit(), onOver(result), onEnd() }
+   * 结算都在发起方的浏览器里做，结果通过 pvpApply 播放 */
+  function pvpClock() {
+    if (!pvp || !pvp.deadline) return '';
+    var left = Math.max(0, Math.ceil((pvp.deadline - Date.now()) / 1000));
+    return left <= 30 ? '（剩余 ' + left + ' 秒，超时将自动出招）' : '';
+  }
+  function startPvp(opt) {
+    setFieldBg(null);
+    PV = opt.side; pvp = opt; pvp.waiting = false; pvp.q = Promise.resolve(); pvp.deadline = Date.now() + opt.seconds * 1000;
+    app.S = opt.S; storyEnd = null; itemUsed = null;
+    app.screen = 'battle'; app.logHTML = ''; $('log').innerHTML = '';
+    $('builder').hidden = true; $('battle').hidden = false; $('endcard').hidden = true;
+    shownIds = [null, null]; ['plate0', 'plate1'].forEach(function (id) { $(id).dataset.ready = ''; });
+    var me = app.S.sides[PV], foe = app.S.sides[1 - PV], nn = function (x) { return x.nick || SPMAP[x.id].name; };
+    addLog('与 ' + opt.foe + ' 的 ' + opt.mode + 'v' + opt.mode + ' 切磋开始！', 'turn');
+    addLog(foe.name + '派出了【' + nn(foe.team[0]) + '】，你派出了【' + nn(me.team[0]) + '】！', '');
+    addLog('对手阵容：' + foe.team.map(function (x) { return nn(x) + ' LV' + x.lv; }).join('、'), 'dmg');
+    renderSnap(snap(app.S), true);
+    showTab('moves'); refreshCmd();
+    pvp.clock = setInterval(function () { if (pvp && !busy && app.S && !app.S.over) { var h = $('cmd-hint'), t = pvpClock(); if (t || /剩余/.test(h.textContent)) refreshCmd(); } }, 1000);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  // 播放一回合的结果；S 是结算后的战况（应战方收到的是副本）
+  function pvpApply(evs, S, seconds) {
+    if (!pvp) return Promise.resolve();
+    var P = pvp;
+    P.q = P.q.then(async function () {
+      if (pvp !== P) return;
+      busy = true; refreshCmd();
+      await play(evs);
+      if (pvp !== P) return;
+      app.S = S; busy = false; P.waiting = false; P.deadline = Date.now() + (seconds || 90) * 1000;
+      afterTurn();
+    });
+    return P.q;
+  }
+  // 对方掉线或离开：直接判定结果
+  function pvpAbort(note, myResult) {
+    if (!pvp || !app.S) return;
+    var P = pvp;
+    P.q = P.q.then(function () {
+      if (pvp !== P || app.S.over) return;
+      P.endNote = note; busy = false;
+      app.S.over = myResult === 'draw' ? 'draw' : (myResult === 'win') === (PV === 0) ? 'win' : 'lose';
+      addLog(note, 'bad'); showEnd();
+    });
+  }
+  window.HSBATTLE = { start: startStory, startPvp: startPvp, pvpApply: pvpApply, pvpAbort: pvpAbort, pvpActive: function () { return !!pvp; } };
   var shownIds = [null, null];
+  /* ---------- 联网切磋：PV 是「我」在对战里的位置（0 发起方 / 1 应战方），画面始终把自己放在下方 ---------- */
+  var PV = 0, pvp = null;
+  function V(i) { return i ^ PV; }
+  function flipSnap(sn) { return PV && sn ? { turn: sn.turn, sides: [sn.sides[1], sn.sides[0]] } : sn; }
   function hpClass(h, m) { var r = h / m; return r > 0.5 ? '' : r > 0.2 ? 'mid' : 'low'; }
   function renderSnap(sn, instant) {
+    sn = flipSnap(sn);
     var trn = app.S && app.S.training;
     $('turnNo').textContent = trn ? sn.turn : Math.min(sn.turn, MAX_TURNS);
     var left = MAX_TURNS - sn.turn; $('turnMax').textContent = trn ? '训练 · 不限回合' : left <= 0 ? '最后一回合' : '上限 ' + MAX_TURNS; $('turnMax').className = 'tmax' + (!trn && left <= 10 ? ' warn' : '');
     sn.sides.forEach(function (sd, i) {
       var pl = $('plate' + i);
       var html = '<span class="tape ' + (i ? 'r' : 'l') + '"></span>' +
-        '<div class="row1"><span class="pn">' + sd.name + '</span>' + typeTips(sd, sn.sides[1 - i]) + statTip(sd, i === 1 && rankOn()) +
+        '<div class="row1"><span class="pn">' + esc(sd.name) + '</span>' + typeTips(sd, sn.sides[1 - i]) + statTip(sd, i === 1 && rankOn()) +
           '<span class="abil" tabindex="0" aria-label="特性 ' + esc(sd.ability.n) + '：' + esc(sd.ability.d) + '">特性 · ' + esc(sd.ability.n) +
-          '<span class="tip" role="tooltip"><b>特性 · ' + esc(sd.ability.n) + '</b>' + esc(sd.ability.d) + (sd.ability.extra ? '<span class="tipx">' + esc(sd.ability.extra) + '</span>' : '') + '<span class="tipx">当前是否生效，看血条下方状态栏里的特性</span></span></span><span class="who">' + (sd.dummy ? '训练木桩' : i ? (app.S && app.S.story ? app.S.story.foe : '对手') : '你') + '</span></div>' +
+          '<span class="tip" role="tooltip"><b>特性 · ' + esc(sd.ability.n) + '</b>' + esc(sd.ability.d) + (sd.ability.extra ? '<span class="tipx">' + esc(sd.ability.extra) + '</span>' : '') + '<span class="tipx">当前是否生效，看血条下方状态栏里的特性</span></span></span><span class="who">' + esc(sd.dummy ? '训练木桩' : i ? (pvp ? pvp.foe : app.S && app.S.story ? app.S.story.foe : '对手') : '你') + '</span></div>' +
         '<div class="hpbar"><i class="' + hpClass(sd.hp, sd.maxhp) + '" style="width:' + (sd.hp / sd.maxhp * 100) + '%"></i></div>' +
         '<div class="hprow"><span>' + (sd.dummy ? '体力 ∞' : sd.hp + ' / ' + sd.maxhp) + '</span><span class="pips">' +
-        sd.team.map(function (t) { var hide = i === 1 && rankOn() && !t.seen; return '<span class="' + (hide ? 'unk' : t.fainted ? 'dead' : '') + (t.active ? ' cur' : '') + '" title="' + (hide ? '还没派出' : t.nick || SPMAP[t.id].name) + '">' + (hide ? '?' : '') + '</span>'; }).join('') + '</span></div>' +
+        sd.team.map(function (t) { var hide = i === 1 && rankOn() && !t.seen; return '<span class="' + (hide ? 'unk' : t.fainted ? 'dead' : '') + (t.active ? ' cur' : '') + '" title="' + esc(hide ? '还没派出' : t.nick || SPMAP[t.id].name) + '">' + (hide ? '?' : '') + '</span>'; }).join('') + '</span></div>' +
         '<div class="chips">' + sd.chips.map(function (c) { return '<span class="chip sc ' + c.k + '" tabindex="0">' + esc(c.t) + (c.d ? '<span class="tip" role="tooltip"><b>' + esc(c.h || c.t) + '</b>' + esc(c.d) + '</span>' : '') + '</span>'; }).join('') + '</div>';
       // 只更新内容，保留血条动画：首次整块写入，之后逐项更新
       var pkey = sd.id + '|' + sd.types.join(',') + '|' + sn.sides[1 - i].id + '|' + sn.sides[1 - i].types.join(',');
@@ -542,10 +599,10 @@
     for (var k = 0; k < evs.length; k++) {
       var e = evs[k];
       switch (e.t) {
-        case 'text': addLog(e.text, e.cls); renderSnap(e.snap); flashAbility(e.text, e.snap); await wait(e.cls === 'turn' ? 120 : 300); break;
-        case 'use': renderSnap(e.snap); restartAnim($('mon' + e.side), 'lunge' + e.side); banner(e.move, e.type); await wait(450); break;
-        case 'hit': renderSnap(e.snap); if (app.S && app.S.training && e.side === 1) renderStats(); if (e.amount > 0) { restartAnim($('mon' + e.side), 'hit'); floatNum(e.side, '-' + e.amount + (e.crit ? '!' : ''), e.crit ? 'crit' : ''); } await wait(480); break;
-        case 'heal': renderSnap(e.snap); restartAnim($('mon' + e.side), 'heal'); floatNum(e.side, '+' + e.amount, 'heal'); await wait(380); break;
+        case 'text': addLog(e.text, e.cls); renderSnap(e.snap); flashAbility(e.text, flipSnap(e.snap)); await wait(e.cls === 'turn' ? 120 : 300); break;
+        case 'use': renderSnap(e.snap); restartAnim($('mon' + V(e.side)), 'lunge' + V(e.side)); banner(e.move, e.type); await wait(450); break;
+        case 'hit': renderSnap(e.snap); if (app.S && app.S.training && e.side === 1) renderStats(); if (e.amount > 0) { restartAnim($('mon' + V(e.side)), 'hit'); floatNum(V(e.side), '-' + e.amount + (e.crit ? '!' : ''), e.crit ? 'crit' : ''); } await wait(480); break;
+        case 'heal': renderSnap(e.snap); restartAnim($('mon' + V(e.side)), 'heal'); floatNum(V(e.side), '+' + e.amount, 'heal'); await wait(380); break;
         case 'switch': renderSnap(e.snap); await wait(520); break;
         case 'throw': renderSnap(e.snap); restartAnim($('mon1'), 'throw'); await wait(900); break;
         case 'faint': renderSnap(e.snap); await wait(650); break;
@@ -561,33 +618,35 @@
   }
   function refreshCmd() {
     var S = app.S; if (!S) return;
-    var me = act(S, 0), foe = act(S, 1), lock = busy || !!S.over;
+    var me = act(S, PV), foe = act(S, 1 - PV), needMe = pvp ? !!(S.need && S.need[PV]) : S.needSwitch;
+    var peerPick = pvp && S.need && S.need[1 - PV] && !needMe;   // 对方在选替补，我这边没事可做
+    var lock = busy || !!S.over || !!(pvp && (pvp.waiting || peerPick));
     var foeTypes = typesOf(foe);
     var usable = me.moves.some(function (m) { return m.pp > 0 && !moveBlocked(me, m); });
     var html = '';
-    if (!usable) html = '<button type="button" class="mv" data-mi="-1"' + (lock || S.needSwitch ? ' disabled' : '') + ' style="--tc:' + TYPE_COLOR['普通'] + '"><span class="t1"><span class="mn">挣扎</span></span><span class="md">' + STRUGGLE.d + '</span></button>';
+    if (!usable) html = '<button type="button" class="mv" data-mi="-1"' + (lock || needMe ? ' disabled' : '') + ' style="--tc:' + TYPE_COLOR['普通'] + '"><span class="t1"><span class="mn">挣扎</span></span><span class="md">' + STRUGGLE.d + '</span></button>';
     else me.moves.forEach(function (slot, i) {
       var m = liveMove(me, M[slot.n]), mt = mvType(me, m), e = m.cat === '变化' ? 1 : effT(mt, foeTypes);
-      html += '<button type="button" class="mv" data-mi="' + i + '"' + (lock || S.needSwitch || slot.pp <= 0 || moveBlocked(me, slot) ? ' disabled' : '') + ' style="--tc:' + TYPE_COLOR[mt] + '" title="' + esc(m.d) + '">' +
+      html += '<button type="button" class="mv" data-mi="' + i + '"' + (lock || needMe || slot.pp <= 0 || moveBlocked(me, slot) ? ' disabled' : '') + ' style="--tc:' + TYPE_COLOR[mt] + '" title="' + esc(m.d) + '">' +
         '<span class="t1"><span class="mn">' + (i + 1) + '. ' + m.name + (moveBlocked(me, slot) ? '（光影之月中不可用）' : '') + '</span><span class="pp">PP ' + slot.pp + '/' + slot.max + '</span></span>' +
         '<span class="t2">' + tchip(mt) + '<span>' + m.cat + (m.power ? ' · 威力' + m.power : '') + (m.pri ? ' · 先制+' + m.pri : '') + '</span>' +
         (hitBlocked(foe, mt) && (m.cat !== '变化' || targetsFoe(m)) ? '<span class="eff0">无法命中</span>' : e > 1 ? '<span class="eff2">克制 ×' + e + '</span>' : e < 1 ? '<span class="eff0">被抵抗 ×' + e + '</span>' : '') + '</span>' +
         '<span class="md">' + esc(m.d) + '</span></button>';
     });
     $('mgrid').innerHTML = html;
-    var locked = me.tm.noSwitch > 0 && !S.needSwitch;
-    $('tgrid').innerHTML = S.sides[0].team.map(function (t, k) {
-      var s = SPMAP[t.id], dis = lock || t.fainted || k === S.sides[0].active || locked;
+    var locked = me.tm.noSwitch > 0 && !needMe;
+    $('tgrid').innerHTML = S.sides[PV].team.map(function (t, k) {
+      var s = SPMAP[t.id], dis = lock || t.fainted || k === S.sides[PV].active || locked;
       return '<button type="button" class="tm" data-ti="' + k + '"' + (dis ? ' disabled' : '') + '><img src="' + (t.img || SPRITES[t.id]) + '" alt="">' +
-        '<span><span class="nm">' + (t.nick || s.name) + '</span> ' + tchips(s.types) +
+        '<span><span class="nm">' + esc(t.nick || s.name) + '</span> ' + tchips(s.types) +
         '<div class="hpbar"><i class="' + hpClass(t.hp, t.maxhp) + '" style="width:' + (t.hp / t.maxhp * 100) + '%"></i></div>' +
-        '<span class="hpt">' + (t.fainted ? '已倒下' : k === S.sides[0].active ? '出战中 · ' + t.hp + '/' + t.maxhp : t.hp + '/' + t.maxhp) + '</span></span></button>';
+        '<span class="hpt">' + (t.fainted ? '已倒下' : k === S.sides[PV].active ? '出战中 · ' + t.hp + '/' + t.maxhp : t.hp + '/' + t.maxhp) + '</span></span></button>';
     }).join('');
     var its = S.items;
     $('tab-items').hidden = !its;
     if (!its && tab === 'items') showTab('moves');
     if (its) $('igrid').innerHTML = ITEM_ORDER.map(function (k) {
-      var it = ITEMS[k], n = its[k] || 0, cap = !!it.cap, dis = lock || S.needSwitch || n <= 0 || (cap && (!S.wild || S.wild.noCatch)) || (!cap && me.hp >= me.maxhp);
+      var it = ITEMS[k], n = its[k] || 0, cap = !!it.cap, dis = lock || needMe || n <= 0 || (cap && (!S.wild || S.wild.noCatch)) || (!cap && me.hp >= me.maxhp);
       var rate = cap && S.wild && S.wild.noCatch ? '<span class="rate">被瘴气污染，无法捕捉</span>' : cap && S.wild && n > 0 ? '<span class="rate">当前成功率约 ' + Math.round(catchChance(S, k) * 100) + '%</span>' : cap && !S.wild ? '<span class="rate">只能对野生精灵使用</span>' : '';
       return '<button type="button" class="tm it" data-it="' + k + '"' + (dis ? ' disabled' : '') + ' title="' + esc(it.d) + '">' + itemIcon(k) +
         '<span class="it-t"><b>' + it.name + '</b><span class="cnt">持有 ' + n + '</span>' + rate + '</span></button>';
@@ -596,16 +655,20 @@
     hint.className = 'hint';
     if (S.over) hint.textContent = '对战结束';
     else if (busy) hint.textContent = '回合进行中……';
-    else if (S.needSwitch) { hint.textContent = '【' + (me.nick || SPMAP[me.id].name) + '】已倒下，请选择下一只出战的精灵'; hint.className = 'hint alert'; }
+    else if (pvp && pvp.waiting) hint.textContent = '已选择，等待 ' + pvp.foe + ' 行动……' + pvpClock();
+    else if (peerPick) hint.textContent = '等待 ' + pvp.foe + ' 选择下一只出战的精灵……' + pvpClock();
+    else if (needMe) { hint.textContent = '【' + (me.nick || SPMAP[me.id].name) + '】已倒下，请选择下一只出战的精灵'; hint.className = 'hint alert'; }
     else if (locked) hint.textContent = '受「傲慢」影响，' + me.tm.noSwitch + ' 回合内无法切换精灵';
-    else hint.textContent = S.training ? '点击技能对木桩出招，也可按键盘 1–4 出招。伤害统计会实时更新。' : '点击技能出招，或在「精灵」页切换精灵（切换会占用本回合），也可按键盘 1–4 出招。';
+    else hint.textContent = S.training ? '点击技能对木桩出招，也可按键盘 1–4 出招。伤害统计会实时更新。' : '点击技能出招，或在「精灵」页切换精灵（切换会占用本回合），也可按键盘 1–4 出招。' + pvpClock();
     $('btn-quit').disabled = !!S.over;
     $('btn-quit').textContent = S.training ? '结束训练' : S.wild ? '逃跑' : '认输';
+    if (needMe && !lock) showTab('team');
     $('tab-team').hidden = !!S.training;
   }
 
   async function doTurn(pAct) {
     var S = app.S; if (busy || S.over) return;
+    if (pvp) { if (pvp.waiting) return; pvp.waiting = true; refreshCmd(); pvp.onAct(pAct); return; }
     busy = true; refreshCmd();
     var evs = resolveTurn(S, [pAct, S.training ? { kind: 'pass' } : aiChoose(S)]);
     await play(evs);
@@ -615,7 +678,7 @@
     var S = app.S; renderStats();
     renderSnap(snap(S));
     if (S.over) return showEnd();
-    if (S.needSwitch) showTab('team');
+    if (pvp ? S.need && S.need[PV] : S.needSwitch) showTab('team');
     refreshCmd();
   }
   function applyRank(result) {
@@ -635,6 +698,16 @@
   }
   function showEnd() {
     var S = app.S, r = S.over;
+    if (pvp) {
+      var mine = r === 'draw' ? 'draw' : (r === 'win') === (PV === 0) ? 'win' : 'lose';
+      $('end-title').textContent = mine === 'win' ? '胜利！' : mine === 'lose' ? '失败了' : '平局';
+      $('end-sub').textContent = '与 ' + pvp.foe + ' 的 ' + pvp.mode + 'v' + pvp.mode + ' 切磋 · 共 ' + (S.turn - 1) + ' 回合' + (pvp.endNote ? ' · ' + pvp.endNote : '') + ' · 切磋不影响经验和段位';
+      $('end-rank').hidden = true; $('end-hid').hidden = true;
+      $('btn-back').textContent = '返回社交'; $('btn-again').hidden = true;
+      $('endcard').hidden = false; refreshCmd();
+      if (!pvp.ended) { pvp.ended = true; if (pvp.onOver) pvp.onOver(mine); }
+      return;
+    }
     if (S.training) {
       var L = S.training.log, tot = L.reduce(function (a, x) { return a + x.amt; }, 0), turns = Math.max(0, S.turn - (S.training.t0 || 1));
       $('end-title').textContent = r === 'lose' ? '训练中断' : '训练结束';
@@ -673,6 +746,12 @@
   $('tgrid').addEventListener('click', async function (e) {
     var b = e.target.closest('[data-ti]'); if (!b || b.disabled || busy) return;
     var k = +b.dataset.ti, S = app.S;
+    if (pvp) {
+      if (pvp.waiting) return;
+      if (S.need && S.need[PV]) { pvp.waiting = true; showTab('moves'); refreshCmd(); pvp.onRepl(k); }
+      else { showTab('moves'); doTurn({ kind: 'switch', to: k }); }
+      return;
+    }
     if (S.needSwitch) {
       busy = true; refreshCmd();
       await play(playerReplace(S, k));
@@ -694,12 +773,19 @@
     if (busy || !app.S || app.S.over) return;
     if (app.S.training) { app.S.over = 'train'; showEnd(); return; }
     if (app.S.wild) { app.S.over = 'flee'; addLog('你带着精灵们逃走了。', 'dmg'); showEnd(); return; }
+    if (pvp && Date.now() - quitArmed < 3000) { b.textContent = '认输'; quitArmed = 0; pvp.onQuit(); return; }
     if (Date.now() - quitArmed < 3000) { app.S.over = 'lose'; addLog('你认输了。', 'bad'); b.textContent = '认输'; showEnd(); return; }
     quitArmed = Date.now(); b.textContent = '再点一次确认';
     setTimeout(function () { b.textContent = '认输'; }, 3000);
   });
   $('btn-again').addEventListener('click', function () { if (rankOn()) { $('btn-back').click(); return; } $('log').innerHTML = ''; startBattle(); });
   $('btn-back').addEventListener('click', function () {
+    if (pvp) {
+      var done = pvp.onEnd; clearInterval(pvp.clock); pvp = null; PV = 0;
+      app.screen = 'builder'; app.S = null; $('battle').hidden = true; $('builder').hidden = false; $('log').innerHTML = ''; $('btn-again').hidden = false; setFieldBg(null);
+      shownIds = [null, null]; ['plate0', 'plate1'].forEach(function (id) { $(id).dataset.ready = ''; });
+      if (done) done(); return;
+    }
     if (app.S && app.S.story) {
       var res = app.S.over, cb = storyEnd, seen = app.S.sides[0].team.map(function (x) { return !!x.seen; }), downs = app.S.sides[1].team.filter(function (x) { return x.fainted; }).map(function (x) { return { id: x.id, lv: x.lv }; }); storyEnd = null; itemUsed = null;
       app.screen = 'builder'; app.S = null; $('battle').hidden = true; $('builder').hidden = false; $('log').innerHTML = ''; $('btn-again').hidden = false; setFieldBg(null);

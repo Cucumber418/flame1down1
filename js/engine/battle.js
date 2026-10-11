@@ -499,8 +499,11 @@ function resolveTurn(S, acts) {
   checkOver(S, evs);
   if (!S.over && !S.training && S.turn >= MAX_TURNS) timeUp(S, evs);
   if (!S.over) {
-    if (act(S, 1).fainted) { var k = aiPickReplacement(S); doSwitch(S, evs, 1, k, false); }
-    S.needSwitch = act(S, 0).fainted;
+    if (S.pvp) { S.need = [act(S, 0).fainted, act(S, 1).fainted]; S.needSwitch = false; }   // 联网切磋：双方各自选替补
+    else {
+      if (act(S, 1).fainted) { var k = aiPickReplacement(S); doSwitch(S, evs, 1, k, false); }
+      S.needSwitch = act(S, 0).fainted;
+    }
   }
   S.turn++;
   return evs;
@@ -541,7 +544,7 @@ function useItem(S, evs, i, key) {
 var MAX_TURNS = 60;   // 每场最多 60 回合
 function timeUp(S, evs) {
   var p = aliveIdx(S, 0).length, a = aliveIdx(S, 1).length;
-  log(S, evs, '已达到 ' + MAX_TURNS + ' 回合上限，对战强制结束：你剩 ' + p + ' 只，对手剩 ' + a + ' 只', 'turn');
+  log(S, evs, '已达到 ' + MAX_TURNS + ' 回合上限，对战强制结束：' + (S.pvp ? S.sides[0].name + '剩 ' + p + ' 只，' + S.sides[1].name : '你剩 ' + p + ' 只，对手') + '剩 ' + a + ' 只', 'turn');
   S.over = p > a ? 'win' : p < a ? 'lose' : 'draw'; S.timeUp = true;
   E(S, evs, 'over', { result: S.over });
 }
@@ -570,6 +573,13 @@ function doSwitch(S, evs, i, to, midTurn) {
 }
 function playerReplace(S, idx) {
   var evs = []; doSwitch(S, evs, 0, idx, false); S.needSwitch = false; return evs;
+}
+// 联网切磋：精灵倒下后双方选好的替补，按 0 号位、1 号位的顺序上场（picks[i] 为 null 表示这一方不用换）
+function pvpReplace(S, picks) {
+  var evs = [];
+  [0, 1].forEach(function (i) { if (picks[i] != null && S.need && S.need[i]) doSwitch(S, evs, i, picks[i], false); });
+  S.need = [false, false];
+  return evs;
 }
 
 function cantAct(S, evs, me) {

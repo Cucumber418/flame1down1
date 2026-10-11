@@ -64,7 +64,12 @@ function newSession(name) {
 }
 function whoIs(req) {
   var m = /^Bearer ([0-9a-f]{64})$/.exec(req.headers.authorization || '');
-  if (!m) return null;
+  return m ? whoToken(m[1]) : null;
+}
+// 用登录凭证找到账号（WebSocket 连接认证也用这个）
+function whoToken(token) {
+  if (!/^[0-9a-f]{64}$/.test(String(token || ''))) return null;
+  var m = [null, token];
   var s = sessions[sha(m[1])];
   if (!s || s.exp < Date.now()) return null;
   // 每次使用时顺延有效期（每天最多写一次文件）
@@ -116,9 +121,11 @@ function validData(d) {
 }
 
 /* ---------- 各个接口 ---------- */
+var extra = [];   // 其他模块（社交）注册的接口
 function handle(req, res) {
   var url = req.url.split('?')[0];
   if (url.indexOf('/api/') !== 0) return false;
+  for (var i = 0; i < extra.length; i++) if (extra[i](req, res, url)) return true;
   var ip = clientIp(req);
 
   if (url === '/api/me' && req.method === 'GET') {
@@ -223,4 +230,10 @@ function listUsers() {
   }).filter(Boolean);
 }
 
-module.exports = { handle: handle, userCount: userCount, resetPassword: resetPassword, listUsers: listUsers, DATA_DIR: DATA_DIR };
+function allUsers() {
+  return fs.readdirSync(USER_DIR).filter(function (f) { return /\.json$/.test(f); })
+    .map(function (f) { return readJSON(path.join(USER_DIR, f), null); }).filter(Boolean);
+}
+
+module.exports = { handle: handle, use: function (fn) { extra.push(fn); }, whoIs: whoIs, whoToken: whoToken, loadUser: loadUser, saveUser: saveUser, allUsers: allUsers,
+  reply: reply, readBody: readBody, userCount: userCount, resetPassword: resetPassword, listUsers: listUsers, DATA_DIR: DATA_DIR };
