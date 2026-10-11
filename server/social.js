@@ -70,6 +70,8 @@ function showMons(acc) {
   var c = acc.card && Array.isArray(acc.card.show) ? acc.card.show : [];
   return c.slice(0, 5).map(function (u) { return monByU(acc, u); }).filter(Boolean);
 }
+// 精灵大乱斗：读完孝感大厅的支线「精灵大乱斗」才开放
+function brawlOk(acc) { return !!(acc && acc.story && acc.story.brawl && acc.story.brawl.done); }
 // 茶室：读完「陆羽茶室」支线才开放，最多展示 3 只
 function homeOf(acc) {
   var open = !!(acc.story && acc.story.tea && acc.story.tea.done), h = acc.home || {};
@@ -88,6 +90,7 @@ function summary(u, me) {
   o.show = showMons(acc).map(function (m) { return { sid: str(m.sid, 32), lv: int(m.lv, 1, 100) }; });
   o.rank = rankOut(p.rank).best;
   var hm = homeOf(acc); o.homeOpen = hm.open; o.homeN = hm.mons.length;
+  o.brawl = brawlOk(acc);
   return o;
 }
 function card(u, me) {
@@ -124,6 +127,7 @@ var brawls = {};      // id -> { id, ws, user, sids, timer, invited: [账号名]
 function brawlPick(name, us) {
   var u = A.loadUser(name), acc = u && parseSave(u).acc;
   if (!acc) return { err: '还没有创建角色' };
+  if (!brawlOk(acc)) return { err: '还没有开放精灵大乱斗' };
   var team = activeTeam(acc);
   if (team.length < 3) return { err: '出战配队里至少要有 3 只精灵' };
   if (!Array.isArray(us) || us.length !== 3) return { err: '要选 3 只精灵' };
@@ -135,7 +139,7 @@ function brawlPick(name, us) {
   }
   return { sids: picked.map(function (m) { return str(m.sid, 32); }) };
 }
-function eligible(name, exceptWs) { return isOnline(name) && !isBusy(name) && !Object.keys(brawls).some(function (k) { return brawls[k].user === name; }); }
+function eligible(name, exceptWs) { var u = A.loadUser(name); return isOnline(name) && !isBusy(name) && u && brawlOk(parseSave(u).acc) && !Object.keys(brawls).some(function (k) { return brawls[k].user === name; }); }
 function endBrawl(b, reason, msg, skipUser) {
   if (!brawls[b.id]) return;
   delete brawls[b.id]; clearTimeout(b.timer);

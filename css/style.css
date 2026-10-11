@@ -1215,3 +1215,6 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .bw-pop-btns { display: flex; gap: 6px; justify-content: flex-end; margin-top: 4px; }
 .bw-pop-btns .btn { padding: 5px 12px; font-size: 13px; }
 @media (prefers-reduced-motion: reduce) { .bw-pop { animation: none; } }
+
+.mode.locked { opacity: .55; border-style: dashed; }
+.mode.locked b { color: var(--pencil); }

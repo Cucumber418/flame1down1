@@ -34,8 +34,12 @@
   function renderMode() {
     $('mode-sandbox').classList.toggle('on', app.mode === 'sandbox'); $('mode-sandbox').setAttribute('aria-selected', app.mode === 'sandbox');
     $('mode-rank').classList.toggle('on', app.mode === 'rank'); $('mode-rank').setAttribute('aria-selected', app.mode === 'rank');
-    // 精灵大乱斗：面板由 social.js 绘制（需要联网），其他配置区先收起来
-    var bw = app.mode === 'brawl';
+    // 精灵大乱斗：读完支线「精灵大乱斗」（孝感大厅 · Dr.黄）后才开放；面板由 social.js 绘制，其他配置区先收起来
+    var hs = !!(window.HSACC && window.HSACC.ready()), bwOpen = hs && window.HSACC.brawlOpen();
+    if (hs && app.mode === 'brawl' && !bwOpen) app.mode = 'sandbox';   // 账号读进来之后再判断，避免刷新时丢掉上次选的模式
+    $('mode-brawl').classList.toggle('locked', !bwOpen); $('mode-brawl').setAttribute('aria-disabled', String(!bwOpen));
+    if (!bwOpen) $('brawl-sub').textContent = '未开放 · 持有 3 只精灵后，去孝感大厅找 Dr.黄';
+    var bw = app.mode === 'brawl' && bwOpen;
     $('mode-brawl').classList.toggle('on', bw); $('mode-brawl').setAttribute('aria-selected', bw);
     $('brawl').hidden = !bw; document.querySelector('#builder .bagbox').hidden = bw; document.querySelector('#builder .build').hidden = bw;
     if (bw) { $('rankcard').hidden = true; $('subbar').hidden = true; if (window.HSBRAWL) window.HSBRAWL.render(); return; }
@@ -70,7 +74,10 @@
     $('ts-lv').value = app.train.lv; $('ts-lvr').value = app.train.lv; $('ts-def' + app.train.def).checked = true; renderTrainNote();
   }
   $('mode-sandbox').addEventListener('click', function () { app.mode = 'sandbox'; saveMode(); renderMode(); renderBuilder(); });
-  $('mode-brawl').addEventListener('click', function () { app.mode = 'brawl'; saveMode(); renderMode(); });
+  $('mode-brawl').addEventListener('click', function () {
+    if (!(window.HSACC && window.HSACC.ready() && window.HSACC.brawlOpen())) { var t = '精灵大乱斗还没开放：持有 3 只精灵后，去星际探索 · 荆楚号 · 孝感大厅找 Dr.黄。'; if (window.HSACC) window.HSACC.toast(t); else flashMsg(t); return; }
+    app.mode = 'brawl'; saveMode(); renderMode();
+  });
   $('mode-rank').addEventListener('click', function () { app.mode = 'rank'; saveMode(); if (ensureDraft().pick != null) app.sel = B()[0]; renderMode(); renderBuilder(); });
   $('rankcard').addEventListener('click', function (e) {
     if (e.target.id !== 'btn-reset') return;
@@ -522,7 +529,7 @@
       addLog(note, 'bad'); showEnd();
     });
   }
-  window.HSBATTLE = { start: startStory, startPvp: startPvp, pvpApply: pvpApply, pvpAbort: pvpAbort, pvpActive: function () { return !!pvp; } };
+  window.HSBATTLE = { renderMode: function () { renderMode(); if (app.mode !== 'brawl') renderBuilder(); }, start: startStory, startPvp: startPvp, pvpApply: pvpApply, pvpAbort: pvpAbort, pvpActive: function () { return !!pvp; } };
   var shownIds = [null, null];
   /* ---------- 联网切磋：PV 是「我」在对战里的位置（0 发起方 / 1 应战方），画面始终把自己放在下方 ---------- */
   var PV = 0, pvp = null;

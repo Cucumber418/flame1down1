@@ -58,10 +58,12 @@
     api('GET', '/api/players').then(function (r) {
       loading = false;
       if (r._code !== 200) { st.err = r.error || '读取失败'; render(); return; }
-      st.err = ''; st.players = r.players; st.me = r.me; render(); renderBrawl();
+      st.err = ''; st.players = r.players; st.me = r.me; st.loadedAt = Date.now(); render(); renderBrawl();
     }).catch(function () { loading = false; st.err = '连不上服务器'; render(); });
   }
   setInterval(function () { if (A.page() === 'social' && !A.inBattle() && document.visibilityState === 'visible') load(); }, 30000);
+  // 竞技对战的大乱斗面板开着时，20 秒刷新一次谁能匹配（别人刚读完支线、刚上线都要能看到）
+  setInterval(function () { var el = $('brawl'); if (el && !el.hidden && A.page() === 'arena' && !A.inBattle() && document.visibilityState === 'visible') load(); }, 20000);
 
   function playerRow(p) {
     var name = p.noChar ? '（还没创建角色）' : p.name, canFight = !p.me && !p.noChar && p.online && !p.busy;
@@ -528,7 +530,7 @@
   /* ---------- 精灵大乱斗 ----------
    * 竞技对战的第三种模式。选 3 只开始匹配，其他在线玩家收到小弹窗，先接受的人和你对战。 */
   function myTeam() { var a = A.acc(); return a ? (a.teams[a.active] || []).map(A.mon).filter(Boolean) : []; }
-  function matchable() { return (st.players || []).filter(function (p) { return !p.me && !p.noChar && p.online && !p.busy; }).length; }
+  function matchable() { return (st.players || []).filter(function (p) { return !p.me && !p.noChar && p.brawl && p.online && !p.busy; }).length; }
   function validPicks(team) {
     var us = team.map(function (m) { return m.u; });
     if (!st.bw.picks) st.bw.picks = us.slice(0, 3);
@@ -543,7 +545,7 @@
     }).join('') + '</div>';
   }
   function renderBrawl() {
-    var el = $('brawl'); if (!el || el.hidden || !A.ready()) return;
+    var el = $('brawl'); if (!el || el.hidden || !A.ready() || !A.brawlOpen()) return;
     var B = A.BRAWL, today = A.brawlToday();
     var rules = '<ul class="bw-rules"><li>只有其他玩家在线时才能开始，匹配后他们会收到小弹窗，先接受的人成为你的对手。</li>' +
       '<li>每人从出战配队里选 <b>3 只</b>（出战配队至少要有 3 只）。</li>' +
@@ -553,16 +555,16 @@
       '<div class="bw-prog"><span>今天的大乱斗经验</span><b>' + A.fmt(today) + ' / ' + A.fmt(B.cap) + '</b><span class="pbar"><i style="width:' + Math.min(100, today / B.cap * 100) + '%"></i></span></div>';
     if (!online) { el.innerHTML = '<div class="bw-card"><span class="tape l"></span><h2 class="sec">精灵大乱斗</h2>' + rules + '<p class="hint">大乱斗需要联网：用服务器网址打开游戏并登录后才能匹配。</p></div>'; return; }
     var team = myTeam(), picks = validPicks(team), n = matchable(), W = st.bw.wait;
-    var sub = $('brawl-sub'); if (sub) sub.textContent = st.wsOk ? (n ? '现在有 ' + n + ' 位玩家可以匹配' : '暂时没有其他玩家在线') : '正在连接服务器……';
+    var sub = $('brawl-sub'); if (sub && A.brawlOpen()) sub.textContent = st.wsOk ? (n ? '现在有 ' + n + ' 位玩家可以匹配' : '暂时没有可以匹配的乘员') : '正在连接服务器……';
     var foot;
     if (W) foot = '<div class="bw-wait"><span class="dot busy"></span><span>正在匹配……已邀请 ' + (W.n || '?') + ' 位在线玩家，<b id="bw-left">' + Math.max(0, Math.ceil((W.deadline - Date.now()) / 1000)) + '</b> 秒后没人接受就自动取消</span><button type="button" class="btn ghost" id="bw-cancel">取消匹配</button></div>';
     else {
-      var why = !st.wsOk ? '正在连接服务器……' : team.length < 3 ? '出战配队里至少要有 3 只精灵，先去「精灵背包」配队' : picks.length !== 3 ? '还要选 ' + (3 - picks.length) + ' 只' : !n ? '现在没有其他玩家在线，等朋友上线再来' : '';
+      var why = !st.wsOk ? '正在连接服务器……' : team.length < 3 ? '出战配队里至少要有 3 只精灵，先去「精灵背包」配队' : picks.length !== 3 ? '还要选 ' + (3 - picks.length) + ' 只' : !n ? '现在没有可以匹配的乘员（对方要在线，并且也在孝感大厅开放了大乱斗）' : '';
       foot = '<div class="soc-foot"><span class="hint' + (why ? ' red' : '') + '">' + (why || '准备就绪') + '</span><button type="button" class="btn primary" id="bw-go"' + (why ? ' disabled' : '') + '>开始匹配</button></div>';
     }
     el.innerHTML = '<div class="bw-card"><span class="tape l"></span><span class="tape r"></span><div class="bw-head"><h2 class="sec">精灵大乱斗</h2><span class="soc-on">' + (st.wsOk ? '<span class="dot' + (n ? ' on' : '') + '"></span>' + n + ' 人可匹配' : '<span class="dot"></span>连接中') + '</span></div>' + rules +
       '<h3 class="shop-h">选 3 只参战 <span class="hint">从出战配队里选，按点选顺序</span></h3>' + (team.length ? pickGrid(team, picks, 'data-bwpick') : '<p class="hint">出战配队是空的。</p>') + foot + '</div>';
-    if (!st.players && st.wsOk) load();
+    if (st.wsOk && (!st.players || Date.now() - (st.loadedAt || 0) > 10000)) load();
   }
   if ($('brawl')) $('brawl').addEventListener('click', function (e) {
     var t = e.target.closest('[data-bwpick]');
@@ -583,7 +585,7 @@
   // 别人在匹配：右下角小弹窗
   function closeBwInvite() { var I = st.bw.inv; if (!I) return; clearInterval(I.iv); if (I.el.parentNode) I.el.remove(); if (I.dlg) I.dlg.close(); st.bw.inv = null; }
   function brawlInvite(m) {
-    if (!A.ready() || A.inBattle() || st.match || st.bw.wait || st.pend || st.inc || st.bw.inv) return;   // 正忙就不打扰
+    if (!A.ready() || !A.brawlOpen() || A.inBattle() || st.match || st.bw.wait || st.pend || st.inc || st.bw.inv) return;   // 没开放或正忙就不打扰
     var el = document.createElement('div'); el.className = 'bw-pop'; el.setAttribute('role', 'status');
     el.innerHTML = '<b>⚔ 精灵大乱斗</b><span>' + esc(m.fromName) + ' 正在找人打大乱斗</span><span class="hint" id="bwp-left"></span>' +
       '<div class="bw-pop-btns"><button type="button" class="btn ghost" data-bwno="1">忽略</button><button type="button" class="btn primary" data-bwyes="1">接受</button></div>';

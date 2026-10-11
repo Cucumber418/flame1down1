@@ -128,6 +128,7 @@
     checkRankRewards(); daily();
     ['arena', 'log', 'bag', 'store', 'dex', 'social', 'explore'].forEach(function (p) { $('pg-' + p).hidden = p !== page; });
     renderRename();
+    if (page === 'arena' && window.HSBATTLE && window.HSBATTLE.renderMode && $('battle').hidden) window.HSBATTLE.renderMode();
     if (page === 'social') { if (window.HSSOCIAL) window.HSSOCIAL.render(); }
     else if (page === 'bag') renderBag();
     else if (page === 'log') renderLog();
@@ -654,6 +655,7 @@
     rare: { name: '学院部', planet: 'jingchu', dept: '黄冈', chapter: '支线 · 稀有精灵', side: true, bg: 'pod_p', d: 'Bttp 在黄冈秘鉴里发现了几页几乎空白的记录，想请你帮学院部找一只稀有精灵。', after: 'flora1', pos: [26, 58] },
     rare_r: { name: '学院部', planet: 'jingchu', dept: '黄冈', chapter: '支线 · 稀有精灵（汇报）', side: true, bg: 'pod_p', d: '把捕捉到的稀有精灵带回学院部，向 Bttp 汇报。', after: 'rare', pos: [74, 58], need: function () { return !!rareOwned(); }, needText: '捕捉一种稀有精灵后来汇报', reward: { title: 'collector' } },
     storage: { name: '物资仓储', planet: 'jingchu', dept: '荆门', chapter: '支线 · 物资仓储', side: true, bg: 'storage_p', d: '荆楚号即将抵达芙罗拉星，新乘员要去物资仓储领取探索物资。读完后，物资仓储里的「商城」开放。', after: 'board', pos: [50, 62], reward: { exp: 0, energy: 300, items: { cap1: 10 } } },
+    brawl: { name: '孝感大厅', planet: 'jingchu', dept: '孝感', chapter: '支线 · 精灵大乱斗', side: true, bg: 'xiaogan', d: 'Dr.黄 在孝感大厅里鼓捣着一台新搬来的机器，听说你身边已经有 3 只精灵了，想让你试试。读完后开放「精灵大乱斗」。', after: 'xiaogan', pos: [76, 56], need: function () { return acc.mons.length >= 3; }, needText: '持有 3 只精灵后开放' },
     xiaogan: { name: '孝感大厅', planet: 'jingchu', dept: '孝感', chapter: '支线 · 孝感大厅', side: true, bg: 'xiaogan', d: '舰上切磋对战的地方。听说那里有个奇怪的家伙在等着新乘员。读完后开放「竞技对战」。', after: 'board', pos: [50, 66], reward: { exp: 0, energy: 200 } }
   };
   // 已有画面的舰内区域；其余区域先用占位画面
@@ -677,7 +679,9 @@
   // 稀有精灵：野外精灵表里标了 rare 的种类
   function rareOwned() { var R = []; for (var k in WILD) WILD[k].forEach(function (w) { if (w.rare && R.indexOf(w.sid) < 0) R.push(w.sid); }); return acc.mons.filter(function (m) { return R.indexOf(m.sid) >= 0; })[0] || null; }
   function planetOpen(P) { return !P.after || prog(P.after).done; }
-  var UNLOCK = { xiaogan: '竞技对战', academy: '黄冈秘鉴', storage: '商城', tea: '茶室' };
+  var UNLOCK = { xiaogan: '竞技对战', academy: '黄冈秘鉴', storage: '商城', tea: '茶室', brawl: '精灵大乱斗' };
+  function brawlOpen() { return !!(acc && acc.story && acc.story.brawl && acc.story.brawl.done); }
+  function brawlPlayed() { return !!(acc && acc.stats && acc.stats.brawls > 0); }
   function homeOpen() { return !!(acc && acc.story && acc.story.tea && acc.story.tea.done); }
   // 茶室里展示的精灵：[{ u, t: 放出来的时间 }]
   function home() {
@@ -1464,7 +1468,7 @@
   $('pg-explore').addEventListener('keydown', function (e) { if (e.target.id === 'home-name') { if (e.key === 'Enter') { e.preventDefault(); saveHomeName(); } else if (e.key === 'Escape') { ex.homeEdit = false; renderHome(); } } });
 
   /* ---------- 任务：主线 / 支线 / 世界 ---------- */
-  var MAIN_Q = ['school', 'river', 'jiuquan', 'board', 'flora1'], SIDE_Q = ['academy', 'xiaogan', 'storage', 'tiger', 'tea', 'rare', 'mingming'];
+  var MAIN_Q = ['school', 'river', 'jiuquan', 'board', 'flora1'], SIDE_Q = ['academy', 'xiaogan', 'brawl', 'storage', 'tiger', 'tea', 'rare', 'mingming'];
   // 世界任务（奖励暂定）
   var WQ = [
     { id: 'w_first', n: '初到芙罗拉', d: '荆楚号已经抵达芙罗拉星。去丛林或草甸，和那里的野生精灵过过招吧。', where: '芙罗拉星 · 丛林 / 草甸', steps: [{ t: '在芙罗拉星击败 1 只野生精灵', k: 'wins', n: 1 }], reward: { energy: 100 }, after: 'flora1', go: 'flora' },
@@ -1492,6 +1496,7 @@
     }
     var pr = prog(id); if (!unlocked(id)) return 'lock';
     if (id === 'tiger') return bossWon('tiger') ? 'done' : pr.done || pr.at > 0 ? 'doing' : 'todo';
+    if (id === 'brawl') return brawlPlayed() ? 'done' : pr.done || pr.at > 0 ? 'doing' : 'todo';
     if (id === 'rare') return prog('rare_r').done ? 'done' : pr.done || pr.at > 0 ? 'doing' : 'todo';
     return pr.done ? 'done' : pr.at > 0 ? 'doing' : 'todo';
   }
@@ -1520,9 +1525,10 @@
       var S = SITES[id], pr = prog(id); desc = S.d; R = S.reward;
       steps = [{ t: '前往 ' + qWhere(id), ok: pr.done || pr.at > 0 }, { t: '读完剧情「' + qName(id) + '」', ok: pr.done }];
       if (S.chapter.indexOf('准备发射') >= 0) steps.splice(1, 0, { t: '和 Threego 进行剧情对战', ok: pr.done || !!pr.bt });
+      if (id === 'brawl') steps = [{ t: '在孝感大厅听 Dr.黄 介绍精灵大乱斗', ok: pr.done }, { t: '打一场精灵大乱斗（竞技对战 → 精灵大乱斗，需要有其他乘员在线）', ok: brawlPlayed() }];
       if (id === 'tiger') { steps = [{ t: '在古城防卫部听舰载广播介绍泰戈尔', ok: pr.done }, { t: '挑战并击败首领「泰戈尔」（只有水、火、草系技能能命中它）', ok: bossWon('tiger') }]; R = { mon: '小胖虎 LV10（首次击败）' }; }
       if (id === 'rare') { var rr = prog('rare_r'); steps = [{ t: '在学院部听 Bttp 说明任务', ok: pr.done }, { t: '捕捉一种稀有精灵（芙罗拉星的丛林深处可能会有）', ok: rr.done || !!rareOwned() }, { t: '回到学院部，向 Bttp 汇报', ok: rr.done }]; R = SITES.rare_r.reward; desc = S.d; }
-      if (st === 'lock') need = S.need && prog(S.after).done && !S.need() ? S.needText + (id === 'mingming' ? '（当前 ' + litCount() + ' / 10）' : '') + '。' : '先读完「' + SITES[S.after].chapter.split(' · ')[1] + '」。';
+      if (st === 'lock') need = S.need && prog(S.after).done && !S.need() ? S.needText + (id === 'mingming' ? '（当前 ' + litCount() + ' / 10）' : id === 'brawl' ? '（当前持有 ' + acc.mons.length + ' 只）' : '') + '。' : '先读完「' + SITES[S.after].chapter.split(' · ')[1] + '」。';
     }
     var rw = R ? rwList(R) : []; if (!W && UNLOCK[id]) rw.push('开放「' + UNLOCK[id] + '」');
     var cur = steps.filter(function (x) { return !x.ok; })[0];
@@ -1828,8 +1834,12 @@
   }
   function brawlToday() { return acc.brawlExp && acc.brawlExp.d === bjDay() ? acc.brawlExp.n || 0 : 0; }
   function brawlReward(result, noReward) {
+    if (!acc.stats) acc.stats = {};
+    var first = !brawlPlayed();
+    if (!noReward) { acc.stats.brawls = (acc.stats.brawls || 0) + 1; if (first) setTimeout(function () { toast('支线「精灵大乱斗」完成！随时可以再来和其他乘员打大乱斗。'); }, 4200); }
     var want = noReward ? 0 : result === 'win' ? BRAWL_WIN : BRAWL_LOSE, had = brawlToday(), give = Math.max(0, Math.min(want, BRAWL_CAP - had));
-    if (give > 0) { acc.brawlExp = { d: bjDay(), n: had + give }; acc.exp = (acc.exp || 0) + give; save(); renderRes(); }
+    if (give > 0) { acc.brawlExp = { d: bjDay(), n: had + give }; acc.exp = (acc.exp || 0) + give; renderRes(); }
+    save();
     return { want: want, give: give, today: brawlToday(), cap: BRAWL_CAP };
   }
 
@@ -1838,7 +1848,7 @@
     acc: function () { return acc; }, ready: ready, save: save, toast: toast, go: go, page: function () { return page; }, renderRes: renderRes,
     titleName: titleName, mon: mon, fmt: fmt,
     npcPlan: npcPlan, npcHome: npcHome,
-    brawlSpec: brawlSpec, brawlReward: brawlReward, brawlToday: brawlToday, BRAWL: { win: BRAWL_WIN, lose: BRAWL_LOSE, cap: BRAWL_CAP, lv: BRAWL_LV },
+    brawlOpen: brawlOpen, brawlSpec: brawlSpec, brawlReward: brawlReward, brawlToday: brawlToday, BRAWL: { win: BRAWL_WIN, lose: BRAWL_LOSE, cap: BRAWL_CAP, lv: BRAWL_LV },
     teaFight: teaFight, teaLeft: teaLeft, TEA_DAILY: TEA_DAILY, TEA_EXP: TEA_EXP, homePos: HOME_POS,
     view: function (m) { var f = form(m); return { name: f.name, img: f.img, stage: f.stage }; },
     // 把服务器发来的精灵资料变成对战用的精灵（逐项检查，不信任外来数据）
