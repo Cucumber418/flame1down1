@@ -16,6 +16,7 @@
   <header class="topbar">
     <div class="masthead"><h1>Flame1Down - 1<small>试验版</small></h1></div>
     <div class="acct" id="who">
+      <button type="button" class="mail-btn" id="mail-btn" aria-label="邮箱" title="邮箱"><span aria-hidden="true">✉</span><b>邮箱</b><i class="q-badge" id="mail-badge" hidden></i></button>
       <span class="res" id="res"></span>
       <button type="button" class="who-btn" id="who-btn" aria-haspopup="true" aria-expanded="false"><span class="av" id="who-av">?</span><span><span class="lab" id="who-title">做题家</span><br><b id="who-name"></b></span></button>
       <div class="who-menu" id="who-menu" hidden>
@@ -173,6 +174,7 @@ CLOUD.boot([
   'js/data/moves.js',
   'js/data/creatures.js',
   'js/data/story.js',
+  'js/data/mail.js',
   'js/data/wild.js',
   'js/data/ship-map.js',
   'js/engine/battle.js',

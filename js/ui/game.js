@@ -125,7 +125,7 @@
       var on = b.dataset.page === page; b.classList.toggle('on', on); b.setAttribute('aria-selected', on);
     });
     syncBattle();
-    checkRankRewards(); daily();
+    deliverMail(); checkRankRewards(); daily();
     ['arena', 'log', 'bag', 'store', 'dex', 'social', 'explore'].forEach(function (p) { $('pg-' + p).hidden = p !== page; });
     renderRename();
     if (page === 'arena' && window.HSBATTLE && window.HSBATTLE.renderMode && $('battle').hidden) window.HSBATTLE.renderMode();
@@ -1081,8 +1081,10 @@
 
   /* ---------- 排位赛季奖励：首次达到每个段位各奖励一次，达到铂金送 LV10 小月亮 ---------- */
   var SEASON = 'S1';
-  var RANK_RW = [null, { exp: 500, energy: 200 }, { exp: 1000, energy: 300 }, { exp: 1500, energy: 400 }, { exp: 2000, energy: 500, gift: [{ sid: 'moon', lv: 10 }] },
+  // 2026-10-11 起段位奖励翻倍（RANK_RW_OLD 是翻倍前的标准，用来给之前领过的玩家算补发差额）
+  var RANK_RW_OLD = [null, { exp: 500, energy: 200 }, { exp: 1000, energy: 300 }, { exp: 1500, energy: 400 }, { exp: 2000, energy: 500 },
     { exp: 2500, energy: 600 }, { exp: 3000, energy: 700 }, { exp: 3500, energy: 800 }, { exp: 4000, energy: 900 }, { exp: 4500, energy: 1000 }, { exp: 5000, energy: 1200 }];
+  var RANK_RW = RANK_RW_OLD.map(function (R, r) { return R && { exp: R.exp * 2, energy: R.energy * 2, gift: r === 4 ? [{ sid: 'moon', lv: 10 }] : undefined }; });
   function rankBest() { try { var r = JSON.parse(localStorage.getItem('hs-rank-v1') || 'null'); return r ? Math.max(r.best || 0, r.r || 0) : 0; } catch (e) { return 0; } }
   function rankRec() { if (!acc.rankRw || acc.rankRw.season !== SEASON) acc.rankRw = { season: SEASON, got: {} }; return acc.rankRw; }
   function checkRankRewards() {
@@ -1097,6 +1099,110 @@
     }
     if (msg.length) { save(); renderRes(); setTimeout(function () { toast('排位赛季奖励 · ' + msg.join('')); }, 500); }
   }
+
+  /* ---------- 邮箱 ----------
+   * acc.mail：邮件列表（新的在前）；acc.mailSeen：已经投递过的邮件编号，删掉了也不会重发
+   * 全服邮件写在 js/data/mail.js；按每个人情况算的补发，在这里用 sendMail() */
+  var MAIL_MAX = 100;
+  function dayStr() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  function mails() { if (!Array.isArray(acc.mail)) acc.mail = []; if (!acc.mailSeen) acc.mailSeen = {}; return acc.mail; }
+  function hasAtt(a) { return !!(a && (a.exp || a.energy || (a.items && Object.keys(a.items).length) || (a.mons && a.mons.length))); }
+  function attList(a) {
+    var r = []; if (!a) return r;
+    if (a.exp) r.push('累积经验 ×' + fmt(a.exp)); if (a.energy) r.push('能量 ×' + fmt(a.energy));
+    if (a.items) for (var k in a.items) r.push(((ITEMS[k] || SHOP_X[k] || { name: k }).name) + ' ×' + a.items[k]);
+    (a.mons || []).forEach(function (g) { if (SPMAP[g.sid]) r.push(form(g).name + ' LV' + g.lv); });
+    return r;
+  }
+  function sendMail(m) {
+    var L = mails();
+    if (m.id && acc.mailSeen[m.id]) return false;
+    if (m.id) acc.mailSeen[m.id] = Date.now();
+    L.unshift({ id: m.id || 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), t: Date.now(), date: m.date || dayStr(), from: m.from || '荆楚号舰务处',
+      title: m.title, body: m.body || '', att: hasAtt(m.att) ? m.att : null, read: false, got: !hasAtt(m.att) });
+    // 超过上限时，先删最旧的已读已领邮件
+    while (L.length > MAIL_MAX) { var k = -1; for (var i = L.length - 1; i >= 0; i--) if (L[i].read && L[i].got) { k = i; break; } if (k < 0) break; L.splice(k, 1); }
+    return true;
+  }
+  function mailTodo() { return ready() ? mails().filter(function (m) { return !m.read || !m.got; }).length : 0; }
+  function renderMailBadge() { var b = $('mail-badge'), n = mailTodo(); b.hidden = !n; b.textContent = n > 99 ? '99+' : n; }
+  function deliverMail() {
+    if (!ready()) return;
+    var me = window.CLOUD && window.CLOUD.user ? window.CLOUD.user() : null, today = dayStr(), changed = false;
+    mails();
+    (typeof MAILS !== 'undefined' ? MAILS : []).forEach(function (M0) {
+      if (!M0 || !M0.id || acc.mailSeen[M0.id]) return;
+      if (M0.to && (!me || M0.to.indexOf(me) < 0)) return;
+      if (M0.until && today > M0.until) return;
+      if (sendMail(M0)) changed = true;
+    });
+    // 排位赛季段位奖励翻倍：之前按旧标准领过的段位，补发差额（每个账号只算一次）
+    var rec = rankRec();
+    if (!rec.x2) {
+      rec.x2 = true; changed = true;
+      var tiers = Object.keys(rec.got).map(Number).filter(function (r) { return RANK_RW[r]; }).sort(function (a, b) { return a - b; });
+      if (tiers.length) {
+        var e = 0, g = 0; tiers.forEach(function (r) { e += RANK_RW[r].exp - RANK_RW_OLD[r].exp; g += RANK_RW[r].energy - RANK_RW_OLD[r].energy; });
+        sendMail({ id: SEASON + '-rank-x2', title: '排位赛季 ' + SEASON + ' 段位奖励翻倍补发',
+          body: '{name}，你好！\n排位赛季 ' + SEASON + ' 的段位奖励已经翻倍。你之前已经达到过 ' + tiers.map(function (r) { return RANKS[r]; }).join('、') + '，当时按旧标准发放了奖励。\n现在按新标准补发差额，请领取附件。',
+          att: { exp: e, energy: g } });
+      }
+    }
+    if (changed) save();
+    renderMailBadge();
+  }
+  function claimMail(m) {
+    if (!m || m.got) return [];
+    var a = m.att || {}, got = attList(a);
+    if (a.exp) acc.exp = (acc.exp || 0) + a.exp;
+    if (a.energy) acc.energy = (acc.energy || 0) + a.energy;
+    if (a.items) giveItems(a.items);
+    (a.mons || []).forEach(function (g) { if (!SPMAP[g.sid]) return; var nm = newMon(g.sid, g.lv), T = acc.teams[acc.active]; if (T.length < TEAM_SIZE) T.push(nm.u); });
+    m.got = true; m.read = true;
+    return got;
+  }
+  var mailOpen = null;
+  function mailHTML() {
+    var L = mails(), left = L.filter(function (m) { return !m.got; }).length;
+    var items = L.map(function (m, i) {
+      var on = mailOpen === m.id, A = attList(m.att);
+      return '<li class="mb-item' + (m.read ? '' : ' unread') + (on ? ' open' : '') + '"><button type="button" class="mb-head" data-mbopen="' + i + '" aria-expanded="' + on + '">' +
+        '<span class="mb-dot" aria-hidden="true"></span><span class="mb-t"><b>' + esc(m.title) + '</b><small>' + esc(m.from) + ' · ' + esc(m.date) + '</small></span>' +
+        (A.length ? '<span class="chip mb-att' + (m.got ? ' got' : '') + '">' + (m.got ? '已领取' : '附件') + '</span>' : '') + '</button>' +
+        (on ? '<div class="mb-body">' + esc(m.body.replace(/\{name\}/g, acc.name)).split('\n').map(function (p) { return '<p>' + p + '</p>'; }).join('') +
+          (A.length ? '<div class="mb-atts"><b>附件</b>' + A.map(function (x) { return '<span class="chip">' + esc(x) + '</span>'; }).join('') + '</div>' +
+            (m.got ? '<p class="hint">附件已领取</p>' : '<button type="button" class="btn primary" data-mbget="' + i + '">领取附件</button>') : '') + '</div>' : '') + '</li>';
+    }).join('');
+    return '<span class="tape l"></span><span class="tape r"></span><span class="step">荆楚号 · 乘员邮箱</span><h2>邮箱</h2>' +
+      '<div class="mb-tools"><span class="hint">共 ' + L.length + ' 封' + (left ? '，' + left + ' 封有附件没领' : '') + '</span>' +
+      '<button type="button" class="btn ghost" data-mbclean="1"' + (L.some(function (m) { return m.read && m.got; }) ? '' : ' disabled') + '>删除已读已领</button>' +
+      '<button type="button" class="btn primary" data-mball="1"' + (left ? '' : ' disabled') + '>一键领取</button></div>' +
+      (L.length ? '<ul class="mb-list">' + items + '</ul>' : '<p class="hint mb-empty">邮箱是空的。</p>') +
+      '<div class="soc-foot"><button type="button" class="btn ghost" data-mbx="1">关闭</button></div>';
+  }
+  function openMailbox() {
+    deliverMail();
+    var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'mailbox';
+    var box = document.createElement('div'); box.className = 'soc-box mailbox'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', '邮箱');
+    d.appendChild(box); document.body.appendChild(d);
+    var L = mails();
+    if (!mailOpen && L[0]) { mailOpen = L[0].id; if (!L[0].read) { L[0].read = true; save(); } }
+    function draw() { box.innerHTML = mailHTML(); renderMailBadge(); }
+    draw();
+    d.addEventListener('click', function (e) {
+      if (e.target === d || e.target.closest('[data-mbx]')) { d.remove(); return; }
+      var t;
+      if ((t = e.target.closest('[data-mbopen]'))) { var m = mails()[+t.dataset.mbopen]; mailOpen = mailOpen === m.id ? null : m.id; if (!m.read) { m.read = true; save(); } draw(); return; }
+      if ((t = e.target.closest('[data-mbget]'))) { var got = claimMail(mails()[+t.dataset.mbget]); save(); renderRes(); renderTop(); draw(); if (got.length) toast('领取了：' + got.join('、') + '。'); return; }
+      if (e.target.closest('[data-mball]')) {
+        var all = []; mails().forEach(function (m) { all = all.concat(claimMail(m)); }); save(); renderRes(); renderTop(); draw();
+        if (all.length) toast('一键领取了 ' + all.length + ' 项附件：' + all.join('、') + '。'); return;
+      }
+      if (e.target.closest('[data-mbclean]')) { acc.mail = mails().filter(function (m) { return !(m.read && m.got); }); save(); draw(); return; }
+    });
+  }
+  $('mail-btn').addEventListener('click', openMailbox);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && $('mailbox')) $('mailbox').remove(); });
 
   /* ---------- 每日任务：每天 0:00 刷新，必定包含 3 个竞技对战任务 ---------- */
   var DAILY = {
@@ -1180,6 +1286,7 @@
       '<article class="log-card wide"><span class="tape l"></span><span class="chip log-tag">每日任务</span><h3>今天的任务</h3>' + dailyHTML() + '</article>' +
       '<article class="log-card wide"><span class="tape r"></span><span class="chip log-tag">排位赛季 ' + SEASON + '</span><h3>首次达到段位的奖励</h3>' +
         '<p>本赛季最高段位：<b>' + RANKS[best] + '</b>。每个段位第一次达到时发放一次；<b>达到铂金送 LV10 的' + form({ sid: 'moon', lv: 10 }).name + '</b>。</p>' +
+        '<p class="hint"><b class="red">段位奖励已翻倍！</b>之前已经领过的段位，按新标准补发的差额已经发到你的邮箱。</p>' +
         '<table class="rank-rw"><thead><tr><th>段位</th><th>奖励</th><th>状态</th></tr></thead><tbody>' + rows + '</tbody></table>' +
         (arenaOpen() ? '<button type="button" class="btn" data-golog="arena">去竞技对战</button>' : '<p class="hint">完成荆楚号 · 孝感大厅的支线后开放竞技对战。</p>') + '</article>' +
       '</div>';
@@ -1848,6 +1955,7 @@
     acc: function () { return acc; }, ready: ready, save: save, toast: toast, go: go, page: function () { return page; }, renderRes: renderRes,
     titleName: titleName, mon: mon, fmt: fmt,
     npcPlan: npcPlan, npcHome: npcHome,
+    sendMail: sendMail, openMailbox: openMailbox,
     brawlOpen: brawlOpen, brawlSpec: brawlSpec, brawlReward: brawlReward, brawlToday: brawlToday, BRAWL: { win: BRAWL_WIN, lose: BRAWL_LOSE, cap: BRAWL_CAP, lv: BRAWL_LV },
     teaFight: teaFight, teaLeft: teaLeft, TEA_DAILY: TEA_DAILY, TEA_EXP: TEA_EXP, homePos: HOME_POS,
     view: function (m) { var f = form(m); return { name: f.name, img: f.img, stage: f.stage }; },

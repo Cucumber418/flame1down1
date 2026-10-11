@@ -1218,3 +1218,31 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 
 .mode.locked { opacity: .55; border-style: dashed; }
 .mode.locked b { color: var(--pencil); }
+
+/* ============ 邮箱 ============ */
+.mail-btn { cursor: pointer; display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; padding: 3px 10px; border: 1.5px solid var(--ink); border-radius: 999px; background: var(--paper-2); color: var(--ink); white-space: nowrap; }
+.mail-btn > span { font-size: 15px; line-height: 1; color: var(--blue); }
+.mail-btn b { font-weight: 600; }
+.mail-btn:hover { background: var(--paper); }
+.soc-box.mailbox { max-width: 640px; max-height: calc(100vh - 32px); overflow: hidden; grid-template-rows: auto auto auto minmax(0, 1fr) auto; }
+.mb-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.mb-tools .hint { margin-right: auto; }
+.mb-tools .btn { padding: 5px 12px; font-size: 13px; }
+.mb-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; overflow-y: auto; min-height: 0; max-height: 60vh; }
+.mb-item { border: 1.5px solid var(--rule); border-radius: 12px; background: var(--paper); }
+.mb-item.open { border-color: var(--ink); background: var(--paper-2); }
+.mb-head { width: 100%; cursor: pointer; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 9px 12px; border: 0; background: none; text-align: left; }
+.mb-dot { width: 8px; height: 8px; border-radius: 50%; background: transparent; }
+.mb-item.unread .mb-dot { background: var(--red); }
+.mb-t { display: grid; min-width: 0; }
+.mb-t b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mb-item.unread .mb-t b { color: var(--red); }
+.mb-t small { color: var(--pencil); font-size: 12px; }
+.chip.mb-att { color: #b7791f; border-color: #b7791f; }
+.chip.mb-att.got { color: var(--pencil); border-color: var(--rule); }
+.mb-body { padding: 0 14px 12px 30px; display: grid; gap: 8px; }
+.mb-body p { margin: 0; line-height: 1.65; }
+.mb-atts { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.mb-atts b { font-size: 13px; margin-right: 4px; }
+.mb-body .btn { justify-self: start; padding: 6px 14px; }
+.mb-empty { padding: 18px 0; }
