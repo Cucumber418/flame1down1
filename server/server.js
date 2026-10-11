@@ -69,8 +69,8 @@ function serveFile(req, res) {
       'Content-Type': MIME[ext] || 'application/octet-stream',
       'Content-Length': st.size,
       'ETag': etag,
-      // 图片很少改，让浏览器缓存一天；网页和代码每次都检查有没有更新
-      'Cache-Control': /^\/images\//.test(urlPath) ? 'public, max-age=86400' : 'no-cache'
+      // 每次都向服务器确认有没有更新：没变时只回 304，不会重新下载；换了图刷新就能看到
+      'Cache-Control': 'no-cache'
     };
     if (req.headers['if-none-match'] === etag) { res.writeHead(304, headers); return res.end(); }
     res.writeHead(200, headers);
