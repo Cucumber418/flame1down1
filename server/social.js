@@ -79,7 +79,13 @@ function homeOf(acc) {
   var mons = (Array.isArray(h.mons) ? h.mons : []).slice(0, 3).map(function (x) { return monByU(acc, x && typeof x === 'object' ? x.u : x); }).filter(Boolean);
   return { open: open, name: str(h.name, 10) || '陆羽茶室', mons: open ? mons : [] };
 }
-function rankOut(r) { return r ? { r: int(r.r, 0, 99), best: int(Math.max(r.best || 0, r.r || 0), 0, 99), w: int(r.w, 0, 1e7), l: int(r.l, 0, 1e7) } : { r: 0, best: 0, w: 0, l: 0 }; }
+var KING_R = 10;   // 王者（段位表见 js/engine/ranked.js 的 RANKS）
+function rankOut(r) {
+  if (!r) return { r: 0, best: 0, w: 0, l: 0, stars: 0, kingBest: 0 };
+  var cur = int(r.r, 0, 99), stars = int(r.stars, 0, 1e6);
+  return { r: cur, best: int(Math.max(r.best || 0, r.r || 0), 0, 99), w: int(r.w, 0, 1e7), l: int(r.l, 0, 1e7), stars: stars,
+    kingBest: Math.max(int(r.kingBest, 0, 1e6), cur === KING_R ? stars : 0) };   // 王者达到过的最高星数
+}
 
 function summary(u, me) {
   var p = parseSave(u), acc = p.acc, on = isOnline(u.name);
@@ -89,7 +95,7 @@ function summary(u, me) {
   o.name = str(acc.name, 20); o.title = str(acc.title, 20) || null;
   o.monsN = acc.mons.length; o.teamN = activeTeam(acc).length;
   o.show = showMons(acc).map(function (m) { return { sid: str(m.sid, 32), lv: int(m.lv, 1, 100) }; });
-  o.rank = rankOut(p.rank).best;
+  var ro = rankOut(p.rank); o.rank = ro.best; if (ro.best === KING_R) o.rankStars = ro.kingBest;
   var hm = homeOf(acc); o.homeOpen = hm.open; o.homeN = hm.mons.length;
   o.brawl = brawlOk(acc);
   return o;

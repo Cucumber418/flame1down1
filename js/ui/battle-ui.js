@@ -69,9 +69,9 @@
     if (app.mode === 'rank') {
       var R = app.rank, ladder = RANKS.map(function (n, i) { return '<li class="' + (i < R.r ? 'done' : i === R.r ? 'cur' : '') + '" style="--rc:' + RANK_COLOR[i] + '" title="' + n + '">' + n + '</li>'; }).join('');
       rc.innerHTML = '<div class="rc-main">' + rankBadge(R.r) + starsHTML(R.stars, R.r) +
-        '<div class="rc-txt"><b>当前段位：' + RANKS[R.r] + '</b><span>对手特点：' + esc(rankDesc(R.r)) + '</span>' +
-        '<span class="rc-rule">每局胜利获得 1 星，集满 3 星晋级；每局失败扣除 1 星，0 星时失败将降级。双方阵容的综合实力相当，对手精灵在出场后才会揭晓。每局最多 ' + MAX_TURNS + ' 回合，届时剩余精灵多的一方获胜，数量相同则为平局，星数不变。</span></div>' +
-        '<div class="rc-rec"><span>战绩：' + R.w + ' 胜 ' + R.l + ' 负</span><span>最高段位：' + RANKS[R.best || 0] + '</span><button type="button" class="btn ghost" id="btn-reset">' + (Date.now() - resetArmed < 3000 ? '再点一次确认' : '重置段位') + '</button></div></div>' +
+        '<div class="rc-txt"><b>当前段位：' + RANKS[R.r] + '</b><span>对手特点：' + esc(rankDesc(R.r, R.stars)) + '</span>' +
+        '<span class="rc-rule">每局胜利获得 1 星，集满 3 星晋级；每局失败扣除 1 星，0 星时失败将降级。' + (R.r === RANKS.length - 1 ? '王者段位不封顶，星数越高，电脑越强、越会玩，对手阵容也会比你稍强（最多算到 ' + KING_CAP + ' 星）。' : '双方阵容的综合实力相当。') + '对手精灵在出场后才会揭晓。每局最多 ' + MAX_TURNS + ' 回合，届时剩余精灵多的一方获胜，数量相同则为平局，星数不变。</span></div>' +
+        '<div class="rc-rec"><span>战绩：' + R.w + ' 胜 ' + R.l + ' 负</span><span>最高段位：' + RANKS[R.best || 0] + ((R.best || 0) === RANKS.length - 1 ? ' ' + Math.max(R.kingBest || 0, R.r === RANKS.length - 1 ? R.stars : 0) + ' 星' : '') + '</span><button type="button" class="btn ghost" id="btn-reset">' + (Date.now() - resetArmed < 3000 ? '再点一次确认' : '重置段位') + '</button></div></div>' +
         '<ol class="ladder">' + ladder + '</ol>';
     }
   }
@@ -465,10 +465,10 @@
     bgm('pvp');
     var p = B().map(function (id) { return { id: id, moves: app.loadout[id].slice() }; });
     var rank = app.mode === 'rank';
-    var a = rank ? buildAITeam(app.rank.r, B()) : (function () { var ids = shuffle(SP.map(function (s) { return s.id; })).slice(0, 5); return ids.map(function (id) { return { id: id, moves: smartLoadout(id, 6, ids) }; }); })();
+    var a = rank ? buildAITeam(app.rank.r, B(), app.rank.stars) : (function () { var ids = shuffle(SP.map(function (s) { return s.id; })).slice(0, 5); return ids.map(function (id) { return { id: id, moves: smartLoadout(id, 6, ids) }; }); })();
     app.lastP = p;
     app.S = newBattle(p, a);
-    if (rank) { app.S.mode = 'rank'; app.S.rankAt = app.rank.r; app.S.ai = rankAI(app.rank.r); app.draft.used = true; saveDraft(); }
+    if (rank) { app.S.mode = 'rank'; app.S.rankAt = app.rank.r; app.S.ai = rankAI(app.rank.r, app.rank.stars); app.draft.used = true; saveDraft(); }
     app.screen = 'battle'; app.logHTML = ''; $('log').innerHTML = '';
     $('builder').hidden = true; $('battle').hidden = false; $('endcard').hidden = true;
     shownIds = [null, null];
@@ -732,6 +732,7 @@
       else x.msg = '黑铁为最低段位，不再降级';
     } else x.msg = '平局，星数不变';
     R.best = Math.max(R.best || 0, R.r);
+    if (R.r === RANKS.length - 1) R.kingBest = Math.max(R.kingBest || 0, R.stars);   // 王者达到过的最高星数（社交名片里显示）
     x.to = R.r; x.toStars = R.stars; saveRank(); return x;
   }
   function showEnd() {

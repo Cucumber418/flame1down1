@@ -6,7 +6,22 @@
 /* ---------- 实战模式：段位与电脑强度 ---------- */
 var RANKS = ['黑铁', '青铜', '白银', '黄金', '铂金', '翡翠', '钻石', '星耀', '大师', '宗师', '王者'];
 var RANK_COLOR = ['#5b5650', '#9a6436', '#8d97a3', '#c49a1c', '#3f8f8a', '#2f9a5e', '#3a6fc4', '#7b4fc9', '#b0398f', '#c4392f', '#d18a12'];
-function rankAI(r) {
+// 王者段位里，电脑随星数继续变强（每星一档，最多算到 KING_CAP 星）：能力值、阵容、配招、失误和换人都会提升
+var KING = RANKS.length - 1, KING_CAP = 30;
+function kingK(r, stars) { return r === KING ? Math.min(KING_CAP, Math.max(0, Math.floor(stars || 0))) : 0; }
+function rankAI(r, stars) {
+  var a = rankAI0(r), k = kingK(r, stars);
+  if (k) {
+    a.mult = Math.round((1.15 + 0.01 * k) * 100) / 100;   // 能力值倍率：王者 0 星 ×1.15，30 星 ×1.45
+    a.noise = Math.max(0.02, 0.05 - 0.001 * k);           // 估分越来越准
+    a.switchP = Math.min(0.8, 0.55 + 0.01 * k);           // 更常考虑换人
+    a.threat = Math.max(0.6, 1 - 0.015 * k);              // 受到的威胁没那么大时也会提前换人躲克制
+    a.picks = 12 + k;                                     // 配招时比较更多方案
+    a.edge = Math.min(0.3, 0.01 * k);                     // 阵容强度比你高一点（30 星时预测胜率约 57%）
+  }
+  return a;
+}
+function rankAI0(r) {
   return {
     randomP: Math.max(0, 0.5 - 0.06 * r),          // 黑铁一半招式随便放，宗师以上不乱放
     noise: Math.max(0.05, 0.45 - 0.04 * r),         // 估分噪声越来越小
@@ -16,8 +31,9 @@ function rankAI(r) {
     mult: [0.82, 0.85, 0.88, 0.91, 0.94, 0.97, 1.0, 1.03, 1.06, 1.1, 1.15][r]   // 对手能力值倍率
   };
 }
-function rankDesc(r) {
-  var a = rankAI(r);
+function rankDesc(r, stars) {
+  var a = rankAI(r, stars), k = kingK(r, stars);
+  if (k) return '王者 ' + stars + ' 星：电脑能力值 ×' + a.mult + ' · 对手阵容比你稍强' + ' · 几乎不失误 · 配招针对性强 · 更会换人躲克制' + (k >= KING_CAP ? ' · 已到最强' : ' · 星数越高越强');
   return '电脑能力值 ×' + a.mult + ' · ' + (r < 2 ? '经常乱放技能' : r < 5 ? '偶尔乱放技能' : r < 8 ? '很少失误' : '几乎不失误') +
     ' · ' + (r < 1 ? '技能完全随机配置' : r < 4 ? '配招较为随意' : r < 8 ? '会根据阵容调整配招' : '配招针对性强') + (r >= 4 ? ' · 会换人躲克制' : '');
 }
@@ -96,9 +112,9 @@ function drawFairTeam(avoid, target) {
   return shuffled(pool[Math.floor(RNG() * pool.length)].ids);
 }
 function drawDraft() { var a = drawFairTeam(); return [a, drawFairTeam(a, teamPower(a))]; }
-function buildAITeam(r, vsIds) {
-  var a = rankAI(r);
-  return (vsIds ? drawFairTeam(null, teamPower(vsIds)) : drawFairTeam()).map(function (id) {
+function buildAITeam(r, vsIds, stars) {
+  var a = rankAI(r, stars);
+  return (vsIds ? drawFairTeam(null, teamPower(vsIds) + (a.edge || 0)) : drawFairTeam()).map(function (id) {
     return { id: id, moves: null, mult: a.mult };
   }).map(function (t, k, team) {
     t.moves = a.picks ? smartLoadout(t.id, a.picks, team.map(function (x) { return x.id; })) : shuffled(SPMAP[t.id].moves.concat(SPMAP[t.id].hidden)).slice(0, 4);
