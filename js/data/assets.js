@@ -91,7 +91,7 @@ var PRE_SPRITES = {
   "hephaestus_s1": "images/pre_sprites/hephaestus_s1.png",
   "hephaestus_s2": "images/pre_sprites/hephaestus_s2.png",
   "leigong_s1": "images/pre_sprites/leigong_s1.webp",
-  "leigong_s2": "images/pre_sprites/leigong_s2.png",
+  "leigong_s2": "images/pre_sprites/leigong_s2.webp",
   "inkarm_s1": "images/pre_sprites/inkarm_s1.png",
   "inkarm_s2": "images/pre_sprites/inkarm_s2.png",
   "barren_s1": "images/pre_sprites/barren_s1.png",
@@ -250,5 +250,6 @@ var SILHOUETTES = {
 
 // 异色精灵的立绘（只有部分形态有）：键名规则和 PRE_SPRITES 一样，最终形态用精灵 id
 var SHINY_SPRITES = {
-  "leigong_s1": "images/shiny/leigong_s1.webp"
+  "leigong_s1": "images/shiny/leigong_s1.webp",
+  "leigong_s2": "images/shiny/leigong_s2.webp"
 };
