@@ -32,35 +32,52 @@ jobs:
             echo "ok=yes" >> "$GITHUB_OUTPUT"
           fi
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         if: steps.cfg.outputs.ok == 'yes'
 
-      - name: 准备 SSH 钥匙
+      - name: 准备 SSH 钥匙并检查能不能连上服务器
         if: steps.cfg.outputs.ok == 'yes'
         env:
-          HOST: ${{ secrets.DEPLOY_HOST }}
+          RAW_HOST: ${{ secrets.DEPLOY_HOST }}
           KEY: ${{ secrets.DEPLOY_KEY }}
         run: |
+          # 容错：去掉 http://、端口、路径和空白，只留下 IP
+          HOST=$(printf '%s' "$RAW_HOST" | tr -d '[:space:]' | sed -E 's#^[a-zA-Z]+://##; s#/.*$##; s#:[0-9]+$##')
+          echo "HOST=$HOST" >> "$GITHUB_ENV"
           mkdir -p ~/.ssh
-          printf '%s\n' "$KEY" > ~/.ssh/deploy && chmod 600 ~/.ssh/deploy
-          ssh-keyscan -T 30 "$HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          printf '%s\n' "$KEY" | tr -d '\r' > ~/.ssh/deploy && chmod 600 ~/.ssh/deploy
+          if ! ssh-keygen -y -f ~/.ssh/deploy >/dev/null 2>&1; then
+            # 从网页终端复制时换行可能变成了空格：按标准格式重新排一遍
+            BODY=$(printf '%s' "$KEY" | tr -d '\r\n' | sed -E 's/.*-----BEGIN OPENSSH PRIVATE KEY-----//; s/-----END OPENSSH PRIVATE KEY-----.*//' | tr -d ' ')
+            { echo '-----BEGIN OPENSSH PRIVATE KEY-----'; printf '%s' "$BODY" | fold -w 70; echo; echo '-----END OPENSSH PRIVATE KEY-----'; } > ~/.ssh/deploy
+          fi
+          if ! ssh-keygen -y -f ~/.ssh/deploy >/dev/null 2>&1; then
+            echo "::error title=DEPLOY_KEY 不对::DEPLOY_KEY 不是完整的私钥。要从 -----BEGIN OPENSSH PRIVATE KEY----- 一直复制到 -----END OPENSSH PRIVATE KEY-----，包括这两行。"
+            exit 1
+          fi
+          if ! timeout 20 bash -c "exec 3<>/dev/tcp/$HOST/22" 2>/dev/null; then
+            echo "::error title=连不上服务器::从 GitHub 连不上服务器的 22 端口。请检查：1) DEPLOY_HOST 是不是服务器的公网 IP；2) 腾讯云控制台 → 这台服务器 → 防火墙 里是否放行了 TCP 22。"
+            exit 1
+          fi
+          if ! ssh -i ~/.ssh/deploy -o StrictHostKeyChecking=accept-new -o ConnectTimeout=30 -o BatchMode=yes "ubuntu@$HOST" true 2>/tmp/ssh.err; then
+            echo "::error title=服务器拒绝了这把钥匙::能连上服务器，但登录失败。请确认在服务器上用 ubuntu 账号（不加 sudo）运行过生成钥匙的那行命令。详情：$(tr '\n' ' ' </tmp/ssh.err)"
+            exit 1
+          fi
+          echo "已连上服务器"
 
       - name: 上传新版本
         if: steps.cfg.outputs.ok == 'yes'
         env:
-          HOST: ${{ secrets.DEPLOY_HOST }}
         run: |
           for i in 1 2 3; do
             rsync -az --delete --exclude '.git' --exclude '.github' \
-              -e "ssh -i ~/.ssh/deploy -o ServerAliveInterval=15 -o ConnectTimeout=30" \
+              -e "ssh -i ~/.ssh/deploy -o StrictHostKeyChecking=accept-new -o ServerAliveInterval=15 -o ConnectTimeout=30" \
               --rsync-path="sudo rsync" ./ "ubuntu@$HOST:/opt/flame1down1/" && break
             echo "第 $i 次上传失败，10 秒后重试"; sleep 10
-            [ "$i" = 3 ] && exit 1
+            [ "$i" = 3 ] && { echo "::error title=上传失败::上传新版本到服务器失败了三次，请把这个页面截图发给 Claude。"; exit 1; }
           done
 
       - name: 重启游戏服务并自检
         if: steps.cfg.outputs.ok == 'yes'
-        env:
-          HOST: ${{ secrets.DEPLOY_HOST }}
         run: |
-          ssh -i ~/.ssh/deploy -o ConnectTimeout=30 "ubuntu@$HOST" 'sudo systemctl restart flame1down && sleep 2 && P=$(sed -n "s/^Environment=PORT=//p" /etc/systemd/system/flame1down.service); curl -fsS "http://127.0.0.1:${P:-80}/ping" && echo " 服务器已更新到 '"${GITHUB_SHA::7}"'"'
+          ssh -i ~/.ssh/deploy -o StrictHostKeyChecking=accept-new -o ConnectTimeout=30 "ubuntu@$HOST" 'sudo systemctl restart flame1down && sleep 2 && P=$(sed -n "s/^Environment=PORT=//p" /etc/systemd/system/flame1down.service); curl -fsS "http://127.0.0.1:${P:-80}/ping" && echo " 服务器已更新到 '"${GITHUB_SHA::7}"'"'
