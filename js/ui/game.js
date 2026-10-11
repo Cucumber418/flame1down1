@@ -1144,7 +1144,7 @@
       if (tiers.length) {
         var e = 0, g = 0; tiers.forEach(function (r) { e += RANK_RW[r].exp - RANK_RW_OLD[r].exp; g += RANK_RW[r].energy - RANK_RW_OLD[r].energy; });
         sendMail({ id: SEASON + '-rank-x2', title: '排位赛季 ' + SEASON + ' 段位奖励翻倍补发',
-          body: '{name}，你好！\n排位赛季 ' + SEASON + ' 的段位奖励已经翻倍。你之前已经达到过 ' + tiers.map(function (r) { return RANKS[r]; }).join('、') + '，当时按旧标准发放了奖励。\n现在按新标准补发差额，请领取附件。',
+          body: '{name}，你好！\n排位赛季 ' + SEASON + ' 的段位奖励已经翻倍。你之前已经达到过' + tiers.map(function (r) { return RANKS[r]; }).join('、') + '，当时按旧标准发放了奖励。\n现在按新标准补发差额，请领取附件。',
           att: { exp: e, energy: g } });
       }
     }
