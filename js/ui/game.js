@@ -400,9 +400,10 @@
    * 可以在这里直接使用的道具写在 USE_ITEMS（kind：nat 改性格，ev 加学习力）；对战道具（ITEMS）和改名卡在这里只显示说明 */
   var USE_ITEMS = {
     natTagore: { name: '泰戈尔性格药剂', sid: 'tagore', kind: 'nat', d: '把你的一只泰戈尔（小胖虎、胖虎也可以）的性格改成你指定的性格。' },
+    evAny: { name: '通用学习力合剂', sid: null, kind: 'ev', d: '为你的任意一只精灵直接增加 100 点学习力。加进「可分配学习力」，再在精灵资料里自己分配；学习力总量最多 ' + EV_TOTAL + '。' },
     evTagore: { name: '泰戈尔学习力合剂', sid: 'tagore', kind: 'ev', d: '为你的一只泰戈尔（小胖虎、胖虎也可以）直接增加 100 点学习力。加进「可分配学习力」，再在精灵资料里自己分配；学习力总量最多 ' + EV_TOTAL + '。' }
   };
-  var BAG_ORDER = ['natTagore', 'evTagore', 'auto', 'rename', 'cap1', 'cap2', 'cap3', 'pot1', 'pot2'];
+  var BAG_ORDER = ['natTagore', 'evTagore', 'evAny', 'auto', 'rename', 'cap1', 'cap2', 'cap3', 'pot1', 'pot2'];
   function itemName(k) { var it = ITEMS[k] || USE_ITEMS[k] || SHOP_X[k] || TEA_SHOP[k]; return it ? it.name : k; }
   function evRoom(m) { return Math.max(0, EV_TOTAL - evSum(m) - (m.evFree || 0)); }
   function itemsHTML() {
@@ -424,7 +425,7 @@
       else if (k === 'auto') body = '<p>' + esc(TEA_SHOP.auto.d) + '</p><button type="button" class="btn" data-itgo="home">去我的茶室装上</button>';
       else if (ITEMS[k]) body = '<p>' + esc(ITEMS[k].d) + '</p><p class="hint">在剧情、野外和首领对战的「道具」页使用，会占用一回合。</p>';
       else if (it) {
-        var mons = acc.mons.filter(function (m) { return m.sid === it.sid; }).sort(function (a, b) { return b.lv - a.lv; });
+        var mons = acc.mons.filter(function (m) { return !it.sid || m.sid === it.sid; }).sort(function (a, b) { return b.lv - a.lv; });
         if (!mons.some(function (m) { return m.u === ui.itTarget; })) ui.itTarget = mons.length ? mons[0].u : null;
         var tm = mon(ui.itTarget);
         body = '<p>' + esc(it.d) + '</p>' + (mons.length ? '<div class="it-step"><b>1. 选择精灵</b><div class="it-mons">' + mons.map(function (m) {
@@ -444,7 +445,7 @@
     if (k === 'rename') { setTimeout(function () { renaming = true; renderRename(); $('who-menu').hidden = false; $('who-btn').setAttribute('aria-expanded', true); window.scrollTo(0, 0); }, 0); return; }   // 等这次点击处理完再打开名字菜单，免得被「点别处关闭」立刻关上
     var it = USE_ITEMS[k], m = mon(ui.itTarget), msg;
     if (!it || !(acc.items[k] > 0)) return;
-    if (!m || m.sid !== it.sid) { ui.itMsg = '先选一只' + SPMAP[it.sid].name + '。'; renderBag(); return; }
+    if (!m || (it.sid && m.sid !== it.sid)) { ui.itMsg = '先选一只' + (it.sid ? SPMAP[it.sid].name : '精灵') + '。'; renderBag(); return; }
     if (it.kind === 'nat') {
       var sel = $('it-nat'), nat = sel && sel.value;
       if (!nat || !(nat in NATURES)) return;
@@ -872,6 +873,7 @@
     if (ex.view === 'quests') { renderQuests(); return; }
     if (ex.view === 'home') { if (homeOpen()) { renderHome(); return; } ex.view = 'area'; renderArea(); return; }
     if (ex.view === 'boss') { if (bossOpen(ex.boss)) { renderBoss(); return; } ex.view = 'planets'; }
+    if (ex.view === 'bosshub') { renderBossHub(); return; }
     if (ex.view === 'weekly') { if (weeklyOpen()) { ex.boss = WEEKLY.boss; renderBoss(true); return; } ex.view = 'planets'; }
     if (ex.view === 'room') { if (homeOpen()) { renderRoom(); return; } ex.view = 'area'; renderArea(); return; }
     if (ex.view === 'teashop') { if (homeOpen()) { renderTeaShop(); return; } ex.view = 'area'; renderArea(); return; }
@@ -879,6 +881,9 @@
     var Pp = ex.view === 'sites' && PLANETS.filter(function (p) { return p.id === ex.planet; })[0];
     var html = exHead(ex.view === 'planets' ? '选择要前往的星球。' : Pp && Pp.ship ? '点击舰上的区域，即可传送过去。' : '选择要前往的地点。');
     if (ex.view === 'planets') {
+      var nOpen = Object.keys(BOSSES).filter(bossOpen).length;
+      html += '<button type="button" class="weekly-card hub-card" data-bosshub="1"><span class="tape l"></span><span class="hub-ic">' + Object.keys(BOSSES).map(function (k) { return '<img src="' + SPRITES[BOSSES[k].sid] + '" alt="">'; }).join('') + '</span><span class="wk-txt"><span class="chip boss-diff">Boss挑战</span><b>首领一览</b>' +
+        '<small>' + Object.keys(BOSSES).map(function (k) { return BOSSES[k].name; }).join('、') + ' · 已开放 ' + nOpen + ' / ' + Object.keys(BOSSES).length + '</small></span><span class="wk-pm">›</span></button>';
       if (weeklyOpen()) {
         var WB = BOSSES[WEEKLY.boss], pn = permits();
         html += '<button type="button" class="weekly-card" data-weekly="1"><span class="tape l"></span><img src="' + SPRITES[WB.sid] + '" alt=""><span class="wk-txt"><span class="chip boss-diff d2">每周挑战</span><b>' + WB.name + ' · ' + WB.lv[WEEKLY.d].diff + '难度</b>' +
@@ -1186,7 +1191,10 @@
   var RANK_RW_OLD = [null, { exp: 500, energy: 200 }, { exp: 1000, energy: 300 }, { exp: 1500, energy: 400 }, { exp: 2000, energy: 500 },
     { exp: 2500, energy: 600 }, { exp: 3000, energy: 700 }, { exp: 3500, energy: 800 }, { exp: 4000, energy: 900 }, { exp: 4500, energy: 1000 }, { exp: 5000, energy: 1200 }];
   var RANK_GIFT = { 4: [{ sid: 'moon', lv: 10 }], 10: [{ sid: 'bone', lv: 10 }] };   // 铂金送小月亮，王者送凶骨（骨刃一阶）
-  var RANK_RW = RANK_RW_OLD.map(function (R, r) { return R && { exp: R.exp * 2, energy: R.energy * 2, gift: RANK_GIFT[r], title: 'S1-' + r }; });
+  // 2026-10-11 起各段位额外送道具（之前已经领过的段位，差的道具用邮箱补发）
+  var RANK_ITEMS = { 2: { cap1: 5 }, 3: { cap1: 5 }, 5: { cap2: 5 }, 6: { cap2: 5 }, 7: { cap2: 5, evAny: 1 }, 8: { cap3: 1, evAny: 1 }, 9: { cap3: 1, evAny: 2 }, 10: { cap3: 1, evAny: 3 } };
+  var RANK_RW = RANK_RW_OLD.map(function (R, r) { return R && { exp: R.exp * 2, energy: R.energy * 2, gift: RANK_GIFT[r], title: 'S1-' + r, items: RANK_ITEMS[r] }; });
+  function itemsText(o) { return o ? Object.keys(o).map(function (k) { return itemName(k) + ' ×' + o[k]; }).join('、') : ''; }
   function rankBest() { try { var r = JSON.parse(localStorage.getItem('hs-rank-v1') || 'null'); return r ? Math.max(r.best || 0, r.r || 0) : 0; } catch (e) { return 0; } }
   function rankRec() { if (!acc.rankRw || acc.rankRw.season !== SEASON) acc.rankRw = { season: SEASON, got: {} }; return acc.rankRw; }
   function checkRankRewards() {
@@ -1194,8 +1202,8 @@
     var rec = rankRec(), best = rankBest(), msg = [];
     for (var r = 1; r <= best && r < RANK_RW.length; r++) if (!rec.got[r]) {
       var R = RANK_RW[r]; rec.got[r] = Date.now();
-      acc.exp += R.exp; acc.energy += R.energy;
-      var line = '首次达到' + RANKS[r] + '段位：累积经验 +' + fmt(R.exp) + '，能量 +' + fmt(R.energy);
+      acc.exp += R.exp; acc.energy += R.energy; giveItems(R.items);
+      var line = '首次达到' + RANKS[r] + '段位：累积经验 +' + fmt(R.exp) + '，能量 +' + fmt(R.energy) + (R.items ? '，' + itemsText(R.items) : '');
       (R.gift || []).forEach(function (g) { var m = newMon(g.sid, g.lv), T = acc.teams[acc.active]; if (T.length < TEAM_SIZE) T.push(m.u); line += '，并获得了 ' + form(m).name + ' LV' + g.lv + '！'; });
       msg.push(line + '。');
     }
@@ -1212,7 +1220,7 @@
   function attList(a) {
     var r = []; if (!a) return r;
     if (a.exp) r.push('累积经验 ×' + fmt(a.exp)); if (a.energy) r.push('能量 ×' + fmt(a.energy));
-    if (a.items) for (var k in a.items) r.push(((ITEMS[k] || SHOP_X[k] || { name: k }).name) + ' ×' + a.items[k]);
+    if (a.items) for (var k in a.items) r.push(itemName(k) + ' ×' + a.items[k]);
     (a.mons || []).forEach(function (g) { if (SPMAP[g.sid]) r.push(form(g).name + ' LV' + g.lv); });
     return r;
   }
@@ -1249,6 +1257,13 @@
           body: '{name}，你好！\n排位赛季 ' + SEASON + ' 的段位奖励已经翻倍。你之前已经达到过' + tiers.map(function (r) { return RANKS[r]; }).join('、') + '，当时按旧标准发放了奖励。\n现在按新标准补发差额，请领取附件。',
           att: { exp: e, energy: g } });
       }
+    }
+    // 段位奖励新增道具：之前已经领过的段位，补发道具（每个账号只算一次）
+    if (!rec.items) {
+      rec.items = true; changed = true;
+      var add = {}, which = [];
+      Object.keys(rec.got).map(Number).sort(function (a, b) { return a - b; }).forEach(function (r) { var o = RANK_ITEMS[r]; if (!o) return; which.push(RANKS[r]); for (var k in o) add[k] = (add[k] || 0) + o[k]; });
+      if (which.length) sendMail({ id: SEASON + '-rank-items', title: '排位赛季 ' + SEASON + ' 段位奖励新增道具补发', body: '{name}，你好！\n排位赛季 ' + SEASON + ' 的段位奖励新增了捕捉装置和通用学习力合剂。你之前已经达到过' + which.join('、') + '，现在补发这些段位新增的道具，请领取附件。', att: { items: add } });
     }
     // 王者奖励新增 LV10 凶骨：在加这份奖励之前就领过王者奖励的，用邮箱补发
     if (!rec.kingGift) {
@@ -1390,7 +1405,7 @@
     var rows = RANK_RW.map(function (R, r) {
       if (!R) return '';
       var got = rec.got[r];
-      return '<tr class="' + (got ? 'got' : r <= best ? 'ok' : '') + (R.gift ? ' big' : '') + '"><td>' + RANKS[r] + '</td><td>累积经验 ×' + fmt(R.exp) + '，能量 ×' + fmt(R.energy) + '，称号「' + titleName(R.title) + '」' + (R.gift ? '，<b class="red">' + R.gift.map(function (g) { return form(g).name + ' LV' + g.lv; }).join('、') + '</b>' : '') + '</td><td>' + (got ? '已领取' : '未达成') + '</td></tr>';
+      return '<tr class="' + (got ? 'got' : r <= best ? 'ok' : '') + (R.gift ? ' big' : '') + '"><td>' + RANKS[r] + '</td><td>累积经验 ×' + fmt(R.exp) + '，能量 ×' + fmt(R.energy) + '，称号「' + titleName(R.title) + '」' + (R.items ? '，' + itemsText(R.items) : '') + (R.gift ? '，<b class="red">' + R.gift.map(function (g) { return form(g).name + ' LV' + g.lv; }).join('、') + '</b>' : '') + '</td><td>' + (got ? '已领取' : '未达成') + '</td></tr>';
     }).join('');
     $('pg-log').innerHTML = '<div class="page-head"><h2 class="sec">航行日志</h2><p class="hint">荆楚号的公告板：更新公告、限时活动、每日任务、排位奖励和新首领。</p></div>' +
       '<div class="log-grid">' + changelogHTML() +
@@ -1485,6 +1500,20 @@
     if (R.later) a.push('奖励将在之后添加');
     return a.join('、');
   }
+  // 星际探索 · Boss挑战：所有首领集中在这里，点进去就是各自的首领页
+  function renderBossHub() {
+    var cards = Object.keys(BOSSES).map(function (k) {
+      var B = BOSSES[k], open = bossOpen(k);
+      var lv = B.lv.map(function (L, i) { var op = levelOpen(k, i), won = bossWon(k, i); return '<span class="hb-lv' + (won ? ' won' : op ? ' op' : '') + '">' + L.diff + (won ? ' ✓' : op ? '' : ' 🔒') + '</span>'; }).join('');
+      return '<article class="boss-hub-it' + (open ? '' : ' locked') + '"><span class="tape r"></span><div class="hb-art"><img src="' + BG[B.bg] + '" alt="" class="boss-bg"><img src="' + SPRITES[B.sid] + '" alt="" class="boss-mon"></div>' +
+        '<div class="hb-txt"><h3>' + B.name + '</h3><p class="hint">' + esc(bossWhere(B)) + ' · ' + esc(B.d) + '</p><p class="hb-lvs">' + lv + '</p>' +
+        (open ? '<button type="button" class="btn primary" data-boss="' + k + '" data-from="hub">挑战</button>' : '<button type="button" class="btn" disabled>' + esc(B.lv[0].lockText) + '</button>') + '</div></article>';
+    }).join('');
+    $('pg-explore').innerHTML = exHead('所有首领都集中在这里。难度依次开放，每档难度第一次击败都有奖励。') +
+      '<div class="crumb"><button type="button" class="btn ghost" id="ex-back">‹ 返回星球</button><b>Boss挑战</b></div>' +
+      (weeklyOpen() ? '<p class="hint">每周挑战在星球列表上方单独入口，挑战许可 ' + permits() + ' / ' + PERMIT.max + '。</p>' : '') +
+      '<div class="boss-hub">' + cards + '</div>';
+  }
   function renderBoss(weekly) {
     var k = ex.boss, B = BOSSES[k], d = weekly ? WEEKLY.d : bossSel(k), L = B.lv[d], won = bossWon(k, d);
     var rec = (acc.bosses && acc.bosses[recKey(k, weekly ? 'w' : d)]) || {}, open = weekly ? weeklyOpen() : levelOpen(k, d), pn = weekly ? permits() : 0;
@@ -1498,7 +1527,7 @@
     var btn = weekly ? '<button type="button" class="btn primary" data-weeklygo="1"' + (pn > 0 ? '' : ' disabled') + '>开始挑战（消耗 1 枚挑战许可）</button><p class="hint permit-line">挑战许可 <b>' + pn + '</b> / ' + PERMIT.max + ' · ' + permitNext() + '</p>'
       : open ? '<button type="button" class="btn primary" data-bossgo="' + k + '" data-d="' + d + '">开始挑战</button>' : '<button type="button" class="btn" disabled>' + esc(L.lockText) + '</button>';
     $('pg-explore').innerHTML = exHead(weekly ? '每周挑战：和困难难度的泰戈尔一模一样，每次挑战消耗 1 枚挑战许可。' : '首领可以反复挑战。难度依次开放，每档难度第一次击败都有奖励。') +
-      '<div class="crumb"><button type="button" class="btn ghost" id="boss-back">‹ 返回' + (weekly ? '星际探索' : bossWhere(B)) + '</button><b>' + (weekly ? '每周挑战 · ' : '首领 · ') + B.name + '</b></div>' + tabs +
+      '<div class="crumb"><button type="button" class="btn ghost" id="boss-back">‹ 返回' + (weekly ? '星际探索' : ex.bossFrom === 'hub' ? 'Boss挑战' : bossWhere(B)) + '</button><b>' + (weekly ? '每周挑战 · ' : '首领 · ') + B.name + '</b></div>' + tabs +
       '<article class="boss-card"><span class="tape l"></span><div class="boss-art"><img src="' + BG[B.bg] + '" alt="" class="boss-bg"><img src="' + SPRITES[B.sid] + '" alt="' + B.name + '" class="boss-mon"></div>' +
       '<div class="boss-txt"><span class="chip boss-diff d' + d + '">' + (weekly ? '每周挑战 · ' : '') + L.diff + '难度</span><h3>' + B.name + '</h3><p class="hint">' + esc(B.d) + '</p>' +
       '<ul class="boss-rules"><li><b>等级</b>LV' + L.lv + '</li><li><b>体力</b>' + fmt(L.hp) + '</li>' + rules +
@@ -1988,7 +2017,8 @@
     if (b.dataset.npctalk) { npcTalk(b.dataset.npctalk); return; }
     if (b.dataset.room) { ex.view = 'room'; ex.room = b.dataset.room; ex.area = '天门'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); mysteryRoll('荆楚号 · 陆羽茶室'); return; }
     if (b.dataset.home) { ex.view = 'home'; ex.area = '天门'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); mysteryRoll('荆楚号 · 陆羽茶室'); return; }
-    if (b.dataset.boss) { var BB = BOSSES[b.dataset.boss]; ex.view = 'boss'; ex.boss = b.dataset.boss; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); mysteryRoll(BB.dept ? '荆楚号 · ' + DEPTS[BB.dept][0] : bossWhere(BB)); return; }
+    if (b.dataset.bosshub) { ex.view = 'bosshub'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
+    if (b.dataset.boss) { var BB = BOSSES[b.dataset.boss]; ex.bossFrom = b.dataset.from || null; ex.view = 'boss'; ex.boss = b.dataset.boss; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); mysteryRoll(BB.dept ? '荆楚号 · ' + DEPTS[BB.dept][0] : bossWhere(BB)); return; }
     if (b.dataset.bossd) { ex.bossK = ex.boss; ex.bossD = +b.dataset.bossd; renderBoss(); return; }
     if (b.dataset.bossgo) { startBoss(b.dataset.bossgo, +b.dataset.d || 0); return; }
     if (b.dataset.weekly) { ex.view = 'weekly'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
@@ -1996,6 +2026,7 @@
     if (b.id === 'boss-back') {
       var BK2 = BOSSES[ex.boss];
       if (ex.view === 'weekly') ex.view = 'planets';
+      else if (ex.bossFrom === 'hub') ex.view = 'bosshub';
       else if (BK2.dept) { ex.view = 'area'; ex.area = BK2.dept; }
       else { ex.view = 'sites'; ex.planet = BK2.planet; ex.fpart = 'catch'; }
       renderExplore(); return;
