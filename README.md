@@ -19,7 +19,7 @@ js/
     moves.js          技能表
     creatures.js      精灵表（种族值、进化、特性、技能列表）
     story.js          星际探索剧本（全部对话）
-    wild.js           芙罗拉星野外精灵（出现概率、捕捉率）
+    wild.js           各星球的野外精灵和区域（出现概率、捕捉率）
     assets.js         图片路径表
     ship-map.js       荆楚号平面图的区域坐标
   engine/             对战规则，和界面无关
@@ -28,7 +28,7 @@ js/
     ranked.js         实战段位、电脑强度、配招、公平阵容
   ui/                 界面
     battle-ui.js      竞技对战页面：选精灵、对战画面、动画
-    game.js           账号、背包、仓库、黄冈秘鉴、星际探索、商城、茶室、任务
+    game.js           账号、背包、仓库、黄冈秘鉴、航行日志、星际探索、商城、茶室、任务、每日任务
 images/
   sprites/            精灵立绘（最终形态），文件名 = 精灵 id
   pre_sprites/        进化前形态，id_s1 是一阶，id_s2 是二阶

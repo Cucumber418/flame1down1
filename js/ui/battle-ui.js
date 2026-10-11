@@ -659,6 +659,7 @@
     $('btn-again').textContent = rankOn() ? '下一局 · 重新选择阵容' : '同样的背包再来一局';
     $('endcard').hidden = false;
     refreshCmd();
+    if (!S.story && !S.evSent) { S.evSent = 1; if (window.HSEV) window.HSEV('arena', { rank: rankOn(), result: r }); }
   }
 
   $('mgrid').addEventListener('click', function (e) { var b = e.target.closest('[data-mi]'); if (b && !b.disabled) doTurn({ kind: 'move', i: +b.dataset.mi }); });
