@@ -215,12 +215,12 @@ var M = {
   缠绕: { type: '草', cat: '变化', tgtStage: { spe: -2 }, d: '降低对方2级速度' },
   生长: { type: '草', cat: '变化', selfStage: { spa: 1 }, d: '提升1级特攻' },
   绿色射线: { type: '草', cat: '特攻', power: 65, d: '威力65' },
-  凋零之蚀: { type: '草', cat: '变化', custom: 'wither', pp: 10, d: '使对方每回合损失1/10最大体力，持续到战斗结束' },
+  凋零之蚀: { type: '草', cat: '变化', custom: 'wither', pp: 10, d: '使对方每回合损失1/20最大体力，持续到战斗结束；可以无限叠加，每层再多损失1/20' },
   荒芜之触: { type: '草', cat: '特攻', power: 75, custom: 'weak3', d: '威力75，使对方伤害降低30%，持续3回合' },
   寄生种子: { type: '草', cat: '变化', status: { k: '寄生', min: 5, max: 5, chance: 1 }, d: '使对方寄生5回合' },
   枯萎之壤: { type: '草', cat: '变化', tgtStage: { atk: -1, spa: -1, acc: -1 }, d: '降低对方1级物攻、特攻、命中' },
   腐败枷锁: { type: '草', cat: '变化', tgtStage: { spe: -1 }, custom: 'noBoostFoe', pp: 10, d: '降低对方1级速度，使对方5回合内无法提升能力等级' },
-  灭却: { type: '普通', cat: '特攻', power: 1, hidden: true, custom: 'annihilate', pp: 5, d: '威力1，5%概率秒杀对方，对方存在的不利状态越多，成功率越高（试验版：每多1种不利状态 +10%，最高60%）' },
+  灭却: { type: '普通', cat: '特攻', power: 1, hidden: true, custom: 'annihilate', pp: 2, d: '威力1，PP 2，秒杀成功后恢复本技能全部 PP；5%概率秒杀对方，对方存在的不利状态越多，成功率越高（试验版：每多1种不利状态 +10%，最高60%）' },
 
   // —— 玛西露姆（草）
   毒孢子: { type: '草', cat: '特攻', power: 30, status: { k: '中毒', min: 2, max: 4, chance: 0.5 }, d: '威力30，50%概率使对方中毒2-4回合' },

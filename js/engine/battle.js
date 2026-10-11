@@ -78,7 +78,7 @@ function mkFrom(t) {
   if (t.onlyHit) m.onlyHit = t.onlyHit;           // 首领：只有这些属性的技能能命中它
   if (t.emblem && EMBLEMS[t.id] && EMBLEMS[t.id].m === t.emblem) m.emblem = t.emblem;
   // 首领的特殊能力（见 BOSS_FX）；pp：首领技能的 PP（长时间战斗不会用光）
-  if (t.boss) { m.boss = JSON.parse(JSON.stringify(t.boss)); if (m.boss.pp) m.moves.forEach(function (x) { x.pp = x.max = m.boss.pp; }); }
+  if (t.boss) { m.boss = JSON.parse(JSON.stringify(t.boss)); if (m.boss.pp) m.moves.forEach(function (x) { if (M[x.n].custom !== 'annihilate') x.pp = x.max = m.boss.pp; }); }   // 灭却除外，仍按原本的 PP
   if (t.u != null) { m.u = t.u; m.hl = t.hl || []; }   // 账号里的精灵：可以在战斗中领悟隐藏技能
   return m;
 }
@@ -220,7 +220,7 @@ function chipsOf(m, foe) {
   if (m.fx.flash) c.push({ t: '闪光', k: 'st', h: '闪光飞叶', d: '下一次受到攻击时，额外降低1级命中' });
   if (m.fx.earMark) c.push({ t: '被听穿', k: 'st', h: '灵耳谛听', d: '试图闪避被识破：下一次受到的攻击威力翻倍' });
   if (miaN(m)) c.push({ t: '瘴气 ×' + miaN(m), k: 'st', h: '瘴气 · ' + miaN(m) + ' 层', d: '物攻、特攻 +' + (miaN(m) * 5) + '%，物防、特防 −' + Math.min(90, miaN(m) * 5) + '%（每层 ±5%，防御最低降到 10%）。持续到战斗结束，换下场也不会消失；在瘴气环境中每回合结束时再获得 1 层。' });
-  if (m.perm && m.perm.wither) c.push({ t: '凋零之蚀', k: 'st', h: '凋零之蚀', d: '每回合结束损失1/10最大体力，持续到战斗结束' });
+  if (m.perm && m.perm.wither) c.push({ t: '凋零之蚀' + (witherN(m) > 1 ? ' ×' + witherN(m) : ''), k: 'st', h: '凋零之蚀 · ' + witherN(m) + ' 层', d: '每回合结束损失 ' + witherN(m) + '/20 最大体力（每层 1/20，可以无限叠加），持续到战斗结束。当前每回合损失 ' + witherDot(m) + ' 点' });
   if (m.fx.boostNext) c.push({ t: '潜水蓄力', k: 'fx', h: '潜水蓄力', d: '下一次攻击伤害提升50%' });
   if (m.fx.moon) c.push({ t: '月升 ×' + m.fx.moon, k: 'fx', h: '月升 · ' + m.fx.moon + ' / 5', d: '达到5层时转化为光影之月。下场时清空。' });
   if (m.fx.moonNext) c.push({ t: '月蚀 · 下次攻击+15%', k: 'fx', h: '月蚀', d: '刚转换过属性，下一次攻击伤害提升15%' });
@@ -669,7 +669,11 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   if (mv.custom === 'zeroBreak' && !foe.fainted && foe.st['冰冻'] > 0) { var zb = Math.floor(foe.maxhp / 8); log(S, evs, '冰破附带 ' + zb + ' 点固定伤害', 'fxl'); applyDamage(S, evs, j, zb, i, {}); }
   if (mv.custom === 'annihilate' && !foe.fainted) {
     var pk = Math.min(0.6, 0.05 + 0.1 * negCount(foe));
-    if (RNG() < pk) { log(S, evs, '灭却！' + nm(foe) + '被一击抹杀！', 'crit'); applyDamage(S, evs, j, foe.hp + (foe.fx.shield || 0), i, {}); }
+    if (RNG() < pk) {
+      log(S, evs, '灭却！' + nm(foe) + '被一击抹杀！', 'crit'); applyDamage(S, evs, j, foe.hp + (foe.fx.shield || 0), i, {});
+      // 秒杀成功：灭却的 PP 全部恢复
+      if (foe.fainted && slotIdx >= 0 && me.moves[slotIdx] && me.moves[slotIdx].pp < me.moves[slotIdx].max) { me.moves[slotIdx].pp = me.moves[slotIdx].max; log(S, evs, '灭却的 PP 全部恢复了！', 'fxl'); }
+    }
     else log(S, evs, '灭却没有发动（成功率 ' + Math.round(pk * 100) + '%）');
   }
   if (mv.custom === 'originBlade' && !foe.fainted && foe.stages.spe <= -6) { log(S, evs, '起源巨刃斩断了速度降到最低的敌人！', 'crit'); applyDamage(S, evs, j, foe.hp + (foe.fx.shield || 0), i, {}); }
@@ -859,7 +863,7 @@ function doStatus(S, evs, i, mv) {
     case 'halfPhys5': timer('halfPhys', 5, nm(me) + '展开幽冥结界：5回合内物理伤害减半'); break;
     case 'halfPhys3': timer('halfPhys', 3, nm(me) + '竖起盾墙：3回合内物理伤害减半'); break;
     case 'chaosWater': if (!foe.fainted) { var cw = loseHp(S, evs, j, foe.hp / 5, '混沌水域吸取了' + nm(foe) + '的体力'); heal(S, evs, i, cw); } break;
-    case 'wither': foe.perm.wither = true; foe.hqWither = me; E(S, evs, 'stage', { side: j }); log(S, evs, nm(foe) + '被凋零之蚀侵蚀，每回合损失1/10最大体力，直到战斗结束', 'bad'); break;
+    case 'wither': foe.perm.wither = witherN(foe) + 1; foe.hqWither = me; E(S, evs, 'stage', { side: j }); log(S, evs, nm(foe) + '被凋零之蚀侵蚀（' + foe.perm.wither + ' 层），每回合损失 ' + foe.perm.wither + '/20 最大体力，直到战斗结束', 'bad'); break;
     case 'swamp': timer('swamp', 5, nm(me) + '展开孢子沼泽：5回合内异常状态成功率×1.5'); break;
     case 'purge':
       loseHp(S, evs, i, Math.floor(me.hp / 2), nm(me) + '损失了一半现有体力');
@@ -1014,6 +1018,9 @@ function miasmaField(S, evs) {
 }
 
 /* ---------- 瘴气：每层使物攻、特攻 +5%，物防、特防 −5%（最低降到 10%），换下场也不消失 ---------- */
+// 凋零之蚀：每层每回合损失 1/20 最大体力，可以无限叠加（旧存档里的 true 算 1 层）
+function witherN(m) { var w = m.perm && m.perm.wither; return w === true ? 1 : w > 0 ? w : 0; }
+function witherDot(m) { return Math.max(1, Math.floor(m.maxhp * witherN(m) / 20)); }
 function miaN(m) { return (m.perm && m.perm.miasma) || 0; }
 function miaAtk(m) { return 1 + 0.05 * miaN(m); }
 function miaDef(m) { return Math.max(0.1, 1 - 0.05 * miaN(m)); }
@@ -1038,7 +1045,7 @@ function endOfTurn(S, evs) {
     if (!m.fainted && m.st['流血'] > 0) loseHp(S, evs, i, 60, nm(m) + '因流血受到伤害');
     if (!m.fainted && m.st['中毒'] > 0) { var pz = m.fx.poison || 1; loseHp(S, evs, i, Math.max(1, Math.floor(m.maxhp * pz / 16)), nm(m) + '因中毒受到伤害' + (pz > 1 ? '（' + pz + ' 层）' : '')); }
     if (!m.fainted && m.st['烧伤'] > 0) loseHp(S, evs, i, e8, nm(m) + '因烧伤受到伤害');
-    if (!m.fainted && m.perm.wither) loseHp(S, evs, i, e10, nm(m) + '被凋零之蚀侵蚀');
+    if (!m.fainted && m.perm.wither) loseHp(S, evs, i, witherDot(m), nm(m) + '被凋零之蚀侵蚀' + (witherN(m) > 1 ? '（' + witherN(m) + ' 层）' : ''));
     if (!m.fainted && m.tm.rain > 0 && !o.fainted) { log(S, evs, '雨水对' + nm(o) + '附加 30 点固定伤害', 'fxl'); S.dotSrc = '祈雨'; applyDamage(S, evs, 1 - i, 30, null, {}); S.dotSrc = null; }
     if (!m.fainted && m.tm.hail > 0 && !o.fainted) { log(S, evs, '冰雹砸向' + nm(o), 'fxl'); S.dotSrc = '冰雹'; applyDamage(S, evs, 1 - i, Math.floor(o.maxhp / 10), null, {}); S.dotSrc = null; }
     if (!m.fainted && m.tm.genggu > 0) { changeStages(S, evs, i, { spa: 1 }); heal(S, evs, i, m.maxhp / 6); }

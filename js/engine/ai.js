@@ -72,7 +72,7 @@ function scoreMove(S, me, foe, mv) {
     case 'selfDestruct': case 'bunker': s += hpR < 0.2 ? 40 + (c === 'bunker' ? posSum(foe) * 12 : 0) : -60; break;
     case 'burnout': s += foe.perm.melt > 0 && foe.perm.melt < 5 ? 50 : -60; break;
     case 'melt': s += (foe.perm.melt || 0) < 5 ? CUSTOM_SCORE.melt : -40; break;
-    case 'wither': s += foe.perm.wither ? -40 : CUSTOM_SCORE.wither; break;
+    case 'wither': s += CUSTOM_SCORE.wither * Math.max(0.35, 1 - 0.15 * witherN(foe)); break;   // 可以叠加，叠得越多收益越低
     case 'silentSea': s += Object.keys(foe.tm).length * 12; break;
     case 'purge': s += negCount(me) * 15 - (hpR < 0.4 ? 40 : 10); break;
     case 'siren': s += me.tm.siren ? -40 : (hpR > 0.5 ? 36 : 10); break;

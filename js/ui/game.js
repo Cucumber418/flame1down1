@@ -135,6 +135,7 @@
     else if (page === 'dex') renderDex2();
     else if (page === 'store') renderStore();
     else if (page === 'explore') renderExplore();
+    if (typeof bgmScene === 'function') bgmScene();
   }
   function renderRes() { $('res').innerHTML = '<span class="res-chip" title="经验背包里的累积经验，可分配给精灵">经验 <b>' + fmt(acc.exp) + '</b></span><span class="res-chip en" title="能量（货币）">能量 <b>' + fmt(acc.energy) + '</b></span>'; }
   function go(p) { if (ex.mode === 'replay' && p !== 'explore') { stopTimers(); ex.mode = null; ex.view = 'sites'; } page = p; ui.pick = -1; savePage(); renderTop(); window.scrollTo(0, 0); }
@@ -849,7 +850,7 @@
 
   function renderExplore() {
     if (ex.mode === 'intro') return;
-    stopTimers();
+    stopTimers(); setTimeout(bgmScene, 0);
     var el = $('pg-explore');
     if (ex.view === 'vn') { renderVN(); return; }
     if (ex.view === 'area') { renderArea(); return; }
@@ -1927,7 +1928,7 @@
     if (fromStart) { pr.at = 0; pr.ch = null; }
     ex.mode = mode; ex.host = host; ex.view = mode === 'replay' ? 'vn' : ex.view;
     ex.i = stepAt(pr.at); ex.log = []; ex.auto = false; ex.skip = false; ex.pickSel = null; ex.curBg = null;
-    renderVN();
+    renderVN(); bgmScene();
   }
   function renderVN() {
     var S = SITES[ex.site], P = PLANETS.filter(function (p) { return p.id === S.planet; })[0], intro = ex.mode === 'intro';
@@ -2174,5 +2175,21 @@
     leaveBattle: function () { ex.fighting = false; document.body.classList.remove('story-fight'); go('social'); }
   };
 
-  renderTop(); syncBattle();
+  /* ---------- 界面音乐：按当前所在的界面选曲（对战中由战斗音乐盖过，见 js/ui/audio.js） ---------- */
+  function sceneNow() {
+    var vnSite = ex.site && SITES[ex.site] && (ex.mode === 'intro' || (ex.mode === 'replay' && ex.view === 'vn')) ? SITES[ex.site].planet : null;
+    if (vnSite === 'earth') return 'earth';            // 地球上的剧情（含序章）
+    if (!ready()) return 'ui';
+    if (page === 'arena') return 'arena';              // 竞技大厅
+    if (page === 'explore') {
+      if (vnSite === 'flora') return 'flora';
+      if (ex.view === 'sites' && ex.planet === 'flora') return 'flora';
+      if (ex.view === 'boss' && BOSSES[ex.boss] && BOSSES[ex.boss].planet === 'flora') return 'flora';
+    }
+    return 'ui';
+  }
+  function bgmScene() { if (window.HSAUDIO && HSAUDIO.scene) HSAUDIO.scene(sceneNow()); }
+  setInterval(bgmScene, 500);
+
+  renderTop(); syncBattle(); bgmScene();
 })();
