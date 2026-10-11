@@ -39,15 +39,17 @@
   <div class="onboard-wrap" id="onboard" hidden></div>
 
   <div class="page" id="pg-arena">
-  <p class="hint arena-sub">24 只原创精灵 · 沙盒调试 / 实战段位两种模式 · 背包最多 5 只，可随时切换。竞技对战使用孝感大厅的模拟精灵：一律满级、学习力为 0、性格平衡（无修正），与账号里的精灵互不影响。</p>
+  <p class="hint arena-sub">24 只原创精灵 · 沙盒调试 / 实战段位 / 精灵大乱斗三种模式 · 背包最多 5 只，可随时切换。竞技对战使用孝感大厅的模拟精灵：一律满级、学习力为 0、性格平衡（无修正），与账号里的精灵互不影响。</p>
 
   <!-- ============ 选精灵 ============ -->
   <section id="builder">
     <div class="modebar" role="tablist" aria-label="模式">
       <button type="button" class="mode on" id="mode-sandbox" role="tab" aria-selected="true"><b>沙盒调试</b><span>自由组建阵容，可预先查看对手配置，用于测试技能与数值</span></button>
       <button type="button" class="mode" id="mode-rank" role="tab" aria-selected="false"><b>实战</b><span>从系统给出的两套阵容中择一出战，对手阵容不公开，计入段位</span></button>
+      <button type="button" class="mode" id="mode-brawl" role="tab" aria-selected="false"><b>精灵大乱斗</b><span id="brawl-sub">多人在线时开放 · 双方各出 3 只，打乱后随机分配</span></button>
     </div>
     <div class="rankcard" id="rankcard" hidden></div>
+    <div class="brawl" id="brawl" hidden></div>
     <div class="subbar" id="subbar" role="tablist" aria-label="沙盒内容">
       <button type="button" class="sub on" id="sub-battle" role="tab" aria-selected="true">对战</button>
       <button type="button" class="sub" id="sub-train" role="tab" aria-selected="false">训练</button>

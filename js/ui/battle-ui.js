@@ -11,7 +11,7 @@
   app.mode = 'sandbox';
   app.rank = { r: 0, stars: 0, w: 0, l: 0, best: 0 };
   try { var savedR = JSON.parse(localStorage.getItem('hs-rank-v1') || 'null'); if (savedR && savedR.r != null) app.rank = savedR; } catch (e) {}
-  try { if (localStorage.getItem('hs-mode') === 'rank') app.mode = 'rank'; } catch (e) {}
+  try { var sm = localStorage.getItem('hs-mode'); if (sm === 'rank' || sm === 'brawl') app.mode = sm; } catch (e) {}
   // 实战：每局系统给出两套强度相同的阵容，二选一
   app.draft = null;
   try { var savedD = JSON.parse(localStorage.getItem('hs-draft-v1') || 'null'); if (savedD && savedD.opts) app.draft = savedD; } catch (e) {}
@@ -34,6 +34,11 @@
   function renderMode() {
     $('mode-sandbox').classList.toggle('on', app.mode === 'sandbox'); $('mode-sandbox').setAttribute('aria-selected', app.mode === 'sandbox');
     $('mode-rank').classList.toggle('on', app.mode === 'rank'); $('mode-rank').setAttribute('aria-selected', app.mode === 'rank');
+    // 精灵大乱斗：面板由 social.js 绘制（需要联网），其他配置区先收起来
+    var bw = app.mode === 'brawl';
+    $('mode-brawl').classList.toggle('on', bw); $('mode-brawl').setAttribute('aria-selected', bw);
+    $('brawl').hidden = !bw; document.querySelector('#builder .bagbox').hidden = bw; document.querySelector('#builder .build').hidden = bw;
+    if (bw) { $('rankcard').hidden = true; $('subbar').hidden = true; if (window.HSBRAWL) window.HSBRAWL.render(); return; }
     var rc = $('rankcard'); rc.hidden = app.mode !== 'rank';
     $('subbar').hidden = app.mode !== 'sandbox';
     $('sub-battle').classList.toggle('on', app.sub === 'battle'); $('sub-battle').setAttribute('aria-selected', app.sub === 'battle');
@@ -65,6 +70,7 @@
     $('ts-lv').value = app.train.lv; $('ts-lvr').value = app.train.lv; $('ts-def' + app.train.def).checked = true; renderTrainNote();
   }
   $('mode-sandbox').addEventListener('click', function () { app.mode = 'sandbox'; saveMode(); renderMode(); renderBuilder(); });
+  $('mode-brawl').addEventListener('click', function () { app.mode = 'brawl'; saveMode(); renderMode(); });
   $('mode-rank').addEventListener('click', function () { app.mode = 'rank'; saveMode(); if (ensureDraft().pick != null) app.sel = B()[0]; renderMode(); renderBuilder(); });
   $('rankcard').addEventListener('click', function (e) {
     if (e.target.id !== 'btn-reset') return;
@@ -482,9 +488,10 @@
     $('builder').hidden = true; $('battle').hidden = false; $('endcard').hidden = true;
     shownIds = [null, null]; ['plate0', 'plate1'].forEach(function (id) { $(id).dataset.ready = ''; });
     var me = app.S.sides[PV], foe = app.S.sides[1 - PV], nn = function (x) { return x.nick || SPMAP[x.id].name; };
-    addLog('与 ' + opt.foe + ' 的 ' + opt.mode + 'v' + opt.mode + ' 切磋开始！', 'turn');
+    addLog(opt.brawl ? '与 ' + opt.foe + ' 的精灵大乱斗开始！' : '与 ' + opt.foe + ' 的 ' + opt.mode + 'v' + opt.mode + ' 切磋开始！', 'turn');
     addLog(foe.name + '派出了【' + nn(foe.team[0]) + '】，你派出了【' + nn(me.team[0]) + '】！', '');
     addLog('对手阵容：' + foe.team.map(function (x) { return nn(x) + ' LV' + x.lv; }).join('、'), 'dmg');
+    (opt.notes || []).forEach(function (t) { addLog(t, 'dmg'); });
     renderSnap(snap(app.S), true);
     showTab('moves'); refreshCmd();
     pvp.clock = setInterval(function () { if (pvp && !busy && app.S && !app.S.over) { var h = $('cmd-hint'), t = pvpClock(); if (t || /剩余/.test(h.textContent)) refreshCmd(); } }, 1000);
@@ -702,9 +709,10 @@
     if (pvp) {
       var mine = r === 'draw' ? 'draw' : (r === 'win') === (PV === 0) ? 'win' : 'lose';
       $('end-title').textContent = mine === 'win' ? '胜利！' : mine === 'lose' ? '失败了' : '平局';
-      $('end-sub').textContent = '与 ' + pvp.foe + ' 的 ' + pvp.mode + 'v' + pvp.mode + ' 切磋 · 共 ' + (S.turn - 1) + ' 回合' + (pvp.endNote ? ' · ' + pvp.endNote : '') + ' · 切磋不影响经验和段位';
+      $('end-sub').textContent = '与 ' + pvp.foe + (pvp.brawl ? ' 的精灵大乱斗' : ' 的 ' + pvp.mode + 'v' + pvp.mode + ' 切磋') + ' · 共 ' + (S.turn - 1) + ' 回合' + (pvp.endNote ? ' · ' + pvp.endNote : '') + (pvp.brawl ? '' : ' · 切磋不影响经验和段位');
+      $('btn-back').textContent = pvp.brawl ? '返回竞技对战' : '返回社交';
       $('end-rank').hidden = true; $('end-hid').hidden = true;
-      $('btn-back').textContent = '返回社交'; $('btn-again').hidden = true;
+      $('btn-again').hidden = true;
       $('endcard').hidden = false; refreshCmd();
       if (!pvp.ended) { pvp.ended = true; if (pvp.onOver) pvp.onOver(mine); }
       return;

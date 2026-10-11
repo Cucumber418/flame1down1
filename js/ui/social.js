@@ -17,7 +17,7 @@
   var esc = H.esc, tchips = H.tchips;
   var SHOW_MAX = 5, MOTTO_MAX = 200, TURN_SEC = 90;
   var online = !!(C && C.user && C.user());   // 用服务器打开并登录了才有社交功能
-  var st = { view: null, tab: 'players', players: null, me: null, err: '', ws: null, wsOk: false, retry: 0, pend: null, inc: null, match: null, edit: null };
+  var st = { bw: { picks: null, wait: null, inv: null }, view: null, tab: 'players', players: null, me: null, err: '', ws: null, wsOk: false, retry: 0, pend: null, inc: null, match: null, edit: null };
 
   /* ---------- 小工具 ---------- */
   function api(method, url, body) { return C.api(method, url, body); }
@@ -58,7 +58,7 @@
     api('GET', '/api/players').then(function (r) {
       loading = false;
       if (r._code !== 200) { st.err = r.error || '读取失败'; render(); return; }
-      st.err = ''; st.players = r.players; st.me = r.me; render();
+      st.err = ''; st.players = r.players; st.me = r.me; render(); renderBrawl();
     }).catch(function () { loading = false; st.err = '连不上服务器'; render(); });
   }
   setInterval(function () { if (A.page() === 'social' && !A.inBattle() && document.visibilityState === 'visible') load(); }, 30000);
@@ -282,7 +282,9 @@
     ws.onclose = function () {
       if (st.ws !== ws) return;
       st.wsOk = false; st.ws = null; render();
-      if (st.match && HB.pvpActive()) HB.pvpAbort('你和服务器的连接断开了，对战中止', 'lose');
+      if (st.match && HB.pvpActive()) { st.match.aborted = 'self'; HB.pvpAbort('你和服务器的连接断开了，对战中止', 'lose'); }
+      if (st.bw.wait) { st.bw.wait = null; A.toast('和服务器的连接断开了，大乱斗匹配已取消'); }
+      closeBwInvite(); renderBrawl();
       if (st.pend) { closePend(); A.toast('和服务器的连接断开了，切磋邀请已取消'); }
       if (st.inc) { st.inc.dlg.close(); st.inc = null; }
       retry();
@@ -292,12 +294,16 @@
 
   function onMsg(m) {
     switch (m.type) {
-      case 'authed': st.wsOk = true; st.retry = 0; load(); render(); break;
+      case 'authed': st.wsOk = true; st.retry = 0; load(); render(); renderBrawl(); break;
+      case 'brawl-wait': if (st.bw.wait) { st.bw.wait.id = m.id; st.bw.wait.n = m.n; st.bw.wait.deadline = Date.now() + m.seconds * 1000; } renderBrawl(); break;
+      case 'brawl-invite': brawlInvite(m); break;
+      case 'brawl-end': brawlEnd(m); break;
       case 'auth-fail': st.wsOk = false; break;
       case 'presence':
         (st.players || []).forEach(function (p) { if (p.user === m.user) { p.online = m.online; p.busy = m.busy; if (!m.online) p.lastSeen = Date.now(); } });
         if (st.players && !(st.players || []).some(function (p) { return p.user === m.user; })) load();
         if (st.tab !== 'mine') render();
+        renderBrawl();
         break;
       case 'ch-sent': if (st.pend) { st.pend.id = m.id; st.pend.deadline = Date.now() + m.seconds * 1000; drawPend(); } break;
       case 'ch-end': chEnd(m); break;
@@ -305,7 +311,7 @@
       case 'match': startMatch(m); break;
       case 'mm': mmMsg(m.data || {}); break;
       case 'mm-end':
-        if (st.match && m.reason === 'left') { HB.pvpAbort(st.match.foe + ' 离开了对战，你获胜', 'win'); stopHost(); }
+        if (st.match && m.reason === 'left') { st.match.aborted = 'peer'; HB.pvpAbort(st.match.foe + ' 离开了对战，你获胜', 'win'); stopHost(); }
         break;
     }
   }
@@ -376,7 +382,7 @@
 
   /* ---------- 被宣战：直接弹窗 ---------- */
   function challenged(m) {
-    if (!A.ready() || A.inBattle() || st.match || st.pend || st.inc) { send({ type: 'ch-reply', id: m.id, ok: false, reason: 'busy' }); return; }
+    if (!A.ready() || A.inBattle() || st.match || st.pend || st.inc || st.bw.wait) { send({ type: 'ch-reply', id: m.id, ok: false, reason: 'busy' }); return; }
     var acc = A.acc(), mine = (acc.teams[acc.active] || []).map(A.mon).filter(Boolean).slice(0, m.mode);
     var deadline = Date.now() + m.seconds * 1000, iv;
     var d = dialog('incoming', '<span class="step">⚔ 宣战</span><h2>' + esc(m.fromName) + ' 向你发起切磋！</h2>' +
@@ -404,12 +410,15 @@
   /* ---------- 对战 ---------- */
   function startMatch(m) {
     closePend(); if (st.inc) { st.inc.close(); st.inc = null; }
+    st.bw.wait = null; closeBwInvite();
     [].forEach.call(document.querySelectorAll('.soc-dlg'), function (d) { d.remove(); });
-    st.match = { id: m.id, side: m.side, mode: m.mode, foe: m.peerName, names: m.names };
+    st.match = { id: m.id, side: m.side, mode: m.mode, foe: m.peerName, names: m.names, brawl: !!m.brawl };
+    if (m.brawl) st.match.notes = brawlNotes(m);
     if (m.side === 0) {
-      var p = (m.teams[0] || []).map(A.spec).filter(Boolean), a = (m.teams[1] || []).map(A.spec).filter(Boolean);
+      var mk = m.brawl ? A.brawlSpec : A.spec;
+      var p = (m.teams[0] || []).map(mk).filter(Boolean), a = (m.teams[1] || []).map(mk).filter(Boolean);
       var S = newBattle(p, a);
-      S.pvp = { mode: m.mode }; S.sides[0].name = m.names[0]; S.sides[1].name = m.names[1];
+      S.pvp = { mode: m.mode, brawl: !!m.brawl }; S.sides[0].name = m.names[0]; S.sides[1].name = m.names[1];
       st.match.S = S;
       send({ type: 'mm', id: m.id, data: { k: 'init', S: S } });
       begin(S);
@@ -420,19 +429,27 @@
   function begin(S) {
     var M0 = st.match;
     A.enterBattle();
-    HB.startPvp({ S: S, side: M0.side, foe: M0.foe, mode: M0.mode, seconds: TURN_SEC,
+    HB.startPvp({ S: S, side: M0.side, foe: M0.foe, mode: M0.mode, seconds: TURN_SEC, notes: M0.notes, brawl: M0.brawl,
       onAct: function (a) { if (M0.side === 0) hostGot(0, 'act', a); else send({ type: 'mm', id: M0.id, data: { k: 'act', a: a } }); },
       onRepl: function (k) { if (M0.side === 0) hostGot(0, 'repl', k); else send({ type: 'mm', id: M0.id, data: { k: 'repl', i: k } }); },
       onQuit: function () { if (M0.side === 0) hostQuit(0); else send({ type: 'mm', id: M0.id, data: { k: 'quit' } }); },
-      onOver: function () { stopHost(); send({ type: 'mm-over', id: M0.id }); },
-      onEnd: function () { st.match = null; A.leaveBattle(); load(); }
+      onOver: function (mine) {
+        stopHost(); send({ type: 'mm-over', id: M0.id });
+        if (M0.brawl) {
+          var none = M0.quitSide === M0.side || M0.aborted === 'self';
+          var r = A.brawlReward(mine, none);
+          var txt = none ? '认输或自己掉线的大乱斗没有奖励。' : r.give > 0 ? '大乱斗奖励：累积经验 +' + A.fmt(r.give) + (r.give < r.want ? '（已达今日上限）' : '') + '，今天累计 ' + A.fmt(r.today) + ' / ' + A.fmt(r.cap) + '。' : '今天的大乱斗经验已经达到上限 ' + A.fmt(r.cap) + '，明天再来。';
+          setTimeout(function () { A.toast(txt); }, 600);
+        }
+      },
+      onEnd: function () { var bw = M0.brawl; st.match = null; if (bw) { A.leaveBattle(); A.go('arena'); } else A.leaveBattle(); load(); }
     });
   }
   function mmMsg(d) {
     var M0 = st.match; if (!M0) return;
     if (M0.side === 1) {
       if (d.k === 'init') begin(d.S);
-      else if (d.k === 'turn') HB.pvpApply(d.evs || [], d.S, d.sec);
+      else if (d.k === 'turn') { if (d.quit != null) M0.quitSide = d.quit; HB.pvpApply(d.evs || [], d.S, d.sec); }
       return;
     }
     if (d.k === 'act') hostGot(1, 'act', d.a);
@@ -500,15 +517,131 @@
   function hostQuit(i) {
     var M0 = st.match; if (!M0 || M0.side !== 0 || M0.phase === 'over') return;
     var S = M0.S, evs = [];
-    S.over = i === 0 ? 'lose' : 'win';
+    S.over = i === 0 ? 'lose' : 'win'; M0.quitSide = i;
     evs.push({ t: 'text', text: S.sides[i].name + '认输了。', cls: 'bad', snap: snap(S) });
     evs.push({ t: 'over', result: S.over, snap: snap(S) });
     hostPhase('over');
-    send({ type: 'mm', id: M0.id, data: { k: 'turn', evs: evs, S: S, sec: TURN_SEC } });
+    send({ type: 'mm', id: M0.id, data: { k: 'turn', evs: evs, S: S, sec: TURN_SEC, quit: i } });
     HB.pvpApply(evs, S, TURN_SEC);
   }
 
+  /* ---------- 精灵大乱斗 ----------
+   * 竞技对战的第三种模式。选 3 只开始匹配，其他在线玩家收到小弹窗，先接受的人和你对战。 */
+  function myTeam() { var a = A.acc(); return a ? (a.teams[a.active] || []).map(A.mon).filter(Boolean) : []; }
+  function matchable() { return (st.players || []).filter(function (p) { return !p.me && !p.noChar && p.online && !p.busy; }).length; }
+  function validPicks(team) {
+    var us = team.map(function (m) { return m.u; });
+    if (!st.bw.picks) st.bw.picks = us.slice(0, 3);
+    st.bw.picks = st.bw.picks.filter(function (u) { return us.indexOf(u) >= 0; });
+    return st.bw.picks;
+  }
+  function pickGrid(team, picks, attr) {
+    return '<div class="me-pick bw-pick">' + team.map(function (m) {
+      var k = picks.indexOf(m.u), v = A.view(m), full = k < 0 && picks.length >= 3, s = SPMAP[m.sid];
+      return '<button type="button" class="me-mon' + (k >= 0 ? ' on' : '') + '" ' + attr + '="' + m.u + '"' + (full ? ' disabled' : '') + ' aria-pressed="' + (k >= 0) + '">' +
+        (k >= 0 ? '<span class="me-no">' + (k + 1) + '</span>' : '') + '<img src="' + v.img + '" alt=""><b>' + esc(v.name) + '</b><small>' + s.types.join(' / ') + '</small></button>';
+    }).join('') + '</div>';
+  }
+  function renderBrawl() {
+    var el = $('brawl'); if (!el || el.hidden || !A.ready()) return;
+    var B = A.BRAWL, today = A.brawlToday();
+    var rules = '<ul class="bw-rules"><li>只有其他玩家在线时才能开始，匹配后他们会收到小弹窗，先接受的人成为你的对手。</li>' +
+      '<li>每人从出战配队里选 <b>3 只</b>（出战配队至少要有 3 只）。</li>' +
+      '<li>双方的 6 只精灵统一为 <b>LV' + B.lv + '</b>，学会所有隐藏技能，配招为技能表的最后 4 个，没有学习力，性格随机。</li>' +
+      '<li>6 只打乱后随机分给两人各 3 只，你可能会用到对方的精灵。</li>' +
+      '<li>胜者 <b>' + A.fmt(B.win) + '</b>、败者 <b>' + A.fmt(B.lose) + '</b> 累积经验（平局各 ' + A.fmt(B.lose) + '，认输没有），每天最多 ' + A.fmt(B.cap) + '。</li></ul>' +
+      '<div class="bw-prog"><span>今天的大乱斗经验</span><b>' + A.fmt(today) + ' / ' + A.fmt(B.cap) + '</b><span class="pbar"><i style="width:' + Math.min(100, today / B.cap * 100) + '%"></i></span></div>';
+    if (!online) { el.innerHTML = '<div class="bw-card"><span class="tape l"></span><h2 class="sec">精灵大乱斗</h2>' + rules + '<p class="hint">大乱斗需要联网：用服务器网址打开游戏并登录后才能匹配。</p></div>'; return; }
+    var team = myTeam(), picks = validPicks(team), n = matchable(), W = st.bw.wait;
+    var sub = $('brawl-sub'); if (sub) sub.textContent = st.wsOk ? (n ? '现在有 ' + n + ' 位玩家可以匹配' : '暂时没有其他玩家在线') : '正在连接服务器……';
+    var foot;
+    if (W) foot = '<div class="bw-wait"><span class="dot busy"></span><span>正在匹配……已邀请 ' + (W.n || '?') + ' 位在线玩家，<b id="bw-left">' + Math.max(0, Math.ceil((W.deadline - Date.now()) / 1000)) + '</b> 秒后没人接受就自动取消</span><button type="button" class="btn ghost" id="bw-cancel">取消匹配</button></div>';
+    else {
+      var why = !st.wsOk ? '正在连接服务器……' : team.length < 3 ? '出战配队里至少要有 3 只精灵，先去「精灵背包」配队' : picks.length !== 3 ? '还要选 ' + (3 - picks.length) + ' 只' : !n ? '现在没有其他玩家在线，等朋友上线再来' : '';
+      foot = '<div class="soc-foot"><span class="hint' + (why ? ' red' : '') + '">' + (why || '准备就绪') + '</span><button type="button" class="btn primary" id="bw-go"' + (why ? ' disabled' : '') + '>开始匹配</button></div>';
+    }
+    el.innerHTML = '<div class="bw-card"><span class="tape l"></span><span class="tape r"></span><div class="bw-head"><h2 class="sec">精灵大乱斗</h2><span class="soc-on">' + (st.wsOk ? '<span class="dot' + (n ? ' on' : '') + '"></span>' + n + ' 人可匹配' : '<span class="dot"></span>连接中') + '</span></div>' + rules +
+      '<h3 class="shop-h">选 3 只参战 <span class="hint">从出战配队里选，按点选顺序</span></h3>' + (team.length ? pickGrid(team, picks, 'data-bwpick') : '<p class="hint">出战配队是空的。</p>') + foot + '</div>';
+    if (!st.players && st.wsOk) load();
+  }
+  if ($('brawl')) $('brawl').addEventListener('click', function (e) {
+    var t = e.target.closest('[data-bwpick]');
+    if (t && !st.bw.wait) { var u = +t.dataset.bwpick, P = st.bw.picks, k = P.indexOf(u); if (k >= 0) P.splice(k, 1); else if (P.length < 3) P.push(u); renderBrawl(); return; }
+    if (e.target.id === 'bw-go') {
+      e.target.disabled = true; e.target.textContent = '正在同步存档……';
+      C.flush().then(function () {
+        st.bw.wait = { id: null, n: 0, deadline: Date.now() + 60000 };
+        if (!send({ type: 'brawl-start', us: st.bw.picks.slice(0, 3) })) { st.bw.wait = null; A.toast('连接断开了，请稍后再试'); }
+        renderBrawl();
+      });
+      return;
+    }
+    if (e.target.id === 'bw-cancel') { if (st.bw.wait && st.bw.wait.id) send({ type: 'brawl-cancel', id: st.bw.wait.id }); st.bw.wait = null; renderBrawl(); }
+  });
+  setInterval(function () { var l = $('bw-left'); if (l && st.bw.wait) l.textContent = Math.max(0, Math.ceil((st.bw.wait.deadline - Date.now()) / 1000)); }, 500);
+
+  // 别人在匹配：右下角小弹窗
+  function closeBwInvite() { var I = st.bw.inv; if (!I) return; clearInterval(I.iv); if (I.el.parentNode) I.el.remove(); if (I.dlg) I.dlg.close(); st.bw.inv = null; }
+  function brawlInvite(m) {
+    if (!A.ready() || A.inBattle() || st.match || st.bw.wait || st.pend || st.inc || st.bw.inv) return;   // 正忙就不打扰
+    var el = document.createElement('div'); el.className = 'bw-pop'; el.setAttribute('role', 'status');
+    el.innerHTML = '<b>⚔ 精灵大乱斗</b><span>' + esc(m.fromName) + ' 正在找人打大乱斗</span><span class="hint" id="bwp-left"></span>' +
+      '<div class="bw-pop-btns"><button type="button" class="btn ghost" data-bwno="1">忽略</button><button type="button" class="btn primary" data-bwyes="1">接受</button></div>';
+    document.body.appendChild(el);
+    var I = st.bw.inv = { id: m.id, from: m.from, fromName: m.fromName, el: el, deadline: Date.now() + m.seconds * 1000 };
+    I.iv = setInterval(function () { var l = el.querySelector('#bwp-left'); if (l) l.textContent = Math.max(0, Math.ceil((I.deadline - Date.now()) / 1000)) + ' 秒内有效'; if (Date.now() > I.deadline) closeBwInvite(); }, 250);
+    el.addEventListener('click', function (e) {
+      if (e.target.closest('[data-bwno]')) { closeBwInvite(); return; }
+      if (e.target.closest('[data-bwyes]')) brawlAcceptPick();
+    });
+  }
+  function brawlAcceptPick() {
+    var I = st.bw.inv; if (!I) return;
+    var team = myTeam();
+    if (team.length < 3) { A.toast('出战配队里至少要有 3 只精灵才能参加大乱斗，先去「精灵背包」配队。'); closeBwInvite(); return; }
+    var picks = validPicks(team).slice();
+    I.el.hidden = true;
+    I.dlg = dialog('bw-accept', '<span class="step">精灵大乱斗 · 接受 ' + esc(I.fromName) + '</span><h2>选 3 只参战</h2>' +
+      '<p class="hint">6 只精灵会统一到 LV' + A.BRAWL.lv + '，打乱后每人随机分 3 只。<b id="bwa-left"></b></p><div id="bwa-grid"></div>' +
+      '<div class="soc-foot"><button type="button" class="btn ghost" data-x="1">算了</button><button type="button" class="btn primary" id="bwa-go">确认接受</button></div>',
+      function (d, close) {
+        d.dataset.sticky = '1';
+        function draw() { d.querySelector('#bwa-grid').innerHTML = pickGrid(team, picks, 'data-bwa'); d.querySelector('#bwa-go').disabled = picks.length !== 3; }
+        draw();
+        d.addEventListener('click', function (e) {
+          var t = e.target.closest('[data-bwa]');
+          if (t) { var u = +t.dataset.bwa, k = picks.indexOf(u); if (k >= 0) picks.splice(k, 1); else if (picks.length < 3) picks.push(u); draw(); return; }
+          if (e.target.closest('[data-x]')) { closeBwInvite(); return; }
+          if (e.target.id === 'bwa-go' && picks.length === 3) {
+            e.target.disabled = true; e.target.textContent = '正在同步存档……'; st.bw.picks = picks.slice();
+            C.flush().then(function () { if (st.bw.inv) send({ type: 'brawl-accept', id: I.id, us: picks.slice() }); });
+          }
+        });
+      });
+    var tick = setInterval(function () { var l = I.dlg && I.dlg.el.querySelector('#bwa-left'); if (!l || !st.bw.inv) return clearInterval(tick); l.textContent = '还剩 ' + Math.max(0, Math.ceil((I.deadline - Date.now()) / 1000)) + ' 秒。'; }, 250);
+  }
+  function brawlEnd(m) {
+    if (m.side === 'from') {
+      if (m.reason === 'taken') return;   // 有人接受了，马上会收到 match
+      var had = !!st.bw.wait; st.bw.wait = null; renderBrawl();
+      var R = { timeout: '没有人接受你的大乱斗邀请，匹配已取消。', cancel: '' };
+      var t = m.reason === 'error' ? m.msg : R[m.reason];
+      if (t && (had || m.reason === 'error')) A.toast(t);
+    } else if (st.bw.inv && (!m.id || st.bw.inv.id === m.id)) {
+      var nm = st.bw.inv.fromName, wasOpen = !!st.bw.inv.dlg; closeBwInvite();
+      if (wasOpen) A.toast(m.reason === 'taken' ? nm + ' 的大乱斗已经被别人接下了。' : m.reason === 'error' ? m.msg : nm + ' 取消了大乱斗匹配。');
+    }
+  }
+  // 分牌结果写进战斗记录：谁拿到了谁的精灵
+  function brawlNotes(m) {
+    var mine = m.teams[m.side], owners = m.names;
+    return ['精灵大乱斗：双方 6 只精灵已统一为 LV' + A.BRAWL.lv + '，打乱后随机分配。',
+      '你分到了：' + mine.map(function (x) { var v = A.view({ sid: x.sid, lv: A.BRAWL.lv }); return v.name + '（' + (x.owner === m.side ? '你的' : owners[x.owner] + ' 的') + '，' + x.nat + '）'; }).join('、')];
+  }
+
+  window.HSBRAWL = { render: renderBrawl };
   window.HSSOCIAL = { render: function () { if (!st.players) load(); render(); } };
   connect();
   if (A.page() === 'social') window.HSSOCIAL.render();
+  renderBrawl();
 })();

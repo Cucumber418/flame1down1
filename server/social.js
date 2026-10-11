@@ -22,6 +22,15 @@
  *   → { type:'mm', id, data } / ← { type:'mm', data }            对战中双方互发的消息（服务器只转发）
  *   → { type:'mm-over', id }                     对战结束
  *   ← { type:'mm-end', reason }                  对方掉线或离开
+ *
+ * 精灵大乱斗：
+ *   → { type:'brawl-start', us:[u,u,u] }         从出战配队里选 3 只开始匹配
+ *   ← { type:'brawl-wait', id, n, seconds }      已向 n 位在线玩家发出邀请
+ *   ← { type:'brawl-invite', id, from, fromName, seconds }   有人在匹配大乱斗（小弹窗）
+ *   → { type:'brawl-accept', id, us:[u,u,u] }    接受，并选好自己的 3 只
+ *   → { type:'brawl-cancel', id }                发起方取消匹配
+ *   ← { type:'brawl-end', id, reason, msg }      匹配结束（超时、取消、被别人接走、出错）
+ *   开打后和切磋一样走 match / mm 消息，match 里带 brawl:true，6 只精灵由服务器洗牌后每人分 3 只
  */
 'use strict';
 
@@ -29,6 +38,8 @@ var crypto = require('crypto');
 var A = require('./accounts');
 
 var CH_SECONDS = 30;          // 宣战弹窗等待回应的时间
+var BRAWL_SECONDS = 60;       // 大乱斗等待别人接受的时间
+var BRAWL_LV = 60;
 var MODES = [1, 3, 5];
 
 /* ---------- 从存档里读出名片 ---------- */
@@ -107,6 +118,38 @@ function presence(name) {
   allSockets.forEach(function (w) { if (w.user) out(w, msg); });
 }
 
+/* ---------- 精灵大乱斗 ---------- */
+var brawls = {};      // id -> { id, ws, user, sids, timer, invited: [账号名] }
+// 检查选的 3 只都在这个人的出战配队里，返回它们的种类
+function brawlPick(name, us) {
+  var u = A.loadUser(name), acc = u && parseSave(u).acc;
+  if (!acc) return { err: '还没有创建角色' };
+  var team = activeTeam(acc);
+  if (team.length < 3) return { err: '出战配队里至少要有 3 只精灵' };
+  if (!Array.isArray(us) || us.length !== 3) return { err: '要选 3 只精灵' };
+  var picked = [];
+  for (var i = 0; i < 3; i++) {
+    var m = team.filter(function (x) { return x.u === us[i]; })[0];
+    if (!m || picked.indexOf(m) >= 0) return { err: '选的精灵不在出战配队里' };
+    picked.push(m);
+  }
+  return { sids: picked.map(function (m) { return str(m.sid, 32); }) };
+}
+function eligible(name, exceptWs) { return isOnline(name) && !isBusy(name) && !Object.keys(brawls).some(function (k) { return brawls[k].user === name; }); }
+function endBrawl(b, reason, msg, skipUser) {
+  if (!brawls[b.id]) return;
+  delete brawls[b.id]; clearTimeout(b.timer);
+  out(b.ws, { type: 'brawl-end', id: b.id, reason: reason, msg: msg || '', side: 'from' });
+  b.invited.forEach(function (n) { if (n !== skipUser) toUser(n, { type: 'brawl-end', id: b.id, reason: reason, side: 'to' }); });
+}
+var NAT_LIST = ['孤独', '固执', '调皮', '勇敢', '大胆', '淘气', '无虑', '悠闲', '保守', '稳重', '马虎', '冷静', '沉着', '温顺', '慎重', '狂妄', '胆小', '急躁', '开朗', '天真', '害羞', '实干', '坦率', '浮躁', '认真'];
+function dealBrawl(a, b) {
+  var pool = a.map(function (sid) { return { sid: sid, owner: 0 }; }).concat(b.map(function (sid) { return { sid: sid, owner: 1 }; }));
+  for (var i = pool.length - 1; i > 0; i--) { var j = crypto.randomInt(i + 1), t = pool[i]; pool[i] = pool[j]; pool[j] = t; }
+  pool.forEach(function (x) { x.lv = BRAWL_LV; x.nat = NAT_LIST[crypto.randomInt(NAT_LIST.length)]; });
+  return [pool.slice(0, 3), pool.slice(3, 6)];
+}
+
 /* ---------- 切磋邀请与对战 ---------- */
 var challenges = {};  // id -> { id, from(ws), fromUser, to, mode, timer }
 var matches = {};     // id -> { id, socks:[host, guest], users:[..] }
@@ -177,6 +220,42 @@ function onMessage(ws, msg) {
       presence(c2.fromUser); presence(c2.to);
       return true;
     }
+    case 'brawl-start': {
+      if (!ws.user) return true;
+      if (ws.match) { out(ws, { type: 'brawl-end', reason: 'error', msg: '你正在对战中', side: 'from' }); return true; }
+      if (Object.keys(brawls).some(function (k) { return brawls[k].ws === ws; })) return true;
+      var pk = brawlPick(ws.user, msg.us);
+      if (pk.err) { out(ws, { type: 'brawl-end', reason: 'error', msg: pk.err, side: 'from' }); return true; }
+      var who2 = Object.keys(online).filter(function (n) { return n !== ws.user && eligible(n); });
+      if (!who2.length) { out(ws, { type: 'brawl-end', reason: 'error', msg: '现在没有其他可以匹配的在线玩家', side: 'from' }); return true; }
+      var bw = { id: newId(), ws: ws, user: ws.user, sids: pk.sids, invited: who2 };
+      brawls[bw.id] = bw;
+      bw.timer = setTimeout(function () { endBrawl(bw, 'timeout'); }, BRAWL_SECONDS * 1000);
+      out(ws, { type: 'brawl-wait', id: bw.id, n: who2.length, seconds: BRAWL_SECONDS });
+      var fromName = gameName(ws.user);
+      who2.forEach(function (n) { toUser(n, { type: 'brawl-invite', id: bw.id, from: ws.user, fromName: fromName, seconds: BRAWL_SECONDS }); });
+      return true;
+    }
+    case 'brawl-cancel': {
+      var bc = brawls[msg.id];
+      if (bc && bc.ws === ws) endBrawl(bc, 'cancel');
+      return true;
+    }
+    case 'brawl-accept': {
+      var ba = brawls[msg.id];
+      if (!ba || !ws.user || ba.invited.indexOf(ws.user) < 0) { out(ws, { type: 'brawl-end', id: msg.id, reason: 'gone', side: 'to' }); return true; }
+      if (ws.match || ba.ws.readyState !== 1 || ba.ws.match) { out(ws, { type: 'brawl-end', id: msg.id, reason: 'gone', side: 'to' }); return true; }
+      var pk2 = brawlPick(ws.user, msg.us);
+      if (pk2.err) { out(ws, { type: 'brawl-end', id: msg.id, reason: 'error', msg: pk2.err, side: 'to' }); return true; }
+      endBrawl(ba, 'taken', '', ws.user);   // 其他被邀请的人：已经被接走了（发起方这里随后收到 match）
+      var mid = ba.id, host2 = ba.ws, teams2 = dealBrawl(ba.sids, pk2.sids), names2 = [gameName(ba.user), gameName(ws.user)];
+      matches[mid] = { id: mid, socks: [host2, ws], users: [ba.user, ws.user] };
+      host2.match = mid; ws.match = mid;
+      out(host2, { type: 'match', id: mid, side: 0, mode: 3, brawl: true, peer: ws.user, peerName: names2[1], names: names2, teams: teams2 });
+      out(ws, { type: 'match', id: mid, side: 1, mode: 3, brawl: true, peer: ba.user, peerName: names2[0], names: names2, teams: teams2 });
+      presence(ba.user); presence(ws.user);
+      return true;
+    }
     case 'mm': {
       var m = matches[msg.id];
       if (!m || ws.match !== msg.id) return true;
@@ -195,6 +274,7 @@ function onMessage(ws, msg) {
 function onOpen(ws) { allSockets.push(ws); }
 function onClose(ws) {
   allSockets = allSockets.filter(function (w) { return w !== ws; });
+  Object.keys(brawls).forEach(function (k) { if (brawls[k].ws === ws) endBrawl(brawls[k], 'cancel'); });
   Object.keys(challenges).forEach(function (k) {
     var c = challenges[k];
     if (c.from === ws) endChallenge(c, 'cancel');

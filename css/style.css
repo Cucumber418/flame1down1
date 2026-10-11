@@ -68,7 +68,8 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .btn.ghost { box-shadow: none; background: transparent; }
 
 /* ============ 选精灵 ============ */
-.modebar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; }
+.modebar { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; }
+@media (max-width: 640px) { .modebar { grid-template-columns: minmax(0, 1fr); gap: 6px; } }
 .mode { cursor: pointer; text-align: left; display: grid; gap: 2px; padding: 10px 14px; border: 1.5px solid var(--ink); border-radius: 12px; background: var(--paper-2); }
 .mode b { font-family: var(--f-hand); font-weight: 400; font-size: 26px; line-height: 1.1; color: var(--ink); }
 .mode span { font-size: 12.5px; color: var(--pencil); }
@@ -1194,3 +1195,23 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .npc-say { display: grid; gap: 10px; }
 .npc-line { font-size: 17px; line-height: 1.6; background: var(--paper); border: 1.5px solid var(--ink); border-radius: 12px; padding: 10px 14px; }
 @media (max-width: 560px) { .npc-box { grid-template-columns: 90px minmax(0, 1fr); } .npc-face { width: 90px; } .npc-line { font-size: 15px; } }
+
+/* ============ 精灵大乱斗 ============ */
+.brawl { margin-bottom: 18px; }
+.bw-card { position: relative; background: var(--paper-2); border: 1.5px solid var(--ink); border-radius: 16px; padding: 18px; display: grid; gap: 12px; }
+.bw-head { display: flex; align-items: baseline; gap: 12px; }
+.bw-rules { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 13.5px; }
+.bw-rules b { color: var(--red); }
+.bw-prog { display: grid; grid-template-columns: auto auto minmax(80px, 1fr); align-items: center; gap: 4px 12px; font-size: 13px; color: var(--pencil); }
+.bw-prog b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.bw-prog .pbar { display: block; width: auto; margin: 0; height: 8px; border-radius: 999px; background: var(--paper); border: 1px solid var(--rule); overflow: hidden; }
+.bw-prog .pbar i { display: block; height: 100%; background: #b7791f; }
+.bw-card .shop-h { margin: 4px 0 0; }
+.bw-pick { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); max-height: none; }
+.bw-wait { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; background: var(--paper); border: 1.5px dashed #e08a2e; border-radius: 12px; padding: 10px 12px; font-size: 13.5px; }
+.bw-wait .btn { margin-left: auto; }
+.bw-pop { position: fixed; right: 16px; bottom: 16px; z-index: 320; width: min(300px, calc(100vw - 32px)); display: grid; gap: 4px; background: var(--paper-2); border: 1.5px solid var(--ink); border-radius: 14px; padding: 12px 14px; box-shadow: 3px 3px 0 #e08a2e; animation: soc-pop .3s ease-out; }
+.bw-pop > b { color: #b7791f; }
+.bw-pop-btns { display: flex; gap: 6px; justify-content: flex-end; margin-top: 4px; }
+.bw-pop-btns .btn { padding: 5px 12px; font-size: 13px; }
+@media (prefers-reduced-motion: reduce) { .bw-pop { animation: none; } }

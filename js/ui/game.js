@@ -1816,11 +1816,29 @@
     } });
   }
 
+  /* ---------- 精灵大乱斗（竞技对战的第三种模式，联网） ----------
+   * 6 只精灵统一 LV60、学会所有隐藏技能、配招为技能表的最后 4 个、无学习力，性格由服务器随机
+   * 胜者 2000、败者 1000 累积经验（平局各 1000；自己认输或自己掉线没有奖励），每天最多 20000 */
+  var BRAWL_WIN = 2000, BRAWL_LOSE = 1000, BRAWL_CAP = 20000, BRAWL_LV = 60;
+  function brawlSpec(raw) {
+    var s = raw && SPMAP[raw.sid]; if (!s) return null;
+    var all = s.moves.concat(s.hidden).filter(function (n, i, a) { return M[n] && a.indexOf(n) === i; });
+    var f = form({ sid: raw.sid, lv: BRAWL_LV });
+    return { id: raw.sid, lv: BRAWL_LV, moves: all.slice(-4), nick: f.name, img: f.img, ev: {}, nat: raw.nat && NATURES[raw.nat] ? raw.nat : null };
+  }
+  function brawlToday() { return acc.brawlExp && acc.brawlExp.d === bjDay() ? acc.brawlExp.n || 0 : 0; }
+  function brawlReward(result, noReward) {
+    var want = noReward ? 0 : result === 'win' ? BRAWL_WIN : BRAWL_LOSE, had = brawlToday(), give = Math.max(0, Math.min(want, BRAWL_CAP - had));
+    if (give > 0) { acc.brawlExp = { d: bjDay(), n: had + give }; acc.exp = (acc.exp || 0) + give; save(); renderRes(); }
+    return { want: want, give: give, today: brawlToday(), cap: BRAWL_CAP };
+  }
+
   /* ---------- 给社交页（social.js）用的接口 ---------- */
   window.HSACC = {
     acc: function () { return acc; }, ready: ready, save: save, toast: toast, go: go, page: function () { return page; }, renderRes: renderRes,
     titleName: titleName, mon: mon, fmt: fmt,
     npcPlan: npcPlan, npcHome: npcHome,
+    brawlSpec: brawlSpec, brawlReward: brawlReward, brawlToday: brawlToday, BRAWL: { win: BRAWL_WIN, lose: BRAWL_LOSE, cap: BRAWL_CAP, lv: BRAWL_LV },
     teaFight: teaFight, teaLeft: teaLeft, TEA_DAILY: TEA_DAILY, TEA_EXP: TEA_EXP, homePos: HOME_POS,
     view: function (m) { var f = form(m); return { name: f.name, img: f.img, stage: f.stage }; },
     // 把服务器发来的精灵资料变成对战用的精灵（逐项检查，不信任外来数据）
