@@ -1,0 +1,888 @@
+/* ==========================================================
+ * 对战规则
+ * 能力值计算、伤害公式、状态、回合流程、道具
+ * ========================================================== */
+
+var STG = ['atk', 'def', 'spa', 'spd', 'spe', 'acc', 'eva'];
+var STG_NAME = { atk: '物攻', def: '物防', spa: '特攻', spd: '特防', spe: '速度', acc: '命中', eva: '闪避' };
+var BASE_NAME = { hp: '体力', atk: '物攻', def: '物防', spa: '特攻', spd: '特防', spe: '速度' };
+var TM_NAME = { cap: '逆鳞', genggu: '恒压', green: '绿色幻境', immune: '免疫异常', reflect: '风王结界', dodge: '光滑皮肤',
+  noSwitch: '无法切换', prio: '先制+1', rain: '祈雨', tri: '三相归元', soul: '收魂',
+  voidPhys: '虚空化', induct: '电磁感应', vortex: '闪电漩涡', darkside: '月之暗面', hail: '冰雹', noBoost: '禁止强化',
+  seal: '万灵封印', liuhuo: '流火', calm: '静谧水域', halfPhys: '物伤减半', tide: '黑雾潮汐', vuln: '易伤', weak: '伤害-30%',
+  swamp: '孢子沼泽', mist: '白雾', jungle: '丛林法则', siren: '海妖之歌', dr40: '减伤40%', crit2: '必定暴击', retal: '寂灭幽映',
+  block: '坚不可摧', recoil: '磁暴反冲', sure3: '谛听', ear: '灵耳谛听', noHeal: '禁疗' };
+var FOE_TM = { noSwitch: 1, soul: 1, noBoost: 1, seal: 1, vuln: 1, weak: 1, noHeal: 1 };
+/* 进化链长度不固定（三阶或两阶），最后一阶是最终形态 */
+function evoLast(s) { return s && s.evo ? s.evo.length - 1 : 0; }
+function isFin(s, i) { return !s || !s.evo || i === s.evo.length - 1; }
+function stageLabel(s, i) { return isFin(s, i) ? '最终形态' : ['一阶', '二阶'][i]; }
+function formImg(s, i) { return isFin(s, i) ? SPRITES[s.id] : (PRE_SPRITES[s.id + '_s' + (i + 1)] || SPRITES[s.id]); }
+function formRawName(s, i) { return isFin(s, i) ? s.name : s.evo[i].n; }
+function typesOf(m) { if (m.perm && m.perm.moonFull) return ['光', '暗影']; return m.tm && m.tm.darkside > 0 ? ['暗影'] : sp(m).types; }
+function mvType(me, mv) {
+  if (me.perm && me.perm.moonFull) return me.perm.moonMv || mv.type;   // 光影之月：技能维持变身瞬间的属性
+  if (mv.custom === 'lightside') return '光'; return me.tm && me.tm.darkside > 0 ? '暗影' : mv.type;
+}
+// 光影之月下，月之暗面 / 月之亮面不能再使用
+function moveBlocked(me, slot) { return !!(me.perm && me.perm.moonFull && slot && M[slot.n] && M[slot.n].custom === 'darkside'); }
+// 处于月之暗面时，「月之暗面」变为「月之亮面」
+var LIGHTSIDE = { name: '月之亮面', type: '光', cat: '变化', custom: 'lightside', pri: 0, pp: 5, hidden: true, d: '结束月之暗面，将精灵属性、技能属性切换回光系' };
+function liveMove(me, mv) { return mv && mv.custom === 'darkside' && me.tm && me.tm.darkside > 0 ? LIGHTSIDE : mv; }
+
+function stageMult(n) { return n >= 0 ? (2 + n) / 2 : 2 / (2 - n); }
+// 命中修正：提升命中维持原样；闪避提高 / 命中下降（净等级为负）的效果减弱（-1 级 80%，-6 级 40%）
+function accMult(n) { n = Math.max(-6, Math.min(6, n)); return n >= 0 ? (3 + n) / 3 : 4 / (4 - n); }
+var STAB = 1.2;      // 本系加成：技能属性与精灵属性相同时伤害 ×1.2
+var HP_MULT = 1.75;   // 体力在原公式基础上 ×1.75
+function calcStat(b, k, lv) { lv = lv || LV; var v = Math.floor((2 * b + 31) * lv / 100); return k === 'hp' ? Math.floor((v + lv + 10) * HP_MULT) : v + 5; }
+function blankStages() { var o = {}; STG.forEach(function (k) { o[k] = 0; }); return o; }
+function sp(m) { return m.id === 'dummy' ? (m.dummySpec || DUMMY) : SPMAP[m.id]; }
+function ability(m) { return sp(m).ability ? sp(m).ability.n : '无'; }
+function hasEmblem(m, mv) { return sp(m).emblem && sp(m).emblem.m === mv; }
+
+/* 性格（参照赛尔号）：一项能力 ×1.1，另一项 ×0.9；五种性格无修正 */
+var NATURES = {
+  孤独: ['atk', 'def'], 固执: ['atk', 'spa'], 调皮: ['atk', 'spd'], 勇敢: ['atk', 'spe'],
+  大胆: ['def', 'atk'], 淘气: ['def', 'spa'], 无虑: ['def', 'spd'], 悠闲: ['def', 'spe'],
+  保守: ['spa', 'atk'], 稳重: ['spa', 'def'], 马虎: ['spa', 'spd'], 冷静: ['spa', 'spe'],
+  沉着: ['spd', 'atk'], 温顺: ['spd', 'def'], 慎重: ['spd', 'spa'], 狂妄: ['spd', 'spe'],
+  胆小: ['spe', 'atk'], 急躁: ['spe', 'def'], 开朗: ['spe', 'spa'], 天真: ['spe', 'spd'],
+  害羞: null, 实干: null, 坦率: null, 浮躁: null, 认真: null
+};
+function natureMult(nat, k) { var n = nat && NATURES[nat]; if (!n) return 1; return n[0] === k ? 1.1 : n[1] === k ? 0.9 : 1; }
+/* 学习力：每 10 点 = 1 点能力值；单项最多 300，总和最多 750 */
+var EV_MAX = 300, EV_TOTAL = 750;
+function fullStat(b, k, lv, ev, nat) {
+  var v = calcStat(b, k, lv) + Math.floor(((ev && ev[k]) || 0) / 10);
+  return k === 'hp' ? v : Math.floor(v * natureMult(nat, k));
+}
+function makeMon(id, moveNames, mult, lv, ev, nat) {
+  var s = SPMAP[id], stats = {}; mult = mult || 1; lv = lv || LV;
+  ['atk', 'def', 'spa', 'spd', 'spe'].forEach(function (k) { stats[k] = Math.round(fullStat(s.base[k], k, lv, ev, nat) * mult); });
+  var maxhp = Math.round(fullStat(s.base.hp, 'hp', lv, ev, nat) * mult);
+  return { id: id, lv: lv, maxhp: maxhp, hp: maxhp, stats: stats,
+    moves: moveNames.map(function (n) { return { n: n, pp: M[n].pp, max: M[n].pp }; }),
+    stages: blankStages(), st: {}, tm: {}, fx: {}, flags: {}, perm: {}, fainted: false };
+}
+
+// 剧情对战可以给精灵起显示名（如进化前的形态名）和换图
+function mkFrom(t) { var m = makeMon(t.id, t.moves, t.mult, t.lv, t.ev, t.nat); if (t.nick) m.nick = t.nick; if (t.img) m.img = t.img; if (t.miasma) m.perm.miasma = t.miasma; return m; }
+function newBattle0(pTeam, aTeam) {
+  return { turn: 1, over: null, needSwitch: false, order: [], turnActed: [false, false], silenced: [false, false],
+    sides: [
+      { name: '你', team: pTeam.map(mkFrom), active: 0, soulMark: false },
+      { name: '对手', team: aTeam.map(mkFrom), active: 0, soulMark: false }
+    ] };
+}
+function newTraining(p, lv, defBase) {
+  var spec = { id: 'dummy', name: '木桩', types: ['无'], type: '无', base: { hp: 100, atk: 0, def: defBase, spa: 0, spd: defBase, spe: 0 }, ability: DUMMY.ability, moves: [], hidden: [], def: [] };
+  var S = newBattle0([{ id: p.id, moves: p.moves, lv: lv }], []);
+  var d = { id: 'dummy', dummySpec: spec, lv: lv, stats: {}, moves: [], stages: blankStages(), st: {}, tm: {}, fx: {}, flags: {}, perm: {}, fainted: false, seen: true };
+  ['atk', 'def', 'spa', 'spd', 'spe'].forEach(function (k) { d.stats[k] = k === 'def' || k === 'spd' ? calcStat(defBase, k, lv) : 1; });
+  d.maxhp = d.hp = calcStat(100, 'hp', lv);     // 名义体力：按体力种族值 100 计算，用于百分比类效果；受伤后立刻回满
+  S.sides[1].team = [d]; S.sides[1].name = '木桩';
+  S.training = { lv: lv, def: defBase, log: [] };
+  [0].forEach(function (i) { var m = act(S, i); m.seen = true; if (ability(m) === '踏浪') m.tm.prio = 1; });
+  return S;
+}
+function dotLabel(why) {
+  var keys = ['寄生', '溺水', '流血', '中毒', '烧伤', '凋零之蚀', '冰雹', '雨水', '磁暴反冲', '感电', '混沌水域', '额外吸取'];
+  for (var i = 0; i < keys.length; i++) if (why && why.indexOf(keys[i]) >= 0) return keys[i] === '雨水' ? '祈雨' : keys[i] === '额外吸取' ? '生命榨取（额外吸取）' : keys[i];
+  return '持续/附加效果';
+}
+function recordDummy(S, amt, src) { if (S.training && amt > 0) S.training.log.push({ turn: S.turn, src: src || S.curMove || '其他', amt: amt }); }
+function newBattle(pTeam, aTeam) {
+  var S = newBattle0(pTeam, aTeam);
+  [0, 1].forEach(function (i) { var m = act(S, i); m.seen = true; if (ability(m) === '踏浪') m.tm.prio = 1; });
+  return S;
+}
+
+function act(S, i) { var m = S.sides[i].team[S.sides[i].active]; if (!m.perm) m.perm = {}; return m; }
+function nm(m) { return '【' + (m.nick || sp(m).name) + '】'; }
+function aliveIdx(S, i) { var r = []; S.sides[i].team.forEach(function (m, k) { if (!m.fainted) r.push(k); }); return r; }
+
+/* ---------- 快照：给界面逐帧播放 ---------- */
+var ST_DESC = {
+  害怕: '无法行动', 石化: '无法行动', 睡眠: '无法行动，受到攻击伤害时会醒来', 麻痹: '无法行动', 冰冻: '无法行动',
+  疲惫: '无法行动', 寄生: '每回合结束损失1/8最大体力，被对方吸走（草系精灵免疫）', 溺水: '每回合结束损失1/8最大体力；攻击造成的伤害变为30%',
+  流血: '每回合结束损失60点体力（机械系免疫）', 中毒: '每回合结束损失1/16最大体力×层数；可无限叠加，叠加时回合数取较长的一方', 烧伤: '每回合结束损失1/8最大体力',
+  失明: '攻击时有50%概率落空'
+};
+var TM_DESC = {
+  cap: '单次受到的伤害不超过250，超出部分等额反馈给对方', genggu: '每回合提升1级特攻，恢复1/6最大体力',
+  green: '每回合恢复1/4最大体力', immune: '免疫异常状态', reflect: '免疫并反弹对方施加的异常状态',
+  dodge: '每次受到攻击有40%概率闪避', noSwitch: '无法切换精灵', prio: '所有技能先制+1',
+  rain: '每回合结束对对方附加30点固定伤害', tri: '使用草、水、火系技能时额外恢复1/3体力',
+  soul: '受到的伤害提升20%', voidPhys: '闪避物理攻击', induct: '主动攻击命中后提升1级特攻',
+  vortex: '每回合结束降低对方1级命中', darkside: '精灵属性和技能属性都变成暗影系',
+  hail: '每回合结束对对方造成其1/10最大体力的伤害', noBoost: '无法提升能力等级',
+  seal: '无法提升能力等级；强行提升会损失1/4当前体力', liuhuo: '火系技能威力+5', calm: '每回合恢复1/5最大体力',
+  halfPhys: '受到的物理伤害减半', tide: '从使用的下回合起，每回合结束额外发动一次黑雾潮汐（共4次）', vuln: '受到的伤害提升30%',
+  weak: '造成的伤害降低30%', swamp: '施加异常状态的成功率×1.5', mist: '免疫能力下降',
+  jungle: '对体力比例低于自己的敌人伤害提升70%', siren: '倒计时结束时，若自己还在场，对方失去全部体力',
+  dr40: '受到的伤害减免40%', crit2: '攻击必定致命一击', retal: '受到攻击时降低对方1级物攻、特攻、命中',
+  block: '每回合获得100点护盾，抵挡伤害', recoil: '受到攻击时反弹对方1/4最大体力的伤害',
+  sure3: '攻击必定命中', ear: '攻击必定命中；对方若试图主动闪避，其下一次受到的攻击威力翻倍', noHeal: '无法恢复体力'
+};
+function stageText(k, v) {
+  var mult = (k === 'acc' || k === 'eva') ? accMult(v) : stageMult(v);
+  var what = k === 'acc' ? '命中率' : k === 'eva' ? '闪避率（对方命中率 ×' + (Math.round(100 * accMult(-v)) / 100) + '）' : STG_NAME[k];
+  return (v > 0 ? '提升' : '降低') + Math.abs(v) + '级，' + (k === 'eva' ? what : what + ' ×' + (Math.round(mult * 100) / 100)) + '。能力等级上下限为 ±6，换下场后清除';
+}
+// 状态栏里的特性：显示“此刻”具体生效了什么
+function pct(x) { return Math.round(x * 100) + '%'; }
+function moonStack(S, evs, i, why) {
+  var m = act(S, i); if (ability(m) !== '月蚀' || m.perm.moonFull) return;
+  m.fx.moon = (m.fx.moon || 0) + 1;
+  log(S, evs, nm(m) + '的「月蚀」：' + why + '，月升 ' + m.fx.moon + ' / 5', 'fxl');
+  if (m.fx.moon >= 5) {
+    m.fx.moon = 0; m.perm.moonFull = true; m.perm.moonMv = m.tm.darkside > 0 ? '暗影' : null; delete m.tm.darkside;
+    log(S, evs, nm(m) + '的月升达到5层，转化为「光影之月」！', 'crit');
+  }
+  E(S, evs, 'stage', { side: i });
+}
+function moonSwitch(S, evs, i) {
+  var m = act(S, i); if (ability(m) !== '月蚀') return;
+  m.fx.moonNext = 1; moonStack(S, evs, i, '转换属性，下一次攻击伤害+15%');
+}
+function abilityLive(m, foe) {
+  var ab = ability(m), t = m.fx.fieldT || 0, on, f = foe && !foe.fainted ? foe : null;
+  var lowSelf = m.hp <= m.maxhp / 3;
+  switch (ab) {
+    case '旅行': return '每次被替换上场时，提升1级速度（首发上场不触发）';
+    case '龙啸': if (!f) return '对手不在场，暂不生效';
+      on = f.hp < m.hp; return on ? '生效中：对手体力 ' + f.hp + ' 低于自己 ' + m.hp + '，造成伤害 +15%' : '未生效：对手体力 ' + f.hp + ' 不低于自己 ' + m.hp;
+    case '复苏': return lowSelf ? '生效中：体力已低于1/3，造成伤害 +30%' : '未生效：体力降到 ' + Math.floor(m.maxhp / 3) + ' 以下时，造成伤害 +30%';
+    case '水形': on = STG.some(function (k) { return m.stages[k] > 0; });
+      return on ? '生效中：处于能力提升状态，受到伤害 -10%' : '未生效：有任意一项能力提升时，受到伤害 -10%';
+    case '光滑': return '持续生效：对方命中率 ×0.9';
+    case '借风': return '每回合判定：比对方先出手时，造成伤害 +15%（速度 ' + Math.round(speedOf(m)) + (f ? ' / 对手 ' + Math.round(speedOf(f)) : '') + '）';
+    case '收魂': return '待触发：击败对手后，对方下一只上场的精灵1回合内受到伤害 +20%';
+    case '突袭': return m.flags.firstAtk ? '已用掉：本次出场的首次攻击已经打出' : '待触发：本次出场的第一次攻击伤害 +30%';
+    case '元素': return '持续生效：水、火、草系技能威力 +10';
+    case '虚空': return '持续生效：致命一击率翻倍（普通技能 12.5%，高暴击技能 50%）';
+    case '感电': return '持续生效：受到物理攻击时，把伤害的15%反弹给对方';
+    case '月蚀': return m.perm.moonFull ? '已转化为光影之月' + (m.fx.moonNext ? '；下一次攻击伤害+15%' : '') :
+      '月升 ' + (m.fx.moon || 0) + ' / 5' + (m.fx.moonNext ? '；下一次攻击伤害+15%' : '');
+    case '冰刺': return f && f.st['冰冻'] > 0 ? '对手冰冻中：其能力提升已被解除' : '待触发：使对手冰冻时，解除其所有能力提升';
+    case '起源': if (!f) return '对手不在场，暂不生效';
+      on = speedOf(m) > speedOf(f); return (on ? '生效中' : '未生效') + '：速度 ' + Math.round(speedOf(m)) + ' / 对手 ' + Math.round(speedOf(f)) + '，速度领先时造成伤害 +15%';
+    case '熔炼': return '生效中：出场第 ' + (t + 1) + ' 回合，造成伤害 +' + Math.round(6 * Math.min(5, t + 1)) + '%' + (t + 1 >= 5 ? '（已到上限）' : '（上限 +30%）');
+    case '引雷': return f && f.fx.leiyin ? '生效中：对手已被引雷，下一次受到伤害 +20%' : '待触发：降低对手能力后，对手下一次受到伤害 +20%';
+    case '暗潮': return '待触发：每次恢复体力时，30%概率提升1级闪避（当前闪避 ' + (m.stages.eva > 0 ? '+' : '') + m.stages.eva + '）';
+    case '枯萎': return '生效中：出场第 ' + (t + 1) + ' 回合，对手造成的伤害 -' + pct(Math.min(0.3, 0.05 * t)) + (0.05 * t >= 0.3 ? '（已到上限）' : '（每回合 -5%，上限 -30%）');
+    case '孢子': return '待触发：使用名字含“孢子”的技能时，恢复 ' + Math.floor(m.maxhp / 10) + ' 体力（1/10）';
+    case '追猎': if (!f) return '对手不在场，暂不生效';
+      on = f.hp <= f.maxhp / 3; return on ? '生效中：对手体力已低于1/3，造成伤害 +25%' : '未生效：对手体力降到 ' + Math.floor(f.maxhp / 3) + ' 以下时，造成伤害 +25%';
+    case '踏浪': return m.tm.prio > 0 && !(m.tm.prio > 1 && false) ? '生效中：本回合技能先制 +1' : '已结束：出场时的先制 +1 已用完';
+    case '盾甲': return '持续生效：受到伤害 -10%';
+    case '幻叶': return lowSelf ? '生效中：体力已低于1/3，受到伤害 -30%' : '未生效：体力降到 ' + Math.floor(m.maxhp / 3) + ' 以下时，受到伤害 -30%';
+  }
+  return sp(m).ability ? sp(m).ability.d : '';
+}
+function chipsOf(m, foe) {
+  var c = [];
+  var abo = sp(m).ability;
+  if (abo && abo.n !== '无') c.push({ t: '特性 · ' + abo.n, k: 'ab' + (/^生效中/.test(abilityLive(m, foe)) ? ' on' : ''), d: abilityLive(m, foe), h: abo.n + ' · 当前效果' });
+  STG.forEach(function (k) { var v = m.stages[k]; if (v) c.push({ t: STG_NAME[k] + (v > 0 ? '+' : '') + v, k: v > 0 ? 'up' : 'down', h: STG_NAME[k] + (v > 0 ? ' 提升' : ' 下降'), d: stageText(k, v) }); });
+  for (var s in m.st) if (m.st[s] > 0) {
+    var pz = s === '中毒' ? (m.fx.poison || 1) : 0;
+    c.push({ t: s + (pz > 1 ? '×' + pz + ' · ' : ' ') + m.st[s], k: 'st', h: s + (pz ? ' · ' + pz + ' 层' : '') + ' · 剩 ' + m.st[s] + ' 回合', d: (ST_DESC[s] || '') + (pz ? '。当前每回合损失 ' + Math.max(1, Math.floor(m.maxhp * pz / 16)) + ' 点' : '') });
+  }
+  if (m.fx.shield > 0) c.push({ t: '护盾 ' + m.fx.shield, k: 'fx', h: '护盾', d: '先吸收接下来受到的 ' + m.fx.shield + ' 点伤害' });
+  if (m.fx.absDef) c.push({ t: '免疫下次攻击', k: 'fx', h: '免疫下次攻击', d: '闪避下一次受到的攻击' });
+  if (m.fx.endure) c.push({ t: '不灭之躯', k: 'fx', h: '不灭之躯', d: '下一次受到致死攻击时残留1点体力' });
+  if (m.fx.brand) c.push({ t: '烙印 ' + m.fx.brand + '/3', k: 'st', h: '闪电烙印', d: '叠满3层时陷入麻痹1-2回合' });
+  if (m.fx.leiyin) c.push({ t: '引雷', k: 'st', h: '引雷', d: '下一次受到的伤害提升20%' });
+  if (m.fx.sureHit && !m.fx.sureCrit) c.push({ t: '下次必中', k: 'fx', h: '下次必中', d: '下一次攻击必定命中' });
+  if (m.perm && m.perm.melt) c.push({ t: '熔化 ×' + m.perm.melt, k: 'st', h: '熔化 · ' + m.perm.melt + ' 层', d: '受到的伤害提升 ' + m.perm.melt * 20 + '%（每层20%，最多5层），持续到战斗结束，换下场也不会消失' });
+  if (m.perm && m.perm.star) c.push({ t: '星星魔法 ×' + m.perm.star, k: 'fx', h: '星星魔法 · 已使用 ' + m.perm.star + ' 次', d: '下一次星星魔法威力 ' + Math.min(200, 25 * (m.perm.star + 1)) + '（换下场也会保留）' });
+  if (m.fx.flash) c.push({ t: '闪光', k: 'st', h: '闪光飞叶', d: '下一次受到攻击时，额外降低1级命中' });
+  if (m.fx.earMark) c.push({ t: '被听穿', k: 'st', h: '灵耳谛听', d: '试图闪避被识破：下一次受到的攻击威力翻倍' });
+  if (miaN(m)) c.push({ t: '瘴气 ×' + miaN(m), k: 'st', h: '瘴气 · ' + miaN(m) + ' 层', d: '物攻、特攻 +' + (miaN(m) * 5) + '%，物防、特防 −' + Math.min(90, miaN(m) * 5) + '%（每层 ±5%，防御最低降到 10%）。持续到战斗结束，换下场也不会消失；在瘴气环境中每回合结束时再获得 1 层。' });
+  if (m.perm && m.perm.wither) c.push({ t: '凋零之蚀', k: 'st', h: '凋零之蚀', d: '每回合结束损失1/10最大体力，持续到战斗结束' });
+  if (m.fx.boostNext) c.push({ t: '潜水蓄力', k: 'fx', h: '潜水蓄力', d: '下一次攻击伤害提升50%' });
+  if (m.fx.moon) c.push({ t: '月升 ×' + m.fx.moon, k: 'fx', h: '月升 · ' + m.fx.moon + ' / 5', d: '达到5层时转化为光影之月。下场时清空。' });
+  if (m.fx.moonNext) c.push({ t: '月蚀 · 下次攻击+15%', k: 'fx', h: '月蚀', d: '刚转换过属性，下一次攻击伤害提升15%' });
+  if (m.perm && m.perm.moonFull) c.push({ t: '光影之月', k: 'fx', h: '光影之月（永久，下场保留）', d: '属性：光 + 暗影\n技能属性：固定为' + (m.perm.moonMv ? '暗影系' : '原属性') + '\n伤害 +15%\n使用技能时，其余技能各恢复1点PP\n无法使用月之暗面 / 月之亮面' });
+  if (m.fx.sureCrit) c.push({ t: m.fx.sureHit ? '必中必暴' : '下次暴击', k: 'fx', h: m.fx.sureHit ? '必中必暴' : '下次暴击', d: m.fx.sureHit ? '下一次攻击必定命中并造成致命一击' : '下一次攻击必定致命一击' });
+  for (var t in m.tm) if (m.tm[t] > 0) c.push({ t: (TM_NAME[t] || t) + ' ' + m.tm[t], k: FOE_TM[t] ? 'st' : 'fx', h: (TM_NAME[t] || t) + ' · 剩 ' + m.tm[t] + ' 回合', d: TM_DESC[t] || '' });
+  return c;
+}
+// 当前全部具体能力值（含能力等级、特性、场上效果）
+function statSheet(m, foe) {
+  var rows = [];
+  rows.push({ k: '体力', v: m.hp + ' / ' + m.maxhp, base: sp(m).base.hp });
+  ['atk', 'def', 'spa', 'spd', 'spe'].forEach(function (k) {
+    var st = m.stages[k], eff = Math.floor(m.stats[k] * stageMult(st));
+    rows.push({ k: STG_NAME[k], v: String(eff), raw: m.stats[k], st: st, base: sp(m).base[k] });
+  });
+  var acc = accMult(m.stages.acc);
+  rows.push({ k: '命中', v: Math.round(acc * 100) + '%', st: m.stages.acc, note: m.st['失明'] > 0 ? '失明：攻击有50%概率落空' : '' });
+  var dodge = 1 - accMult(-m.stages.eva);
+  if (ability(m) === '光滑') dodge = 1 - (1 - dodge) * 0.9;
+  var dn = [];
+  if (ability(m) === '光滑') dn.push('含「光滑」');
+  if (m.tm.dodge > 0) dn.push('光滑皮肤另有40%闪避');
+  if (m.tm.voidPhys > 0) dn.push('虚空化：物理攻击全部闪避');
+  rows.push({ k: '闪避', v: Math.round(Math.max(0, dodge) * 100) + '%', st: m.stages.eva, note: dn.join('，') });
+  var cr = (1 / 16) * (ability(m) === '虚空' ? 2 : 1);
+  var crn = m.fx.sureCrit || m.tm.crit2 > 0 ? '下次攻击必定致命一击' : '高暴击技能为 ' + Math.round(cr * 4 * 100) + '%';
+  rows.push({ k: '暴击率', v: (m.fx.sureCrit || m.tm.crit2 > 0 ? 100 : Math.round(cr * 1000) / 10) + '%', note: crn });
+  var dmgOut = 1, dmgIn = 1, ab = ability(m), t = m.fx.fieldT || 0, f = foe && !foe.fainted ? foe : null;
+  if (ab === '龙啸' && f && f.hp < m.hp) dmgOut *= 1.15;
+  if (ab === '复苏' && m.hp <= m.maxhp / 3) dmgOut *= 1.3;
+  if (ab === '起源' && f && speedOf(m) > speedOf(f)) dmgOut *= 1.15;
+  if (ab === '熔炼') dmgOut *= 1 + 0.06 * Math.min(5, t + 1);
+  if (ab === '追猎' && f && f.hp <= f.maxhp / 3) dmgOut *= 1.25;
+  if (m.fx.moonNext) dmgOut *= 1.15;
+  if (m.perm && m.perm.moonFull) dmgOut *= 1.15;
+  if (m.tm.weak > 0) dmgOut *= 0.7;
+  if (m.st['溺水'] > 0) dmgOut *= 0.3;
+  if (f && ability(f) === '枯萎') dmgOut *= Math.max(0.7, 1 - 0.05 * (f.fx.fieldT || 0));
+  if (m.fx.boostNext) dmgOut *= 1.5;
+  if (ab === '幻叶' && m.hp <= m.maxhp / 3) dmgIn *= 0.7;
+  if (ab === '盾甲') dmgIn *= 0.9;
+  if (ab === '水形' && STG.some(function (k) { return m.stages[k] > 0; })) dmgIn *= 0.9;
+  if (m.tm.soul > 0) dmgIn *= 1.2;
+  if (m.tm.vuln > 0) dmgIn *= 1.3;
+  if (m.perm && m.perm.melt) dmgIn *= 1 + 0.2 * m.perm.melt;
+  if (m.fx.leiyin) dmgIn *= 1.2;
+  if (m.tm.dr40 > 0) dmgIn *= 0.6;
+  rows.push({ k: '造成伤害', v: '×' + (Math.round(dmgOut * 100) / 100), note: '特性与场上效果合计（不含属性克制）' });
+  rows.push({ k: '受到伤害', v: '×' + (Math.round(dmgIn * 100) / 100), note: m.tm.halfPhys > 0 ? '另外物理伤害减半' : '' });
+  var pri = m.tm.prio > 0 ? '+1' : '0';
+  rows.push({ k: '先制加成', v: pri });
+  return rows;
+}
+function snap(S) {
+  return {
+    turn: S.turn,
+    sides: S.sides.map(function (sd) {
+      var m = sd.team[sd.active];
+      var ab = sp(m).ability || { n: '无', d: '图鉴里还没写特性' };
+      return { id: m.id, name: m.nick || sp(m).name, img: m.img || null, types: typesOf(m), lv: m.lv || LV, dummy: m.id === 'dummy', ability: { n: ab.n, d: ab.d, extra: ab.extra || '' }, stats: statSheet(m, S.sides[1 - S.sides.indexOf(sd)].team[S.sides[1 - S.sides.indexOf(sd)].active]), hp: m.hp, maxhp: m.maxhp, fainted: m.fainted, chips: chipsOf(m, S.sides[1 - S.sides.indexOf(sd)].team[S.sides[1 - S.sides.indexOf(sd)].active]),
+        team: sd.team.map(function (x, k) { return { id: x.id, nick: x.nick || null, fainted: x.fainted, active: k === sd.active, hp: x.hp, maxhp: x.maxhp, seen: !!x.seen }; }) };
+    })
+  };
+}
+function E(S, evs, t, o) { var e = o || {}; e.t = t; e.snap = snap(S); evs.push(e); }
+function log(S, evs, text, cls) { E(S, evs, 'text', { text: text, cls: cls || '' }); }
+
+/* ---------- 基础操作 ---------- */
+function faint(S, evs, j) {
+  var t = act(S, j); t.fainted = true; t.hp = 0;
+  E(S, evs, 'faint', { side: j }); log(S, evs, nm(t) + '倒下了！', 'bad');
+}
+function loseHp(S, evs, j, amt, why) {
+  var t = act(S, j); if (t.fainted || amt <= 0) return 0;
+  if (t.id === 'dummy') { amt = Math.floor(amt); recordDummy(S, amt, why ? (S.curMove && why.indexOf('混沌水域') < 0 && why.indexOf('额外吸取') < 0 ? S.curMove : dotLabel(why)) : null); E(S, evs, 'hit', { side: j, amount: amt }); if (why) log(S, evs, why + '（' + amt + '）'); return amt; }
+  amt = Math.min(t.hp, Math.floor(amt)); t.hp -= amt;
+  E(S, evs, 'hit', { side: j, amount: amt });
+  if (why) log(S, evs, why);
+  if (t.hp <= 0) faint(S, evs, j);
+  return amt;
+}
+function applyDamage(S, evs, j, amount, src, o) {
+  o = o || {};
+  var t = act(S, j); if (t.fainted) return 0;
+  var amt = Math.floor(amount), excess = 0;
+  if (t.tm.cap > 0 && amt > 250 && src != null) { excess = amt - 250; amt = 250; }
+  if (t.fx.shield > 0) {
+    var ab = Math.min(t.fx.shield, amt); t.fx.shield -= ab; amt -= ab;
+    if (ab) log(S, evs, nm(t) + '的护盾吸收了 ' + ab + ' 点伤害');
+  }
+  if (t.fx.endure && src != null && amt >= t.hp && t.hp > 1) {
+    amt = t.hp - 1; t.fx.endure = 0; log(S, evs, nm(t) + '的不灭之躯撑住了，残留 1 点体力！', 'fxl');
+  }
+  if (t.id === 'dummy') { recordDummy(S, amt, src == null ? (S.dotSrc || '持续/附加效果') : null); E(S, evs, 'hit', { side: j, amount: amt, crit: o.crit, eff: o.eff }); return amt; }
+  amt = Math.min(t.hp, amt); t.hp -= amt;
+  if (amt > 0 && t.st['睡眠'] > 0 && src != null) { delete t.st['睡眠']; log(S, evs, nm(t) + '被打醒了'); }
+  E(S, evs, 'hit', { side: j, amount: amt, crit: o.crit, eff: o.eff });
+  if (excess > 0) {
+    log(S, evs, nm(t) + '的龙之逆鳞把 ' + excess + ' 点伤害反馈给了对方！', 'fxl');
+    loseHp(S, evs, src, excess);
+  }
+  if (t.hp <= 0 && !o.noFaint) faint(S, evs, j);
+  return amt;
+}
+function heal(S, evs, i, amount) {
+  var m = act(S, i); if (m.fainted) return 0;
+  if (m.tm.noHeal > 0) { if (Math.floor(amount) > 0 && m.hp < m.maxhp) log(S, evs, nm(m) + '处于禁疗状态，无法恢复体力', 'bad'); return 0; }
+  var a = Math.min(m.maxhp - m.hp, Math.floor(amount));
+  if (a <= 0) return 0;
+  m.hp += a; E(S, evs, 'heal', { side: i, amount: a });
+  log(S, evs, nm(m) + '恢复了 ' + a + ' 点体力', 'good');
+  if (ability(m) === '暗潮' && RNG() < 0.3) { log(S, evs, nm(m) + '的「暗潮」发动了', 'fxl'); changeStages(S, evs, i, { eva: 1 }); }
+  return a;
+}
+// src：施加者（降低对方能力时用来触发特性）
+function changeStages(S, evs, i, obj, src) {
+  var m = act(S, i); if (m.fainted) return;
+  var parts = [], lowered = false, tried = false;
+  for (var k in obj) {
+    var v = obj[k];
+    if (v > 0 && (m.tm.noBoost > 0 || m.tm.seal > 0)) { tried = true; continue; }
+    if (v < 0 && m.tm.mist > 0) { parts.push(STG_NAME[k] + '被白雾保护'); continue; }
+    var old = m.stages[k], nv = Math.max(-6, Math.min(6, old + v));
+    m.stages[k] = nv;
+    if (nv === old) parts.push(STG_NAME[k] + (v > 0 ? '已无法再提升' : '已无法再降低'));
+    else { parts.push(STG_NAME[k] + (nv > old ? ' +' : ' −') + Math.abs(nv - old)); if (nv < old) lowered = true; }
+  }
+  if (tried) {
+    log(S, evs, nm(m) + '被封印，无法提升能力等级', 'bad');
+    if (m.tm.seal > 0) loseHp(S, evs, i, Math.floor(m.hp / 4), '万灵封印反噬，' + nm(m) + '损失了1/4当前体力');
+  }
+  if (parts.length) { E(S, evs, 'stage', { side: i }); log(S, evs, nm(m) + ' ' + parts.join('，'), 'fxl'); }
+  if (lowered && src != null && src !== i && !act(S, src).fainted && ability(act(S, src)) === '引雷') m.fx.leiyin = 1;
+}
+var CONTROL = { 害怕: 1, 石化: 1, 睡眠: 1, 麻痹: 1, 冰冻: 1, 疲惫: 1 };
+var CANT_ACT = { 害怕: '害怕得无法行动', 石化: '被石化了，无法行动', 睡眠: '正在睡觉', 麻痹: '身体麻痹，无法行动', 冰冻: '被冻住了，无法行动', 疲惫: '疲惫得无法行动' };
+function addStatus(S, evs, j, k, turns, src, noReflect) {
+  var t = act(S, j); if (t.fainted) return;
+  if (k === '寄生' && typesOf(t).indexOf('草') >= 0) { log(S, evs, nm(t) + '是草系精灵，不会被寄生'); return; }
+  if (t.tm.reflect > 0) {
+    if (!noReflect && src != null && !act(S, src).fainted) {
+      log(S, evs, nm(t) + '的风王结界把「' + k + '」反弹了回去！', 'fxl');
+      addStatus(S, evs, src, k, turns, j, true);
+    } else log(S, evs, nm(t) + '免疫了「' + k + '」');
+    return;
+  }
+  if (t.tm.immune > 0) { log(S, evs, nm(t) + '免疫了「' + k + '」'); return; }
+  if (k === '流血' && typesOf(t).indexOf('机械') >= 0) { log(S, evs, nm(t) + '是机械系精灵，不会流血'); return; }
+  if (k === '中毒') {
+    if (t.st['中毒'] > 0) {
+      t.fx.poison = (t.fx.poison || 1) + 1; t.st['中毒'] = Math.max(t.st['中毒'], turns);
+      E(S, evs, 'stage', { side: j });
+      log(S, evs, nm(t) + '的中毒叠加到 ' + t.fx.poison + ' 层（剩 ' + t.st['中毒'] + ' 回合）', 'bad'); return;
+    }
+    t.fx.poison = 1;
+  }
+  if (t.st[k] > 0) { log(S, evs, nm(t) + '已经处于' + k + '状态'); return; }
+  // 控制类状态：如果对方本回合已经行动过，额外+1回合，保证真的能控住
+  t.st[k] = turns + (CONTROL[k] && S.turnActed[j] ? 1 : 0);
+  E(S, evs, 'stage', { side: j });
+  log(S, evs, nm(t) + '陷入了「' + k + '」状态（' + turns + '回合）', 'bad');
+  if (k === '冰冻' && src != null && ability(act(S, src)) === '冰刺') { log(S, evs, nm(act(S, src)) + '的「冰刺」发动了', 'fxl'); clearUps(S, evs, j); }
+}
+function statusRoll(me, chance) { return RNG() < chance * (me.tm.swamp > 0 ? 1.5 : 1); }
+function clearVolatile(m) { m.stages = blankStages(); m.st = {}; m.tm = {}; m.fx = {}; }
+function rint(a, b) { return a + Math.floor(RNG() * (b - a + 1)); }
+function negCount(m) {
+  var n = 0; for (var s in m.st) if (m.st[s] > 0) n++;
+  STG.forEach(function (k) { if (m.stages[k] < 0) n++; });
+  if (m.perm.melt) n++; if (m.perm.wither) n++;
+  return n;
+}
+function posSum(m) { var n = 0; STG.forEach(function (k) { if (m.stages[k] > 0) n += m.stages[k]; }); return n; }
+
+/* ---------- 伤害公式（参考赛尔号） ---------- */
+function movePower(me, foe, mv) {
+  var power = mv.power, t = mvType(me, mv);
+  if (hasEmblem(me, '音速喷射') && mv.name === '音速喷射') power += 30;
+  if (ability(me) === '元素' && (t === '水' || t === '火' || t === '草')) power += 10;
+  if (me.tm.liuhuo > 0 && t === '火') power += 5;
+  switch (mv.custom) {
+    case 'lowHpDouble': if (foe.hp < foe.maxhp / 4) power *= 2; break;
+    case 'iceSpike': if (foe.st['冰冻'] > 0) power += 50; break;
+    case 'originStorm': power += 15 * Math.max(0, -foe.stages.spe); break;
+    case 'punish': power += 20 * posSum(foe); break;
+    case 'canyue': power = Math.min(160, 10 * Math.pow(2, me.flags.canyue || 0)); break;
+    case 'starMagic': var sn = me.perm.star || 0; power = Math.min(200, 25 * (me.fx.starNow ? sn : sn + 1)); break;
+  }
+  if (foe.fx && foe.fx.earMark) power *= 2;
+  return power;
+}
+function calcDamage(me, foe, mv, firstMover, est) {
+  var power = movePower(me, foe, mv), t = mvType(me, mv);
+  var phys = mv.cat === '物攻';
+  var A = me.stats[phys ? 'atk' : 'spa'] * stageMult(me.stages[phys ? 'atk' : 'spa']) * miaAtk(me);
+  var D = foe.stats[phys ? 'def' : 'spd'] * stageMult(foe.stages[phys ? 'def' : 'spd']) * miaDef(foe);
+  var base = Math.floor(Math.floor(Math.floor(2 * (me.lv || LV) / 5 + 2) * power * A / D) / 50) + 2;
+  var mod = 1, e = effT(t, typesOf(foe)), crit = false;
+  if (typesOf(me).indexOf(t) >= 0) mod *= STAB;
+  mod *= e;
+  var ab = ability(me), fab = ability(foe);
+  if (est) mod *= 236 / 255;
+  else {
+    var cr = (mv.crit === 'high' ? 0.25 : 1 / 16) * (ab === '虚空' ? 2 : 1);
+    if (me.fx.sureCrit) { crit = true; me.fx.sureCrit = 0; }
+    else if (me.tm.crit2 > 0) crit = true;
+    else crit = RNG() < cr;
+    if (crit) mod *= 1.5;
+    mod *= (217 + Math.floor(RNG() * 39)) / 255;
+  }
+  if (ab === '龙啸' && foe.hp < me.hp) mod *= 1.15;
+  if (ab === '复苏' && me.hp <= me.maxhp / 3) mod *= 1.3;
+  if (ab === '借风' && firstMover) mod *= 1.15;
+  if (ab === '突袭' && !me.flags.firstAtk) mod *= 1.3;
+  if (ab === '起源' && speedOf(me) > speedOf(foe)) mod *= 1.15;
+  if (ab === '熔炼') mod *= 1 + 0.06 * Math.min(5, (me.fx.fieldT || 0) + 1);
+  if (ab === '追猎' && foe.hp <= foe.maxhp / 3) mod *= 1.25;
+  if (me.fx.moonNext) mod *= 1.15;
+  if (me.perm.moonFull) mod *= 1.15;
+  if (fab === '枯萎') mod *= Math.max(0.7, 1 - 0.05 * (foe.fx.fieldT || 0));
+  if (fab === '幻叶' && foe.hp <= foe.maxhp / 3) mod *= 0.7;
+  if (fab === '盾甲') mod *= 0.9;
+  if (fab === '水形' && STG.some(function (k) { return foe.stages[k] > 0; })) mod *= 0.9;
+  switch (mv.custom) {
+    case 'halfHpBoost': if (foe.hp < foe.maxhp / 2) mod *= 1.5; break;
+    case 'poisonBoost': if (foe.st['中毒'] > 0) mod *= 1.5; break;
+    case 'lowHpX2': if (me.hp < me.maxhp / 3) mod *= 2; break;
+  }
+  if (me.tm.jungle > 0 && foe.hp / foe.maxhp < me.hp / me.maxhp) mod *= 1.7;
+  if (me.fx.boostNext) mod *= 1.5;
+  if (me.tm.weak > 0) mod *= 0.7;
+  if (me.st['溺水'] > 0) mod *= 0.3;
+  if (foe.tm.soul > 0) mod *= 1.2;
+  if (foe.tm.vuln > 0) mod *= 1.3;
+  if (foe.perm.melt) mod *= 1 + 0.2 * foe.perm.melt;
+  if (foe.fx.leiyin) { mod *= 1.2; if (!est) foe.fx.leiyin = 0; }
+  if (phys && foe.tm.halfPhys > 0) mod *= 0.5;
+  if (foe.tm.dr40 > 0) mod *= 0.6;
+  return { dmg: Math.max(1, Math.floor(base * mod)), crit: crit, eff: e };
+}
+function hitChance(me, foe, mv) {
+  if (mv.always) return 1;
+  var acc = mv.acc || 100;
+  if (mv.custom === 'drown' && foe.st['溺水'] > 0) acc = 90;
+  var p = acc / 100 * accMult(me.stages.acc - foe.stages.eva);
+  if (ability(foe) === '光滑') p *= 0.9;
+  return Math.min(1, p);
+}
+function fixedAmount(me, foe, mv) {
+  if (mv.fixedOnly === 'smile') return Math.floor((me.lv || LV) * 2.5);
+  if (mv.fixedOnly === 'selfBlast') return me.maxhp;
+  return 0;
+}
+
+/* ---------- 回合流程 ---------- */
+function moveFor(m, i) {
+  if (i < 0) return STRUGGLE;
+  var slot = m.moves[i];
+  return slot && slot.pp > 0 ? M[slot.n] : STRUGGLE;
+}
+function speedOf(m) { return m.stats.spe * stageMult(m.stages.spe); }
+
+function resolveTurn(S, acts) {
+  var evs = [];
+  S.turnActed = [false, false]; S.silenced = [false, false]; S.order = [];
+  log(S, evs, '第 ' + S.turn + ' 回合', 'turn');
+  if (acts[0].kind === 'item') { useItem(S, evs, 0, acts[0].key); S.turnActed[0] = true; if (S.over) { S.turn++; return evs; } }
+  [0, 1].forEach(function (i) { if (acts[i].kind === 'switch') doSwitch(S, evs, i, acts[i].to, true); });
+  var info = [0, 1].filter(function (i) { return acts[i].kind === 'move'; }).map(function (i) {
+    var m = act(S, i), mv = moveFor(m, acts[i].i);
+    return { i: i, mv: mv, slot: acts[i].i, pri: mv.pri + (m.tm.prio > 0 ? 1 : 0), spe: speedOf(m), r: RNG() };
+  });
+  info.sort(function (a, b) { return b.pri - a.pri || b.spe - a.spe || a.r - b.r; });
+  S.order = info.map(function (x) { return x.i; });
+  [0, 1].forEach(function (i) { if (acts[i].kind === 'switch') S.turnActed[i] = true; });
+  for (var q = 0; q < info.length; q++) {
+    if (S.over) break;
+    useMove(S, evs, info[q].i, info[q].mv, info[q].slot);
+    S.turnActed[info[q].i] = true;
+    checkOver(S, evs);
+  }
+  if (!S.over) endOfTurn(S, evs);
+  checkOver(S, evs);
+  if (!S.over && !S.training && S.turn >= MAX_TURNS) timeUp(S, evs);
+  if (!S.over) {
+    if (act(S, 1).fainted) { var k = aiPickReplacement(S); doSwitch(S, evs, 1, k, false); }
+    S.needSwitch = act(S, 0).fainted;
+  }
+  S.turn++;
+  return evs;
+}
+
+/* ---------- 道具：商城购买，剧情/野外对战中使用（占用本回合） ---------- */
+var ITEMS = {
+  cap1: { name: '普通精灵捕捉装置', price: 200, cap: 1, d: '投向野生精灵尝试捕捉。对手体力越低、身上有异常状态时越容易成功。' },
+  cap2: { name: '加强精灵捕捉装置', price: 500, cap: 1.5, d: '捕捉成功率是普通装置的 1.5 倍。' },
+  cap3: { name: '华为精灵捕捉装置', price: 2000, cap: 'sure', d: '必定捕捉成功。' },
+  pot1: { name: '体力补药', price: 100, heal: 0.3, d: '为出战中的精灵恢复 30% 最大体力。' },
+  pot2: { name: '强能体力补药', price: 250, heal: 0.5, d: '为出战中的精灵恢复 50% 最大体力。' }
+};
+var ITEM_ORDER = ['cap1', 'cap2', 'cap3', 'pot1', 'pot2'];
+function hasStatus(m) { for (var k in m.st) if (m.st[k] > 0 && ST_DESC[k]) return true; return false; }
+// 捕捉成功率 = 精灵捕捉率 × 装置倍率 × (1 − 剩余体力比例 × 0.5) × (有异常状态 ×1.25)
+function catchChance(S, key) {
+  var it = ITEMS[key], f = act(S, 1); if (!it || !it.cap || !S.wild || f.fainted) return 0;
+  if (it.cap === 'sure') return 1;
+  return Math.min(1, S.wild.rate * it.cap * (1 - 0.5 * f.hp / f.maxhp) * (hasStatus(f) ? 1.25 : 1));
+}
+function useItem(S, evs, i, key) {
+  var it = ITEMS[key], m = act(S, i); if (!it) return;
+  if (it.heal) {
+    log(S, evs, '你使用了「' + it.name + '」', 'fxl');
+    if (!heal(S, evs, i, m.maxhp * it.heal)) log(S, evs, nm(m) + '的体力已经是满的了', 'dmg');
+    return;
+  }
+  var f = act(S, 1), p = catchChance(S, key);
+  log(S, evs, '你向' + nm(f) + '投出了「' + it.name + '」……', 'fxl');
+  E(S, evs, 'throw', { side: 1 });
+  if (RNG() < p) {
+    log(S, evs, '捕捉成功！' + nm(f) + '被收进了捕捉装置。', 'good');
+    S.over = 'caught'; E(S, evs, 'over', { result: 'caught' });
+  } else log(S, evs, '可惜！' + nm(f) + '挣脱了出来。', 'bad');
+}
+
+var MAX_TURNS = 60;   // 每场最多 60 回合
+function timeUp(S, evs) {
+  var p = aliveIdx(S, 0).length, a = aliveIdx(S, 1).length;
+  log(S, evs, '已达到 ' + MAX_TURNS + ' 回合上限，对战强制结束：你剩 ' + p + ' 只，对手剩 ' + a + ' 只', 'turn');
+  S.over = p > a ? 'win' : p < a ? 'lose' : 'draw'; S.timeUp = true;
+  E(S, evs, 'over', { result: S.over });
+}
+function checkOver(S, evs) {
+  if (S.over) return;
+  var p = aliveIdx(S, 0).length, a = aliveIdx(S, 1).length;
+  if (S.training) { if (!p) { S.over = 'lose'; E(S, evs, 'over', { result: 'lose' }); } return; }
+  if (!p || !a) { S.over = !a ? 'win' : 'lose'; if (!p && !a) S.over = 'draw'; E(S, evs, 'over', { result: S.over }); }
+}
+
+function onEnter(S, evs, i, midTurn) {
+  var inn = act(S, i);
+  if (ability(inn) === '踏浪') { inn.tm.prio = midTurn ? 2 : 1; log(S, evs, nm(inn) + '踏浪而来，下回合先制+1', 'fxl'); }
+  if (ability(inn) === '旅行') { log(S, evs, nm(inn) + '的「旅行」发动了', 'fxl'); changeStages(S, evs, i, { spe: 1 }); }
+}
+function doSwitch(S, evs, i, to, midTurn) {
+  var side = S.sides[i], out = act(S, i);
+  if (!out.fainted) { clearVolatile(out); log(S, evs, side.name + '收回了' + nm(out)); }
+  side.active = to;
+  var inn = act(S, i); inn.seen = true;
+  if (side.soulMark) { inn.tm.soul = 1; side.soulMark = false; }
+  E(S, evs, 'switch', { side: i });
+  log(S, evs, side.name + '派出了' + nm(inn) + '！');
+  if (inn.tm.soul) log(S, evs, '收魂的诅咒缠上了' + nm(inn) + '，本回合受到的伤害提升', 'bad');
+  onEnter(S, evs, i, midTurn);
+}
+function playerReplace(S, idx) {
+  var evs = []; doSwitch(S, evs, 0, idx, false); S.needSwitch = false; return evs;
+}
+
+function cantAct(S, evs, me) {
+  for (var k in CANT_ACT) if (me.st[k] > 0) { log(S, evs, nm(me) + CANT_ACT[k] + '！', 'bad'); return true; }
+  return false;
+}
+
+function useMove(S, evs, i, mv, slotIdx, extra) {
+  var me = act(S, i), j = 1 - i, foe = act(S, j);
+  mv = liveMove(me, mv);
+  if (me.fainted) return;
+  if (!extra && cantAct(S, evs, me)) return;
+  if (slotIdx >= 0 && moveBlocked(me, me.moves[slotIdx])) { log(S, evs, nm(me) + '处于光影之月，无法使用「' + mv.name + '」'); return; }
+  if (!mv.struggle && slotIdx >= 0) me.moves[slotIdx].pp--;
+  if (S.silenced[i] && !extra) { log(S, evs, nm(me) + '的「' + mv.name + '」被黑暗吞没，失效了！', 'bad'); return; }
+  var firstMover = !S.turnActed[j];
+  var mt = mvType(me, mv);
+  S.curMove = i === 0 ? mv.name : null;
+  E(S, evs, 'use', { side: i, move: mv.name, type: mt });
+  log(S, evs, nm(me) + (extra ? '额外发动了「' : '使用了「') + mv.name + '」！', 'use');
+  if (!extra && me.perm.moonFull && slotIdx >= 0) {
+    var got = 0; me.moves.forEach(function (sl, k) { if (k !== slotIdx && sl.pp < sl.max) { sl.pp++; got++; } });
+    if (got) log(S, evs, '光影之月：其余技能各恢复1点PP', 'fxl');
+  }
+  if (ability(me) === '孢子' && mv.name.indexOf('孢子') >= 0) heal(S, evs, i, me.maxhp / 10);
+  me.fx.starNow = 0;
+  if (mv.custom === 'starMagic') { me.perm.star = (me.perm.star || 0) + 1; me.fx.starNow = 1; }
+  if (mv.cat === '变化') { doStatus(S, evs, i, mv); return; }
+
+  if (foe.fainted) { log(S, evs, '但是没有目标'); return; }
+  if (mv.custom === 'poisonHeart' && !(foe.st['中毒'] > 0)) { log(S, evs, '但是没有命中！（渗透孢子只能命中中毒的敌人）'); me.fx.boostNext = 0; return; }
+  var sure = me.fx.sureHit; if (sure) me.fx.sureHit = 0;
+  if (me.tm.sure3 > 0 || me.tm.ear > 0) sure = 1;
+  if (!sure && me.st['失明'] > 0 && RNG() < 0.5) { log(S, evs, nm(me) + '看不清目标，攻击落空了！'); me.fx.boostNext = 0; return; }
+  if (!sure && RNG() >= hitChance(me, foe, mv)) { log(S, evs, '但是没有命中！'); me.fx.boostNext = 0; return; }
+  if (foe.fx.absDef) { foe.fx.absDef = 0; log(S, evs, nm(foe) + '闪开了这次攻击！', 'fxl'); me.fx.boostNext = 0; return; }
+  if (foe.tm.dodge > 0 && RNG() < 0.4) { log(S, evs, nm(foe) + '用光滑皮肤闪开了攻击！', 'fxl'); me.fx.boostNext = 0; return; }
+  if (mv.cat === '物攻' && foe.tm.voidPhys > 0) { log(S, evs, nm(foe) + '处于虚空化，物理攻击穿过了它的身体！', 'fxl'); me.fx.boostNext = 0; return; }
+
+  var total = 0, lastEff = 1, n = 0, hits = 1;
+  if (mv.fixedOnly) {
+    var fa = fixedAmount(me, foe, mv);
+    log(S, evs, '造成 ' + fa + ' 点固定伤害', 'fxl');
+    total = applyDamage(S, evs, j, fa, i, { noFaint: true });
+  } else {
+    if (mv.hits) {
+      if (mv.custom === 'fireHits' && foe.st['烧伤'] > 0) hits = 9;
+      else if (mv.hits[0] === 2 && mv.hits[1] === 5) { var r = RNG(); hits = r < 0.35 ? 2 : r < 0.7 ? 3 : r < 0.85 ? 4 : 5; }
+      else hits = rint(mv.hits[0], mv.hits[1]);
+    }
+    for (var h = 0; h < hits && foe.hp > 0; h++) {
+      var res = calcDamage(me, foe, mv, firstMover, false);
+      lastEff = res.eff; n++;
+      if (res.crit) log(S, evs, '致命一击！', 'crit');
+      total += applyDamage(S, evs, j, res.dmg, i, { crit: res.crit, eff: res.eff, noFaint: true });
+      if (me.fainted) break;
+    }
+    if (lastEff > 1) log(S, evs, '效果拔群！', 'good'); else if (lastEff < 1) log(S, evs, '效果不太好……');
+  }
+  log(S, evs, '对' + nm(foe) + '造成 ' + total + ' 点伤害', 'dmg');
+  if (foe.hp <= 0 && !foe.fainted) faint(S, evs, j);
+  if (hits > 1) log(S, evs, '连续命中 ' + n + ' 次！');
+  me.flags.firstAtk = true; me.fx.boostNext = 0; me.fx.moonNext = 0;
+  if (mv.custom === 'canyue') me.flags.canyue = (me.flags.canyue || 0) + 1;
+  if (mv.fixed && !foe.fainted) { log(S, evs, '附加 ' + mv.fixed + ' 点固定伤害', 'fxl'); applyDamage(S, evs, j, mv.fixed, i, {}); }
+  if (mv.custom === 'zeroBreak' && !foe.fainted && foe.st['冰冻'] > 0) { var zb = Math.floor(foe.maxhp / 8); log(S, evs, '冰破附带 ' + zb + ' 点固定伤害', 'fxl'); applyDamage(S, evs, j, zb, i, {}); }
+  if (mv.custom === 'annihilate' && !foe.fainted) {
+    var pk = Math.min(0.6, 0.05 + 0.1 * negCount(foe));
+    if (RNG() < pk) { log(S, evs, '灭却！' + nm(foe) + '被一击抹杀！', 'crit'); applyDamage(S, evs, j, foe.hp + (foe.fx.shield || 0), i, {}); }
+    else log(S, evs, '灭却没有发动（成功率 ' + Math.round(pk * 100) + '%）');
+  }
+  if (mv.custom === 'originBlade' && !foe.fainted && foe.stages.spe <= -6) { log(S, evs, '起源巨刃斩断了速度降到最低的敌人！', 'crit'); applyDamage(S, evs, j, foe.hp + (foe.fx.shield || 0), i, {}); }
+  if (total > 0) {
+    if (foe.fx.earMark) foe.fx.earMark = 0;
+    if (foe.fx.flash && !foe.fainted) { foe.fx.flash = 0; log(S, evs, '闪光飞叶的光芒刺痛了' + nm(foe) + '的眼睛', 'fxl'); changeStages(S, evs, j, { acc: -1 }, i); }
+  }
+  // 受击方的反击类效果
+  if (total > 0 && !me.fainted) {
+    if (ability(foe) === '感电' && mv.cat === '物攻') loseHp(S, evs, i, Math.max(1, Math.floor(total * 0.15)), nm(foe) + '的「感电」反弹了部分伤害');
+    if (foe.tm.recoil > 0 && !me.fainted) loseHp(S, evs, i, Math.floor(me.maxhp / 4), nm(foe) + '的磁暴反冲造成了反弹伤害');
+    if (foe.tm.retal > 0 && !foe.fainted && !me.fainted) { log(S, evs, nm(foe) + '的寂灭幽映发动了', 'fxl'); changeStages(S, evs, i, { atk: -1, spa: -1, acc: -1 }, j); }
+  }
+  if (mv.fixedOnly === 'selfBlast' && !me.fainted) { log(S, evs, nm(me) + '舍身爆破，牺牲了自己'); me.hp = 0; faint(S, evs, i); }
+  if (me.fainted) return;
+  if (mv.drain && total > 0) heal(S, evs, i, total * mv.drain);
+  if (mv.struggle && total > 0) loseHp(S, evs, i, Math.max(1, Math.floor(total / 4)), nm(me) + '受到了反作用伤害');
+  if (total > 0 && me.tm.induct > 0) { log(S, evs, '电磁感应生效', 'fxl'); changeStages(S, evs, i, { spa: 1 }); }
+  if (foe.fainted) {
+    if (mv.koHeal) heal(S, evs, i, me.maxhp * mv.koHeal);
+    moonStack(S, evs, i, '击败敌人');
+    if (ability(me) === '收魂' && aliveIdx(S, j).length) { S.sides[j].soulMark = true; log(S, evs, nm(me) + '的「收魂」发动了，对方下一只精灵会更脆弱', 'fxl'); }
+  } else {
+    if (mv.tgtStage && RNG() < (mv.tgtChance || 1)) changeStages(S, evs, j, mv.tgtStage, i);
+    if (mv.status && statusRoll(me, mv.status.chance)) addStatus(S, evs, j, mv.status.k, rint(mv.status.min, mv.status.max), i);
+    if (mv.clearTgtUp) clearUps(S, evs, j);
+    switch (mv.custom) {
+      case 'brand':
+        foe.fx.brand = (foe.fx.brand || 0) + 1;
+        log(S, evs, nm(foe) + '身上的闪电烙印：' + foe.fx.brand + ' / 3', 'fxl');
+        if (foe.fx.brand >= 3) { foe.fx.brand = 0; addStatus(S, evs, j, '麻痹', rint(1, 2), i); }
+        E(S, evs, 'stage', { side: j }); break;
+      case 'flashLeaf': foe.fx.flash = 1; E(S, evs, 'stage', { side: j }); log(S, evs, nm(foe) + '被闪光飞叶的光芒笼罩：下一次受到攻击时会额外降低1级命中', 'fxl'); break;
+      case 'vuln': foe.tm.vuln = 3; E(S, evs, 'stage', { side: j }); log(S, evs, nm(foe) + '被恶魔触手缠住，3回合内受到的伤害增加30%', 'bad'); break;
+      case 'weak3': foe.tm.weak = 3; E(S, evs, 'stage', { side: j }); log(S, evs, nm(foe) + '的力量被荒芜侵蚀，3回合内伤害降低30%', 'bad'); break;
+      case 'blastSlash': if (firstMover && statusRoll(me, 0.5)) addStatus(S, evs, j, '烧伤', rint(2, 5), i); break;
+      case 'poisonHeart': foe.st['中毒'] += 1; foe.fx.poison = (foe.fx.poison || 1) + 1; E(S, evs, 'stage', { side: j }); log(S, evs, nm(foe) + '的中毒叠加到 ' + foe.fx.poison + ' 层，并延长了1回合（剩 ' + foe.st['中毒'] + ' 回合）', 'fxl'); break;
+      case 'lifeSqueeze':
+        if (foe.st['寄生'] > 0) { var ls = loseHp(S, evs, j, foe.maxhp / 6, '额外吸取了' + nm(foe) + '的体力'); heal(S, evs, i, ls); } break;
+    }
+  }
+  switch (mv.custom) {
+    case 'moonBlade': if (total < 180) changeStages(S, evs, i, { atk: 1 }); break;
+    case 'boneCut': if (total > 200) changeStages(S, evs, i, { spe: 1 }); break;
+    case 'vortex': if (!extra) { me.tm.vortex = 3; E(S, evs, 'stage', { side: i }); log(S, evs, '闪电漩涡缠住了战场（3回合）', 'fxl'); } break;
+    case 'liuhuo': me.tm.liuhuo = 5; E(S, evs, 'stage', { side: i }); log(S, evs, nm(me) + '的火系技能威力提升5点（5回合）', 'fxl'); break;
+    case 'tide': if (!extra) { me.tm.tide = 5; me.fx.tideWait = 1; E(S, evs, 'stage', { side: i }); log(S, evs, '黑雾潮汐涌起，从下回合起连续4回合，每回合结束时会再发动一次', 'fxl'); } break;
+  }
+  if (mv.clearSelfDownAtk) { var anyD = false; STG.forEach(function (k) { if (me.stages[k] < 0) { me.stages[k] = 0; anyD = true; } }); if (anyD) { E(S, evs, 'stage', { side: i }); log(S, evs, nm(me) + '解除了自身的能力下降状态', 'fxl'); } }
+  if (mv.custom === 'transferDown') {
+    var moved = {}, any = false;
+    STG.forEach(function (k) { if (me.stages[k] < 0) { moved[k] = me.stages[k]; me.stages[k] = 0; any = true; } });
+    if (any) { log(S, evs, nm(me) + '把自身的能力下降转移给了对方', 'fxl'); if (!foe.fainted) changeStages(S, evs, j, moved, i); else E(S, evs, 'stage', { side: i }); }
+  }
+  if (mv.custom === 'normalPunch') {
+    if (hasEmblem(me, '普通拳') && !me.flags.punch) {
+      me.flags.punch = true;
+      STG.forEach(function (k) { if (me.stages[k] < 0) me.stages[k] = 0; });
+      me.st = {};
+      E(S, evs, 'stage', { side: i });
+      log(S, evs, '纹章生效：' + nm(me) + '移除了自身的负面效果', 'fxl');
+    } else changeStages(S, evs, i, { acc: -2 });
+  }
+  if (mv.selfStage && RNG() < (mv.selfChance || 1)) changeStages(S, evs, i, mv.selfStage);
+  if (mv.heal) heal(S, evs, i, me.maxhp * (mv.lowHeal && me.hp < me.maxhp / 4 ? mv.lowHeal : mv.heal));
+  if (me.tm.tri > 0 && (mt === '草' || mt === '水' || mt === '火')) { log(S, evs, '三相归元生效', 'fxl'); heal(S, evs, i, me.maxhp / 3); }
+}
+
+function clearUps(S, evs, j) {
+  var t = act(S, j), any = false;
+  STG.forEach(function (k) { if (t.stages[k] > 0) { t.stages[k] = 0; any = true; } });
+  if (any) { E(S, evs, 'stage', { side: j }); log(S, evs, nm(t) + '的能力提升效果被消除了', 'fxl'); }
+}
+
+var FOE_CUSTOM = { noSwitch: 1, stealDef: 1, stealAtk: 1, hail: 0, noBoostFoe: 1, melt: 1, burnout: 1, wither: 1, weak2: 1, seal: 1, silentSea: 1, selfDestruct: 0, bunker: 0, dielectric: 1, chaosWater: 1 };
+function targetsFoe(mv) { return !!(mv.tgtStage || mv.status || FOE_CUSTOM[mv.custom]); }
+
+var EVADE_CUSTOM = { dodge: 1, absDef: 1, dodgeOne: 1, voidPhys: 1 };
+function doStatus(S, evs, i, mv) {
+  var me = act(S, i), j = 1 - i, foe = act(S, j);
+  var c = mv.custom;
+  // 灵耳谛听：对方试图主动闪避，就被识破
+  if (!foe.fainted && foe.tm.ear > 0 && ((mv.selfStage && mv.selfStage.eva > 0) || EVADE_CUSTOM[c])) {
+    me.fx.earMark = 1; E(S, evs, 'stage', { side: i });
+    log(S, evs, nm(me) + '想要闪避，却被' + nm(foe) + '的灵耳谛听听穿了！下一次受到的攻击威力翻倍', 'bad');
+  }
+  if (c === 'burnout' && !(foe.perm && foe.perm.melt > 0)) { log(S, evs, '但是对方没有熔化状态，技能失败了'); return; }
+  if (targetsFoe(mv)) {
+    if (foe.fainted) { log(S, evs, '但是没有目标'); return; }
+    if (RNG() >= hitChance(me, foe, mv)) { log(S, evs, '但是没有命中！'); return; }
+    if (mv.tgtStage) {
+      var ts = mv.tgtStage;
+      if (c === 'dielectric' && foe.st['麻痹'] > 0) { ts = {}; for (var kk in mv.tgtStage) ts[kk] = mv.tgtStage[kk] * 2; log(S, evs, '对方处于麻痹，效果翻倍！', 'fxl'); }
+      changeStages(S, evs, j, ts, i);
+    }
+    if (mv.status) {
+      if (statusRoll(me, mv.status.chance)) addStatus(S, evs, j, mv.status.k, rint(mv.status.min, mv.status.max), i);
+      else if (!mv.tgtStage) log(S, evs, '但是对方没有受到影响');
+    }
+  }
+  var sst = mv.selfStage;
+  if (mv.name === '木叶庇护' && hasEmblem(me, '木叶庇护')) sst = { def: 2, spd: 2 };
+  if (sst) changeStages(S, evs, i, sst);
+  if (mv.heal) heal(S, evs, i, me.maxhp * (mv.lowHeal && me.hp < me.maxhp / 4 ? mv.lowHeal : mv.heal));
+  if (mv.clearSelfDown) {
+    var any = false; STG.forEach(function (k) { if (me.stages[k] < 0) { me.stages[k] = 0; any = true; } });
+    E(S, evs, 'stage', { side: i });
+    log(S, evs, any ? nm(me) + '解除了自身的能力下降状态' : '但是没有需要解除的能力下降', any ? 'fxl' : '');
+  }
+  function timer(key, n, text) { me.tm[key] = n; E(S, evs, 'stage', { side: i }); log(S, evs, text, 'fxl'); }
+  function foeTimer(key, n, text) { foe.tm[key] = n; E(S, evs, 'stage', { side: j }); log(S, evs, text, 'bad'); }
+  function flag(text) { E(S, evs, 'stage', { side: i }); log(S, evs, text, 'fxl'); }
+  switch (c) {
+    case 'sure3': timer('sure3', 3, nm(me) + '竖起耳朵仔细聆听：3回合内攻击必定命中'); break;
+    case 'ear': timer('ear', 3, nm(me) + '的灵耳捕捉到了一切声音：3回合内攻击必定命中，对方若试图闪避会被识破'); break;
+    case 'lightStaff':
+      changeStages(S, evs, i, RNG() < 0.5 ? { def: 1 } : { spd: 1 });
+      if (!foe.fainted) foeTimer('noHeal', 2, nm(foe) + '被光之杖照耀，2回合内无法恢复体力');
+      break;
+    case 'nilin': timer('cap', 5, nm(me) + '竖起逆鳞：5回合内单次受到的伤害不超过250'); break;
+    case 'genggu': timer('genggu', 2, nm(me) + '进入亘古恒压状态（2回合）'); break;
+    case 'shield': me.fx.shield = Math.max(me.fx.shield || 0, 100); flag(nm(me) + '获得了 100 点护盾'); break;
+    case 'noSwitch': foeTimer('noSwitch', 5, nm(foe) + '被傲慢震慑，5回合内无法切换精灵'); break;
+    case 'priorityUp': timer('prio', 5, nm(me) + '与水天融为一色：5回合内技能先制+1'); break;
+    case 'dodge': timer('dodge', 3, nm(me) + '的皮肤变得光滑（3回合）'); break;
+    case 'absDef': me.fx.absDef = 1; flag(nm(me) + '摆出了绝对防御的架势'); break;
+    case 'dodgeOne': me.fx.absDef = 1; flag(nm(me) + '准备遁走，会闪避下1次攻击'); break;
+    case 'immune': timer('immune', 5, nm(me) + '被香甜气息包围，5回合内免疫异常状态'); break;
+    case 'reflect': timer('reflect', 5, nm(me) + '展开了风王结界（5回合）'); break;
+    case 'green': timer('green', 5, nm(me) + '展开了绿色幻境（5回合）'); break;
+    case 'rain': timer('rain', 5, '天空下起了雨（5回合）'); break;
+    case 'tri': heal(S, evs, i, me.maxhp / 3); timer('tri', 3, nm(me) + '三相归元（3回合）'); break;
+    case 'boostNext': me.fx.boostNext = 1; flag(nm(me) + '潜入水中，下一次攻击伤害提升50%'); break;
+    case 'silence':
+      if (!S.turnActed[j] && S.order.indexOf(j) >= 0 && !foe.fainted) { S.silenced[j] = true; log(S, evs, '黑暗笼罩了' + nm(foe) + '，它本回合的技能将会失效！', 'fxl'); }
+      else log(S, evs, '但是对方已经出手或没有出招，没有效果');
+      break;
+    case 'selfBreak': case 'selfBreak2':
+      loseHp(S, evs, i, Math.floor(me.hp / 2), nm(me) + '燃烧了一半体力');
+      changeStages(S, evs, i, { atk: 2, spe: 1, acc: 1 });
+      if (c === 'selfBreak2') { me.fx.sureCrit = 1; me.fx.sureHit = 1; flag(nm(me) + '的下一次攻击必定命中并造成致命一击'); }
+      break;
+    // —— 第二批
+    case 'nextCrit': me.fx.sureCrit = 1; flag(nm(me) + '的下一次攻击必定致命一击'); break;
+    case 'voidPhys': timer('voidPhys', 2, nm(me) + '进入虚空化，2回合内闪避物理攻击'); break;
+    case 'induct': timer('induct', 5, nm(me) + '展开电磁感应（5回合）'); break;
+    case 'stealDef': changeStages(S, evs, j, { def: -1 }, i); changeStages(S, evs, i, { def: 1 }); break;
+    case 'stealAtk': changeStages(S, evs, j, { atk: -1 }, i); changeStages(S, evs, i, { atk: 1 }); break;
+    case 'lightside':
+      delete me.tm.darkside; E(S, evs, 'stage', { side: i });
+      log(S, evs, nm(me) + '转入月之亮面：属性和技能恢复为光系', 'fxl');
+      moonSwitch(S, evs, i);
+      break;
+    case 'darkside':
+      timer('darkside', 5, nm(me) + '转入月之暗面：属性和技能都变成暗影系（5回合）');
+      moonSwitch(S, evs, i);
+      break;
+    case 'hail': timer('hail', 5, '下起了冰雹（5回合）'); break;
+    case 'mystic':
+      if (RNG() < 0.6) changeStages(S, evs, i, { spa: 1, def: 1, spd: 1, spe: 1, acc: 1, eva: 1 });
+      else log(S, evs, '但是神秘之力没有回应');
+      break;
+    case 'noBoostFoe': foeTimer('noBoost', 5, nm(foe) + '被封印，5回合内无法提升能力等级'); break;
+    case 'seal': foeTimer('seal', 5, nm(foe) + '被万灵封印：5回合内禁止提升能力等级，强行提升会受反噬'); break;
+    case 'melt':
+      foe.perm.melt = Math.min(5, (foe.perm.melt || 0) + 1); E(S, evs, 'stage', { side: j });
+      log(S, evs, nm(foe) + '熔化 ' + foe.perm.melt + ' 层，受到的伤害提升 ' + foe.perm.melt * 20 + '%（持续到战斗结束）', 'bad'); break;
+    case 'burnout': foe.perm.melt = 5; E(S, evs, 'stage', { side: j }); log(S, evs, nm(foe) + '的熔化直接叠到了 5 层！', 'bad'); break;
+    case 'capacitor':
+      if (hasEmblem(me, '恐怖电容')) { me.fx.shield = (me.fx.shield || 0) + 150; flag('纹章生效：' + nm(me) + '额外获得 150 点护盾'); }
+      break;
+    case 'selfDestruct':
+      if (!foe.fainted) { addStatus(S, evs, j, '疲惫', 2, i); changeStages(S, evs, j, { def: -1, spd: -1 }, i); }
+      log(S, evs, nm(me) + '自爆了！'); me.hp = 0; faint(S, evs, i); break;
+    case 'bunker':
+      if (!foe.fainted) clearUps(S, evs, j);
+      log(S, evs, nm(me) + '炸毁了碉堡，牺牲了自己'); me.hp = 0; faint(S, evs, i); break;
+    case 'calm': timer('calm', 5, nm(me) + '周围化作静谧水域（5回合）'); break;
+    case 'halfPhys5': timer('halfPhys', 5, nm(me) + '展开幽冥结界：5回合内物理伤害减半'); break;
+    case 'halfPhys3': timer('halfPhys', 3, nm(me) + '竖起盾墙：3回合内物理伤害减半'); break;
+    case 'chaosWater': if (!foe.fainted) { var cw = loseHp(S, evs, j, foe.hp / 5, '混沌水域吸取了' + nm(foe) + '的体力'); heal(S, evs, i, cw); } break;
+    case 'wither': foe.perm.wither = true; E(S, evs, 'stage', { side: j }); log(S, evs, nm(foe) + '被凋零之蚀侵蚀，每回合损失1/10最大体力，直到战斗结束', 'bad'); break;
+    case 'swamp': timer('swamp', 5, nm(me) + '展开孢子沼泽：5回合内异常状态成功率×1.5'); break;
+    case 'purge':
+      loseHp(S, evs, i, Math.floor(me.hp / 2), nm(me) + '损失了一半现有体力');
+      if (!me.fainted) {
+        STG.forEach(function (k) { if (me.stages[k] < 0) me.stages[k] = 0; }); me.st = {};
+        delete me.tm.noBoost; delete me.tm.seal; delete me.tm.weak; delete me.tm.vuln; delete me.tm.noSwitch; me.perm = {};
+        flag(nm(me) + '以毒攻毒，清除了自身一切不利状态');
+      }
+      break;
+    case 'mist': timer('mist', 5, nm(me) + '被白雾笼罩：5回合内免疫能力下降'); break;
+    case 'jungle': timer('jungle', 3, nm(me) + '遵循丛林法则：3回合内对比自己更虚弱的敌人伤害+70%'); break;
+    case 'siren': me.tm.siren = 5; me.fx.sirenFoe = S.sides[j].active; flag(nm(me) + '唱起海妖之歌……5回合后若它还站着，对方将失去全部体力'); break;
+    case 'silentSea': foe.tm = {}; E(S, evs, 'stage', { side: j }); log(S, evs, '寂静之海消除了' + nm(foe) + '身上所有回合类效果', 'fxl'); break;
+    case 'dr40': timer('dr40', 3, nm(me) + '受到潮汐庇佑：3回合内受伤减免40%'); break;
+    case 'weak2': foeTimer('weak', 2, nm(foe) + '的魂魄被封住，2回合内伤害降低30%'); break;
+    case 'crit2': timer('crit2', 3, nm(me) + '接下来2回合的攻击必定致命一击'); break;
+    case 'endure': me.fx.endure = 1; flag(nm(me) + '进入不灭之躯：下一次受到致死攻击时会残留1体力'); break;
+    case 'sureHitNext': me.fx.sureHit = 1; flag(nm(me) + '的下一次攻击必定命中'); break;
+    case 'retal': timer('retal', 3, nm(me) + '展开寂灭幽映（3回合）'); break;
+    case 'block100': me.fx.shield = Math.max(me.fx.shield || 0, 100); timer('block', 3, nm(me) + '坚不可摧：3回合内每回合抵挡100点伤害'); break;
+    case 'recoilQ': timer('recoil', 4, nm(me) + '充能磁暴反冲（4回合）'); break;
+  }
+}
+
+/* ---------- 瘴气：每层使物攻、特攻 +5%，物防、特防 −5%（最低降到 10%），换下场也不消失 ---------- */
+function miaN(m) { return (m.perm && m.perm.miasma) || 0; }
+function miaAtk(m) { return 1 + 0.05 * miaN(m); }
+function miaDef(m) { return Math.max(0.1, 1 - 0.05 * miaN(m)); }
+function miasmaTick(S, evs) {
+  if (S.env !== 'miasma') return;
+  [0, 1].forEach(function (i) {
+    var m = act(S, i); if (m.fainted) return;
+    m.perm.miasma = miaN(m) + 1;
+    log(S, evs, nm(m) + '受到瘴气侵染（瘴气 ×' + m.perm.miasma + '）', 'fxl');
+  });
+}
+function endOfTurn(S, evs) {
+  S.curMove = null;
+  miasmaTick(S, evs);
+  [0, 1].forEach(function (i) {
+    var m = act(S, i); if (m.fainted) return;
+    var o = act(S, 1 - i);
+    var e8 = Math.max(1, Math.floor(m.maxhp / 8)), e10 = Math.max(1, Math.floor(m.maxhp / 10));
+    if (m.st['寄生'] > 0) { var got = loseHp(S, evs, i, e8, nm(m) + '被寄生之种吸取了体力'); if (!o.fainted) heal(S, evs, 1 - i, got); }
+    if (!m.fainted && m.st['溺水'] > 0) loseHp(S, evs, i, e8, nm(m) + '因溺水受到伤害');
+    if (!m.fainted && m.st['流血'] > 0) loseHp(S, evs, i, 60, nm(m) + '因流血受到伤害');
+    if (!m.fainted && m.st['中毒'] > 0) { var pz = m.fx.poison || 1; loseHp(S, evs, i, Math.max(1, Math.floor(m.maxhp * pz / 16)), nm(m) + '因中毒受到伤害' + (pz > 1 ? '（' + pz + ' 层）' : '')); }
+    if (!m.fainted && m.st['烧伤'] > 0) loseHp(S, evs, i, e8, nm(m) + '因烧伤受到伤害');
+    if (!m.fainted && m.perm.wither) loseHp(S, evs, i, e10, nm(m) + '被凋零之蚀侵蚀');
+    if (!m.fainted && m.tm.rain > 0 && !o.fainted) { log(S, evs, '雨水对' + nm(o) + '附加 30 点固定伤害', 'fxl'); S.dotSrc = '祈雨'; applyDamage(S, evs, 1 - i, 30, null, {}); S.dotSrc = null; }
+    if (!m.fainted && m.tm.hail > 0 && !o.fainted) { log(S, evs, '冰雹砸向' + nm(o), 'fxl'); S.dotSrc = '冰雹'; applyDamage(S, evs, 1 - i, Math.floor(o.maxhp / 10), null, {}); S.dotSrc = null; }
+    if (!m.fainted && m.tm.genggu > 0) { changeStages(S, evs, i, { spa: 1 }); heal(S, evs, i, m.maxhp / 6); }
+    if (!m.fainted && m.tm.green > 0) heal(S, evs, i, m.maxhp / 4);
+    if (!m.fainted && m.tm.calm > 0) heal(S, evs, i, m.maxhp / 5);
+    if (!m.fainted && m.tm.vortex > 0 && !o.fainted) { log(S, evs, '闪电漩涡干扰了' + nm(o) + '的视线', 'fxl'); changeStages(S, evs, 1 - i, { acc: -1 }, i); }
+    if (!m.fainted && m.tm.tide > 0 && m.fx.tideWait) delete m.fx.tideWait;   // 使用当回合不触发，从下回合末开始
+    else if (!m.fainted && m.tm.tide > 0 && !o.fainted && !S.over) useMove(S, evs, i, M['黑雾潮汐'], -1, true);
+    if (!m.fainted && m.tm.block > 0) m.fx.shield = Math.max(m.fx.shield || 0, 100);
+    if (!m.fainted && m.tm.siren === 1) {
+      if (!o.fainted && S.sides[1 - i].active === m.fx.sirenFoe) { log(S, evs, '海妖之歌唱完了，' + nm(o) + '失去了全部体力！', 'crit'); S.dotSrc = '海妖之歌'; applyDamage(S, evs, 1 - i, o.hp + (o.fx.shield || 0), null, {}); S.dotSrc = null; }
+      else log(S, evs, '海妖之歌唱完了，但听歌的对手已经不在场上');
+    }
+    if (!m.fainted) m.fx.fieldT = (m.fx.fieldT || 0) + 1;
+  });
+  [0, 1].forEach(function (i) {
+    var m = act(S, i); if (m.fainted) return;
+    for (var s in m.st) { if (m.st[s] > 0 && --m.st[s] <= 0) { delete m.st[s]; if (s === '中毒') delete m.fx.poison; log(S, evs, nm(m) + '的「' + s + '」状态解除了'); } }
+    for (var t in m.tm) {
+      if (m.tm[t] > 0 && --m.tm[t] <= 0) {
+        delete m.tm[t];
+        if (t === 'darkside') { log(S, evs, nm(m) + '离开了月之暗面，恢复原来的属性'); moonSwitch(S, evs, i); }
+      }
+    }
+  });
+  E(S, evs, 'stage', { side: 0 });
+}
