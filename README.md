@@ -103,6 +103,9 @@ server/
   admin.js            管理账号（列出账号、帮人重设密码）
   setup.sh            第一次安装用（装 Node.js、注册成开机自启的服务）
   update.sh           以后更新用
+  backup.sh           备份所有存档（定时自动运行，也可手动）
+  restore.sh          从备份恢复存档
+  install-backup.sh   安装每 6 小时一次的自动备份（自动部署时会自动运行）
   node_modules/ws     WebSocket 库，直接放进仓库，服务器上不用再 npm install
 ```
 
@@ -228,6 +231,27 @@ ffmpeg -i 原曲.mp3 -vn -map_metadata -1 -af loudnorm=I=-16:TP=-1.5:LRA=11 -ar 
 ## 更新公告（航行日志 · 近期改动）
 
 每次改动技能、数值或玩法，都在 `js/data/changelog.js` 的 `CHANGELOG` 最前面加一条 `{ date, title, items }`。航行日志最上方的「更新公告」会展开最新一条，更早的折叠起来。
+
+## 存档备份
+
+服务器上的账号和存档（`/opt/flame1down-data`）会自动备份到 `/opt/flame1down-backups`：
+
+- **每 6 小时一次**（0、6、12、18 点左右，系统定时任务 `flame1down-backup.timer`；服务器关机错过的那次，开机后会补上）
+- **每次自动部署前一次**（文件名带 `deploy`）
+- 每份是一个 `saves-日期-时间-标记.tar.gz`，**保留 30 天**，更早的自动删掉
+
+这些都由自动部署装好，不用手动设置。在服务器上可以用：
+
+```
+sudo bash /opt/flame1down1/server/backup.sh manual      # 立刻手动备份一次
+sudo bash /opt/flame1down1/server/restore.sh            # 列出所有备份
+sudo bash /opt/flame1down1/server/restore.sh latest     # 恢复到最近一份
+sudo bash /opt/flame1down1/server/restore.sh 文件名      # 恢复到指定的那份
+```
+
+恢复前会先把当前存档再备份一次（标记 `before-restore`），原来的存档目录也会改名留着，恢复错了可以再换回来。恢复会让在线的玩家断线几秒。
+
+注意：备份和存档在同一台服务器上，能防误删、改坏存档，防不了整台服务器出问题。需要的话可以在腾讯云控制台给服务器做快照。
 
 ## 存档
 
