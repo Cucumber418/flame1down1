@@ -181,21 +181,29 @@
     { id: 'purifier', n: '芙罗拉净化者', d: '完成芙罗拉星的星球任务「祛除瘴气」', ok: function () { return !!(acc.purge && acc.purge.n >= 30); } },
     { id: 'force', n: '原力掌控者', d: '击败困难难度的首领「泰戈尔」', ok: function () { return bossWon('tiger', 2); } }
   ];
+  // 排位赛季称号：本赛季（S1）达到某个段位就获得「S1 + 段位名」，例如「S1翡翠」（黑铁是起始段位，不发）
+  for (var sr = 1; sr < RANKS.length; sr++) (function (r) {
+    TITLES.push({ id: 'S1-' + r, n: 'S1' + RANKS[r], d: '排位赛季 S1 达到' + RANKS[r] + '段位', season: true, ok: function () { return rankBest() >= r; } });
+  })(sr);
   function checkTitles() {
     if (!acc.titles) acc.titles = [];
-    TITLES.forEach(function (T) {
-      if (acc.titles.indexOf(T.id) < 0 && T.ok()) { acc.titles.push(T.id); save(); setTimeout(function () { toast('获得称号「' + T.n + '」！点右上角的名字即可佩戴。'); }, 400); }
-    });
+    var got = [];
+    TITLES.forEach(function (T) { if (acc.titles.indexOf(T.id) < 0 && T.ok()) { acc.titles.push(T.id); got.push(T.n); } });
+    // 一次拿到好几个（比如老玩家第一次看到赛季称号）时合成一条提示
+    if (got.length) { save(); setTimeout(function () { toast('获得称号「' + got.join('」「') + '」！点右上角的名字即可佩戴。'); }, 400); }
   }
   function titleName(id) { var T = TITLES.filter(function (x) { return x.id === id; })[0]; return T ? T.n : ''; }
   function renderTitle() {
     var cur = acc.title && acc.titles.indexOf(acc.title) >= 0 ? acc.title : '';
     $('who-title').textContent = cur ? titleName(cur) : '做题家';
     $('who-title').classList.toggle('has', !!cur);
+    var nS = TITLES.filter(function (T) { return T.season; }).length, ownS = TITLES.filter(function (T) { return T.season && acc.titles.indexOf(T.id) >= 0; }).length;
     $('title-box').innerHTML = '<b>称号</b>' + TITLES.map(function (T) {
       var own = acc.titles.indexOf(T.id) >= 0;
+      if (T.season && !own) return '';   // 没拿到的赛季称号不一个个列出来，下面汇总一行
       return '<label class="tt-opt' + (own ? '' : ' lock') + '"><input type="radio" name="title" value="' + T.id + '"' + (cur === T.id ? ' checked' : '') + (own ? '' : ' disabled') + '><span><b>' + T.n + '</b><small>' + (own ? '已获得' : '未获得 · ' + T.d) + '</small></span></label>';
-    }).join('') + '<label class="tt-opt"><input type="radio" name="title" value=""' + (cur ? '' : ' checked') + '><span><b>不佩戴</b></span></label>';
+    }).join('') + '<p class="tt-season">排位赛季 S1 段位称号：已获得 ' + ownS + ' / ' + nS + '（每达到一个新段位获得一个）</p>' +
+      '<label class="tt-opt"><input type="radio" name="title" value=""' + (cur ? '' : ' checked') + '><span><b>不佩戴</b></span></label>';
   }
   /* ---------- 改名卡：商城 1000 能量，在名字菜单里使用 ---------- */
   var renaming = false;
@@ -1177,7 +1185,8 @@
   // 2026-10-11 起段位奖励翻倍（RANK_RW_OLD 是翻倍前的标准，用来给之前领过的玩家算补发差额）
   var RANK_RW_OLD = [null, { exp: 500, energy: 200 }, { exp: 1000, energy: 300 }, { exp: 1500, energy: 400 }, { exp: 2000, energy: 500 },
     { exp: 2500, energy: 600 }, { exp: 3000, energy: 700 }, { exp: 3500, energy: 800 }, { exp: 4000, energy: 900 }, { exp: 4500, energy: 1000 }, { exp: 5000, energy: 1200 }];
-  var RANK_RW = RANK_RW_OLD.map(function (R, r) { return R && { exp: R.exp * 2, energy: R.energy * 2, gift: r === 4 ? [{ sid: 'moon', lv: 10 }] : undefined }; });
+  var RANK_GIFT = { 4: [{ sid: 'moon', lv: 10 }], 10: [{ sid: 'bone', lv: 10 }] };   // 铂金送小月亮，王者送凶骨（骨刃一阶）
+  var RANK_RW = RANK_RW_OLD.map(function (R, r) { return R && { exp: R.exp * 2, energy: R.energy * 2, gift: RANK_GIFT[r], title: 'S1-' + r }; });
   function rankBest() { try { var r = JSON.parse(localStorage.getItem('hs-rank-v1') || 'null'); return r ? Math.max(r.best || 0, r.r || 0) : 0; } catch (e) { return 0; } }
   function rankRec() { if (!acc.rankRw || acc.rankRw.season !== SEASON) acc.rankRw = { season: SEASON, got: {} }; return acc.rankRw; }
   function checkRankRewards() {
@@ -1240,6 +1249,11 @@
           body: '{name}，你好！\n排位赛季 ' + SEASON + ' 的段位奖励已经翻倍。你之前已经达到过' + tiers.map(function (r) { return RANKS[r]; }).join('、') + '，当时按旧标准发放了奖励。\n现在按新标准补发差额，请领取附件。',
           att: { exp: e, energy: g } });
       }
+    }
+    // 王者奖励新增 LV10 凶骨：在加这份奖励之前就领过王者奖励的，用邮箱补发
+    if (!rec.kingGift) {
+      rec.kingGift = true; changed = true;
+      if (rec.got[10]) sendMail({ id: SEASON + '-king-gift', title: '王者段位奖励补发：凶骨', body: '{name}，你好！\n排位赛季 ' + SEASON + ' 的王者段位奖励新增了 LV10 的凶骨。你之前已经达到王者，现在补发给你，请领取附件。', att: { mons: [{ sid: 'bone', lv: 10 }] } });
     }
     if (changed) save();
     renderMailBadge();
@@ -1376,7 +1390,7 @@
     var rows = RANK_RW.map(function (R, r) {
       if (!R) return '';
       var got = rec.got[r];
-      return '<tr class="' + (got ? 'got' : r <= best ? 'ok' : '') + (R.gift ? ' big' : '') + '"><td>' + RANKS[r] + '</td><td>累积经验 ×' + fmt(R.exp) + '，能量 ×' + fmt(R.energy) + (R.gift ? '，<b class="red">' + R.gift.map(function (g) { return form(g).name + ' LV' + g.lv; }).join('、') + '</b>' : '') + '</td><td>' + (got ? '已领取' : '未达成') + '</td></tr>';
+      return '<tr class="' + (got ? 'got' : r <= best ? 'ok' : '') + (R.gift ? ' big' : '') + '"><td>' + RANKS[r] + '</td><td>累积经验 ×' + fmt(R.exp) + '，能量 ×' + fmt(R.energy) + '，称号「' + titleName(R.title) + '」' + (R.gift ? '，<b class="red">' + R.gift.map(function (g) { return form(g).name + ' LV' + g.lv; }).join('、') + '</b>' : '') + '</td><td>' + (got ? '已领取' : '未达成') + '</td></tr>';
     }).join('');
     $('pg-log').innerHTML = '<div class="page-head"><h2 class="sec">航行日志</h2><p class="hint">荆楚号的公告板：更新公告、限时活动、每日任务、排位奖励和新首领。</p></div>' +
       '<div class="log-grid">' + changelogHTML() +
@@ -1388,7 +1402,7 @@
         (bossOpen('barren') ? '<button type="button" class="btn" data-golog="boss-barren">去挑战</button>' : '') + '</article>' +
       '<article class="log-card wide"><span class="tape l"></span><span class="chip log-tag">每日任务</span><h3>今天的任务</h3>' + dailyHTML() + '</article>' +
       '<article class="log-card wide"><span class="tape r"></span><span class="chip log-tag">排位赛季 ' + SEASON + '</span><h3>首次达到段位的奖励</h3>' +
-        '<p>本赛季最高段位：<b>' + RANKS[best] + '</b>。每个段位第一次达到时发放一次；<b>达到铂金送 LV10 的' + form({ sid: 'moon', lv: 10 }).name + '</b>。</p>' +
+        '<p>本赛季最高段位：<b>' + RANKS[best] + '</b>。每个段位第一次达到时发放一次，并获得赛季称号（如「S1翡翠」）；<b>达到铂金送 LV10 的' + form({ sid: 'moon', lv: 10 }).name + '，达到王者送 LV10 的' + form({ sid: 'bone', lv: 10 }).name + '</b>。</p>' +
         '<p class="hint"><b class="red">段位奖励已翻倍！</b>之前已经领过的段位，按新标准补发的差额已经发到你的邮箱。</p>' +
         '<table class="rank-rw"><thead><tr><th>段位</th><th>奖励</th><th>状态</th></tr></thead><tbody>' + rows + '</tbody></table>' +
         (arenaOpen() ? '<button type="button" class="btn" data-golog="arena">去竞技对战</button>' : '<p class="hint">完成荆楚号 · 孝感大厅的支线后开放竞技对战。</p>') + '</article>' +
