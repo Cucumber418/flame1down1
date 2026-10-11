@@ -290,8 +290,15 @@
       '<div class="trait"><p><b>特性 · ' + esc(s.ability.n) + '</b>　<span class="blue">' + esc(s.ability.d) + '</span></p>' + (s.ability.extra ? '<p class="blue" style="font-size:13px">' + esc(s.ability.extra) + '</p>' : '') + '</div>' +
       '<div><div class="moves-head"><h4>出战技能 <span class="' + (n === 4 ? 'blue' : 'red') + '">' + n + '/4</span></h4>' +
       '<span class="hint">普通技能 LV1 学会第 1 个，之后每 5 级学会一个；隐藏技能需达到 LV50</span></div>' +
-      '<div class="mlist">' + s.moves.map(row).join('') + s.hidden.map(row).join('') + '</div></div>' +
+      '<div class="mlist">' + s.moves.concat(s.hidden).filter(function (mv) { return a.indexOf(mv) >= 0; }).map(row).join('') + '</div>' + nextMoveHint(m) + '</div>' +
       '<div class="d-actions">' + acts + '</div>';
+  }
+  // 下一个技能在几级学会（不透露技能名）
+  function nextMoveHint(m) {
+    var s = SPMAP[m.sid], nx = 0;
+    for (var i = 0; i < s.moves.length; i++) if (m.lv < learnLv(i)) { nx = learnLv(i); break; }
+    if (!nx && m.lv < 50 && s.hidden.length) nx = 50;
+    return nx ? '<p class="hint" style="margin-top:6px">下一个技能将在 LV' + nx + ' 学会。</p>' : '';
   }
   function onDetailChange(e) {
     var cb = e.target.closest('input[data-amove]'); if (!cb) return;
