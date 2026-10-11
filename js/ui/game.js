@@ -547,9 +547,10 @@
         var on = owned(s.id), best = 0;
         acc.mons.forEach(function (m) { if (m.sid === s.id) best = Math.max(best, stageOf(s, m.lv)); });
         var seen = !on && acc.seen && acc.seen[s.id] !== undefined, sf = seen ? seenForm(s) : null;
-        var img = on ? form({ sid: s.id, lv: s.evo[best].lv }).img : seen ? sf.img : SPRITES[s.id];
+        // 完全没见过的精灵：只显示一阶形态的全黑剪影
+        var img = on ? form({ sid: s.id, lv: s.evo[best].lv }).img : seen ? sf.img : (SILHOUETTES[s.id] || (s.evo ? formImg(s, 0) : SPRITES[s.id]));
         var no = s.evo && s.evo[0].no ? 'No.' + s.evo[0].no + '–' + s.evo[evoLast(s)].no : '';
-        return '<button type="button" class="card hg' + (on ? ' on' : seen ? ' off seen' : ' off') + (dexSel === s.id ? ' sel' : '') + '" data-hg="' + s.id + '"' + (on ? '' : ' aria-disabled="true"') + '>' +
+        return '<button type="button" class="card hg' + (on ? ' on' : seen ? ' off seen' : ' off unseen') + (dexSel === s.id ? ' sel' : '') + '" data-hg="' + s.id + '"' + (on ? '' : ' aria-disabled="true"') + '>' +
           (no ? '<span class="hgno">' + no + '</span>' : '') + '<img src="' + img + '" alt=""><span class="nm">' + (on ? esc(topName(s)) + '系' : seen ? esc(sf.name) : '？？？') + '</span>' +
           '<span class="meta">' + (on ? tchips(s.types) : '<span>' + (seen ? '见过 · 未获得' : '未获得') + '</span>') + '</span></button>';
       }).join('') + '</div><article class="detail" id="hg-detail">' + hgDetail(dexSel) + '</article></div>';

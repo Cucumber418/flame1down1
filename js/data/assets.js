@@ -171,3 +171,30 @@ var CHARS = {
   "drh_oh": "images/characters/drh_oh.webp",
   "drh_grin": "images/characters/drh_grin.webp"
 };
+
+// 黄冈秘鉴里完全没见过的精灵：一阶形态的全黑剪影  →  images/silhouettes/
+var SILHOUETTES = {
+  "aegis": "images/silhouettes/aegis.png",
+  "barren": "images/silhouettes/barren.png",
+  "bone": "images/silhouettes/bone.png",
+  "dragon": "images/silhouettes/dragon.png",
+  "faraday": "images/silhouettes/faraday.png",
+  "frost": "images/silhouettes/frost.png",
+  "gorgon": "images/silhouettes/gorgon.png",
+  "hauris": "images/silhouettes/hauris.png",
+  "hephaestus": "images/silhouettes/hephaestus.png",
+  "inkarm": "images/silhouettes/inkarm.png",
+  "kaleo": "images/silhouettes/kaleo.png",
+  "leaf": "images/silhouettes/leaf.png",
+  "leigong": "images/silhouettes/leigong.png",
+  "moon": "images/silhouettes/moon.png",
+  "mush": "images/silhouettes/mush.png",
+  "pede": "images/silhouettes/pede.png",
+  "phantom": "images/silhouettes/phantom.png",
+  "pluto": "images/silhouettes/pluto.png",
+  "siren": "images/silhouettes/siren.png",
+  "squid": "images/silhouettes/squid.png",
+  "tagore": "images/silhouettes/tagore.png",
+  "wild": "images/silhouettes/wild.png",
+  "wind": "images/silhouettes/wind.png"
+};

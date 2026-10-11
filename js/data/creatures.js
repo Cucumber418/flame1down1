@@ -146,7 +146,7 @@ var SP = [
 ];
 // 训练木桩：不在图鉴里，不会攻击，体力无限
 var DUMMY = { id: 'dummy', name: '木桩', types: ['无'], type: '无', base: { hp: 100, atk: 0, def: 50, spa: 0, spd: 50, spe: 0 }, ability: { n: '无', d: '训练用木桩，不会攻击，体力无限' }, moves: [], hidden: [], def: [] };
-// 还没画出来、只在账号系统里用的精灵（不进入竞技对战，也不参与强度测算）
+// 只在账号系统里出现的精灵（不进入竞技对战，也不参与强度测算）：占位精灵，以及竞技名单固定之后新加的所有精灵
 var EXTRA_SP = [
   { id: 'shroom', name: '方头蘑菇', types: ['火'], base: { hp: 80, atk: 80, def: 80, spa: 80, spd: 80, spe: 80 }, unsure: ['hp', 'atk', 'def', 'spa', 'spd', 'spe'], placeholder: true,
     evo: [{ n: '方头蘑菇', lv: 1 }, { n: null, lv: 25 }, { lv: 50 }], evoLvSure: false,
@@ -155,6 +155,11 @@ var EXTRA_SP = [
     moves: ['火之刃', '流火', '爆炎斩', '火焰漩涡', '焚烧', '火焰能量', '猛冲击', '磨刀'],
     hidden: [], def: ['火之刃', '流火', '爆炎斩', '火焰能量'] }
 ];
-var SPMAP = {}; EXTRA_SP.forEach(function (s) { s.type = s.types[0]; SPMAP[s.id] = s; });
-SP.forEach(function (s) { if (!s.types) s.types = [s.type]; s.type = s.types[0]; SPMAP[s.id] = s; });
+// 竞技对战的精灵名单已经固定为下面这些。以后新加的精灵即使写进 SP，也会自动转到 EXTRA_SP：
+// 不会出现在竞技对战的配队、对手和图鉴里，只能在星际探索中遇到，在背包 / 黄冈秘鉴里查看。
+var ARENA_ROSTER = ['dragon', 'leaf', 'gorgon', 'squid', 'wind', 'pluto', 'pede', 'tagore', 'hauris', 'faraday', 'moon', 'frost',
+  'wild', 'hephaestus', 'leigong', 'inkarm', 'barren', 'mush', 'kaleo', 'siren', 'bone', 'aegis', 'leafcat', 'phantom'];
+(function () { var keep = []; SP.forEach(function (s) { (ARENA_ROSTER.indexOf(s.id) >= 0 ? keep : EXTRA_SP).push(s); }); SP = keep; })();
+var SPMAP = {};
+EXTRA_SP.concat(SP).forEach(function (s) { if (!s.types) s.types = [s.type]; s.type = s.types[0]; SPMAP[s.id] = s; });
 SPMAP.dummy = DUMMY;   // 只用于显示名字与图像，不进入图鉴和阵容
