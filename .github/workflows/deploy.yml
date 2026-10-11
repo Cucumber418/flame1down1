@@ -67,7 +67,6 @@ jobs:
 
       - name: 上传新版本
         if: steps.cfg.outputs.ok == 'yes'
-        env:
         run: |
           for i in 1 2 3; do
             rsync -az --delete --exclude '.git' --exclude '.github' \
