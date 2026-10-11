@@ -8,7 +8,7 @@
   var $ = function (id) { return document.getElementById(id); };
   var H = window.HSUI, esc = H.esc, tchip = H.tchip, tchips = H.tchips, atkTip = H.atkTip;
   var KEY = 'hs-account-v1', PKEY = 'hs-page';
-  var STARTERS = ['leaf', 'squid', 'shroom'], START_LV = 5, NAME_MAX = 10, TEAM_N = 2, TEAM_SIZE = 5;
+  var STARTERS = ['leaf', 'squid', 'shroom'], START_LV = 5, NAME_MAX = 20, TEAM_N = 2, TEAM_SIZE = 5;
   var TEAM_NAME = ['配队一', '配队二'];
   var NAT_KEYS = Object.keys(NATURES), STAT_KEYS = ['hp', 'atk', 'def', 'spa', 'spd', 'spe'];
   var BASE_NAME = { hp: '体力', atk: '物攻', def: '物防', spa: '特攻', spd: '特防', spe: '速度' };
@@ -1248,7 +1248,7 @@
   /* ---------- 商城：荆门 · 物资仓储 ---------- */
   var shopQty = {};
   // 不在战斗里用的商品
-  var SHOP_X = { rename: { name: '改名卡', price: 1000, d: '使用后可以修改做题家名字（最多 10 个字）。兑换后点右上角的名字，在菜单里使用。' } };
+  var SHOP_X = { rename: { name: '改名卡', price: 1000, d: '使用后可以修改做题家名字（最多 ' + NAME_MAX + ' 个字）。兑换后点右上角的名字，在菜单里使用。' } };
   function goods(k) { return ITEMS[k] || SHOP_X[k]; }
   function renderShop() {
     var grp = [['捕捉装置', ['cap1', 'cap2', 'cap3']], ['体力补药', ['pot1', 'pot2']], ['其他', ['rename']]];
@@ -1385,7 +1385,7 @@
     var d = document.createElement('div'); d.className = 'soc-dlg npc-dlg';
     d.innerHTML = '<div class="soc-box npc-box" role="dialog" aria-modal="true"><span class="tape l"></span><span class="tape r"></span>' +
       '<img class="npc-face" src="' + npcArt(k, L[0]) + '" alt="' + esc(N.name) + '"><div class="npc-say"><span class="step">' + esc(N.name) + '</span><p class="npc-line">' + esc(fill(L[1])) + '</p>' +
-      '<p class="hint">' + esc(N.name) + ' 会带 3 只精灵，等级在你出战配队平均等级（LV' + teamAvgLv() + '）的 −5 到 +5 之间。' + (won ? '今天已经领过 ' + esc(N.name) + ' 的胜利奖励了，还可以继续切磋。' : '获胜可得 ' + fmt(NPC_WIN_EXP) + ' 累积经验（每天一次）。') + '</p>' +
+      '<p class="hint">' + esc(N.name) + ' 会带 3 只精灵，实力与你相当。' + (won ? '今天已经领过 ' + esc(N.name) + ' 的胜利奖励了，还可以继续切磋。' : '获胜可得 ' + fmt(NPC_WIN_EXP) + ' 累积经验（每天一次）。') + '</p>' +
       '<div class="soc-foot"><button type="button" class="btn ghost" data-npcx="1">下次再说</button><button type="button" class="btn primary" data-npcgo="1">开始对战</button></div></div></div>';
     document.body.appendChild(d);
     d.addEventListener('click', function (e) {
@@ -1420,7 +1420,8 @@
         if (msg) setTimeout(function () { toast(msg); }, 300);
       } });
   }
-  function roomShow(k) { return k === 't' ? [{ sid: 'tagore', lv: 8 }, { sid: weakStarter(), lv: 7 }] : []; }
+  // 房间里固定展示的精灵：Threego 是小胖虎和被玩家主宠克制的初始精灵，Dr.黄 是董之马（至高之盾的一阶）
+  function roomShow(k) { return k === 't' ? [{ sid: 'tagore', lv: 8 }, { sid: weakStarter(), lv: 7 }] : k === 'h' ? [{ sid: 'aegis', lv: 10 }] : []; }
   function renderRoom() {
     var R = ROOMS.filter(function (x) { return x.k === ex.room; })[0], list = roomShow(R.k);
     var figs = list.map(function (x, i) {
@@ -1437,7 +1438,7 @@
         '<p class="hint">' + (inside ? '点房间里的 ' + esc(N.name) + ' 或右边的按钮和 TA 说话，会进入对战。胜利奖励 ' + fmt(NPC_WIN_EXP) + ' 累积经验，每天一次。' : esc(N.away) + '所有乘员看到的时间都一样。') + '</p>' +
         '<p class="tea-left">今天的胜利奖励：<b>' + (won ? '已领取' : '未领取') + '</b></p></div>' +
         '<button type="button" class="btn primary" data-npctalk="' + R.k + '"' + (inside ? '' : ' disabled') + '>' + (inside ? '对话' : '不在家') + '</button></div>' : '') +
-      (list.length ? '<p class="hint" style="margin-top:8px">Threego 在房间里展示着她的伙伴们。点它们可以摸摸。</p>' : '');
+      (list.length ? '<p class="hint" style="margin-top:8px">' + (N ? esc(N.name) : '主人') + ' 在房间里展示着' + (R.k === 't' ? '她' : '他') + '的伙伴。点它们可以摸摸。</p>' : '');
   }
   function saveHomeName() {
     var ip = $('home-name'); if (!ip) return;

@@ -72,7 +72,7 @@ function summary(u, me) {
   var o = { user: u.name, online: on, busy: on && isBusy(u.name), friend: !!(me && me.friends && me.friends.indexOf(u.name) >= 0),
     fan: !!(me && u.friends && u.friends.indexOf(me.name) >= 0), me: !!(me && me.name === u.name), lastSeen: lastSeen[u.name] || (u.save && u.save.savedAt) || u.created };
   if (!acc || !acc.introDone) { o.noChar = true; return o; }
-  o.name = str(acc.name, 10); o.title = str(acc.title, 20) || null;
+  o.name = str(acc.name, 20); o.title = str(acc.title, 20) || null;
   o.monsN = acc.mons.length; o.teamN = activeTeam(acc).length;
   o.show = showMons(acc).map(function (m) { return { sid: str(m.sid, 32), lv: int(m.lv, 1, 100) }; });
   o.rank = rankOut(p.rank).best;
@@ -91,7 +91,7 @@ function card(u, me) {
   o.titles = Array.isArray(acc.titles) ? acc.titles.filter(function (x) { return typeof x === 'string'; }).slice(0, 20) : [];
   return o;
 }
-function gameName(name) { var u = A.loadUser(name), acc = u && parseSave(u).acc; return acc ? str(acc.name, 10) : name; }
+function gameName(name) { var u = A.loadUser(name), acc = u && parseSave(u).acc; return acc ? str(acc.name, 20) : name; }
 function teamSpec(name, n) { var u = A.loadUser(name), acc = u && parseSave(u).acc; return acc ? activeTeam(acc).slice(0, n).map(monOut) : []; }
 
 /* ---------- 在线状态 ---------- */
@@ -231,7 +231,7 @@ A.use(function (req, res, url) {
     var ha = parseSave(hu).acc;
     if (!ha || !ha.introDone) { A.reply(res, 200, { user: hu.name, noChar: true }); return true; }
     var hm = homeOf(ha);
-    A.reply(res, 200, { user: hu.name, name: str(ha.name, 10), me: hu.name === me.name, open: hm.open, homeName: hm.name, mons: hm.mons.map(monOut), online: isOnline(hu.name) });
+    A.reply(res, 200, { user: hu.name, name: str(ha.name, 20), me: hu.name === me.name, open: hm.open, homeName: hm.name, mons: hm.mons.map(monOut), online: isOnline(hu.name) });
     return true;
   }
   if (url === '/api/friends' && req.method === 'POST') {
