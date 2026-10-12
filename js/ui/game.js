@@ -2134,11 +2134,24 @@
     if (ok) { done(); return; }
     try { navigator.clipboard.writeText(QQ_GROUP).then(done, function () { toast('QQ 群号：' + QQ_GROUP + '（没能自动复制，请长按群号手动复制）'); }); } catch (er) { toast('QQ 群号：' + QQ_GROUP + '（没能自动复制，请长按群号手动复制）'); }
   });
+  // 精灵推荐：每期推荐一只精灵和它的一个技能，换一期只改 PICK
+  var PICK = { no: 1, sid: 'tagore', lv: 25, move: '慈悲气波', title: '胖虎 · 抓精灵的好帮手',
+    body: ['想抓的精灵总是一不小心就被打倒？试试胖虎的<b>「慈悲气波」</b>：就算这一下足以击败对方，也会给它留下 <b>1 点体力</b>。',
+      '对方体力越低越好抓。先用慈悲气波把野生精灵打到只剩 1 点体力，再扔捕捉装置，稀有精灵和异色精灵都不怕失手。'],
+    how: '击败古城防卫部简单难度的泰戈尔，可以领养一只小胖虎。它在 LV15 学会慈悲气波，LV25 进化成胖虎。' };
+  function pickHTML() {
+    var f = form({ sid: PICK.sid, lv: PICK.lv }), M0 = M[PICK.move];
+    return '<article class="log-card pick"><span class="tape r"></span><span class="chip log-tag">精灵推荐 · 第 ' + PICK.no + ' 期</span><h3>' + esc(PICK.title) + '</h3>' +
+      '<div class="pick-row"><div class="pick-art"><img src="' + f.img + '" alt="' + esc(f.name) + '"></div><div class="pick-txt">' + PICK.body.map(function (t) { return '<p>' + t + '</p>'; }).join('') +
+      (M0 ? '<p class="pick-mv"><b>' + esc(PICK.move) + '</b> · ' + esc(M0.type) + '系 · ' + esc(M0.cat) + ' · 威力 ' + M0.power + '</p>' : '') + '</div></div>' +
+      '<p class="hint">' + PICK.how + '</p></article>';
+  }
   function renderLog() {
     var now = new Date(), h = now.getHours(), on = mysteryTime();
     var wait = on ? '' : (function () { var t = new Date(now); t.setHours(MYSTERY.from, 0, 0, 0); var m = Math.max(0, Math.round((t - now) / 60000)); return '距离今天的活动开始还有 ' + Math.floor(m / 60) + ' 小时 ' + (m % 60) + ' 分钟'; })();
     $('pg-log').innerHTML = '<div class="page-head"><h2 class="sec">航行日志</h2><p class="hint">荆楚号的公告板：更新公告、限时活动、每日任务和新首领。</p></div>' +
       '<div class="log-grid">' + '<article class="log-card wide qq-card"><span class="tape l"></span><span class="tape r"></span><div class="qq-txt"><span class="chip log-tag">船员交流</span><h3>QQ 群：<b class="qq-no">' + QQ_GROUP + '</b></h3><p class="hint">攻略、组队切磋、bug 反馈、新精灵立绘抢先看，都在群里。</p></div><button type="button" class="btn primary" data-copyqq="1">复制群号</button></article>' + changelogHTML() +
+      pickHTML() +
       '<article class="log-card ev"><span class="tape l"></span><span class="chip log-tag">限时活动</span><h3>神秘精灵出没</h3>' +
         '<p>每天 <b>16:00–24:00</b>，在星际探索的任何场景，都有 <b>3%</b> 的概率刷出一只神秘精灵！</p><p class="hint">它是什么？只有遇到过的人才知道。</p>' +
         '<p class="log-st ' + (on ? 'on' : '') + '">' + (on ? '活动进行中，今天 24:00 结束' : wait) + '</p></article>' +
@@ -2148,7 +2161,7 @@
       (function () {   // 困难泰戈尔上线：按玩家进度提示下一步（不剧透隐藏特效）
         var h = levelOpen('tiger', 2), won = bossWon('tiger', 2), tip = won ? '你已经击败了困难难度的泰戈尔，每周挑战已开放。' : h ? '在荆楚号 · 襄阳 · 古城防卫部挑战。' : bossWon('tiger', 1) ? '' : bossOpen('tiger') ? '先击败普通难度的泰戈尔，困难难度就会开放。' : '读完荆楚号 · 襄阳 · 古城防卫部的支线「东北来的泰戈尔」后，就能开始挑战泰戈尔。';
         return '<article class="log-card next tiger-hard"><span class="tape l"></span><span class="chip log-tag">首领挑战</span><h3>泰戈尔 · 困难难度已上线</h3>' +
-          '<div class="next-art"><img src="' + SPRITES.tagore + '" alt=""></div><p>古城防卫部的泰戈尔终于拿出了真本事：<b>LV60、体力 5000</b>，元素亲和（只有水、火、草系技能能命中它）加上东北的纷争（物攻永久提升 30%）。</p>' +
+          '<div class="next-art"><img src="' + SPRITES.tagore + '" alt=""></div><p>古城防卫部的泰戈尔终于拿出了真本事！这是它最强的状态，来看看你的队伍能不能接住它的全力一击。</p>' +
           '<p>首次击败获得称号<b>「原力掌控者」</b>、泰戈尔性格药剂 ×3、累积经验 ×50,000，并开放每周挑战。</p><p class="hint">据说……它还藏着一手。' + tip + '</p>' +
           (h ? '<button type="button" class="btn" data-golog="boss-tiger">去挑战</button>' : '') + '</article>';
       })() +
