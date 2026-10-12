@@ -470,7 +470,7 @@
   var MON_ORDER = ['evAny', 'evTagore', 'natTagore'], GEN_ORDER = ['trans', 'helmet', 'auto', 'rename', 'cap1', 'cap2', 'cap3', 'pot1', 'pot2'];
   // 剧情道具：主线里拿到的，不能使用也不会消耗
   var KEY_ITEMS = {
-    trans: { name: '精灵翻译器', d: '根据官方文件，这个翻译器能凭一己之力考到雅思 6.5 分。这样一来，翻译精灵的语言也一定能行吧……', img: 'translator' },
+    trans: { name: '精灵翻译器', d: '汉街总部国际A座的情报显示，这个翻译器能凭一己之力考到雅思 6.5 分。这样一来，翻译精灵的语言也一定能行吧……', img: 'translator' },
     helmet: { name: '烟雾保护头盔', d: 'Bttp 用无人机空投下来的头盔，戴上后在浓密的瘴气里也能呼吸、看清路。很容易摔坏。', img: 'helmet' }
   };
   var BAG_ORDER = MON_ORDER.concat(GEN_ORDER);
