@@ -67,7 +67,7 @@ var PRE_SPRITES = {
   "dragon_s2": "images/pre_sprites/dragon_s2.png",
   "leaf_s1": "images/pre_sprites/leaf_s1.webp",
   "leaf_s2": "images/pre_sprites/leaf_s2.webp",
-  "gorgon_s1": "images/pre_sprites/gorgon_s1.png",
+  "gorgon_s1": "images/pre_sprites/gorgon_s1.webp",
   "gorgon_s2": "images/pre_sprites/gorgon_s2.png",
   "squid_s1": "images/pre_sprites/squid_s1.png",
   "squid_s2": "images/pre_sprites/squid_s2.png",
