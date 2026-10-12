@@ -111,7 +111,7 @@ var PRE_SPRITES = {
   "leafcat_s2": "images/pre_sprites/leafcat_s2.svg",
   "phantom_s1": "images/pre_sprites/phantom_s1.png",
   "phantom_s2": "images/pre_sprites/phantom_s2.png",
-  "shroom_s1": "images/pre_sprites/shroom_s1.svg",
+  "shroom_s1": "images/pre_sprites/shroom_s1.webp",
   "shroom_s2": "images/pre_sprites/shroom_s2.svg",
   "turkey_s1": "images/pre_sprites/turkey_s1.svg",
   "turkey_s2": "images/pre_sprites/turkey_s2.svg"
@@ -248,7 +248,8 @@ var SILHOUETTES = {
   "leafcat_1": "images/silhouettes/leafcat_1.png",
   "phantom_0": "images/silhouettes/phantom_0.png",
   "phantom_1": "images/silhouettes/phantom_1.png",
-  "phantom_2": "images/silhouettes/phantom_2.png"
+  "phantom_2": "images/silhouettes/phantom_2.png",
+  "shroom_0": "images/silhouettes/shroom_0.png"
 };
 
 // 异色精灵的立绘（只有部分形态有）：键名规则和 PRE_SPRITES 一样，最终形态用精灵 id

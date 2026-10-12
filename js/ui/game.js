@@ -440,7 +440,7 @@
       '<p style="margin:0 0 6px"><span class="lvbig">LV' + m.lv + '</span>' + tchips(s.types) + '</p>' +
       '<p class="hint">' + stageLabel(s, f.stage) + (!isFin(s, f.stage) ? ' · 最终进化为' + (s.placeholder ? '？' : s.name) : '') +
       (ts.length ? ' · ' + ts.map(function (x) { return TEAM_NAME[x.t] + (x.lead ? '首发' : ''); }).join('、') : ' · 未加入配队') + '</p>' +
-      (f.d ? '<p class="formdesc">' + esc(f.d) + '</p>' : '') + evoLine(m) + (s.placeholder ? '<p class="placeholder-note" style="margin-top:6px">还没画出来，形象、数值和技能均为占位</p>' : '') + '</div></div>' +
+      (f.d ? '<p class="formdesc">' + esc(f.d) + '</p>' : '') + evoLine(m) + (s.placeholder ? '<p class="placeholder-note" style="margin-top:6px">数值和技能还是占位，二阶和最终形态还没画出来</p>' : '') + '</div></div>' +
       expBox(m) + stats +
       '<div class="trait"><p><b>特性 · ' + esc(s.ability.n) + '</b>　<span class="blue">' + esc(s.ability.d) + '</span></p>' + (s.ability.extra ? '<p class="blue" style="font-size:13px">' + esc(s.ability.extra) + '</p>' : '') +
       (acc.emblems && acc.emblems[m.sid] && EMBLEMS[m.sid] ? '<p><b>纹章 · ' + EMBLEMS[m.sid].m + '</b>　<span class="blue">' + esc(EMBLEMS[m.sid].d) + '</span></p>' : '') + '</div>' +
@@ -3201,7 +3201,7 @@
       return '<button type="button" class="vp-card' + (sel === sid ? ' sel' : '') + '" role="radio" aria-checked="' + (sel === sid) + '" data-pk="' + sid + '">' +
         '<img src="' + f.img + '" alt=""><span class="nm">' + esc(f.name) + '</span><span class="tc">' + tchips(s.types) + '<span class="chip">LV' + START_LV + '</span></span>' +
         (f.d ? '<span class="fd">' + esc(f.d) + '</span>' : '') + '<span class="ab">特性 · ' + esc(s.ability.n) + '</span><span class="ad">' + esc(s.ability.d) + '</span>' +
-        (s.placeholder ? '<span class="placeholder-note">还没画出来，形象和数值均为占位</span>' : '') + '</button>';
+        (s.placeholder ? '<span class="placeholder-note">数值和技能还是占位</span>' : '') + '</button>';
     }).join('') + '</div><div class="vp-foot"><span>' + (sel ? '选择 <b>' + esc(monName(sel)) + '</b> 作为你的伙伴？选定后不能更换。' : '点击一只精灵') + '</span>' +
       '<button type="button" class="btn primary" data-vn="pickok"' + (sel ? '' : ' disabled') + '>就选它了</button></div>';
   }
