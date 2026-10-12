@@ -12,6 +12,7 @@ function estAttack(me, foe, mv) {
   var d = calcDamage(me, foe, mv, true, true).dmg;
   if (mv.hits) { var hn = mv.custom === 'fireHits' && foe.st['烧伤'] > 0 ? 9 : mv.custom === 'riceHits' ? Math.min(15, (mv.hits[0] + mv.hits[1]) / 2 + ((me.perm && me.perm.rice) || 0)) : (mv.hits[0] + mv.hits[1]) / 2; d = d * hn + (mv.fixedHit || 0) * hn; }
   if (mv.custom === 'annihilate') d += foe.hp * Math.min(0.6, 0.05 + 0.1 * negCount(foe));
+  if (mv.mercy) d = Math.min(d, Math.max(0, foe.hp - 1));   // 慈悲气波打不倒对方
   return (d + addFixed(me, mv)) * hitChance(me, foe, mv);
 }
 function bestEst(me, foe) {

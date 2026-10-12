@@ -36,6 +36,7 @@
       }
       if (!(m.exp >= expAt(m.lv))) m.exp = expAt(m.lv);
       // 隐藏技能改为战斗中领悟：旧存档里已经装备着的隐藏技能视为已领悟
+      if (Array.isArray(m.moves)) m.moves = m.moves.map(moveName);   // 改过名字的技能换成新名字
       if (!Array.isArray(m.hl)) m.hl = (m.moves || []).filter(function (n) { return M[n] && M[n].hidden && LEARN[n]; });
       var a = avail(m.sid, m.lv, m.hl); m.moves = (m.moves || []).filter(function (n) { return a.indexOf(n) >= 0; });
       if (!m.moves.length) m.moves = defaultMoves(m.sid, m.lv, m.hl);

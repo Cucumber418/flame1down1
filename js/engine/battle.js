@@ -69,7 +69,7 @@ function makeMon(id, moveNames, mult, lv, ev, nat) {
   ['atk', 'def', 'spa', 'spd', 'spe'].forEach(function (k) { stats[k] = Math.round(fullStat(s.base[k], k, lv, ev, nat) * mult); });
   var maxhp = Math.round(fullStat(s.base.hp, 'hp', lv, ev, nat) * mult);
   return { id: id, lv: lv, maxhp: maxhp, hp: maxhp, stats: stats,
-    moves: moveNames.map(function (n) { return { n: n, pp: M[n].pp, max: M[n].pp }; }),
+    moves: moveNames.map(moveName).filter(function (n) { return M[n]; }).map(function (n) { return { n: n, pp: M[n].pp, max: M[n].pp }; }),
     stages: blankStages(), st: {}, tm: {}, fx: {}, flags: {}, perm: {}, fainted: false };
 }
 
@@ -689,6 +689,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
       total += applyDamage(S, evs, j, res.dmg, i, { crit: res.crit, eff: res.eff, noFaint: true });
       if (me.fainted) break;
     }
+    if (mv.mercy && foe.hp <= 0 && !foe.fainted) { foe.hp = 1; total = Math.max(0, total - 1); log(S, evs, nm(me) + '手下留情，' + nm(foe) + '还剩 1 点体力', 'fxl'); E(S, evs, 'stage', { side: j }); }   // 慈悲气波：不会把对方打倒
     if (lastEff > 1) { log(S, evs, '效果拔群！', 'good'); if (!S.se) S.se = [0, 0]; S.se[i]++; } else if (lastEff < 1) log(S, evs, '效果不太好……');   // S.se：双方打出效果拔群的次数（星球挑战的星级用）
     // 每次攻击附带的固定伤害（飞空连击、非凡连击）：按命中次数合起来结算一次，免得十几次连击动画太长
     if (mv.fixedHit && n && foe.hp > 0 && !me.fainted) { log(S, evs, '每次攻击附带 ' + mv.fixedHit + ' 点固定伤害，共 ' + (mv.fixedHit * n) + ' 点', 'fxl'); total += applyDamage(S, evs, j, mv.fixedHit * n, i, { noFaint: true }); }

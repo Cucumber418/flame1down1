@@ -78,7 +78,7 @@ var PRE_SPRITES = {
   "pede_s1": "images/pre_sprites/pede_s1.png",
   "pede_s2": "images/pre_sprites/pede_s2.png",
   "tagore_s1": "images/pre_sprites/tagore_s1.png",
-  "tagore_s2": "images/pre_sprites/tagore_s2.png",
+  "tagore_s2": "images/pre_sprites/tagore_s2.webp",
   "hauris_s1": "images/pre_sprites/hauris_s1.png",
   "hauris_s2": "images/pre_sprites/hauris_s2.png",
   "faraday_s1": "images/pre_sprites/faraday_s1.webp",

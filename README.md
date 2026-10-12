@@ -377,6 +377,10 @@ ffmpeg -i 原曲.mp3 -vn -map_metadata -1 -af loudnorm=I=-16:TP=-1.5:LRA=11 -ar 
 - 剧情：`CAST.p.img` 是个 getter，按性别返回 `pm` / `pf`；剧本里写 `f: { p: 'laugh' }` 就换成对应差分。
 - 名片：服务器 `summary()` 带上 `gender`，`social.js` 的 `cardHTML` 在右上角显示主角形象。
 
+## 技能改名
+
+`js/data/moves.js` 的 `MOVE_RENAME`（旧名 → 新名）。读档清理、竞技对战的配招恢复、引擎建精灵（`makeMon`）都会经过 `moveName()` 换成新名字，所以别人还没更新的存档里出现旧名字也不会出错。目前：原力气波 → 慈悲气波。
+
 ## 表情
 
 12 个表情图在 `images/emotes/`（从 `images/characters/` 里 Threego、Dr.黄、Bttp 的立绘差分裁出头部，256×256 透明 webp），清单是 `js/data/assets.js` 的 `EMOTES`（`emoteOf(id)` 查一个，`emoteMsg(text)` 判断一条私信是不是表情）。

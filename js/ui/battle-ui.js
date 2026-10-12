@@ -15,7 +15,7 @@
       var s = SPMAP[id], lo = savedL[id];
       if (!s || !app.loadout[id] || !Array.isArray(lo)) return;
       var own = s.moves.concat(s.hidden);
-      lo = lo.filter(function (n, i) { return M[n] && own.indexOf(n) >= 0 && lo.indexOf(n) === i; }).slice(0, 4);
+      lo = lo.map(moveName).filter(function (n, i) { return M[n] && own.indexOf(n) >= 0 && lo.indexOf(n) === i; }).slice(0, 4);
       if (lo.length) app.loadout[id] = lo;
     });
   } catch (e) {}
