@@ -1293,10 +1293,11 @@
     return acc.gather;
   }
   function gatherKey(rid, i) { return rid + ':' + i; }
-  function gatherNodesHTML(rid) {
+  function gatherNodesHTML(rid, scene, n) {
     var g = GATHER[rid]; if (!g || !GATHER_ITEMS[g.item]) return '';
     var got = gatherRec().got, name = GATHER_ITEMS[g.item].name;
     return GATHER_SPOTS.map(function (s, i) {
+      if (n && i % n !== scene) return '';   // 采集点分散在不同场景里
       var done = !!got[gatherKey(rid, i)];
       return '<button type="button" class="wf-node' + (done ? ' done' : '') + '" data-gather="' + i + '" style="left:' + s.x + '%;top:' + s.y + '%" title="' + (done ? '今天已采集' : '采集' + name + ' ×' + g.n) + '" aria-label="' + (done ? name + '，今天已经采集过' : '采集' + name + ' ×' + g.n) + '"><i class="wf-gem" aria-hidden="true"></i><span>' + (done ? '已采集' : name) + '</span></button>';
     }).join('');
@@ -1342,22 +1343,40 @@
     stepFieldMon(m, 0);
     return m;
   }
+  /* 一个区域有好几个场景（有几张背景就有几个，至少 2 个），左右箭头切换；每个场景各有 4 个精灵位置。
+   * 每只精灵各自计时：待一会儿（FIELD_LIFE）就淡出离开，隔一小段时间（FIELD_GAP）再在同一片范围里出现一只新的，互不影响。
+   * 采集点：第 i 个放在第 i 个场景里（场景比采集点少时轮着放）。 */
+  var FIELD_LIFE = [14000, 32000], FIELD_GAP = [1500, 6000], FIELD_FADE = 600;
+  function between(r) { return r[0] + Math.random() * (r[1] - r[0]); }
+  function fillSlot(R, F, slot, now, first) {
+    var m = spawnFieldMon(R, slot); m.id = ++F.seq;
+    m.die = now + (first ? Math.random() * FIELD_LIFE[1] + 4000 : between(FIELD_LIFE));   // 刚进来时错开，不会一起走
+    slot.mon = m; slot.next = 0; return m;
+  }
   function fieldState(rid) {
     var R = regionById(rid); if (!R || !R.pool) return null;
     if (!fields[rid]) {
-      var bg = R.bgs && R.bgs.length ? BG[R.bgs[Math.floor(Math.random() * R.bgs.length)]] : '';
-      fields[rid] = { seq: FIELD_SLOTS.length, bg: bg, mons: FIELD_SLOTS.map(function (s, i) { var m = spawnFieldMon(R, s); m.id = i + 1; return m; }) };
+      var bgs = (R.bgs || []).filter(function (k) { return BG[k]; }), n = Math.max(2, bgs.length), now = Date.now();
+      var F = fields[rid] = { seq: 0, scene: Math.floor(Math.random() * n), scenes: [] };
+      for (var i = 0; i < n; i++) {
+        var sc = { bg: bgs.length ? BG[bgs[i % bgs.length]] : '', flip: i >= bgs.length && i % 2 === 1, slots: FIELD_SLOTS.map(function (s) { return { hx: s.hx, hy: s.hy, r: s.r, mon: null, next: 0 }; }) };
+        sc.slots.forEach(function (sl) { fillSlot(R, F, sl, now, true); });
+        F.scenes.push(sc);
+      }
     }
     return fields[rid];
   }
-  // 重新进入区域，或在场景里待满 10 秒：丢掉这一批，按进入时的办法再抽一批（含背景）
   function loadField(rid) { delete fields[rid]; return fieldState(rid); }
-  function replaceFieldMon(rid, id) {
-    var F = fields[rid], R = regionById(rid); if (!F || !R) return;
-    for (var i = 0; i < F.mons.length; i++) if (F.mons[i].id === id) {
-      var old = F.mons[i], m = spawnFieldMon(R, { hx: old.hx, hy: old.hy, r: old.r });
-      m.id = ++F.seq; F.mons[i] = m; return;
-    }
+  // 不在眼前的场景：按时间补算（离开的离开、该出现的出现）
+  function catchUp(R, F, sc, now) {
+    sc.slots.forEach(function (sl) {
+      if (sl.mon && now >= sl.mon.die + FIELD_FADE) { sl.next = sl.mon.die + FIELD_FADE + between(FIELD_GAP); sl.mon = null; }
+      if (!sl.mon && now >= sl.next) fillSlot(R, F, sl, now);
+    });
+  }
+  function replaceFieldMon(rid, id) {   // 打完、抓到或逃走：这只离开，过一会儿再补一只
+    var F = fields[rid]; if (!F) return;
+    F.scenes.forEach(function (sc) { sc.slots.forEach(function (sl) { if (sl.mon && sl.mon.id === id) { sl.mon = null; sl.next = Date.now() + between(FIELD_GAP); } }); });
   }
   function enterField(rid) {
     var R = regionById(rid); if (!R || R.boss || !R.pool || !regionOpen(R)) return;
@@ -1365,21 +1384,24 @@
     ex.view = 'field'; ex.region = rid; ex.planet = R.planet;
     renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8);
   }
+  function fieldMonHTML(m, cls) {
+    return '<button type="button" class="wf-mon' + (m.face < 0 ? ' flip' : '') + (cls ? ' ' + cls : '') + '" data-wfid="' + m.id + '" title="' + esc(m.name) + ' LV' + m.lv + '" aria-label="和' + esc(m.name) + '对战" style="left:' + m.x.toFixed(2) + '%;top:' + m.y.toFixed(2) + '%;z-index:' + Math.round(m.y) + '"><i class="wf-sh" aria-hidden="true"></i><img src="' + m.img + '" alt=""></button>';
+  }
   function renderField() {
     var R = regionById(ex.region);
     if (!R || !R.pool || !regionOpen(R)) { ex.view = 'sites'; renderExplore(); return; }
-    var F = fieldState(R.id), P = planetOf(R.planet);
-    var bg = F.bg ? '<img class="wf-bg" src="' + F.bg + '" alt="">' : '<div class="wf-ph">' + regionArt(R.id) + '</div>';
-    var mons = F.mons.map(function (m) {
-      return '<button type="button" class="wf-mon' + (m.face < 0 ? ' flip' : '') + '" data-wfid="' + m.id + '" title="' + esc(m.name) + ' LV' + m.lv + '" aria-label="和' + esc(m.name) + '对战" style="left:' + m.x.toFixed(2) + '%;top:' + m.y.toFixed(2) + '%;z-index:' + Math.round(m.y) + '"><i class="wf-sh" aria-hidden="true"></i><img src="' + m.img + '" alt=""></button>';
-    }).join('');
+    var F = fieldState(R.id), P = planetOf(R.planet), sc = F.scenes[F.scene], n = F.scenes.length;
+    catchUp(R, F, sc, Date.now());
+    var bg = sc.bg ? '<img class="wf-bg' + (sc.flip ? ' flip' : '') + '" src="' + sc.bg + '" alt="">' : '<div class="wf-ph' + (sc.flip ? ' flip' : '') + '">' + regionArt(R.id) + '</div>';
+    var mons = sc.slots.filter(function (sl) { return sl.mon; }).map(function (sl) { return fieldMonHTML(sl.mon); }).join('');
+    var nav = n > 1 ? '<button type="button" class="wf-arrow l" data-wfnav="-1" aria-label="上一个场景">‹</button><button type="button" class="wf-arrow r" data-wfnav="1" aria-label="下一个场景">›</button>' +
+      '<span class="wf-dots" aria-label="场景 ' + (F.scene + 1) + ' / ' + n + '">' + F.scenes.map(function (x, i) { return '<i class="' + (i === F.scene ? 'on' : '') + '"></i>'; }).join('') + '</span>' : '';
     var spareTip = R.planet === 'flora' && spareActive() ? '<div class="spare-note"><span class="tape l"></span><b>主线任务 · 引出猎杀者</b>　手下留情：这些精灵不会倒下，体力剩 1 点时就会逃走，算作「假装击败」。已完成 <b>' + spareN() + ' / ' + SPARE_N + '</b>。</div>' : '';
     $('pg-explore').innerHTML = exHead('点击场景里走动的精灵，就会和它开战。') +
-      '<div class="crumb"><button type="button" class="btn ghost" id="field-back">‹ 返回' + esc(P.name) + '</button><b>' + esc(P.name) + ' · ' + esc(R.name) + '</b></div>' +
-      invLine() + spareTip + '<div class="wf-scene" id="wf-scene">' + bg + mons + gatherNodesHTML(R.id) + '</div>' +
-      '<p class="hint">每只精灵在自己的一小片范围里走动。点中哪只，就和哪只对战；打完、抓到或逃走之后，这只离开，会有新的一只补上。每隔 10 秒会换一批，和重新进入这个区域一样。场景里的采集点固定不动，不会跟着一起换；每个采集点每天可以采集 1 次。芙罗拉、坎布尔、庞贝采到星砂 ×12，莱汀和白之星采到星核 ×1。</p>';
+      '<div class="crumb"><button type="button" class="btn ghost" id="field-back">‹ 返回' + esc(P.name) + '</button><b>' + esc(P.name) + ' · ' + esc(R.name) + '</b>' + (n > 1 ? '<span class="hint">场景 ' + (F.scene + 1) + ' / ' + n + '</span>' : '') + '</div>' +
+      invLine() + spareTip + '<div class="wf-scene" id="wf-scene">' + bg + mons + gatherNodesHTML(R.id, F.scene, n) + nav + '</div>' +
+      '<p class="hint">点左右两边的箭头可以切换场景。每只精灵在自己的一小片范围里走动，待一会儿就会离开，过一阵又会有新的精灵出现，各走各的。点中哪只，就和哪只对战；打完、抓到或逃走之后，这只离开，过一会儿会有新的一只补上。采集点固定在场景里，每个每天可以采集 1 次：芙罗拉、坎布尔、庞贝采到星砂 ×12，莱汀和白之星采到星核 ×1。</p>';
     startFieldMove();
-    startFieldRefresh();
   }
   function startFieldMove() {
     stopField();
@@ -1387,11 +1409,19 @@
     fieldTick = setInterval(function () {
       if (page !== 'explore' || ex.view !== 'field' || ex.fighting) { stopField(); return; }
       var scene = $('wf-scene'); if (!scene) { stopField(); return; }
-      var F = fields[ex.region]; if (!F) return;
-      var now = Date.now(), dt = Math.min(0.05, (now - last) / 1000); last = now;
-      F.mons.forEach(function (m) {
+      var F = fields[ex.region], R = regionById(ex.region); if (!F || !R) return;
+      var sc = F.scenes[F.scene], now = Date.now(), dt = Math.min(0.05, (now - last) / 1000); last = now;
+      sc.slots.forEach(function (sl) {
+        var m = sl.mon;
+        if (!m) {   // 空位：时间到了就出现一只新的（淡入）
+          if (now >= sl.next) { var nm_ = fillSlot(R, F, sl, now); scene.insertAdjacentHTML('beforeend', fieldMonHTML(nm_, 'wf-in')); }
+          return;
+        }
+        var el = scene.querySelector('[data-wfid="' + m.id + '"]');
+        if (now >= m.die && !m.out) { m.out = now; if (el) el.classList.add('wf-out'); }   // 待够了：淡出
+        if (m.out && now - m.out >= FIELD_FADE) { if (el) el.remove(); sl.mon = null; sl.next = now + between(FIELD_GAP); return; }
         stepFieldMon(m, dt);
-        var el = scene.querySelector('[data-wfid="' + m.id + '"]'); if (!el) return;
+        if (!el) return;
         el.style.left = m.x.toFixed(2) + '%';
         el.style.top = m.y.toFixed(2) + '%';
         el.style.zIndex = String(Math.round(m.y));
@@ -1399,20 +1429,17 @@
       });
     }, 40);
   }
-  function startFieldRefresh() {
-    if (fieldRefresh) { clearInterval(fieldRefresh); fieldRefresh = null; }
-    fieldRefresh = setInterval(function () {
-      if (page !== 'explore' || ex.view !== 'field' || ex.fighting || !$('wf-scene')) { stopField(); return; }
-      loadField(ex.region);
-      renderField();
-    }, 10000);
+  function fieldNav(d) {
+    var F = fields[ex.region]; if (!F) return;
+    var n = F.scenes.length; F.scene = (F.scene + d + n) % n;
+    renderField();
   }
   function engageField(id) {
     if (ex.fighting) return;
     var R = regionById(ex.region), F = R && fields[R.id]; if (!F || !regionOpen(R)) return;
-    var m = null; F.mons.forEach(function (x) { if (x.id === id) m = x; }); if (!m) return;
+    var sc = F.scenes[F.scene], m = null; sc.slots.forEach(function (sl) { if (sl.mon && sl.mon.id === id) m = sl.mon; }); if (!m || m.out) return;
     var P = planetOf(R.planet);
-    var o = { sid: m.sid, lv: m.lv, rate: m.rate, shiny: !!m.shiny, bg: F.bg || null, back: R.name, where: P.name + ' · ' + R.name, fieldId: m.id, fieldRid: R.id };
+    var o = { sid: m.sid, lv: m.lv, rate: m.rate, shiny: !!m.shiny, bg: sc.bg || null, back: R.name, where: P.name + ' · ' + R.name, fieldId: m.id, fieldRid: R.id };
     if (R.planet === 'flora' && purgeActive() && Math.random() < PURGE.chance) { o.taint = true; o.miasma = 5; o.noCatch = true; o.foe = '被瘴气污染的野生精灵'; o.where += ' · 瘴气精灵'; }
     if (R.planet === 'flora' && spareActive()) { o.spare = true; o.where += ' · 手下留情'; }
     stopField();
@@ -3000,6 +3027,7 @@
     if (b.dataset.field && !b.disabled) { enterField(b.dataset.field); return; }
     if (b.dataset.gather != null && b.dataset.gather !== '') { gatherAt(+b.dataset.gather); return; }
     if (b.dataset.wfid) { engageField(+b.dataset.wfid); return; }
+    if (b.dataset.wfnav) { fieldNav(+b.dataset.wfnav); return; }
     if (b.id === 'field-back') { var FR = regionById(ex.region); ex.view = 'sites'; if (FR) ex.planet = FR.planet; ex.fpart = 'catch'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
     if (b.dataset.goshop) { ex.planet = 'jingchu'; ex.area = '荆门'; ex.view = 'shop'; ex.tp = true; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
     if (b.id === 'ex-area') { ex.view = 'area'; renderExplore(); return; }

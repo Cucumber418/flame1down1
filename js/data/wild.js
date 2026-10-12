@@ -5,28 +5,28 @@
 
 var WILD_POOLS = {
   forest: [
-    { sid: 'mush', lv: [1, 5], w: 57, rate: 0.65, tag: '较高' },
+    { sid: 'mush', lv: [1, 5], w: 62, rate: 0.65, tag: '较高' },
     { sid: 'wind', lv: [1, 3], w: 35, rate: 0.85, tag: '极高' },
-    { sid: 'kaleo', lv: [5, 5], w: 5, rate: 0.45, tag: '中等', rare: true },
-    { sid: 'leaf', lv: [5, 5], w: 3, rate: 0.45, tag: '中等', rare: true }   // 三主宠：各在对应属性的星球 3% 出现
+    { sid: 'kaleo', lv: [5, 5], w: 2, rate: 0.45, tag: '中等', rare: true },
+    { sid: 'leaf', lv: [5, 5], w: 1, rate: 0.45, tag: '中等', rare: true }   // 三主宠：各在对应属性的星球 1% 出现（稀有精灵在野外场景里一次能看到好几只，概率调低了）
   ],
   grass: [
-    { sid: 'wind', lv: [1, 3], w: 62, rate: 0.85, tag: '极高' },
+    { sid: 'wind', lv: [1, 3], w: 64, rate: 0.85, tag: '极高' },
     { sid: 'mush', lv: [1, 5], w: 35, rate: 0.65, tag: '较高' },
-    { sid: 'leaf', lv: [5, 5], w: 3, rate: 0.45, tag: '中等', rare: true }
+    { sid: 'leaf', lv: [5, 5], w: 1, rate: 0.45, tag: '中等', rare: true }
   ],
   // 坎布尔星（水系）
   kb_sea: [
-    { sid: 'pede', lv: [6, 10], w: 52, rate: 0.7, tag: '较高' },
+    { sid: 'pede', lv: [6, 10], w: 57, rate: 0.7, tag: '较高' },
     { sid: 'gorgon', lv: [6, 10], w: 40, rate: 0.65, tag: '较高' },
-    { sid: 'siren', lv: [12, 12], w: 5, rate: 0.4, tag: '中等', rare: true },
-    { sid: 'squid', lv: [10, 10], w: 3, rate: 0.45, tag: '中等', rare: true }
+    { sid: 'siren', lv: [12, 12], w: 2, rate: 0.4, tag: '中等', rare: true },
+    { sid: 'squid', lv: [10, 10], w: 1, rate: 0.45, tag: '中等', rare: true }
   ],
   // 庞贝星（火系）
   pp_lava: [
-    { sid: 'hephaestus', lv: [8, 14], w: 92, rate: 0.6, tag: '较高' },
-    { sid: 'turkey', lv: [12, 12], w: 5, rate: 0.45, tag: '中等', rare: true },
-    { sid: 'shroom', lv: [12, 12], w: 3, rate: 0.45, tag: '中等', rare: true }
+    { sid: 'hephaestus', lv: [8, 14], w: 97, rate: 0.6, tag: '较高' },
+    { sid: 'turkey', lv: [12, 12], w: 2, rate: 0.45, tag: '中等', rare: true },
+    { sid: 'shroom', lv: [12, 12], w: 1, rate: 0.45, tag: '中等', rare: true }
   ],
   // 莱汀陨石带（电系）
   lt_belt: [
@@ -35,8 +35,8 @@ var WILD_POOLS = {
   ],
   // 白之星（冰系）
   wh_snow: [
-    { sid: 'frost', lv: [12, 18], w: 95, rate: 0.55, tag: '中等' },
-    { sid: 'wild', lv: [20, 20], w: 5, rate: 0.35, tag: '较低', rare: true }
+    { sid: 'frost', lv: [12, 18], w: 98, rate: 0.55, tag: '中等' },
+    { sid: 'wild', lv: [20, 20], w: 2, rate: 0.35, tag: '较低', rare: true }
   ]
 };
 var WILD_REGIONS = [

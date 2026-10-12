@@ -1742,3 +1742,17 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .pc-helper { display: inline-grid; grid-template-columns: auto auto; column-gap: 8px; align-items: center; padding: 6px 10px; border: 1px solid var(--rule); border-radius: 10px; background: var(--paper); }
 .pc-helper img { grid-row: span 3; width: 56px; height: 56px; object-fit: contain; }
 @media (max-width: 760px) { .ch-cols { grid-template-columns: 1fr; } .ch-node { flex-basis: 92px; } }
+
+/* 野外场景：左右箭头切换场景；精灵各自淡入淡出 */
+.wf-arrow { position: absolute; top: 50%; z-index: 120; width: 44px; height: 64px; margin-top: -32px; border: 2px solid #fff; border-radius: 12px; background: rgba(20, 18, 14, .55); color: #fff; font-size: 34px; line-height: 1; cursor: pointer; display: grid; place-items: center; padding: 0 0 4px; }
+.wf-arrow.l { left: 10px; } .wf-arrow.r { right: 10px; }
+.wf-arrow:hover, .wf-arrow:focus-visible { background: rgba(20, 18, 14, .8); }
+.wf-dots { position: absolute; left: 50%; bottom: 10px; z-index: 120; transform: translateX(-50%); display: flex; gap: 6px; padding: 4px 8px; border-radius: 999px; background: rgba(20, 18, 14, .5); }
+.wf-dots i { width: 8px; height: 8px; border-radius: 50%; background: rgba(255, 255, 255, .45); }
+.wf-dots i.on { background: #fff; }
+.wf-bg.flip, .wf-ph.flip svg { transform: scaleX(-1); }
+.wf-mon { transition: opacity .6s ease; }
+.wf-mon.wf-out { opacity: 0; pointer-events: none; }
+.wf-mon.wf-in { animation: wfIn .6s ease-out; }
+@keyframes wfIn { from { opacity: 0; } to { opacity: 1; } }
+@media (max-width: 760px) { .wf-arrow { width: 36px; height: 52px; margin-top: -26px; font-size: 28px; } }
