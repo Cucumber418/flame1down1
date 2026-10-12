@@ -1587,3 +1587,30 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .qq-card .qq-txt { flex: 1 1 260px; display: grid; gap: 4px; }
 .qq-card h3 { margin: 0; }
 .qq-card .qq-no { color: var(--red); font-size: 1.25em; letter-spacing: .06em; font-variant-numeric: tabular-nums; user-select: all; }
+
+/* ============ 私信 ============ */
+.btn.dm-btn { border-color: #6f8f2a; color: #4c6a12; }
+.dm-win { position: fixed; right: 16px; bottom: 16px; z-index: 340; width: min(360px, calc(100vw - 32px)); height: min(500px, calc(100vh - 100px)); display: grid; grid-template-rows: auto minmax(0, 1fr) auto; background: var(--paper-2); border: 1.5px solid var(--ink); border-radius: 16px; box-shadow: 4px 4px 0 var(--ink); overflow: hidden; animation: soc-pop .25s ease-out; }
+.dm-head { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1.5px solid var(--ink); background: var(--paper); }
+.dm-head .pav { width: 36px; height: 36px; font-size: 18px; }
+.dm-head > div { flex: 1; min-width: 0; display: grid; }
+.dm-head b { font-size: 15px; } .dm-head small { font-size: 12px; color: var(--pencil); }
+.dm-x { cursor: pointer; border: 0; background: none; font-size: 24px; line-height: 1; color: var(--pencil); padding: 0 4px; }
+.dm-body { overflow-y: auto; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+.dm-empty { margin: auto; text-align: center; }
+.dm-time { align-self: center; margin: 6px 0 2px; font-size: 11.5px; color: var(--pencil); background: var(--paper); padding: 1px 10px; border-radius: 999px; }
+.dm-msg { align-self: flex-start; max-width: 80%; background: #fff; border: 1.5px solid var(--rule); border-radius: 4px 14px 14px 14px; padding: 6px 10px 4px; }
+.dm-msg.me { align-self: flex-end; background: #e3f0d2; border-color: #a9c98a; border-radius: 14px 4px 14px 14px; }
+.dm-msg p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14px; line-height: 1.5; }
+.dm-msg small { display: block; text-align: right; font-size: 10.5px; color: var(--pencil); }
+.dm-foot { display: flex; gap: 8px; align-items: flex-end; padding: 8px 10px; border-top: 1.5px solid var(--ink); background: var(--paper); }
+.dm-foot textarea { flex: 1; resize: none; padding: 6px 8px; border: 1.5px solid var(--ink); border-radius: 10px; font: inherit; font-size: 14px; background: #fff; }
+.dm-list { display: grid; gap: 8px; }
+.dm-row { cursor: pointer; display: flex; align-items: center; gap: 10px; text-align: left; padding: 10px 12px; background: var(--paper-2); border: 1.5px solid var(--ink); border-radius: 14px; font: inherit; color: var(--ink); }
+.dm-row.unread { border-color: var(--red); box-shadow: 2px 2px 0 var(--red); }
+.dm-r-txt { flex: 1; min-width: 0; display: grid; } .dm-r-txt small { color: var(--pencil); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dm-r-side { display: grid; justify-items: end; gap: 2px; } .dm-r-side small { color: var(--pencil); font-size: 12px; }
+.dm-pop { position: fixed; right: 16px; top: 16px; z-index: 345; width: min(300px, calc(100vw - 32px)); display: grid; gap: 4px; background: var(--paper-2); border: 1.5px solid var(--ink); border-radius: 14px; padding: 12px 14px; box-shadow: 3px 3px 0 #6f8f2a; animation: soc-pop .3s ease-out; }
+.dm-pop > b { color: #4c6a12; }
+.dm-pop-h { display: flex; align-items: center; gap: 8px; } .dm-pop-h .pav { width: 30px; height: 30px; font-size: 15px; } .dm-pop-h b { flex: 1; } .dm-pop-h small { color: var(--pencil); font-size: 12px; }
+.dm-pop-t { margin: 2px 0 0; font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 5.5em; overflow: hidden; }

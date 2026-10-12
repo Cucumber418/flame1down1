@@ -576,4 +576,4 @@ A.use(function (req, res, url) {
   return true;
 });
 
-module.exports = { avatarOf: function (name) { var u = A.loadUser(name), acc = u && parseSave(u).acc; return acc ? avatarOf(acc) : null; }, onMessage: onMessage, onOpen: onOpen, onClose: onClose, onlineCount: function () { return Object.keys(online).length; } };
+module.exports = { toUser: toUser, gameName: gameName, isOnline: isOnline, avatarOf: function (name) { var u = A.loadUser(name), acc = u && parseSave(u).acc; return acc ? avatarOf(acc) : null; }, onMessage: onMessage, onOpen: onOpen, onClose: onClose, onlineCount: function () { return Object.keys(online).length; } };

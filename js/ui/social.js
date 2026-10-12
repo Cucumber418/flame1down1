@@ -84,6 +84,7 @@
       (p.me ? '<button type="button" class="btn" data-tab="mine">编辑名片</button>' :
         '<button type="button" class="btn ghost" data-home="' + esc(p.user) + '"' + (p.homeOpen ? '' : ' disabled title="对方还没有开放茶室"') + '>茶室' + (p.homeN ? ' · ' + p.homeN : '') + '</button>' +
         '<button type="button" class="btn' + (p.friend ? ' on' : '') + '" data-friend="' + esc(p.user) + '" aria-pressed="' + !!p.friend + '">' + (p.friend ? '★ 好友' : '＋ 加好友') + '</button>' +
+        (p.friend && !p.noChar ? '<button type="button" class="btn dm-btn" data-dm="' + esc(p.user) + '">💬 私信' + (dmUnreadOf(p.user) ? '<i class="q-badge">' + dmUnreadOf(p.user) + '</i>' : '') + '</button>' : '') +
         (canWatch(p) ? watchBtn(p) : '<button type="button" class="btn primary" data-fight="' + esc(p.user) + '"' + (canFight ? '' : ' disabled title="' + (p.noChar ? '对方还没有创建角色' : p.busy ? '对方正在对战中' + (p.friend ? '' : '，加为好友后可以观战') : '对方不在线') + '"') + '>切磋</button>')) +
       '</span></article>';
   }
@@ -119,7 +120,8 @@
         var f = e.target.closest('[data-friend]'); if (f) { toggleFriend(f.dataset.friend).then(function () { close(); openCard(user); }); return; }
         var g = e.target.closest('[data-fight]'); if (g && !g.disabled) { close(); askFight(g.dataset.fight); return; }
         var h = e.target.closest('[data-home]'); if (h && !h.disabled) { close(); openHome(h.dataset.home); return; }
-        var w = e.target.closest('[data-watch]'); if (w) { close(); watchStart(w.dataset.watch); }
+        var w = e.target.closest('[data-watch]'); if (w) { close(); watchStart(w.dataset.watch); return; }
+        var dm = e.target.closest('[data-dm]'); if (dm) { close(); dmOpen(dm.dataset.dm); }
       });
     });
     api('GET', '/api/card?user=' + encodeURIComponent(user)).then(function (c) {
@@ -129,6 +131,7 @@
       body.innerHTML = cardHTML(c) + '<div class="soc-foot"><button type="button" class="btn ghost" data-x="1">关闭</button>' +
         (c.me ? '' : '<button type="button" class="btn ghost" data-home="' + esc(c.user) + '"' + (c.homeOpen ? '' : ' disabled') + '>拜访茶室</button>' +
           '<button type="button" class="btn" data-friend="' + esc(c.user) + '">' + (c.friend ? '取消好友' : '＋ 加好友') + '</button>' +
+          (c.friend && !c.noChar ? '<button type="button" class="btn dm-btn" data-dm="' + esc(c.user) + '">💬 私信</button>' : '') +
           (canWatch(c) ? watchBtn(c) : '<button type="button" class="btn primary" data-fight="' + esc(c.user) + '"' + (canFight ? '' : ' disabled') + '>切磋</button>')) + '</div>';
     }).catch(function () { var body = d.el.querySelector('.pc-body'); if (body) body.innerHTML = '<p class="hint">连不上服务器</p>'; });
   }
@@ -225,6 +228,7 @@
     if (st.view) { pg.innerHTML = '<div class="soc-head"><h2 class="sec">拜访茶室</h2></div>' + homeHTML(); return; }
     var body;
     if (st.tab === 'mine') body = mineHTML();
+    else if (st.tab === 'dm') body = dmListHTML();
     else if (!st.players) body = '<p class="hint soc-load">' + (st.err ? esc(st.err) + ' · <button type="button" class="btn ghost" data-reload="1">重试</button>' : '读取船员名单中……') + '</p>';
     else {
       var list = st.tab === 'friends' ? friends : P;
@@ -235,6 +239,7 @@
       '<div class="subbar soc-tabs" role="tablist">' +
       '<button type="button" class="sub' + (st.tab === 'players' ? ' on' : '') + '" data-tab="players" role="tab" aria-selected="' + (st.tab === 'players') + '">玩家 ' + (st.players ? P.length : '') + '</button>' +
       '<button type="button" class="sub' + (st.tab === 'friends' ? ' on' : '') + '" data-tab="friends" role="tab" aria-selected="' + (st.tab === 'friends') + '">好友 ' + (st.players ? friends.length : '') + '</button>' +
+      '<button type="button" class="sub' + (st.tab === 'dm' ? ' on' : '') + '" data-tab="dm" role="tab" aria-selected="' + (st.tab === 'dm') + '">私信' + (st.dmUnread ? '<i class="q-badge">' + st.dmUnread + '</i>' : '') + '</button>' +
       '<button type="button" class="sub' + (st.tab === 'mine' ? ' on' : '') + '" data-tab="mine" role="tab" aria-selected="' + (st.tab === 'mine') + '">我的名片</button>' +
       '<button type="button" class="sub sub-go" data-myhome="1" title="' + (A.homeOpen() ? '直接去我的茶室' : '读完「陆羽茶室」支线后开放') + '">我的茶室 ›</button>' +
       '<span class="soc-on">' + (st.wsOk ? '<span class="dot on"></span>' + on + ' 人在线' : '<span class="dot"></span>正在连接服务器……') + '</span></div>' +
@@ -244,7 +249,7 @@
   if ($('pg-social')) {
     $('pg-social').addEventListener('click', function (e) {
       var t;
-      if ((t = e.target.closest('[data-tab]'))) { st.tab = t.dataset.tab; if (st.tab === 'mine' && !st.edit) startEdit(); render(); if (st.tab !== 'mine') load(); return; }
+      if ((t = e.target.closest('[data-tab]'))) { st.tab = t.dataset.tab; if (st.tab === 'mine' && !st.edit) startEdit(); render(); if (st.tab === 'dm') dmLoadList(); else if (st.tab !== 'mine') load(); return; }
       if ((t = e.target.closest('[data-myhome]'))) { A.goHome(); return; }
       if ((t = e.target.closest('[data-reload]'))) { load(); return; }
       if ((t = e.target.closest('[data-back]'))) { st.view = null; render(); load(); return; }
@@ -259,6 +264,7 @@
       if ((t = e.target.closest('[data-friend]'))) { toggleFriend(t.dataset.friend); return; }
       if ((t = e.target.closest('[data-fight]'))) { if (!t.disabled) askFight(t.dataset.fight); return; }
       if ((t = e.target.closest('[data-watch]'))) { watchStart(t.dataset.watch); return; }
+      if ((t = e.target.closest('[data-dm]'))) { dmOpen(t.dataset.dm); return; }
       if ((t = e.target.closest('[data-card]'))) { openCard(t.dataset.card); return; }
       if ((t = e.target.closest('[data-pick]'))) {
         var u = +t.dataset.pick, ed = st.edit, k = ed.show.indexOf(u);
@@ -307,12 +313,14 @@
 
   function onMsg(m) {
     switch (m.type) {
-      case 'authed': st.wsOk = true; st.retry = 0; load(); render(); renderBrawl(); if (HB.castResync) HB.castResync(); break;
+      case 'authed': st.wsOk = true; st.retry = 0; load(); render(); renderBrawl(); if (HB.castResync) HB.castResync(); dmLoadList(true); break;
       case 'cast-viewers': if (HB.castViewers) HB.castViewers(m.n, m.names); break;
       case 'cast-invited': if (HB.castInvited) HB.castInvited(m.ok, m.ok ? '已向 ' + m.n + ' 位在线船员发出观战邀请，现在所有人都可以观战这场对战' : m.msg); break;
       case 'cast-note': if (HB.castNote) HB.castNote(m.msg); break;
       case 'watch-invite': watchInvite(m); break;
       case 'watch': onWatch(m); break;
+      case 'dm': dmGot(m); break;
+      case 'dm-echo': dmEcho(m); break;
       case 'brawl-wait': if (st.bw.wait) { st.bw.wait.id = m.id; st.bw.wait.n = m.n; st.bw.wait.deadline = Date.now() + m.seconds * 1000; } renderBrawl(); break;
       case 'brawl-invite': brawlInvite(m); break;
       case 'brawl-end': brawlEnd(m); break;
@@ -950,6 +958,115 @@
     el.addEventListener('click', function (e) {
       if (e.target.closest('[data-wno]')) { clearTimeout(t); el.remove(); return; }
       if (e.target.closest('[data-wyes]')) { clearTimeout(t); el.remove(); watchStart(m.user); }
+    });
+  }
+
+  /* ---------- 私信（服务器见 server/dm.js）----------
+   * 好友的玩家行和名片上有「💬 私信」按钮，打开右下角的聊天窗口（每条带时间）。
+   * 收到私信：聊天窗口开着就直接显示，没开就在右上角弹出提示，点「回复」打开窗口。社交里的「私信」页列出所有对话和未读数。 */
+  st.dmList = null; st.dmUnread = 0; st.dm = null;
+  function dmUnreadOf(user) { var c = (st.dmList || []).filter(function (x) { return x.peer === user; })[0]; return c ? c.unread : 0; }
+  function dmTime(t) {
+    var d = new Date(t), now = new Date(), hm = ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+    if (d.toDateString() === now.toDateString()) return hm;
+    var y = new Date(now); y.setDate(now.getDate() - 1);
+    if (d.toDateString() === y.toDateString()) return '昨天 ' + hm;
+    return (d.getFullYear() !== now.getFullYear() ? d.getFullYear() + '年' : '') + (d.getMonth() + 1) + '月' + d.getDate() + '日 ' + hm;
+  }
+  function dmLoadList(notify) {
+    if (!online) return;
+    api('GET', '/api/dm-list').then(function (r) {
+      if (r._code !== 200) return;
+      var before = st.dmUnread; st.dmList = r.convs; st.dmUnread = r.unread;
+      if (A.page() === 'social' && st.tab !== 'mine') render();
+      if (notify && r.unread > 0 && !before) dmPop({ unreadAll: r.unread });
+    }).catch(function () {});
+  }
+  function dmListHTML() {
+    var L = st.dmList;
+    if (!L) return '<p class="hint soc-load">读取私信中……</p>';
+    if (!L.length) return '<div class="soc-empty"><p>还没有私信。在「好友」里点对方的「💬 私信」就能开始聊天（要先把对方加为好友）。</p></div>';
+    return '<div class="plist dm-list">' + L.map(function (c) {
+      return '<button type="button" class="dm-row' + (c.unread ? ' unread' : '') + '" data-dm="' + esc(c.peer) + '"><span class="pav' + (c.avatar ? ' img' : '') + '">' + A.avatarInner(c.avatar, c.name) + '</span>' +
+        '<span class="dm-r-txt"><b>' + esc(c.name) + '</b><small>' + (c.lastFrom === c.peer ? '' : '我：') + esc(c.last.slice(0, 60)) + '</small></span><span class="dm-r-side"><small>' + dmTime(c.lastT) + '</small>' + (c.unread ? '<i class="q-badge">' + c.unread + '</i>' : '') + '</span></button>';
+    }).join('') + '</div>';
+  }
+  function dmOpen(user) {
+    if (!online) { A.toast('私信需要联网'); return; }
+    var old = document.querySelector('.dm-win'); if (old) old.remove();
+    var p = (st.players || []).filter(function (x) { return x.user === user; })[0];
+    st.dm = { user: user, msgs: [], name: p && p.name || user };
+    var w = document.createElement('div'); w.className = 'dm-win'; w.setAttribute('role', 'dialog'); w.setAttribute('aria-label', '私信');
+    w.innerHTML = '<div class="dm-head"><span class="pav" id="dm-av">' + esc(Array.from(st.dm.name)[0] || '?') + '</span><div><b id="dm-name">' + esc(st.dm.name) + '</b><small id="dm-st">@' + esc(user) + '</small></div><button type="button" class="dm-x" data-dmx="1" aria-label="关闭">×</button></div>' +
+      '<div class="dm-body" id="dm-body"><p class="hint dm-empty">读取中……</p></div>' +
+      '<div class="dm-foot"><textarea id="dm-text" rows="2" maxlength="300" placeholder="说点什么……（回车发送，Shift+回车换行）"></textarea><button type="button" class="btn primary" id="dm-send">发送</button></div>';
+    document.body.appendChild(w);
+    var ta = w.querySelector('#dm-text');
+    w.addEventListener('click', function (e) { if (e.target.closest('[data-dmx]')) { w.remove(); st.dm = null; return; } if (e.target.id === 'dm-send') dmSend(); });
+    ta.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); dmSend(); } });
+    api('GET', '/api/dm?with=' + encodeURIComponent(user)).then(function (r) {
+      if (!st.dm || st.dm.user !== user) return;
+      if (r._code !== 200) { $('dm-body').innerHTML = '<p class="hint dm-empty">' + esc(r.error || '读取失败') + '</p>'; return; }
+      st.dm.msgs = r.msgs; st.dm.me = r.me; st.dm.name = r.name; st.dm.canSend = r.canSend;
+      $('dm-name').textContent = r.name; $('dm-st').innerHTML = '@' + esc(user) + ' · ' + (r.online ? '<span class="dot on"></span>在线' : '离线');
+      var av = $('dm-av'); av.innerHTML = A.avatarInner(r.avatar, r.name); av.classList.toggle('img', !!r.avatar);
+      if (!r.canSend) { ta.disabled = true; ta.placeholder = '先把对方加为好友，才能发私信'; }
+      dmDraw(); ta.focus();
+      (st.dmList || []).forEach(function (c) { if (c.peer === user) { st.dmUnread -= c.unread; c.unread = 0; } });
+      if (A.page() === 'social') render();
+    }).catch(function () { var b = $('dm-body'); if (b) b.innerHTML = '<p class="hint dm-empty">连不上服务器</p>'; });
+  }
+  function dmDraw() {
+    var D = st.dm, b = $('dm-body'); if (!D || !b) return;
+    if (!D.msgs.length) { b.innerHTML = '<p class="hint dm-empty">还没有聊过天，打个招呼吧。</p>'; return; }
+    var prev = 0;
+    b.innerHTML = D.msgs.map(function (m) {
+      var mine = m.f === D.me, gap = m.t - prev > 5 * 60000; prev = m.t;
+      return (gap ? '<p class="dm-time">' + dmTime(m.t) + '</p>' : '') + '<div class="dm-msg' + (mine ? ' me' : '') + '" title="' + dmTime(m.t) + '"><p>' + esc(m.x) + '</p><small>' + dmTime(m.t).replace(/^.* /, '') + '</small></div>';
+    }).join('');
+    b.scrollTop = b.scrollHeight;
+  }
+  function dmSend() {
+    var D = st.dm, ta = $('dm-text'); if (!D || !ta || ta.disabled) return;
+    var text = ta.value.trim(); if (!text) return;
+    ta.disabled = true;
+    api('POST', '/api/dm', { to: D.user, text: text }).then(function (r) {
+      ta.disabled = false; ta.focus();
+      if (r._code !== 200) { A.toast(r.error || '发送失败'); return; }
+      ta.value = '';
+      if (st.dm === D && !D.msgs.some(function (x) { return x.t === r.msg.t && x.f === r.msg.f; })) { D.msgs.push(r.msg); dmDraw(); }
+    }).catch(function () { ta.disabled = false; A.toast('连不上服务器'); });
+  }
+  function dmEcho(m) {   // 自己在别的设备上发的
+    var D = st.dm; if (!D || D.user !== m.to || D.msgs.some(function (x) { return x.t === m.t && x.f === D.me; })) return;
+    D.msgs.push({ f: D.me, t: m.t, x: m.text }); dmDraw();
+  }
+  function dmGot(m) {
+    var D = st.dm;
+    if (D && D.user === m.from && document.querySelector('.dm-win')) {
+      D.msgs.push({ f: m.from, t: m.t, x: m.text }); dmDraw();
+      api('GET', '/api/dm?with=' + encodeURIComponent(m.from)).catch(function () {});   // 标记已读
+      return;
+    }
+    var c = (st.dmList || []).filter(function (x) { return x.peer === m.from; })[0];
+    if (c) { c.unread++; c.last = m.text; c.lastFrom = m.from; c.lastT = m.t; } else { if (!st.dmList) st.dmList = []; st.dmList.unshift({ peer: m.from, name: m.fromName, avatar: m.avatar, last: m.text, lastFrom: m.from, lastT: m.t, unread: 1 }); }
+    st.dmUnread++;
+    if (A.page() === 'social' && st.tab !== 'mine') render();
+    dmPop(m);
+  }
+  // 右上角的私信提示
+  function dmPop(m) {
+    var old = document.querySelector('.dm-pop'); if (old) old.remove();
+    var el = document.createElement('div'); el.className = 'dm-pop'; el.setAttribute('role', 'status');
+    el.innerHTML = m.unreadAll ? '<b>💬 私信</b><span>你有 ' + m.unreadAll + ' 条未读私信</span><div class="bw-pop-btns"><button type="button" class="btn ghost" data-dpx="1">稍后</button><button type="button" class="btn primary" data-dplist="1">查看</button></div>'
+      : '<div class="dm-pop-h"><span class="pav' + (m.avatar ? ' img' : '') + '">' + A.avatarInner(m.avatar, m.fromName) + '</span><b>' + esc(m.fromName) + '</b><small>' + dmTime(m.t) + '</small></div><p class="dm-pop-t">' + esc(m.text.slice(0, 120)) + '</p>' +
+        '<div class="bw-pop-btns"><button type="button" class="btn ghost" data-dpx="1">忽略</button><button type="button" class="btn primary" data-dpr="' + esc(m.from) + '">回复</button></div>';
+    document.body.appendChild(el);
+    var tm = setTimeout(function () { el.remove(); }, 20000);
+    el.addEventListener('click', function (e) {
+      if (e.target.closest('[data-dpx]')) { clearTimeout(tm); el.remove(); return; }
+      var r = e.target.closest('[data-dpr]'); if (r) { clearTimeout(tm); el.remove(); dmOpen(r.dataset.dpr); return; }
+      if (e.target.closest('[data-dplist]')) { clearTimeout(tm); el.remove(); st.tab = 'dm'; if (A.page() !== 'social' && !A.inBattle()) A.go('social'); else render(); dmLoadList(); }
     });
   }
 
