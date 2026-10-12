@@ -837,6 +837,8 @@
     mingming: { name: '古城防卫部', planet: 'jingchu', dept: '襄阳', chapter: '支线 · 明明教官的礼物', side: true, bg: 'bridge_p', d: '古城防卫部的明明教官听说你在黄冈秘鉴里点亮了十类精灵，想见见你。', after: 'board', pos: [48, 82], need: function () { return litCount() >= 10; }, needText: '在黄冈秘鉴中点亮 10 类精灵后开放', reward: { gift: [{ sid: 'aegis', lv: 10 }] } },
     tiger: { name: '古城防卫部', planet: 'jingchu', dept: '襄阳', chapter: '支线 · 东北来的泰戈尔', side: true, bg: 'bridge_p', d: '古城防卫部来了一只从东北招募的特殊虎系精灵，专门辅助船员训练。读完后开放首领「泰戈尔」的挑战。', after: 'board', pos: [30, 70] },
     tiger2: { name: '古城防卫部', planet: 'jingchu', dept: '襄阳', chapter: '支线 · 来东北试试', side: true, bg: 'bridge_p', d: '被你打败的泰戈尔一屁股坐在地上，好像有话要说……读完后开放首领「泰戈尔」的普通难度。', after: 'tiger', pos: [84, 72], need: function () { return bossWon('tiger'); }, needText: '击败简单难度的泰戈尔后开放' },
+    fl_chal: { name: '古城防卫部', planet: 'jingchu', dept: '襄阳', chapter: '支线 · 芙罗拉星挑战', side: true, bg: 'bridge_p', d: '明明教官在芙罗拉星上划出了一条「挑战路线」，一关接一关，每关最多评三颗星。读完后开放芙罗拉星的「挑战」。', after: 'flora1', pos: [66, 56], reward: { energy: 300 }, endText: '「芙罗拉星 · 挑战」已开放：去星际探索 · 芙罗拉星的「挑战」页，从第一关开始。' },
+    fl_chal2: { name: '挑战路线 · 第二关', planet: 'flora', chapter: '支线 · 借来的力量', side: true, bg: 'fl_lake', d: '第二关的入口前，明明教官打来了通讯。', after: 'fl_chal', need: function () { return chalStars('fl1') > 0; }, needText: '通过芙罗拉星挑战第一关', fpart: 'challenge', endText: '现在可以带助战精灵出战了。回到第二关，挑 4 只自己的精灵，再带上明明教官的赫菲托斯试试吧。' },
     rare: { name: '学院部', planet: 'jingchu', dept: '黄冈', chapter: '支线 · 稀有精灵', side: true, bg: 'pod_p', d: 'Bttp 在黄冈秘鉴里发现了几页几乎空白的记录，想请你帮学院部找一只稀有精灵。', after: 'flora1', pos: [26, 58] },
     rare_r: { name: '学院部', planet: 'jingchu', dept: '黄冈', chapter: '支线 · 稀有精灵（汇报）', side: true, bg: 'pod_p', d: '把捕捉到的稀有精灵带回学院部，向 Bttp 汇报。', after: 'rare', pos: [74, 58], need: function () { return !!rareOwned(); }, needText: '捕捉一种稀有精灵后来汇报', reward: { title: 'collector' } },
     storage: { name: '物资仓储', planet: 'jingchu', dept: '荆门', chapter: '支线 · 物资仓储', side: true, bg: 'storage_p', d: '荆楚号即将抵达芙罗拉星，新船员要去物资仓储领取探索物资。读完后，物资仓储里的「商城」开放。', after: 'board', pos: [50, 62], reward: { exp: 0, energy: 300, items: { cap1: 10 } } },
@@ -866,9 +868,10 @@
   var SCRIPT = STORY_SCRIPT;   // 剧本内容见 js/data/story.js
   function unlocked(id) { var S = SITES[id], a = S.after; return (!a || prog(a).done) && (!S.need || S.need()); }
   // 稀有精灵：野外精灵表里标了 rare 的种类
-  function rareOwned() { var R = []; for (var k in WILD) WILD[k].forEach(function (w) { if (w.rare && R.indexOf(w.sid) < 0) R.push(w.sid); }); return acc.mons.filter(function (m) { return R.indexOf(m.sid) >= 0; })[0] || null; }
+  // 三主宠虽然也在野外以稀有精灵出现，但开局就有一只，不算支线「稀有精灵」要找的那种
+  function rareOwned() { var R = []; for (var k in WILD) WILD[k].forEach(function (w) { if (w.rare && STARTERS.indexOf(w.sid) < 0 && R.indexOf(w.sid) < 0) R.push(w.sid); }); return acc.mons.filter(function (m) { return R.indexOf(m.sid) >= 0; })[0] || null; }
   function planetOpen(P) { return !P.after || prog(P.after).done; }
-  var UNLOCK = { xiaogan: '竞技对战', academy: '黄冈秘鉴', storage: '商城', tea: '茶室', brawl: '精灵大乱斗', tiger2: '泰戈尔 · 普通难度' };
+  var UNLOCK = { xiaogan: '竞技对战', academy: '黄冈秘鉴', storage: '商城', tea: '茶室', brawl: '精灵大乱斗', tiger2: '泰戈尔 · 普通难度', fl_chal: '芙罗拉星 · 挑战', fl_chal2: '助战精灵' };
   function brawlOpen() { return !!(acc && acc.story && acc.story.brawl && acc.story.brawl.done); }
   function brawlPlayed() { return !!(acc && acc.stats && acc.stats.brawls > 0); }
   // 平衡模式切磋统一的等级；拥有的精灵种类数（「收集」）；是否参加过竞技征召
@@ -1144,7 +1147,7 @@
     if (prog('flora1').done) head = head.replace('<div class="fparts" role="tablist">', '<div class="fparts" role="tablist"><button type="button" class="tab' + (part === 'story' ? ' on' : '') + '" data-fpart="story">剧情' + (newMain ? '<i class="q-badge">!</i>' : '') + '</button>');
     if (part === 'story') return head + sp;
     if (part === 'task') return head + planetTasks('flora');
-    if (part === 'challenge') return head + '<div class="fl-soon"><span class="tape r"></span><b>挑战 · 关卡副本</b><p>按关卡推进的副本，每一关都会根据表现给出星级评价。</p><p class="stars3" aria-hidden="true">☆ ☆ ☆</p><p class="hint">即将开放，敬请期待。</p></div>';
+    if (part === 'challenge') return head + chalPage('flora');
     var regs = REGIONS.map(function (R) {
       var BK = Object.keys(BOSSES).filter(function (k) { return BOSSES[k].region === R.id; })[0], locked = !!R.boss && !(BK && bossOpen(BK));
       return '<article class="region' + (locked ? ' locked' : '') + '"><div class="rg-art">' + (R.bgs && BG[R.bgs[0]] ? '<img src="' + BG[R.bgs[0]] + '" alt="' + R.name + '">' + (R.bgs.length > 1 ? '<span class="rg-more">' + R.bgs.slice(1).map(function (k) { return '<img src="' + BG[k] + '" alt="">'; }).join('') + '</span>' : '') : regionArt(R.id)) + '</div><div class="rg-txt"><h4>' + R.name + ' <small>' + R.en + '</small></h4><p class="hint">' + R.d + '</p>' +
@@ -1240,6 +1243,149 @@
         renderTop(); syncBattle(); window.scrollTo(0, $('pg-explore').offsetTop - 8);
         if (msg.length) setTimeout(function () { toast(msg.join('')); }, 300);
       } });
+  }
+  /* ---------- 星球挑战：从左到右一条链，每个节点是一关，按顺序开放；每关三颗星 ----------
+   * 在古城防卫部读完支线「芙罗拉星挑战」后开放。第一次点开第二关时插播支线「借来的力量」，之后可以带助战精灵：
+   *   自己的配队里挑 4 只 + 1 只助战（明明教官的 LV30 赫菲托斯，或好友名片里的助战精灵，服务器接口 /api/helpers）
+   * 星级：1 星 = 击败所有敌人；2、3 星看每关的 s2 / s3（nofaint 无精灵倒下、half 结束时全员体力高于一半、super 用过克制对方属性的技能、nostatus 结束时没有异常状态）
+   * 存档：acc.chal[关卡 id] = { s: [星1, 星2, 星3], got: 首通时间 } */
+  var CHAL = {
+    flora: [
+      { id: 'fl1', n: '草甸前哨', bg: 'fl_meadow', foes: [{ sid: 'wind', lv: 8 }], s2: 'nofaint', s3: 'half', reward: { exp: 3000, energy: 600 } },
+      { id: 'fl2', n: '湖畔双影', bg: 'fl_lake', foes: [{ sid: 'wind', lv: 10 }, { sid: 'wind', lv: 10 }], s2: 'nofaint', s3: 'super', reward: { exp: 4000, energy: 800 } },
+      { id: 'fl3', n: '林下菌丛', bg: 'fl_path', foes: [{ sid: 'mush', lv: 13 }], s2: 'nofaint', s3: 'half', reward: { exp: 5000, energy: 1000 } },
+      { id: 'fl4', n: '密林混战', bg: 'fl_sun', foes: [{ sid: 'mush', lv: 15 }, { sid: 'wind', lv: 15 }], s2: 'nofaint', s3: 'nostatus', reward: { exp: 6500, energy: 1200 } },
+      { id: 'fl5', n: '猎手的领地', bg: 'fl_maple', foes: [{ sid: 'mush', lv: 15 }, { sid: 'kaleo', lv: 20 }], s2: 'nofaint', s3: 'nostatus', reward: { exp: 8000, energy: 1500 } }
+    ]
+  };
+  var STAR_TXT = { win: '击败所有敌人', nofaint: '无精灵倒下', half: '战斗结束时，所有出战精灵的体力都高于一半', super: '使用一次克制对方属性的技能（效果拔群）', nostatus: '战斗结束时，所有精灵都不处于异常状态' };
+  var MM_HELPER = { key: 'mm', owner: '明明教官', mon: { sid: 'hephaestus', lv: 30, moves: [] } };
+  function chalRec(id) { if (!acc.chal) acc.chal = {}; return acc.chal[id] || null; }
+  function chalStars(id) { var r = acc && acc.chal && acc.chal[id]; return r ? r.s.filter(Boolean).length : 0; }
+  function chalOpen() { return !!(acc && prog('fl_chal').done); }
+  function chalLevelOpen(P, i) { return chalOpen() && (i === 0 || chalStars(CHAL[P][i - 1].id) > 0); }
+  function helperSet() { return !!(acc && acc.card && acc.card.helper != null && mon(acc.card.helper)); }
+  function helperOk() { return prog('fl_chal2').done; }
+  function starRow(n, got) { var h = ''; for (var i = 0; i < 3; i++) h += '<i class="' + (got ? (got[i] ? 'on' : '') : i < n ? 'on' : '') + '">★</i>'; return '<span class="ch-stars">' + h + '</span>'; }
+  // 好友的助战精灵（联网时从服务器读，几分钟内用缓存）
+  function loadHelpers(force) {
+    if (!bsOnline() || ex.hpBusy || (!force && ex.helpers && Date.now() - ex.helpersT < 120000)) return;
+    ex.hpBusy = true;
+    CLOUD.api('GET', '/api/helpers').then(function (r) {
+      ex.hpBusy = false; if (r._code !== 200) return;
+      ex.helpers = r.helpers || []; ex.helpersT = Date.now();
+      if (page === 'explore' && ex.view === 'sites' && ex.fpart === 'challenge') renderExplore();
+    }).catch(function () { ex.hpBusy = false; });
+  }
+  function helperList() {
+    var L = [MM_HELPER];
+    (ex.helpers || []).forEach(function (h) { if (h && h.mon && SPMAP[h.mon.sid]) L.push({ key: 'u:' + h.user, owner: h.name || h.user, mon: h.mon }); });
+    return L;
+  }
+  function chalTeam() {   // 这一关的出战精灵：自己的（按配队顺序）+ 助战
+    var team = (acc.teams[acc.active] || []).map(mon).filter(Boolean), tk = acc.active + ':' + team.map(function (m) { return m.u; }).join(',');
+    if (!ex.chalOwn || ex.chalTk !== tk) { ex.chalOwn = team.map(function (m) { return m.u; }); ex.chalTk = tk; }   // 配队变了就重新全选
+    var H = ex.chalHelper && helperOk() ? helperList().filter(function (h) { return h.key === ex.chalHelper; })[0] : null;
+    if (ex.chalHelper && !H) ex.chalHelper = null;
+    var own = team.filter(function (m) { return ex.chalOwn.indexOf(m.u) >= 0; }).slice(0, H ? 4 : 5);
+    return { team: team, own: own, helper: H };
+  }
+  function chalPage(P) {
+    if (!chalOpen()) {
+      return '<div class="fl-soon"><span class="tape r"></span><b>挑战 · 关卡副本</b><p>古城防卫部的明明教官在芙罗拉星上划出了一条挑战路线：一关接一关，每一关都会根据表现评出 1~3 颗星。</p><p class="stars3" aria-hidden="true">☆ ☆ ☆</p>' +
+        (prog('flora1').done ? '<p class="hint">去荆楚号 · 襄阳 · 古城防卫部，找明明教官接取挑战任务。</p><button type="button" class="btn primary" data-tpgo="襄阳">前往古城防卫部</button>' : '<p class="hint">读完主线「降临芙罗拉」后，去古城防卫部找明明教官。</p>') + '</div>';
+    }
+    var L = CHAL[P], sel = ex.chal != null && L[ex.chal] && chalLevelOpen(P, ex.chal) ? ex.chal : (function () { var k = 0; L.forEach(function (x, i) { if (chalLevelOpen(P, i)) k = i; }); return k; })();
+    ex.chal = sel;
+    if (helperOk()) loadHelpers();
+    var total = L.reduce(function (a, x) { return a + chalStars(x.id); }, 0);
+    var chain = '<ol class="ch-chain">' + L.map(function (x, i) {
+      var open = chalLevelOpen(P, i), n = chalStars(x.id), r = acc.chal && acc.chal[x.id];
+      return '<li class="ch-node' + (open ? '' : ' locked') + (n ? ' clear' : '') + (i === sel ? ' sel' : '') + '"><button type="button" data-chal="' + i + '"' + (open ? '' : ' disabled') + ' aria-label="第 ' + (i + 1) + ' 关' + (open ? '' : '（未开放）') + '">' +
+        '<span class="ch-no">' + (open ? i + 1 : '🔒') + '</span>' + starRow(n, r && r.s) + '<b>' + esc(x.n) + '</b></button></li>';
+    }).join('') + '</ol>';
+    var x = L[sel], rec = acc.chal && acc.chal[x.id], T = chalTeam(), conds = ['win', x.s2, x.s3];
+    var foes = x.foes.map(function (f) { var k = wildKnown(f.sid), fm = form(f); return '<li>' + (k ? '<img src="' + fm.img + '" alt="">' : silTag(f.sid, fm.stage)) + '<span><b>' + (k ? esc(fm.name) : '？？？') + '</b><small>LV' + f.lv + '</small></span></li>'; }).join('');
+    var ownHTML = T.team.map(function (m) {
+      var on = T.own.indexOf(m) >= 0, f = form(m), dis = !on && T.own.length >= (T.helper ? 4 : 5);
+      return '<button type="button" class="ch-mon' + (on ? ' on' : '') + '" data-chown="' + m.u + '"' + (dis ? ' disabled' : '') + ' aria-pressed="' + on + '"><img src="' + f.img + '" alt=""><b>' + esc(f.name) + '</b><small>LV' + m.lv + '</small></button>';
+    }).join('');
+    var helpHTML = !helperOk() ? '<p class="hint">' + (sel >= 1 ? '' : '通过第一关后，第二关会解锁「助战精灵」：可以借一只别人的精灵一起出战。') + '</p>' :
+      '<div class="ch-helpers"><button type="button" class="ch-help' + (!T.helper ? ' on' : '') + '" data-chhelp=""><span class="ch-none">不带助战</span></button>' + helperList().map(function (h) {
+        var f = form(h.mon), on = T.helper && T.helper.key === h.key;
+        return '<button type="button" class="ch-help' + (on ? ' on' : '') + '" data-chhelp="' + esc(h.key) + '"><img src="' + f.img + '" alt=""><b>' + esc(f.name) + '</b><small>LV' + h.mon.lv + ' · ' + esc(h.owner) + '</small></button>';
+      }).join('') + '</div><p class="hint">' + (bsOnline() ? (ex.helpers && ex.helpers.length ? '好友在名片里放的助战精灵都在这里。' : '好友在名片里放了助战精灵后，也会出现在这里。') : '联网登录后，还能借用好友名片里的助战精灵。') + '自己也可以在「社交 → 我的名片」里挂一只助战精灵。</p>';
+    var ready_ = T.own.length > 0;
+    return '<div class="ch-wrap"><div class="ch-head"><b>芙罗拉星 · 挑战路线</b><span class="hint">共 ' + L.length + ' 关 · 已获得 ' + total + ' / ' + L.length * 3 + ' 颗星</span></div>' + chain +
+      '<article class="ch-detail"><span class="tape r"></span><div class="ch-dh"><span class="sc-tag">第 ' + (sel + 1) + ' 关</span><h3>' + esc(x.n) + '</h3>' + starRow(chalStars(x.id), rec && rec.s) + '</div>' +
+      '<div class="ch-cols"><div><h4>敌人</h4><ul class="ch-foes">' + foes + '</ul>' +
+      '<h4>星级要求</h4><ol class="ch-conds">' + conds.map(function (c, k) { var got = rec && rec.s[k]; return '<li class="' + (got ? 'ok' : '') + '"><span class="ch-star">' + (got ? '★' : '☆') + '</span>' + STAR_TXT[c] + '</li>'; }).join('') + '</ol>' +
+      '<p class="ch-rw"><b>首次通关奖励</b>　' + rwList(x.reward).map(function (t) { return '<span class="chip">' + t + '</span>'; }).join(' ') + (rec && rec.got ? '<span class="hint">（已领取）</span>' : '') + '</p></div>' +
+      '<div><h4>出战精灵 <span class="hint">' + (T.helper ? '自己的 ' + T.own.length + ' / 4 只 + 1 只助战' : '自己的 ' + T.own.length + ' / 5 只') + '，点一下选上或取下</span></h4><div class="ch-mons">' + (ownHTML || '<p class="hint">当前配队是空的。</p>') + '</div>' +
+      '<h4>助战精灵</h4>' + helpHTML + '</div></div>' +
+      '<div class="ch-go"><button type="button" class="btn primary" data-chgo="' + sel + '"' + (ready_ ? '' : ' disabled') + '>开始挑战</button><span class="hint">战斗中可以使用补药；挑战失败不会有任何损失，可以反复挑战。</span></div></article></div>';
+  }
+  function startChal(P, i) {
+    var x = CHAL[P][i]; if (!x || !chalLevelOpen(P, i)) return;
+    var T = chalTeam(); if (!T.own.length) return;
+    var own = T.own, p = own.map(storyMon);
+    if (T.helper) { var hm = storyMon({ sid: T.helper.mon.sid, lv: T.helper.mon.lv, moves: T.helper.mon.moves || [], ev: T.helper.mon.ev || null, nat: T.helper.mon.nat || null, shiny: !!T.helper.mon.shiny }); hm.nick = hm.nick + '（' + T.helper.owner + '）'; p.push(hm); }
+    var a = x.foes.map(function (f) { seeMon(f.sid, f.lv); return storyMon({ sid: f.sid, lv: f.lv, moves: [] }); });
+    stopTimers(); ex.fighting = true; document.body.classList.add('story-fight'); syncBattle();
+    $('pg-explore').hidden = true; $('pg-arena').hidden = false;
+    window.HSBATTLE.start({ p: p, a: a, foe: '挑战第 ' + (i + 1) + ' 关「' + x.n + '」', items: invCopy(), bg: BG[x.bg] || null, onItem: useInv,
+      onEnd: function (res, seen, downs, quit, S) {
+        var msg = [];
+        if (res === 'win' && S) {
+          var mine = S.sides[0].team, conds = ['win', x.s2, x.s3];
+          var ok = conds.map(function (c) {
+            if (c === 'win') return true;
+            if (c === 'nofaint') return mine.every(function (m) { return !m.fainted; });
+            if (c === 'half') return mine.every(function (m) { return !m.fainted && m.hp > m.maxhp / 2; });
+            if (c === 'super') return !!(S.se && S.se[0] > 0);
+            if (c === 'nostatus') return mine.every(function (m) { return m.fainted || !Object.keys(m.st || {}).some(function (k) { return m.st[k] > 0; }); });
+            return false;
+          });
+          if (!acc.chal) acc.chal = {};
+          var r = acc.chal[x.id] || (acc.chal[x.id] = { s: [false, false, false] }), before = chalStars(x.id);
+          ok.forEach(function (v, k) { if (v) r.s[k] = true; });
+          msg.push('挑战第 ' + (i + 1) + ' 关「' + x.n + '」通过！本次 ' + ok.filter(Boolean).length + ' 颗星' + (chalStars(x.id) > before && before ? '，最好成绩提升到 ' + chalStars(x.id) + ' 颗星' : '') + '。');
+          var miss = conds.filter(function (c, k) { return !ok[k]; }).map(function (c) { return STAR_TXT[c]; });
+          if (miss.length) msg.push('没拿到的星：' + miss.join('；') + '。');
+          if (!r.got) { r.got = Date.now(); acc.exp = (acc.exp || 0) + (x.reward.exp || 0); acc.energy = (acc.energy || 0) + (x.reward.energy || 0); msg.push('首次通关奖励：' + rwList(x.reward).join('、') + '。'); }
+          if (CHAL[P][i + 1] && !before) { ex.chal = i + 1; msg.push('第 ' + (i + 2) + ' 关已开放。'); }
+        } else if (res !== 'win') msg.push(quit ? '退出了挑战。' : '挑战失败了……调整一下出战精灵再来吧。');
+        dailyHit('pve');
+        var ownSeen = seen ? seen.slice(0, own.length) : null;
+        msg = msg.concat(battleRewards(own, ownSeen, downs));
+        save();
+        ex.fighting = false; document.body.classList.remove('story-fight');
+        ex.view = 'sites'; ex.planet = P; ex.fpart = 'challenge';
+        $('pg-arena').hidden = page !== 'arena'; $('pg-explore').hidden = page !== 'explore';
+        renderTop(); syncBattle(); window.scrollTo(0, $('pg-explore').offsetTop - 8);
+        if (msg.length) setTimeout(function () { toast(msg.join('')); }, 300);
+      } });
+  }
+  function chalClick(b) {
+    if (b.dataset.tpgo) { ex.planet = 'jingchu'; teleport(b.dataset.tpgo); return true; }
+    if (b.dataset.chal != null && b.dataset.chal !== undefined && !b.disabled) {
+      var i = +b.dataset.chal; ex.chal = i;
+      // 第一次点开第二关：插播支线「借来的力量」，读完自动选上明明教官的赫菲托斯
+      if (i === 1 && unlocked('fl_chal2') && !prog('fl_chal2').done) { ex.chalHelper = 'mm'; startVN('fl_chal2', 'replay', $('pg-explore'), true); window.scrollTo(0, $('pg-explore').offsetTop - 8); return true; }
+      renderExplore(); return true;
+    }
+    if (b.dataset.chown) {
+      var u = +b.dataset.chown, k = ex.chalOwn.indexOf(u);
+      if (k >= 0) ex.chalOwn.splice(k, 1); else ex.chalOwn.push(u);
+      renderExplore(); return true;
+    }
+    if (b.dataset.chhelp !== undefined) {
+      ex.chalHelper = b.dataset.chhelp || null;
+      if (ex.chalHelper) { var T = chalTeam(); if (T.own.length > 4) ex.chalOwn = T.own.slice(0, 4).map(function (m) { return m.u; }); }
+      renderExplore(); return true;
+    }
+    if (b.dataset.chgo) { startChal('flora', +b.dataset.chgo); return true; }
+    return false;
   }
   // 其他星球的探索页（只有捕捉）
   function wildPage(P) {
@@ -2245,7 +2391,7 @@
   $('pg-explore').addEventListener('keydown', function (e) { if (e.target.id === 'home-name') { if (e.key === 'Enter') { e.preventDefault(); saveHomeName(); } else if (e.key === 'Escape') { ex.homeEdit = false; renderHome(); } } });
 
   /* ---------- 任务：主线 / 支线 / 世界 ---------- */
-  var MAIN_Q = ['school', 'river', 'jiuquan', 'board', 'flora1', 'flora2', 'flora3'], SIDE_Q = ['academy', 'xiaogan', 'brawl', 'draft', 'storage', 'tiger', 'tiger2', 'tea', 'rare', 'mingming'];
+  var MAIN_Q = ['school', 'river', 'jiuquan', 'board', 'flora1', 'flora2', 'flora3'], SIDE_Q = ['academy', 'xiaogan', 'brawl', 'draft', 'storage', 'tiger', 'tiger2', 'tea', 'rare', 'mingming', 'fl_chal'];
   // 世界任务（奖励暂定）
   var WQ = [
     { id: 'w_first', n: '初到芙罗拉', d: '荆楚号已经抵达芙罗拉星。去丛林或草甸，和那里的野生精灵过过招吧。', where: '芙罗拉星 · 丛林 / 草甸', steps: [{ t: '在芙罗拉星击败 1 只野生精灵', k: 'wins', n: 1 }], reward: { energy: 100 }, after: 'flora1', go: 'flora' },
@@ -2277,6 +2423,7 @@
     if (id === 'brawl') return brawlPlayed() ? 'done' : pr.done || pr.at > 0 ? 'doing' : 'todo';
     if (id === 'draft') return pr.done && draftPlayed() ? 'done' : pr.done || pr.at > 0 ? 'doing' : 'todo';
     if (id === 'rare') return prog('rare_r').done ? 'done' : pr.done || pr.at > 0 ? 'doing' : 'todo';
+    if (id === 'fl_chal') return pr.done && chalStars('fl2') > 0 && helperSet() ? 'done' : pr.done || pr.at > 0 ? 'doing' : 'todo';
     if (id === 'flora2') return pr.done && spareN() >= SPARE_N ? 'done' : pr.done || pr.at > 0 ? 'doing' : 'todo';
     return pr.done ? 'done' : pr.at > 0 ? 'doing' : 'todo';
   }
@@ -2309,6 +2456,7 @@
       if (id === 'draft') steps = [{ t: '在孝感大厅听 Dr.黄 介绍竞技征召', ok: pr.done }, { t: '和其他船员打一场竞技征召（社交 → 向在线玩家宣战 → 5v5 · 平衡模式 · 竞技征召，胜负都算）', ok: draftPlayed() }];
       if (id === 'tiger2') { steps = [{ t: '在古城防卫部听泰戈尔介绍普通难度', ok: pr.done }, { t: '挑战并击败普通难度的「泰戈尔」（LV40，体力 1500，东北的纷争：物攻永久提升 30%）', ok: bossWon('tiger', 1) }]; R = { mon: '普通拳纹章、累积经验 ×20,000（首次击败普通难度）' }; }
       if (id === 'flora2') steps = [{ t: '前往 ' + qWhere(id), ok: pr.done || pr.at > 0 }, { t: '读完剧情「' + qName(id) + '」', ok: pr.done }, { t: '在芙罗拉星的丛林或草甸「假装击败」野生精灵（这个任务里野生精灵不会倒下，体力剩 1 点时就会逃走）', ok: spareN() >= SPARE_N, p: spareN() + ' / ' + SPARE_N }];
+      if (id === 'fl_chal') steps = [{ t: '在古城防卫部听明明教官介绍挑战路线', ok: pr.done }, { t: '通过芙罗拉星挑战第二关（星际探索 → 芙罗拉星 → 挑战）', ok: chalStars('fl2') > 0 }, { t: '自己也挂一只助战精灵：社交 → 我的名片 → 助战精灵', ok: helperSet() }];
       if (id === 'rare') { var rr = prog('rare_r'); steps = [{ t: '在学院部听 Bttp 说明任务', ok: pr.done }, { t: '捕捉一种稀有精灵（芙罗拉星的丛林深处可能会有）', ok: rr.done || !!rareOwned() }, { t: '回到学院部，向 Bttp 汇报', ok: rr.done }]; R = SITES.rare_r.reward; desc = S.d; }
       if (st === 'lock') need = S.need && prog(S.after).done && !S.need() ? S.needText + (id === 'mingming' ? '（当前 ' + litCount() + ' / 10）' : id === 'brawl' ? '（当前持有 ' + acc.mons.length + ' 只）' : id === 'draft' ? '（当前 ' + speciesN() + ' / 10 种）' : id === 'flora3' ? '（当前 ' + spareN() + ' / ' + SPARE_N + '）' : '') + '。' : '先读完「' + SITES[S.after].chapter.split(' · ')[1] + '」。';
     }
@@ -2366,6 +2514,7 @@
       ex.planet = W.go; ex.view = 'sites'; ex.fpart = 'catch'; go('explore'); renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return;
     }
     var S = SITES[id]; ex.planet = S.planet; go('explore');
+    if (id === 'fl_chal' && prog('fl_chal').done) { if (chalStars('fl2') > 0 && !helperSet()) { go('social'); toast('在「我的名片」里选一只助战精灵，保存名片即可。'); return; } ex.planet = 'flora'; ex.view = 'sites'; ex.fpart = 'challenge'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
     if (S.dept) { teleport(S.dept); return; }
     ex.view = 'sites'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8);
   }
@@ -2454,6 +2603,7 @@
     if (ex.view === 'shop' && shopClick(e)) return;
     if (e.target.closest('#bsoc')) { bsocClick(e); return; }
     var b = e.target.closest('button, .dept.open'); if (!b) return;
+    if (chalClick(b)) return;
     if (b.dataset.area) { teleport(b.dataset.area); return; }
     if (b.dataset.npctalk) { npcTalk(b.dataset.npctalk); return; }
     if (b.dataset.room) { ex.view = 'room'; ex.room = b.dataset.room; ex.area = '天门'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); mysteryRoll('荆楚号 · 陆羽茶室'); return; }
@@ -2631,9 +2781,9 @@
       (R ? '<p>获得奖励</p><div class="vn-reward">' + rwList(R).map(function (x) { return '<span>' + x + '</span>'; }).join('') + '</div>' : '') +
       (ex.site === 'rare' && !nxt ? '<p><b class="red">任务：捕捉一种稀有精灵，然后回学院部汇报。</b></p>' : '') + (R && R.title ? '<p><b class="red">获得称号「' + TITLES.filter(function (x) { return x.id === R.title; })[0].n + '」！</b><br><span class="hint">点击右上角的名字即可佩戴</span></p>' : '') +
       (chPaid ? '<div class="vn-chap"><b>「' + chPaid.n + '」完成！</b><p>章节大奖</p><div class="vn-reward">' + rwList(chPaid.reward).map(function (x) { return '<span>' + x + '</span>'; }).join('') + '</div></div>' : '') +
-      (nxt && !unlocked(nxt) && SITES[nxt].needText ? '<p><b class="red">任务：' + SITES[nxt].needText + '。</b></p>' : '') +
-      (UNLOCK[ex.site] ? '<p><b class="red">「' + UNLOCK[ex.site] + '」已开放！</b>' + (ex.site === 'storage' ? '<br><span class="hint">在荆楚号 · 荆门 · 物资仓储里进入</span>' : '') + '</p>' : '') +
-      '<p>' + (nxt && !unlocked(nxt) ? '完成任务后，下一段「' + SITES[nxt].chapter.split(' · ')[1] + '」就会开放。' : nxt ? (SITES[nxt].side ? '支线「' : '下一段「') + SITES[nxt].chapter.split(' · ')[1] + '」已解锁，可在星际探索 · ' + nxtP.name + (SITES[nxt].dept ? ' · ' + DEPTS[SITES[nxt].dept][0] : '') + '中继续。' : '后续剧情正在制作中。') + '</p>' +
+      (nxt && !unlocked(nxt) && SITES[nxt].needText && !SITES[ex.site].endText ? '<p><b class="red">任务：' + SITES[nxt].needText + '。</b></p>' : '') +
+      (UNLOCK[ex.site] && !SITES[ex.site].endText ? '<p><b class="red">「' + UNLOCK[ex.site] + '」已开放！</b>' + (ex.site === 'storage' ? '<br><span class="hint">在荆楚号 · 荆门 · 物资仓储里进入</span>' : '') + '</p>' : '') +
+      '<p>' + (SITES[ex.site].endText ? SITES[ex.site].endText : nxt && !unlocked(nxt) ? '完成任务后，下一段「' + SITES[nxt].chapter.split(' · ')[1] + '」就会开放。' : nxt ? (SITES[nxt].side ? '支线「' : '下一段「') + SITES[nxt].chapter.split(' · ')[1] + '」已解锁，可在星际探索 · ' + nxtP.name + (SITES[nxt].dept ? ' · ' + DEPTS[SITES[nxt].dept][0] : '') + '中继续。' : '后续剧情正在制作中。') + '</p>' +
       '<div class="row">' + (intro ? '<button type="button" class="btn primary" data-vn="enter">进入游戏</button>'
         : '<button type="button" class="btn" data-vn="replay">重温一遍</button>' + (nxt && unlocked(nxt) ? '<button type="button" class="btn" data-vn="next" data-nx="' + nxt + '">继续下一段</button>' : '') + '<button type="button" class="btn primary" data-vn="exit">' + (SITES[ex.site].dept ? '返回区域' : '返回地点') + '</button>') + '</div></div>';
     syncBtns();
@@ -2649,7 +2799,7 @@
       var a = b.dataset.vn;
       if (a === 'fight') { startFight(b.dataset.fk); return; }
       if (a === 'pickok' && ex.pickSel) { pickStarter(ex.pickSel); ex.i++; show(); return; }
-      if (a === 'exit') { stopTimers(); ex.mode = null; ex.planet = SITES[ex.site].planet; if (SITES[ex.site].dept) { ex.view = 'area'; ex.area = SITES[ex.site].dept; } else ex.view = 'sites'; renderExplore(); return; }
+      if (a === 'exit') { stopTimers(); ex.mode = null; ex.planet = SITES[ex.site].planet; if (SITES[ex.site].fpart) ex.fpart = SITES[ex.site].fpart; if (SITES[ex.site].dept) { ex.view = 'area'; ex.area = SITES[ex.site].dept; } else ex.view = 'sites'; renderExplore(); return; }
       if (a === 'replay') { startVN(ex.site, 'replay', ex.host, true); return; }
       if (a === 'next') { startVN(b.dataset.nx, 'replay', ex.host, prog(b.dataset.nx).done || !prog(b.dataset.nx).at); return; }
       if (a === 'enter') { finishIntro(); return; }

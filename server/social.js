@@ -9,6 +9,7 @@
  *   GET  /api/card?user=账号名    某个玩家的完整名片
  *   POST /api/friends { user, on }   加好友 / 删好友（单向，像「关注」）
  *   GET  /api/home?user=账号名    拜访某人的茶室：茶室名字、展示中的精灵（用于观看和挑战）
+ *   GET  /api/helpers            好友名片里的助战精灵（星球挑战里可以借用）
  *
  * WebSocket 消息（在 server.js 的 /ws 上）：
  *   → { type:'auth', token }                     用登录凭证认证，之后才算「在线」
@@ -104,6 +105,8 @@ function avatarOf(acc) {
   var m = acc && acc.avatar != null ? monByU(acc, acc.avatar) : null;
   return m ? { sid: str(m.sid, 32), lv: int(m.lv, 1, 100), shiny: !!m.shiny } : null;
 }
+// 助战精灵：名片里设置的一只（acc.card.helper 是精灵编号），星球挑战里好友可以借用
+function helperOf(acc) { var u = acc && acc.card && acc.card.helper; return u != null ? monByU(acc, u) : null; }
 function showMons(acc) {
   var c = acc.card && Array.isArray(acc.card.show) ? acc.card.show : [];
   return c.slice(0, 5).map(function (u) { return monByU(acc, u); }).filter(Boolean);
@@ -150,6 +153,7 @@ function card(u, me) {
   o.created = acc.created || u.created; o.speciesN = Object.keys(species).length;
   o.motto = acc.card ? str(acc.card.motto, 200) : '';
   o.show = showMons(acc).map(function (m) { return monOut(m, acc); });
+  var hp = helperOf(acc); o.helper = hp ? monOut(hp, acc) : null;
   o.rankInfo = rankOut(parseSave(u).rank);
   o.titles = Array.isArray(acc.titles) ? acc.titles.filter(function (x) { return typeof x === 'string'; }).slice(0, 20) : [];
   return o;
@@ -531,7 +535,7 @@ function onClose(ws) {
 
 /* ---------- HTTP 接口 ---------- */
 A.use(function (req, res, url) {
-  if (url !== '/api/players' && url !== '/api/card' && url !== '/api/friends' && url !== '/api/home') return false;
+  if (url !== '/api/players' && url !== '/api/card' && url !== '/api/friends' && url !== '/api/home' && url !== '/api/helpers') return false;
   var who = A.whoIs(req), me = who && A.loadUser(who.user);
   if (!me) { A.reply(res, 401, { error: '登录已失效，请重新登录' }); return true; }
 
@@ -539,6 +543,16 @@ A.use(function (req, res, url) {
     var list = A.allUsers().map(function (u) { return summary(u, me); });
     list.sort(function (a, b) { return (b.me - a.me) || (b.online - a.online) || (b.friend - a.friend) || ((b.lastSeen || 0) - (a.lastSeen || 0)); });
     A.reply(res, 200, { me: me.name, players: list });
+    return true;
+  }
+  // 星球挑战：我加了好友的人里，名片上放了助战精灵的
+  if (url === '/api/helpers' && req.method === 'GET') {
+    var hl = [];
+    (Array.isArray(me.friends) ? me.friends : []).forEach(function (n) {
+      var fu = A.loadUser(n), fa = fu && parseSave(fu).acc, hm = fa && fa.introDone && helperOf(fa);
+      if (hm) hl.push({ user: fu.name, name: str(fa.name, 20), mon: monOut(hm, fa) });
+    });
+    A.reply(res, 200, { helpers: hl });
     return true;
   }
   if (url === '/api/card' && req.method === 'GET') {

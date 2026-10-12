@@ -1667,3 +1667,49 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .rk-rw p { margin: 0; font-size: 14px; }
 .qs-p { white-space: nowrap; }
 .emote-bub.flip img { transform: scaleX(-1); }   /* 表情朝向对手 */
+
+/* ---------- 星球挑战：从左到右的关卡链 ---------- */
+.ch-wrap { display: grid; gap: 14px; }
+.ch-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; }
+.ch-head b { font-family: var(--f-hand); font-weight: 400; font-size: 26px; }
+.ch-chain { list-style: none; margin: 0; padding: 18px 8px 8px; display: flex; gap: 0; overflow-x: auto; position: relative; }
+.ch-node { flex: 1 0 116px; position: relative; display: flex; justify-content: center; }
+.ch-node + .ch-node::before { content: ''; position: absolute; top: 26px; right: 50%; width: 100%; height: 4px; background: var(--rule); border-radius: 2px; z-index: 0; }
+.ch-node.clear + .ch-node::before, .ch-node.clear + .ch-node.clear::before { background: var(--red); }
+.ch-node button { position: relative; z-index: 1; display: grid; justify-items: center; gap: 4px; background: none; border: 0; padding: 0 4px; cursor: pointer; color: var(--ink); font: inherit; }
+.ch-no { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; font-family: var(--f-hand); font-size: 28px; background: var(--paper-2); border: 2.5px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); }
+.ch-node.clear .ch-no { background: #fbe7c4; }
+.ch-node.sel .ch-no { background: var(--ink); color: #fff; box-shadow: 2px 2px 0 var(--red); }
+.ch-node.locked button { cursor: not-allowed; opacity: .5; }
+.ch-node.locked .ch-no { font-size: 18px; border-style: dashed; box-shadow: none; }
+.ch-node b { font-size: 12.5px; white-space: nowrap; }
+.ch-stars { display: inline-flex; gap: 1px; font-size: 14px; letter-spacing: 0; }
+.ch-stars i { font-style: normal; color: #cfc8b4; }
+.ch-stars i.on { color: #e0a21b; text-shadow: 0 0 1px #8a5d00; }
+.ch-detail { position: relative; background: var(--paper-2); border: 1.5px solid var(--ink); border-radius: 14px; padding: 16px; display: grid; gap: 12px; box-shadow: 3px 3px 0 var(--ink); }
+.ch-dh { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.ch-dh h3 { margin: 0; font-family: var(--f-hand); font-weight: 400; font-size: 30px; }
+.ch-dh .ch-stars { font-size: 22px; }
+.ch-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 18px; }
+.ch-cols h4 { margin: 4px 0 6px; font-size: 14px; }
+.ch-cols h4 .hint { font-weight: 400; font-size: 12px; }
+.ch-foes { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.ch-foes li { display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 4px; border: 1px solid var(--rule); border-radius: 10px; background: var(--paper); }
+.ch-foes img { width: 46px; height: 46px; object-fit: contain; }
+.ch-foes span { display: grid; } .ch-foes small { color: var(--pencil); }
+.ch-conds { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 13.5px; }
+.ch-conds li { display: flex; gap: 6px; align-items: baseline; }
+.ch-star { color: #cfc8b4; font-size: 16px; } .ch-conds li.ok .ch-star { color: #e0a21b; }
+.ch-conds li.ok { color: var(--ink); } .ch-conds li:not(.ok) { color: var(--pencil); }
+.ch-rw { margin: 6px 0 0; font-size: 13px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.ch-mons, .ch-helpers { display: flex; flex-wrap: wrap; gap: 6px; }
+.ch-mon, .ch-help { display: grid; justify-items: center; gap: 1px; width: 92px; padding: 6px 4px; border: 1.5px dashed var(--rule); border-radius: 10px; background: var(--paper); cursor: pointer; font: inherit; color: var(--ink); }
+.ch-mon img, .ch-help img { width: 52px; height: 52px; object-fit: contain; }
+.ch-mon b, .ch-help b { font-size: 12.5px; } .ch-mon small, .ch-help small { font-size: 11px; color: var(--pencil); text-align: center; }
+.ch-mon.on, .ch-help.on { border: 2px solid var(--red); background: #fff4ef; }
+.ch-mon:disabled { opacity: .45; cursor: not-allowed; }
+.ch-none { display: grid; place-items: center; height: 52px; font-size: 12.5px; color: var(--pencil); }
+.ch-go { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.pc-helper { display: inline-grid; grid-template-columns: auto auto; column-gap: 8px; align-items: center; padding: 6px 10px; border: 1px solid var(--rule); border-radius: 10px; background: var(--paper); }
+.pc-helper img { grid-row: span 3; width: 56px; height: 56px; object-fit: contain; }
+@media (max-width: 760px) { .ch-cols { grid-template-columns: 1fr; } .ch-node { flex-basis: 92px; } }

@@ -5,23 +5,28 @@
 
 var WILD_POOLS = {
   forest: [
-    { sid: 'mush', lv: [1, 5], w: 60, rate: 0.65, tag: '较高' },
+    { sid: 'mush', lv: [1, 5], w: 57, rate: 0.65, tag: '较高' },
     { sid: 'wind', lv: [1, 3], w: 35, rate: 0.85, tag: '极高' },
-    { sid: 'kaleo', lv: [5, 5], w: 5, rate: 0.45, tag: '中等', rare: true }
+    { sid: 'kaleo', lv: [5, 5], w: 5, rate: 0.45, tag: '中等', rare: true },
+    { sid: 'leaf', lv: [5, 5], w: 3, rate: 0.45, tag: '中等', rare: true }   // 三主宠：各在对应属性的星球 3% 出现
   ],
   grass: [
-    { sid: 'wind', lv: [1, 3], w: 65, rate: 0.85, tag: '极高' },
-    { sid: 'mush', lv: [1, 5], w: 35, rate: 0.65, tag: '较高' }
+    { sid: 'wind', lv: [1, 3], w: 62, rate: 0.85, tag: '极高' },
+    { sid: 'mush', lv: [1, 5], w: 35, rate: 0.65, tag: '较高' },
+    { sid: 'leaf', lv: [5, 5], w: 3, rate: 0.45, tag: '中等', rare: true }
   ],
   // 坎布尔星（水系）
   kb_sea: [
-    { sid: 'pede', lv: [6, 10], w: 55, rate: 0.7, tag: '较高' },
+    { sid: 'pede', lv: [6, 10], w: 52, rate: 0.7, tag: '较高' },
     { sid: 'gorgon', lv: [6, 10], w: 40, rate: 0.65, tag: '较高' },
-    { sid: 'siren', lv: [12, 12], w: 5, rate: 0.4, tag: '中等', rare: true }
+    { sid: 'siren', lv: [12, 12], w: 5, rate: 0.4, tag: '中等', rare: true },
+    { sid: 'squid', lv: [10, 10], w: 3, rate: 0.45, tag: '中等', rare: true }
   ],
   // 庞贝星（火系）
   pp_lava: [
-    { sid: 'hephaestus', lv: [8, 14], w: 100, rate: 0.6, tag: '较高' }
+    { sid: 'hephaestus', lv: [8, 14], w: 92, rate: 0.6, tag: '较高' },
+    { sid: 'turkey', lv: [12, 12], w: 5, rate: 0.45, tag: '中等', rare: true },
+    { sid: 'shroom', lv: [12, 12], w: 3, rate: 0.45, tag: '中等', rare: true }
   ],
   // 莱汀陨石带（电系）
   lt_belt: [

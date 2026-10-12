@@ -948,9 +948,9 @@
       if (done) done(); return;
     }
     if (app.S && app.S.story) {
-      var res = app.S.over, quit = !!app.S.quit, cb = storyEnd, seen = app.S.sides[0].team.map(function (x) { return !!x.seen; }), downs = app.S.sides[1].team.filter(function (x) { return x.fainted; }).map(function (x) { return { id: x.id, lv: x.lv }; }); storyEnd = null; itemUsed = null;
+      var endS = app.S, res = app.S.over, quit = !!app.S.quit, cb = storyEnd, seen = app.S.sides[0].team.map(function (x) { return !!x.seen; }), downs = app.S.sides[1].team.filter(function (x) { return x.fainted; }).map(function (x) { return { id: x.id, lv: x.lv }; }); storyEnd = null; itemUsed = null;
       app.screen = 'builder'; app.S = null; $('battle').hidden = true; $('builder').hidden = false; $('log').innerHTML = ''; $('btn-again').hidden = false; setFieldBg(null);
-      if (cb) cb(res, seen, downs, quit); return;
+      if (cb) cb(res, seen, downs, quit, endS); return;
     }
     app.screen = 'builder'; app.S = null; $('statsbox').hidden = true; $('battle').hidden = true; $('builder').hidden = false; $('log').innerHTML = ''; renderMode(); renderBuilder();
   });

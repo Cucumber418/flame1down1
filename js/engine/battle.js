@@ -687,7 +687,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
       total += applyDamage(S, evs, j, res.dmg, i, { crit: res.crit, eff: res.eff, noFaint: true });
       if (me.fainted) break;
     }
-    if (lastEff > 1) log(S, evs, '效果拔群！', 'good'); else if (lastEff < 1) log(S, evs, '效果不太好……');
+    if (lastEff > 1) { log(S, evs, '效果拔群！', 'good'); if (!S.se) S.se = [0, 0]; S.se[i]++; } else if (lastEff < 1) log(S, evs, '效果不太好……');   // S.se：双方打出效果拔群的次数（星球挑战的星级用）
     // 每次攻击附带的固定伤害（飞空连击、非凡连击）：按命中次数合起来结算一次，免得十几次连击动画太长
     if (mv.fixedHit && n && foe.hp > 0 && !me.fainted) { log(S, evs, '每次攻击附带 ' + mv.fixedHit + ' 点固定伤害，共 ' + (mv.fixedHit * n) + ' 点', 'fxl'); total += applyDamage(S, evs, j, mv.fixedHit * n, i, { noFaint: true }); }
   }
