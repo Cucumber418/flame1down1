@@ -28,7 +28,7 @@ var M = {
   寄生之种: { type: '草', cat: '变化', status: { k: '寄生', min: 5, max: 5, chance: 1 }, d: '使对方寄生5回合（每回合吸取对方1/10体力）' },
   猛冲击: { type: '普通', cat: '物攻', power: 60, custom: 'halfHpBoost', d: '威力60，对体力低于1/2者伤害提升50%' },
   吸取: { type: '草', cat: '特攻', power: 60, drain: 0.5, d: '威力60，造成伤害的一半转化为体力回复' },
-  花粉: { type: '草', cat: '变化', tgtStage: { acc: -2 }, d: '降低对方2级命中' },
+  花粉: { type: '草', cat: '变化', tgtStage: { acc: -1 }, custom: 'pollen', d: '降低对方1级命中，40%概率改为降低2级' },
   强力吸取: { type: '草', cat: '特攻', power: 80, drain: 0.5, d: '威力80，造成伤害的一半转化为体力回复' },
   光合作用: { type: '草', cat: '变化', heal: 1 / 5, selfStage: { spa: 1 }, pp: 10, d: '恢复1/5体力，提升1级特攻' },
   软化粉: { type: '草', cat: '特攻', power: 50, tgtStage: { atk: -2 }, d: '威力50，降低对方2级物攻' },

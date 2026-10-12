@@ -831,6 +831,7 @@ function doStatus(S, evs, i, mv) {
     hqLand(me, foe, mv.name, i);
     if (mv.tgtStage) {
       var ts = mv.tgtStage;
+      if (c === 'pollen' && RNG() < 0.4) ts = { acc: -2 };   // 花粉：40% 降 2 级
       if (c === 'dielectric' && foe.st['麻痹'] > 0) { ts = {}; for (var kk in mv.tgtStage) ts[kk] = mv.tgtStage[kk] * 2; log(S, evs, '对方处于麻痹，效果翻倍！', 'fxl'); }
       changeStages(S, evs, j, ts, i);
     }
