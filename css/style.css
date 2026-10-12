@@ -1513,3 +1513,35 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .av-opt .pav { width: 56px; height: 56px; font-size: 28px; }
 .av-opt small { font-size: 12px; line-height: 1.35; text-align: center; }
 .rk-rules { margin: 10px 0 6px; } .rk-prog { margin-bottom: 10px; } .rk-prog .pbar i { background: var(--blue); }
+
+/* ============ 首领攻略板 ============ */
+.bsoc { position: relative; margin-top: 14px; padding: 16px; background: var(--paper-2); border: 1.5px solid var(--ink); border-radius: 16px; box-shadow: 3px 3px 0 var(--ink); display: grid; gap: 8px; }
+.bsoc h4 { margin: 6px 0 0; font-size: 14px; } .bsoc h4 small { font-weight: 400; color: var(--pencil); margin-left: 4px; }
+.bs-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
+.bs-h { margin: 0; font-family: var(--f-hand); font-weight: 400; font-size: 26px; }
+.bs-avg b { font-size: 18px; } .bs-avg small { color: var(--pencil); }
+.bs-stars i { font-style: normal; color: var(--rule); letter-spacing: 1px; } .bs-stars i.on { color: #e0a51b; }
+.bs-clears { display: flex; flex-wrap: wrap; gap: 6px; }
+.bs-clr { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px 2px 2px; border: 1px solid var(--rule); border-radius: 999px; background: var(--paper); font-size: 13px; }
+.bs-clr.me { border-color: var(--red); }
+.bs-clr .pav { width: 24px; height: 24px; font-size: 13px; }
+.bs-form { display: grid; gap: 6px; padding: 10px 12px; border: 1.5px dashed var(--red); border-radius: 12px; }
+.bs-form textarea { width: 100%; resize: vertical; padding: 8px 10px; border: 1.5px solid var(--ink); border-radius: 10px; background: var(--paper); font: inherit; font-size: 14px; }
+.bs-pick { display: flex; align-items: center; gap: 2px; }
+.bs-pick button { cursor: pointer; border: 0; background: none; font-size: 26px; line-height: 1; color: var(--rule); padding: 0 2px; }
+.bs-pick button.on { color: #e0a51b; }
+.bs-pick .hint { margin-left: 8px; }
+.bs-row { display: flex; align-items: center; justify-content: flex-end; gap: 8px; } .bs-row .hint { margin-right: auto; }
+.bs-lock { padding: 8px 10px; border: 1px dashed var(--rule); border-radius: 10px; }
+.bs-list { list-style: none; margin: 0; padding: 0; display: grid; }
+.bs-post { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; padding: 10px 0; border-top: 1px dashed var(--rule); }
+.bs-post:first-child { border-top: 0; }
+.bs-post .pav { width: 36px; height: 36px; font-size: 18px; }
+.bs-who { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.bs-text { margin: 4px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.6; font-size: 14.5px; }
+.bs-acts { margin: 6px 0 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.bs-v { cursor: pointer; padding: 2px 10px; border: 1px solid var(--rule); border-radius: 999px; background: var(--paper); font: inherit; font-size: 13px; color: var(--ink); }
+.bs-v b { font-weight: 600; font-variant-numeric: tabular-nums; }
+.bs-v.on { border-color: var(--blue); background: #e8eefb; color: var(--blue); }
+.bs-v:disabled { cursor: default; opacity: .7; }
+.bs-none { padding: 8px 0; }

@@ -5,6 +5,8 @@
  *   sudo node /opt/flame1down1/server/admin.js reset 账号名 新密码     帮忘记密码的人重设密码
  *   sudo node /opt/flame1down1/server/admin.js board                 看讨论区最近 30 条留言（带编号）
  *   sudo node /opt/flame1down1/server/admin.js board-del 编号          删掉讨论区里的一条留言
+ *   sudo node /opt/flame1down1/server/admin.js boss                  看首领攻略板上的所有攻略（带编号）
+ *   sudo node /opt/flame1down1/server/admin.js boss-del 编号           删掉一条首领攻略
  *
  * 重设密码后会自动重启游戏服务，让旧的登录失效。
  */
@@ -41,6 +43,15 @@ if (cmd === 'list') {
   bd2.posts = bd2.posts.filter(function (p) { return p.id !== process.argv[3]; });
   if (bd2.posts.length === n0) { console.error('没有编号为 ' + process.argv[3] + ' 的留言'); process.exit(1); }
   B.store(bd2); console.log('已删除'); process.exit(0);
+} else if (cmd === 'boss') {
+  var bb = require('./bossboard').load();
+  Object.keys(bb.levels).forEach(function (k) { (bb.levels[k].posts || []).forEach(function (p) { console.log('  [' + p.id + '] ' + k + '  ' + fmt(p.t) + '  ' + p.user + '  ' + p.stars + '星：' + p.text.replace(/\n/g, ' ')); }); });
+  process.exit(0);
+} else if (cmd === 'boss-del' && process.argv[3]) {
+  var BB = require('./bossboard'), bb2 = BB.load(), hit = false;
+  Object.keys(bb2.levels).forEach(function (k) { var L = bb2.levels[k], n0 = L.posts.length; L.posts = L.posts.filter(function (p) { return p.id !== process.argv[3]; }); if (L.posts.length !== n0) hit = true; });
+  if (!hit) { console.error('没有编号为 ' + process.argv[3] + ' 的攻略'); process.exit(1); }
+  BB.store(bb2); console.log('已删除'); process.exit(0);
 } else {
-  console.log('用法：\n  sudo node /opt/flame1down1/server/admin.js list\n  sudo node /opt/flame1down1/server/admin.js reset 账号名 新密码\n  sudo node /opt/flame1down1/server/admin.js board\n  sudo node /opt/flame1down1/server/admin.js board-del 编号');
+  console.log('用法：\n  sudo node /opt/flame1down1/server/admin.js list\n  sudo node /opt/flame1down1/server/admin.js reset 账号名 新密码\n  sudo node /opt/flame1down1/server/admin.js board\n  sudo node /opt/flame1down1/server/admin.js board-del 编号\n  sudo node /opt/flame1down1/server/admin.js boss\n  sudo node /opt/flame1down1/server/admin.js boss-del 编号');
 }

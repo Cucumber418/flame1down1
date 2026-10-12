@@ -1753,8 +1753,86 @@
       '<li><b>时限</b>' + MAX_TURNS + ' 回合内没有击败首领，算挑战失败</li>' +
       '<li><b>奖励</b>' + rw + '</li><li><b>战绩</b>' + (rec.wins || 0) + ' 胜 / ' + (rec.tries || 0) + ' 次挑战</li></ul>' +
       '<p class="hint">会使用你当前的出战配队（' + TEAM_NAME[acc.active] + '）。' + (L.only ? '记得带上会' + L.only.join('、') + '系技能的精灵。' : '') + '对战中可以使用补药。</p>' +
-      btn + '</div></article>';
+      btn + '</div></article>' + (weekly ? '' : '<section class="bsoc" id="bsoc"><p class="hint">读取攻略中……</p></section>');
+    if (!weekly) bsocLoad(k, d);
   }
+  /* ---------- 首领攻略板（每个难度一块，服务器见 server/bossboard.js）----------
+   * 已通过的玩家（服务器从存档里读）、攻略留言（通过后才能发，每人一条，1~5 星评分）、赞 / 踩 / 欢乐 */
+  var BS_MAX = 500;
+  function bsOnline() { return !!(window.CLOUD && CLOUD.user && CLOUD.user()); }
+  function bsocLoad(k, d) {
+    var key = k + ':' + d; ex.bs = ex.bs && ex.bs.key === key ? ex.bs : { key: key, k: k, d: d, data: null, edit: false, stars: 0, draft: '' };
+    if (!bsOnline()) { var el0 = $('bsoc'); if (el0) el0.innerHTML = '<h3 class="bs-h">通关玩家 · 攻略</h3><p class="hint">攻略板需要联网：用服务器网址打开游戏并登录后才能看到。</p>'; return; }
+    CLOUD.api('GET', '/api/boss?k=' + k + '&d=' + d).then(function (r) {
+      if (!ex.bs || ex.bs.key !== key) return;
+      if (r._code !== 200) { var e1 = $('bsoc'); if (e1) e1.innerHTML = '<p class="hint">' + esc(r.error || '读取失败') + '</p>'; return; }
+      ex.bs.data = r;
+      var mine = r.posts.filter(function (p) { return p.me; })[0];
+      if (mine && !ex.bs.edit) { ex.bs.stars = mine.stars; }
+      bsocDraw();
+    }).catch(function () { var e2 = $('bsoc'); if (e2) e2.innerHTML = '<p class="hint">连不上服务器</p>'; });
+  }
+  function starsTxt(n) { var h = ''; for (var i = 1; i <= 5; i++) h += '<i class="' + (i <= n ? 'on' : '') + '">★</i>'; return '<span class="bs-stars">' + h + '</span>'; }
+  function bsAgo(t) { var s0 = (Date.now() - t) / 1000; if (s0 < 60) return '刚刚'; if (s0 < 3600) return Math.floor(s0 / 60) + ' 分钟前'; if (s0 < 86400) return Math.floor(s0 / 3600) + ' 小时前'; var dd = new Date(t); return (dd.getMonth() + 1) + '月' + dd.getDate() + '日'; }
+  function bsocDraw() {
+    var el = $('bsoc'), S = ex.bs, r = S && S.data; if (!el || !r) return;
+    var B = BOSSES[S.k], L = B.lv[S.d], mine = r.posts.filter(function (p) { return p.me; })[0];
+    var clears = r.clears.length ? r.clears.slice(0, 40).map(function (c) { return '<span class="bs-clr' + (c.me ? ' me' : '') + '" title="@' + esc(c.user) + '"><span class="pav' + (c.avatar ? ' img' : '') + '">' + avatarInner(c.avatar, c.name) + '</span>' + esc(c.name) + '</span>'; }).join('') + (r.clears.length > 40 ? '<span class="hint">等 ' + r.clears.length + ' 人</span>' : '')
+      : '<p class="hint">还没有人通过' + L.diff + '难度。第一个通过的会是你吗？</p>';
+    var form = '';
+    if (r.canPost && (!mine || S.edit)) {
+      var st = S.stars || 0;
+      form = '<div class="bs-form"><b>' + (mine ? '修改你的攻略' : '你已经通过了这个难度，写一份攻略吧') + '</b>' +
+        '<div class="bs-pick" role="radiogroup" aria-label="评分">' + [1, 2, 3, 4, 5].map(function (n) { return '<button type="button" class="' + (n <= st ? 'on' : '') + '" data-bsstar="' + n + '" aria-label="' + n + ' 星">★</button>'; }).join('') + '<span class="hint">' + (st ? st + ' 星' : '给这个难度打个分（1~5 星）') + '</span></div>' +
+        '<textarea id="bs-text" rows="4" maxlength="' + BS_MAX + '" placeholder="带了哪几只精灵、怎么打的、要注意什么……">' + esc(S.draft || (mine ? mine.text : '')) + '</textarea>' +
+        '<div class="bs-row"><span class="hint" id="bs-cnt">' + Array.from(S.draft || (mine ? mine.text : '')).length + ' / ' + BS_MAX + '</span>' + (mine ? '<button type="button" class="btn ghost" data-bsx="1">取消</button>' : '') + '<button type="button" class="btn primary" data-bssend="1">' + (mine ? '保存修改' : '发表攻略') + '</button></div></div>';
+    } else if (!r.canPost) form = '<p class="hint bs-lock">通过' + L.diff + '难度之后，可以在这里发攻略、给这个难度打分。</p>';
+    var posts = r.posts.length ? r.posts.map(function (p) {
+      var vb = function (v, ico, lab) { return '<button type="button" class="bs-v' + (p.my[v] ? ' on' : '') + '" data-bsvote="' + v + '" data-id="' + esc(p.id) + '"' + (p.me ? ' disabled title="不能给自己投票"' : ' title="' + lab + '"') + '>' + ico + ' <b>' + p[v] + '</b></button>'; };
+      return '<li class="bs-post' + (p.me ? ' mine' : '') + '"><span class="pav' + (p.avatar ? ' img' : '') + '">' + avatarInner(p.avatar, p.name) + '</span><div class="bs-body">' +
+        '<p class="bs-who"><b>' + esc(p.name) + '</b>' + starsTxt(p.stars) + '<span class="hint">' + bsAgo(p.edited || p.t) + (p.edited ? '（修改过）' : '') + '</span></p>' +
+        '<p class="bs-text">' + esc(p.text) + '</p><p class="bs-acts">' + vb('up', '👍', '赞') + vb('down', '👎', '踩') + vb('fun', '😂', '欢乐') +
+        (p.me ? '<button type="button" class="linkbtn" data-bsedit="1">修改</button><button type="button" class="linkbtn red" data-bsdel="' + esc(p.id) + '">删除</button>' : '') + '</p></div></li>';
+    }).join('') : '<li class="hint bs-none">还没有攻略。</li>';
+    el.innerHTML = '<span class="tape r"></span><div class="bs-top"><h3 class="bs-h">' + B.name + ' · ' + L.diff + '难度</h3>' +
+      (r.posts.length ? '<span class="bs-avg">' + starsTxt(Math.round(r.avg)) + ' <b>' + r.avg.toFixed(1) + '</b> <small>' + r.posts.length + ' 份评价</small></span>' : '<span class="hint">暂无评分</span>') + '</div>' +
+      '<h4>已通过的玩家 <small>' + r.clears.length + ' 人</small></h4><div class="bs-clears">' + clears + '</div>' +
+      '<h4>攻略 · 留言 <small>按赞数排序</small></h4>' + form + '<ul class="bs-list">' + posts + '</ul>';
+  }
+  function bsocClick(e) {
+    var S = ex.bs, t; if (!S) return;
+    if ((t = e.target.closest('[data-bsstar]'))) { var ta = $('bs-text'); if (ta) S.draft = ta.value; S.stars = +t.dataset.bsstar; bsocDraw(); return; }
+    if (e.target.closest('[data-bsedit]')) { S.edit = true; S.draft = ''; bsocDraw(); var t2 = $('bs-text'); if (t2) t2.focus(); return; }
+    if (e.target.closest('[data-bsx]')) { S.edit = false; S.draft = ''; bsocLoad(S.k, S.d); return; }
+    if ((t = e.target.closest('[data-bssend]'))) {
+      var text = ($('bs-text') || {}).value || '';
+      if (!S.stars) { toast('先点星星给这个难度打个分（1~5 星）。'); return; }
+      if (!text.trim()) { toast('攻略不能是空的。'); return; }
+      t.disabled = true;
+      CLOUD.api('POST', '/api/boss-post', { k: S.k, d: S.d, text: text, stars: S.stars }).then(function (r) {
+        if (r._code !== 200) { t.disabled = false; toast(r.error || '发表失败'); return; }
+        S.edit = false; S.draft = ''; toast(r.edited ? '攻略已修改。' : '攻略已发表，其他船员可以看到了。'); bsocLoad(S.k, S.d);
+      }).catch(function () { t.disabled = false; toast('连不上服务器'); });
+      return;
+    }
+    if ((t = e.target.closest('[data-bsvote]'))) {
+      if (t.disabled) return;
+      CLOUD.api('POST', '/api/boss-vote', { k: S.k, d: S.d, id: t.dataset.id, v: t.dataset.bsvote }).then(function (r) {
+        if (r._code !== 200) { toast(r.error || '操作失败'); return; }
+        var P = S.data.posts.filter(function (p) { return p.id === t.dataset.id; })[0]; if (P) { P.up = r.up; P.down = r.down; P.fun = r.fun; P.my = r.my; }
+        bsocDraw();
+      }).catch(function () { toast('连不上服务器'); });
+      return;
+    }
+    if ((t = e.target.closest('[data-bsdel]'))) {
+      if (t.dataset.armed !== '1') { t.dataset.armed = '1'; t.textContent = '确认删除？'; return; }
+      CLOUD.api('POST', '/api/boss-del', { k: S.k, d: S.d, id: t.dataset.bsdel }).then(function (r) {
+        if (r._code !== 200) { toast(r.error || '删除失败'); return; }
+        S.stars = 0; bsocLoad(S.k, S.d);
+      }).catch(function () { toast('连不上服务器'); });
+    }
+  }
+  $('pg-explore').addEventListener('input', function (e) { if (e.target.id === 'bs-text' && ex.bs) { ex.bs.draft = e.target.value; var c = $('bs-cnt'); if (c) c.textContent = Array.from(e.target.value).length + ' / ' + BS_MAX; } });
   function dropName(D) { return D.items ? Object.keys(D.items).map(function (k) { return itemName(k) + (D.items[k] > 1 ? ' ×' + D.items[k] : ''); }).join('、') : D.energy ? '能量 ×' + fmt(D.energy) : '累积经验 ×' + fmt(D.exp); }
   // 每档难度第一次击败的奖励
   function firstReward(L) {
@@ -2256,6 +2334,7 @@
   $('pg-explore').addEventListener('click', function (e) {
     if (ex.mode === 'replay' && $('vn')) { vnClick(e); return; }
     if (ex.view === 'shop' && shopClick(e)) return;
+    if (e.target.closest('#bsoc')) { bsocClick(e); return; }
     var b = e.target.closest('button, .dept.open'); if (!b) return;
     if (b.dataset.area) { teleport(b.dataset.area); return; }
     if (b.dataset.qopen) { ex.qBack = { view: ex.view, planet: ex.planet, area: ex.area }; ex.view = 'quests'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
