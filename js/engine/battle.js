@@ -552,15 +552,17 @@ function resolveTurn(S, acts) {
   return evs;
 }
 
-/* ---------- 道具：商城购买，剧情/野外对战中使用（占用本回合） ---------- */
+/* ---------- 道具：对战中使用（占用本回合） ----------
+ * cap1、pot1、pot2 在商城用能量兑换。cap2、cap3、pot200 只在冶炼坊合成。 */
 var ITEMS = {
   cap1: { name: '普通精灵捕捉装置', price: 200, cap: 1, d: '投向野生精灵尝试捕捉。对手体力越低、身上有异常状态时越容易成功。' },
-  cap2: { name: '加强精灵捕捉装置', price: 500, cap: 1.5, d: '捕捉成功率是普通装置的 1.5 倍。' },
-  cap3: { name: '华为精灵捕捉装置', price: 2000, cap: 'sure', d: '必定捕捉成功。' },
+  cap2: { name: '加强精灵捕捉装置', cap: 1.5, d: '捕捉成功率是普通装置的 1.5 倍。在黄石 · 冶炼坊用星砂合成。' },
+  cap3: { name: '华为精灵捕捉装置', cap: 'sure', d: '必定捕捉成功。在黄石 · 冶炼坊用星核合成。' },
   pot1: { name: '体力补药', price: 100, heal: 0.3, d: '为出战中的精灵恢复 30% 最大体力。' },
-  pot2: { name: '强能体力补药', price: 250, heal: 0.5, d: '为出战中的精灵恢复 50% 最大体力。' }
+  pot2: { name: '强能体力补药', price: 250, heal: 0.5, d: '为出战中的精灵恢复 50% 最大体力。' },
+  pot200: { name: '200血药', heal: 200, flat: true, d: '为出战中的精灵恢复 200 点体力。在黄石 · 冶炼坊用药草合成。' }
 };
-var ITEM_ORDER = ['cap1', 'cap2', 'cap3', 'pot1', 'pot2'];
+var ITEM_ORDER = ['cap1', 'cap2', 'cap3', 'pot1', 'pot2', 'pot200'];
 function hasStatus(m) { for (var k in m.st) if (m.st[k] > 0 && ST_DESC[k]) return true; return false; }
 // 捕捉成功率 = 精灵捕捉率 × 装置倍率 × (1 − 剩余体力比例 × 0.5) × (有异常状态 ×1.25)
 function catchChance(S, key) {
@@ -572,7 +574,7 @@ function useItem(S, evs, i, key) {
   var it = ITEMS[key], m = act(S, i); if (!it) return;
   if (it.heal) {
     log(S, evs, '你使用了「' + it.name + '」', 'fxl');
-    if (!heal(S, evs, i, m.maxhp * it.heal)) log(S, evs, nm(m) + '的体力已经是满的了', 'dmg');
+    if (!heal(S, evs, i, it.flat ? it.heal : m.maxhp * it.heal)) log(S, evs, nm(m) + '的体力已经是满的了', 'dmg');
     return;
   }
   var f = act(S, 1), p = catchChance(S, key);
