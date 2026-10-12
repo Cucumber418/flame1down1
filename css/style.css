@@ -1614,3 +1614,22 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .dm-pop > b { color: #4c6a12; }
 .dm-pop-h { display: flex; align-items: center; gap: 8px; } .dm-pop-h .pav { width: 30px; height: 30px; font-size: 15px; } .dm-pop-h b { flex: 1; } .dm-pop-h small { color: var(--pencil); font-size: 12px; }
 .dm-pop-t { margin: 2px 0 0; font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 5.5em; overflow: hidden; }
+
+/* ============ 表情 ============ */
+.emote-wrap { position: relative; display: inline-block; }
+.tab.emote { border-color: #6f8f2a; color: #4c6a12; }
+.emote-pop { position: absolute; bottom: calc(100% + 8px); left: 0; z-index: 40; width: 276px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 8px; background: var(--paper-2); border: 1.5px solid var(--ink); border-radius: 12px; box-shadow: 3px 3px 0 var(--ink); }
+.emote-pop[hidden] { display: none; }
+.emote-pop button, .dm-emotes button { cursor: pointer; padding: 2px; border: 1px solid var(--rule); border-radius: 10px; background: #fff; aspect-ratio: 1; }
+.emote-pop button:hover, .dm-emotes button:hover { border-color: var(--ink); }
+.emote-pop img, .dm-emotes img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.emote-bub { position: absolute; top: 2%; left: 50%; transform: translateX(-50%); width: 34%; max-width: 120px; aspect-ratio: 1; z-index: 6; background: #fff; border: 2px solid var(--ink); border-radius: 50%; padding: 4px; box-shadow: 3px 3px 0 rgba(35,34,43,.35); animation: emotePop 3.2s ease-out forwards; pointer-events: none; }
+.emote-bub img { width: 100%; height: 100%; object-fit: contain; border-radius: 50%; }
+@keyframes emotePop { 0% { transform: translateX(-50%) scale(.3); opacity: 0; } 10% { transform: translateX(-50%) scale(1.08); opacity: 1; } 18% { transform: translateX(-50%) scale(1); } 85% { opacity: 1; } 100% { opacity: 0; transform: translateX(-50%) translateY(-10px); } }
+.dm-emotes { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; padding: 6px 8px; border-top: 1px dashed var(--rule); background: var(--paper); }
+.dm-emotes[hidden] { display: none; }
+.dm-win { grid-template-rows: auto minmax(0, 1fr) auto auto; }
+.dm-emo-btn { cursor: pointer; border: 1.5px solid var(--ink); border-radius: 10px; background: #fff; font-size: 18px; padding: 4px 6px; align-self: stretch; }
+.dm-msg.emote { background: transparent !important; border: 0; padding: 0; }
+.dm-msg.emote img { width: 96px; height: 96px; object-fit: contain; display: block; }
+.dm-pop-e { width: 64px; height: 64px; object-fit: contain; }

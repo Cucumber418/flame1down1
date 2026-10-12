@@ -261,3 +261,22 @@ var ITEM_IMG = {
   "helmet": "images/items/helmet.webp",
   "drone": "images/items/drone.webp"
 };
+
+// 表情（从人物立绘的各个差分里截出头像）：聊天私信和联网对战里都能发
+var EMOTES = [
+  { id: "threego", n: "Threego · 开心", img: "images/emotes/threego.webp" },
+  { id: "threego_laugh", n: "Threego · 气鼓鼓", img: "images/emotes/threego_laugh.webp" },
+  { id: "threego_eat", n: "Threego · 慌张", img: "images/emotes/threego_eat.webp" },
+  { id: "threego_smile", n: "Threego · 不好意思", img: "images/emotes/threego_smile.webp" },
+  { id: "drh", n: "Dr.黄 · 得意", img: "images/emotes/drh.webp" },
+  { id: "drh_cry", n: "Dr.黄 · 哭哭", img: "images/emotes/drh_cry.webp" },
+  { id: "drh_oh", n: "Dr.黄 · 哦？", img: "images/emotes/drh_oh.webp" },
+  { id: "drh_grin", n: "Dr.黄 · 坏笑", img: "images/emotes/drh_grin.webp" },
+  { id: "bttp", n: "Bttp · 平静", img: "images/emotes/bttp.webp" },
+  { id: "bttp_god", n: "Bttp · 神", img: "images/emotes/bttp_god.webp" },
+  { id: "bttp_smile", n: "Bttp · 微笑", img: "images/emotes/bttp_smile.webp" },
+  { id: "bttp_huh", n: "Bttp · 疑惑", img: "images/emotes/bttp_huh.webp" }
+];
+function emoteOf(id) { for (var i = 0; i < EMOTES.length; i++) if (EMOTES[i].id === id) return EMOTES[i]; return null; }
+// 私信里的表情写成「[[e:表情id]]」这样一条消息
+function emoteMsg(text) { var m = /^\[\[e:([a-z_]+)\]\]$/.exec(text || ''); return m ? emoteOf(m[1]) : null; }

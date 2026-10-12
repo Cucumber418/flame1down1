@@ -474,7 +474,7 @@
     if (!CAST.on) return;
     castFlush(); CAST.on = false;
     if (caster) caster('end', { title: title, sub: sub });
-    castViewers(0, []); $('btn-invite').hidden = true;
+    castViewers(0, []); $('btn-invite').hidden = true; $('btn-emote').hidden = true; var ep = $('emote-pop'); if (ep) ep.hidden = true;
   }
   function castFx(o) { if (CAST.on) { CAST.fx.push(o); castQueue(); } }
   // 有几个人在看
@@ -577,7 +577,7 @@
     app.screen = 'battle'; app.logHTML = ''; $('log').innerHTML = '';
     $('builder').hidden = true; $('battle').hidden = false; $('endcard').hidden = true;
     shownIds = [null, null]; ['plate0', 'plate1'].forEach(function (id) { $(id).dataset.ready = ''; });
-    castBegin(); $('btn-invite').hidden = false; $('btn-invite').disabled = false; $('btn-invite').textContent = '邀请全服观战';
+    castBegin(); $('btn-emote').hidden = false; $('btn-invite').hidden = false; $('btn-invite').disabled = false; $('btn-invite').textContent = '邀请全服观战';
     var me = app.S.sides[PV], foe = app.S.sides[1 - PV], nn = function (x) { return x.nick || SPMAP[x.id].name; };
     addLog(opt.brawl ? '与 ' + opt.foe + ' 的精灵大乱斗开始！' : '与 ' + opt.foe + ' 的 ' + (opt.label || opt.mode + 'v' + opt.mode) + ' 切磋开始！', 'turn');
     addLog(foe.name + '派出了【' + nn(foe.team[0]) + '】，你派出了【' + nn(me.team[0]) + '】！', '');
@@ -622,6 +622,7 @@
     castViewers: castViewers,
     castInvited: function (ok, msg) { var b = $('btn-invite'); if (ok) { b.disabled = true; b.textContent = '已邀请全服观战'; } else b.disabled = false; if (CAST.on) addLog(msg, 'dmg'); },
     castNote: function (msg) { if (CAST.on) addLog(msg, 'dmg'); },
+    peerEmote: function (id) { if (!pvp) return; showEmote(1, id); castFx({ a: 'emote', i: 1, e: id }); },
     setLoadout: function (id, mv) { if (!SPMAP[id] || !Array.isArray(mv) || !mv.length) return; app.loadout[id] = mv.slice(0, 4); saveLoadout(); } };
   var shownIds = [null, null];
   /* ---------- 联网切磋：PV 是「我」在对战里的位置（0 发起方 / 1 应战方），画面始终把自己放在下方 ---------- */
@@ -901,6 +902,29 @@
     app.S.items[k]--; if (itemUsed) itemUsed(k);
     showTab('moves'); doTurn({ kind: 'item', key: k });
   });
+  /* 联网对战里发表情：自己这边立刻显示，再通过 social.js 发给对方；观众也能看到。3 秒内只能发一个 */
+  var emoteAt = 0;
+  function showEmote(i, id) {   // i：画面上的位置（0 下方的自己，1 上方的对手）
+    var E0 = typeof emoteOf === 'function' ? emoteOf(id) : null; if (!E0) return;
+    var mon = $('mon' + i); if (!mon) return;
+    var old = mon.querySelector('.emote-bub'); if (old) old.remove();
+    var b = document.createElement('div'); b.className = 'emote-bub'; b.innerHTML = '<img src="' + E0.img + '" alt="' + esc(E0.n) + '">';
+    mon.appendChild(b); setTimeout(function () { b.remove(); }, 3200);
+  }
+  $('btn-emote').addEventListener('click', function (e) {
+    e.stopPropagation(); var pop = $('emote-pop');
+    if (pop.hidden) pop.innerHTML = EMOTES.map(function (x) { return '<button type="button" data-emote="' + x.id + '" title="' + esc(x.n) + '"><img src="' + x.img + '" alt="' + esc(x.n) + '"></button>'; }).join('');
+    pop.hidden = !pop.hidden;
+  });
+  $('emote-pop').addEventListener('click', function (e) {
+    e.stopPropagation(); var b = e.target.closest('[data-emote]'); if (!b || !pvp) return;
+    if (Date.now() - emoteAt < 3000) { flashHint('表情发得太快了，稍等一下'); return; }
+    emoteAt = Date.now(); $('emote-pop').hidden = true;
+    showEmote(0, b.dataset.emote); castFx({ a: 'emote', i: 0, e: b.dataset.emote });
+    if (pvp.onEmote) pvp.onEmote(b.dataset.emote);
+  });
+  document.addEventListener('click', function () { var p = $('emote-pop'); if (p) p.hidden = true; });
+  function flashHint(t) { var h = $('cmd-hint'); if (h) { h.textContent = t; h.className = 'hint alert'; setTimeout(refreshCmd, 1500); } }
   $('btn-invite').addEventListener('click', function () { if (pvp && CAST.on && caster && !this.disabled) { this.disabled = true; caster('invite', {}); } });
   $('btn-speed').addEventListener('click', function () { app.fast = !app.fast; this.textContent = '动画：' + (app.fast ? '快速' : '正常'); });
   $('btn-quit').addEventListener('click', function () {

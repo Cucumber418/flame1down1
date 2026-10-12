@@ -480,6 +480,7 @@
       onAct: function (a) { if (M0.side === 0) hostGot(0, 'act', a); else send({ type: 'mm', id: M0.id, data: { k: 'act', a: a } }); },
       onRepl: function (k) { if (M0.side === 0) hostGot(0, 'repl', k); else send({ type: 'mm', id: M0.id, data: { k: 'repl', i: k } }); },
       onQuit: function () { if (M0.side === 0) hostQuit(0); else send({ type: 'mm', id: M0.id, data: { k: 'quit' } }); },
+      onEmote: function (e) { send({ type: 'mm', id: M0.id, data: { k: 'emote', e: String(e).slice(0, 32) } }); },
       onOver: function (mine) {
         stopHost(); send({ type: 'mm-over', id: M0.id });
         if (M0.pick === 'draft') A.noteDraft();   // 支线任务「竞技征召」：打完一场就算（胜负都算）
@@ -495,6 +496,7 @@
   }
   function mmMsg(d) {
     var M0 = st.match; if (!M0) return;
+    if (d.k === 'emote') { if (HB.peerEmote) HB.peerEmote(d.e); return; }   // 对方发的表情
     if (M0.side === 1) {
       if (d.k === 'init') begin(d.S);
       else if (d.k === 'turn') { if (d.quit != null) M0.quitSide = d.quit; HB.pvpApply(d.evs || [], d.S, d.sec); }
@@ -921,6 +923,7 @@
           var n = document.createElement('div'); n.className = 'float ' + (f.a === 'heal' ? 'heal' : f.c ? 'crit' : ''); n.textContent = (f.a === 'heal' ? '+' : '-') + f.n + (f.c ? '!' : '');
           mon.appendChild(n); setTimeout(function () { n.remove(); }, 950);
         } else if (f.a === 'throw') wtAnim(mon, 'throw');
+        else if (f.a === 'emote' && typeof emoteOf === 'function' && emoteOf(f.e)) { var ob = mon.querySelector('.emote-bub'); if (ob) ob.remove(); var eb = document.createElement('div'); eb.className = 'emote-bub'; eb.innerHTML = '<img src="' + emoteOf(f.e).img + '" alt="">'; mon.appendChild(eb); setTimeout(function () { eb.remove(); }, 3200); }
       }, k * 120);
     });
   }
@@ -988,7 +991,7 @@
     if (!L.length) return '<div class="soc-empty"><p>还没有私信。在「好友」里点对方的「💬 私信」就能开始聊天（要先把对方加为好友）。</p></div>';
     return '<div class="plist dm-list">' + L.map(function (c) {
       return '<button type="button" class="dm-row' + (c.unread ? ' unread' : '') + '" data-dm="' + esc(c.peer) + '"><span class="pav' + (c.avatar ? ' img' : '') + '">' + A.avatarInner(c.avatar, c.name) + '</span>' +
-        '<span class="dm-r-txt"><b>' + esc(c.name) + '</b><small>' + (c.lastFrom === c.peer ? '' : '我：') + esc(c.last.slice(0, 60)) + '</small></span><span class="dm-r-side"><small>' + dmTime(c.lastT) + '</small>' + (c.unread ? '<i class="q-badge">' + c.unread + '</i>' : '') + '</span></button>';
+        '<span class="dm-r-txt"><b>' + esc(c.name) + '</b><small>' + (c.lastFrom === c.peer ? '' : '我：') + (emoteMsg(c.last) ? '[表情] ' + esc(emoteMsg(c.last).n) : esc(c.last.slice(0, 60))) + '</small></span><span class="dm-r-side"><small>' + dmTime(c.lastT) + '</small>' + (c.unread ? '<i class="q-badge">' + c.unread + '</i>' : '') + '</span></button>';
     }).join('') + '</div>';
   }
   function dmOpen(user) {
@@ -999,10 +1002,16 @@
     var w = document.createElement('div'); w.className = 'dm-win'; w.setAttribute('role', 'dialog'); w.setAttribute('aria-label', '私信');
     w.innerHTML = '<div class="dm-head"><span class="pav" id="dm-av">' + esc(Array.from(st.dm.name)[0] || '?') + '</span><div><b id="dm-name">' + esc(st.dm.name) + '</b><small id="dm-st">@' + esc(user) + '</small></div><button type="button" class="dm-x" data-dmx="1" aria-label="关闭">×</button></div>' +
       '<div class="dm-body" id="dm-body"><p class="hint dm-empty">读取中……</p></div>' +
-      '<div class="dm-foot"><textarea id="dm-text" rows="2" maxlength="300" placeholder="说点什么……（回车发送，Shift+回车换行）"></textarea><button type="button" class="btn primary" id="dm-send">发送</button></div>';
+      '<div class="dm-emotes" id="dm-emotes" hidden>' + EMOTES.map(function (x) { return '<button type="button" data-dme="' + x.id + '" title="' + esc(x.n) + '"><img src="' + x.img + '" alt="' + esc(x.n) + '"></button>'; }).join('') + '</div>' +
+      '<div class="dm-foot"><button type="button" class="dm-emo-btn" id="dm-emo" title="表情" aria-label="表情">😀</button><textarea id="dm-text" rows="2" maxlength="300" placeholder="说点什么……（回车发送，Shift+回车换行）"></textarea><button type="button" class="btn primary" id="dm-send">发送</button></div>';
     document.body.appendChild(w);
     var ta = w.querySelector('#dm-text');
-    w.addEventListener('click', function (e) { if (e.target.closest('[data-dmx]')) { w.remove(); st.dm = null; return; } if (e.target.id === 'dm-send') dmSend(); });
+    w.addEventListener('click', function (e) {
+      if (e.target.closest('[data-dmx]')) { w.remove(); st.dm = null; return; }
+      if (e.target.id === 'dm-send') { dmSend(); return; }
+      if (e.target.closest('#dm-emo')) { var pe = $('dm-emotes'); pe.hidden = !pe.hidden; return; }
+      var em = e.target.closest('[data-dme]'); if (em) { $('dm-emotes').hidden = true; dmSend('[[e:' + em.dataset.dme + ']]'); }
+    });
     ta.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); dmSend(); } });
     api('GET', '/api/dm?with=' + encodeURIComponent(user)).then(function (r) {
       if (!st.dm || st.dm.user !== user) return;
@@ -1022,18 +1031,19 @@
     var prev = 0;
     b.innerHTML = D.msgs.map(function (m) {
       var mine = m.f === D.me, gap = m.t - prev > 5 * 60000; prev = m.t;
-      return (gap ? '<p class="dm-time">' + dmTime(m.t) + '</p>' : '') + '<div class="dm-msg' + (mine ? ' me' : '') + '" title="' + dmTime(m.t) + '"><p>' + esc(m.x) + '</p><small>' + dmTime(m.t).replace(/^.* /, '') + '</small></div>';
+      var em = emoteMsg(m.x);
+      return (gap ? '<p class="dm-time">' + dmTime(m.t) + '</p>' : '') + '<div class="dm-msg' + (mine ? ' me' : '') + (em ? ' emote' : '') + '" title="' + dmTime(m.t) + '">' + (em ? '<img src="' + em.img + '" alt="' + esc(em.n) + '">' : '<p>' + esc(m.x) + '</p>') + '<small>' + dmTime(m.t).replace(/^.* /, '') + '</small></div>';
     }).join('');
     b.scrollTop = b.scrollHeight;
   }
-  function dmSend() {
+  function dmSend(raw) {
     var D = st.dm, ta = $('dm-text'); if (!D || !ta || ta.disabled) return;
-    var text = ta.value.trim(); if (!text) return;
+    var text = raw || ta.value.trim(); if (!text) return;
     ta.disabled = true;
     api('POST', '/api/dm', { to: D.user, text: text }).then(function (r) {
       ta.disabled = false; ta.focus();
       if (r._code !== 200) { A.toast(r.error || '发送失败'); return; }
-      ta.value = '';
+      if (!raw) ta.value = '';
       if (st.dm === D && !D.msgs.some(function (x) { return x.t === r.msg.t && x.f === r.msg.f; })) { D.msgs.push(r.msg); dmDraw(); }
     }).catch(function () { ta.disabled = false; A.toast('连不上服务器'); });
   }
@@ -1059,7 +1069,7 @@
     var old = document.querySelector('.dm-pop'); if (old) old.remove();
     var el = document.createElement('div'); el.className = 'dm-pop'; el.setAttribute('role', 'status');
     el.innerHTML = m.unreadAll ? '<b>💬 私信</b><span>你有 ' + m.unreadAll + ' 条未读私信</span><div class="bw-pop-btns"><button type="button" class="btn ghost" data-dpx="1">稍后</button><button type="button" class="btn primary" data-dplist="1">查看</button></div>'
-      : '<div class="dm-pop-h"><span class="pav' + (m.avatar ? ' img' : '') + '">' + A.avatarInner(m.avatar, m.fromName) + '</span><b>' + esc(m.fromName) + '</b><small>' + dmTime(m.t) + '</small></div><p class="dm-pop-t">' + esc(m.text.slice(0, 120)) + '</p>' +
+      : '<div class="dm-pop-h"><span class="pav' + (m.avatar ? ' img' : '') + '">' + A.avatarInner(m.avatar, m.fromName) + '</span><b>' + esc(m.fromName) + '</b><small>' + dmTime(m.t) + '</small></div><p class="dm-pop-t">' + (emoteMsg(m.text) ? '<img class="dm-pop-e" src="' + emoteMsg(m.text).img + '" alt="">' : esc(m.text.slice(0, 120))) + '</p>' +
         '<div class="bw-pop-btns"><button type="button" class="btn ghost" data-dpx="1">忽略</button><button type="button" class="btn primary" data-dpr="' + esc(m.from) + '">回复</button></div>';
     document.body.appendChild(el);
     var tm = setTimeout(function () { el.remove(); }, 20000);
