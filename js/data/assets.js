@@ -12,7 +12,7 @@ var SPRITES = {
   "wind": "images/sprites/wind.png",
   "pluto": "images/sprites/pluto.png",
   "pede": "images/sprites/pede.png",
-  "tagore": "images/sprites/tagore.webp",
+  "tagore": "images/sprites/tagore_v2.webp",
   "hauris": "images/sprites/hauris.webp",
   "faraday": "images/sprites/faraday.png",
   "moon": "images/sprites/moon.png",
@@ -308,5 +308,5 @@ function emoteMsg(text) { var m = /^\[\[e:([a-z_]+)\]\]$/.exec(text || ''); retu
 
 // 首领在战斗中途换的形态（只在对应的战斗里出现，不进图鉴）
 var AWAKE_SPRITES = {
-  "tagore": "images/sprites/tagore_awake.webp"
+  "tagore": "images/sprites/tagore_awake_v2.webp"
 };
