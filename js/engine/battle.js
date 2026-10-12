@@ -6,13 +6,13 @@
 var STG = ['atk', 'def', 'spa', 'spd', 'spe', 'acc', 'eva'];
 var STG_NAME = { atk: '物攻', def: '物防', spa: '特攻', spd: '特防', spe: '速度', acc: '命中', eva: '闪避' };
 var BASE_NAME = { hp: '体力', atk: '物攻', def: '物防', spa: '特攻', spd: '特防', spe: '速度' };
-var TM_NAME = { cap: '逆鳞', genggu: '恒压', green: '绿色幻境', immune: '免疫异常', reflect: '风王结界', dodge: '光滑皮肤',
+var TM_NAME = { brandCd: '烙印冷却', cap: '逆鳞', genggu: '恒压', green: '绿色幻境', immune: '免疫异常', reflect: '风王结界', dodge: '光滑皮肤',
   noSwitch: '无法切换', prio: '先制+1', rain: '祈雨', tri: '三相归元', soul: '收魂',
   voidPhys: '虚空化', induct: '电磁感应', vortex: '闪电漩涡', darkside: '月之暗面', hail: '冰雹', noBoost: '禁止强化',
   seal: '万灵封印', liuhuo: '流火', calm: '静谧水域', halfPhys: '物伤减半', tide: '黑雾潮汐', vuln: '易伤', weak: '伤害-30%',
   swamp: '孢子沼泽', mist: '白雾', jungle: '丛林法则', siren: '海妖之歌', dr40: '减伤40%', crit2: '必定暴击', retal: '寂灭幽映',
   block: '坚不可摧', recoil: '磁暴反冲', sure3: '谛听', ear: '灵耳谛听', noHeal: '禁疗' };
-var FOE_TM = { noSwitch: 1, soul: 1, noBoost: 1, seal: 1, vuln: 1, weak: 1, noHeal: 1 };
+var FOE_TM = { brandCd: 1, noSwitch: 1, soul: 1, noBoost: 1, seal: 1, vuln: 1, weak: 1, noHeal: 1 };
 /* 进化链长度不固定（三阶或两阶），最后一阶是最终形态 */
 function evoLast(s) { return s && s.evo ? s.evo.length - 1 : 0; }
 function isFin(s, i) { return !s || !s.evo || i === s.evo.length - 1; }
@@ -131,6 +131,7 @@ var ST_DESC = {
   失明: '攻击时有50%概率落空', 冻伤: '每回合结束损失1/8最大体力'
 };
 var TM_DESC = {
+  brandCd: '闪电烙印麻痹过后的冷却：这段时间里叠不上闪电烙印',
   cap: '单次受到的伤害不超过250，超出部分等额反馈给对方', genggu: '每回合提升1级特攻，恢复1/6最大体力',
   green: '每回合恢复1/4最大体力', immune: '免疫异常状态', reflect: '免疫并反弹对方施加的异常状态',
   dodge: '每次受到攻击有40%概率闪避', noSwitch: '无法切换精灵', prio: '所有技能先制+1',
@@ -214,7 +215,7 @@ function chipsOf(m, foe) {
   if (m.fx.shield > 0) c.push({ t: '护盾 ' + m.fx.shield, k: 'fx', h: '护盾', d: '先吸收接下来受到的 ' + m.fx.shield + ' 点伤害' });
   if (m.fx.absDef) c.push({ t: '免疫下次攻击', k: 'fx', h: '免疫下次攻击', d: '闪避下一次受到的攻击' });
   if (m.fx.endure) c.push({ t: '不灭之躯', k: 'fx', h: '不灭之躯', d: '下一次受到致死攻击时残留1点体力' });
-  if (m.fx.brand) c.push({ t: '烙印 ' + m.fx.brand + '/3', k: 'st', h: '闪电烙印', d: '叠满3层时陷入麻痹1-2回合' });
+  if (m.fx.brand) c.push({ t: '烙印 ' + m.fx.brand + '/2', k: 'st', h: '闪电烙印', d: '叠满2层时必定陷入麻痹2回合' });
   if (m.fx.leiyin) c.push({ t: '引雷', k: 'st', h: '引雷', d: '下一次受到的伤害提升20%' });
   if (m.fx.sureHit && !m.fx.sureCrit) c.push({ t: '下次必中', k: 'fx', h: '下次必中', d: '下一次攻击必定命中' });
   if (m.perm && m.perm.melt) c.push({ t: '熔化 ×' + m.perm.melt, k: 'st', h: '熔化 · ' + m.perm.melt + ' 层', d: '受到的伤害提升 ' + m.perm.melt * 20 + '%（每层20%，最多5层），持续到战斗结束，换下场也不会消失' });
@@ -730,9 +731,11 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
     if (mv.clearTgtUp) clearUps(S, evs, j);
     switch (mv.custom) {
       case 'brand':
+        // 叠满 2 层必定麻痹 2 回合；之后对方进入烙印冷却（麻痹期间 + 解除后 1 回合），这段时间叠不上烙印
+        if (foe.tm.brandCd > 0) { log(S, evs, nm(foe) + '处于烙印冷却中，闪电烙印没能叠上'); break; }
         foe.fx.brand = (foe.fx.brand || 0) + 1;
-        log(S, evs, nm(foe) + '身上的闪电烙印：' + foe.fx.brand + ' / 3', 'fxl');
-        if (foe.fx.brand >= 3) { foe.fx.brand = 0; addStatus(S, evs, j, '麻痹', rint(1, 2), i); }
+        log(S, evs, nm(foe) + '身上的闪电烙印：' + foe.fx.brand + ' / 2', 'fxl');
+        if (foe.fx.brand >= 2) { foe.fx.brand = 0; addStatus(S, evs, j, '麻痹', 2, i); foe.tm.brandCd = (foe.st['麻痹'] || 0) + 1; E(S, evs, 'stage', { side: j }); }
         E(S, evs, 'stage', { side: j }); break;
       case 'flashLeaf': foe.fx.flash = 1; E(S, evs, 'stage', { side: j }); log(S, evs, nm(foe) + '被闪光飞叶的光芒笼罩：下一次受到攻击时会额外降低1级命中', 'fxl'); break;
       case 'vuln': foe.tm.vuln = 3; E(S, evs, 'stage', { side: j }); log(S, evs, nm(foe) + '被恶魔触手缠住，3回合内受到的伤害增加30%', 'bad'); break;

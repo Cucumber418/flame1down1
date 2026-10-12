@@ -130,7 +130,7 @@ var M = {
   屏障: { type: '普通', cat: '变化', selfStage: { spd: 1 }, d: '提升1级特防' },
   电浆炮: { type: '电', cat: '特攻', power: 70, d: '威力70' },
   聚雷: { type: '电', cat: '变化', selfStage: { spa: 1 }, d: '提升1级特攻' },
-  闪电烙印: { type: '电', cat: '特攻', power: 70, custom: 'brand', d: '威力70，叠加一层烙印，叠满3层时使对方麻痹1-2回合' },
+  闪电烙印: { type: '电', cat: '特攻', power: 70, custom: 'brand', d: '威力70，叠加一层烙印，叠满2层时必定使对方麻痹2回合；之后对方进入烙印冷却（麻痹期间及解除后1回合内无法叠加烙印）' },
   雷暴: { type: '电', cat: '变化', tgtStage: { def: -1, spd: -1 }, d: '降低对方1级物防、特防' },
   饱和电浆炮: { type: '电', cat: '特攻', power: 100, always: true, d: '威力100，必中' },
   电磁感应: { type: '电', cat: '变化', custom: 'induct', pp: 10, d: '5回合内主动攻击命中后提升1级特攻' },
