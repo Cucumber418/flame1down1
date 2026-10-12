@@ -1633,3 +1633,36 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .dm-msg.emote { background: transparent !important; border: 0; padding: 0; }
 .dm-msg.emote img { width: 96px; height: 96px; object-fit: contain; display: block; }
 .dm-pop-e { width: 64px; height: 64px; object-fit: contain; }
+
+/* ---------- 顶栏「任务」：悬停看进度，点开是任务面板 ---------- */
+.qtop-wrap { position: relative; }
+.qtop-btn .q-badge { margin-left: 2px; }
+.qtop-pop { position: absolute; top: calc(100% + 8px); right: 0; z-index: 70; width: 330px; max-height: min(70vh, 520px); overflow-y: auto; padding: 12px; background: var(--paper-2); border: 1.5px solid var(--ink); border-radius: 12px; box-shadow: 3px 3px 0 var(--ink); cursor: pointer; }
+.qtop-pop::before { content: ''; position: absolute; left: 0; right: 0; top: -10px; height: 10px; }   /* 鼠标从按钮移到小窗时不断开 */
+.qp-h { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin: 0 0 8px; font-size: 14px; }
+.qp-h .hint { font-size: 11.5px; }
+.qp-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.qp-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "k n e" "s s s" "b b b"; column-gap: 8px; row-gap: 3px; align-items: center; padding: 7px 9px; border: 1px solid var(--rule); border-radius: 9px; background: var(--paper); }
+.qp-row:hover { border-color: var(--ink); }
+.qp-row.claim { border-color: var(--red); }
+.qp-k { grid-area: k; font-size: 11px; font-weight: 700; color: #fff; background: var(--ink); border-radius: 99px; padding: 1px 7px; }
+.qp-row.daily .qp-k { background: var(--blue); }
+.qp-row b { grid-area: n; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.qp-row em { grid-area: e; font-style: normal; font-size: 12px; font-weight: 700; color: var(--pencil); white-space: nowrap; }
+.qp-row.claim em { color: var(--red); }
+.qp-step { grid-area: s; font-size: 12px; color: var(--pencil); line-height: 1.4; }
+.qp-bar { grid-area: b; height: 6px; border-radius: 99px; background: var(--rule); overflow: hidden; }
+.qp-bar i { display: block; height: 100%; background: var(--blue); border-radius: inherit; }
+.qp-row.claim .qp-bar i { background: var(--red); }
+.qp-none { margin: 8px 0 0; font-size: 12px; }
+#quest-dlg { place-items: start center; }
+.soc-box.quest-box { max-width: 980px; }
+.quest-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.quest-box .q-tabs { margin-bottom: 0; }
+@media (max-width: 720px) { .qtop-pop { right: auto; left: 0; width: min(330px, calc(100vw - 32px)); } }
+
+/* 平衡排位段位卡下面的段位奖励表 */
+.rk-rw { border-top: 1px dashed var(--rule); padding-top: 8px; display: grid; gap: 8px; }
+.rk-rw summary { cursor: pointer; display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; }
+.rk-rw p { margin: 0; font-size: 14px; }
+.qs-p { white-space: nowrap; }

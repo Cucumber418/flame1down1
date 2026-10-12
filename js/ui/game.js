@@ -141,7 +141,7 @@
     else if (page === 'explore') renderExplore();
     if (typeof bgmScene === 'function') bgmScene();
   }
-  function renderRes() { $('res').innerHTML = '<span class="res-chip" title="经验背包里的累积经验，可分配给精灵">经验 <b>' + fmt(acc.exp) + '</b></span><span class="res-chip en" title="能量（货币）">能量 <b>' + fmt(acc.energy) + '</b></span>'; }
+  function renderRes() { $('res').innerHTML = '<span class="res-chip" title="经验背包里的累积经验，可分配给精灵">经验 <b>' + fmt(acc.exp) + '</b></span><span class="res-chip en" title="能量（货币）">能量 <b>' + fmt(acc.energy) + '</b></span>'; setTimeout(renderQBadge, 0); }
   function go(p) { if (ex.mode === 'replay' && p !== 'explore') { stopTimers(); ex.mode = null; ex.view = 'sites'; } page = p; ui.pick = -1; savePage(); renderTop(); window.scrollTo(0, 0); }
   $('mainnav').addEventListener('click', function (e) {
     var b = e.target.closest('[data-page]'); if (!b || b.disabled) return;
@@ -963,7 +963,7 @@
     var el = $('pg-explore');
     if (ex.view === 'vn') { renderVN(); return; }
     if (ex.view === 'area') { renderArea(); return; }
-    if (ex.view === 'quests') { renderQuests(); return; }
+    if (ex.view === 'quests') ex.view = 'planets';   // 任务面板已经移到顶栏
     if (ex.view === 'home') { if (homeOpen()) { renderHome(); return; } ex.view = 'area'; renderArea(); return; }
     if (ex.view === 'boss') { if (bossOpen(ex.boss)) { renderBoss(); return; } ex.view = 'planets'; }
     if (ex.view === 'bosshub') { renderBossHub(); return; }
@@ -1632,13 +1632,7 @@
   function renderLog() {
     var now = new Date(), h = now.getHours(), on = mysteryTime();
     var wait = on ? '' : (function () { var t = new Date(now); t.setHours(MYSTERY.from, 0, 0, 0); var m = Math.max(0, Math.round((t - now) / 60000)); return '距离今天的活动开始还有 ' + Math.floor(m / 60) + ' 小时 ' + (m % 60) + ' 分钟'; })();
-    var best = rankBest(), rec = rankRec();
-    var rows = RANK_RW.map(function (R, r) {
-      if (!R) return '';
-      var got = rec.got[r];
-      return '<tr class="' + (got ? 'got' : r <= best ? 'ok' : '') + (R.gift ? ' big' : '') + '"><td>' + RANKS[r] + '</td><td>累积经验 ×' + fmt(R.exp) + '，能量 ×' + fmt(R.energy) + '，称号「' + titleName(R.title) + '」' + (R.items ? '，' + itemsText(R.items) : '') + (R.gift ? '，<b class="red">' + R.gift.map(function (g) { return form(g).name + ' LV' + g.lv; }).join('、') + '</b>' : '') + '</td><td>' + (got ? '已领取' : '未达成') + '</td></tr>';
-    }).join('');
-    $('pg-log').innerHTML = '<div class="page-head"><h2 class="sec">航行日志</h2><p class="hint">荆楚号的公告板：更新公告、限时活动、每日任务、排位奖励和新首领。</p></div>' +
+    $('pg-log').innerHTML = '<div class="page-head"><h2 class="sec">航行日志</h2><p class="hint">荆楚号的公告板：更新公告、限时活动、每日任务和新首领。</p></div>' +
       '<div class="log-grid">' + '<article class="log-card wide qq-card"><span class="tape l"></span><span class="tape r"></span><div class="qq-txt"><span class="chip log-tag">船员交流</span><h3>QQ 群：<b class="qq-no">' + QQ_GROUP + '</b></h3><p class="hint">攻略、组队切磋、bug 反馈、新精灵立绘抢先看，都在群里。</p></div><button type="button" class="btn primary" data-copyqq="1">复制群号</button></article>' + changelogHTML() +
       '<article class="log-card ev"><span class="tape l"></span><span class="chip log-tag">限时活动</span><h3>神秘精灵出没</h3>' +
         '<p>每天 <b>16:00–24:00</b>，在星际探索的任何场景，都有 <b>3%</b> 的概率刷出一只神秘精灵！</p><p class="hint">它是什么？只有遇到过的人才知道。</p>' +
@@ -1647,12 +1641,20 @@
         '<div class="next-art"><img src="' + SPRITES.barren + '" alt=""></div><p>芙罗拉星盐碱地深处的瘴气，源头就是它。简单难度击败可以领养一只枯叶灵。</p><p class="hint">' + (bossOpen('barren') ? '在星际探索 · 芙罗拉星 · 盐碱地挑战。' : '读完主线「降临芙罗拉」后可以挑战。') + '</p>' +
         (bossOpen('barren') ? '<button type="button" class="btn" data-golog="boss-barren">去挑战</button>' : '') + '</article>' +
       '<article class="log-card wide"><span class="tape l"></span><span class="chip log-tag">每日任务</span><h3>今天的任务</h3>' + dailyHTML() + '</article>' +
-      '<article class="log-card wide"><span class="tape r"></span><span class="chip log-tag">排位赛季 ' + SEASON + '</span><h3>首次达到段位的奖励</h3>' +
-        '<p>本赛季最高段位：<b>' + RANKS[best] + '</b>。每个段位第一次达到时发放一次，并获得赛季称号（如「S1翡翠」）；<b>达到铂金送 LV10 的' + form({ sid: 'moon', lv: 10 }).name + '，达到王者送 LV10 的' + form({ sid: 'bone', lv: 10 }).name + '</b>。</p>' +
-        '<p class="hint"><b class="red">段位奖励已翻倍！</b>之前已经领过的段位，按新标准补发的差额已经发到你的邮箱。</p>' +
-        '<table class="rank-rw"><thead><tr><th>段位</th><th>奖励</th><th>状态</th></tr></thead><tbody>' + rows + '</tbody></table>' +
-        (arenaOpen() ? '<button type="button" class="btn" data-golog="arena">去竞技对战</button>' : '<p class="hint">完成荆楚号 · 孝感大厅的支线后开放竞技对战。</p>') + '</article>' +
       '</div>';
+  }
+  // 排位赛季的段位奖励表：显示在竞技对战 · 平衡排位的段位卡下面（battle-ui.js 通过 HSACC.rankRwHTML 调用）
+  function rankRwHTML() {
+    if (!ready()) return '';
+    var best = rankBest(), rec = rankRec(), gotN = 0, allN = 0;
+    var rows = RANK_RW.map(function (R, r) {
+      if (!R) return '';
+      var got = rec.got[r]; allN++; if (got) gotN++;
+      return '<tr class="' + (got ? 'got' : r <= best ? 'ok' : '') + (R.gift ? ' big' : '') + '"><td>' + RANKS[r] + '</td><td>累积经验 ×' + fmt(R.exp) + '，能量 ×' + fmt(R.energy) + '，称号「' + titleName(R.title) + '」' + (R.items ? '，' + itemsText(R.items) : '') + (R.gift ? '，<b class="red">' + R.gift.map(function (g) { return form(g).name + ' LV' + g.lv; }).join('、') + '</b>' : '') + '</td><td>' + (got ? '已领取' : '未达成') + '</td></tr>';
+    }).join('');
+    return '<details class="rk-rw" open><summary><b>排位赛季 ' + SEASON + ' · 首次达到段位的奖励</b><span class="hint">已领取 ' + gotN + ' / ' + allN + '</span></summary>' +
+      '<p>本赛季最高段位：<b>' + RANKS[best] + '</b>。每个段位第一次达到时发放一次，并获得赛季称号（如「S1翡翠」）；<b>达到铂金送 LV10 的' + form({ sid: 'moon', lv: 10 }).name + '，达到王者送 LV10 的' + form({ sid: 'bone', lv: 10 }).name + '</b>。</p>' +
+      '<table class="rank-rw"><thead><tr><th>段位</th><th>奖励</th><th>状态</th></tr></thead><tbody>' + rows + '</tbody></table></details>';
   }
   $('pg-log').addEventListener('click', function (e) {
     var c = e.target.closest('[data-dclaim]'); if (c) { claimDaily(+c.dataset.dclaim); renderLog(); return; }
@@ -2260,8 +2262,7 @@
   function qList(tab) { return tab === 'main' ? MAIN_Q : tab === 'side' ? SIDE_Q : tab === 'daily' ? [] : WQ.map(function (w) { return w.id; }); }
   function qTodo(tab) { if (tab === 'daily') { var D = daily(); return D ? D.list.filter(function (t) { return !t.c; }).length : 0; } return qList(tab).filter(function (id) { var st = qState(id); return st === 'todo' || st === 'doing' || st === 'claim'; }).length; }
   function exHead(hint) {
-    var n = qTodo('main') + qTodo('side') + qTodo('world') + dailyClaimable();
-    return '<div class="page-head ex-head"><h2 class="sec">星际探索</h2><p class="hint">' + hint + '</p><button type="button" class="btn q-open" data-qopen="1">任务' + (n ? '<i class="q-badge">' + n + '</i>' : '') + '</button></div>';
+    return '<div class="page-head ex-head"><h2 class="sec">星际探索</h2><p class="hint">' + hint + '</p></div>';
   }
   function qName(id) { var W = wq(id); return W ? W.n : SITES[id].chapter.split(' · ')[1]; }
   function qWhere(id) {
@@ -2269,8 +2270,8 @@
     var S = SITES[id], P = PLANETS.filter(function (p) { return p.id === S.planet; })[0];
     return P.name + ' · ' + (S.dept ? S.dept + ' · ' + DEPTS[S.dept][0] : S.name);
   }
-  function qDetail(id) {
-    if (!id) return '<p class="empty-note">点击左边的任务，查看需要做什么。</p>';
+  // 一个任务的完整信息：状态、步骤（ok 已完成，p 进度文字）、奖励、介绍、未开放原因
+  function qInfo(id) {
     var W = wq(id), st = qState(id), steps, R, desc, need = '';
     if (W) {
       desc = W.d; R = W.reward;
@@ -2288,6 +2289,11 @@
       if (id === 'rare') { var rr = prog('rare_r'); steps = [{ t: '在学院部听 Bttp 说明任务', ok: pr.done }, { t: '捕捉一种稀有精灵（芙罗拉星的丛林深处可能会有）', ok: rr.done || !!rareOwned() }, { t: '回到学院部，向 Bttp 汇报', ok: rr.done }]; R = SITES.rare_r.reward; desc = S.d; }
       if (st === 'lock') need = S.need && prog(S.after).done && !S.need() ? S.needText + (id === 'mingming' ? '（当前 ' + litCount() + ' / 10）' : id === 'brawl' ? '（当前持有 ' + acc.mons.length + ' 只）' : id === 'draft' ? '（当前 ' + speciesN() + ' / 10 种）' : id === 'flora3' ? '（当前 ' + spareN() + ' / ' + SPARE_N + '）' : '') + '。' : '先读完「' + SITES[S.after].chapter.split(' · ')[1] + '」。';
     }
+    return { W: W, st: st, steps: steps, R: R, desc: desc, need: need };
+  }
+  function qDetail(id) {
+    if (!id) return '<p class="empty-note">点击左边的任务，查看需要做什么。</p>';
+    var I = qInfo(id), W = I.W, st = I.st, steps = I.steps, R = I.R, desc = I.desc, need = I.need;
     var rw = R ? rwList(R) : []; if (!W && UNLOCK[id]) rw.push('开放「' + UNLOCK[id] + '」');
     var cur = steps.filter(function (x) { return !x.ok; })[0];
     var act = st === 'lock' ? '' : st === 'claim' ? '<button type="button" class="btn primary" data-qclaim="' + id + '">领取奖励</button>'
@@ -2309,9 +2315,10 @@
       ex.qsel = pick;
     }
     var tabs = [['main', '主线任务'], ['side', '支线任务'], ['world', '世界任务'], ['daily', '每日任务']].map(function (t) { var n = qTodo(t[0]); return '<button type="button" role="tab" class="tab' + (tab === t[0] ? ' on' : '') + '" aria-selected="' + (tab === t[0]) + '" data-qtab="' + t[0] + '">' + t[1] + (n ? '<i class="q-badge">' + n + '</i>' : '') + '</button>'; }).join('');
+    var body = $('quest-body'); if (!body) return;
+    renderQBadge();
     if (tab === 'daily') {
-      $('pg-explore').innerHTML = '<div class="page-head"><h2 class="sec">星际探索</h2><p class="hint">查看当前的任务，以及每个任务需要做什么。</p></div>' +
-        '<div class="crumb"><button type="button" class="btn ghost" id="q-back">‹ 返回</button><b>任务</b></div><div class="fparts q-tabs" role="tablist">' + tabs + '</div>' +
+      body.innerHTML = '<div class="fparts q-tabs" role="tablist">' + tabs + '</div>' +
         '<article class="detail log-card wide">' + dailyHTML() + '</article>';
       return;
     }
@@ -2326,18 +2333,16 @@
       return head + '<button type="button" class="q-item ' + st + (ex.qsel === id ? ' sel' : '') + '" data-q="' + id + '"><span class="qi-n">' + esc(qName(id)) + '</span><span class="qi-w">' + esc(qWhere(id)) + '</span><span class="q-st ' + st + '">' + QLAB[st] + '</span></button>';
     }).join('');
     if (tab === 'main' && ids.every(function (id) { return qState(id) === 'done'; })) list += '<p class="hint q-more">后续主线正在制作中（未完待续）。</p>';
-    $('pg-explore').innerHTML = '<div class="page-head"><h2 class="sec">星际探索</h2><p class="hint">查看当前的任务，以及每个任务需要做什么。</p></div>' +
-      '<div class="crumb"><button type="button" class="btn ghost" id="q-back">‹ 返回</button><b>任务</b></div>' +
-      '<div class="fparts q-tabs" role="tablist">' + tabs + '</div>' +
+    body.innerHTML = '<div class="fparts q-tabs" role="tablist">' + tabs + '</div>' +
       '<div class="q-wrap"><div class="q-list">' + list + '</div><article class="detail q-detail" id="q-detail">' + qDetail(ex.qsel) + '</article></div>';
   }
   function questGo(id) {
-    var W = wq(id);
+    var W = wq(id); closeQuests();
     if (W) {
       if (W.go === 'dex') { if (dexOpen()) go('dex'); return; }
-      ex.planet = W.go; ex.view = 'sites'; ex.fpart = 'catch'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return;
+      ex.planet = W.go; ex.view = 'sites'; ex.fpart = 'catch'; go('explore'); renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return;
     }
-    var S = SITES[id]; ex.planet = S.planet;
+    var S = SITES[id]; ex.planet = S.planet; go('explore');
     if (S.dept) { teleport(S.dept); return; }
     ex.view = 'sites'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8);
   }
@@ -2348,19 +2353,85 @@
     toast('完成世界任务「' + W.n + '」！获得 ' + rwList(R).join('、') + '。');
   }
 
+  /* ---------- 顶栏「任务」：在名字旁边。鼠标移上去看进行中任务的进度，点开是完整的任务面板 ---------- */
+  function qAllTodo() { try { return qTodo('main') + qTodo('side') + qTodo('world') + dailyClaimable(); } catch (e) { return 0; } }
+  function renderQBadge() { var b = $('qtop-badge'); if (!b || !ready()) return; var n = qAllTodo(); b.hidden = !n; b.textContent = n > 99 ? '99+' : n; }
+  function openQuests(tab) {
+    if (!ready()) return;
+    hideQPeek();
+    if (tab) { ex.qtab = tab; ex.qsel = null; }
+    var d = $('quest-dlg');
+    if (!d) {
+      d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'quest-dlg';
+      d.innerHTML = '<div class="soc-box quest-box" role="dialog" aria-modal="true" aria-label="任务"><span class="tape l"></span><span class="tape r"></span>' +
+        '<div class="quest-head"><div><span class="step">任务</span><h2>任务面板</h2></div><button type="button" class="btn ghost" data-qx="1">关闭</button></div>' +
+        '<p class="hint">主线、支线、世界任务和每日任务。点一个任务，查看需要做什么，并可以一键前往。</p><div id="quest-body"></div></div>';
+      document.body.appendChild(d);
+      d.addEventListener('click', questClick);
+    }
+    renderQuests();
+  }
+  function closeQuests() { var d = $('quest-dlg'); if (d) d.remove(); }
+  function questClick(e) {
+    var d = $('quest-dlg');
+    if (e.target === d || e.target.closest('[data-qx]')) { closeQuests(); return; }
+    var b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.qtab) { ex.qtab = b.dataset.qtab; ex.qsel = null; renderQuests(); return; }
+    if (b.dataset.q) { ex.qsel = b.dataset.q; renderQuests(); var q = $('q-detail'); if (q && window.innerWidth < 760) q.scrollIntoView({ block: 'start', behavior: 'smooth' }); return; }
+    if (b.dataset.qgo) { questGo(b.dataset.qgo); return; }
+    if (b.dataset.dclaim) { claimDaily(+b.dataset.dclaim); renderQuests(); if (page === 'log') renderLog(); return; }
+    if (b.dataset.qclaim) { claimQuest(b.dataset.qclaim); return; }
+  }
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && $('quest-dlg')) closeQuests(); });
+  // 悬停小窗：只列进行中 / 可领取的任务，每个写出当前这一步和进度
+  function qPeekHTML() {
+    var rows = [];
+    [['main', '主线'], ['side', '支线'], ['world', '世界']].forEach(function (T) {
+      qList(T[0]).forEach(function (id) {
+        var st = qState(id); if (st !== 'doing' && st !== 'claim') return;
+        var I = qInfo(id), done = I.steps.filter(function (x) { return x.ok; }).length, n = I.steps.length;
+        var cur = I.steps.filter(function (x) { return !x.ok; })[0];
+        var pct = cur && cur.p ? (function () { var m = /(\d+) \/ (\d+)/.exec(cur.p); return m ? +m[1] / +m[2] : done / n; })() : done / n;
+        rows.push('<li class="qp-row ' + st + '" data-qpeek="' + id + '"><span class="qp-k">' + T[1] + '</span><b>' + esc(qName(id)) + '</b>' +
+          '<span class="qp-step">' + (st === 'claim' ? '已完成，可以领取奖励' : esc(cur ? cur.t : '')) + '</span>' +
+          '<span class="qp-bar"><i style="width:' + Math.round((st === 'claim' ? 1 : pct) * 100) + '%"></i></span><em>' + (st === 'claim' ? '可领取' : cur && cur.p ? cur.p : '第 ' + (done + 1) + ' / ' + n + ' 步') + '</em></li>');
+      });
+    });
+    var D = daily(), dl = '';
+    if (D) {
+      var c = D.list.filter(function (t) { return t.c; }).length, ok = D.list.filter(function (t) { return !t.c && t.p >= DAILY[t.id].n; }).length;
+      dl = '<li class="qp-row daily' + (ok ? ' claim' : '') + '" data-qpeek="daily"><span class="qp-k">每日</span><b>今天的每日任务</b><span class="qp-step">已领取 ' + c + ' 个' + (ok ? '，还有 ' + ok + ' 个可以领取' : '') + '</span>' +
+        '<span class="qp-bar"><i style="width:' + Math.round((c + ok) / D.list.length * 100) + '%"></i></span><em>' + (c + ok) + ' / ' + D.list.length + '</em></li>';
+    }
+    return '<p class="qp-h"><b>进行中的任务</b><span class="hint">点击打开任务面板</span></p>' +
+      (rows.length ? '<ul class="qp-list">' + rows.join('') + dl + '</ul>' : '<ul class="qp-list">' + dl + '</ul><p class="hint qp-none">没有进行中的主线、支线或世界任务。</p>');
+  }
+  var qPeekT = 0;
+  function showQPeek() {
+    if (!ready() || $('quest-dlg')) return;
+    clearTimeout(qPeekT);
+    var p = $('qtop-pop'); p.innerHTML = qPeekHTML(); p.hidden = false;
+  }
+  function hideQPeek() { clearTimeout(qPeekT); var p = $('qtop-pop'); if (p) p.hidden = true; }
+  if ($('qtop-wrap')) {
+    var canHover = window.matchMedia && window.matchMedia('(hover: hover)').matches;
+    $('qtop-wrap').addEventListener('mouseenter', function () { if (canHover) showQPeek(); });
+    $('qtop-wrap').addEventListener('mouseleave', function () { qPeekT = setTimeout(hideQPeek, 150); });
+    $('qtop-btn').addEventListener('click', function () { openQuests(); });
+    $('qtop-pop').addEventListener('click', function (e) {
+      var r = e.target.closest('[data-qpeek]'); if (!r) { openQuests(); return; }
+      var id = r.dataset.qpeek;
+      if (id === 'daily') { openQuests('daily'); return; }
+      ex.qtab = wq(id) ? 'world' : SITES[id].side ? 'side' : 'main'; ex.qsel = id; openQuests();
+    });
+  }
+
   $('pg-explore').addEventListener('click', function (e) {
     if (ex.mode === 'replay' && $('vn')) { vnClick(e); return; }
     if (ex.view === 'shop' && shopClick(e)) return;
     if (e.target.closest('#bsoc')) { bsocClick(e); return; }
     var b = e.target.closest('button, .dept.open'); if (!b) return;
     if (b.dataset.area) { teleport(b.dataset.area); return; }
-    if (b.dataset.qopen) { ex.qBack = { view: ex.view, planet: ex.planet, area: ex.area }; ex.view = 'quests'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
-    if (b.id === 'q-back') { var qb = ex.qBack || { view: 'planets' }; ex.view = qb.view === 'quests' ? 'planets' : qb.view; ex.planet = qb.planet || ex.planet; ex.area = qb.area; renderExplore(); return; }
-    if (b.dataset.qtab) { ex.qtab = b.dataset.qtab; ex.qsel = null; renderQuests(); return; }
-    if (b.dataset.q) { ex.qsel = b.dataset.q; renderQuests(); var d = $('q-detail'); if (d && window.innerWidth < 760) d.scrollIntoView({ block: 'start', behavior: 'smooth' }); return; }
-    if (b.dataset.qgo) { questGo(b.dataset.qgo); return; }
-    if (b.dataset.dclaim) { claimDaily(+b.dataset.dclaim); renderQuests(); return; }
-    if (b.dataset.qclaim) { claimQuest(b.dataset.qclaim); return; }
     if (b.dataset.npctalk) { npcTalk(b.dataset.npctalk); return; }
     if (b.dataset.room) { ex.view = 'room'; ex.room = b.dataset.room; ex.area = '天门'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); mysteryRoll('荆楚号 · 陆羽茶室'); return; }
     if (b.dataset.home) { ex.view = 'home'; ex.area = '天门'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); mysteryRoll('荆楚号 · 陆羽茶室'); return; }
@@ -2643,7 +2714,7 @@
     titleName: titleName, mon: mon, fmt: fmt, avatarInner: avatarInner, avatarSpec: function () { var m = avatarMon(); return m ? { sid: m.sid, lv: m.lv, shiny: !!m.shiny } : null; },
     npcPlan: npcPlan, npcHome: npcHome,
     sendMail: sendMail, openMailbox: openMailbox,
-    rankToday: rankToday, RANK_EXP: { exp: RANK_EXP, n: RANK_EXP_N },
+    rankToday: rankToday, RANK_EXP: { exp: RANK_EXP, n: RANK_EXP_N }, rankRwHTML: rankRwHTML, openQuests: openQuests,
     brawlOpen: brawlOpen, brawlSpec: brawlSpec, brawlReward: brawlReward, brawlToday: brawlToday, BRAWL: { win: BRAWL_WIN, lose: BRAWL_LOSE, cap: BRAWL_CAP, lv: BRAWL_LV },
     // 平衡模式切磋：LV60、性格无修正、没有学习力和纹章，技能可以从全部技能里选（没选就用竞技对战里记住的配招）
     balSpec: function (raw) {
