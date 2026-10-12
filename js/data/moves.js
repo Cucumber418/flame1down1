@@ -66,7 +66,7 @@ var M = {
   加速: { type: '普通', cat: '变化', selfStage: { spe: 1 }, d: '提升1级速度' },
   种子炸弹: { type: '草', cat: '特攻', power: 70, tgtStage: { spd: -1 }, tgtChance: 0.4, d: '威力70，40%概率降低对方1级特防' },
   香甜气息: { type: '草', cat: '变化', custom: 'immune', pp: 10, d: '5回合内免疫异常状态' },
-  绿色幻境: { type: '草', cat: '变化', custom: 'green', pp: 5, d: '5回合内每回合恢复1/4体力' },
+  绿色幻境: { type: '草', cat: '变化', custom: 'green', pp: 5, d: '5回合内每回合恢复已损失体力的1/5' },
   木叶旋风: { type: '草', cat: '特攻', power: 80, tgtStage: { spd: -1 }, tgtChance: 0.4, d: '威力80，40%概率降低对方1级特防' },
   飞旋一击: { type: '普通', cat: '特攻', power: 60, pri: 1, d: '威力60，先制+1' },
   木叶刺: { type: '草', cat: '物攻', power: 85, d: '威力85' },
@@ -215,7 +215,7 @@ var M = {
   缠绕: { type: '草', cat: '变化', tgtStage: { spe: -2 }, d: '降低对方2级速度' },
   生长: { type: '草', cat: '变化', selfStage: { spa: 1 }, d: '提升1级特攻' },
   绿色射线: { type: '草', cat: '特攻', power: 65, d: '威力65' },
-  凋零之蚀: { type: '草', cat: '变化', custom: 'wither', pp: 10, d: '使对方每回合损失1/24最大体力，持续到战斗结束；可以无限叠加，每层再多损失1/24' },
+  凋零之蚀: { type: '草', cat: '变化', custom: 'wither', pp: 10, d: '使对方每回合损失1/24最大体力，持续到战斗结束；可以叠加，每层再多损失1/24，最多4层' },
   荒芜之触: { type: '草', cat: '特攻', power: 75, custom: 'weak3', d: '威力75，使对方伤害降低30%，持续3回合' },
   寄生种子: { type: '草', cat: '变化', status: { k: '寄生', min: 5, max: 5, chance: 1 }, d: '使对方寄生5回合' },
   枯萎之壤: { type: '草', cat: '变化', tgtStage: { atk: -1, spa: -1, acc: -1 }, d: '降低对方1级物攻、特攻、命中' },
@@ -282,7 +282,7 @@ var M = {
   // —— 幻境叶果（草/超能）
   盛放: { type: '草', cat: '特攻', power: 75, d: '威力75' },
   幻境汲取: { type: '超能', cat: '特攻', power: 90, drain: 0.5, d: '威力90，造成伤害的一半转化为体力回复' },
-  生命遁迹: { type: '草', cat: '变化', selfStage: { def: 1, spd: 1, spa: 1 }, heal: 1 / 8, lowHeal: 1 / 6, pp: 10, d: '提升1级物防、特防、特攻，恢复1/8体力，体力低于1/4时改为恢复1/6' },
+  生命遁迹: { type: '草', cat: '变化', selfStage: { def: 1, spd: 1, spa: 1 }, healLost: 1 / 8, pp: 10, d: '提升1级物防、特防、特攻，恢复已损失体力的1/8' },
   生命榨取: { type: '草', cat: '特攻', power: 100, drain: 0.5, hidden: true, custom: 'lifeSqueeze', d: '威力100，造成伤害的一半转化为体力回复，若对方寄生则额外吸取对方1/6当前体力值' },
   万灵封印: { type: '超能', cat: '变化', hidden: true, custom: 'seal', pp: 5, d: '5回合内禁止对方提升能力等级，若对方尝试提升能力等级，则使之损失1/4当前体力值' },
   // —— 叶子喵（草 · 光）

@@ -133,7 +133,7 @@ var ST_DESC = {
 var TM_DESC = {
   brandCd: '闪电烙印麻痹过后的冷却：这段时间里叠不上闪电烙印',
   cap: '单次受到的伤害不超过250，超出部分等额反馈给对方', genggu: '每回合提升1级特攻，恢复1/6最大体力',
-  green: '每回合恢复1/4最大体力', immune: '免疫异常状态', reflect: '免疫并反弹对方施加的异常状态',
+  green: '每回合恢复已损失体力的1/5', immune: '免疫异常状态', reflect: '免疫并反弹对方施加的异常状态',
   dodge: '每次受到攻击有40%概率闪避', noSwitch: '无法切换精灵', prio: '所有技能先制+1',
   rain: '每回合结束对对方附加30点固定伤害', tri: '使用草、水、火系技能时额外恢复1/3体力',
   soul: '受到的伤害提升20%', voidPhys: '闪避物理攻击', induct: '主动攻击命中后提升1级特攻',
@@ -234,7 +234,7 @@ function chipsOf(m, foe) {
   if (m.fx.flash) c.push({ t: '闪光', k: 'st', h: '闪光飞叶', d: '下一次受到攻击时，额外降低1级命中' });
   if (m.fx.earMark) c.push({ t: '被听穿', k: 'st', h: '灵耳谛听', d: '试图闪避被识破：下一次受到的攻击威力翻倍' });
   if (miaN(m)) c.push({ t: '瘴气 ×' + miaN(m), k: 'st', h: '瘴气 · ' + miaN(m) + ' 层', d: '物攻、特攻 +' + (miaN(m) * 5) + '%，物防、特防 −' + Math.min(90, miaN(m) * 5) + '%（每层 ±5%，防御最低降到 10%）。持续到战斗结束，换下场也不会消失；在瘴气环境中每回合结束时再获得 1 层。' });
-  if (m.perm && m.perm.wither) c.push({ t: '凋零之蚀' + (witherN(m) > 1 ? ' ×' + witherN(m) : ''), k: 'st', h: '凋零之蚀 · ' + witherN(m) + ' 层', d: '每回合结束损失 ' + witherN(m) + '/' + WITHER_DIV + ' 最大体力（每层 1/' + WITHER_DIV + '，可以无限叠加），持续到战斗结束。当前每回合损失 ' + witherDot(m) + ' 点' });
+  if (m.perm && m.perm.wither) c.push({ t: '凋零之蚀' + (witherN(m) > 1 ? ' ×' + witherN(m) : ''), k: 'st', h: '凋零之蚀 · ' + witherN(m) + ' 层', d: '每回合结束损失 ' + witherN(m) + '/' + WITHER_DIV + ' 最大体力（每层 1/' + WITHER_DIV + '，最多 ' + WITHER_MAX + ' 层），持续到战斗结束。当前每回合损失 ' + witherDot(m) + ' 点' });
   if (m.fx.boostNext) c.push({ t: '潜水蓄力', k: 'fx', h: '潜水蓄力', d: '下一次攻击伤害提升50%' });
   if (m.fx.moon) c.push({ t: '月升 ×' + m.fx.moon, k: 'fx', h: '月升 · ' + m.fx.moon + ' / 5', d: '达到5层时转化为光影之月。下场时清空。' });
   if (m.fx.moonNext) c.push({ t: '月蚀 · 下次攻击+15%', k: 'fx', h: '月蚀', d: '刚转换过属性，下一次攻击伤害提升15%' });
@@ -790,6 +790,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   }
   if (mv.selfStage && RNG() < (mv.selfChance || 1)) changeStages(S, evs, i, mv.selfStage);
   if (mv.heal) heal(S, evs, i, me.maxhp * (mv.lowHeal && me.hp < me.maxhp / 4 ? mv.lowHeal : mv.heal));
+  if (mv.healLost) heal(S, evs, i, (me.maxhp - me.hp) * mv.healLost);   // 按已损失体力回复（生命遁迹）
   if (me.tm.tri > 0 && (mt === '草' || mt === '水' || mt === '火')) { log(S, evs, '三相归元生效', 'fxl'); heal(S, evs, i, me.maxhp / 3); }
 }
 
@@ -842,6 +843,7 @@ function doStatus(S, evs, i, mv) {
   if (mv.name === '木叶庇护' && hasEmblem(me, '木叶庇护')) sst = { def: 2, spd: 2 };
   if (sst) changeStages(S, evs, i, sst);
   if (mv.heal) heal(S, evs, i, me.maxhp * (mv.lowHeal && me.hp < me.maxhp / 4 ? mv.lowHeal : mv.heal));
+  if (mv.healLost) heal(S, evs, i, (me.maxhp - me.hp) * mv.healLost);   // 按已损失体力回复（生命遁迹）
   if (mv.clearSelfDown) {
     var any = false; STG.forEach(function (k) { if (me.stages[k] < 0) { me.stages[k] = 0; any = true; } });
     E(S, evs, 'stage', { side: i });
@@ -919,7 +921,9 @@ function doStatus(S, evs, i, mv) {
     case 'halfPhys5': timer('halfPhys', 5, nm(me) + '展开幽冥结界：5回合内物理伤害减半'); break;
     case 'halfPhys3': timer('halfPhys', 3, nm(me) + '竖起盾墙：3回合内物理伤害减半'); break;
     case 'chaosWater': if (!foe.fainted) { var cw = loseHp(S, evs, j, foe.hp / 5, '混沌水域吸取了' + nm(foe) + '的体力'); heal(S, evs, i, cw); } break;
-    case 'wither': foe.perm.wither = witherN(foe) + 1; foe.hqWither = me; E(S, evs, 'stage', { side: j }); log(S, evs, nm(foe) + '被凋零之蚀侵蚀（' + foe.perm.wither + ' 层），每回合损失 ' + foe.perm.wither + '/' + WITHER_DIV + ' 最大体力，直到战斗结束', 'bad'); break;
+    case 'wither':
+      if (witherN(foe) >= WITHER_MAX) { log(S, evs, nm(foe) + '身上的凋零之蚀已经叠满 ' + WITHER_MAX + ' 层，没有效果'); break; }
+      foe.perm.wither = witherN(foe) + 1; foe.hqWither = me; E(S, evs, 'stage', { side: j }); log(S, evs, nm(foe) + '被凋零之蚀侵蚀（' + foe.perm.wither + ' 层），每回合损失 ' + foe.perm.wither + '/' + WITHER_DIV + ' 最大体力，直到战斗结束', 'bad'); break;
     case 'swamp': timer('swamp', 5, nm(me) + '展开孢子沼泽：5回合内异常状态成功率×1.5'); break;
     case 'purge':
       loseHp(S, evs, i, Math.floor(me.hp / 2), nm(me) + '损失了一半现有体力');
@@ -1109,7 +1113,7 @@ function miasmaField(S, evs) {
 
 /* ---------- 瘴气：每层使物攻、特攻 +5%，物防、特防 −5%（最低降到 10%），换下场也不消失 ---------- */
 // 凋零之蚀：每层每回合损失 1/24 最大体力，可以无限叠加（旧存档里的 true 算 1 层）
-var WITHER_DIV = 24;
+var WITHER_DIV = 24, WITHER_MAX = 4;   // 凋零之蚀每层 1/24，最多 4 层
 function witherN(m) { var w = m.perm && m.perm.wither; return w === true ? 1 : w > 0 ? w : 0; }
 function witherDot(m) { return Math.max(1, Math.floor(m.maxhp * witherN(m) / WITHER_DIV)); }
 function miaN(m) { return (m.perm && m.perm.miasma) || 0; }
@@ -1141,7 +1145,7 @@ function endOfTurn(S, evs) {
     if (!m.fainted && m.tm.rain > 0 && !o.fainted) { log(S, evs, '雨水对' + nm(o) + '附加 30 点固定伤害', 'fxl'); S.dotSrc = '祈雨'; applyDamage(S, evs, 1 - i, 30, null, {}); S.dotSrc = null; }
     if (!m.fainted && m.tm.hail > 0 && !o.fainted) { log(S, evs, '冰雹砸向' + nm(o), 'fxl'); S.dotSrc = '冰雹'; applyDamage(S, evs, 1 - i, Math.floor(o.maxhp / 10), null, {}); S.dotSrc = null; }
     if (!m.fainted && m.tm.genggu > 0) { changeStages(S, evs, i, { spa: 1 }); heal(S, evs, i, m.maxhp / 6); }
-    if (!m.fainted && m.tm.green > 0) heal(S, evs, i, m.maxhp / 4);
+    if (!m.fainted && m.tm.green > 0) heal(S, evs, i, (m.maxhp - m.hp) / 5);   // 已损失体力的 1/5
     if (!m.fainted && m.tm.calm > 0) { var ch = heal(S, evs, i, m.maxhp / 5), cq = hqR(m); cq.h['静谧水域'] = (cq.h['静谧水域'] || 0) + ch; if (cq.h['静谧水域'] >= m.maxhp * 0.6) hqGet(S, evs, m, '寂静之海'); }
     if (!m.fainted && m.tm.vortex > 0 && !o.fainted) { log(S, evs, '闪电漩涡干扰了' + nm(o) + '的视线', 'fxl'); changeStages(S, evs, 1 - i, { acc: -1 }, i); }
     if (!m.fainted && m.tm.tide > 0 && m.fx.tideWait) delete m.fx.tideWait;   // 使用当回合不触发，从下回合末开始

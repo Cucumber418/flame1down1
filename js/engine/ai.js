@@ -39,7 +39,7 @@ function scoreMove(S, me, foe, mv) {
     if (mv.status && (!foe.st[mv.status.k] || mv.status.k === '中毒') && !(mv.status.k === '流血' && typesOf(foe).indexOf('机械') >= 0)) s += 18 * mv.status.chance;
     return s;
   }
-  if (mv.heal) s += hpR < 0.55 ? 75 * (1 - hpR) + 15 : 0;
+  if (mv.heal || mv.healLost) s += hpR < 0.55 ? (mv.healLost ? 50 : 75) * (1 - hpR) + 15 : 0;
   if (mv.selfStage) for (var k in mv.selfStage) if (me.stages[k] < 4 && !me.tm.noBoost && !me.tm.seal) s += (hpR > 0.5 ? 16 : 4) * mv.selfStage[k];
   if (mv.selfStage && me.tm.seal > 0) s -= 40;
   if (mv.tgtStage) for (var k2 in mv.tgtStage) if (foe.stages[k2] > -4 && !foe.tm.mist) s += 9 * Math.abs(mv.tgtStage[k2]);
@@ -72,7 +72,7 @@ function scoreMove(S, me, foe, mv) {
     case 'selfDestruct': case 'bunker': s += hpR < 0.2 ? 40 + (c === 'bunker' ? posSum(foe) * 12 : 0) : -60; break;
     case 'burnout': s += foe.perm.melt > 0 && foe.perm.melt < 5 ? 50 : -60; break;
     case 'melt': s += (foe.perm.melt || 0) < 5 ? CUSTOM_SCORE.melt : -40; break;
-    case 'wither': s += CUSTOM_SCORE.wither * Math.max(0.35, 1 - 0.15 * witherN(foe)); break;   // 可以叠加，叠得越多收益越低
+    case 'wither': s += witherN(foe) >= WITHER_MAX ? -40 : CUSTOM_SCORE.wither * Math.max(0.35, 1 - 0.15 * witherN(foe)); break;   // 可以叠加，叠得越多收益越低
     case 'silentSea': s += Object.keys(foe.tm).length * 12; break;
     case 'purge': s += negCount(me) * 15 - (hpR < 0.4 ? 40 : 10); break;
     case 'siren': s += me.tm.siren ? -40 : (hpR > 0.5 ? 36 : 10); break;
