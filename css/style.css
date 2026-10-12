@@ -1786,3 +1786,7 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .pcard.has-look .pc-top, .pcard.has-look .pc-stats { padding-right: 124px; }
 .pcard.has-look .pc-motto { margin-right: 124px; min-height: 0; }
 @media (max-width: 600px) { .pc-look { width: 78px; height: 106px; } .pcard.has-look .pc-top, .pcard.has-look .pc-stats { padding-right: 88px; } .pcard.has-look .pc-motto { margin-right: 0; } }
+/* 航行日志 · 困难泰戈尔上线：直接展示立绘（不是剪影） */
+.log-card.tiger-hard h3 { color: #a5561a; }
+.tiger-hard .next-art { background: linear-gradient(160deg, #fbf1d0, #f0d9a8); }
+.tiger-hard .next-art img { filter: drop-shadow(0 6px 6px rgba(80, 50, 10, .35)); opacity: 1; }

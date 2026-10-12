@@ -12,7 +12,7 @@ var SPRITES = {
   "wind": "images/sprites/wind.png",
   "pluto": "images/sprites/pluto.png",
   "pede": "images/sprites/pede.png",
-  "tagore": "images/sprites/tagore.png",
+  "tagore": "images/sprites/tagore.webp",
   "hauris": "images/sprites/hauris.png",
   "faraday": "images/sprites/faraday.png",
   "moon": "images/sprites/moon.png",

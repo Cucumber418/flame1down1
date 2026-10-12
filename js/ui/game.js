@@ -2140,6 +2140,13 @@
       '<article class="log-card next"><span class="tape r"></span><span class="chip log-tag">新首领</span><h3>草系首领「荒芜」现身盐碱地</h3>' +
         '<div class="next-art"><img src="' + SPRITES.barren + '" alt=""></div><p>芙罗拉星盐碱地深处的瘴气，源头就是它。简单难度击败可以领养一只枯叶灵。</p><p class="hint">' + (bossOpen('barren') ? '在星际探索 · 芙罗拉星 · 盐碱地挑战。' : '读完主线「降临芙罗拉」后可以挑战。') + '</p>' +
         (bossOpen('barren') ? '<button type="button" class="btn" data-golog="boss-barren">去挑战</button>' : '') + '</article>' +
+      (function () {   // 困难泰戈尔上线：按玩家进度提示下一步（不剧透隐藏特效）
+        var h = levelOpen('tiger', 2), won = bossWon('tiger', 2), tip = won ? '你已经击败了困难难度的泰戈尔，每周挑战已开放。' : h ? '在荆楚号 · 襄阳 · 古城防卫部挑战。' : bossWon('tiger', 1) ? '' : bossOpen('tiger') ? '先击败普通难度的泰戈尔，困难难度就会开放。' : '读完荆楚号 · 襄阳 · 古城防卫部的支线「东北来的泰戈尔」后，就能开始挑战泰戈尔。';
+        return '<article class="log-card next tiger-hard"><span class="tape l"></span><span class="chip log-tag">首领挑战</span><h3>泰戈尔 · 困难难度已上线</h3>' +
+          '<div class="next-art"><img src="' + SPRITES.tagore + '" alt=""></div><p>古城防卫部的泰戈尔终于拿出了真本事：<b>LV60、体力 5000</b>，元素亲和（只有水、火、草系技能能命中它）加上东北的纷争（物攻永久提升 30%）。</p>' +
+          '<p>首次击败获得称号<b>「原力掌控者」</b>、泰戈尔性格药剂 ×3、累积经验 ×50,000，并开放每周挑战。</p><p class="hint">据说……它还藏着一手。' + tip + '</p>' +
+          (h ? '<button type="button" class="btn" data-golog="boss-tiger">去挑战</button>' : '') + '</article>';
+      })() +
       '<article class="log-card wide"><span class="tape l"></span><span class="chip log-tag">每日任务</span><h3>今天的任务</h3>' + dailyHTML() + '</article>' +
       '</div>';
   }
@@ -2158,7 +2165,8 @@
   }
   $('pg-log').addEventListener('click', function (e) {
     var c = e.target.closest('[data-dclaim]'); if (c) { claimDaily(+c.dataset.dclaim); renderLog(); return; }
-    var g = e.target.closest('[data-golog]'); if (g) { if (g.dataset.golog === 'boss-barren') { ex.view = 'boss'; ex.boss = 'barren'; go('explore'); return; } go(g.dataset.golog); }
+    var g = e.target.closest('[data-golog]'); if (g) { if (g.dataset.golog === 'boss-barren') { ex.view = 'boss'; ex.boss = 'barren'; go('explore'); return; }
+      if (g.dataset.golog === 'boss-tiger') { ex.view = 'boss'; ex.boss = 'tiger'; ex.bossK = 'tiger'; ex.bossD = 2; go('explore'); return; } go(g.dataset.golog); }
   });
 
   /* ---------- 首领：常驻在舰上部门或星球上，可反复挑战；每个首领分几档难度 ----------
