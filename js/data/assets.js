@@ -107,7 +107,7 @@ var PRE_SPRITES = {
   "bone_s2": "images/pre_sprites/bone_s2.png",
   "aegis_s1": "images/pre_sprites/aegis_s1.png",
   "aegis_s2": "images/pre_sprites/aegis_s2.png",
-  "leafcat_s1": "images/pre_sprites/leafcat_s1_v2.webp",
+  "leafcat_s1": "images/pre_sprites/leafcat_s1_v3.webp",
   "leafcat_s2": "images/pre_sprites/leafcat_s2.svg",
   "phantom_s1": "images/pre_sprites/phantom_s1.png",
   "phantom_s2": "images/pre_sprites/phantom_s2.png",
