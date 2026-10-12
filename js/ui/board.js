@@ -62,7 +62,7 @@
   function titleName(id) { return id && A && A.titleName ? A.titleName(id) : ''; }
   function postHTML(p) {
     var mine = p.user === B.me, tn = titleName(p.title);
-    return '<li class="bd-post' + (mine ? ' mine' : '') + '" data-id="' + esc(p.id) + '"><span class="pav">' + esc(Array.from(p.name || p.user || '?')[0] || '?') + '</span>' +
+    return '<li class="bd-post' + (mine ? ' mine' : '') + '" data-id="' + esc(p.id) + '"><span class="pav' + (p.avatar ? ' img' : '') + '">' + (A && A.avatarInner ? A.avatarInner(p.avatar, p.name || p.user) : esc(Array.from(p.name || p.user || '?')[0] || '?')) + '</span>' +
       '<div class="bd-body"><p class="bd-who"><b>' + esc(p.name) + '</b>' + (tn ? '<span class="chip ttl">' + esc(tn) + '</span>' : '') + '<span class="hint">@' + esc(p.user) + ' · ' + ago(p.t) + '</span></p>' +
       '<p class="bd-text">' + esc(p.text) + '</p>' +
       '<p class="bd-acts"><button type="button" class="linkbtn" data-reply="' + esc(p.name) + '">回复</button>' + (mine ? '<button type="button" class="linkbtn red" data-del="' + esc(p.id) + '">删除</button>' : '') + '</p></div></li>';
@@ -119,7 +119,7 @@
       btn.disabled = false;
       if (r._code !== 200) { toast(r.error || '发送失败'); return; }
       ta.value = ''; ta.dispatchEvent(new Event('input'));
-      B.posts.unshift(r.post); drawList(); markSeen(r.post.t);
+      r.post.avatar = A && A.avatarSpec ? A.avatarSpec() : null; B.posts.unshift(r.post); drawList(); markSeen(r.post.t);
     }).catch(function () { btn.disabled = false; toast('连不上服务器'); });
   }
   // 小红点：别人发了新留言（自己发的不算）

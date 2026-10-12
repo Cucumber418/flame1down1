@@ -99,6 +99,11 @@ function ownedSids(name) {
   acc.mons.forEach(function (m) { var s = m && str(m.sid, 32); if (s && out.indexOf(s) < 0) out.push(s); });
   return out;
 }
+// 头像：存档里 avatar 是一只精灵的编号；这只精灵不在了就没有头像（显示名字首字）
+function avatarOf(acc) {
+  var m = acc && acc.avatar != null ? monByU(acc, acc.avatar) : null;
+  return m ? { sid: str(m.sid, 32), lv: int(m.lv, 1, 100), shiny: !!m.shiny } : null;
+}
 function showMons(acc) {
   var c = acc.card && Array.isArray(acc.card.show) ? acc.card.show : [];
   return c.slice(0, 5).map(function (u) { return monByU(acc, u); }).filter(Boolean);
@@ -129,7 +134,7 @@ function summary(u, me) {
   var o = { user: u.name, online: on, busy: on && isBusy(u.name), battle: on ? battleOf(u.name) : null, watchOpen: !!(cw && cw.cast.open), friend: !!(me && me.friends && me.friends.indexOf(u.name) >= 0),
     fan: !!(me && u.friends && u.friends.indexOf(me.name) >= 0), me: !!(me && me.name === u.name), lastSeen: lastSeen[u.name] || (u.save && u.save.savedAt) || u.created };
   if (!acc || !acc.introDone) { o.noChar = true; return o; }
-  o.name = str(acc.name, 20); o.title = str(acc.title, 20) || null;
+  o.name = str(acc.name, 20); o.title = str(acc.title, 20) || null; o.avatar = avatarOf(acc);
   o.monsN = acc.mons.length; o.teamN = activeTeam(acc).length;
   o.show = showMons(acc).map(function (m) { return { sid: str(m.sid, 32), lv: int(m.lv, 1, 100) }; });
   var ro = rankOut(p.rank); o.rank = ro.best; if (ro.best === KING_R) o.rankStars = ro.kingBest;
@@ -566,4 +571,4 @@ A.use(function (req, res, url) {
   return true;
 });
 
-module.exports = { onMessage: onMessage, onOpen: onOpen, onClose: onClose, onlineCount: function () { return Object.keys(online).length; } };
+module.exports = { avatarOf: function (name) { var u = A.loadUser(name), acc = u && parseSave(u).acc; return acc ? avatarOf(acc) : null; }, onMessage: onMessage, onOpen: onOpen, onClose: onClose, onlineCount: function () { return Object.keys(online).length; } };

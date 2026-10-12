@@ -117,7 +117,7 @@
     if (acc.story && acc.story.storage && acc.story.storage.rewarded && !acc.story.storage.itemsGiven) { giveItems(SITES.storage.reward.items); acc.story.storage.itemsGiven = true; save(); }
     $('who-name').textContent = acc.name;
     renderRes();
-    $('who-av').textContent = Array.from(acc.name)[0] || '?';
+    renderAvatar();
     $('who-info').textContent = '做题家「' + acc.name + '」 · 拥有精灵 ' + acc.mons.length + ' 只 · 创建于 ' + new Date(acc.created).toLocaleDateString('zh-CN');
     checkTitles(); renderTitle();
     if (page === 'arena' && !arenaOpen()) page = 'bag';
@@ -209,6 +209,37 @@
     }).join('') + '<p class="tt-season">排位赛季 S1 段位称号：已获得 ' + ownS + ' / ' + nS + '（每达到一个新段位获得一个）</p>' +
       '<label class="tt-opt"><input type="radio" name="title" value=""' + (cur ? '' : ' checked') + '><span><b>不佩戴</b></span></label>';
   }
+  /* ---------- 头像：用自己拥有的一只精灵当头像（存档 acc.avatar = 精灵的编号 u；精灵不在了就用名字首字） ----------
+   * 社交的玩家列表、名片、讨论区都会显示（服务器从存档里读，见 server/social.js 的 avatarOf） */
+  function avatarMon() { return acc && acc.avatar != null ? mon(acc.avatar) : null; }
+  function avatarInner(spec, name) {
+    if (spec && SPMAP[spec.sid]) { var f = form({ sid: spec.sid, lv: spec.lv, shiny: spec.shiny }); return '<img src="' + f.img + '" alt="">'; }
+    return esc(Array.from(name || '?')[0] || '?');
+  }
+  function renderAvatar() {
+    var m = avatarMon(), av = $('who-av');
+    av.innerHTML = avatarInner(m, acc.name); av.classList.toggle('img', !!m);
+    $('avatar-box').innerHTML = '<b>头像</b><div class="av-row"><span class="pav' + (m ? ' img' : '') + '">' + avatarInner(m, acc.name) + '</span><span class="hint">' + (m ? esc(form(m).name) + ' · LV' + m.lv : '名字首字（默认）') + '</span><button type="button" class="btn" id="av-pick">更换头像</button></div>';
+  }
+  function openAvatarPicker() {
+    $('who-menu').hidden = true;
+    var old = $('av-dlg'); if (old) old.remove();
+    var cur = acc.avatar, list = acc.mons.slice().sort(function (a, b) { return b.lv - a.lv || a.u - b.u; });
+    var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'av-dlg';
+    d.innerHTML = '<div class="soc-box av-box" role="dialog" aria-modal="true" aria-label="更换头像"><span class="tape l"></span><span class="tape r"></span><span class="step">头像</span><h2>选一只精灵当头像</h2>' +
+      '<p class="hint">只能选自己拥有的精灵，显示的是它现在的形态。社交、名片和讨论区里，其他船员都会看到。</p>' +
+      '<div class="av-grid"><button type="button" class="av-opt' + (avatarMon() ? '' : ' on') + '" data-av=""><span class="pav">' + esc(Array.from(acc.name)[0] || '?') + '</span><small>名字首字</small></button>' +
+      list.map(function (m) { var f = form(m); return '<button type="button" class="av-opt' + (m.u === cur ? ' on' : '') + '" data-av="' + m.u + '"><span class="pav img"><img src="' + f.img + '" alt=""></span><small>' + esc(f.name) + (m.shiny ? '<span class="shiny-tag">异色</span>' : '') + '<br>LV' + m.lv + '</small></button>'; }).join('') +
+      '</div><div class="soc-foot"><button type="button" class="btn ghost" data-avx="1">取消</button></div></div>';
+    document.body.appendChild(d);
+    d.addEventListener('click', function (e) {
+      if (e.target === d || e.target.closest('[data-avx]')) { d.remove(); return; }
+      var b = e.target.closest('[data-av]'); if (!b) return;
+      acc.avatar = b.dataset.av === '' ? null : +b.dataset.av; save(); renderAvatar(); d.remove();
+      var m = avatarMon(); toast(m ? '头像换成了「' + form(m).name + '」。同步到服务器后，其他船员就能看到。' : '头像改回了名字首字。');
+    });
+  }
+  $('avatar-box').addEventListener('click', function (e) { e.stopPropagation(); if (e.target.id === 'av-pick') openAvatarPicker(); });
   /* ---------- 改名卡：商城 1000 能量，在名字菜单里使用 ---------- */
   var renaming = false;
   function renderRename() {
@@ -2513,7 +2544,7 @@
   /* ---------- 给社交页（social.js）用的接口 ---------- */
   window.HSACC = {
     acc: function () { return acc; }, ready: ready, save: save, toast: toast, go: go, page: function () { return page; }, renderRes: renderRes,
-    titleName: titleName, mon: mon, fmt: fmt,
+    titleName: titleName, mon: mon, fmt: fmt, avatarInner: avatarInner, avatarSpec: function () { var m = avatarMon(); return m ? { sid: m.sid, lv: m.lv, shiny: !!m.shiny } : null; },
     npcPlan: npcPlan, npcHome: npcHome,
     sendMail: sendMail, openMailbox: openMailbox,
     rankToday: rankToday, RANK_EXP: { exp: RANK_EXP, n: RANK_EXP_N },

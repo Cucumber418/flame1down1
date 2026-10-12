@@ -40,7 +40,9 @@ A.use(function (req, res, url) {
     var q = {}; (req.url.split('?')[1] || '').split('&').forEach(function (kv) { var p = kv.split('='); if (p[0]) q[p[0]] = decodeURIComponent(p[1] || ''); });
     var n = Math.max(1, Math.min(100, parseInt(q.n, 10) || 40)), before = +q.before || Infinity;
     var d = load(), list = d.posts.filter(function (p) { return p.t < before; });
-    var page = list.slice(-n).reverse();
+    var page = list.slice(-n).reverse(), av = {};
+    // 头像按发帖人现在的头像显示（换了头像，旧留言也跟着换）
+    page = page.map(function (p) { if (!(p.user in av)) av[p.user] = require('./social').avatarOf(p.user); return Object.assign({}, p, { avatar: av[p.user] }); });
     A.reply(res, 200, { me: who.user, posts: page, more: list.length > n, latest: d.posts.length ? d.posts[d.posts.length - 1].t : 0, total: d.posts.length });
     return true;
   }
