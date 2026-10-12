@@ -18,6 +18,8 @@
     <div class="acct" id="who">
       <button type="button" class="mail-btn" id="mail-btn" aria-label="邮箱" title="邮箱"><span aria-hidden="true">✉</span><b>邮箱</b><i class="q-badge" id="mail-badge" hidden></i></button>
       <div class="snd-wrap"><button type="button" class="mail-btn snd-btn" id="snd-btn" aria-haspopup="true" aria-expanded="false" title="声音设置"><span aria-hidden="true">🔊</span><b>声音</b></button><div class="snd-menu" id="snd-menu" hidden></div></div>
+      <button type="button" class="mail-btn" id="about-btn" title="关于"><span aria-hidden="true">ⓘ</span><b>关于</b></button>
+      <button type="button" class="mail-btn" id="board-btn" title="讨论区"><span aria-hidden="true">💬</span><b>讨论</b><i class="q-badge dot-badge" id="board-badge" hidden></i></button>
       <span class="res" id="res"></span>
       <button type="button" class="who-btn" id="who-btn" aria-haspopup="true" aria-expanded="false"><span class="av" id="who-av">?</span><span><span class="lab" id="who-title">做题家</span><br><b id="who-name"></b></span></button>
       <div class="who-menu" id="who-menu" hidden>
@@ -134,6 +136,7 @@
           <button class="tab" id="tab-team" type="button">精灵</button>
           <button class="tab" id="tab-items" type="button" hidden>道具</button>
           <button class="tab speed" id="btn-speed" type="button">动画：正常</button>
+          <button class="tab invite" id="btn-invite" type="button" hidden>邀请全服观战</button>
           <button class="tab quit" id="btn-quit" type="button">认输</button>
         </div>
         <div class="mgrid" id="mgrid"></div>
@@ -142,7 +145,7 @@
         <p class="hint" id="cmd-hint"></p>
       </div>
       <div class="logbox">
-        <h4>战斗记录</h4>
+        <h4>战斗记录 <span class="cast-n" id="cast-n" hidden></span></h4>
         <div class="log" id="log" aria-live="polite"></div>
       </div>
     </div>
@@ -187,7 +190,8 @@ CLOUD.boot([
   'js/ui/audio.js',
   'js/ui/battle-ui.js',
   'js/ui/game.js',
-  'js/ui/social.js'
+  'js/ui/social.js',
+  'js/ui/board.js'
 ]);
 </script>
 </body>

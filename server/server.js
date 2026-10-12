@@ -19,6 +19,7 @@ var path = require('path');
 var WebSocket = require('ws');
 var accounts = require('./accounts');
 var social = require('./social');
+require('./board');   // 讨论区（公开留言板）
 
 var PORT = parseInt(process.env.PORT, 10) || 80;
 var ROOT = path.resolve(__dirname, '..');           // 仓库根目录

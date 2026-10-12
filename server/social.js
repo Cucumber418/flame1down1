@@ -40,6 +40,18 @@
  *   → { type:'brawl-cancel', id }                发起方取消匹配
  *   ← { type:'brawl-end', id, reason, msg }      匹配结束（超时、取消、被别人接走、出错）
  *   开打后和切磋一样走 match / mm 消息，match 里带 brawl:true，6 只精灵由服务器洗牌后每人分 3 只
+ *
+ * 观战（任何对战都能看：野外、剧情、首领、茶室、竞技对战、切磋、大乱斗）：
+ *   正在对战的玩家把画面（战况快照 + 战斗记录 + 动画提示）不停地发给服务器，服务器转给观众。
+ *   → { type:'cast', op:'start', head:{ label, foe, pvp } }   开始转播（对战一开始就发）
+ *   → { type:'cast', op:'f', snap, log:[[文字, 样式]], fx:[...] }   画面更新（大约每 0.25 秒一次）
+ *   → { type:'cast', op:'end', title, sub }                   对战结束
+ *   ← { type:'cast-viewers', n, names }                       有几个人在看你
+ *   → { type:'cast-invite' }                                  两名玩家对战时，任一方都可以向全服在线玩家发观战邀请
+ *   ← { type:'watch-invite', user, name, peerName, label }    收到全服观战邀请
+ *   → { type:'watch-start', user } / { type:'watch-stop' }    开始 / 停止观战。只能看自己加了好友的人，或者发过全服邀请的对战
+ *   ← { type:'watch', op:'full' | 'f' | 'end', ... }          观战画面；op=err 表示看不了（msg 写原因）
+ *   presence 和玩家列表里的 battle 是对战标签（例如「野外 · 雷暴陨石群」），watchOpen 表示发过全服邀请、谁都能看
  */
 'use strict';
 
@@ -98,7 +110,10 @@ function homeOf(acc) {
   var open = !!(acc.story && acc.story.tea && acc.story.tea.done), h = acc.home || {};
   var cap = 3 + Math.min(4, int(h.cap, 0, 4));   // 茶室商店扩容：最多 7 只
   var mons = (Array.isArray(h.mons) ? h.mons : []).slice(0, cap).map(function (x) { return monByU(acc, x && typeof x === 'object' ? x.u : x); }).filter(Boolean);
-  return { open: open, name: str(h.name, 10) || '陆羽茶室', mons: open ? mons : [] };
+  // 茶室音乐：大厅（默认）/ 地球 / 芙罗拉星（击败普通难度荒芜才有）
+  var flora = !!(acc.bosses && acc.bosses['barren:1'] && acc.bosses['barren:1'].wins > 0);
+  var bgm = h.bgm === 'earth' || (h.bgm === 'flora' && flora) ? h.bgm : 'ui';
+  return { open: open, name: str(h.name, 10) || '陆羽茶室', mons: open ? mons : [], bgm: bgm };
 }
 var KING_R = 10;   // 王者（段位表见 js/engine/ranked.js 的 RANKS）
 function rankOut(r) {
@@ -110,7 +125,8 @@ function rankOut(r) {
 
 function summary(u, me) {
   var p = parseSave(u), acc = p.acc, on = isOnline(u.name);
-  var o = { user: u.name, online: on, busy: on && isBusy(u.name), friend: !!(me && me.friends && me.friends.indexOf(u.name) >= 0),
+  var cw = on && castOf(u.name);
+  var o = { user: u.name, online: on, busy: on && isBusy(u.name), battle: on ? battleOf(u.name) : null, watchOpen: !!(cw && cw.cast.open), friend: !!(me && me.friends && me.friends.indexOf(u.name) >= 0),
     fan: !!(me && u.friends && u.friends.indexOf(me.name) >= 0), me: !!(me && me.name === u.name), lastSeen: lastSeen[u.name] || (u.save && u.save.savedAt) || u.created };
   if (!acc || !acc.introDone) { o.noChar = true; return o; }
   o.name = str(acc.name, 20); o.title = str(acc.title, 20) || null;
@@ -141,11 +157,13 @@ var online = {};      // 账号名 -> [ws, ...]
 var lastSeen = {};
 var allSockets = [];
 function isOnline(name) { return !!(online[name] && online[name].length); }
-function isBusy(name) { return (online[name] || []).some(function (w) { return !!w.match; }); }
+function isBusy(name) { return (online[name] || []).some(function (w) { return !!w.match || !!w.cast; }); }
+function castOf(name) { return (online[name] || []).filter(function (w) { return !!w.cast; })[0] || null; }
+function battleOf(name) { var c = castOf(name); return c ? c.cast.head.label : isBusy(name) ? '切磋' : null; }
 function out(ws, obj) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(obj)); }
 function toUser(name, obj) { (online[name] || []).forEach(function (w) { out(w, obj); }); }
 function presence(name) {
-  var msg = { type: 'presence', user: name, online: isOnline(name), busy: isBusy(name) };
+  var c = castOf(name), msg = { type: 'presence', user: name, online: isOnline(name), busy: isBusy(name), battle: battleOf(name), watchOpen: !!(c && c.cast.open) };
   allSockets.forEach(function (w) { if (w.user) out(w, msg); });
 }
 
@@ -280,6 +298,59 @@ function prepNext(m) {
   out(m.socks[1], Object.assign({}, base, { side: 1, peer: m.users[0], peerName: m.names[0] }));
 }
 
+/* ---------- 观战 ---------- */
+var CAST_LOG = 80, INVITE_GAP = 60 * 1000;
+function castViewers(w) {
+  var C = w.cast; if (!C) return;
+  out(w, { type: 'cast-viewers', n: C.viewers.length, names: C.viewers.map(function (v) { return gameName(v.user); }).filter(function (x, i, a) { return a.indexOf(x) === i; }).slice(0, 20) });
+}
+function unwatch(v) {
+  var w = v.watching; v.watching = null;
+  if (!w || !w.cast) return;
+  var n = w.cast.viewers.length;
+  w.cast.viewers = w.cast.viewers.filter(function (x) { return x !== v; });
+  if (w.cast.viewers.length !== n) castViewers(w);
+}
+function castEnd(w, title, sub) {
+  var C = w.cast; if (!C) return;
+  w.cast = null;
+  C.viewers.forEach(function (v) { if (v.watching === w) v.watching = null; out(v, { type: 'watch', op: 'end', user: w.user, title: str(title, 40), sub: str(sub, 200) }); });
+  if (w.user) presence(w.user);
+}
+function cleanLog(a) { return (Array.isArray(a) ? a : []).slice(0, 60).map(function (x) { return Array.isArray(x) ? [str(x[0], 300), str(x[1], 12)] : null; }).filter(Boolean); }
+function onCast(ws, msg) {
+  if (!ws.user) return;
+  if (msg.op === 'start') {
+    var old = ws.cast, h = msg.head || {};
+    ws.cast = { head: { label: str(h.label, 40) || '对战', foe: str(h.foe, 30), pvp: !!ws.match, name: gameName(ws.user) }, snap: null, log: [], viewers: old ? old.viewers : [], open: !!(old && old.open && ws.match), t: Date.now() };
+    if (ws.match && matches[ws.match]) ws.cast.open = ws.cast.open || !!matches[ws.match].open;
+    if (h.resume && Array.isArray(msg.log)) ws.cast.log = cleanLog(msg.log).slice(-CAST_LOG);
+    if (msg.snap && typeof msg.snap === 'object') ws.cast.snap = msg.snap;
+    ws.cast.viewers.forEach(function (v) { sendFull(v, ws); });
+    presence(ws.user);
+    return;
+  }
+  var C = ws.cast; if (!C) return;
+  if (msg.op === 'f') {
+    var lg = cleanLog(msg.log), fx = Array.isArray(msg.fx) ? msg.fx.slice(0, 40) : [];
+    if (msg.snap && typeof msg.snap === 'object') C.snap = msg.snap;
+    if (lg.length) { C.log = C.log.concat(lg); if (C.log.length > CAST_LOG) C.log = C.log.slice(-CAST_LOG); }
+    if (C.viewers.length) { var f = { type: 'watch', op: 'f', user: ws.user, snap: msg.snap || null, log: lg, fx: fx }; C.viewers.forEach(function (v) { out(v, f); }); }
+    return;
+  }
+  if (msg.op === 'end') castEnd(ws, msg.title, msg.sub);
+}
+function sendFull(v, w) {
+  var C = w.cast;
+  out(v, { type: 'watch', op: 'full', user: w.user, head: C.head, snap: C.snap, log: C.log, n: C.viewers.length });
+}
+function canWatch(ws, name) {
+  var me = A.loadUser(ws.user), w = castOf(name);
+  if (!w) return { err: '对方现在没有在对战' };
+  if (!(w.cast.open || (me && Array.isArray(me.friends) && me.friends.indexOf(name) >= 0))) return { err: '只能观战自己的好友（或者发出了全服观战邀请的对战）' };
+  return { w: w };
+}
+
 function onMessage(ws, msg) {
   switch (msg.type) {
     case 'auth': {
@@ -393,6 +464,34 @@ function onMessage(ws, msg) {
       out(m.socks[m.socks[0] === ws ? 1 : 0], { type: 'mm', id: msg.id, data: msg.data });
       return true;
     }
+    case 'cast': onCast(ws, msg); return true;
+    case 'cast-invite': {
+      var mi = ws.match && matches[ws.match];
+      if (!ws.cast || !mi || mi.prep) { out(ws, { type: 'cast-invited', ok: false, msg: '只有和其他玩家对战时才能邀请全服观战' }); return true; }
+      if (mi.invitedAt && Date.now() - mi.invitedAt < INVITE_GAP) { out(ws, { type: 'cast-invited', ok: false, msg: '刚刚已经邀请过了，过一会儿再试' }); return true; }
+      mi.invitedAt = Date.now(); mi.open = true;
+      mi.socks.forEach(function (w) { if (w.cast) w.cast.open = true; });
+      var side = mi.socks[0] === ws ? 0 : 1, peerName = gameName(mi.users[1 - side]), myName = gameName(ws.user), n = 0;
+      Object.keys(online).forEach(function (u) {
+        if (mi.users.indexOf(u) >= 0) return;
+        n++; toUser(u, { type: 'watch-invite', user: ws.user, name: myName, peer: mi.users[1 - side], peerName: peerName, label: ws.cast.head.label });
+      });
+      out(ws, { type: 'cast-invited', ok: true, n: n });
+      out(mi.socks[1 - side], { type: 'cast-note', msg: myName + ' 向全服发出了观战邀请' });
+      mi.users.forEach(presence);
+      return true;
+    }
+    case 'watch-start': {
+      if (!ws.user) return true;
+      var wn = String(msg.user || '');
+      if (wn === ws.user) { out(ws, { type: 'watch', op: 'err', msg: '不能观战自己' }); return true; }
+      var cw = canWatch(ws, wn);
+      if (cw.err) { out(ws, { type: 'watch', op: 'err', user: wn, msg: cw.err }); return true; }
+      if (ws.watching !== cw.w) { unwatch(ws); ws.watching = cw.w; cw.w.cast.viewers.push(ws); castViewers(cw.w); }
+      sendFull(ws, cw.w);
+      return true;
+    }
+    case 'watch-stop': unwatch(ws); return true;
     case 'mm-over': {
       var m2 = matches[msg.id];
       if (m2 && ws.match === msg.id) endMatch(msg.id, ws, 'over');
@@ -412,6 +511,8 @@ function onClose(ws) {
     else if (c.to === ws.user && (online[ws.user] || []).length <= 1) endChallenge(c, 'gone');
   });
   if (ws.match) endMatch(ws.match, ws, 'left');
+  unwatch(ws);
+  if (ws.cast) castEnd(ws, '转播中断', '对方离开了游戏');
   if (ws.user && online[ws.user]) {
     online[ws.user] = online[ws.user].filter(function (w) { return w !== ws; });
     if (!online[ws.user].length) { delete online[ws.user]; lastSeen[ws.user] = Date.now(); presence(ws.user); }
@@ -442,7 +543,7 @@ A.use(function (req, res, url) {
     var ha = parseSave(hu).acc;
     if (!ha || !ha.introDone) { A.reply(res, 200, { user: hu.name, noChar: true }); return true; }
     var hm = homeOf(ha);
-    A.reply(res, 200, { user: hu.name, name: str(ha.name, 20), me: hu.name === me.name, open: hm.open, homeName: hm.name, mons: hm.mons.map(function (m) { return monOut(m, ha); }), online: isOnline(hu.name) });
+    A.reply(res, 200, { user: hu.name, name: str(ha.name, 20), me: hu.name === me.name, open: hm.open, homeName: hm.name, bgm: hm.bgm, mons: hm.mons.map(function (m) { return monOut(m, ha); }), online: isOnline(hu.name) });
     return true;
   }
   if (url === '/api/friends' && req.method === 'POST') {

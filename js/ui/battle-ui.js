@@ -430,12 +430,58 @@
   // 战斗背景音乐（见 audio.js）
   function bgm(k) { if (window.HSAUDIO) HSAUDIO.play(k); }
   function bgmStop(ms) { if (window.HSAUDIO) HSAUDIO.stop(ms); }
+  /* ---------- 观战转播：对战画面（战况快照、战斗记录、动画提示）攒一小会儿发给服务器，由服务器转给观众（见 social.js）---------- */
+  var CAST = { on: false, head: null, snap: null, log: [], fx: [], timer: null, all: [] }, caster = null;
+  function castLabel() {
+    var S = app.S; if (!S) return '对战';
+    if (pvp) return pvp.brawl ? '精灵大乱斗' : '切磋 · ' + (pvp.label || pvp.mode + 'v' + pvp.mode);
+    if (S.training) return '竞技对战 · 训练';
+    if (S.wild) return '野外 · ' + (S.wild.where || '');
+    if (S.story) { var a0 = S.sides[1].team[0]; return S.story.foe === '首领' ? '首领战 · ' + (a0.nick || SPMAP[a0.id].name) : '对战 · ' + S.story.foe; }
+    return S.mode === 'rank' ? '竞技对战 · 实战' + RANKS[S.rankAt] : '竞技对战 · 沙盒';
+  }
+  function castFoe() { var S = app.S; return pvp ? pvp.foe : S.training ? '训练木桩' : S.wild ? '野生精灵' : S.story ? S.story.foe : '电脑'; }
+  // 发出去的快照：去掉能力值明细（太长，观众用不到）；实战里对手还没派出的精灵不公开
+  function castSnap(sn) {
+    var hide = rankOn();
+    return { turn: sn.turn, sides: sn.sides.map(function (sd, i) {
+      return { id: sd.id, name: sd.name, img: sd.img, types: sd.types, lv: hide && i === 1 ? null : sd.lv, dummy: sd.dummy, ability: { n: sd.ability.n, d: sd.ability.d }, hp: sd.hp, maxhp: sd.maxhp, fainted: sd.fainted,
+        chips: sd.chips.map(function (c) { return { k: c.k, t: c.t, h: c.h, d: c.d }; }),
+        team: sd.team.map(function (t) { var u = hide && i === 1 && !t.seen; return { id: u ? null : t.id, nick: u ? null : t.nick, fainted: t.fainted, active: t.active }; }) };
+    }) };
+  }
+  function castBegin() {
+    CAST.on = true; CAST.snap = null; CAST.log = []; CAST.fx = []; CAST.all = [];
+    CAST.head = { label: castLabel(), foe: castFoe() };
+    if (caster) caster('start', { head: CAST.head });
+    castViewers(0, []);
+  }
+  function castQueue() { if (CAST.on && !CAST.timer) CAST.timer = setTimeout(castFlush, 250); }
+  function castFlush() {
+    clearTimeout(CAST.timer); CAST.timer = null;
+    if (!CAST.on || (!CAST.snap && !CAST.log.length && !CAST.fx.length)) return;
+    if (caster) caster('f', { snap: CAST.snap, log: CAST.log, fx: CAST.fx });
+    CAST.snap = null; CAST.log = []; CAST.fx = [];
+  }
+  function castEnd(title, sub) {
+    if (!CAST.on) return;
+    castFlush(); CAST.on = false;
+    if (caster) caster('end', { title: title, sub: sub });
+    castViewers(0, []); $('btn-invite').hidden = true;
+  }
+  function castFx(o) { if (CAST.on) { CAST.fx.push(o); castQueue(); } }
+  // 有几个人在看
+  function castViewers(n, names) {
+    var el = $('cast-n'); if (!el) return;
+    el.hidden = !n || !CAST.on; el.textContent = n ? '👁 ' + n + ' 人观战中' : '';
+    el.title = (names || []).join('、');
+  }
   function startTraining() {
     var id = app.sel; bgm('pvp');
     app.S = newTraining({ id: id, moves: app.loadout[id].slice() }, app.train.lv, app.train.def);
     app.screen = 'battle'; app.logHTML = ''; $('log').innerHTML = '';
     $('builder').hidden = true; $('battle').hidden = false; $('endcard').hidden = true;
-    shownIds = [null, null];
+    shownIds = [null, null]; castBegin();
     addLog('训练开始：【' + SPMAP[id].name + '】LV' + app.train.lv + ' 对阵木桩（双防种族值 ' + app.train.def + '）', 'turn');
     renderSnap(snap(app.S), true); renderStats();
     showTab('moves'); refreshCmd();
@@ -471,7 +517,7 @@
     if (rank) { app.S.mode = 'rank'; app.S.rankAt = app.rank.r; app.S.ai = rankAI(app.rank.r, app.rank.stars); app.draft.used = true; saveDraft(); }
     app.screen = 'battle'; app.logHTML = ''; $('log').innerHTML = '';
     $('builder').hidden = true; $('battle').hidden = false; $('endcard').hidden = true;
-    shownIds = [null, null];
+    shownIds = [null, null]; castBegin();
     addLog('对手派出了【' + SPMAP[a[0].id].name + '】，你派出了【' + SPMAP[p[0].id].name + '】！', '');
     if (rank) addLog('实战 · ' + RANKS[app.rank.r] + '段位 · 对手其余 4 只精灵尚未公开', 'turn');
     else { addLog('对手背包：' + a.map(function (x) { return SPMAP[x.id].name; }).join('、'), 'dmg'); a.forEach(function (x) { addLog('　' + SPMAP[x.id].name + '：' + x.moves.map(function (n) { return M[n].name; }).join('、'), 'dmg'); }); }
@@ -492,7 +538,7 @@
     storyEnd = opt.onEnd; itemUsed = opt.onItem || null;
     app.screen = 'battle'; app.logHTML = ''; $('log').innerHTML = '';
     $('builder').hidden = true; $('battle').hidden = false; $('endcard').hidden = true;
-    shownIds = [null, null];
+    shownIds = [null, null]; castBegin();
     var nn = function (x) { return x.nick || SPMAP[x.id].name; };
     if (opt.wild) { addLog('野生的【' + nn(opt.a[0]) + '】（LV' + opt.a[0].lv + '）出现了！你派出了【' + nn(opt.p[0]) + '】！', ''); addLog(opt.wild.where + ' · 野外对战', 'turn'); }
     else { addLog(opt.foe + '派出了【' + nn(opt.a[0]) + '】，你派出了【' + nn(opt.p[0]) + '】！', ''); addLog('剧情对战 · ' + opt.foe, 'turn'); }
@@ -517,6 +563,7 @@
     app.screen = 'battle'; app.logHTML = ''; $('log').innerHTML = '';
     $('builder').hidden = true; $('battle').hidden = false; $('endcard').hidden = true;
     shownIds = [null, null]; ['plate0', 'plate1'].forEach(function (id) { $(id).dataset.ready = ''; });
+    castBegin(); $('btn-invite').hidden = false; $('btn-invite').disabled = false; $('btn-invite').textContent = '邀请全服观战';
     var me = app.S.sides[PV], foe = app.S.sides[1 - PV], nn = function (x) { return x.nick || SPMAP[x.id].name; };
     addLog(opt.brawl ? '与 ' + opt.foe + ' 的精灵大乱斗开始！' : '与 ' + opt.foe + ' 的 ' + (opt.label || opt.mode + 'v' + opt.mode) + ' 切磋开始！', 'turn');
     addLog(foe.name + '派出了【' + nn(foe.team[0]) + '】，你派出了【' + nn(me.team[0]) + '】！', '');
@@ -555,6 +602,12 @@
   window.HSBATTLE = { renderMode: function () { renderMode(); if (app.mode !== 'brawl') renderBuilder(); }, start: startStory, startPvp: startPvp, pvpApply: pvpApply, pvpAbort: pvpAbort, pvpActive: function () { return !!pvp; },
     // 竞技对战里给每只精灵记住的配招（平衡模式切磋选技能时沿用，改了也会记回来）
     loadout: function (id) { return app.loadout[id] ? app.loadout[id].slice() : []; },
+    // 观战转播：social.js 连上服务器后把发送函数交给这里
+    setCaster: function (fn) { caster = fn; },
+    castResync: function () { if (CAST.on && caster && app.S) { caster('start', { head: Object.assign({ resume: 1 }, CAST.head), snap: castSnap(flipSnap(snap(app.S))), log: CAST.all.slice(-60) }); } },
+    castViewers: castViewers,
+    castInvited: function (ok, msg) { var b = $('btn-invite'); if (ok) { b.disabled = true; b.textContent = '已邀请全服观战'; } else b.disabled = false; if (CAST.on) addLog(msg, 'dmg'); },
+    castNote: function (msg) { if (CAST.on) addLog(msg, 'dmg'); },
     setLoadout: function (id, mv) { if (!SPMAP[id] || !Array.isArray(mv) || !mv.length) return; app.loadout[id] = mv.slice(0, 4); saveLoadout(); } };
   var shownIds = [null, null];
   /* ---------- 联网切磋：PV 是「我」在对战里的位置（0 发起方 / 1 应战方），画面始终把自己放在下方 ---------- */
@@ -564,6 +617,7 @@
   function hpClass(h, m) { var r = h / m; return r > 0.5 ? '' : r > 0.2 ? 'mid' : 'low'; }
   function renderSnap(sn, instant) {
     sn = flipSnap(sn);
+    if (CAST.on) { CAST.snap = castSnap(sn); castQueue(); }
     var trn = app.S && app.S.training;
     $('turnNo').textContent = trn ? sn.turn : Math.min(sn.turn, MAX_TURNS);
     var left = MAX_TURNS - sn.turn; $('turnMax').textContent = trn ? '训练 · 不限回合' : left <= 0 ? '最后一回合' : '上限 ' + MAX_TURNS; $('turnMax').className = 'tmax' + (!trn && left <= 10 ? ' warn' : '');
@@ -631,6 +685,7 @@
   function addLog(text, cls) {
     var h = '<p class="' + cls + '">' + esc(text).replace(/【(.+?)】/g, '<b>$1</b>') + '</p>';
     app.logHTML += h;
+    if (CAST.on) { CAST.log.push([text, cls || '']); CAST.all.push([text, cls || '']); if (CAST.all.length > 80) CAST.all.shift(); castQueue(); }
     var lg = $('log'); lg.insertAdjacentHTML('beforeend', h);
     while (lg.children.length > 160) lg.removeChild(lg.firstChild);
     lg.scrollTop = lg.scrollHeight;
@@ -641,11 +696,11 @@
       var e = evs[k];
       switch (e.t) {
         case 'text': addLog(e.text, e.cls); renderSnap(e.snap); flashAbility(e.text, flipSnap(e.snap)); await wait(e.cls === 'turn' ? 120 : 300); break;
-        case 'use': renderSnap(e.snap); restartAnim($('mon' + V(e.side)), 'lunge' + V(e.side)); banner(e.move, e.type); await wait(450); break;
-        case 'hit': renderSnap(e.snap); if (app.S && app.S.training && e.side === 1) renderStats(); if (e.amount > 0) { restartAnim($('mon' + V(e.side)), 'hit'); floatNum(V(e.side), '-' + e.amount + (e.crit ? '!' : ''), e.crit ? 'crit' : ''); } await wait(480); break;
-        case 'heal': renderSnap(e.snap); restartAnim($('mon' + V(e.side)), 'heal'); floatNum(V(e.side), '+' + e.amount, 'heal'); await wait(380); break;
+        case 'use': renderSnap(e.snap); castFx({ a: 'use', i: V(e.side), m: e.move, ty: e.type }); restartAnim($('mon' + V(e.side)), 'lunge' + V(e.side)); banner(e.move, e.type); await wait(450); break;
+        case 'hit': renderSnap(e.snap); if (e.amount > 0) castFx({ a: 'hit', i: V(e.side), n: e.amount, c: !!e.crit }); if (app.S && app.S.training && e.side === 1) renderStats(); if (e.amount > 0) { restartAnim($('mon' + V(e.side)), 'hit'); floatNum(V(e.side), '-' + e.amount + (e.crit ? '!' : ''), e.crit ? 'crit' : ''); } await wait(480); break;
+        case 'heal': renderSnap(e.snap); castFx({ a: 'heal', i: V(e.side), n: e.amount }); restartAnim($('mon' + V(e.side)), 'heal'); floatNum(V(e.side), '+' + e.amount, 'heal'); await wait(380); break;
         case 'switch': renderSnap(e.snap); await wait(520); break;
-        case 'throw': renderSnap(e.snap); restartAnim($('mon1'), 'throw'); await wait(900); break;
+        case 'throw': renderSnap(e.snap); castFx({ a: 'throw', i: 1 }); restartAnim($('mon1'), 'throw'); await wait(900); break;
         case 'faint': renderSnap(e.snap); await wait(650); break;
         default: renderSnap(e.snap); await wait(60);
       }
@@ -738,7 +793,8 @@
     if (R.r === RANKS.length - 1) R.kingBest = Math.max(R.kingBest || 0, R.stars);   // 王者达到过的最高星数（社交名片里显示）
     x.to = R.r; x.toStars = R.stars; saveRank(); return x;
   }
-  function showEnd() {
+  function showEnd() { showEnd0(); castEnd($('end-title').textContent, $('end-sub').textContent); }
+  function showEnd0() {
     var S = app.S, r = S.over;
     bgmStop(1500);
     if (pvp) {
@@ -811,6 +867,7 @@
     app.S.items[k]--; if (itemUsed) itemUsed(k);
     showTab('moves'); doTurn({ kind: 'item', key: k });
   });
+  $('btn-invite').addEventListener('click', function () { if (pvp && CAST.on && caster && !this.disabled) { this.disabled = true; caster('invite', {}); } });
   $('btn-speed').addEventListener('click', function () { app.fast = !app.fast; this.textContent = '动画：' + (app.fast ? '快速' : '正常'); });
   $('btn-quit').addEventListener('click', function () {
     var b = this;
@@ -824,7 +881,7 @@
   });
   $('btn-again').addEventListener('click', function () { if (rankOn()) { $('btn-back').click(); return; } $('log').innerHTML = ''; startBattle(); });
   $('btn-back').addEventListener('click', function () {
-    bgmStop(400);
+    bgmStop(400); castEnd('对战结束', '');
     if (pvp) {
       var done = pvp.onEnd; clearInterval(pvp.clock); pvp = null; PV = 0;
       app.screen = 'builder'; app.S = null; $('battle').hidden = true; $('builder').hidden = false; $('log').innerHTML = ''; $('btn-again').hidden = false; setFieldBg(null);

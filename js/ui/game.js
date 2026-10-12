@@ -128,6 +128,7 @@
     });
     syncBattle();
     deliverMail(); checkRankRewards(); daily(); homeSettle();
+    setTimeout(newsCheck, 1500);
     ['arena', 'log', 'bag', 'store', 'dex', 'items', 'social', 'explore'].forEach(function (p) { $('pg-' + p).hidden = p !== page; });
     renderRename();
     if (page === 'arena' && window.HSBATTLE && window.HSBATTLE.renderMode && $('battle').hidden) window.HSBATTLE.renderMode();
@@ -1284,6 +1285,10 @@
       if (M0.until && today > M0.until) return;
       if (sendMail(M0)) changed = true;
     });
+    // 荒芜普通难度的首次击败奖励（茶室音乐「芙罗拉星」）：之前已经击败过的船员，发邮件告诉他已经解锁
+    if (bossWon('barren', 1) && !acc.mailSeen['barren-bgm']) {
+      changed = sendMail({ id: 'barren-bgm', title: '荒芜普通难度奖励：茶室音乐', body: '{name}，你好！\n你已经击败过普通难度的首领「荒芜」。这一档难度的首次击败奖励现在补上了：茶室音乐「芙罗拉星」。\n去星际探索 · 荆楚号 · 陆羽茶室 · 我的房间，就可以把它换成你的茶室音乐，来拜访你茶室的船员也都能听到。' }) || changed;
+    }
     // 排位赛季段位奖励翻倍：之前按旧标准领过的段位，补发差额（每个账号只算一次）
     var rec = rankRec();
     if (!rec.x2) {
@@ -1436,6 +1441,35 @@
       '<p class="hint">技能、数值和玩法的改动都会公布在这里，最新的在最上面。</p>' + L.slice(0, 1).map(one).join('') +
       (L.length > 1 ? '<details class="cl-more"><summary>更早的改动（' + (L.length - 1) + ' 条）</summary>' + L.slice(1).map(one).join('') + '</details>' : '') + '</article>';
   }
+  /* 每天第一次打开游戏：弹出半屏的「更新公告」，列出上次看过之后新增的改动（没有新的就显示最新一条）。
+   * 看过哪些记在存档里（newsSeen），所以换设备也不会重复算「新」；当天弹过就不再弹（newsDay）。
+   * 正在对战或看剧情时先不弹，等结束后再弹。 */
+  function clKey(c) { return c.date + '|' + c.title; }
+  function newsCheck() {
+    if (!ready() || typeof CHANGELOG === 'undefined' || !CHANGELOG.length || acc.newsDay === dayStr()) return;
+    if (!$('battle').hidden || ex.fighting || (ex.mode && (ex.mode === 'intro' || ex.view === 'vn')) || $('news') || $('mailbox')) return;
+    var first = !Array.isArray(acc.newsSeen), seen = first ? [] : acc.newsSeen;   // 第一次弹：只列最近 3 条，不然一下子十几条太多
+    var fresh = first ? CHANGELOG.slice(0, 3) : CHANGELOG.filter(function (c) { return seen.indexOf(clKey(c)) < 0; });
+    var list = fresh.length ? fresh.slice(0, 5) : CHANGELOG.slice(0, 1);
+    acc.newsDay = dayStr(); acc.newsSeen = CHANGELOG.slice(0, 60).map(clKey); save();
+    var d = document.createElement('div'); d.className = 'soc-dlg news-dlg'; d.id = 'news';
+    d.innerHTML = '<div class="soc-box news-box" role="dialog" aria-modal="true" aria-labelledby="news-h"><span class="tape l"></span><span class="tape r"></span>' +
+      '<div class="news-top"><span class="step">航行日志 · ' + dayStr() + '</span><h2 id="news-h">' + (first ? '最近的更新公告' : fresh.length ? '有 ' + fresh.length + ' 条新的更新公告' : '今天的航行日志') + '</h2></div>' +
+      '<div class="news-list">' + list.map(function (c) {
+        var isNew = fresh.indexOf(c) >= 0;
+        return '<div class="cl-entry"><p class="cl-h"><b>' + esc(c.title) + '</b>' + (isNew ? '<span class="news-new">新</span>' : '') + '<span>' + esc(c.date) + '</span></p><ul>' + c.items.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul></div>';
+      }).join('') + (first || fresh.length > list.length ? '<p class="hint">更早的改动都在航行日志的「更新公告」里。</p>' : '') + '</div>' +
+      '<div class="soc-foot"><button type="button" class="btn ghost" data-nlog="1">去航行日志</button><button type="button" class="btn primary" data-nx="1">知道了</button></div></div>';
+    document.body.appendChild(d);
+    var close = function () { d.remove(); };
+    d.addEventListener('click', function (e) {
+      if (e.target === d || e.target.closest('[data-nx]')) { close(); return; }
+      if (e.target.closest('[data-nlog]')) { close(); if ($('battle').hidden) go('log'); }
+    });
+    document.addEventListener('keydown', function esc0(e) { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', esc0); } });
+    d.querySelector('[data-nx]').focus();
+  }
+  setInterval(function () { if (document.visibilityState === 'visible') newsCheck(); }, 20000);
   function renderLog() {
     var now = new Date(), h = now.getHours(), on = mysteryTime();
     var wait = on ? '' : (function () { var t = new Date(now); t.setHours(MYSTERY.from, 0, 0, 0); var m = Math.max(0, Math.round((t - now) / 60000)); return '距离今天的活动开始还有 ' + Math.floor(m / 60) + ' 小时 ' + (m % 60) + ' 分钟'; })();
@@ -1483,7 +1517,7 @@
       d: '潜伏在芙罗拉星盐碱地地底的草系首领。盐碱地里的瘴气，就是从它身上散出来的。',
       lv: [
         { diff: '简单', lv: 40, hp: 1000, boss: { dr: 0.15, mia: 1, pp: 99 }, bgm: 'boss', open: function () { return prog('flora1').done; }, lockText: '读完主线「降临芙罗拉」后开放', reward: { mon: { sid: 'barren', lv: 10 } } },
-        { diff: '普通', lv: 65, hp: 3000, boss: { dr: 0.15, mia: 1, puppet: 1, pp: 99 }, bgm: 'boss2', open: function () { return bossWon('barren', 0); }, lockText: '击败简单难度后开放', reward: { later: true } }
+        { diff: '普通', lv: 65, hp: 3000, boss: { dr: 0.15, mia: 1, puppet: 1, pp: 99 }, bgm: 'boss2', open: function () { return bossWon('barren', 0); }, lockText: '击败简单难度后开放', reward: { bgm: 'flora' } }
       ] }
   };
   // 每周挑战：击败困难难度的泰戈尔后开放，规则和困难难度一样，每次消耗 1 枚挑战许可
@@ -1535,6 +1569,7 @@
     if (R.title) a.push('称号「' + titleName(R.title) + '」');
     if (R.items) for (var k in R.items) a.push(itemName(k) + ' ×' + R.items[k]);
     if (R.exp) a.push('累积经验 ×' + fmt(R.exp));
+    if (R.bgm) a.push('茶室音乐「' + bgmName(R.bgm) + '」');
     if (R.later) a.push('奖励将在之后添加');
     return a.join('、');
   }
@@ -1587,6 +1622,7 @@
     if (R.title && acc.titles.indexOf(R.title) < 0) { acc.titles.push(R.title); out.push('获得称号「' + titleName(R.title) + '」！点右上角的名字即可佩戴。'); }
     if (R.items) { giveItems(R.items); out.push('获得 ' + Object.keys(R.items).map(function (k) { return itemName(k) + ' ×' + R.items[k]; }).join('、') + '，可以在精灵资料或「储存箱」里使用。'); }
     if (R.exp) { acc.exp = (acc.exp || 0) + R.exp; out.push('累积经验 +' + fmt(R.exp) + '，已放进经验背包。'); }
+    if (R.bgm) { acc.mailSeen['barren-bgm'] = Date.now(); out.push('获得茶室音乐「' + bgmName(R.bgm) + '」！去陆羽茶室 · 我的房间就能换上，来拜访你茶室的船员也都能听到。'); }
     if (R.later) out.push('这一档难度的首次击败奖励将在之后添加，到时会通过邮箱补发给已经击败过的船员。');
     return out;
   }
@@ -1673,6 +1709,28 @@
   var HOME_BASE = 3, HOME_POS = [[20, 88], [47, 84], [73, 70], [34, 66], [60, 60], [88, 92], [8, 70]], HOME_CAP_H = 24;
   // 茶室能同时展示几只：基础 3 只，茶室商店的「茶室精灵容量 +1」每买一次多 1 只（最多买 4 次）
   function homeMax() { return HOME_BASE + Math.min(4, (acc && acc.home && acc.home.cap) || 0); }
+  /* 茶室音乐：自己和来拜访的船员在茶室里都会听到（曲子见 js/ui/audio.js）
+   * 大厅（默认，和陆羽茶室大厅一样）和地球一开始就有；芙罗拉星是击败普通难度荒芜的奖励 */
+  var HOME_BGM = [
+    { k: 'ui', n: '大厅', d: '默认' },
+    { k: 'earth', n: '地球', d: '自动解锁' },
+    { k: 'flora', n: '芙罗拉星', d: '击败普通难度的荒芜获得', own: function () { return bossWon('barren', 1); } }
+  ];
+  function bgmName(k) { var b = HOME_BGM.filter(function (x) { return x.k === k; })[0]; return b ? b.n : k; }
+  function bgmOwned(k) { var b = HOME_BGM.filter(function (x) { return x.k === k; })[0]; return !!b && (!b.own || b.own()); }
+  function homeBgm() { var k = acc && acc.home && acc.home.bgm; return k && bgmOwned(k) ? k : 'ui'; }
+  $('pg-explore').addEventListener('change', function (e) {
+    var r = e.target.closest('[data-hbgm]'); if (!r || !r.checked || !bgmOwned(r.dataset.hbgm)) return;
+    home().bgm = r.dataset.hbgm; save(); bgmScene();
+    toast('茶室音乐换成了「' + bgmName(r.dataset.hbgm) + '」，来拜访的船员也会听到。');
+  });
+  function homeBgmBar() {
+    var cur = homeBgm();
+    return '<div class="hm-bgm"><b>茶室音乐</b><div class="seg" role="radiogroup" aria-label="茶室音乐">' + HOME_BGM.map(function (b) {
+      var own = bgmOwned(b.k);
+      return '<label class="' + (own ? '' : 'dis') + '" title="' + esc(own ? b.d : '未获得 · ' + b.d) + '"><input type="radio" name="hm-bgm" value="' + b.k + '"' + (b.k === cur ? ' checked' : '') + (own ? '' : ' disabled') + ' data-hbgm="' + b.k + '"><span>' + (own ? '' : '🔒 ') + b.n + '</span></label>';
+    }).join('') + '</div><span class="hint">你和来拜访的船员在茶室里都会听到。' + (bgmOwned('flora') ? '' : '「芙罗拉星」要击败普通难度的荒芜才能获得。') + '</span></div>';
+  }
   /* 茶室商店（茶室大厅）
    * auto：7日自律训练装置，装在展示中的精灵身上；每满 1 天自动收回结算经验、再开始下一天，一共 7 天
    * cap：茶室精灵容量 +1，价格依次 2000 / 5000 / 10000 / 20000 能量，最多 4 次 */
@@ -1732,7 +1790,7 @@
       '<div class="crumb"><button type="button" class="btn ghost" id="home-back">‹ 返回大厅</button>' + title + '</div>' +
       '<div class="home-room"><img class="home-bg" src="' + BG.tea_p + '" alt="' + esc(H.name) + '">' + figs +
       (H.mons.length ? '' : '<p class="home-empty">茶室里空荡荡的。从下面选几只精灵，放出来展示吧。</p>') + '</div>' +
-      autoBar + '<div class="home-pick"><h4>展示的精灵 <span class="hint">' + H.mons.length + ' / ' + homeMax() + ' · 每小时经验 = 30 + 等级 × 6，最多累计 ' + HOME_CAP_H + ' 小时 · 点击卡片放出或收回，点茶室里的精灵可以摸摸它</span></h4><div class="hm-grid">' + cards + '</div></div>';
+      homeBgmBar() + autoBar + '<div class="home-pick"><h4>展示的精灵 <span class="hint">' + H.mons.length + ' / ' + homeMax() + ' · 每小时经验 = 30 + 等级 × 6，最多累计 ' + HOME_CAP_H + ' 小时 · 点击卡片放出或收回，点茶室里的精灵可以摸摸它</span></h4><div class="hm-grid">' + cards + '</div></div>';
   }
   function renderTeaShop() {
     var nCap = Math.min(4, (acc.home && acc.home.cap) || 0), capPrice = CAP_PRICE[nCap], A0 = TEA_SHOP.auto, q = shopQty.tsauto || 1, cost = A0.price * q, ok = acc.energy >= cost;
@@ -2370,6 +2428,8 @@
     if (vnSite === 'earth') return 'earth';            // 地球上的剧情（含序章）
     if (!ready()) return 'ui';
     if (page === 'arena') return 'arena';              // 竞技大厅
+    if (page === 'explore' && ex.view === 'home') return homeBgm();   // 自己的茶室：放自己选的茶室音乐
+    if (page === 'social' && window.HSSOCIAL && HSSOCIAL.visitBgm) { var vb = HSSOCIAL.visitBgm(); if (vb) return vb; }   // 拜访别人的茶室：放主人选的
     if (page === 'explore') {
       if (vnSite === 'flora') return 'flora';
       if (ex.view === 'sites' && ex.planet === 'flora') return 'flora';

@@ -35,7 +35,7 @@
   function rankChip(r, stars) { return r > 0 && typeof RANK_COLOR !== 'undefined' ? '<span class="chip rk" style="--rc:' + RANK_COLOR[r] + '">' + rankLabel(r, stars) + '</span>' : ''; }
   function statusOf(p) {
     if (p.me) return '<span class="dot on"></span>在线（我）';
-    if (p.busy) return '<span class="dot busy"></span>对战中';
+    if (p.busy) return '<span class="dot busy"></span>对战中' + (p.battle ? ' · ' + esc(p.battle) : '');
     if (p.online) return '<span class="dot on"></span>在线';
     return '<span class="dot"></span>离线' + (p.lastSeen ? ' · ' + ago(p.lastSeen) : '');
   }
@@ -69,6 +69,9 @@
   // 竞技对战的大乱斗面板开着时，20 秒刷新一次谁能匹配（别人刚读完支线、刚上线都要能看到）
   setInterval(function () { var el = $('brawl'); if (el && !el.hidden && A.page() === 'arena' && !A.inBattle() && document.visibilityState === 'visible') load(); }, 20000);
 
+  // 能不能观战：对方正在对战，并且是自己的好友（或者对方发了全服观战邀请）
+  function canWatch(p) { return !p.me && p.online && p.busy && !!p.battle && (p.friend || p.watchOpen); }
+  function watchBtn(p) { return canWatch(p) ? '<button type="button" class="btn watch" data-watch="' + esc(p.user) + '">👁 观战</button>' : ''; }
   function playerRow(p) {
     var name = p.noChar ? '（还没创建角色）' : p.name, canFight = !p.me && !p.noChar && p.online && !p.busy;
     return '<article class="prow' + (p.me ? ' me' : '') + (p.online ? ' live' : '') + '" data-user="' + esc(p.user) + '">' +
@@ -81,7 +84,7 @@
       (p.me ? '<button type="button" class="btn" data-tab="mine">编辑名片</button>' :
         '<button type="button" class="btn ghost" data-home="' + esc(p.user) + '"' + (p.homeOpen ? '' : ' disabled title="对方还没有开放茶室"') + '>茶室' + (p.homeN ? ' · ' + p.homeN : '') + '</button>' +
         '<button type="button" class="btn' + (p.friend ? ' on' : '') + '" data-friend="' + esc(p.user) + '" aria-pressed="' + !!p.friend + '">' + (p.friend ? '★ 好友' : '＋ 加好友') + '</button>' +
-        '<button type="button" class="btn primary" data-fight="' + esc(p.user) + '"' + (canFight ? '' : ' disabled title="' + (p.noChar ? '对方还没有创建角色' : p.busy ? '对方正在对战中' : '对方不在线') + '"') + '>切磋</button>') +
+        (canWatch(p) ? watchBtn(p) : '<button type="button" class="btn primary" data-fight="' + esc(p.user) + '"' + (canFight ? '' : ' disabled title="' + (p.noChar ? '对方还没有创建角色' : p.busy ? '对方正在对战中' + (p.friend ? '' : '，加为好友后可以观战') : '对方不在线') + '"') + '>切磋</button>')) +
       '</span></article>';
   }
 
@@ -115,7 +118,8 @@
         if (e.target.closest('[data-x]')) return close();
         var f = e.target.closest('[data-friend]'); if (f) { toggleFriend(f.dataset.friend).then(function () { close(); openCard(user); }); return; }
         var g = e.target.closest('[data-fight]'); if (g && !g.disabled) { close(); askFight(g.dataset.fight); return; }
-        var h = e.target.closest('[data-home]'); if (h && !h.disabled) { close(); openHome(h.dataset.home); }
+        var h = e.target.closest('[data-home]'); if (h && !h.disabled) { close(); openHome(h.dataset.home); return; }
+        var w = e.target.closest('[data-watch]'); if (w) { close(); watchStart(w.dataset.watch); }
       });
     });
     api('GET', '/api/card?user=' + encodeURIComponent(user)).then(function (c) {
@@ -125,7 +129,7 @@
       body.innerHTML = cardHTML(c) + '<div class="soc-foot"><button type="button" class="btn ghost" data-x="1">关闭</button>' +
         (c.me ? '' : '<button type="button" class="btn ghost" data-home="' + esc(c.user) + '"' + (c.homeOpen ? '' : ' disabled') + '>拜访茶室</button>' +
           '<button type="button" class="btn" data-friend="' + esc(c.user) + '">' + (c.friend ? '取消好友' : '＋ 加好友') + '</button>' +
-          '<button type="button" class="btn primary" data-fight="' + esc(c.user) + '"' + (canFight ? '' : ' disabled') + '>切磋</button>') + '</div>';
+          (canWatch(c) ? watchBtn(c) : '<button type="button" class="btn primary" data-fight="' + esc(c.user) + '"' + (canFight ? '' : ' disabled') + '>切磋</button>')) + '</div>';
     }).catch(function () { var body = d.el.querySelector('.pc-body'); if (body) body.innerHTML = '<p class="hint">连不上服务器</p>'; });
   }
   function toggleFriend(user) {
@@ -159,7 +163,7 @@
       return '<div class="hm-fig' + (d.mons.length > 3 ? ' many' : '') + '" style="left:' + p[0] + '%;top:' + p[1] + '%"><button type="button" class="hm-poke" data-poke="1" aria-label="摸摸' + esc(v.name) + '"><img src="' + v.img + '" alt=""></button><span class="hm-tag">' + esc(v.name) + ' · LV' + m.lv + '</span></div>';
     }).join('');
     var left = A.teaLeft(), mine = (A.acc().teams[A.acc().active] || []).map(A.mon).filter(Boolean);
-    return back + '<b class="home-name">' + esc(d.homeName) + '</b><span class="hint">' + esc(d.name) + ' 的茶室' + (d.online ? ' · 主人在线' : '') + '</span></div>' +
+    return back + '<b class="home-name">' + esc(d.homeName) + '</b><span class="hint">' + esc(d.name) + ' 的茶室' + (d.online ? ' · 主人在线' : '') + ' · 茶室音乐「' + ({ ui: '大厅', earth: '地球', flora: '芙罗拉星' }[d.bgm] || '大厅') + '」</span></div>' +
       '<div class="home-room"><img class="home-bg" src="' + BG.tea_p + '" alt="' + esc(d.homeName) + '">' + figs +
       (d.mons.length ? '' : '<p class="home-empty">茶室里空荡荡的，主人还没有放精灵出来展示。</p>') + '</div>' +
       (d.me ? '<p class="hint" style="margin-top:8px">这是你自己的茶室。</p>' :
@@ -254,6 +258,7 @@
       }
       if ((t = e.target.closest('[data-friend]'))) { toggleFriend(t.dataset.friend); return; }
       if ((t = e.target.closest('[data-fight]'))) { if (!t.disabled) askFight(t.dataset.fight); return; }
+      if ((t = e.target.closest('[data-watch]'))) { watchStart(t.dataset.watch); return; }
       if ((t = e.target.closest('[data-card]'))) { openCard(t.dataset.card); return; }
       if ((t = e.target.closest('[data-pick]'))) {
         var u = +t.dataset.pick, ed = st.edit, k = ed.show.indexOf(u);
@@ -302,13 +307,18 @@
 
   function onMsg(m) {
     switch (m.type) {
-      case 'authed': st.wsOk = true; st.retry = 0; load(); render(); renderBrawl(); break;
+      case 'authed': st.wsOk = true; st.retry = 0; load(); render(); renderBrawl(); if (HB.castResync) HB.castResync(); break;
+      case 'cast-viewers': if (HB.castViewers) HB.castViewers(m.n, m.names); break;
+      case 'cast-invited': if (HB.castInvited) HB.castInvited(m.ok, m.ok ? '已向 ' + m.n + ' 位在线船员发出观战邀请，现在所有人都可以观战这场对战' : m.msg); break;
+      case 'cast-note': if (HB.castNote) HB.castNote(m.msg); break;
+      case 'watch-invite': watchInvite(m); break;
+      case 'watch': onWatch(m); break;
       case 'brawl-wait': if (st.bw.wait) { st.bw.wait.id = m.id; st.bw.wait.n = m.n; st.bw.wait.deadline = Date.now() + m.seconds * 1000; } renderBrawl(); break;
       case 'brawl-invite': brawlInvite(m); break;
       case 'brawl-end': brawlEnd(m); break;
       case 'auth-fail': st.wsOk = false; break;
       case 'presence':
-        (st.players || []).forEach(function (p) { if (p.user === m.user) { p.online = m.online; p.busy = m.busy; if (!m.online) p.lastSeen = Date.now(); } });
+        (st.players || []).forEach(function (p) { if (p.user === m.user) { p.online = m.online; p.busy = m.busy; p.battle = m.battle || null; p.watchOpen = !!m.watchOpen; if (!m.online) p.lastSeen = Date.now(); } });
         if (st.players && !(st.players || []).some(function (p) { return p.user === m.user; })) load();
         if (st.tab !== 'mine') render();
         renderBrawl();
@@ -435,6 +445,7 @@
 
   /* ---------- 对战 ---------- */
   function startMatch(m) {
+    watchClose(true);
     closePend(); if (st.inc) { st.inc.close(); st.inc = null; }
     st.bw.wait = null; closeBwInvite();
     [].forEach.call(document.querySelectorAll('.soc-dlg'), function (d) { d.remove(); });
@@ -786,8 +797,114 @@
       '你分到了：' + mine.map(function (x) { var v = A.view({ sid: x.sid, lv: A.BRAWL.lv }); return v.name + '（' + (x.owner === m.side ? '你的' : owners[x.owner] + ' 的') + '，' + x.nat + '）'; }).join('、')];
   }
 
+  /* ---------- 观战 ----------
+   * 对战中的玩家把画面发给服务器，服务器转给观众（见 server/social.js）。这里画观战窗口：上方两块信息牌、中间战场、下方战斗记录。
+   * 画面里下方（左边）是被观战的玩家，上方（右边）是他的对手。 */
+  if (HB.setCaster) HB.setCaster(function (op, data) { if (op === 'invite') send({ type: 'cast-invite' }); else send(Object.assign({ type: 'cast', op: op }, data)); });
+  function watchStart(user) {
+    if (!st.wsOk) { A.toast('还没连上服务器，稍等一下再试'); return; }
+    if (A.inBattle()) { A.toast('你正在对战中，打完再来观战吧'); return; }
+    watchClose(true);
+    var p = (st.players || []).filter(function (x) { return x.user === user; })[0];
+    st.watch = { user: user, name: p && p.name || user, head: null, ready: false, shown: [null, null] };
+    var d = dialog('watch', '<div class="wt-head"><div><span class="step" id="wt-label">观战</span><h2 id="wt-title">' + esc(st.watch.name) + ' 的对战</h2></div><span class="wt-n" id="wt-n"></span><button type="button" class="btn ghost" data-wx="1">退出观战</button></div>' +
+      '<div class="wt-stage"><div class="plates"><div class="plate" id="wt-p0"></div><div class="vs">第<b id="wt-turn">1</b>回合</div><div class="plate r" id="wt-p1"></div></div>' +
+      '<div class="field wt-field"><div class="mon p0" id="wt-m0"><div class="ground"></div><div class="face"><img alt=""></div></div><div class="mon p1" id="wt-m1"><div class="ground"></div><div class="face"><img alt=""></div></div>' +
+      '<div class="banner" id="wt-banner"></div><div class="wt-wait" id="wt-wait">正在连接对战画面……</div><div class="endcard" id="wt-end" hidden><div class="box"><h3 id="wt-end-t"></h3><p class="hint" id="wt-end-s"></p><div class="row"><button type="button" class="btn" data-wx="1">关闭</button></div></div></div></div>' +
+      '<div class="logbox"><h4>战斗记录</h4><div class="log" id="wt-log"></div></div></div>', function (el) {
+        el.dataset.sticky = '1';
+        el.addEventListener('click', function (e) { if (e.target.closest('[data-wx]')) watchClose(); });
+      });
+    st.watch.dlg = d;
+    send({ type: 'watch-start', user: user });
+  }
+  function watchClose(silent) {
+    var W = st.watch; if (!W) return;
+    st.watch = null; if (W.dlg) W.dlg.close();
+    if (!W.over) send({ type: 'watch-stop' });
+  }
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && st.watch) watchClose(); });
+  function wtLog(list) {
+    var lg = $('wt-log'); if (!lg) return;
+    lg.insertAdjacentHTML('beforeend', list.map(function (x) { return '<p class="' + esc(x[1] || '') + '">' + esc(you(x[0])).replace(/【(.+?)】/g, '<b>$1</b>') + '</p>'; }).join(''));
+    while (lg.children.length > 160) lg.removeChild(lg.firstChild);
+    lg.scrollTop = lg.scrollHeight;
+  }
+  // 战斗记录是被观战的玩家视角写的（「你派出了……」），观众看到的换成他的名字
+  function you(t) { var W = st.watch; return W ? String(t).replace(/你们/g, '大家').replace(/你/g, W.name) : String(t); }
+  function hpCls(h, m) { var r = h / m; return r > 0.5 ? '' : r > 0.2 ? 'mid' : 'low'; }
+  function wtSnap(sn) {
+    var W = st.watch; if (!W || !sn || !sn.sides) return;
+    $('wt-turn').textContent = sn.turn;
+    sn.sides.forEach(function (sd, i) {
+      var pl = $('wt-p' + i), who = i ? (W.head && W.head.foe) || '对手' : W.name;
+      pl.innerHTML = '<span class="tape ' + (i ? 'r' : 'l') + '"></span><div class="row1"><span class="pn">' + esc(sd.name) + '</span>' + tchips(sd.types || []) +
+        '<span class="chip sc lvc">' + (sd.lv ? 'LV' + sd.lv : 'LV ??') + '</span><span class="abil" tabindex="0">特性 · ' + esc(sd.ability ? sd.ability.n : '') + '<span class="tip" role="tooltip"><b>特性 · ' + esc(sd.ability ? sd.ability.n : '') + '</b>' + esc(sd.ability ? sd.ability.d : '') + '</span></span><span class="who">' + esc(who) + '</span></div>' +
+        '<div class="hpbar"><i class="' + hpCls(sd.hp, sd.maxhp) + '" style="width:' + (sd.hp / sd.maxhp * 100) + '%"></i></div>' +
+        '<div class="hprow"><span>' + (sd.dummy ? '体力 ∞' : sd.hp + ' / ' + sd.maxhp) + '</span><span class="pips">' + (sd.team || []).map(function (t) { return '<span class="' + (!t.id ? 'unk' : t.fainted ? 'dead' : '') + (t.active ? ' cur' : '') + '" title="' + esc(!t.id ? '还没派出' : t.nick || (SPMAP[t.id] ? SPMAP[t.id].name : '')) + '">' + (!t.id ? '?' : '') + '</span>'; }).join('') + '</span></div>' +
+        '<div class="chips">' + (sd.chips || []).map(function (c) { return '<span class="chip sc ' + esc(c.k || '') + '" tabindex="0">' + esc(c.t) + (c.d ? '<span class="tip" role="tooltip"><b>' + esc(c.h || c.t) + '</b>' + esc(c.d) + '</span>' : '') + '</span>'; }).join('') + '</div>';
+      var mon = $('wt-m' + i), img = mon.querySelector('img'), key = sd.id + '|' + (sd.img || '');
+      if (W.shown[i] !== key) { W.shown[i] = key; img.src = sd.img || SPRITES[sd.id] || ''; img.alt = sd.name; mon.classList.remove('fainted'); wtAnim(mon, 'enter'); }
+      mon.classList.toggle('fainted', !!sd.fainted);
+      mon.classList.toggle('miasma', (sd.chips || []).some(function (c) { return String(c.t).indexOf('瘴气') === 0; }));
+    });
+    $('wt-wait').hidden = true;
+  }
+  function wtAnim(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); setTimeout(function () { el.classList.remove(cls); }, 900); }
+  function wtFx(list) {
+    (list || []).forEach(function (f, k) {
+      setTimeout(function () {
+        if (!st.watch) return;
+        var mon = $('wt-m' + (f.i ? 1 : 0)); if (!mon) return;
+        if (f.a === 'use') { wtAnim(mon, 'lunge' + (f.i ? 1 : 0)); var b = $('wt-banner'); b.textContent = f.m || ''; b.style.color = (typeof TYPE_COLOR !== 'undefined' && TYPE_COLOR[f.ty]) || 'var(--ink)'; wtAnim(b, 'show'); }
+        else if (f.a === 'hit' || f.a === 'heal') {
+          wtAnim(mon, f.a === 'hit' ? 'hit' : 'heal');
+          var n = document.createElement('div'); n.className = 'float ' + (f.a === 'heal' ? 'heal' : f.c ? 'crit' : ''); n.textContent = (f.a === 'heal' ? '+' : '-') + f.n + (f.c ? '!' : '');
+          mon.appendChild(n); setTimeout(function () { n.remove(); }, 950);
+        } else if (f.a === 'throw') wtAnim(mon, 'throw');
+      }, k * 120);
+    });
+  }
+  function onWatch(m) {
+    var W = st.watch; if (!W || (m.user && m.user !== W.user)) return;
+    if (m.op === 'err') { watchClose(true); A.toast(m.msg || '现在看不了这场对战'); return; }
+    if (m.op === 'full') {
+      W.head = m.head; W.name = (m.head && m.head.name) || W.name; W.ready = true; W.shown = [null, null];
+      $('wt-label').textContent = '观战 · ' + ((m.head && m.head.label) || '对战');
+      $('wt-title').textContent = W.name + ' vs ' + ((m.head && m.head.foe) || '对手');
+      $('wt-n').textContent = (m.n || 1) + ' 人在看';
+      $('wt-log').innerHTML = ''; wtLog(m.log || []);
+      $('wt-end').hidden = true;
+      if (m.snap) wtSnap(m.snap); else $('wt-wait').textContent = '对战刚开始，等待画面……';
+      return;
+    }
+    if (m.op === 'f') { if (m.log && m.log.length) wtLog(m.log); if (m.snap) wtSnap(m.snap); wtFx(m.fx); return; }
+    if (m.op === 'end') {
+      W.over = true;
+      $('wt-end-t').textContent = '对战结束';
+      $('wt-end-s').textContent = W.name + '：' + (m.title || '') + (m.sub ? ' · ' + you(m.sub) : '');
+      $('wt-end').hidden = false;
+    }
+  }
+  // 两名玩家对战时，有一方向全服发了观战邀请
+  function watchInvite(m) {
+    if (!A.ready() || A.inBattle() || st.match || st.watch) return;
+    var old = document.querySelector('.bw-pop.wt-pop'); if (old) old.remove();
+    var el = document.createElement('div'); el.className = 'bw-pop wt-pop'; el.setAttribute('role', 'status');
+    el.innerHTML = '<b>👁 观战邀请</b><span>' + esc(m.name) + ' 和 ' + esc(m.peerName) + ' 正在' + esc(m.label || '对战') + '，邀请大家来观战</span>' +
+      '<div class="bw-pop-btns"><button type="button" class="btn ghost" data-wno="1">忽略</button><button type="button" class="btn primary" data-wyes="1">去观战</button></div>';
+    document.body.appendChild(el);
+    var t = setTimeout(function () { el.remove(); }, 45000);
+    el.addEventListener('click', function (e) {
+      if (e.target.closest('[data-wno]')) { clearTimeout(t); el.remove(); return; }
+      if (e.target.closest('[data-wyes]')) { clearTimeout(t); el.remove(); watchStart(m.user); }
+    });
+  }
+
   window.HSBRAWL = { render: renderBrawl };
-  window.HSSOCIAL = { render: function () { if (!st.players) load(); render(); } };
+  window.HSSOCIAL = { render: function () { if (!st.players) load(); render(); },
+    // 正在拜访的茶室的主人选的茶室音乐（game.js 选界面音乐时用）
+    visitBgm: function () { var d = st.view && st.view.data; return d && d.open && !d.noChar ? d.bgm || 'ui' : null; } };
   connect();
   if (A.page() === 'social') window.HSSOCIAL.render();
   renderBrawl();

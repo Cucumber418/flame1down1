@@ -3,6 +3,8 @@
  *
  *   sudo node /opt/flame1down1/server/admin.js list                  列出所有账号
  *   sudo node /opt/flame1down1/server/admin.js reset 账号名 新密码     帮忘记密码的人重设密码
+ *   sudo node /opt/flame1down1/server/admin.js board                 看讨论区最近 30 条留言（带编号）
+ *   sudo node /opt/flame1down1/server/admin.js board-del 编号          删掉讨论区里的一条留言
  *
  * 重设密码后会自动重启游戏服务，让旧的登录失效。
  */
@@ -29,6 +31,16 @@ if (cmd === 'list') {
     catch (e) { console.log('请手动重启：sudo systemctl restart flame1down'); }
     process.exit(0);
   });
+} else if (cmd === 'board') {
+  var bd = require('./board').load();
+  console.log('讨论区共 ' + bd.posts.length + ' 条留言，最近 30 条：');
+  bd.posts.slice(-30).forEach(function (p) { console.log('  [' + p.id + '] ' + fmt(p.t) + '  ' + p.name + '（' + p.user + '）：' + p.text.replace(/\n/g, ' ')); });
+  process.exit(0);
+} else if (cmd === 'board-del' && process.argv[3]) {
+  var B = require('./board'), bd2 = B.load(), n0 = bd2.posts.length;
+  bd2.posts = bd2.posts.filter(function (p) { return p.id !== process.argv[3]; });
+  if (bd2.posts.length === n0) { console.error('没有编号为 ' + process.argv[3] + ' 的留言'); process.exit(1); }
+  B.store(bd2); console.log('已删除'); process.exit(0);
 } else {
-  console.log('用法：\n  sudo node /opt/flame1down1/server/admin.js list\n  sudo node /opt/flame1down1/server/admin.js reset 账号名 新密码');
+  console.log('用法：\n  sudo node /opt/flame1down1/server/admin.js list\n  sudo node /opt/flame1down1/server/admin.js reset 账号名 新密码\n  sudo node /opt/flame1down1/server/admin.js board\n  sudo node /opt/flame1down1/server/admin.js board-del 编号');
 }

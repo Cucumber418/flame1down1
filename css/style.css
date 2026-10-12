@@ -1407,3 +1407,68 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .shiny-tag.big { font-size: 13px; margin-left: 8px; }
 .cimg { position: relative; }
 .cimg .shiny-tag { position: absolute; left: 2px; bottom: 2px; margin: 0; }
+
+/* ============ 观战 ============ */
+.btn.watch { border-color: var(--blue); color: var(--blue); }
+.tab.invite { border-color: var(--blue); color: var(--blue); }
+.tab.invite:disabled { opacity: .6; }
+.cast-n { font-family: var(--f-body); font-size: 12px; color: var(--blue); margin-left: 6px; vertical-align: middle; }
+.soc-box.watch { max-width: 980px; gap: 10px; padding: 18px 16px 14px; }
+.wt-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.wt-head > div { flex: 1; min-width: 0; }
+.wt-head h2 { font-size: 28px; }
+.wt-n { font-size: 12.5px; color: var(--pencil); }
+.wt-stage { display: grid; gap: 10px; }
+.wt-stage .plates { margin-bottom: 0; }
+.wt-field { max-height: 44vh; }
+.wt-stage .log { max-height: 160px; min-height: 90px; }
+.wt-wait { position: absolute; inset: 0; display: grid; place-items: center; font-size: 15px; color: var(--pencil); background: rgba(251, 250, 243, .6); }
+.wt-wait[hidden] { display: none; }
+.bw-pop.wt-pop { box-shadow: 3px 3px 0 var(--blue); }
+.bw-pop.wt-pop > b { color: var(--blue); }
+@media (max-width: 760px) { .wt-head h2 { font-size: 22px; } .soc-box.watch { padding: 14px 10px 10px; } }
+
+/* ============ 每日更新公告弹窗 ============ */
+.soc-box.news-box { max-width: 680px; max-height: min(60vh, 640px); min-height: min(46vh, 420px); grid-template-rows: auto minmax(0, 1fr) auto; overflow: hidden; }
+.news-box .news-top h2 { font-size: 30px; }
+.news-list { overflow-y: auto; display: grid; gap: 10px; align-content: start; padding-right: 4px; }
+.news-list .cl-entry { border-top: 1px dashed var(--rule); padding-top: 8px; }
+.news-list .cl-entry:first-child { border-top: 0; padding-top: 0; }
+.cl-h .news-new { display: inline-block; margin-left: 6px; padding: 0 7px; border-radius: 999px; background: var(--red); color: #fff; font-size: 11px; font-weight: 700; line-height: 1.7; }
+@media (max-width: 760px) {
+  .news-dlg { place-items: end center; padding: 0; }
+  .soc-box.news-box { max-height: 62vh; min-height: 50vh; border-radius: 16px 16px 0 0; box-shadow: 0 -3px 0 var(--ink); }
+}
+
+/* ============ 关于 / 讨论 ============ */
+.dot-badge:empty { min-width: 9px; width: 9px; height: 9px; padding: 0; }
+.soc-box.about-box { max-width: 560px; }
+.ab-lead { font-family: var(--f-hand); font-size: 20px; line-height: 1.5; color: var(--ink); }
+.ab-h { margin: 6px 0 0; font-size: 14px; color: var(--red); letter-spacing: .08em; }
+.ab-credits { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 16px; margin: 0; padding: 10px 14px; background: var(--paper); border: 1.5px dashed var(--rule); border-radius: 12px; }
+.ab-credits dt { color: var(--pencil); font-size: 13.5px; }
+.ab-credits dd { margin: 0; font-weight: 600; }
+.ab-note { padding: 10px 12px; border-left: 3px solid var(--red); background: var(--paper); border-radius: 0 10px 10px 0; line-height: 1.65; }
+.soc-box.board-box { max-width: 680px; max-height: calc(100vh - 32px); grid-template-rows: auto auto auto minmax(0, 1fr) auto; overflow: hidden; }
+.bd-head { display: flex; align-items: flex-start; gap: 10px; } .bd-head > div { flex: 1; }
+.bd-form { display: grid; gap: 6px; }
+.bd-form textarea { width: 100%; resize: vertical; min-height: 70px; padding: 8px 10px; border: 1.5px solid var(--ink); border-radius: 10px; background: var(--paper); font: inherit; font-size: 14px; }
+.bd-form-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.bd-list { list-style: none; margin: 0; padding: 0 4px 0 0; overflow-y: auto; display: grid; gap: 0; align-content: start; min-height: 120px; }
+.bd-post { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; padding: 10px 0; border-top: 1px dashed var(--rule); }
+.bd-post:first-child { border-top: 0; }
+.bd-post .pav { width: 34px; height: 34px; font-size: 16px; }
+.bd-post.mine .pav { background: var(--red); }
+.bd-who { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin: 0; }
+.bd-who .chip { font-size: 11px; }
+.bd-text { margin: 3px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.6; font-size: 14.5px; }
+.bd-acts { margin: 2px 0 0; display: flex; gap: 12px; }
+.linkbtn { cursor: pointer; border: 0; background: none; padding: 0; font-size: 12.5px; color: var(--pencil); text-decoration: underline; text-underline-offset: 2px; }
+.linkbtn.red { color: var(--red); }
+.bd-empty { padding: 16px 0; text-align: center; }
+.bd-more { justify-self: center; }
+
+/* ============ 茶室音乐 ============ */
+.hm-bgm { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 10px 0 0; padding: 10px 12px; background: var(--paper-2); border: 1.5px solid var(--ink); border-radius: 12px; }
+.hm-bgm .seg label.dis { opacity: .55; cursor: not-allowed; }
+.hm-bgm .hint { flex: 1 1 220px; }
