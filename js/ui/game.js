@@ -1777,21 +1777,22 @@
   }
 
   /* ---------- 神秘精灵：每天 16:00–24:00，切换场景时有 3% 概率出现（真身是 LV10 幽灵鱼） ---------- */
-  var MYSTERY = { sid: 'hauris', lv: 10, rate: 0.4, chance: 0.03, from: 16, to: 24 };
+  var MYSTERY = { sid: 'hauris', lv: 10, rate: 0.4, chance: 0.03, shiny: 0.03, from: 16, to: 24 };
   function mysteryTime() { var h = new Date().getHours(); return h >= MYSTERY.from && h < MYSTERY.to; }
   function mysteryRoll(where) {
     if (!ready() || ex.fighting || !mysteryTime() || $('mys')) return;
     if (Math.random() >= MYSTERY.chance) return;
     var d = document.createElement('div'); d.id = 'mys'; d.className = 'mys'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-label', '神秘精灵');
     d.dataset.where = where || '星际探索';
-    d.innerHTML = '<div class="mys-box"><span class="tape l"></span><div class="mys-art"><img src="' + form({ sid: MYSTERY.sid, lv: MYSTERY.lv }).img + '" alt=""></div><b>神秘精灵出现了！</b><p>一团忽明忽暗的影子从' + esc(d.dataset.where) + '的角落里飘了出来，正盯着你看。</p>' +
+    var sh = Math.random() < MYSTERY.shiny; if (sh) d.dataset.shiny = '1';
+    d.innerHTML = '<div class="mys-box"><span class="tape l"></span><div class="mys-art"><img src="' + form({ sid: MYSTERY.sid, lv: MYSTERY.lv, shiny: sh }).img + '" alt=""></div><b>神秘精灵出现了！</b><p>一团忽明忽暗的影子从' + esc(d.dataset.where) + '的角落里飘了出来，正盯着你看。</p>' +
       '<div class="row"><button type="button" class="btn primary" data-mys="go">迎战</button><button type="button" class="btn" data-mys="no">放它离开</button></div></div>';
     document.body.appendChild(d);
   }
   document.addEventListener('click', function (e) {
     var b = e.target.closest('[data-mys]'); if (!b) return;
-    var d = $('mys'), where = d ? d.dataset.where : '星际探索'; if (d) d.remove();
-    if (b.dataset.mys === 'go') startWildBattle({ sid: MYSTERY.sid, lv: MYSTERY.lv, rate: MYSTERY.rate, back: where, where: '神秘精灵 · ' + where, foe: '神秘精灵' });
+    var d = $('mys'), where = d ? d.dataset.where : '星际探索', sh = !!(d && d.dataset.shiny); if (d) d.remove();
+    if (b.dataset.mys === 'go') startWildBattle({ sid: MYSTERY.sid, lv: MYSTERY.lv, rate: MYSTERY.rate, shiny: sh, back: where, where: '神秘精灵 · ' + where, foe: '神秘精灵' });
     else toast('神秘的影子一闪，消失不见了。');
   });
 

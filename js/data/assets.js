@@ -79,7 +79,7 @@ var PRE_SPRITES = {
   "pede_s2": "images/pre_sprites/pede_s2.png",
   "tagore_s1": "images/pre_sprites/tagore_s1.png",
   "tagore_s2": "images/pre_sprites/tagore_s2.webp",
-  "hauris_s1": "images/pre_sprites/hauris_s1.png",
+  "hauris_s1": "images/pre_sprites/hauris_s1.webp",
   "hauris_s2": "images/pre_sprites/hauris_s2.png",
   "faraday_s1": "images/pre_sprites/faraday_s1.webp",
   "faraday_s2": "images/pre_sprites/faraday_s2.png",
@@ -271,7 +271,8 @@ var SILHOUETTES = {
 var SHINY_SPRITES = {
   "leigong_s1": "images/shiny/leigong_s1.webp",
   "leigong_s2": "images/shiny/leigong_s2.webp",
-  "leigong": "images/shiny/leigong.webp"
+  "leigong": "images/shiny/leigong.webp",
+  "hauris_s1": "images/shiny/hauris_s1.webp"
 };
 
 // 剧情里出现的道具图（储存箱里的剧情道具也用这些图）
