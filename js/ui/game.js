@@ -1318,15 +1318,15 @@
   /* ---------- 登录奖励（都通过邮箱发） ----------
    * 离线经验：距离上次在线超过 20 分钟再打开游戏，每离线 1 分钟给 6 点累积经验（游戏开着时每 2 分钟记一次在线时间）
    * 每日登录：每天（北京时间）3000 累积经验；没登录的日子，下次登录时一起补发（从创建账号那天算起） */
-  var OFFLINE_GAP = 20 * 60000, OFFLINE_RATE = 6, LOGIN_EXP = 3000, onlineSeen = false;
+  var OFFLINE_GAP = 20 * 60000, OFFLINE_RATE = 6, OFFLINE_MAX_MIN = 3 * 24 * 60, LOGIN_EXP = 3000, onlineSeen = false;   // 离线经验最多算 3 天
   function dayNum(t) { return Math.floor((t + 8 * 3600e3) / 86400000); }
   function loginRewards() {
     if (!ready()) return;
     var now = Date.now(), last = acc.lastActive, dirty = false;
     onlineSeen = true;
     if (last && now - last > OFFLINE_GAP) {
-      var mins = Math.floor((now - last) / 60000), xp = mins * OFFLINE_RATE;
-      sendMail({ title: '离线经验', body: '{name}，欢迎回来！\n你离开了 ' + durText(mins) + '。这段时间里，精灵们也在自己训练：每分钟 ' + OFFLINE_RATE + ' 点累积经验，一共 ' + fmt(xp) + ' 点，请领取附件。', att: { exp: xp } });
+      var mins = Math.floor((now - last) / 60000), paid = Math.min(mins, OFFLINE_MAX_MIN), xp = paid * OFFLINE_RATE;
+      sendMail({ title: '离线经验', body: '{name}，欢迎回来！\n你离开了 ' + (mins >= 1440 ? Math.floor(mins / 1440) + ' 天 ' : '') + durText(mins % 1440) + '。这段时间里，精灵们也在自己训练：每分钟 ' + OFFLINE_RATE + ' 点累积经验' + (mins > OFFLINE_MAX_MIN ? '，最多算 3 天' : '') + '，一共 ' + fmt(xp) + ' 点，请领取附件。', att: { exp: xp } });
     }
     if (!last || now - last > 60000) { acc.lastActive = now; dirty = true; }
     var today = dayNum(now), from = acc.loginDay != null ? acc.loginDay + 1 : dayNum(acc.created || now);
