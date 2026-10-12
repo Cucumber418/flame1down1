@@ -610,7 +610,7 @@
       (genCells.length ? '<div class="ib-grid">' + genCells.join('') + '</div>' : '<p class="empty-note">还没有一般道具。在荆楚号 · 荆门 · 物资仓储的商城可以兑换。</p>') +
       '<div class="ib-head"><h3>采集物</h3><span class="hint">野外采集点每天可以采集 1 次。芙罗拉、坎布尔、庞贝每个点得到星砂 ×12；莱汀、白之星每个点得到星核 ×1。拿到黄石 · 冶炼坊合成捕捉装置。</span></div>' +
       (gHave.length ? '<div class="ib-grid">' + gHave.map(cell).join('') + '</div>' : '<p class="empty-note">还没有采集物。进入丛林、草甸等区域，点场景里固定的采集点。</p>') +
-      '<div class="ib-head"><h3>种子</h3><span class="hint">第一次在芙罗拉星的丛林或草甸采集时得到 4 颗药草种子。种在恩施 · 太空种植园，收获时种子会退回。</span></div>' +
+      '<div class="ib-head"><h3>种子</h3><span class="hint">第一次在芙罗拉星的丛林或草甸采集时得到 4 颗药草种子。种在恩施 · 太空种植园（读完支线「伟大的种植园」后开放），收获时种子会退回。</span></div>' +
       (sHave.length ? '<div class="ib-grid">' + sHave.map(cell).join('') + '</div>' : '<p class="empty-note">还没有种子。去芙罗拉星的丛林或草甸采集一次。</p>') +
       '<div class="ib-head"><h3>作物</h3><span class="hint">太空种植园收获的药草。两份药草在黄石 · 冶炼坊合成一瓶 200血药。</span></div>' +
       (cHave.length ? '<div class="ib-grid">' + cHave.map(cell).join('') + '</div>' : '<p class="empty-note">还没有药草。种子成熟后，在太空种植园收获。</p>');
@@ -942,6 +942,7 @@
     storage: { name: '物资仓储', planet: 'jingchu', dept: '荆门', chapter: '支线 · 物资仓储', side: true, bg: 'storage_p', d: '荆楚号即将抵达芙罗拉星，新船员要去物资仓储领取探索物资。读完后，物资仓储里的「商城」开放。', after: 'board', pos: [50, 62], reward: { exp: 0, energy: 300, items: { cap1: 10 } } },
     brawl: { name: '孝感大厅', planet: 'jingchu', dept: '孝感', chapter: '支线 · 精灵大乱斗', side: true, bg: 'xiaogan', d: 'Dr.黄 在孝感大厅里鼓捣着一台新搬来的机器，听说你身边已经有 3 只精灵了，想让你试试。读完后开放「精灵大乱斗」。', after: 'xiaogan', pos: [76, 56], need: function () { return acc.mons.length >= 3; }, needText: '持有 3 只精灵后开放' },
     draft: { name: '孝感大厅', planet: 'jingchu', dept: '孝感', chapter: '支线 · 竞技征召', side: true, bg: 'xiaogan', d: 'Dr.黄 听说你已经收集了 10 种精灵，神神秘秘地说要教你一种「真正的切磋」。', after: 'xiaogan', pos: [24, 50], need: function () { return speciesN() >= 10; }, needText: '收集 10 种精灵后开放' },
+    plant: { name: '生态舱', planet: 'jingchu', dept: '恩施', chapter: '支线 · 伟大的种植园', side: true, bg: 'cabin_p', spot: '试验田', d: 'Threego 在地球上最爱种菜，被大家叫作「叶伯伯」。她把荆楚号生态舱的种植业研究了个遍，迫不及待地想带你参观。读完后开放「太空种植园」。', after: 'flora1', pos: [26, 62], reward: { energy: 200, items: { s_herb: 2 } } },
     xiaogan: { name: '孝感大厅', planet: 'jingchu', dept: '孝感', chapter: '支线 · 孝感大厅', side: true, bg: 'xiaogan', d: '舰上切磋对战的地方。听说那里有个奇怪的家伙在等着新船员。读完后开放「竞技对战」。', after: 'board', pos: [50, 66], reward: { exp: 0, energy: 200 } }
   };
   // 已有画面的舰内区域；其余区域先用占位画面
@@ -969,7 +970,7 @@
   // 三主宠虽然也在野外以稀有精灵出现，但开局就有一只，不算支线「稀有精灵」要找的那种
   function rareOwned() { var R = []; for (var k in WILD) WILD[k].forEach(function (w) { if (w.rare && STARTERS.indexOf(w.sid) < 0 && R.indexOf(w.sid) < 0) R.push(w.sid); }); return acc.mons.filter(function (m) { return R.indexOf(m.sid) >= 0; })[0] || null; }
   function planetOpen(P) { return !P.after || prog(P.after).done; }
-  var UNLOCK = { xiaogan: '竞技对战', academy: '黄冈秘鉴', storage: '商城', tea: '茶室', brawl: '精灵大乱斗', tiger2: '泰戈尔 · 普通难度', fl_chal: '芙罗拉星 · 挑战', fl_chal2: '助战精灵' };
+  var UNLOCK = { xiaogan: '竞技对战', academy: '黄冈秘鉴', storage: '商城', tea: '茶室', brawl: '精灵大乱斗', tiger2: '泰戈尔 · 普通难度', fl_chal: '芙罗拉星 · 挑战', fl_chal2: '助战精灵', plant: '太空种植园' };
   function brawlOpen() { return !!(acc && acc.story && acc.story.brawl && acc.story.brawl.done); }
   function brawlPlayed() { return !!(acc && acc.stats && acc.stats.brawls > 0); }
   // 平衡模式切磋统一的等级；拥有的精灵种类数（「收集」）；是否参加过竞技征召
@@ -983,6 +984,8 @@
     acc.home.mons = acc.home.mons.map(function (x) { return typeof x === 'number' ? { u: x, t: Date.now() } : x; }).filter(function (x) { return mon(x.u); });
     return acc.home;
   }
+  // 太空种植园：读完支线「伟大的种植园」后开放；这条支线上线前已经在种的老玩家照常能进
+  function farmOpen() { return !!acc && (prog('plant').done || !!(acc.farm && Array.isArray(acc.farm.plots) && acc.farm.plots.some(Boolean))); }
   function shopOpen() { return !!(acc && acc.story && acc.story.storage && acc.story.storage.done); }
   function dexOpen() { return !!(acc && acc.story && acc.story.academy && acc.story.academy.done); }
   function arenaOpen() { return !!(acc && acc.story && acc.story.xiaogan && acc.story.xiaogan.done); }
@@ -1096,7 +1099,7 @@
     if (ex.view === 'teashop') { if (homeOpen()) { renderTeaShop(); return; } ex.view = 'area'; renderArea(); return; }
     if (ex.view === 'shop') { if (shopOpen()) { renderShop(); return; } ex.view = 'area'; renderArea(); return; }
     if (ex.view === 'forge') { renderForge(); return; }
-    if (ex.view === 'farm') { renderFarm(); return; }
+    if (ex.view === 'farm') { if (farmOpen()) { renderFarm(); return; } ex.view = 'area'; ex.area = '恩施'; }
     var Pp = ex.view === 'sites' && PLANETS.filter(function (p) { return p.id === ex.planet; })[0];
     var html = exHead(ex.view === 'planets' ? '选择要前往的星球。' : Pp && Pp.ship ? '点击舰上的区域，即可传送过去。' : '选择要前往的地点。');
     if (ex.view === 'planets') {
@@ -1173,7 +1176,7 @@
       mk + (n === '天门' ? hallSpots() : '') + bossSpots(n) +
       (n === '荆门' ? '<button type="button" class="mk shop' + (shopOpen() ? '' : ' locked') + '"' + (shopOpen() ? ' data-shop="1"' : ' disabled') + ' style="left:74%;top:40%"><span class="mk-dot">' + (shopOpen() ? '商' : '锁') + '</span><span class="mk-lab"><b>商城 · 物资兑换</b><small>' + (shopOpen() ? '普通捕捉装置和补药' : '读完「物资仓储」支线后开放') + '</small></span></button>' : '') +
       (n === '黄石' ? '<button type="button" class="mk shop" data-forge="1" style="left:50%;top:58%"><span class="mk-dot">炼</span><span class="mk-lab"><b>冶炼坊</b><small>合成捕捉装置和 200血药</small></span></button>' : '') +
-      (n === '恩施' ? '<button type="button" class="mk shop" data-farm="1" style="left:50%;top:58%"><span class="mk-dot">种</span><span class="mk-lab"><b>太空种植园</b><small>种药草，用来做 200血药</small></span></button>' : '') +
+      (n === '恩施' ? '<button type="button" class="mk shop' + (farmOpen() ? '' : ' locked') + '"' + (farmOpen() ? ' data-farm="1"' : ' disabled') + ' style="left:62%;top:58%"><span class="mk-dot">' + (farmOpen() ? '种' : '锁') + '</span><span class="mk-lab"><b>太空种植园</b><small>' + (farmOpen() ? '种药草，用来做 200血药' : '读完支线「伟大的种植园」后开放') + '</small></span></button>' : '') +
       (ids.length || n === '黄石' || n === '恩施' ? '' : '<p class="area-empty">这里暂时没有剧情。</p>') +
       '<div class="tp-fx" aria-hidden="true"><span>传送至 ' + d[0] + '……</span></div></div>' +
       (ids.length ? '<ul class="area-list">' + rw + '</ul>' : '') + '</div>';
@@ -3131,7 +3134,7 @@
     if (b.dataset.fq) { var fq = b.dataset.fq.split('|'), fr = forgeOf(fq[0]); if (fr && !b.disabled) { shopQty['fg-' + fq[0]] = Math.max(1, Math.min(FORGE_Q, (shopQty['fg-' + fq[0]] || 1) + +fq[1])); renderForge(); } return; }
     if (b.dataset.smelt) { forgeCraft(b.dataset.smelt); return; }
     if (b.id === 'forge-back') { ex.view = 'area'; ex.area = '黄石'; ex.planet = 'jingchu'; renderExplore(); return; }
-    if (b.dataset.farm) { ex.view = 'farm'; ex.area = '恩施'; ex.planet = 'jingchu'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
+    if (b.dataset.farm) { if (!farmOpen()) return; ex.view = 'farm'; ex.area = '恩施'; ex.planet = 'jingchu'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
     if (b.dataset.sow) { var sw = b.dataset.sow.split('|'); farmPlant(+sw[0], sw[1]); return; }
     if (b.dataset.reap != null && b.dataset.reap !== '') { farmHarvest(+b.dataset.reap); return; }
     if (b.id === 'farm-back') { ex.view = 'area'; ex.area = '恩施'; ex.planet = 'jingchu'; renderExplore(); return; }
@@ -3183,7 +3186,7 @@
     var a = $('vn-bg'), b = $('vn-bg2');
     if (!ex.curBg) { a.src = BG[k]; } else { b.src = BG[k]; b.classList.remove('in'); void b.offsetWidth; b.classList.add('in'); setTimeout(function () { if (a.isConnected) { a.src = BG[k]; b.classList.remove('in'); } }, 520); }
     a.style.objectPosition = b.style.objectPosition = BG_POS[k] || '';
-    ex.curBg = k; $('vn-spot').textContent = ' · ' + (BG_NAME[k] || '');
+    ex.curBg = k; $('vn-spot').textContent = ' · ' + ((ex.site && SITES[ex.site] && SITES[ex.site].spot) || BG_NAME[k] || '');   // spot：画面借用别处背景时，地点名按剧情写
   }
   function monsHTML(mode) {
     var img = function (sid, cls, label) { return '<figure class="vn-mon ' + cls + '"><img src="' + form({ sid: sid, lv: START_LV }).img + '" alt=""><figcaption>' + esc(label) + '</figcaption></figure>'; };
