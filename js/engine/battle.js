@@ -80,6 +80,7 @@ function mkFrom(t) {
   if (t.emblem && EMBLEMS[t.id] && EMBLEMS[t.id].m === t.emblem) m.emblem = t.emblem;
   // 首领的特殊能力（见 BOSS_FX）；pp：首领技能的 PP（长时间战斗不会用光）
   if (t.boss) { m.boss = JSON.parse(JSON.stringify(t.boss)); if (m.boss.pp) m.moves.forEach(function (x) { if (M[x.n].custom !== 'annihilate') x.pp = x.max = m.boss.pp; }); }   // 灭却除外，仍按原本的 PP
+  if (m.boss && m.boss.feud) m.stats.atk = Math.floor(m.stats.atk * 1.3);   // 「东北的纷争」：物攻永久 +30%（直接算进能力值，不是能力等级，不会被消除）
   if (t.u != null) { m.u = t.u; m.hl = t.hl || []; }   // 账号里的精灵：可以在战斗中领悟隐藏技能
   return m;
 }
@@ -992,6 +993,7 @@ function hqKO(S, evs, me, foe, mv) {
  * 写在 js/ui/game.js 的 BOSSES 里，开战时随精灵传进来 */
 var BOSS_FX = [
   { k: 'noStatus', t: '免疫异常', h: '免疫异常状态', d: function () { return '不会陷入任何异常状态（睡眠、麻痹、中毒、寄生等）'; } },
+  { k: 'feud', t: '东北的纷争', h: '东北的纷争', d: function () { return '物攻永久提升 30%（直接算进能力值，不会被消除）'; } },
   { k: 'ne', t: '来东北试试', h: '来东北试试', d: function () { return '使用普通拳时不会降低自身命中，并解除自身的能力下降状态'; } },
   { k: 'dr', t: '星球聚能', h: '星球聚能', d: function (m) { return '受到的伤害减少 ' + Math.round(m.boss.dr * 100) + '%'; } },
   { k: 'mia', t: '瘴气领域', h: '瘴气领域', d: function () { return '只要它还没倒下，每回合结束时为对手在场的精灵添加 1 层瘴气'; } },

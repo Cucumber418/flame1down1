@@ -1648,7 +1648,7 @@
 
   /* ---------- 首领：常驻在舰上部门或星球上，可反复挑战；每个首领分几档难度 ----------
    * lv：各档难度，按顺序解锁（open 返回是否开放）。boss 是首领的特殊能力，规则写在 js/engine/battle.js 的 BOSS_FX 里：
-   *   noStatus 免疫异常状态 · ne 来东北试试 · dr 星球聚能（减伤比例） · mia 瘴气领域 · puppet 瘴毒傀儡 · pp 首领技能的 PP
+   *   noStatus 免疫异常状态 · feud 东北的纷争（物攻 +30%） · ne 来东北试试 · dr 星球聚能（减伤比例） · mia 瘴气领域 · puppet 瘴毒傀儡 · pp 首领技能的 PP
    * 战绩存在 acc.bosses[记录名]：简单难度沿用首领 id（兼容旧存档），其他难度是「id:序号」，每周挑战是「id:w」 */
   var ONLY3 = ['水', '火', '草'];
   var BOSSES = {
@@ -1656,7 +1656,7 @@
       d: '从东北招募的特殊虎系精灵，常驻古城防卫部，辅助船员们训练。',
       lv: [
         { diff: '简单', lv: 25, hp: 500, only: ONLY3, bgm: 'boss', open: function () { return prog('tiger').done; }, lockText: '读完支线「东北来的泰戈尔」后开放', reward: { mon: { sid: 'tagore', lv: 10 } } },
-        { diff: '普通', lv: 40, hp: 1500, only: ONLY3, boss: { noStatus: 1, ne: 1, pp: 99 }, bgm: 'boss2', open: function () { return prog('tiger2').done; }, lockText: '击败简单难度，再听泰戈尔介绍后开放', reward: { emblem: 'tagore', exp: 20000 } },
+        { diff: '普通', lv: 40, hp: 1500, only: ONLY3, boss: { feud: 1, ne: 1, pp: 99 }, bgm: 'boss2', open: function () { return prog('tiger2').done; }, lockText: '击败简单难度，再听泰戈尔介绍后开放', reward: { emblem: 'tagore', exp: 20000 } },
         { diff: '困难', lv: 60, hp: 5000, only: ONLY3, boss: { noStatus: 1, ne: 1, pp: 99 }, bgm: 'boss2', open: function () { return bossWon('tiger', 1); }, lockText: '击败普通难度后开放', reward: { title: 'force', items: { natTagore: 3 }, exp: 50000 } }
       ] },
     barren: { name: '荒芜', sid: 'barren', planet: 'flora', region: 'salt', bg: 'fl_salt',
@@ -2266,7 +2266,7 @@
       if (id === 'brawl') steps = [{ t: '在孝感大厅听 Dr.黄 介绍精灵大乱斗', ok: pr.done }, { t: '打一场精灵大乱斗（竞技对战 → 精灵大乱斗，需要有其他船员在线）', ok: brawlPlayed() }];
       if (id === 'tiger') { steps = [{ t: '在古城防卫部听舰载广播介绍泰戈尔', ok: pr.done }, { t: '挑战并击败首领「泰戈尔」（只有水、火、草系技能能命中它）', ok: bossWon('tiger') }]; R = { mon: '小胖虎 LV10（首次击败）' }; }
       if (id === 'draft') steps = [{ t: '在孝感大厅听 Dr.黄 介绍竞技征召', ok: pr.done }, { t: '和其他船员打一场竞技征召（社交 → 向在线玩家宣战 → 5v5 · 平衡模式 · 竞技征召，胜负都算）', ok: draftPlayed() }];
-      if (id === 'tiger2') { steps = [{ t: '在古城防卫部听泰戈尔介绍普通难度', ok: pr.done }, { t: '挑战并击败普通难度的「泰戈尔」（LV40，体力 1500，免疫异常状态）', ok: bossWon('tiger', 1) }]; R = { mon: '普通拳纹章、累积经验 ×20,000（首次击败普通难度）' }; }
+      if (id === 'tiger2') { steps = [{ t: '在古城防卫部听泰戈尔介绍普通难度', ok: pr.done }, { t: '挑战并击败普通难度的「泰戈尔」（LV40，体力 1500，东北的纷争：物攻永久提升 30%）', ok: bossWon('tiger', 1) }]; R = { mon: '普通拳纹章、累积经验 ×20,000（首次击败普通难度）' }; }
       if (id === 'flora2') steps = [{ t: '前往 ' + qWhere(id), ok: pr.done || pr.at > 0 }, { t: '读完剧情「' + qName(id) + '」', ok: pr.done }, { t: '在芙罗拉星的丛林或草甸「假装击败」野生精灵（这个任务里野生精灵不会倒下，体力剩 1 点时就会逃走）', ok: spareN() >= SPARE_N, p: spareN() + ' / ' + SPARE_N }];
       if (id === 'rare') { var rr = prog('rare_r'); steps = [{ t: '在学院部听 Bttp 说明任务', ok: pr.done }, { t: '捕捉一种稀有精灵（芙罗拉星的丛林深处可能会有）', ok: rr.done || !!rareOwned() }, { t: '回到学院部，向 Bttp 汇报', ok: rr.done }]; R = SITES.rare_r.reward; desc = S.d; }
       if (st === 'lock') need = S.need && prog(S.after).done && !S.need() ? S.needText + (id === 'mingming' ? '（当前 ' + litCount() + ' / 10）' : id === 'brawl' ? '（当前持有 ' + acc.mons.length + ' 只）' : id === 'draft' ? '（当前 ' + speciesN() + ' / 10 种）' : id === 'flora3' ? '（当前 ' + spareN() + ' / ' + SPARE_N + '）' : '') + '。' : '先读完「' + SITES[S.after].chapter.split(' · ')[1] + '」。';
