@@ -99,7 +99,7 @@ var PRE_SPRITES = {
   "barren_s2": "images/pre_sprites/barren_s2.png",
   "mush_s1": "images/pre_sprites/mush_s1.webp",
   "mush_s2": "images/pre_sprites/mush_s2.png",
-  "kaleo_s1": "images/pre_sprites/kaleo_s1.png",
+  "kaleo_s1": "images/pre_sprites/kaleo_s1.webp",
   "kaleo_s2": "images/pre_sprites/kaleo_s2.png",
   "siren_s1": "images/pre_sprites/siren_s1.png",
   "siren_s2": "images/pre_sprites/siren_s2.png",
