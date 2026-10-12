@@ -1554,6 +1554,7 @@
       d.forEach(function (g) { var m = mon(g.u); if (!m) return; if (!m.hl) m.hl = []; if (m.hl.indexOf(g.mv) < 0) m.hl.push(g.mv); });
       save(); return;
     }
+    if (type === 'bossfx') { if (!acc.seenFx) acc.seenFx = {}; if (!acc.seenFx[d.k]) { acc.seenFx[d.k] = Date.now(); save(); } return; }   // 隐藏的首领特效第一次发动（之后在首领页显示）
     if (type !== 'arena') return;
     dailyHit('arena');
     if (d.rank) { dailyHit('rankPlay'); if (d.result === 'win') dailyHit('rankWin'); } else dailyHit('sandbox');
@@ -1657,7 +1658,7 @@
       lv: [
         { diff: '简单', lv: 25, hp: 500, only: ONLY3, bgm: 'boss', open: function () { return prog('tiger').done; }, lockText: '读完支线「东北来的泰戈尔」后开放', reward: { mon: { sid: 'tagore', lv: 10 } } },
         { diff: '普通', lv: 40, hp: 1500, only: ONLY3, boss: { feud: 1, ne: 1, pp: 99 }, bgm: 'boss2', open: function () { return prog('tiger2').done; }, lockText: '击败简单难度，再听泰戈尔介绍后开放', reward: { emblem: 'tagore', exp: 20000 } },
-        { diff: '困难', lv: 60, hp: 5000, only: ONLY3, boss: { noStatus: 1, ne: 1, pp: 99 }, bgm: 'boss2', open: function () { return bossWon('tiger', 1); }, lockText: '击败普通难度后开放', reward: { title: 'force', items: { natTagore: 3 }, exp: 50000 } }
+        { diff: '困难', lv: 60, hp: 5000, only: ONLY3, boss: { feud: 1, ne: 1, past: 1, pp: 99 }, bgm: 'boss2', open: function () { return bossWon('tiger', 1); }, lockText: '击败普通难度后开放', reward: { title: 'force', items: { natTagore: 3 }, exp: 50000 } }
       ] },
     barren: { name: '荒芜', sid: 'barren', planet: 'flora', region: 'salt', bg: 'fl_salt',
       d: '潜伏在芙罗拉星盐碱地地底的草系首领。盐碱地里的瘴气，就是从它身上散出来的。',
@@ -1705,7 +1706,9 @@
   function fxRules(L) {
     var fake = { boss: L.boss || {}, hp: L.hp }, out = [];
     if (L.only) out.push(['【元素亲和】', '只有' + L.only.join('、') + '系技能才能命中它']);
-    if (L.boss) BOSS_FX.forEach(function (f) { if (L.boss[f.k]) out.push(['【' + f.h + '】', f.d(fake).split('\n')[0]]); });
+    var known = !!(acc.seenFx && acc.seenFx.past);
+    if (L.boss) BOSS_FX.forEach(function (f) { if (L.boss[f.k] && !(f.k === 'past' && !known)) out.push(['【' + f.h + '】', f.d(fake).split('\n')[0]]); });
+    if (L.boss && L.boss.past && known) ['eternal', 'relive', 'sy'].forEach(function (k) { var f = BOSS_FX.filter(function (x) { return x.k === k; })[0]; out.push(['复活后 · 【' + f.h + '】', f.d(fake)]); });
     return out;
   }
   function rewardText(R) {
@@ -1863,7 +1866,9 @@
     if (!team.length) team = acc.mons.slice(0, 1);
     team = team.slice(0, TEAM_SIZE);
     var p = team.map(storyMon);
-    var a = [{ id: B.sid, lv: L.lv, moves: defaultMoves(B.sid, L.lv), nick: B.name, img: SPRITES[B.sid], maxhp: L.hp, onlyHit: L.only, boss: L.boss }];
+    var bossFx = L.boss ? JSON.parse(JSON.stringify(L.boss)) : null;
+    if (bossFx && bossFx.past && acc.seenFx && acc.seenFx.past) bossFx.pastKnown = 1;   // 「东北的往事」第一次发动之前不显示
+    var a = [{ id: B.sid, lv: L.lv, moves: defaultMoves(B.sid, L.lv), nick: B.name, img: SPRITES[B.sid], maxhp: L.hp, onlyHit: L.only, boss: bossFx }];
     seeMon(B.sid, L.lv);
     var rec = bossRec(k, weekly ? 'w' : d); rec.tries++; save();
     stopTimers(); ex.fighting = true; document.body.classList.add('story-fight'); syncBattle();

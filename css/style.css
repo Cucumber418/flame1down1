@@ -1545,3 +1545,13 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .bs-v.on { border-color: var(--blue); background: #e8eefb; color: var(--blue); }
 .bs-v:disabled { cursor: default; opacity: .7; }
 .bs-none { padding: 8px 0; }
+
+/* ============ 对战中的小剧情（困难泰戈尔复活） ============ */
+.bscene { position: absolute; inset: 0; z-index: 5; display: flex; align-items: flex-end; justify-content: center; gap: 12px; padding: 16px; background: linear-gradient(transparent 30%, rgba(35, 34, 43, .55)); cursor: pointer; animation: vnIn .3s ease-out; }
+.bscene .bs-img { height: 70%; max-width: 34%; object-fit: contain; align-self: flex-end; filter: drop-shadow(0 0 2px #fff) drop-shadow(0 0 8px rgba(196, 47, 58, .7)); }
+.bscene .bs-say { flex: 1; max-width: 640px; background: rgba(251, 250, 243, .96); border: 1.5px solid var(--ink); border-radius: 14px; padding: 10px 14px; box-shadow: 3px 3px 0 var(--ink); }
+.bscene .bs-say b { color: #b0702a; font-size: 15px; }
+.bscene .bs-say p { margin: 4px 0 2px; font-size: 15px; line-height: 1.6; }
+.bscene .bs-say.narr p { color: var(--pencil); font-style: italic; }
+.bscene .bs-say small { color: var(--pencil); font-size: 11.5px; }
+@media (max-width: 760px) { .bscene { padding: 8px; } .bscene .bs-img { max-width: 28%; height: 55%; } .bscene .bs-say p { font-size: 13.5px; } }

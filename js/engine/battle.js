@@ -25,7 +25,9 @@ function mvType(me, mv) {
   if (mv.custom === 'lightside') return '光'; return me.tm && me.tm.darkside > 0 ? '暗影' : mv.type;
 }
 // 光影之月下，月之暗面 / 月之亮面不能再使用
-function moveBlocked(me, slot) { return !!(me.perm && me.perm.moonFull && slot && M[slot.n] && M[slot.n].custom === 'darkside'); }
+function moveBlocked(me, slot) { return !!(slot && M[slot.n] && ((me.perm && me.perm.moonFull && M[slot.n].custom === 'darkside') || (me.flags && me.flags.sy && M[slot.n].cat === '变化'))); }
+// 技能为什么不能用（界面上显示）：光影之月 / 沈阳大街（复活后的困难泰戈尔的场地效果，变化技能都不能用）
+function blockWhy(me, slot) { return !moveBlocked(me, slot) ? '' : me.flags && me.flags.sy && M[slot.n].cat === '变化' ? '沈阳大街中不可用' : '光影之月中不可用'; }
 // 处于月之暗面时，「月之暗面」变为「月之亮面」
 var LIGHTSIDE = { name: '月之亮面', type: '光', cat: '变化', custom: 'lightside', pri: 0, pp: 5, hidden: true, d: '结束月之暗面，将精灵属性、技能属性切换回光系' };
 function liveMove(me, mv) { return mv && mv.custom === 'darkside' && me.tm && me.tm.darkside > 0 ? LIGHTSIDE : mv; }
@@ -80,6 +82,7 @@ function mkFrom(t) {
   if (t.emblem && EMBLEMS[t.id] && EMBLEMS[t.id].m === t.emblem) m.emblem = t.emblem;
   // 首领的特殊能力（见 BOSS_FX）；pp：首领技能的 PP（长时间战斗不会用光）
   if (t.boss) { m.boss = JSON.parse(JSON.stringify(t.boss)); if (m.boss.pp) m.moves.forEach(function (x) { if (M[x.n].custom !== 'annihilate') x.pp = x.max = m.boss.pp; }); }   // 灭却除外，仍按原本的 PP
+  if (m.boss) m.boss.atk0 = m.stats.atk;
   if (m.boss && m.boss.feud) m.stats.atk = Math.floor(m.stats.atk * 1.3);   // 「东北的纷争」：物攻永久 +30%（直接算进能力值，不是能力等级，不会被消除）
   if (t.u != null) { m.u = t.u; m.hl = t.hl || []; }   // 账号里的精灵：可以在战斗中领悟隐藏技能
   return m;
@@ -104,7 +107,7 @@ function newTraining(p, lv, defBase) {
   return S;
 }
 function dotLabel(why) {
-  var keys = ['寄生', '溺水', '流血', '中毒', '烧伤', '凋零之蚀', '冰雹', '雨水', '磁暴反冲', '感电', '混沌水域', '额外吸取'];
+  var keys = ['寄生', '溺水', '流血', '中毒', '烧伤', '冻伤', '凋零之蚀', '冰雹', '雨水', '磁暴反冲', '感电', '混沌水域', '额外吸取'];
   for (var i = 0; i < keys.length; i++) if (why && why.indexOf(keys[i]) >= 0) return keys[i] === '雨水' ? '祈雨' : keys[i] === '额外吸取' ? '生命榨取（额外吸取）' : keys[i];
   return '持续/附加效果';
 }
@@ -124,7 +127,7 @@ var ST_DESC = {
   害怕: '无法行动', 石化: '无法行动', 睡眠: '无法行动，受到攻击伤害时会醒来', 麻痹: '无法行动', 冰冻: '无法行动',
   疲惫: '无法行动', 寄生: '每回合结束损失1/10最大体力，被对方吸走（草系精灵免疫）', 溺水: '每回合结束损失1/8最大体力；攻击造成的伤害变为30%',
   流血: '每回合结束损失60点体力（机械系免疫）', 中毒: '每回合结束损失1/16最大体力×层数；可无限叠加，叠加时回合数取较长的一方', 烧伤: '每回合结束损失1/8最大体力',
-  失明: '攻击时有50%概率落空'
+  失明: '攻击时有50%概率落空', 冻伤: '每回合结束损失1/8最大体力'
 };
 var TM_DESC = {
   cap: '单次受到的伤害不超过250，超出部分等额反馈给对方', genggu: '每回合提升1级特攻，恢复1/6最大体力',
@@ -215,7 +218,8 @@ function chipsOf(m, foe) {
   if (m.fx.sureHit && !m.fx.sureCrit) c.push({ t: '下次必中', k: 'fx', h: '下次必中', d: '下一次攻击必定命中' });
   if (m.perm && m.perm.melt) c.push({ t: '熔化 ×' + m.perm.melt, k: 'st', h: '熔化 · ' + m.perm.melt + ' 层', d: '受到的伤害提升 ' + m.perm.melt * 20 + '%（每层20%，最多5层），持续到战斗结束，换下场也不会消失' });
   if (m.onlyHit) c.push({ t: '元素亲和', k: 'fx', h: '首领 · 元素亲和', d: '只有' + m.onlyHit.join('、') + '系技能才能命中它，其他属性的技能都会被挡下' });
-  if (m.boss) BOSS_FX.forEach(function (f) { if (m.boss[f.k]) c.push({ t: f.t, k: 'fx', h: f.h, d: f.d(m) }); });
+  if (m.boss) BOSS_FX.forEach(function (f) { if (m.boss[f.k] && !(f.hide && f.hide(m))) c.push({ t: f.t, k: 'fx', h: f.h, d: f.d(m) }); });
+  if (m.flags && m.flags.sy && !m.boss) c.push({ t: '沈阳大街', k: 'bad', h: '沈阳大街（场地）', d: '场地效果：不能使用变化类技能' });
   if (m.shiny) c.push({ t: '异色', k: 'fx', h: '异色精灵', d: '和同类长得不一样的稀有配色，能力和普通的一样' });
   if (m.puppet) c.push({ t: '瘴毒傀儡', k: 'st', h: '瘴毒傀儡', d: '荒芜召唤出来的傀儡，只会使用攻击技能。被击败后荒芜会重新上场。' });
   if (m.emblem && EMBLEMS[m.id]) c.push({ t: '纹章 · ' + m.emblem, k: 'fx' + (m.flags.punch ? '' : ' on'), h: EMBLEMS[m.id].n, d: EMBLEMS[m.id].d + (m.flags.punch ? '（本场已经生效过）' : '') });
@@ -273,6 +277,7 @@ function statSheet(m, foe) {
   if (m.fx.leiyin) dmgIn *= 1.2;
   if (m.tm.dr40 > 0) dmgIn *= 0.6;
   if (m.boss && m.boss.dr) dmgIn *= 1 - m.boss.dr;
+  if (m.boss && m.boss.eternal) dmgIn *= 1.2;
   rows.push({ k: '造成伤害', v: '×' + (Math.round(dmgOut * 100) / 100), note: '特性与场上效果合计（不含属性克制）' });
   rows.push({ k: '受到伤害', v: '×' + (Math.round(dmgIn * 100) / 100), note: m.tm.halfPhys > 0 ? '另外物理伤害减半' : '' });
   var pri = m.tm.prio > 0 ? '+1' : '0';
@@ -304,6 +309,7 @@ function faint(S, evs, j) {
     log(S, evs, nm(t) + '只剩最后一口气，慌忙逃进了草丛里！', 'good');
     S.over = 'spared'; E(S, evs, 'over', { result: 'spared' }); return;
   }
+  if (t.boss && t.boss.past && !t.boss.revived && !S.pvp) { reviveTiger(S, evs, j, t); return; }
   t.fainted = true; t.hp = 0;
   E(S, evs, 'faint', { side: j }); log(S, evs, nm(t) + '倒下了！', 'bad');
 }
@@ -477,6 +483,7 @@ function calcDamage(me, foe, mv, firstMover, est) {
   if (phys && foe.tm.halfPhys > 0) mod *= 0.5;
   if (foe.tm.dr40 > 0) mod *= 0.6;
   if (foe.boss && foe.boss.dr) mod *= 1 - foe.boss.dr;   // 首领「星球聚能」
+  if (foe.boss && foe.boss.eternal) mod *= 1.2;   // 复活后的泰戈尔「永续的纷争」：受到的伤害 +20%
   return { dmg: Math.max(1, Math.floor(base * mod)), crit: crit, eff: e };
 }
 function hitChance(me, foe, mv) {
@@ -623,7 +630,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   mv = liveMove(me, mv);
   if (me.fainted) return;
   if (!extra && cantAct(S, evs, me)) return;
-  if (slotIdx >= 0 && moveBlocked(me, me.moves[slotIdx])) { log(S, evs, nm(me) + '处于光影之月，无法使用「' + mv.name + '」'); return; }
+  if (slotIdx >= 0 && moveBlocked(me, me.moves[slotIdx])) { log(S, evs, (me.flags && me.flags.sy && mv.cat === '变化' ? '沈阳大街上不讲究这些花架子，' + nm(me) + '无法使用「' : nm(me) + '处于光影之月，无法使用「') + mv.name + '」'); return; }
   if (!mv.struggle && slotIdx >= 0) me.moves[slotIdx].pp--;
   if (S.silenced[i] && !extra) { log(S, evs, nm(me) + '的「' + mv.name + '」被黑暗吞没，失效了！', 'bad'); return; }
   var firstMover = !S.turnActed[j];
@@ -695,6 +702,11 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
     if (foe.fx.flash && !foe.fainted) { foe.fx.flash = 0; log(S, evs, '闪光飞叶的光芒刺痛了' + nm(foe) + '的眼睛', 'fxl'); changeStages(S, evs, j, { acc: -1 }, i); }
   }
   // 受击方的反击类效果
+  if (total > 0 && !me.fainted && !foe.fainted && foe.boss && foe.boss.relive && RNG() < 0.5) {   // 复活后的泰戈尔「往日重现」
+    var rk = ['烧伤', '冻伤', '中毒'][rint(0, 2)];
+    log(S, evs, nm(foe) + '的「往日重现」：东北街头的记忆涌了上来！', 'fxl');
+    addStatus(S, evs, i, rk, rint(1, 3), j);
+  }
   if (total > 0 && !me.fainted) {
     if (ability(foe) === '感电' && mv.cat === '物攻') loseHp(S, evs, i, Math.max(1, Math.floor(total * 0.15)), nm(foe) + '的「感电」反弹了部分伤害');
     if (foe.tm.recoil > 0 && !me.fainted) loseHp(S, evs, i, Math.floor(me.maxhp / 4), nm(foe) + '的磁暴反冲造成了反弹伤害');
@@ -994,12 +1006,43 @@ function hqKO(S, evs, me, foe, mv) {
 var BOSS_FX = [
   { k: 'noStatus', t: '免疫异常', h: '免疫异常状态', d: function () { return '不会陷入任何异常状态（睡眠、麻痹、中毒、寄生等）'; } },
   { k: 'feud', t: '东北的纷争', h: '东北的纷争', d: function () { return '物攻永久提升 30%（直接算进能力值，不会被消除）'; } },
+  { k: 'past', t: '东北的往事', h: '东北的往事', hide: function (m) { return !m.boss.pastKnown; }, d: function () { return '第一次被击败后会不屈复活（LV60，体力 3000），觉醒【永续的纷争】【往日重现】，并展开场地【沈阳大街】'; } },
+  { k: 'eternal', t: '永续的纷争', h: '永续的纷争', d: function () { return '物攻永久提升 60%，但受到的伤害增加 20%'; } },
+  { k: 'relive', t: '往日重现', h: '往日重现', d: function () { return '受到攻击时有 50% 的概率，让对方随机陷入烧伤、冻伤、中毒之一（1~3 回合）'; } },
+  { k: 'sy', t: '沈阳大街', h: '沈阳大街（场地）', d: function () { return '场地效果：双方都不能使用变化类技能'; } },
   { k: 'ne', t: '来东北试试', h: '来东北试试', d: function () { return '使用普通拳时不会降低自身命中，并解除自身的能力下降状态'; } },
   { k: 'dr', t: '星球聚能', h: '星球聚能', d: function (m) { return '受到的伤害减少 ' + Math.round(m.boss.dr * 100) + '%'; } },
   { k: 'mia', t: '瘴气领域', h: '瘴气领域', d: function () { return '只要它还没倒下，每回合结束时为对手在场的精灵添加 1 层瘴气'; } },
   { k: 'puppet', t: '瘴毒傀儡', h: '瘴毒傀儡', d: function (m) { var cd = puppetCd(m), left = m.boss.last == null ? 0 : Math.max(0, cd - (m.boss.now - m.boss.last));
     return '每回合有 30% 的几率下场，召唤一只 LV50 的瘴毒傀儡（芙罗拉星的草系精灵，带 10 层瘴气，只会用攻击技能）。召唤后冷却 15 回合，体力低于 1000 后冷却缩短为 7 回合。' + (left ? '\n当前冷却：还剩 ' + left + ' 回合' : '\n当前：可以召唤'); } }
 ];
+/* 困难泰戈尔「东北的往事」：第一次被击败时不屈复活（只复活一次）
+ * 复活：LV60、体力 3000（回满），清掉能力等级和异常状态；东北的纷争 → 永续的纷争（物攻 +60%、受伤 +20%），新增往日重现，场地变成沈阳大街（双方都不能用变化技能）
+ * 复活前插一段小剧情（事件 scene，由界面播放） */
+var TIGER_PAST = [
+  ['n', '泰戈尔重重地倒在地上。就在大家以为分出胜负的时候，它的爪子动了一下。'],
+  ['tg', '……嘿。好些年没让人撂倒过了。'],
+  ['tg', '想当年在沈阳大街上，俺可不是啥武学宗师。就是个愣头青，天天跟人约架，谁也不服，谁也不怕。'],
+  ['tg', '那会儿哪有啥招式套路，挨一拳就还一拳，摔倒了拍拍土站起来接着干！'],
+  ['tg', '宗师的架子，今儿个先放一边。老铁，接下来跟你打的——是当年那个泰戈尔！'],
+  ['n', '泰戈尔的眼睛亮了起来。它扯掉身上的护具，又一次站了起来。']
+];
+function reviveTiger(S, evs, j, t) {
+  var b = t.boss; b.revived = 1;
+  E(S, evs, 'scene', { side: j, lines: TIGER_PAST, fx: 'past' });
+  b.pastKnown = 1;
+  TIGER_PAST.forEach(function (l) { log(S, evs, (l[0] === 'tg' ? '泰戈尔：' : '') + l[1], 'fxl'); });
+  t.lv = 60; t.maxhp = t.hp = 3000; t.stages = blankStages(); t.st = {}; t.fx.poison = 0;
+  delete b.feud; b.eternal = 1; b.relive = 1; b.sy = 1;
+  t.stats.atk = Math.floor((b.atk0 || t.stats.atk) * 1.6);
+  t.nick = '热血·' + (t.nick || sp(t).name).replace(/^热血·/, '');
+  [0, 1].forEach(function (i) { S.sides[i].team.forEach(function (m) { if (!m.flags) m.flags = {}; m.flags.sy = 1; }); });
+  log(S, evs, '「东北的往事」：' + nm(t) + '不屈地复活了！（体力 3000）', 'crit');
+  log(S, evs, '「东北的纷争」变成了「永续的纷争」：物攻永久提升 60%，但受到的伤害增加 20%', 'fxl');
+  log(S, evs, nm(t) + '觉醒了「往日重现」：受到攻击时有 50% 的概率让对方陷入烧伤、冻伤或中毒', 'fxl');
+  log(S, evs, '场地变成了「沈阳大街」：双方都不能使用变化类技能！', 'bad');
+  E(S, evs, 'heal', { side: j, amount: 3000 });
+}
 function bossOf(S) { var t = S.sides[1].team; for (var i = 0; i < t.length; i++) if (t[i].boss) return t[i]; return null; }
 var PUPPETS = ['mush', 'wind', 'kaleo'];
 function puppetCd(m) { return m.hp < 1000 ? 7 : 15; }
@@ -1059,6 +1102,7 @@ function endOfTurn(S, evs) {
     if (!m.fainted && m.st['流血'] > 0) loseHp(S, evs, i, 60, nm(m) + '因流血受到伤害');
     if (!m.fainted && m.st['中毒'] > 0) { var pz = m.fx.poison || 1; loseHp(S, evs, i, Math.max(1, Math.floor(m.maxhp * pz / 16)), nm(m) + '因中毒受到伤害' + (pz > 1 ? '（' + pz + ' 层）' : '')); }
     if (!m.fainted && m.st['烧伤'] > 0) loseHp(S, evs, i, e8, nm(m) + '因烧伤受到伤害');
+    if (!m.fainted && m.st['冻伤'] > 0) loseHp(S, evs, i, e8, nm(m) + '因冻伤受到伤害');
     if (!m.fainted && m.perm.wither) loseHp(S, evs, i, witherDot(m), nm(m) + '被凋零之蚀侵蚀' + (witherN(m) > 1 ? '（' + witherN(m) + ' 层）' : ''));
     if (!m.fainted && m.tm.rain > 0 && !o.fainted) { log(S, evs, '雨水对' + nm(o) + '附加 30 点固定伤害', 'fxl'); S.dotSrc = '祈雨'; applyDamage(S, evs, 1 - i, 30, null, {}); S.dotSrc = null; }
     if (!m.fainted && m.tm.hail > 0 && !o.fainted) { log(S, evs, '冰雹砸向' + nm(o), 'fxl'); S.dotSrc = '冰雹'; applyDamage(S, evs, 1 - i, Math.floor(o.maxhp / 10), null, {}); S.dotSrc = null; }

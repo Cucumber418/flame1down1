@@ -644,6 +644,7 @@
       else {
         var bar = pl.querySelector('.hpbar i'); bar.style.width = (sd.hp / sd.maxhp * 100) + '%'; bar.className = hpClass(sd.hp, sd.maxhp);
         pl.querySelector('.hprow > span').textContent = sd.dummy ? '体力 ∞' : sd.hp + ' / ' + sd.maxhp;
+        var pn = pl.querySelector('.pn'); if (pn && pn.textContent !== sd.name) pn.textContent = sd.name;   // 改名（比如泰戈尔复活后变成「热血·泰戈尔」）
         var tmp = document.createElement('div'); tmp.innerHTML = html;
         pl.querySelector('.pips').innerHTML = tmp.querySelector('.pips').innerHTML;
         pl.querySelector('.chips').innerHTML = tmp.querySelector('.chips').innerHTML;
@@ -709,11 +710,29 @@
         case 'switch': renderSnap(e.snap); await wait(520); break;
         case 'throw': renderSnap(e.snap); castFx({ a: 'throw', i: 1 }); restartAnim($('mon1'), 'throw'); await wait(900); break;
         case 'faint': renderSnap(e.snap); await wait(650); break;
+        case 'scene': renderSnap(e.snap); if (e.fx && window.HSEV) window.HSEV('bossfx', { k: e.fx }); await showScene(e.lines); break;
         default: renderSnap(e.snap); await wait(60);
       }
     }
   }
 
+  // 对战中的小剧情（比如困难泰戈尔复活时）：在战场上盖一层对话框，点一下翻到下一句（不点也会自己往下走）
+  var SCENE_WHO = { tg: { name: '泰戈尔', img: 'tagore' }, n: null };
+  function showScene(lines) {
+    return new Promise(function (done) {
+      var f = $('field'), box = document.createElement('div'); box.className = 'bscene'; f.appendChild(box);
+      var i = 0, timer = null;
+      function next() {
+        clearTimeout(timer);
+        if (i >= lines.length) { box.remove(); done(); return; }
+        var l = lines[i++], w = SCENE_WHO[l[0]];
+        box.innerHTML = (w ? '<img class="bs-img" src="' + SPRITES[w.img] + '" alt="">' : '') + '<div class="bs-say' + (w ? '' : ' narr') + '">' + (w ? '<b>' + w.name + '</b>' : '') + '<p>' + esc(l[1]) + '</p><small>点击继续</small></div>';
+        timer = setTimeout(next, app.fast ? 2200 : 4200);
+      }
+      box.addEventListener('click', next);
+      next();
+    });
+  }
   var tab = 'moves';
   function showTab(t) {
     tab = t; $('tab-moves').classList.toggle('on', t === 'moves'); $('tab-team').classList.toggle('on', t === 'team'); $('tab-items').classList.toggle('on', t === 'items');
@@ -731,7 +750,7 @@
     else me.moves.forEach(function (slot, i) {
       var m = liveMove(me, M[slot.n]), mt = mvType(me, m), e = m.cat === '变化' ? 1 : effT(mt, foeTypes);
       html += '<button type="button" class="mv" data-mi="' + i + '"' + (lock || needMe || slot.pp <= 0 || moveBlocked(me, slot) ? ' disabled' : '') + ' style="--tc:' + TYPE_COLOR[mt] + '" title="' + esc(m.d) + '">' +
-        '<span class="t1"><span class="mn">' + (i + 1) + '. ' + m.name + (moveBlocked(me, slot) ? '（光影之月中不可用）' : '') + '</span><span class="pp">PP ' + slot.pp + '/' + slot.max + '</span></span>' +
+        '<span class="t1"><span class="mn">' + (i + 1) + '. ' + m.name + (moveBlocked(me, slot) ? '（' + blockWhy(me, slot) + '）' : '') + '</span><span class="pp">PP ' + slot.pp + '/' + slot.max + '</span></span>' +
         '<span class="t2">' + tchip(mt) + '<span>' + m.cat + (m.power ? ' · 威力' + m.power : '') + (m.pri ? ' · 先制+' + m.pri : '') + '</span>' +
         (hitBlocked(foe, mt) && (m.cat !== '变化' || targetsFoe(m)) ? '<span class="eff0">无法命中</span>' : e > 1 ? '<span class="eff2">克制 ×' + e + '</span>' : e < 1 ? '<span class="eff0">被抵抗 ×' + e + '</span>' : '') + '</span>' +
         '<span class="md">' + esc(m.d) + '</span></button>';
