@@ -1473,3 +1473,19 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .hm-bgm { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 10px 0 0; padding: 10px 12px; background: var(--paper-2); border: 1.5px solid var(--ink); border-radius: 12px; }
 .hm-bgm .seg label.dis { opacity: .55; cursor: not-allowed; }
 .hm-bgm .hint { flex: 1 1 220px; }
+
+/* ============ 主线章节 ============ */
+.q-chap { margin: 10px 0 2px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
+.q-chap:first-child { margin-top: 0; }
+.q-chap b { font-family: var(--f-hand); font-size: 22px; font-weight: 400; }
+.q-chap span { font-size: 12px; padding: 0 7px; border-radius: 999px; border: 1px solid var(--pencil); color: var(--pencil); }
+.q-chap span.ok { border-color: var(--blue); color: var(--blue); }
+.q-chap small { flex-basis: 100%; font-size: 12px; color: var(--pencil); }
+.vn-chap { margin: 4px 0; padding: 8px 12px; border: 1.5px dashed var(--red); border-radius: 12px; }
+.vn-chap > b { color: var(--red); font-size: 17px; }
+.vn-chap p { margin: 2px 0 4px; }
+.vn-mon.tw.plain img { filter: drop-shadow(0 3px 0 rgba(251,250,243,.9)) drop-shadow(0 -2px 0 rgba(251,250,243,.9)) drop-shadow(2px 0 0 rgba(251,250,243,.9)) drop-shadow(-2px 0 0 rgba(251,250,243,.9)); }
+.vn-mon.tw.plain figcaption { background: rgba(251,250,243,.92); color: var(--ink); border-color: var(--ink); }
+.spare-note { position: relative; margin: 10px 0; padding: 10px 14px; background: #fff4f0; border: 1.5px solid var(--red); border-radius: 12px; font-size: 14px; line-height: 1.6; }
+.spare-note > b:first-of-type { color: var(--red); }
+.site.fl-story.locked .site-img img { filter: grayscale(.6) brightness(.9); }

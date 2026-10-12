@@ -294,7 +294,16 @@ function log(S, evs, text, cls) { E(S, evs, 'text', { text: text, cls: cls || ''
 
 /* ---------- 基础操作 ---------- */
 function faint(S, evs, j) {
-  var t = act(S, j); t.fainted = true; t.hp = 0;
+  var t = act(S, j);
+  // 主线任务「引出猎杀者」：野生精灵不会倒下，体力剩 1 点时逃走（S.wild.spare）
+  if (j === 1 && S.wild && S.wild.spare && !S.pvp) {
+    t.hp = 1; t.fainted = false;
+    if (S.over === 'spared') return;
+    E(S, evs, 'hit', { side: j, amount: 0 });
+    log(S, evs, nm(t) + '只剩最后一口气，慌忙逃进了草丛里！', 'good');
+    S.over = 'spared'; E(S, evs, 'over', { result: 'spared' }); return;
+  }
+  t.fainted = true; t.hp = 0;
   E(S, evs, 'faint', { side: j }); log(S, evs, nm(t) + '倒下了！', 'bad');
 }
 function loseHp(S, evs, j, amt, why) {

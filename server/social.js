@@ -110,8 +110,8 @@ function homeOf(acc) {
   var open = !!(acc.story && acc.story.tea && acc.story.tea.done), h = acc.home || {};
   var cap = 3 + Math.min(4, int(h.cap, 0, 4));   // 茶室商店扩容：最多 7 只
   var mons = (Array.isArray(h.mons) ? h.mons : []).slice(0, cap).map(function (x) { return monByU(acc, x && typeof x === 'object' ? x.u : x); }).filter(Boolean);
-  // 茶室音乐：大厅（默认）/ 地球 / 芙罗拉星（击败普通难度荒芜才有）
-  var flora = !!(acc.bosses && acc.bosses['barren:1'] && acc.bosses['barren:1'].wins > 0);
+  // 茶室音乐：大厅（默认）/ 地球 / 芙罗拉星（主线第一章通关后才有）
+  var flora = !!((acc.chapters && acc.chapters.ch1) || (acc.mailSeen && acc.mailSeen['barren-bgm']));   // 主线第一章通关（之前击败普通荒芜拿到的也保留）
   var bgm = h.bgm === 'earth' || (h.bgm === 'flora' && flora) ? h.bgm : 'ui';
   return { open: open, name: str(h.name, 10) || '陆羽茶室', mons: open ? mons : [], bgm: bgm };
 }

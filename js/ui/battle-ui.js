@@ -817,10 +817,10 @@
       $('endcard').hidden = false; refreshCmd(); return;
     }
     $('btn-back').textContent = S.wild ? '返回' + S.wild.back : S.story ? (S.story.back ? '返回' + S.story.back : '继续剧情') : '回到背包'; $('btn-again').hidden = !!S.story;
-    $('end-title').textContent = r === 'caught' ? '捕捉成功！' : r === 'flee' ? '顺利逃走了' : r === 'win' ? '胜利！' : r === 'lose' ? '失败了' : '平局';
+    $('end-title').textContent = r === 'caught' ? '捕捉成功！' : r === 'flee' ? '顺利逃走了' : r === 'spared' ? '手下留情' : r === 'win' ? '胜利！' : r === 'lose' ? '失败了' : '平局';
     var left = aliveIdx(S, 0).length;
     var wf = S.wild && act(S, 1);
-    $('end-sub').textContent = S.wild ? (r === 'caught' ? '【' + (wf.nick || SPMAP[wf.id].name) + '】LV' + wf.lv + ' 已收入精灵仓库' : r === 'flee' ? '你带着精灵们离开了。' : r === 'win' ? '野生的' + (wf.nick || SPMAP[wf.id].name) + '倒下了，没能捕捉到它' : '你的精灵们都倒下了，先回去休整吧') + ' · 共 ' + (S.turn - 1) + ' 回合' : (S.story ? '与 ' + S.story.foe + ' 的对战 · 共 ' + (S.turn - 1) + ' 回合' : S.timeUp ? '达到 ' + MAX_TURNS + ' 回合上限，按剩余精灵数判定 · 你剩 ' + left + ' 只，对手剩 ' + aliveIdx(S, 1).length + ' 只' : '共 ' + (S.turn - 1) + ' 回合 · 你的背包还剩 ' + left + ' 只精灵能战斗');
+    $('end-sub').textContent = S.wild ? (r === 'caught' ? '【' + (wf.nick || SPMAP[wf.id].name) + '】LV' + wf.lv + ' 已收入精灵仓库' : r === 'flee' ? '你带着精灵们离开了。' : r === 'spared' ? '野生的' + (wf.nick || SPMAP[wf.id].name) + '只剩最后一口气，逃走了' : r === 'win' ? '野生的' + (wf.nick || SPMAP[wf.id].name) + '倒下了，没能捕捉到它' : '你的精灵们都倒下了，先回去休整吧') + ' · 共 ' + (S.turn - 1) + ' 回合' : (S.story ? '与 ' + S.story.foe + ' 的对战 · 共 ' + (S.turn - 1) + ' 回合' : S.timeUp ? '达到 ' + MAX_TURNS + ' 回合上限，按剩余精灵数判定 · 你剩 ' + left + ' 只，对手剩 ' + aliveIdx(S, 1).length + ' 只' : '共 ' + (S.turn - 1) + ' 回合 · 你的背包还剩 ' + left + ' 只精灵能战斗');
     // 账号精灵在这场战斗中领悟的隐藏技能
     var eh = $('end-hid'), got = []; eh.hidden = true; eh.innerHTML = '';
     if (S.story) S.sides[0].team.forEach(function (x) { (x.hqGot || []).forEach(function (n) { got.push({ u: x.u, mv: n, who: x.nick || SPMAP[x.id].name }); }); });
