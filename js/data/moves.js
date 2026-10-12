@@ -199,7 +199,7 @@ var M = {
   恐怖电容: { type: '电', cat: '变化', selfStage: { atk: 2 }, custom: 'capacitor', pp: 10, d: '提升2级物攻' },
   自爆: { type: '普通', cat: '变化', custom: 'selfDestruct', pp: 5, d: '牺牲自己，使对方疲惫2回合，降低对方1级物防、特防' },
   雷击: { type: '电', cat: '特攻', power: 120, acc: 60, hidden: true, status: { k: '麻痹', min: 1, max: 3, chance: 0.9 }, pp: 5, d: '威力120，90%概率使对方麻痹1-3回合，不易命中（命中60%）' },
-  舍身爆破: { type: '普通', cat: '物攻', power: 0, hidden: true, fixedOnly: 'selfBlast', pp: 5, d: '牺牲自己，造成等同于自身最大体力值的固定伤害' },
+  舍身爆破: { type: '普通', cat: '物攻', power: 0, hidden: true, fixedOnly: 'selfBlast', pp: 5, d: '牺牲自己，造成等同于自身当前体力值的固定伤害（不低于自身最大体力值的 1/3）' },
 
   // —— 幽冥水臂（水/暗影）
   幽冥息: { type: '暗影', cat: '特攻', power: 60, d: '威力60' },

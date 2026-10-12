@@ -502,7 +502,7 @@ function hitChance(me, foe, mv) {
 }
 function fixedAmount(me, foe, mv) {
   if (mv.fixedOnly === 'smile') return Math.floor((me.lv || LV) * 2.5);
-  if (mv.fixedOnly === 'selfBlast') return me.maxhp;
+  if (mv.fixedOnly === 'selfBlast') return Math.max(me.hp, Math.ceil(me.maxhp / 3));   // 等于当前体力，但不低于最大体力的 1/3
   return 0;
 }
 
