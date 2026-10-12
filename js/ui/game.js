@@ -1385,7 +1385,7 @@
     mails();
     (typeof MAILS !== 'undefined' ? MAILS : []).forEach(function (M0) {
       if (!M0 || !M0.id || acc.mailSeen[M0.id]) return;
-      if (M0.to && (!me || M0.to.indexOf(me) < 0)) return;
+      if (M0.to && !((me && M0.to.indexOf(me) >= 0) || M0.to.indexOf(acc.name) >= 0)) return;   // to 里写登录账号名或做题家名字都行
       if (M0.until && today > M0.until) return;
       if (sendMail(M0)) changed = true;
     });
