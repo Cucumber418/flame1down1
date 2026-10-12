@@ -83,7 +83,7 @@ var PRE_SPRITES = {
   "hauris_s2": "images/pre_sprites/hauris_s2.webp",
   "faraday_s1": "images/pre_sprites/faraday_s1.webp",
   "faraday_s2": "images/pre_sprites/faraday_s2.png",
-  "moon_s1": "images/pre_sprites/moon_s1.png",
+  "moon_s1": "images/pre_sprites/moon_s1.webp",
   "moon_s2": "images/pre_sprites/moon_s2.png",
   "frost_s1": "images/pre_sprites/frost_s1.png",
   "frost_s2": "images/pre_sprites/frost_s2.png",
