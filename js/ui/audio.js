@@ -16,7 +16,7 @@
  *   tigerFinal  泰戈尔困难最终形态：困难泰戈尔复活（东北的往事）之后切换成这首
  *   stage   关卡战斗：星球挑战的所有关卡
  *   pvp     竞技对战、切磋、精灵大乱斗
- * 还没用上的：flora2（芙罗拉星 2，留给之后的剧情高潮）
+ *   flora2  芙 2：芙罗拉星野外里比较明快的场景（枫树、草甸、湖畔）；比较黑暗深邃的场景（落叶小径、山毛榉林、林间阳光）放芙 1
  * 切歌时先淡出再淡入；界面音乐切回来时从上次停下的地方接着放。切到别的标签页会暂停。
  * 声音设置（战斗音乐、界面音乐两个开关和音量）存在这台设备的浏览器里，不跟账号同步。
  * 对外：window.HSAUDIO.play(战斗曲目) / stop(淡出毫秒) / scene(界面曲目)
@@ -29,7 +29,7 @@
     stage: 'audio/bgm_stage.mp3', flora2: 'audio/bgm_flora2.mp3', pvp: 'audio/bgm_pvp.mp3',
     ui: 'audio/bgm_ui.mp3', arena: 'audio/bgm_arena.mp3', earth: 'audio/bgm_earth.mp3', flora: 'audio/bgm_flora.mp3'
   };
-  var SCENES = { ui: 1, arena: 1, earth: 1, flora: 1 };
+  var SCENES = { ui: 1, arena: 1, earth: 1, flora: 1, flora2: 1 };
   var KEY = 'hs-sound-v1';
   var cfg = { music: true, ui: true, vol: 60 };
   try {

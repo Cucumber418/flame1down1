@@ -1346,6 +1346,7 @@
   /* 一个区域有好几个场景（有几张背景就有几个，至少 2 个），左右箭头切换；每个场景各有 4 个精灵位置。
    * 每只精灵各自计时：待一会儿（FIELD_LIFE）就淡出离开，隔一小段时间（FIELD_GAP）再在同一片范围里出现一只新的，互不影响。
    * 采集点：第 i 个放在第 i 个场景里（场景比采集点少时轮着放）。 */
+  var FLORA_BRIGHT = { fl_maple: 1, fl_meadow: 1, fl_lake: 1 };   // 芙罗拉星比较明快的场景（放芙罗拉星 2）；落叶小径、山毛榉林、林间阳光比较幽暗（放芙罗拉星 1）
   var FIELD_LIFE = [14000, 32000], FIELD_GAP = [1500, 6000], FIELD_FADE = 600;
   function between(r) { return r[0] + Math.random() * (r[1] - r[0]); }
   function fillSlot(R, F, slot, now, first) {
@@ -1359,7 +1360,7 @@
       var bgs = (R.bgs || []).filter(function (k) { return BG[k]; }), n = Math.max(2, bgs.length), now = Date.now();
       var F = fields[rid] = { seq: 0, scene: Math.floor(Math.random() * n), scenes: [] };
       for (var i = 0; i < n; i++) {
-        var sc = { bg: bgs.length ? BG[bgs[i % bgs.length]] : '', flip: i >= bgs.length && i % 2 === 1, slots: FIELD_SLOTS.map(function (s) { return { hx: s.hx, hy: s.hy, r: s.r, mon: null, next: 0 }; }) };
+        var sc = { bgKey: bgs.length ? bgs[i % bgs.length] : '', bg: bgs.length ? BG[bgs[i % bgs.length]] : '', flip: i >= bgs.length && i % 2 === 1, slots: FIELD_SLOTS.map(function (s) { return { hx: s.hx, hy: s.hy, r: s.r, mon: null, next: 0 }; }) };
         sc.slots.forEach(function (sl) { fillSlot(R, F, sl, now, true); });
         F.scenes.push(sc);
       }
@@ -3383,6 +3384,10 @@
     if (page === 'explore') {
       if (vnSite === 'flora') return 'flora';
       if (ex.view === 'sites' && ex.planet === 'flora') return 'flora';
+      if (ex.view === 'field' && fields[ex.region] && regionById(ex.region) && regionById(ex.region).planet === 'flora') {   // 芙罗拉星野外：明快的场景放芙 2，黑暗深邃的放芙 1
+        var fs_ = fields[ex.region].scenes[fields[ex.region].scene];
+        return fs_ && FLORA_BRIGHT[fs_.bgKey] ? 'flora2' : 'flora';
+      }
       if (ex.view === 'boss' && BOSSES[ex.boss] && BOSSES[ex.boss].planet === 'flora') return 'flora';
     }
     return 'ui';
