@@ -217,7 +217,7 @@ var M = {
   绿色射线: { type: '草', cat: '特攻', power: 65, d: '威力65' },
   凋零之蚀: { type: '草', cat: '变化', custom: 'wither', pp: 10, d: '使对方每回合损失1/24最大体力，持续到战斗结束；可以叠加，每层再多损失1/24，最多4层' },
   荒芜之触: { type: '草', cat: '特攻', power: 75, custom: 'weak3', d: '威力75，使对方伤害降低30%，持续3回合' },
-  寄生种子: { type: '草', cat: '变化', status: { k: '寄生', min: 5, max: 5, chance: 1 }, d: '使对方寄生5回合' },
+  寄生种子: { type: '草', cat: '变化', status: { k: '寄生', min: 5, max: 5, chance: 1, refresh: true }, d: '使对方寄生5回合；对方已经寄生时，寄生回合重置为5回合' },
   枯萎之壤: { type: '草', cat: '变化', tgtStage: { atk: -1, spa: -1, acc: -1 }, d: '降低对方1级物攻、特攻、命中' },
   腐败枷锁: { type: '草', cat: '变化', tgtStage: { spe: -1 }, custom: 'noBoostFoe', pp: 10, d: '降低对方1级速度，使对方5回合内无法提升能力等级' },
   灭却: { type: '普通', cat: '特攻', power: 1, hidden: true, custom: 'annihilate', pp: 2, d: '威力1，PP 2，秒杀成功后恢复本技能全部 PP；5%概率秒杀对方，对方存在的不利状态越多，成功率越高（每多1种不利状态 +10%，最高60%）' },

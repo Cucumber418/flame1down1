@@ -385,14 +385,14 @@ function changeStages(S, evs, i, obj, src) {
 }
 var CONTROL = { 害怕: 1, 石化: 1, 睡眠: 1, 麻痹: 1, 冰冻: 1, 疲惫: 1 };
 var CANT_ACT = { 害怕: '害怕得无法行动', 石化: '被石化了，无法行动', 睡眠: '正在睡觉', 麻痹: '身体麻痹，无法行动', 冰冻: '被冻住了，无法行动', 疲惫: '疲惫得无法行动' };
-function addStatus(S, evs, j, k, turns, src, noReflect) {
+function addStatus(S, evs, j, k, turns, src, noReflect, refresh) {
   var t = act(S, j); if (t.fainted) return;
   if (t.boss && t.boss.noStatus) { log(S, evs, nm(t) + '免疫异常状态，「' + k + '」没有效果'); return; }
   if (k === '寄生' && typesOf(t).indexOf('草') >= 0) { log(S, evs, nm(t) + '是草系精灵，不会被寄生'); return; }
   if (t.tm.reflect > 0) {
     if (!noReflect && src != null && !act(S, src).fainted) {
       log(S, evs, nm(t) + '的风王结界把「' + k + '」反弹了回去！', 'fxl');
-      addStatus(S, evs, src, k, turns, j, true);
+      addStatus(S, evs, src, k, turns, j, true, refresh);
     } else log(S, evs, nm(t) + '免疫了「' + k + '」');
     return;
   }
@@ -406,6 +406,8 @@ function addStatus(S, evs, j, k, turns, src, noReflect) {
     }
     t.fx.poison = 1;
   }
+  // refresh（如寄生种子）：对方已经处于这个状态时，把剩余回合重置
+  if (t.st[k] > 0 && refresh) { t.st[k] = turns; E(S, evs, 'stage', { side: j }); log(S, evs, nm(t) + '的「' + k + '」重置为 ' + turns + ' 回合', 'bad'); return; }
   if (t.st[k] > 0) { log(S, evs, nm(t) + '已经处于' + k + '状态'); return; }
   // 控制类状态：如果对方本回合已经行动过，额外+1回合，保证真的能控住
   t.st[k] = turns + (CONTROL[k] && S.turnActed[j] ? 1 : 0);
@@ -746,7 +748,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
     if (ability(me) === '收魂' && aliveIdx(S, j).length) { S.sides[j].soulMark = true; log(S, evs, nm(me) + '的「收魂」发动了，对方下一只精灵会更脆弱', 'fxl'); }
   } else {
     if (mv.tgtStage && RNG() < (mv.tgtChance || 1)) changeStages(S, evs, j, mv.tgtStage, i);
-    if (mv.status && statusRoll(me, mv.status.chance)) addStatus(S, evs, j, mv.status.k, rint(mv.status.min, mv.status.max), i);
+    if (mv.status && statusRoll(me, mv.status.chance)) addStatus(S, evs, j, mv.status.k, rint(mv.status.min, mv.status.max), i, false, mv.status.refresh);
     if (mv.clearTgtUp && RNG() < (mv.clearTgtChance || 1)) clearUps(S, evs, j);
     switch (mv.custom) {
       case 'brand':
@@ -840,7 +842,7 @@ function doStatus(S, evs, i, mv) {
       changeStages(S, evs, j, ts, i);
     }
     if (mv.status) {
-      if (statusRoll(me, mv.status.chance)) addStatus(S, evs, j, mv.status.k, rint(mv.status.min, mv.status.max), i);
+      if (statusRoll(me, mv.status.chance)) addStatus(S, evs, j, mv.status.k, rint(mv.status.min, mv.status.max), i, false, mv.status.refresh);
       else if (!mv.tgtStage) log(S, evs, '但是对方没有受到影响');
     }
   }
