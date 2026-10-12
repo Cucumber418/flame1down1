@@ -17,7 +17,7 @@ var M = {
   龙尾猛扫: { type: '龙', cat: '物攻', power: 75, d: '威力75' },
   巨龙之吼: { type: '龙', cat: '特攻', power: 70, pri: 1, clearTgtUp: true, d: '威力70，先制+1，消除对方能力提升效果' },
   龙之逆鳞: { type: '龙', cat: '变化', custom: 'nilin', pp: 5, d: '5回合内受到的伤害不会超过250，超出的部分等额反馈给对方' },
-  龙吟崩山震: { type: '龙', cat: '变化', tgtStage: { spd: -2 }, status: { k: '害怕', min: 1, max: 3, chance: 0.4 }, d: '降低对方2级特防，40%概率使对方害怕1-3回合' },
+  龙吟崩山震: { type: '龙', cat: '变化', tgtStage: { spd: -2 }, status: { k: '害怕', min: 1, max: 3, chance: 0.3 }, d: '降低对方2级特防，30%概率使对方害怕1-3回合' },
   巨龙堕天啸: { type: '龙', cat: '特攻', power: 105, custom: 'transferDown', pp: 10, d: '威力105，将自身的能力下降状态转移至对方身上' },
   亘古恒压: { type: '龙', cat: '变化', hidden: true, custom: 'genggu', pp: 5, d: '2回合内每回合提升1级特攻，每回合恢复1/6最大体力' },
   巨龙湮灭破: { type: '龙', cat: '特攻', power: 100, hidden: true, custom: 'lowHpDouble', pp: 10, d: '威力100，对方体力低于1/4时威力加倍' },
@@ -43,7 +43,7 @@ var M = {
   傲慢: { type: '普通', cat: '变化', custom: 'noSwitch', pp: 5, d: '5回合内使对方无法切换精灵' },
   灵光: { type: '普通', cat: '变化', selfStage: { spa: 2 }, d: '提升2级特攻' },
   海啸: { type: '水', cat: '特攻', power: 80, clearTgtUp: true, d: '威力80，消除对方能力提升效果' },
-  凝视: { type: '普通', cat: '变化', status: { k: '石化', min: 2, max: 3, chance: 0.6 }, d: '60%概率使对方石化2-3回合' },
+  凝视: { type: '普通', cat: '变化', status: { k: '石化', min: 2, max: 3, chance: 0.5 }, d: '50%概率使对方石化2-3回合' },
   水天一色: { type: '水', cat: '变化', custom: 'priorityUp', pp: 5, d: '5回合内所有技能先制+1' },
   灭生之潮: { type: '水', cat: '特攻', power: 85, hidden: true, tgtStage: { atk: -1, spa: -1 }, d: '威力85，降低对方1级物攻、特攻' },
   创生之潮: { type: '水', cat: '特攻', power: 70, hidden: true, selfStage: { spa: 1 }, heal: 1 / 4, pp: 10, d: '威力70，提升1级特攻，恢复1/4体力' },
@@ -75,7 +75,7 @@ var M = {
 
   // —— 帕努托尔（暗影）
   影刃: { type: '暗影', cat: '物攻', power: 55, d: '威力55' },
-  颤栗: { type: '暗影', cat: '变化', status: { k: '害怕', min: 2, max: 3, chance: 0.6 }, d: '60%概率使对方害怕2-3回合' },
+  颤栗: { type: '暗影', cat: '变化', status: { k: '害怕', min: 2, max: 3, chance: 0.5 }, d: '50%概率使对方害怕2-3回合' },
   原力光线: { type: '普通', cat: '特攻', power: 70, d: '威力70' },
   黑光: { type: '暗影', cat: '变化', tgtStage: { atk: -1, acc: -1 }, d: '降低对方1级物攻、命中' },
   灵魂之刃: { type: '暗影', cat: '物攻', power: 80, drain: 1 / 3, d: '威力80，造成伤害的1/3转化为体力恢复' },
@@ -113,7 +113,7 @@ var M = {
   // ===================== 第二批：15 只新精灵的技能 =====================
   // —— 豪瑞希德（超能）
   幻术: { type: '超能', cat: '特攻', power: 50, d: '威力50' },
-  魔眼: { type: '超能', cat: '变化', status: { k: '睡眠', min: 2, max: 3, chance: 0.6 }, d: '60%概率使对方睡眠2-3回合' },
+  魔眼: { type: '超能', cat: '变化', status: { k: '睡眠', min: 2, max: 3, chance: 0.5 }, d: '50%概率使对方睡眠2-3回合' },
   念力冲击: { type: '超能', cat: '特攻', power: 75, d: '威力75' },
   奥术护盾: { type: '超能', cat: '变化', selfStage: { spd: 2 }, d: '提升2级特防' },
   驱使念力: { type: '超能', cat: '变化', custom: 'nextCrit', pp: 10, d: '下回合必定致命一击' },
@@ -126,7 +126,7 @@ var M = {
 
   // —— 法拉第（电）
   电球: { type: '电', cat: '特攻', power: 50, d: '威力50' },
-  电磁波: { type: '电', cat: '变化', status: { k: '麻痹', min: 2, max: 3, chance: 0.6 }, d: '60%概率使对方麻痹2-3回合' },
+  电磁波: { type: '电', cat: '变化', status: { k: '麻痹', min: 2, max: 3, chance: 0.5 }, d: '50%概率使对方麻痹2-3回合' },
   屏障: { type: '普通', cat: '变化', selfStage: { spd: 1 }, d: '提升1级特防' },
   电浆炮: { type: '电', cat: '特攻', power: 70, d: '威力70' },
   聚雷: { type: '电', cat: '变化', selfStage: { spa: 1 }, d: '提升1级特攻' },
@@ -153,15 +153,15 @@ var M = {
   // —— 霜冻之冠（冰）
   冰刺: { type: '冰', cat: '物攻', power: 50, d: '威力50' },
   降温: { type: '冰', cat: '变化', tgtStage: { def: -1 }, d: '降低对方1级物防' },
-  霜冻结界: { type: '冰', cat: '特攻', power: 20, status: { k: '冰冻', min: 1, max: 3, chance: 0.6 }, d: '威力20，60%概率使对方冰冻1-3回合' },
+  霜冻结界: { type: '冰', cat: '特攻', power: 20, status: { k: '冰冻', min: 1, max: 3, chance: 0.5 }, d: '威力20，50%概率使对方冰冻1-3回合' },
   冰封: { type: '冰', cat: '变化', tgtStage: { spa: -1, spe: -1 }, d: '降低对方1级特攻、速度' },
   切裂: { type: '普通', cat: '物攻', power: 70, d: '威力70' },
-  冰冻打击: { type: '冰', cat: '物攻', power: 75, status: { k: '冰冻', min: 1, max: 3, chance: 0.35 }, d: '威力75，35%概率使对方冰冻1-3回合' },
+  冰冻打击: { type: '冰', cat: '物攻', power: 75, status: { k: '冰冻', min: 1, max: 3, chance: 0.25 }, d: '威力75，25%概率使对方冰冻1-3回合' },
   遁走: { type: '普通', cat: '变化', custom: 'dodgeOne', pp: 10, d: '闪避下1次攻击' },
   极寒冰刺: { type: '冰', cat: '物攻', power: 100, custom: 'iceSpike', d: '威力100，对方冰冻时威力提升50点' },
   冰雹: { type: '冰', cat: '变化', custom: 'hail', pp: 10, d: '5回合内对方每回合受到1/10最大体力值的固定伤害' },
   零度冰破: { type: '冰', cat: '物攻', power: 110, hidden: true, custom: 'zeroBreak', d: '威力110，对方冰冻时附带对方1/8最大体力的固定伤害' },
-  急冻打击: { type: '冰', cat: '物攻', power: 70, pri: 1, hidden: true, status: { k: '冰冻', min: 1, max: 3, chance: 0.4 }, d: '威力70，先制+1，40%概率使对方冰冻1-3回合' },
+  急冻打击: { type: '冰', cat: '物攻', power: 70, pri: 1, hidden: true, status: { k: '冰冻', min: 1, max: 3, chance: 0.3 }, d: '威力70，先制+1，30%概率使对方冰冻1-3回合' },
 
   // —— 蛮荒遗息（远古）
   秘术冲击: { type: '远古', cat: '特攻', power: 45, d: '威力45' },
@@ -193,12 +193,12 @@ var M = {
   电击: { type: '电', cat: '特攻', power: 40, d: '威力40' },
   磁力波: { type: '电', cat: '特攻', power: 20, tgtStage: { spe: -1 }, d: '威力20，降低对方1级速度' },
   雷切: { type: '电', cat: '物攻', power: 60, pri: 1, d: '威力60，先制+1' },
-  电磁脉冲: { type: '电', cat: '特攻', power: 70, status: { k: '麻痹', min: 1, max: 3, chance: 0.3 }, d: '威力70，30%概率使对方麻痹1-3回合' },
+  电磁脉冲: { type: '电', cat: '特攻', power: 70, status: { k: '麻痹', min: 1, max: 3, chance: 0.2 }, d: '威力70，20%概率使对方麻痹1-3回合' },
   雷光之锤: { type: '电', cat: '物攻', power: 90, d: '威力90' },
   电闪光: { type: '电', cat: '变化', tgtStage: { spe: -1, acc: -1 }, d: '降低对方1级速度、命中' },
   恐怖电容: { type: '电', cat: '变化', selfStage: { atk: 2 }, custom: 'capacitor', pp: 10, d: '提升2级物攻' },
   自爆: { type: '普通', cat: '变化', custom: 'selfDestruct', pp: 5, d: '牺牲自己，使对方疲惫2回合，降低对方1级物防、特防' },
-  雷击: { type: '电', cat: '特攻', power: 120, acc: 60, hidden: true, status: { k: '麻痹', min: 1, max: 3, chance: 1 }, pp: 5, d: '威力120，100%概率使对方麻痹1-3回合，不易命中（命中60%）' },
+  雷击: { type: '电', cat: '特攻', power: 120, acc: 60, hidden: true, status: { k: '麻痹', min: 1, max: 3, chance: 0.9 }, pp: 5, d: '威力120，90%概率使对方麻痹1-3回合，不易命中（命中60%）' },
   舍身爆破: { type: '普通', cat: '物攻', power: 0, hidden: true, fixedOnly: 'selfBlast', pp: 5, d: '牺牲自己，造成等同于自身最大体力值的固定伤害' },
 
   // —— 幽冥水臂（水/暗影）
@@ -224,10 +224,10 @@ var M = {
 
   // —— 玛西露姆（草）
   毒孢子: { type: '草', cat: '特攻', power: 30, status: { k: '中毒', min: 2, max: 4, chance: 0.5 }, d: '威力30，50%概率使对方中毒2-4回合' },
-  催眠孢子: { type: '草', cat: '特攻', power: 30, status: { k: '睡眠', min: 1, max: 3, chance: 0.5 }, d: '威力30，50%概率使对方睡眠1-3回合' },
+  催眠孢子: { type: '草', cat: '特攻', power: 30, status: { k: '睡眠', min: 1, max: 3, chance: 0.4 }, d: '威力30，40%概率使对方睡眠1-3回合' },
   毒雾: { type: '草', cat: '特攻', power: 70, custom: 'poisonBoost', d: '威力70，对中毒时伤害提升50%' },
   毒棘鞭: { type: '草', cat: '物攻', power: 75, custom: 'poisonBoost', d: '威力75，对中毒的敌人伤害提升50%' },
-  麻醉孢子: { type: '草', cat: '特攻', power: 30, status: { k: '麻痹', min: 1, max: 3, chance: 0.5 }, d: '威力30，50%概率使对方麻痹1-3回合' },
+  麻醉孢子: { type: '草', cat: '特攻', power: 30, status: { k: '麻痹', min: 1, max: 3, chance: 0.4 }, d: '威力30，40%概率使对方麻痹1-3回合' },
   孢子沼泽: { type: '草', cat: '变化', custom: 'swamp', pp: 10, d: '5回合内异常状态赋予成功率×1.5' },
   以毒攻毒: { type: '草', cat: '变化', hidden: true, custom: 'purge', pp: 5, d: '损失1/2现有体力，藉此清除自身一切不利状态' },
   渗透孢子: { type: '草', cat: '特攻', power: 100, hidden: true, custom: 'poisonHeart', pp: 10, d: '威力100，仅能命中中毒的敌人，命中后使其中毒叠加1层，并延长1回合持续时长' },
