@@ -254,3 +254,10 @@ var SHINY_SPRITES = {
   "leigong_s2": "images/shiny/leigong_s2.webp",
   "leigong": "images/shiny/leigong.webp"
 };
+
+// 剧情里出现的道具图（储存箱里的剧情道具也用这些图）
+var ITEM_IMG = {
+  "translator": "images/items/translator.webp",
+  "helmet": "images/items/helmet.webp",
+  "drone": "images/items/drone.webp"
+};

@@ -30,7 +30,7 @@
   app.rank = { r: 0, stars: 0, w: 0, l: 0, best: 0 };
   try { var savedR = JSON.parse(localStorage.getItem('hs-rank-v1') || 'null'); if (savedR && savedR.r != null) app.rank = savedR; } catch (e) {}
   try { var sm = localStorage.getItem('hs-mode'); if (sm === 'rank' || sm === 'brawl') app.mode = sm; } catch (e) {}
-  // 实战：每局系统给出两套强度相同的阵容，二选一
+  // 平衡排位：每局系统给出两套强度相同的阵容，二选一
   app.draft = null;
   try { var savedD = JSON.parse(localStorage.getItem('hs-draft-v1') || 'null'); if (savedD && savedD.opts) app.draft = savedD; } catch (e) {}
   function saveDraft() { try { localStorage.setItem('hs-draft-v1', JSON.stringify(app.draft)); } catch (e) {} }
@@ -70,7 +70,7 @@
       var R = app.rank, ladder = RANKS.map(function (n, i) { return '<li class="' + (i < R.r ? 'done' : i === R.r ? 'cur' : '') + '" style="--rc:' + RANK_COLOR[i] + '" title="' + n + '">' + n + '</li>'; }).join('');
       rc.innerHTML = '<div class="rc-main">' + rankBadge(R.r) + starsHTML(R.stars, R.r) +
         '<div class="rc-txt"><b>当前段位：' + RANKS[R.r] + '</b><span>对手特点：' + esc(rankDesc(R.r, R.stars)) + '</span>' +
-        '<span class="rc-rule">每局胜利获得 1 星，集满 3 星晋级；每局失败扣除 1 星，0 星时失败将降级。' + (R.r === RANKS.length - 1 ? '王者段位不封顶，星数越高，电脑越强、越会玩，对手阵容也会比你稍强（最多算到 ' + KING_CAP + ' 星）。' : '双方阵容的综合实力相当。') + '对手精灵在出场后才会揭晓。每局最多 ' + MAX_TURNS + ' 回合，届时剩余精灵多的一方获胜，数量相同则为平局，星数不变。</span></div>' +
+        '<span class="rc-rule">每局胜利获得 1 星，集满 3 星晋级；每局失败扣除 1 星，0 星时失败将降级。' + (R.r === RANKS.length - 1 ? '王者段位不封顶，星数越高，电脑越强、越会玩，对手阵容也会比你稍强（最多算到 ' + KING_CAP + ' 星）。' : '双方阵容的综合实力相当。') + (window.HSACC && HSACC.rankToday ? '每天前 ' + HSACC.RANK_EXP.n + ' 局各奖励 ' + HSACC.RANK_EXP.exp + ' 累积经验（认输不算），今天已领 ' + Math.min(HSACC.rankToday(), HSACC.RANK_EXP.n) + ' / ' + HSACC.RANK_EXP.n + ' 局。' : '') + '对手精灵在出场后才会揭晓。每局最多 ' + MAX_TURNS + ' 回合，届时剩余精灵多的一方获胜，数量相同则为平局，星数不变。</span></div>' +
         '<div class="rc-rec"><span>战绩：' + R.w + ' 胜 ' + R.l + ' 负</span><span>最高段位：' + RANKS[R.best || 0] + ((R.best || 0) === RANKS.length - 1 ? ' ' + Math.max(R.kingBest || 0, R.r === RANKS.length - 1 ? R.stars : 0) + ' 星' : '') + '</span><button type="button" class="btn ghost" id="btn-reset">' + (Date.now() - resetArmed < 3000 ? '再点一次确认' : '重置段位') + '</button></div></div>' +
         '<ol class="ladder">' + ladder + '</ol>';
     }
@@ -162,7 +162,7 @@
   }
   function rankOn() { return !!(app.S && app.S.mode === 'rank'); }
   function statTip(sd, hidden) {
-    if (hidden) return '<span class="chip sc lvc" tabindex="0">LV ??<span class="tip" role="tooltip"><b>' + esc(sd.name) + ' · 能力值未知</b>实战模式中不公开对手的具体能力值。<span class="tipx">' + RANKS[app.S.rankAt] + '段位的对手能力值 ×' + rankAI(app.S.rankAt).mult + '</span></span></span>';
+    if (hidden) return '<span class="chip sc lvc" tabindex="0">LV ??<span class="tip" role="tooltip"><b>' + esc(sd.name) + ' · 能力值未知</b>平衡排位中不公开对手的具体能力值。<span class="tipx">' + RANKS[app.S.rankAt] + '段位的对手能力值 ×' + rankAI(app.S.rankAt).mult + '</span></span></span>';
     var rows = sd.stats.map(function (r) {
       var stg = r.st ? '<span class="sg ' + (r.st > 0 ? 'up' : 'dn') + '">' + (r.st > 0 ? '+' : '') + r.st + '</span>' : '';
       var sub = r.raw != null && r.st ? '<span class="sr">原 ' + r.raw + '</span>' : (r.base != null ? '<span class="sr">种族 ' + r.base + '</span>' : '');
@@ -202,7 +202,7 @@
     $('btn-random').hidden = rank;
     $('bag-title').textContent = rank ? (drafting ? '本局阵容选择' : '本局出战阵容（阵容 ' + 'AB'[d.pick] + '）') : '我的背包';
     $('bag-hint').textContent = rank ? (drafting ? '点击精灵可在下方查看资料。' : '阵容已锁定。可拖动精灵调整出场顺序（第 1 位为首发），并为每只精灵选择 4 个技能。') : '拖动背包里的精灵可调整顺序（触屏长按后拖动），排在第 1 位的为首发。点击精灵即可选中并查看资料；选中后，卡片右上角可直接「移出」或「放进背包」。';
-    if (drafting) { renderDraft(); $('bag-msg').textContent = '请先选择一套阵容'; $('bag-msg').className = 'hint red'; $('btn-start').disabled = true; $('btn-start').textContent = '开始实战 · ' + RANKS[app.rank.r]; return; }
+    if (drafting) { renderDraft(); $('bag-msg').textContent = '请先选择一套阵容'; $('bag-msg').className = 'hint red'; $('btn-start').disabled = true; $('btn-start').textContent = '开始平衡排位 · ' + RANKS[app.rank.r]; return; }
     var html = '';
     for (var i = 0; i < 5; i++) {
       var id = B()[i];
@@ -218,13 +218,13 @@
     $('bag').innerHTML = html;
     var bad = B().filter(function (id) { return app.loadout[id].length !== 4; });
     var rank = app.mode === 'rank', need = rank && B().length < 5;
-    var msg = !B().length ? '背包中至少需要 1 只精灵' : need ? '实战需要携带 5 只精灵，尚缺 ' + (5 - B().length) + ' 只' : bad.length ? SPMAP[bad[0]].name + '尚需选满 4 个技能' :
+    var msg = !B().length ? '背包中至少需要 1 只精灵' : need ? '平衡排位需要携带 5 只精灵，尚缺 ' + (5 - B().length) + ' 只' : bad.length ? SPMAP[bad[0]].name + '尚需选满 4 个技能' :
       rank ? '阵容已就绪，对手阵容将在对战中逐一揭晓' : '已选 ' + B().length + ' 只，电脑将随机携带 5 只';
     $('bag-msg').textContent = msg;
     var blocked = !B().length || bad.length > 0 || need;
     $('bag-msg').className = 'hint' + (blocked ? ' red' : '');
     $('btn-start').disabled = blocked;
-    $('btn-start').textContent = rank ? '开始实战 · ' + RANKS[app.rank.r] : '开始对战';
+    $('btn-start').textContent = rank ? '开始平衡排位 · ' + RANKS[app.rank.r] : '开始对战';
   }
   function renderDex() {
     var quick = !training() && app.mode !== 'rank';
@@ -276,7 +276,7 @@
       '<span class="hint">鼠标移到「隐藏」上可看学习条件，试验版里可以直接选用</span></div>' +
       '<div class="mlist" id="mlist">' + s.moves.map(function (m) { return moveRow(m, s); }).join('') + s.hidden.map(function (m) { return moveRow(m, s); }).join('') + '</div></div>' +
       '<div class="d-actions">' +
-      (app.mode === 'rank' ? (inBag ? '<button class="btn" type="button" id="btn-lead"' + (B()[0] === s.id ? ' disabled' : '') + '>设为首发</button>' : '<span class="hint">实战模式中只能使用本局选定的阵容</span>') :
+      (app.mode === 'rank' ? (inBag ? '<button class="btn" type="button" id="btn-lead"' + (B()[0] === s.id ? ' disabled' : '') + '>设为首发</button>' : '<span class="hint">平衡排位中只能使用本局选定的阵容</span>') :
       inBag ? '<button class="btn" type="button" id="btn-lead"' + (B()[0] === s.id ? ' disabled' : '') + '>设为首发</button><button class="btn ghost" type="button" id="btn-remove">移出背包</button>'
         : '<button class="btn primary" type="button" id="btn-add"' + (B().length >= 5 ? ' disabled' : '') + '>放进背包</button>' + (B().length >= 5 ? '<span class="hint">背包已满 5 只，先移出一只</span>' : '')) +
       '</div>';
@@ -438,10 +438,10 @@
     if (S.training) return '竞技对战 · 训练';
     if (S.wild) return '野外 · ' + (S.wild.where || '');
     if (S.story) { var a0 = S.sides[1].team[0]; return S.story.foe === '首领' ? '首领战 · ' + (a0.nick || SPMAP[a0.id].name) : '对战 · ' + S.story.foe; }
-    return S.mode === 'rank' ? '竞技对战 · 实战' + RANKS[S.rankAt] : '竞技对战 · 沙盒';
+    return S.mode === 'rank' ? '竞技对战 · 平衡排位 · ' + RANKS[S.rankAt] : '竞技对战 · 沙盒';
   }
   function castFoe() { var S = app.S; return pvp ? pvp.foe : S.training ? '训练木桩' : S.wild ? '野生精灵' : S.story ? S.story.foe : '电脑'; }
-  // 发出去的快照：去掉能力值明细（太长，观众用不到）；实战里对手还没派出的精灵不公开
+  // 发出去的快照：去掉能力值明细（太长，观众用不到）；平衡排位里对手还没派出的精灵不公开
   function castSnap(sn) {
     var hide = rankOn();
     return { turn: sn.turn, sides: sn.sides.map(function (sd, i) {
@@ -519,7 +519,7 @@
     $('builder').hidden = true; $('battle').hidden = false; $('endcard').hidden = true;
     shownIds = [null, null]; castBegin();
     addLog('对手派出了【' + SPMAP[a[0].id].name + '】，你派出了【' + SPMAP[p[0].id].name + '】！', '');
-    if (rank) addLog('实战 · ' + RANKS[app.rank.r] + '段位 · 对手其余 4 只精灵尚未公开', 'turn');
+    if (rank) addLog('平衡排位 · ' + RANKS[app.rank.r] + '段位 · 对手其余 4 只精灵尚未公开', 'turn');
     else { addLog('对手背包：' + a.map(function (x) { return SPMAP[x.id].name; }).join('、'), 'dmg'); a.forEach(function (x) { addLog('　' + SPMAP[x.id].name + '：' + x.moves.map(function (n) { return M[n].name; }).join('、'), 'dmg'); }); }
     renderSnap(snap(app.S), true);
     showTab('moves'); refreshCmd();
@@ -839,7 +839,8 @@
     $('btn-again').textContent = rankOn() ? '下一局 · 重新选择阵容' : '同样的背包再来一局';
     $('endcard').hidden = false;
     refreshCmd();
-    if (!S.story && !S.evSent) { S.evSent = 1; if (window.HSEV) window.HSEV('arena', { rank: rankOn(), result: r }); }
+    if (!S.story && !S.evSent) { S.evSent = 1; var em = window.HSEV ? window.HSEV('arena', { rank: rankOn(), result: r, quit: !!S.quit }) : null; if (em) S.evMsg = em; }
+    if (S.evMsg) $('end-sub').textContent += ' · ' + S.evMsg;
   }
 
   $('mgrid').addEventListener('click', function (e) { var b = e.target.closest('[data-mi]'); if (b && !b.disabled) doTurn({ kind: 'move', i: +b.dataset.mi }); });

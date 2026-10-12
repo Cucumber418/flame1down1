@@ -166,7 +166,7 @@
       b.disabled = inB && (story || pg !== 'arena');
       if (lockA) b.setAttribute('aria-disabled', 'true'); else b.removeAttribute('aria-disabled');
       b.title = inB && b.disabled ? '对战进行中，结束后才能切换' : lockA ? (pg === 'dex' ? '读完星际探索 · 荆楚号 · 学院部的剧情后开放' : '读完星际探索 · 荆楚号的支线「孝感大厅」后开放') : '';
-      if (pg === 'arena') { b.classList.toggle('lockA', lockA); b.querySelector('small').textContent = lockA ? '完成孝感大厅支线后开放' : '沙盒调试 · 实战段位'; }
+      if (pg === 'arena') { b.classList.toggle('lockA', lockA); b.querySelector('small').textContent = lockA ? '完成孝感大厅支线后开放' : '沙盒调试 · 平衡排位'; }
       if (pg === 'dex') { b.classList.toggle('lockA', lockA); b.querySelector('small').textContent = lockA ? '在学院部解锁' : (acc ? '已点亮 ' + litCount() + ' / ' + DEX_ALL.length + ' 类' : '精灵图鉴'); }
     });
   }
@@ -417,8 +417,8 @@
   var MON_ORDER = ['evAny', 'evTagore', 'natTagore'], GEN_ORDER = ['trans', 'helmet', 'auto', 'rename', 'cap1', 'cap2', 'cap3', 'pot1', 'pot2'];
   // 剧情道具：主线里拿到的，不能使用也不会消耗
   var KEY_ITEMS = {
-    trans: { name: '精灵翻译器', d: 'Dr.黄 交给地面小队的小装置，人手一只。戴上它，就能和任何精灵简单地交流。' },
-    helmet: { name: '烟雾保护头盔', d: 'Bttp 用无人机空投下来的头盔，戴上后在浓密的瘴气里也能呼吸、看清路。很容易摔坏。' }
+    trans: { name: '精灵翻译器', d: '根据官方文件，这个翻译器能凭一己之力考到雅思 6.5 分。这样一来，翻译精灵的语言也一定能行吧……', img: 'translator' },
+    helmet: { name: '烟雾保护头盔', d: 'Bttp 用无人机空投下来的头盔，戴上后在浓密的瘴气里也能呼吸、看清路。很容易摔坏。', img: 'helmet' }
   };
   var BAG_ORDER = MON_ORDER.concat(GEN_ORDER);
   function itemFits(k, m) { var it = USE_ITEMS[k]; return !!(it && m && (!it.sid || it.sid === m.sid)); }
@@ -457,7 +457,8 @@
     if (ui.itSel === 'permit' && !wk) ui.itSel = null;
     var cell = function (k) {
       var use = !!USE_ITEMS[k] || k === 'rename' || k === 'auto';
-      return '<button type="button" class="ib-it' + (ui.itSel === k ? ' sel' : '') + (use ? ' use' : '') + '" data-itsel="' + k + '"><b>' + itemName(k) + '</b><span class="cnt">×' + acc.items[k] + '</span>' + (USE_ITEMS[k] ? '<small>精灵道具 · 可使用</small>' : KEY_ITEMS[k] ? '<small>剧情道具</small>' : use ? '<small>可使用</small>' : '<small>对战中使用</small>') + '</button>';
+      var kimg = KEY_ITEMS[k] && KEY_ITEMS[k].img && ITEM_IMG[KEY_ITEMS[k].img];
+      return '<button type="button" class="ib-it' + (ui.itSel === k ? ' sel' : '') + (use ? ' use' : '') + (kimg ? ' key' : '') + '" data-itsel="' + k + '">' + (kimg ? '<img class="ib-img" src="' + kimg + '" alt="">' : '') + '<b>' + itemName(k) + '</b><span class="cnt">×' + acc.items[k] + '</span>' + (USE_ITEMS[k] ? '<small>精灵道具 · 可使用</small>' : KEY_ITEMS[k] ? '<small>剧情道具</small>' : use ? '<small>可使用</small>' : '<small>对战中使用</small>') + '</button>';
     };
     var monCells = have.filter(function (k) { return USE_ITEMS[k]; }).map(cell), genCells = have.filter(function (k) { return !USE_ITEMS[k]; }).map(cell);
     if (wk) genCells.unshift('<button type="button" class="ib-it permit' + (ui.itSel === 'permit' ? ' sel' : '') + '" data-itsel="permit"><b>挑战许可</b><span class="cnt">' + pn + ' / ' + PERMIT.max + '</span><small>每周挑战用</small></button>');
@@ -472,7 +473,7 @@
       else if (k === 'rename') body = '<p>' + esc(SHOP_X.rename.d) + '</p><button type="button" class="btn primary" data-ituse="rename">使用改名卡</button>';
       else if (k === 'auto') body = '<p>' + esc(TEA_SHOP.auto.d) + '</p><button type="button" class="btn" data-itgo="home">去我的茶室装上</button>';
       else if (ITEMS[k]) body = '<p>' + esc(ITEMS[k].d) + '</p><p class="hint">在剧情、野外和首领对战的「道具」页使用，会占用一回合。</p>';
-      else if (KEY_ITEMS[k]) body = '<p>' + esc(KEY_ITEMS[k].d) + '</p><p class="hint">剧情道具，在主线剧情里获得。不能使用，也不会消耗。</p>';
+      else if (KEY_ITEMS[k]) body = (KEY_ITEMS[k].img && ITEM_IMG[KEY_ITEMS[k].img] ? '<img class="ib-big" src="' + ITEM_IMG[KEY_ITEMS[k].img] + '" alt="">' : '') + '<p>' + esc(KEY_ITEMS[k].d) + '</p><p class="hint">剧情道具，在主线剧情里获得。不能使用，也不会消耗。</p>';
       else if (it) {
         var mons = acc.mons.filter(function (m) { return !it.sid || m.sid === it.sid; }).sort(function (a, b) { return b.lv - a.lv; });
         if (!mons.some(function (m) { return m.u === ui.itTarget; })) ui.itTarget = mons.length ? mons[0].u : null;
@@ -1314,6 +1315,37 @@
     while (L.length > MAIL_MAX) { var k = -1; for (var i = L.length - 1; i >= 0; i--) if (L[i].read && L[i].got) { k = i; break; } if (k < 0) break; L.splice(k, 1); }
     return true;
   }
+  /* ---------- 登录奖励（都通过邮箱发） ----------
+   * 离线经验：距离上次在线超过 20 分钟再打开游戏，每离线 1 分钟给 6 点累积经验（游戏开着时每 2 分钟记一次在线时间）
+   * 每日登录：每天（北京时间）3000 累积经验；没登录的日子，下次登录时一起补发（从创建账号那天算起） */
+  var OFFLINE_GAP = 20 * 60000, OFFLINE_RATE = 6, LOGIN_EXP = 3000, onlineSeen = false;
+  function dayNum(t) { return Math.floor((t + 8 * 3600e3) / 86400000); }
+  function loginRewards() {
+    if (!ready()) return;
+    var now = Date.now(), last = acc.lastActive, dirty = false;
+    onlineSeen = true;
+    if (last && now - last > OFFLINE_GAP) {
+      var mins = Math.floor((now - last) / 60000), xp = mins * OFFLINE_RATE;
+      sendMail({ title: '离线经验', body: '{name}，欢迎回来！\n你离开了 ' + durText(mins) + '。这段时间里，精灵们也在自己训练：每分钟 ' + OFFLINE_RATE + ' 点累积经验，一共 ' + fmt(xp) + ' 点，请领取附件。', att: { exp: xp } });
+    }
+    if (!last || now - last > 60000) { acc.lastActive = now; dirty = true; }
+    var today = dayNum(now), from = acc.loginDay != null ? acc.loginDay + 1 : dayNum(acc.created || now);
+    if (from <= today) {
+      var miss = today - from;
+      if (miss > 0) sendMail({ id: 'login-back-' + today, title: '每日登录奖励补发（' + miss + ' 天）', body: '{name}，你好！\n每天登录都能领取 ' + fmt(LOGIN_EXP) + ' 累积经验。之前没有领到的 ' + miss + ' 天，现在一起补发，请领取附件。', att: { exp: miss * LOGIN_EXP } });
+      sendMail({ id: 'login-' + today, title: '每日登录奖励', body: '{name}，今天也欢迎登船！\n每天登录都能领取累积经验 ×' + fmt(LOGIN_EXP) + '，请领取附件。', att: { exp: LOGIN_EXP } });
+      acc.loginDay = today; dirty = true;
+    }
+    if (dirty) save();
+  }
+  function markOnline() { if (ready()) { acc.lastActive = Date.now(); save(); } }
+  setInterval(function () { if (ready() && onlineSeen) markOnline(); }, 120000);
+  document.addEventListener('visibilitychange', function () {
+    if (!ready()) return;
+    if (document.visibilityState === 'hidden') markOnline();
+    else { loginRewards(); renderMailBadge(); }   // 电脑睡眠后回来、跨过 0 点：补发离线经验和当天的登录奖励
+  });
+  window.addEventListener('pagehide', markOnline);
   function mailTodo() { return ready() ? mails().filter(function (m) { return !m.read || !m.got; }).length : 0; }
   function renderMailBadge() { var b = $('mail-badge'), n = mailTodo(); b.hidden = !n; b.textContent = n > 99 ? '99+' : n; }
   function deliverMail() {
@@ -1359,6 +1391,14 @@
       rec.kingGift = true; changed = true;
       if (rec.got[10]) sendMail({ id: SEASON + '-king-gift', title: '王者段位奖励补发：凶骨', body: '{name}，你好！\n排位赛季 ' + SEASON + ' 的王者段位奖励新增了 LV10 的凶骨。你之前已经达到王者，现在补发给你，请领取附件。', att: { mons: [{ sid: 'bone', lv: 10 }] } });
     }
+    // 每日任务奖励翻倍：今天已经按旧标准领过的任务，补发差额（之前的日子没有逐日记录，补不了）
+    var DL = daily();
+    if (DL) {
+      var de = 0, dn = 0;
+      DL.list.forEach(function (t) { if (t.x2) return; t.x2 = 1; changed = true; if (t.c && DAILY_OLD[t.id]) { de += DAILY[t.id].rw.exp - DAILY_OLD[t.id][0]; dn += DAILY[t.id].rw.energy - DAILY_OLD[t.id][1]; } });
+      if (de || dn) sendMail({ id: 'daily-x2-' + DL.date, title: '每日任务奖励翻倍补发', body: '{name}，你好！\n每日任务的奖励已经翻倍，而且每天变成了 7 个任务。今天你已经按旧标准领过的任务，现在补发差额，请领取附件。', att: { exp: de, energy: dn } });
+    }
+    loginRewards();
     if (changed) save();
     renderMailBadge();
   }
@@ -1415,18 +1455,23 @@
   $('mail-btn').addEventListener('click', openMailbox);
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && $('mailbox')) $('mailbox').remove(); });
 
-  /* ---------- 每日任务：每天 0:00 刷新，必定包含 3 个竞技对战任务 ---------- */
+  /* ---------- 每日任务：每天 0:00 刷新，一共 7 个：3 个竞技对战任务，开放了精灵大乱斗的话大概率有 1 个大乱斗任务，其余从探索类里抽 ----------
+   * 2026-10-12 起奖励翻倍（rw 里已经是翻倍后的数），当天已经领过的按差额补发到邮箱 */
+  var DAILY_N = 7, DAILY_BRAWL = 0.7;
   var DAILY = {
-    ar_play3: { t: '完成 3 场竞技对战（沙盒或实战都算）', kind: 'arena', n: 3, rw: { exp: 300, energy: 100 }, arena: 1 },
-    ar_rank2: { t: '完成 2 场实战', kind: 'rankPlay', n: 2, rw: { exp: 400, energy: 120 }, arena: 1 },
-    ar_win1: { t: '在实战中获胜 1 场', kind: 'rankWin', n: 1, rw: { exp: 500, energy: 150 }, arena: 1 },
-    ar_sand1: { t: '在沙盒模式完成 1 场对战', kind: 'sandbox', n: 1, rw: { exp: 200, energy: 80 }, arena: 1 },
-    wd_win5: { t: '击败 5 只野生精灵', kind: 'wildWin', n: 5, rw: { exp: 400, energy: 120 }, need: function () { return prog('flora1').done; } },
-    wd_catch1: { t: '捕捉 1 只野生精灵', kind: 'catch', n: 1, rw: { exp: 300, energy: 150 }, need: function () { return prog('flora1').done; } },
-    bs_1: { t: '挑战 1 次首领（胜负都算）', kind: 'boss', n: 1, rw: { exp: 300, energy: 100 }, need: function () { return bossOpen('tiger') || bossOpen('barren'); } },
-    hm_1: { t: '从茶室收回 1 只展示满 1 小时的精灵', kind: 'home', n: 1, rw: { exp: 300, energy: 100 }, need: function () { return homeOpen(); } },
-    pve_2: { t: '完成 2 场剧情、野外或首领对战', kind: 'pve', n: 2, rw: { exp: 300, energy: 100 } }
+    ar_play3: { t: '完成 3 场竞技对战（沙盒或平衡排位都算）', kind: 'arena', n: 3, rw: { exp: 600, energy: 200 }, arena: 1 },
+    ar_rank2: { t: '完成 2 场平衡排位', kind: 'rankPlay', n: 2, rw: { exp: 800, energy: 240 }, arena: 1 },
+    ar_win1: { t: '在平衡排位中获胜 1 场', kind: 'rankWin', n: 1, rw: { exp: 1000, energy: 300 }, arena: 1 },
+    ar_sand1: { t: '在沙盒模式完成 1 场对战', kind: 'sandbox', n: 1, rw: { exp: 400, energy: 160 }, arena: 1 },
+    bw_1: { t: '完成 1 场精灵大乱斗', kind: 'brawl', n: 1, rw: { exp: 1000, energy: 300 }, brawl: 1 },
+    bw_win1: { t: '在精灵大乱斗中获胜 1 场', kind: 'brawlWin', n: 1, rw: { exp: 1200, energy: 360 }, brawl: 1 },
+    wd_win5: { t: '击败 5 只野生精灵', kind: 'wildWin', n: 5, rw: { exp: 800, energy: 240 }, need: function () { return prog('flora1').done; } },
+    wd_catch1: { t: '捕捉 1 只野生精灵', kind: 'catch', n: 1, rw: { exp: 600, energy: 300 }, need: function () { return prog('flora1').done; } },
+    bs_1: { t: '挑战 1 次首领（胜负都算）', kind: 'boss', n: 1, rw: { exp: 600, energy: 200 }, need: function () { return bossOpen('tiger') || bossOpen('barren'); } },
+    hm_1: { t: '从茶室收回 1 只展示满 1 小时的精灵', kind: 'home', n: 1, rw: { exp: 600, energy: 200 }, need: function () { return homeOpen(); } },
+    pve_2: { t: '完成 2 场剧情、野外或首领对战', kind: 'pve', n: 2, rw: { exp: 600, energy: 200 } }
   };
+  var DAILY_OLD = { ar_play3: [300, 100], ar_rank2: [400, 120], ar_win1: [500, 150], ar_sand1: [200, 80], wd_win5: [400, 120], wd_catch1: [300, 150], bs_1: [300, 100], hm_1: [300, 100], pve_2: [300, 100] };   // 翻倍前的奖励（补差额用）
   function todayKey() { var d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
   function seededRng(str) { var x = 7; for (var i = 0; i < str.length; i++) x = (x * 31 + str.charCodeAt(i)) % 2147483647; return function () { x = (x * 48271) % 2147483647; return x / 2147483647; }; }
   function pickN(list, n, rnd) { var a = list.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(rnd() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; } return a.slice(0, n); }
@@ -1434,15 +1479,31 @@
     if (!ready()) return null;
     var k = todayKey();
     if (!acc.daily || acc.daily.date !== k) {
-      var rnd = seededRng(k + acc.name), ids = Object.keys(DAILY);
-      var ar = ids.filter(function (id) { return DAILY[id].arena; });
-      var other = ids.filter(function (id) { return !DAILY[id].arena && id !== 'pve_2' && (!DAILY[id].need || DAILY[id].need()); });
-      var pick = pickN(ar, 3, rnd).concat(pickN(other, 2, rnd));
-      while (pick.length < 5) pick.push('pve_2');
-      acc.daily = { date: k, list: pick.slice(0, 5).map(function (id) { return { id: id, p: 0, c: 0 }; }) };
+      acc.daily = { date: k, list: dailyPick(k, []).map(function (id) { return { id: id, p: 0, c: 0, x2: 1 }; }) };
+      save();
+    }
+    // 旧版（5 个任务）的今天：补到 7 个，进度保留
+    if (acc.daily.list.length < DAILY_N) {
+      var have = acc.daily.list.map(function (t) { return t.id; });
+      dailyPick(k, have).filter(function (id) { return have.indexOf(id) < 0; }).slice(0, DAILY_N - have.length).forEach(function (id) { acc.daily.list.push({ id: id, p: 0, c: 0, x2: 1 }); });
       save();
     }
     return acc.daily;
+  }
+  function dailyPick(k, keep) {
+    var rnd = seededRng(k + acc.name), ids = Object.keys(DAILY), pick = keep.slice();
+    var add = function (list, n) { pickN(list.filter(function (id) { return pick.indexOf(id) < 0; }), n, rnd).forEach(function (id) { pick.push(id); }); };
+    var ok = function (id) { return !DAILY[id].need || DAILY[id].need(); };
+    var ar = ids.filter(function (id) { return DAILY[id].arena; });
+    var bw = brawlOpen() ? ids.filter(function (id) { return DAILY[id].brawl; }) : [];
+    var other = ids.filter(function (id) { return !DAILY[id].arena && !DAILY[id].brawl && ok(id); });
+    var arN = pick.filter(function (id) { return DAILY[id] && DAILY[id].arena; }).length;
+    add(ar, Math.max(0, 3 - arN));
+    if (bw.length && !pick.some(function (id) { return DAILY[id] && DAILY[id].brawl; }) && rnd() < DAILY_BRAWL) add(bw, 1);
+    add(other, DAILY_N - pick.length);
+    add(ar, DAILY_N - pick.length);   // 探索类不够时，用剩下的竞技任务补
+    add(bw, DAILY_N - pick.length);
+    return pick.slice(0, DAILY_N);
   }
   function dailyHit(kind, n) {
     var D = daily(); if (!D) return; var done = [];
@@ -1465,16 +1526,24 @@
     if (type !== 'arena') return;
     dailyHit('arena');
     if (d.rank) { dailyHit('rankPlay'); if (d.result === 'win') dailyHit('rankWin'); } else dailyHit('sandbox');
+    // 平衡排位：每天前 10 局各给 600 累积经验（认输不算）
+    if (d.rank && !d.quit) {
+      var n = rankToday();
+      if (n < RANK_EXP_N) { acc.rankExp = { d: bjDay(), n: n + 1 }; acc.exp = (acc.exp || 0) + RANK_EXP; save(); renderRes(); return '平衡排位奖励：累积经验 +' + fmt(RANK_EXP) + '（今天第 ' + (n + 1) + ' / ' + RANK_EXP_N + ' 局）'; }
+      return '今天的 ' + RANK_EXP_N + ' 局平衡排位经验已经领完了';
+    }
   };
+  var RANK_EXP = 600, RANK_EXP_N = 10;
+  function rankToday() { return acc && acc.rankExp && acc.rankExp.d === bjDay() ? acc.rankExp.n || 0 : 0; }
   function dailyHTML() {
     var D = daily(); if (!D) return '';
     return '<ul class="daily">' + D.list.map(function (t, i) {
       var d = DAILY[t.id], ok = t.p >= d.n, lock = d.arena && !arenaOpen();
-      return '<li class="dl' + (t.c ? ' done' : ok ? ' ok' : '') + '">' + (d.arena ? '<span class="chip dl-tag">竞技</span>' : '<span class="chip dl-tag ex">探索</span>') +
+      return '<li class="dl' + (t.c ? ' done' : ok ? ' ok' : '') + '">' + (d.brawl ? '<span class="chip dl-tag bw">大乱斗</span>' : d.arena ? '<span class="chip dl-tag">竞技</span>' : '<span class="chip dl-tag ex">探索</span>') +
         '<span class="dl-t"><b>' + esc(d.t) + '</b><small>奖励：累积经验 ×' + fmt(d.rw.exp) + '、能量 ×' + fmt(d.rw.energy) + (lock ? ' · 完成孝感大厅支线后才能进行竞技对战' : '') + '</small></span>' +
         '<span class="dl-p"><i style="width:' + Math.round(t.p / d.n * 100) + '%"></i><em>' + t.p + ' / ' + d.n + '</em></span>' +
         (t.c ? '<span class="dl-st">已领取</span>' : ok ? '<button type="button" class="btn primary" data-dclaim="' + i + '">领取</button>' : '<span class="dl-st">进行中</span>') + '</li>';
-    }).join('') + '</ul><p class="hint">每天 0:00 刷新。每天必定有 3 个竞技对战任务，另外 2 个从探索类任务里抽取。</p>';
+    }).join('') + '</ul><p class="hint">每天 0:00 刷新。每天 7 个：必定有 3 个竞技对战任务，开放精灵大乱斗后经常会有 1 个大乱斗任务，其余从探索类任务里抽取。</p>';
   }
 
   /* ---------- 航行日志：活动、每日任务、排位奖励、下期预告 ---------- */
@@ -2249,6 +2318,7 @@
     var img = function (sid, cls, label) { return '<figure class="vn-mon ' + cls + '"><img src="' + form({ sid: sid, lv: START_LV }).img + '" alt=""><figcaption>' + esc(label) + '</figcaption></figure>'; };
     if (mode === 'all') return STARTERS.map(function (sid, i) { return img(sid, ['a1', 'a2', 'a3'][i], monName(sid)); }).join('');
     if (mode && mode.indexOf('tw:') === 0) { var tsid = mode.slice(3); return '<figure class="vn-mon tw"><img src="' + form({ sid: tsid, lv: 3 }).img + '" alt=""><figcaption>被污染的' + esc(form({ sid: tsid, lv: 3 }).name) + '</figcaption></figure>'; }
+    if (mode && mode.indexOf('item:') === 0) { var ip = mode.split(':'); return ITEM_IMG[ip[1]] ? '<figure class="vn-mon tw plain item"><img src="' + ITEM_IMG[ip[1]] + '" alt=""><figcaption>' + esc(ip[2] || '') + '</figcaption></figure>' : ''; }   // item:道具图:标签（剧情里出现的道具）
     if (mode && mode.indexOf('mon:') === 0) { var mp = mode.split(':'); return '<figure class="vn-mon tw plain"><img src="' + form({ sid: mp[1], lv: +mp[2] || 1 }).img + '" alt=""><figcaption>' + esc(mp[3] || form({ sid: mp[1], lv: +mp[2] || 1 }).name) + '</figcaption></figure>'; }   // mon:精灵:等级:标签
     if (mode === 'mine' && acc.starter) return img(acc.starter, 'me', starterName());
     if (mode === 'pair' && acc.starter) return img(acc.starter, 'me', starterName()) + (acc.rival ? img(acc.rival, 'rv', monName(acc.rival)) : '');
@@ -2432,6 +2502,7 @@
   function brawlReward(result, noReward) {
     if (!acc.stats) acc.stats = {};
     var first = !brawlPlayed();
+    if (!noReward) { dailyHit('brawl'); if (result === 'win') dailyHit('brawlWin'); }
     if (!noReward) { acc.stats.brawls = (acc.stats.brawls || 0) + 1; if (first) setTimeout(function () { toast('支线「精灵大乱斗」完成！随时可以再来和其他船员打大乱斗。'); }, 4200); }
     var want = noReward ? 0 : result === 'win' ? BRAWL_WIN : BRAWL_LOSE, had = brawlToday(), give = Math.max(0, Math.min(want, BRAWL_CAP - had));
     if (give > 0) { acc.brawlExp = { d: bjDay(), n: had + give }; acc.exp = (acc.exp || 0) + give; renderRes(); }
@@ -2445,6 +2516,7 @@
     titleName: titleName, mon: mon, fmt: fmt,
     npcPlan: npcPlan, npcHome: npcHome,
     sendMail: sendMail, openMailbox: openMailbox,
+    rankToday: rankToday, RANK_EXP: { exp: RANK_EXP, n: RANK_EXP_N },
     brawlOpen: brawlOpen, brawlSpec: brawlSpec, brawlReward: brawlReward, brawlToday: brawlToday, BRAWL: { win: BRAWL_WIN, lose: BRAWL_LOSE, cap: BRAWL_CAP, lv: BRAWL_LV },
     // 平衡模式切磋：LV60、性格无修正、没有学习力和纹章，技能可以从全部技能里选（没选就用竞技对战里记住的配招）
     balSpec: function (raw) {

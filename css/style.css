@@ -1489,3 +1489,10 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .spare-note { position: relative; margin: 10px 0; padding: 10px 14px; background: #fff4f0; border: 1.5px solid var(--red); border-radius: 12px; font-size: 14px; line-height: 1.6; }
 .spare-note > b:first-of-type { color: var(--red); }
 .site.fl-story.locked .site-img img { filter: grayscale(.6) brightness(.9); }
+.vn-mon.item img { max-width: 260px; }
+.ib-it.key { grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; }
+.ib-it.key .ib-img { grid-row: span 2; }
+.ib-img { width: 40px; height: 40px; object-fit: contain; }
+.ib-big { display: block; max-width: 180px; max-height: 140px; object-fit: contain; margin: 0 auto 8px; }
+.chip.dl-tag.bw { color: #8a3a12; border-color: #e08a2e; background: #fbe8d6; }
+.vn-mon.item { height: 150%; }
