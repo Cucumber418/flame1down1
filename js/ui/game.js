@@ -37,6 +37,7 @@
       if (!(m.exp >= expAt(m.lv))) m.exp = expAt(m.lv);
       // 隐藏技能改为战斗中领悟：旧存档里已经装备着的隐藏技能视为已领悟
       if (Array.isArray(m.moves)) m.moves = m.moves.map(moveName);   // 改过名字的技能换成新名字
+      if (Array.isArray(m.hl)) m.hl = m.hl.map(moveName);
       if (!Array.isArray(m.hl)) m.hl = (m.moves || []).filter(function (n) { return M[n] && M[n].hidden && LEARN[n]; });
       var a = avail(m.sid, m.lv, m.hl); m.moves = (m.moves || []).filter(function (n) { return a.indexOf(n) >= 0; });
       if (!m.moves.length) m.moves = defaultMoves(m.sid, m.lv, m.hl);
@@ -2731,7 +2732,7 @@
     b: { name: 'Bttp', pron: '他', img: 'bttp', fixed: [{ slot: 2, sid: 'bone' }], away: '他每天会在某个时间回房间待一阵子。',
       lines: [['god', '神已经算到你会来了。'], ['', '我的精灵排序是有讲究的，尤其是第三只。'], ['smile', '要不要验证一下你最近的进步？来吧。']] }
   };
-  // 随机池：竞技对战的 24 只，去掉剧情里还没揭晓的首领「荒芜」和神秘精灵「豪瑞希德」（避免提前在黄冈秘鉴里解锁名字）
+  // 随机池：竞技对战的 24 只，去掉剧情里还没揭晓的首领「荒芜」和神秘精灵「哈尔达蒙」（避免提前在黄冈秘鉴里解锁名字）
   var NPC_SECRET = ['barren', 'hauris'];
   var NPC_POOL = SP.map(function (x) { return x.id; }).filter(function (id) { return SPMAP[id] && SPRITES[id] && NPC_SECRET.indexOf(id) < 0; });
   function bjNow() { return new Date(Date.now() + 8 * 3600e3); }

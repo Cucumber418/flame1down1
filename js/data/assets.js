@@ -13,7 +13,7 @@ var SPRITES = {
   "pluto": "images/sprites/pluto.png",
   "pede": "images/sprites/pede.png",
   "tagore": "images/sprites/tagore.webp",
-  "hauris": "images/sprites/hauris.png",
+  "hauris": "images/sprites/hauris.webp",
   "faraday": "images/sprites/faraday.png",
   "moon": "images/sprites/moon.png",
   "frost": "images/sprites/frost.png",
@@ -273,7 +273,8 @@ var SHINY_SPRITES = {
   "leigong_s2": "images/shiny/leigong_s2.webp",
   "leigong": "images/shiny/leigong.webp",
   "hauris_s1": "images/shiny/hauris_s1.webp",
-  "hauris_s2": "images/shiny/hauris_s2.webp"
+  "hauris_s2": "images/shiny/hauris_s2.webp",
+  "hauris": "images/shiny/hauris.webp"
 };
 
 // 剧情里出现的道具图（储存箱里的剧情道具也用这些图）
