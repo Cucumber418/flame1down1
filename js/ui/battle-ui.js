@@ -478,11 +478,18 @@
   }
   function castFx(o) { if (CAST.on) { CAST.fx.push(o); castQueue(); } }
   // 有几个人在看
+  var castNames = [];
   function castViewers(n, names) {
     var el = $('cast-n'); if (!el) return;
-    el.hidden = !n || !CAST.on; el.textContent = n ? '👁 ' + n + ' 人观战中' : '';
-    el.title = (names || []).join('、');
+    castNames = names || [];
+    el.hidden = !n || !CAST.on; el.textContent = n ? '👁 ' + n : '';
+    el.title = n ? n + ' 人观战中，点击查看是谁' : '';
+    var pop = $('cast-pop'); if (pop && !pop.hidden) drawCastPop();
+    if (!n && pop) pop.hidden = true;
   }
+  function drawCastPop() { var pop = $('cast-pop'); pop.innerHTML = '<b>' + castNames.length + ' 人观战中</b>' + (castNames.length ? '<ul>' + castNames.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : ''); }
+  $('cast-n').addEventListener('click', function (e) { e.stopPropagation(); var pop = $('cast-pop'); pop.hidden = !pop.hidden; if (!pop.hidden) drawCastPop(); });
+  document.addEventListener('click', function () { var pop = $('cast-pop'); if (pop) pop.hidden = true; });
   function startTraining() {
     var id = app.sel; bgm('pvp');
     app.S = newTraining({ id: id, moves: app.loadout[id].slice() }, app.train.lv, app.train.def);

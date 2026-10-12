@@ -305,9 +305,13 @@ function prepNext(m) {
 
 /* ---------- 观战 ---------- */
 var CAST_LOG = 80, INVITE_GAP = 60 * 1000;
+function viewerNames(C) { return C.viewers.map(function (v) { return gameName(v.user); }).filter(function (x, i, a) { return a.indexOf(x) === i; }).slice(0, 50); }
+// 观众有变化：告诉对战的人，也告诉每个观众（大家都能看到谁在看）
 function castViewers(w) {
   var C = w.cast; if (!C) return;
-  out(w, { type: 'cast-viewers', n: C.viewers.length, names: C.viewers.map(function (v) { return gameName(v.user); }).filter(function (x, i, a) { return a.indexOf(x) === i; }).slice(0, 20) });
+  var names = viewerNames(C), n = names.length;
+  out(w, { type: 'cast-viewers', n: n, names: names });
+  C.viewers.forEach(function (v) { out(v, { type: 'watch', op: 'viewers', user: w.user, n: n, names: names }); });
 }
 function unwatch(v) {
   var w = v.watching; v.watching = null;
@@ -347,7 +351,8 @@ function onCast(ws, msg) {
 }
 function sendFull(v, w) {
   var C = w.cast;
-  out(v, { type: 'watch', op: 'full', user: w.user, head: C.head, snap: C.snap, log: C.log, n: C.viewers.length });
+  var names = viewerNames(C);
+  out(v, { type: 'watch', op: 'full', user: w.user, head: C.head, snap: C.snap, log: C.log, n: names.length, names: names });
 }
 function canWatch(ws, name) {
   var me = A.loadUser(ws.user), w = castOf(name);

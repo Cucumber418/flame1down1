@@ -807,13 +807,18 @@
     watchClose(true);
     var p = (st.players || []).filter(function (x) { return x.user === user; })[0];
     st.watch = { user: user, name: p && p.name || user, head: null, ready: false, shown: [null, null] };
-    var d = dialog('watch', '<div class="wt-head"><div><span class="step" id="wt-label">观战</span><h2 id="wt-title">' + esc(st.watch.name) + ' 的对战</h2></div><span class="wt-n" id="wt-n"></span><button type="button" class="btn ghost" data-wx="1">退出观战</button></div>' +
+    var d = dialog('watch', '<div class="wt-head"><div><span class="step" id="wt-label">观战</span><h2 id="wt-title">' + esc(st.watch.name) + ' 的对战</h2></div><span class="cast-wrap wt-wrap"><button type="button" class="cast-n" id="wt-n" title="点击查看谁在观战"></button><span class="cast-pop" id="wt-pop" hidden></span></span><button type="button" class="btn ghost" data-wx="1">退出观战</button></div>' +
       '<div class="wt-stage"><div class="plates"><div class="plate" id="wt-p0"></div><div class="vs">第<b id="wt-turn">1</b>回合</div><div class="plate r" id="wt-p1"></div></div>' +
       '<div class="field wt-field"><div class="mon p0" id="wt-m0"><div class="ground"></div><div class="face"><img alt=""></div></div><div class="mon p1" id="wt-m1"><div class="ground"></div><div class="face"><img alt=""></div></div>' +
       '<div class="banner" id="wt-banner"></div><div class="wt-wait" id="wt-wait">正在连接对战画面……</div><div class="endcard" id="wt-end" hidden><div class="box"><h3 id="wt-end-t"></h3><p class="hint" id="wt-end-s"></p><div class="row"><button type="button" class="btn" data-wx="1">关闭</button></div></div></div></div>' +
       '<div class="logbox"><h4>战斗记录</h4><div class="log" id="wt-log"></div></div></div>', function (el) {
         el.dataset.sticky = '1';
-        el.addEventListener('click', function (e) { if (e.target.closest('[data-wx]')) watchClose(); });
+        el.addEventListener('click', function (e) {
+          if (e.target.closest('[data-wx]')) { watchClose(); return; }
+          var pop = el.querySelector('#wt-pop');
+          if (e.target.closest('#wt-n')) { pop.hidden = !pop.hidden; wtViewers(); return; }
+          if (!e.target.closest('#wt-pop')) pop.hidden = true;
+        });
       });
     st.watch.dlg = d;
     send({ type: 'watch-start', user: user });
@@ -824,6 +829,13 @@
     if (!W.over) send({ type: 'watch-stop' });
   }
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && st.watch) watchClose(); });
+  // 观众名单：小眼睛上显示人数，点开看是谁（自己标「你」）
+  function wtViewers() {
+    var W = st.watch; if (!W) return;
+    var me = A.acc() && A.acc().name, list = W.viewers || [];
+    var b = $('wt-n'); if (b) b.textContent = '👁 ' + list.length;
+    var pop = $('wt-pop'); if (pop && !pop.hidden) pop.innerHTML = '<b>' + list.length + ' 人在观战</b><ul>' + list.map(function (x) { return '<li>' + esc(x) + (x === me ? '（你）' : '') + '</li>'; }).join('') + '</ul>';
+  }
   function wtLog(list) {
     var lg = $('wt-log'); if (!lg) return;
     lg.insertAdjacentHTML('beforeend', list.map(function (x) { return '<p class="' + esc(x[1] || '') + '">' + esc(you(x[0])).replace(/【(.+?)】/g, '<b>$1</b>') + '</p>'; }).join(''));
@@ -872,13 +884,14 @@
       W.head = m.head; W.name = (m.head && m.head.name) || W.name; W.ready = true; W.shown = [null, null];
       $('wt-label').textContent = '观战 · ' + ((m.head && m.head.label) || '对战');
       $('wt-title').textContent = W.name + ' vs ' + ((m.head && m.head.foe) || '对手');
-      $('wt-n').textContent = (m.n || 1) + ' 人在看';
+      W.viewers = m.names || []; wtViewers();
       $('wt-log').innerHTML = ''; wtLog(m.log || []);
       $('wt-end').hidden = true;
       if (m.snap) wtSnap(m.snap); else $('wt-wait').textContent = '对战刚开始，等待画面……';
       return;
     }
     if (m.op === 'f') { if (m.log && m.log.length) wtLog(m.log); if (m.snap) wtSnap(m.snap); wtFx(m.fx); return; }
+    if (m.op === 'viewers') { W.viewers = m.names || []; wtViewers(); return; }
     if (m.op === 'end') {
       W.over = true;
       $('wt-end-t').textContent = '对战结束';
