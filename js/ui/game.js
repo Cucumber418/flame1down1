@@ -1707,7 +1707,7 @@
     var fake = { boss: L.boss || {}, hp: L.hp }, out = [];
     if (L.only) out.push(['【元素亲和】', '只有' + L.only.join('、') + '系技能才能命中它']);
     var known = !!(acc.seenFx && acc.seenFx.past);
-    if (L.boss) BOSS_FX.forEach(function (f) { if (L.boss[f.k] && !(f.k === 'past' && !known)) out.push(['【' + f.h + '】', f.d(fake).split('\n')[0]]); });
+    if (L.boss) BOSS_FX.forEach(function (f) { if (L.boss[f.k]) out.push(f.k === 'past' && !known ? ['【？？？】', '尚未揭晓。它好像还藏着什么本事……'] : ['【' + f.h + '】', f.d(fake).split('\n')[0]]); });
     if (L.boss && L.boss.past && known) ['eternal', 'relive', 'sy'].forEach(function (k) { var f = BOSS_FX.filter(function (x) { return x.k === k; })[0]; out.push(['复活后 · 【' + f.h + '】', f.d(fake)]); });
     return out;
   }
