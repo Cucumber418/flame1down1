@@ -30,12 +30,17 @@
     acc.mons.forEach(function (m) {
       if (!m.nat || !(m.nat in NATURES)) m.nat = NAT_KEYS[Math.floor(Math.random() * NAT_KEYS.length)];
       if (!m.ev) m.ev = {}; if (!(m.evFree >= 0)) m.evFree = 0;
+      if (acc.expV !== expV() && m.lv >= 1) {   // 经验曲线换版：等级不变，本级进度按比例换算
+        var o0 = oldExpAt(m.lv), o1 = oldExpAt(Math.min(100, m.lv + 1)), fr = m.lv >= 100 ? 0 : Math.max(0, Math.min(0.999, ((m.exp || 0) - o0) / (o1 - o0)));
+        m.exp = m.lv >= 100 ? expAt(100) : Math.floor(expAt(m.lv) + fr * (expAt(m.lv + 1) - expAt(m.lv)));
+      }
       if (!(m.exp >= expAt(m.lv))) m.exp = expAt(m.lv);
       // 隐藏技能改为战斗中领悟：旧存档里已经装备着的隐藏技能视为已领悟
       if (!Array.isArray(m.hl)) m.hl = (m.moves || []).filter(function (n) { return M[n] && M[n].hidden && LEARN[n]; });
       var a = avail(m.sid, m.lv, m.hl); m.moves = (m.moves || []).filter(function (n) { return a.indexOf(n) >= 0; });
       if (!m.moves.length) m.moves = defaultMoves(m.sid, m.lv, m.hl);
     });
+    acc.expV = expV();
     if (!(acc.exp >= 0)) acc.exp = 0; if (!(acc.energy >= 0)) acc.energy = 0;
     if (!acc.items || typeof acc.items !== 'object') acc.items = {};
   }
@@ -77,10 +82,19 @@
     units.forEach(function (u) { var m = mon(u), room = m ? EV_TOTAL - evSum(m) - (m.evFree || 0) : 0; if (room > 0) { m.evFree = (m.evFree || 0) + Math.min(n, room); got.push(form(m).name); } });
     save(); return got;
   }
-  /* 经验：到达某等级所需的累计经验 = 等级³（LV5 为 125，LV100 为 1,000,000） */
-  var MAX_LV = 100;
-  function expAt(lv) { return lv * lv * lv; }
-  function lvOf(exp) { var lv = Math.max(1, Math.floor(Math.cbrt(exp))); while (lv < MAX_LV && expAt(lv + 1) <= exp) lv++; while (lv > 1 && expAt(lv) > exp) lv--; return Math.min(lv, MAX_LV); }
+  /* 经验：每升一级所需经验以「等级³ 的差」为基础，按等级段调整系数（expK），expTab()[lv] = 到达该等级所需的累计经验
+   * 存档 acc.expV 记录经验曲线的版本；曲线改过之后，读档清理坏数据时按「等级不变、本级进度比例不变」换算旧经验
+   * （读档清理在文件最上面，比这里先执行，所以表格用到时才生成） */
+  var MAX_LV = 100, _expTab = null;
+  function expV() { return 2; }
+  function expK(lv) { return lv < 25 ? 0.6 : lv >= 50 ? 2 : 1; }   // lv → lv+1 这一级的系数
+  function expTab() {
+    if (!_expTab) { _expTab = [0, 1]; for (var l = 1; l < 100; l++) _expTab[l + 1] = _expTab[l] + Math.round(((l + 1) * (l + 1) * (l + 1) - l * l * l) * expK(l)); }
+    return _expTab;
+  }
+  function expAt(lv) { lv = Math.max(1, Math.min(100, lv)); return expTab()[lv]; }
+  function lvOf(exp) { var T = expTab(), lv = 1; while (lv < MAX_LV && T[lv + 1] <= exp) lv++; return lv; }
+  function oldExpAt(lv) { return lv * lv * lv; }   // 第 1 版曲线（只用于换算旧存档）
   function fmt(n) { return Math.floor(n).toLocaleString('en-US'); }
   function giveExp(m, amt) { return gainExp(m, amt, true); }
   // fromPool：从经验分配器里扣；否则是战斗直接获得
@@ -90,7 +104,7 @@
     markForm(m.sid, before.stage);
     m.exp += amt; if (fromPool) acc.exp -= amt; m.lv = lvOf(m.exp); markForm(m.sid, form(m).stage);
     var after = form(m), msg = form(m).name + ' 获得了 ' + fmt(amt) + ' 点经验';
-    if (m.lv > before.lv) msg += '，升到了 LV' + m.lv + '！';
+    if (m.lv > before.lv) { msg += '，升到了 LV' + m.lv + '！'; setTimeout(function () { checkTitles(); renderTitle(); }, 0); }
     else msg += '。';
     if (after.stage > before.stage) msg += before.name + ' 进化成了 ' + after.name + '！';
     var was = avail(m.sid, before.lv, m.hl || []), now = avail(m.sid, m.lv, m.hl || []).filter(function (n) { return was.indexOf(n) < 0; });
@@ -185,6 +199,14 @@
     { id: 'purifier', n: '芙罗拉净化者', d: '完成芙罗拉星的星球任务「祛除瘴气」', ok: function () { return !!(acc.purge && acc.purge.n >= 30); } },
     { id: 'force', n: '原力掌控者', d: '击败困难难度的首领「泰戈尔」', ok: function () { return bossWon('tiger', 2); } }
   ];
+  // 等级成就：有 1 只 / 5 只精灵达到 25、50、75、100 级
+  function lvCount(lv) { return acc.mons.filter(function (m) { return m.lv >= lv; }).length; }
+  [[25, '达人'], [50, '高手'], [75, '狂人'], [100, '神人']].forEach(function (L) {
+    TITLES.push({ id: 'one' + L[0], n: '单科' + L[1], d: '有 1 只精灵达到 ' + L[0] + ' 级', ok: function () { return lvCount(L[0]) >= 1; } });
+  });
+  [[25, '达人'], [50, '高手'], [75, '狂人'], [100, '神人']].forEach(function (L) {
+    TITLES.push({ id: 'all' + L[0], n: '全科' + L[1], d: '有 5 只精灵达到 ' + L[0] + ' 级', ok: function () { return lvCount(L[0]) >= 5; } });
+  });
   // 排位赛季称号：本赛季（S1）达到某个段位就获得「S1 + 段位名」，例如「S1翡翠」（黑铁是起始段位，不发）
   for (var sr = 1; sr < RANKS.length; sr++) (function (r) {
     TITLES.push({ id: 'S1-' + r, n: 'S1' + RANKS[r], d: '排位赛季 S1 达到' + RANKS[r] + '段位', season: true, ok: function () { return rankBest() >= r; } });
@@ -302,7 +324,7 @@
   }
   $('onboard').addEventListener('click', function (e) { if (ex.mode === 'intro' && $('vn')) vnClick(e); });
   function createAccount(name) {
-    acc = { v: 1, name: name, created: Date.now(), starter: null, rival: null, next: 1, mons: [], teams: [[], []], active: 0, introDone: false, story: {}, exp: 0, energy: 0, items: {} };
+    acc = { v: 1, name: name, created: Date.now(), starter: null, rival: null, next: 1, mons: [], teams: [[], []], active: 0, introDone: false, story: {}, exp: 0, energy: 0, items: {}, expV: expV() };
     save(); renderTop(); window.scrollTo(0, 0);
   }
   // 序章里选定初始精灵；Vanber 选克制主角的那只
@@ -1369,7 +1391,8 @@
     }
     if (dirty) save();
   }
-  function markOnline() { if (ready()) { acc.lastActive = Date.now(); save(); } }
+  // 关页面时 visibilitychange 和 pagehide 会连着触发：几秒内已经记过就不再改，免得存档在上传之后又变了（下次打开会误报存档冲突）
+  function markOnline() { if (ready() && !(Date.now() - (acc.lastActive || 0) < 5000)) { acc.lastActive = Date.now(); save(); } }
   setInterval(function () { if (ready() && onlineSeen) markOnline(); }, 120000);
   document.addEventListener('visibilitychange', function () {
     if (!ready()) return;

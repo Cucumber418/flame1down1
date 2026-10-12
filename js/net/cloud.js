@@ -41,6 +41,7 @@
   }
 
   /* ---------- 本地存档 ⇄ 服务器存档 ---------- */
+  function sameData(data) { var c = collect(); data = data || {}; return KEYS.every(function (k) { return (c[k] == null ? null : String(c[k])) === (data[k] == null ? null : String(data[k])); }); }
   function collect() { var d = {}; KEYS.forEach(function (k) { var v = lsGet(k); if (v != null) d[k] = v; }); return d; }
   function apply(data) {
     st.applying = true;
@@ -62,7 +63,8 @@
     function done() { lsSet(OWNER, user); lsSet(REV, String(st.rev)); then(); }
     if (owner === user && dirty) {
       // 本机有这个账号还没上传的进度
-      if (!save || save.rev === localRev) { st.rev = save ? save.rev : 0; done(); schedule(0); return; }
+      // 关页面时用 keepalive 传上去的那一份，服务器收到了但本机没来得及记下新版本号：内容一样就不算冲突
+      if (!save || save.rev === localRev || sameData(save.data)) { st.rev = save ? save.rev : 0; done(); schedule(0); return; }
       return askConflict(save, function () { done(); });
     }
     if (!owner && legacySave()) {
