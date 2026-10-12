@@ -172,7 +172,22 @@ var CHARS = {
   "drh": "images/characters/drh.webp",
   "drh_cry": "images/characters/drh_cry.webp",
   "drh_oh": "images/characters/drh_oh.webp",
-  "drh_grin": "images/characters/drh_grin.webp"
+  "drh_grin": "images/characters/drh_grin.webp",
+  // 主角（pm 男主、pf 女主）：默认、大笑、惊讶、疑惑、生气、慌张、害羞
+  "pm": "images/characters/pm.webp",
+  "pm_laugh": "images/characters/pm_laugh.webp",
+  "pm_shock": "images/characters/pm_shock.webp",
+  "pm_huh": "images/characters/pm_huh.webp",
+  "pm_angry": "images/characters/pm_angry.webp",
+  "pm_sweat": "images/characters/pm_sweat.webp",
+  "pm_shy": "images/characters/pm_shy.webp",
+  "pf": "images/characters/pf.webp",
+  "pf_laugh": "images/characters/pf_laugh.webp",
+  "pf_shock": "images/characters/pf_shock.webp",
+  "pf_huh": "images/characters/pf_huh.webp",
+  "pf_angry": "images/characters/pf_angry.webp",
+  "pf_sweat": "images/characters/pf_sweat.webp",
+  "pf_shy": "images/characters/pf_shy.webp"
 };
 
 

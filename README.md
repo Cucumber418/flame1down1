@@ -369,6 +369,14 @@ ffmpeg -i 原曲.mp3 -vn -map_metadata -1 -af loudnorm=I=-16:TP=-1.5:LRA=11 -ar 
 - 鼠标移上去（只在有鼠标的设备上）弹出小窗：列出进行中和可领取的任务，每个写出当前这一步和进度条（`qPeekHTML()`，步骤来自 `qInfo(id)`），最后一行是今天的每日任务。点小窗里的某一行直接打开任务面板并选中它。
 - 点按钮打开任务面板对话框（`openQuests()`，主线 / 支线 / 世界 / 每日四个分页）。点「前往」会关掉对话框、切到星际探索并传送过去。
 
+## 主角立绘（男主 / 女主）
+
+立绘在 `images/characters/pm*.webp`（男主）和 `pf*.webp`（女主），`CHARS` 里登记。差分后缀：无（默认）、`_laugh` 大笑、`_shock` 惊讶、`_huh` 疑惑、`_angry` 生气、`_sweat` 慌张、`_shy` 害羞。
+
+- 存档 `acc.gender`（`'m'` / `'f'`，旧存档没有时按男主）。创建账号时选（`renderOnboard` 里的 `.ob-gender`），之后在右上角名字菜单的「主角形象」（`#gender-box`）里切换。
+- 剧情：`CAST.p.img` 是个 getter，按性别返回 `pm` / `pf`；剧本里写 `f: { p: 'laugh' }` 就换成对应差分。
+- 名片：服务器 `summary()` 带上 `gender`，`social.js` 的 `cardHTML` 在右上角显示主角形象。
+
 ## 表情
 
 12 个表情图在 `images/emotes/`（从 `images/characters/` 里 Threego、Dr.黄、Bttp 的立绘差分裁出头部，256×256 透明 webp），清单是 `js/data/assets.js` 的 `EMOTES`（`emoteOf(id)` 查一个，`emoteMsg(text)` 判断一条私信是不是表情）。

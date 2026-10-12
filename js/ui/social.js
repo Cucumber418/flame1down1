@@ -103,7 +103,8 @@
         '<span class="tc">' + tchips(s.types) + '</span>' +
         (m.moves && m.moves.length ? '<span class="pc-mv">' + m.moves.map(function (n) { return esc(n); }).join('、') + '</span>' : '') + '</li>';
     }
-    return '<div class="pcard">' +
+    var look = typeof CHARS !== 'undefined' && CHARS['p' + (c.gender === 'f' ? 'f' : 'm')];
+    return '<div class="pcard' + (look ? ' has-look' : '') + '">' + (look ? '<figure class="pc-look"><img src="' + look + '" alt="' + esc(c.name) + '的形象"></figure>' : '') +
       '<div class="pc-top"><span class="pav big' + (c.avatar ? ' img' : '') + '">' + A.avatarInner(c.avatar, c.name) + '</span><div class="pc-who">' +
       '<span class="pc-title">' + esc(c.title ? A.titleName(c.title) || '做题家' : '做题家') + '</span><h3>' + esc(c.name) + '</h3>' +
       '<span class="pc-user">@' + esc(c.user) + (opt.preview ? '' : ' · ' + statusOf(c)) + '</span></div></div>' +
@@ -186,7 +187,7 @@
     var rk = null; try { rk = JSON.parse(localStorage.getItem('hs-rank-v1') || 'null'); } catch (e) {}
     var R = rk ? { r: rk.r || 0, best: Math.max(rk.best || 0, rk.r || 0), w: rk.w || 0, l: rk.l || 0, stars: rk.stars || 0, kingBest: Math.max(rk.kingBest || 0, rk.r === RANKS.length - 1 ? rk.stars || 0 : 0) } : { r: 0, best: 0, w: 0, l: 0 };
     var ed = st.edit;
-    return { user: st.me || (C.user && C.user()), name: acc.name, avatar: A.avatarSpec(), title: acc.title && (acc.titles || []).indexOf(acc.title) >= 0 ? acc.title : null, monsN: acc.mons.length, speciesN: Object.keys(species).length,
+    return { user: st.me || (C.user && C.user()), name: acc.name, avatar: A.avatarSpec(), gender: A.gender ? A.gender() : 'm', title: acc.title && (acc.titles || []).indexOf(acc.title) >= 0 ? acc.title : null, monsN: acc.mons.length, speciesN: Object.keys(species).length,
       created: acc.created, motto: ed.motto, rankInfo: R,
       show: ed.show.map(function (u) { var m = A.mon(u); return m && { sid: m.sid, lv: m.lv, nat: m.nat, moves: m.moves, shiny: !!m.shiny }; }).filter(Boolean),
       helper: ed.helper != null && A.mon(ed.helper) ? (function (m) { return { sid: m.sid, lv: m.lv, nat: m.nat, shiny: !!m.shiny }; })(A.mon(ed.helper)) : null };

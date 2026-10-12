@@ -180,7 +180,7 @@
     if (acc.story && acc.story.storage && acc.story.storage.rewarded && !acc.story.storage.itemsGiven) { giveItems(SITES.storage.reward.items); acc.story.storage.itemsGiven = true; save(); }
     $('who-name').textContent = acc.name;
     renderRes();
-    renderAvatar();
+    renderAvatar(); renderGender();
     $('who-info').textContent = '做题家「' + acc.name + '」 · 拥有精灵 ' + acc.mons.length + ' 只 · 创建于 ' + new Date(acc.created).toLocaleDateString('zh-CN');
     checkTitles(); renderTitle();
     if (page === 'arena' && !arenaOpen()) page = 'bag';
@@ -341,6 +341,21 @@
     $('who-menu').hidden = true; renderTop();
     toast('改名成功：「' + old + '」→「' + v + '」。剧情和名片里都会用新名字。');
   });
+  /* ---------- 主角性别：创建账号时选，之后在右上角名字菜单里可以随时换（剧情立绘、名片跟着变） ---------- */
+  function gender() { return acc && acc.gender === 'f' ? 'f' : 'm'; }
+  function playerArt() { return 'p' + gender(); }
+  function renderGender() {
+    var box = $('gender-box'); if (!box || !acc) return;
+    box.innerHTML = '<b>主角形象</b><div class="gd-opts">' + [['m', '男生'], ['f', '女生']].map(function (g) {
+      return '<button type="button" class="gd-opt' + (gender() === g[0] ? ' on' : '') + '" data-gender="' + g[0] + '" aria-pressed="' + (gender() === g[0]) + '"><img src="' + CHARS['p' + g[0]] + '" alt=""><span>' + g[1] + '</span></button>';
+    }).join('') + '</div>';
+  }
+  $('gender-box').addEventListener('click', function (e) {
+    e.stopPropagation();
+    var b = e.target.closest('[data-gender]'); if (!b || !acc || gender() === b.dataset.gender) return;
+    acc.gender = b.dataset.gender; save(); renderGender();
+    toast('主角形象已换成' + (acc.gender === 'f' ? '女生' : '男生') + '。剧情立绘和名片都会跟着变。');
+  });
   $('title-box').addEventListener('change', function (e) { if (e.target.name === 'title') { acc.title = e.target.value || null; save(); renderTitle(); } });
   $('title-box').addEventListener('click', function (e) { e.stopPropagation(); });
   $('btn-reset').addEventListener('click', function () {
@@ -358,7 +373,10 @@
     if (acc && !acc.introDone) { if (ex.mode !== 'intro' || !$('vn')) startVN('school', 'intro', el, false); return; }
     el.innerHTML = '<div class="onboard"><span class="tape l"></span><span class="tape r"></span>' +
       '<h2>欢迎来到 Flame1Down - 1</h2>' +
-      '<p>请先创建账号。给自己起一个做题家名字，最多 ' + NAME_MAX + ' 个字。</p>' +
+      '<p>请先创建账号。选择主角的性别，再给自己起一个做题家名字，最多 ' + NAME_MAX + ' 个字。</p>' +
+      '<div class="ob-gender" role="radiogroup" aria-label="性别">' + [['m', '男生'], ['f', '女生']].map(function (g) {
+        return '<button type="button" class="ob-g' + ((ob.gender || 'm') === g[0] ? ' on' : '') + '" role="radio" aria-checked="' + ((ob.gender || 'm') === g[0]) + '" data-obg="' + g[0] + '"><img src="' + CHARS['p' + g[0]] + '" alt=""><b>' + g[1] + '</b></button>';
+      }).join('') + '</div>' +
       '<form class="namebox" id="ob-form"><input id="ob-name" type="text" autocomplete="off" spellcheck="false" placeholder="输入做题家名字" aria-label="做题家名字" value="' + esc(ob.name) + '">' +
       '<span class="cnt" id="ob-cnt"></span><button class="btn primary" id="ob-next" type="submit">开始</button></form>' +
       '<p class="hint" id="ob-msg">名字会显示在页面最上方，也会出现在剧情对话里。</p></div>';
@@ -369,11 +387,12 @@
     };
     inp.addEventListener('input', sync); sync();
     $('ob-form').addEventListener('submit', function (e) { e.preventDefault(); if (!ob.name.trim()) return; createAccount(ob.name.trim()); });
+    el.querySelector('.ob-gender').addEventListener('click', function (e) { var b = e.target.closest('[data-obg]'); if (!b) return; ob.gender = b.dataset.obg; renderOnboard(); });
     setTimeout(function () { try { inp.focus(); } catch (er) {} }, 0);
   }
   $('onboard').addEventListener('click', function (e) { if (ex.mode === 'intro' && $('vn')) vnClick(e); });
   function createAccount(name) {
-    acc = { v: 1, name: name, created: Date.now(), starter: null, rival: null, next: 1, mons: [], teams: [[], []], active: 0, introDone: false, story: {}, exp: 0, energy: 0, items: {}, expV: expV() };
+    acc = { v: 1, name: name, gender: ui.ob.gender === 'f' ? 'f' : 'm', created: Date.now(), starter: null, rival: null, next: 1, mons: [], teams: [[], []], active: 0, introDone: false, story: {}, exp: 0, energy: 0, items: {}, expV: expV() };
     save(); renderTop(); window.scrollTo(0, 0);
   }
   // 序章里选定初始精灵；Vanber 选克制主角的那只
@@ -926,7 +945,7 @@
   var BG_NAME = { gate: '校门', school: '校门', flag: '教学楼', garden: '牌坊花园', qiyi: '起义门', street: '彭刘杨路', bridge: '长江大桥', desert: '鸣沙山 · 月牙泉', jslc: '发射中心', tower: '发射塔', launch: '火箭升空', orbit: '地球轨道', hangar: '鄂州港 · 停泊区', cockpit_p: '武汉 · 指挥中枢', hangar_p: '鄂州港 · 停泊区', cabin_p: '温泉生活区', gym_p: '体能馆', storage_p: '物资仓储', pod_p: '学院部 · 资料室', tea_p: '陆羽茶室 · 04 号舱', teahall: '陆羽茶室 · 大厅', bridge2_p: '编钟通讯站', bridge_p: '古城防卫部', xiaogan: '孝感大厅', paifang: '惟楚有材牌坊', hall: '报告厅', field: '操场', aerial: '校园全景' };
   // 角色（立绘为占位）
   var CAST = {
-    p: { name: function () { return acc.name; }, color: '#c42f3a', tall: 1.0 },
+    p: { name: function () { return acc.name; }, color: '#c42f3a', tall: 1.0, get img() { return playerArt(); } },   // 主角立绘按性别：pm 男主 / pf 女主（差分见 CHARS 的 pm_xxx）
     v: { name: function () { return 'Vanber'; }, color: '#2a4ca0', tall: 0.98 },
     z: { name: function () { return '张卫国'; }, color: '#5b5866', tall: 1.0, img: 'zwg' },
     t: { name: function () { return 'Threego'; }, color: '#6f8f2a', tall: 1.0, img: 'threego' },
@@ -3335,7 +3354,7 @@
     titleName: titleName, mon: mon, fmt: fmt, avatarInner: avatarInner, avatarSpec: function () { var m = avatarMon(); return m ? { sid: m.sid, lv: m.lv, shiny: !!m.shiny } : null; },
     npcPlan: npcPlan, npcHome: npcHome,
     sendMail: sendMail, openMailbox: openMailbox,
-    rankToday: rankToday, RANK_EXP: { exp: RANK_EXP, n: RANK_EXP_N }, rankRwHTML: rankRwHTML, openQuests: openQuests,
+    rankToday: rankToday, RANK_EXP: { exp: RANK_EXP, n: RANK_EXP_N }, rankRwHTML: rankRwHTML, openQuests: openQuests, gender: gender,
     brawlOpen: brawlOpen, brawlSpec: brawlSpec, brawlReward: brawlReward, brawlToday: brawlToday, BRAWL: { win: BRAWL_WIN, lose: BRAWL_LOSE, cap: BRAWL_CAP, lv: BRAWL_LV },
     // 平衡模式切磋：LV60、性格无修正、没有学习力和纹章，技能可以从全部技能里选（没选就用竞技对战里记住的配招）
     balSpec: function (raw) {
