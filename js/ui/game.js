@@ -1617,6 +1617,18 @@
     d.querySelector('[data-nx]').focus();
   }
   setInterval(function () { if (document.visibilityState === 'visible') newsCheck(); }, 20000);
+  var QQ_GROUP = '1124145809';   // 航行日志最上方显示的船员 QQ 群
+  $('pg-log').addEventListener('click', function (e) {
+    if (!e.target.closest('[data-copyqq]')) return;
+    var done = function () { toast('群号 ' + QQ_GROUP + ' 已复制，打开 QQ 搜索加群即可。'); };
+    // 网站是 http 打开的，浏览器不给用新的剪贴板接口，先用老办法复制
+    var ta = document.createElement('textarea'); ta.value = QQ_GROUP; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;left:-9999px;top:0';
+    document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, 99);
+    var ok = false; try { ok = document.execCommand('copy'); } catch (er) {}
+    ta.remove();
+    if (ok) { done(); return; }
+    try { navigator.clipboard.writeText(QQ_GROUP).then(done, function () { toast('QQ 群号：' + QQ_GROUP + '（没能自动复制，请长按群号手动复制）'); }); } catch (er) { toast('QQ 群号：' + QQ_GROUP + '（没能自动复制，请长按群号手动复制）'); }
+  });
   function renderLog() {
     var now = new Date(), h = now.getHours(), on = mysteryTime();
     var wait = on ? '' : (function () { var t = new Date(now); t.setHours(MYSTERY.from, 0, 0, 0); var m = Math.max(0, Math.round((t - now) / 60000)); return '距离今天的活动开始还有 ' + Math.floor(m / 60) + ' 小时 ' + (m % 60) + ' 分钟'; })();
@@ -1627,7 +1639,7 @@
       return '<tr class="' + (got ? 'got' : r <= best ? 'ok' : '') + (R.gift ? ' big' : '') + '"><td>' + RANKS[r] + '</td><td>累积经验 ×' + fmt(R.exp) + '，能量 ×' + fmt(R.energy) + '，称号「' + titleName(R.title) + '」' + (R.items ? '，' + itemsText(R.items) : '') + (R.gift ? '，<b class="red">' + R.gift.map(function (g) { return form(g).name + ' LV' + g.lv; }).join('、') + '</b>' : '') + '</td><td>' + (got ? '已领取' : '未达成') + '</td></tr>';
     }).join('');
     $('pg-log').innerHTML = '<div class="page-head"><h2 class="sec">航行日志</h2><p class="hint">荆楚号的公告板：更新公告、限时活动、每日任务、排位奖励和新首领。</p></div>' +
-      '<div class="log-grid">' + changelogHTML() +
+      '<div class="log-grid">' + '<article class="log-card wide qq-card"><span class="tape l"></span><span class="tape r"></span><div class="qq-txt"><span class="chip log-tag">船员交流</span><h3>QQ 群：<b class="qq-no">' + QQ_GROUP + '</b></h3><p class="hint">攻略、组队切磋、bug 反馈、新精灵立绘抢先看，都在群里。</p></div><button type="button" class="btn primary" data-copyqq="1">复制群号</button></article>' + changelogHTML() +
       '<article class="log-card ev"><span class="tape l"></span><span class="chip log-tag">限时活动</span><h3>神秘精灵出没</h3>' +
         '<p>每天 <b>16:00–24:00</b>，在星际探索的任何场景，都有 <b>3%</b> 的概率刷出一只神秘精灵！</p><p class="hint">它是什么？只有遇到过的人才知道。</p>' +
         '<p class="log-st ' + (on ? 'on' : '') + '">' + (on ? '活动进行中，今天 24:00 结束' : wait) + '</p></article>' +

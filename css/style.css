@@ -1581,3 +1581,9 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .bwd-back { transform: rotateY(180deg); background: repeating-linear-gradient(45deg, #e08a2e 0 10px, #f0b35e 10px 20px); color: #fff; font-family: var(--f-hand); font-size: 44px; text-shadow: 2px 2px 0 rgba(0,0,0,.25); }
 .bwd-card.bwd-mine .bwd-front { border-color: var(--red); box-shadow: 2px 2px 0 var(--red); }
 @media (prefers-reduced-motion: reduce) { .bwd-card, .bwd-in { transition: none; } }
+
+/* ============ 航行日志 · QQ 群 ============ */
+.log-card.qq-card { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; border-color: var(--red); box-shadow: 3px 3px 0 var(--red); background: #fff6f2; }
+.qq-card .qq-txt { flex: 1 1 260px; display: grid; gap: 4px; }
+.qq-card h3 { margin: 0; }
+.qq-card .qq-no { color: var(--red); font-size: 1.25em; letter-spacing: .06em; font-variant-numeric: tabular-nums; user-select: all; }
