@@ -1575,15 +1575,70 @@
       '<h4>助战精灵</h4>' + helpHTML + '</div></div>' +
       '<div class="ch-go"><button type="button" class="btn primary" data-chgo="' + sel + '"' + (ready_ ? '' : ' disabled') + '>开始挑战</button><span class="hint">战斗中可以使用补药；挑战失败不会有任何损失，可以反复挑战。</span></div></article></div>';
   }
-  function startChal(P, i) {
+  // 出战顺序：自己的精灵用 'u' + 编号，助战精灵用 'h'；排在第一个的就是首发
+  function chalLineup() {
+    var T = chalTeam(), L = T.own.map(function (m) { return { k: 'u' + m.u, m: m }; });
+    if (T.helper) L.push({ k: 'h', h: T.helper });
+    var ord = ex.chalOrder || [];
+    L.sort(function (a, b) { var ia = ord.indexOf(a.k), ib = ord.indexOf(b.k); return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib); });
+    return L;
+  }
+  function helperSpec(Hp) { var hm = storyMon({ sid: Hp.mon.sid, lv: Hp.mon.lv, moves: Hp.mon.moves || [], ev: Hp.mon.ev || null, nat: Hp.mon.nat || null, shiny: !!Hp.mon.shiny }); hm.nick = hm.nick + '（' + Hp.owner + '）'; return hm; }
+  // 首发选择面板：选好精灵、点「开始挑战」后弹出，拖动（或点「设为首发」）调整出战顺序
+  function openLineup(P, i) {
+    var x = CHAL[P][i]; if (!x) return;
+    var L = chalLineup(); if (!L.some(function (e) { return e.m; })) return;
+    var old = $('lu-dlg'); if (old) old.remove();
+    var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'lu-dlg';
+    var card = function (e) {
+      var f = e.m ? form(e.m) : form(e.h.mon), lv = e.m ? e.m.lv : e.h.mon.lv;
+      return '<li class="lu-card" data-k="' + e.k + '"><span class="lu-no"></span><img src="' + f.img + '" alt="" draggable="false"><b>' + esc(f.name) + '</b><small>LV' + lv + (e.h ? ' · 助战（' + esc(e.h.owner) + '）' : '') + '</small>' + tchips(SPMAP[e.m ? e.m.sid : e.h.mon.sid].types) +
+        '<button type="button" class="btn ghost lu-lead" data-lulead="' + e.k + '">设为首发</button></li>';
+    };
+    d.innerHTML = '<div class="soc-box lu-box" role="dialog" aria-modal="true" aria-label="选择首发"><span class="tape l"></span><span class="tape r"></span>' +
+      '<span class="step">第 ' + (i + 1) + ' 关「' + esc(x.n) + '」</span><h2>出战顺序</h2><p class="hint">按住精灵拖动可以调整顺序，排在第一个的就是首发；也可以点「设为首发」。</p>' +
+      '<ol class="lu-list" id="lu-list">' + L.map(card).join('') + '</ol>' +
+      '<div class="soc-foot"><button type="button" class="btn ghost" data-lux="1">返回修改</button><button type="button" class="btn primary" data-lugo="1">开始战斗</button></div></div>';
+    document.body.appendChild(d);
+    var list = d.querySelector('#lu-list');
+    var mark = function () { Array.prototype.forEach.call(list.children, function (li, k) { li.querySelector('.lu-no').textContent = k ? '第 ' + (k + 1) + ' 位' : '首发'; li.classList.toggle('lead', !k); }); };
+    var order = function () { return Array.prototype.map.call(list.children, function (li) { return li.dataset.k; }); };
+    mark();
+    // 拖动排序：按住一张卡，移到哪张卡的位置就插到哪里（鼠标、触屏都可以）
+    var drag = null;
+    list.addEventListener('pointerdown', function (e) {
+      var li = e.target.closest('.lu-card'); if (!li || e.target.closest('button')) return;
+      drag = li; li.classList.add('drag'); try { list.setPointerCapture(e.pointerId); } catch (er) {}
+      e.preventDefault();
+    });
+    list.addEventListener('pointermove', function (e) {
+      if (!drag) return;
+      var best = null, bd = Infinity;
+      Array.prototype.forEach.call(list.children, function (li) { var r = li.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2, dd = (cx - e.clientX) * (cx - e.clientX) + (cy - e.clientY) * (cy - e.clientY); if (dd < bd) { bd = dd; best = li; } });
+      if (!best || best === drag) return;
+      var kids = Array.prototype.slice.call(list.children);
+      if (kids.indexOf(best) > kids.indexOf(drag)) list.insertBefore(drag, best.nextSibling); else list.insertBefore(drag, best);
+      mark();
+    });
+    var end = function () { if (drag) { drag.classList.remove('drag'); drag = null; mark(); } };
+    list.addEventListener('pointerup', end); list.addEventListener('pointercancel', end);
+    d.addEventListener('click', function (e) {
+      var t = e.target;
+      if (t === d || t.closest('[data-lux]')) { ex.chalOrder = order(); d.remove(); return; }
+      if (t.closest('[data-lulead]')) { var li = t.closest('.lu-card'); list.insertBefore(li, list.firstChild); mark(); return; }
+      if (t.closest('[data-lugo]')) { ex.chalOrder = order(); d.remove(); startChal(P, i, ex.chalOrder); }
+    });
+  }
+  function startChal(P, i, ord) {
     var x = CHAL[P][i]; if (!x || !chalLevelOpen(P, i)) return;
     var T = chalTeam(); if (!T.own.length) return;
-    var own = T.own, p = own.map(storyMon);
-    if (T.helper) { var hm = storyMon({ sid: T.helper.mon.sid, lv: T.helper.mon.lv, moves: T.helper.mon.moves || [], ev: T.helper.mon.ev || null, nat: T.helper.mon.nat || null, shiny: !!T.helper.mon.shiny }); hm.nick = hm.nick + '（' + T.helper.owner + '）'; p.push(hm); }
+    ex.chalOrder = ord || ex.chalOrder;
+    var L = chalLineup(), own = L.filter(function (e) { return e.m; }).map(function (e) { return e.m; });
+    var p = L.map(function (e) { return e.m ? storyMon(e.m) : helperSpec(e.h); });
     var a = x.foes.map(function (f) { seeMon(f.sid, f.lv); return storyMon({ sid: f.sid, lv: f.lv, moves: [] }); });
     stopTimers(); ex.fighting = true; document.body.classList.add('story-fight'); syncBattle();
     $('pg-explore').hidden = true; $('pg-arena').hidden = false;
-    window.HSBATTLE.start({ p: p, a: a, foe: '挑战第 ' + (i + 1) + ' 关「' + x.n + '」', items: invCopy(), bg: BG[x.bg] || null, onItem: useInv,
+    window.HSBATTLE.start({ p: p, a: a, foe: '挑战第 ' + (i + 1) + ' 关「' + x.n + '」', bgm: 'stage', items: invCopy(), bg: BG[x.bg] || null, onItem: useInv,
       onEnd: function (res, seen, downs, quit, S) {
         var msg = [];
         if (res === 'win' && S) {
@@ -1606,7 +1661,7 @@
           if (CHAL[P][i + 1] && !before) { ex.chal = i + 1; msg.push('第 ' + (i + 2) + ' 关已开放。'); }
         } else if (res !== 'win') msg.push(quit ? '退出了挑战。' : '挑战失败了……调整一下出战精灵再来吧。');
         dailyHit('pve');
-        var ownSeen = seen ? seen.slice(0, own.length) : null;
+        var ownSeen = seen ? L.map(function (e, k) { return e.m ? seen[k] : null; }).filter(function (v) { return v !== null; }) : null;
         msg = msg.concat(battleRewards(own, ownSeen, downs));
         save();
         ex.fighting = false; document.body.classList.remove('story-fight');
@@ -1634,7 +1689,11 @@
       if (ex.chalHelper) { var T = chalTeam(); if (T.own.length > 4) ex.chalOwn = T.own.slice(0, 4).map(function (m) { return m.u; }); }
       renderExplore(); return true;
     }
-    if (b.dataset.chgo) { startChal('flora', +b.dataset.chgo); return true; }
+    if (b.dataset.chgo) {
+      var gi = +b.dataset.chgo;
+      if (gi === 1 && unlocked('fl_chal2') && !prog('fl_chal2').done) { ex.chalHelper = 'mm'; startVN('fl_chal2', 'replay', $('pg-explore'), true); window.scrollTo(0, $('pg-explore').offsetTop - 8); return true; }   // 第二关：先强制播完明明教官的助战教学
+      openLineup('flora', gi); return true;
+    }
     return false;
   }
   // 其他星球的探索页（只有捕捉）
@@ -2092,7 +2151,7 @@
       lv: [
         { diff: '简单', lv: 25, hp: 500, only: ONLY3, bgm: 'boss', open: function () { return prog('tiger').done; }, lockText: '读完支线「东北来的泰戈尔」后开放', reward: { mon: { sid: 'tagore', lv: 10 } } },
         { diff: '普通', lv: 40, hp: 1500, only: ONLY3, boss: { feud: 1, ne: 1, pp: 99 }, bgm: 'boss2', open: function () { return prog('tiger2').done; }, lockText: '击败简单难度，再听泰戈尔介绍后开放', reward: { emblem: 'tagore', exp: 20000 } },
-        { diff: '困难', lv: 60, hp: 5000, only: ONLY3, boss: { feud: 1, ne: 1, past: 1, pp: 99 }, bgm: 'boss2', open: function () { return bossWon('tiger', 1); }, lockText: '击败普通难度后开放', reward: { title: 'force', items: { natTagore: 3 }, exp: 50000 } }
+        { diff: '困难', lv: 60, hp: 5000, only: ONLY3, boss: { feud: 1, ne: 1, past: 1, pp: 99 }, bgm: 'boss3', open: function () { return bossWon('tiger', 1); }, lockText: '击败普通难度后开放', reward: { title: 'force', items: { natTagore: 3 }, exp: 50000 } }
       ] },
     barren: { name: '荒芜', sid: 'barren', planet: 'flora', region: 'salt', bg: 'fl_salt',
       d: '潜伏在芙罗拉星盐碱地地底的草系首领。盐碱地里的瘴气，就是从它身上散出来的。',

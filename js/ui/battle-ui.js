@@ -718,7 +718,7 @@
         case 'switch': renderSnap(e.snap); await wait(520); break;
         case 'throw': renderSnap(e.snap); castFx({ a: 'throw', i: 1 }); restartAnim($('mon1'), 'throw'); await wait(900); break;
         case 'faint': renderSnap(e.snap); await wait(650); break;
-        case 'scene': renderSnap(e.snap); if (e.fx && window.HSEV) window.HSEV('bossfx', { k: e.fx }); await showScene(e.lines); break;
+        case 'scene': renderSnap(e.snap); if (e.fx && window.HSEV) window.HSEV('bossfx', { k: e.fx }); await showScene(e.lines); if (e.fx === 'past') bgm('tigerFinal'); break;   // 泰戈尔复活：换成最终形态的专属曲
         default: renderSnap(e.snap); await wait(60);
       }
     }

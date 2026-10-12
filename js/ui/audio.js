@@ -11,8 +11,12 @@
  * 战斗音乐（对战开始时由 battle-ui.js 调用 HSAUDIO.play，对战结束后回到界面音乐）：
  *   normal  寻常：野外对战、剧情对战、茶室和朋友家的对战
  *   boss    首领战（简单难度）
- *   boss2   首领战（普通、困难难度和每周挑战）
+ *   boss2   首领战（普通难度）
+ *   boss3   首领战（困难难度和每周挑战）
+ *   tigerFinal  泰戈尔困难最终形态：困难泰戈尔复活（东北的往事）之后切换成这首
+ *   stage   关卡战斗：星球挑战的所有关卡
  *   pvp     竞技对战、切磋、精灵大乱斗
+ * 还没用上的：flora2（芙罗拉星 2，留给之后的剧情高潮）
  * 切歌时先淡出再淡入；界面音乐切回来时从上次停下的地方接着放。切到别的标签页会暂停。
  * 声音设置（战斗音乐、界面音乐两个开关和音量）存在这台设备的浏览器里，不跟账号同步。
  * 对外：window.HSAUDIO.play(战斗曲目) / stop(淡出毫秒) / scene(界面曲目)
@@ -21,7 +25,8 @@
   'use strict';
   var V = '?v=3';
   var TRACKS = {
-    normal: 'audio/bgm_normal.mp3', boss: 'audio/bgm_boss.mp3', boss2: 'audio/bgm_boss2.mp3', pvp: 'audio/bgm_pvp.mp3',
+    normal: 'audio/bgm_normal.mp3', boss: 'audio/bgm_boss.mp3', boss2: 'audio/bgm_boss2.mp3', boss3: 'audio/bgm_boss3.mp3', tigerFinal: 'audio/bgm_tiger_final.mp3',
+    stage: 'audio/bgm_stage.mp3', flora2: 'audio/bgm_flora2.mp3', pvp: 'audio/bgm_pvp.mp3',
     ui: 'audio/bgm_ui.mp3', arena: 'audio/bgm_arena.mp3', earth: 'audio/bgm_earth.mp3', flora: 'audio/bgm_flora.mp3'
   };
   var SCENES = { ui: 1, arena: 1, earth: 1, flora: 1 };

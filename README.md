@@ -41,7 +41,7 @@ images/
   lineart/            手绘原画扫描
   backgrounds/        剧情、探索、对战背景
   characters/         剧情角色立绘、表情差分、图标
-audio/                背景音乐（界面：ui / arena / earth / flora；战斗：normal / boss / boss2 / pvp）
+audio/                背景音乐（界面：ui / arena / earth / flora；战斗：normal / boss / boss2 / boss3 / tigerFinal / stage / pvp；备用：flora2）
 ```
 
 `index.html` 最先加载 `js/net/cloud.js`，其他脚本写在它下面的 `CLOUD.boot([...])` 列表里，登录完成后按列表顺序加载。顺序是固定的：数据 → 引擎 → 界面。后面的文件会用到前面文件里定义的东西，所以不要调换顺序。新增 js 文件时，把路径按这个规则插进列表里合适的位置。
@@ -249,7 +249,11 @@ Threego、Dr.黄、Bttp 每天会在一个随机时段回到自己在陆羽茶�
 |---|---|
 | `bgm_normal.mp3`（寻常） | 野外对战、剧情对战、茶室和朋友家（Threego / Dr.黄 / Bttp）的对战 |
 | `bgm_boss.mp3`（Boss） | 简单难度的首领战 |
-| `bgm_boss2.mp3`（Boss2） | 普通、困难难度的首领战和每周挑战 |
+| `bgm_boss2.mp3`（Boss2） | 普通难度的首领战 |
+| `bgm_boss3.mp3`（Boss3） | 困难难度的首领战和每周挑战 |
+| `bgm_tiger_final.mp3`（泰戈尔困难最终形态） | 困难泰戈尔「东北的往事」复活小剧情播完后切换（`battle-ui.js` 的 `scene` 事件，`fx === 'past'`） |
+| `bgm_stage.mp3`（关卡战斗） | 星球挑战的所有关卡 |
+| `bgm_flora2.mp3`（芙罗拉星 2） | 还没用，留给之后的剧情高潮（`TRACKS.flora2`） |
 | `bgm_pvp.mp3`（PVP） | 竞技对战（沙盒、平衡排位、训练）、联网切磋、精灵大乱斗 |
 
 **以后换曲子也要先调响度**，否则会忽大忽小：
@@ -327,6 +331,7 @@ ffmpeg -i 原曲.mp3 -vn -map_metadata -1 -af loudnorm=I=-16:TP=-1.5:LRA=11 -ar 
 代码在 `js/ui/game.js` 搜「星球挑战」，关卡表是 `CHAL.flora`（每关 `foes` 敌人、`s2` / `s3` 第二三颗星的条件、`reward` 首通奖励）。
 
 - 开放：读完支线「芙罗拉星挑战」（`fl_chal`，荆楚号 · 襄阳 · 古城防卫部，明明教官，读完第五段后出现）。芙罗拉星的「挑战」页显示一条从左到右的关卡链，上一关拿到至少 1 星，下一关才开放。
+- 出战：选好精灵点「开始挑战」后弹出首发选择面板（`openLineup`），拖动卡片或点「设为首发」调整顺序，排第一的是首发；顺序记在 `ex.chalOrder`（这次打开游戏期间有效）。第二关第一次点开或点开始时，先强制播放支线「借来的力量」。
 - 星级：1 星 = 击败所有敌人；`nofaint` 无精灵倒下、`half` 战斗结束时所有出战精灵体力高于一半、`super` 打出过效果拔群（引擎里的 `S.se[0]`）、`nostatus` 战斗结束时活着的精灵都没有异常状态。每颗星单独记录，取历次最好（存档 `acc.chal[关卡 id] = { s: [星1, 星2, 星3], got: 首通时间 }`）。首次通关发奖励（经验进经验背包、能量），之后可以反复刷星。击败敌人照常给经验和学习力。
 - 助战精灵：第一次点开第二关时插播支线「借来的力量」（`fl_chal2`），之后出战可以选 4 只自己的精灵 + 1 只助战（明明教官的 LV30 赫菲托斯，或好友名片里的助战精灵）。助战精灵不拿经验。
 - 名片里的助战精灵：`acc.card.helper`（精灵编号），在「社交 → 我的名片」里选。服务器 `GET /api/helpers` 返回我加了好友的人里设置了助战精灵的（`server/social.js`），名片接口也会带上 `helper`。
