@@ -451,7 +451,7 @@
     [].forEach.call(document.querySelectorAll('.soc-dlg'), function (d) { d.remove(); });
     closePrep();
     st.match = { id: m.id, side: m.side, mode: m.mode, foe: m.peerName, names: m.names, brawl: !!m.brawl, bal: !!m.bal, pick: m.pick || null, label: m.brawl ? null : fightLabel(m.mode, m.rule, m.pick) };
-    if (m.brawl) st.match.notes = brawlNotes(m);
+    if (m.brawl) { st.match.notes = brawlNotes(m); brawlShow(m); }
     if (m.bal) st.match.notes = balNotes(m);
     if (m.side === 0) {
       var mk = m.brawl ? A.brawlSpec : m.bal ? A.balSpec : A.spec;
@@ -789,6 +789,45 @@
       var nm = st.bw.inv.fromName, wasOpen = !!st.bw.inv.dlg; closeBwInvite();
       if (wasOpen) A.toast(m.reason === 'taken' ? nm + ' 的大乱斗已经被别人接下了。' : m.reason === 'error' ? m.msg : nm + ' 取消了大乱斗匹配。');
     }
+  }
+  /* 大乱斗的抽选动画：双方放进来的 6 只先按主人摆开 → 翻面收拢、洗牌 → 重新发给两边 → 翻开，标出原来是谁的
+   * 只是播放效果，对战已经在后面开始了（点「开始对战」或等几秒自动关掉） */
+  function brawlShow(m) {
+    var me = m.side, cards = [], cnt = [0, 0];
+    m.teams.forEach(function (t, side) { t.forEach(function (x, k) { cards.push({ sid: x.sid, owner: x.owner, to: side, k: k, from: cnt[x.owner]++ }); }); });
+    var old = document.querySelector('.bwd'); if (old) old.remove();
+    var el = document.createElement('div'); el.className = 'bwd';
+    var foeName = m.names[1 - me] || '对手';
+    el.innerHTML = '<div class="bwd-box"><h2>精灵大乱斗 · 抽选</h2><p class="bwd-msg" id="bwd-msg">双方各放进了 3 只精灵……</p>' +
+      '<div class="bwd-stage"><span class="bwd-lab top">' + esc(foeName) + '</span><span class="bwd-lab bot">你</span>' +
+      cards.map(function (c, i) {
+        var v = A.view({ sid: c.sid, lv: A.BRAWL.lv });
+        return '<div class="bwd-card" data-i="' + i + '"><div class="bwd-in"><div class="bwd-front"><img src="' + v.img + '" alt=""><b>' + esc(v.name) + '</b><small>' + (c.owner === me ? '你的' : '对方的') + '</small></div><div class="bwd-back">?</div></div></div>';
+      }).join('') + '</div><button type="button" class="btn primary" id="bwd-go">跳过</button></div>';
+    document.body.appendChild(el);
+    var els = [].slice.call(el.querySelectorAll('.bwd-card')), msg = el.querySelector('#bwd-msg'), timers = [];
+    function at(ms, fn) { timers.push(setTimeout(fn, ms)); }
+    function place(e, row, k, rot) { e.style.left = (6 + k * 31) + '%'; e.style.top = row === 'top' ? '6%' : row === 'mid' ? '30%' : '56%'; e.style.transform = 'rotate(' + (rot || 0) + 'deg)'; }
+    function close() { timers.forEach(clearTimeout); if (el.parentNode) el.remove(); }
+    // 1. 按主人摆开
+    cards.forEach(function (c, i) { place(els[i], c.owner === me ? 'bot' : 'top', c.from); });
+    // 2. 翻面、收拢到中间
+    at(1100, function () { msg.textContent = '翻面、打乱……'; els.forEach(function (e, i) { e.classList.add('flip'); e.style.left = (37 + (i % 3) * 1.5) + '%'; e.style.top = (30 + (i % 2) * 2) + '%'; e.style.transform = 'rotate(' + (i * 7 - 18) + 'deg)'; e.style.zIndex = i; }); });
+    // 3. 洗牌
+    for (var r = 0; r < 6; r++) at(1700 + r * 220, function () { els.forEach(function (e) { e.style.left = (37 + (Math.random() - 0.5) * 30) + '%'; e.style.top = (30 + (Math.random() - 0.5) * 18) + '%'; e.style.transform = 'rotate(' + Math.round((Math.random() - 0.5) * 40) + 'deg)'; e.style.zIndex = Math.floor(Math.random() * 6); }); });
+    // 4. 重新发给两边
+    at(3150, function () { msg.textContent = '重新分配！'; });
+    cards.forEach(function (c, i) { at(3200 + i * 160, function () { place(els[i], c.to === me ? 'bot' : 'top', c.k); els[i].style.zIndex = 10 + i; }); });
+    // 5. 翻开，标出原来是谁的
+    at(4400, function () {
+      els.forEach(function (e) { e.classList.remove('flip'); });
+      var mine = cards.filter(function (c) { return c.to === me; }), fromFoe = mine.filter(function (c) { return c.owner !== me; }).length;
+      msg.textContent = '分配完成：你拿到了 ' + (3 - fromFoe) + ' 只自己的、' + fromFoe + ' 只对方的精灵。';
+      el.querySelector('#bwd-go').textContent = '开始对战';
+      els.forEach(function (e, i) { if (cards[i].to === me) e.classList.add('bwd-mine'); });
+    });
+    at(9000, close);
+    el.addEventListener('click', function (e) { if (e.target.id === 'bwd-go') close(); });
   }
   // 分牌结果写进战斗记录：谁拿到了谁的精灵
   function brawlNotes(m) {

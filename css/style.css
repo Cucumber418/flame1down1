@@ -1561,3 +1561,23 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .bscene .bs-say.narr p { color: var(--pencil); font-style: italic; }
 .bscene .bs-say small { color: var(--pencil); font-size: 11.5px; }
 @media (max-width: 760px) { .bscene { padding: 8px; } .bscene .bs-img { max-width: 28%; height: 55%; } .bscene .bs-say p { font-size: 13.5px; } }
+
+/* ============ 精灵大乱斗 · 抽选动画 ============ */
+.bwd { position: fixed; inset: 0; z-index: 360; display: grid; place-items: center; padding: 16px; background: rgba(35, 34, 43, .6); }
+.bwd-box { width: min(640px, 100%); background: var(--paper-2); border: 1.5px solid var(--ink); border-radius: 16px; box-shadow: 4px 4px 0 #e08a2e; padding: 18px 18px 14px; display: grid; gap: 8px; justify-items: center; }
+.bwd-box h2 { margin: 0; font-family: var(--f-hand); font-weight: 400; font-size: 30px; color: #b7791f; }
+.bwd-msg { margin: 0; font-size: 14px; color: var(--ink); min-height: 1.4em; text-align: center; }
+.bwd-stage { position: relative; width: 100%; aspect-ratio: 16 / 11; border: 1.5px dashed var(--rule); border-radius: 14px; background: var(--paper); overflow: hidden; }
+.bwd-lab { position: absolute; left: 10px; font-size: 12px; font-weight: 700; color: var(--pencil); }
+.bwd-lab.top { top: 4px; } .bwd-lab.bot { bottom: 4px; color: var(--red); }
+.bwd-card { position: absolute; width: 26%; height: 38%; perspective: 600px; transition: left .45s cubic-bezier(.3,.7,.3,1), top .45s cubic-bezier(.3,.7,.3,1), transform .45s; }
+.bwd-in { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform .45s; }
+.bwd-card.flip .bwd-in { transform: rotateY(180deg); }
+.bwd-front, .bwd-back { position: absolute; inset: 0; backface-visibility: hidden; border: 1.5px solid var(--ink); border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 6px 4px 4px; overflow: hidden; }
+.bwd-front { background: var(--paper-2); }
+.bwd-front img { flex: 1 1 0; min-height: 0; width: 100%; object-fit: contain; }
+.bwd-front b { font-size: 13px; line-height: 1.2; text-align: center; }
+.bwd-front small { font-size: 11px; color: var(--pencil); }
+.bwd-back { transform: rotateY(180deg); background: repeating-linear-gradient(45deg, #e08a2e 0 10px, #f0b35e 10px 20px); color: #fff; font-family: var(--f-hand); font-size: 44px; text-shadow: 2px 2px 0 rgba(0,0,0,.25); }
+.bwd-card.bwd-mine .bwd-front { border-color: var(--red); box-shadow: 2px 2px 0 var(--red); }
+@media (prefers-reduced-motion: reduce) { .bwd-card, .bwd-in { transition: none; } }
