@@ -119,7 +119,7 @@
     if (k === 'rename') return '<svg class="it-ic" viewBox="0 0 64 64" aria-hidden="true"><g stroke="#23222b" stroke-width="2.5" stroke-linejoin="round">' +
       '<rect x="8" y="14" width="48" height="36" rx="6" fill="#fbfaf3"/><path d="M8 24h48" /><rect x="14" y="31" width="14" height="13" rx="3" fill="#e8d080"/>' +
       '<path d="M33 34h16M33 41h10" stroke-linecap="round"/><path d="M44 50l12-12 4 4-12 12h-4z" fill="#c42f3a" stroke-width="2"/></g></svg>';
-    var C = { cap1: ['#7c97b8', '#e8eef6'], cap2: ['#c42f3a', '#f6e4e2'], cap3: ['#2b2a33', '#f3d36b'], pot1: ['#5aa469', '#e4f2e2'], pot2: ['#e08a2e', '#fbead4'] }[k] || ['#999', '#eee'];
+    var C = { cap1: ['#7c97b8', '#e8eef6'], cap2: ['#c42f3a', '#f6e4e2'], cap3: ['#2b2a33', '#f3d36b'], pot1: ['#5aa469', '#e4f2e2'], pot2: ['#e08a2e', '#fbead4'], pot200: ['#2f8f86', '#d7f3ef'] }[k] || ['#999', '#eee'];
     if (k.indexOf('cap') === 0) return '<svg class="it-ic" viewBox="0 0 64 64" aria-hidden="true"><g stroke="#23222b" stroke-width="2.5" stroke-linejoin="round">' +
       '<rect x="18" y="6" width="28" height="52" rx="12" fill="' + C[1] + '"/><path d="M18 26h28v12H18z" fill="' + C[0] + '"/>' +
       '<circle cx="32" cy="32" r="7" fill="#fff"/><circle cx="32" cy="32" r="3" fill="' + (k === 'cap3' ? '#f3d36b' : '#8fd3ff') + '" stroke-width="1.5"/>' +
