@@ -406,7 +406,7 @@ function addStatus(S, evs, j, k, turns, src, noReflect, refresh) {
     }
     t.fx.poison = 1;
   }
-  // refresh（如寄生种子）：对方已经处于这个状态时，把剩余回合重置
+  // refresh（如寄生之种）：对方已经处于这个状态时，把剩余回合重置
   if (t.st[k] > 0 && refresh) { t.st[k] = turns; E(S, evs, 'stage', { side: j }); log(S, evs, nm(t) + '的「' + k + '」重置为 ' + turns + ' 回合', 'bad'); return; }
   if (t.st[k] > 0) { log(S, evs, nm(t) + '已经处于' + k + '状态'); return; }
   // 控制类状态：如果对方本回合已经行动过，额外+1回合，保证真的能控住
