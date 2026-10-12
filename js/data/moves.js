@@ -274,9 +274,9 @@ var M = {
   董马防御: { type: '远古', cat: '变化', selfStage: { def: 1, spd: 1 }, d: '提升1级物防、特防' },
   董之盾炸碉堡: { type: '远古', cat: '变化', pri: 2, custom: 'bunker', pp: 5, d: '牺牲自己，消除对方能力提升效果，先制+2' },
   坚不可摧: { type: '机械', cat: '变化', custom: 'block100', pp: 10, d: '3回合内每回合抵挡100伤害' },
-  勇猛盾击: { type: '机械', cat: '物攻', power: 70, selfStage: { def: 1, spd: 1 }, d: '威力70，提升1级物防、特防' },
+  勇猛盾击: { type: '机械', cat: '物攻', power: 70, selfStageOne: [{ def: 1 }, { spd: 1 }], d: '威力70，随机提升1级物防或特防' },
   至高剑锋: { type: '机械', cat: '物攻', power: 85, clearSelfDownAtk: true, d: '威力85，解除自身能力下降状态' },
-  磁暴反冲: { type: '机械', cat: '变化', custom: 'recoilQ', pp: 10, d: '4回合内受到攻击时反弹对方1/4最大体力值的固定伤害' },
+  磁暴反冲: { type: '机械', cat: '变化', custom: 'recoilQ', pp: 10, d: '4回合内受到攻击时，对对方造成75点固定伤害' },
   戳刺: { type: '普通', cat: '物攻', power: 30, hidden: true, tgtStage: { def: -2 }, d: '威力30，降低对方2级物防' },
 
   // —— 幻境叶果（草/超能）

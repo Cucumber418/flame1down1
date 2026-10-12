@@ -1666,3 +1666,4 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .rk-rw summary { cursor: pointer; display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; }
 .rk-rw p { margin: 0; font-size: 14px; }
 .qs-p { white-space: nowrap; }
+.emote-bub.flip img { transform: scaleX(-1); }   /* 表情朝向对手 */

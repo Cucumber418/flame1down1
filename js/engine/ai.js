@@ -42,6 +42,7 @@ function scoreMove(S, me, foe, mv) {
   if (mv.heal || mv.healLost) s += hpR < 0.55 ? (mv.healLost ? 50 : 75) * (1 - hpR) + 15 : 0;
   if (mv.selfStage) for (var k in mv.selfStage) if (me.stages[k] < 4 && !me.tm.noBoost && !me.tm.seal) s += (hpR > 0.5 ? 16 : 4) * mv.selfStage[k];
   if (mv.selfStage && me.tm.seal > 0) s -= 40;
+  if (mv.selfStageOne && !me.tm.noBoost && !me.tm.seal) s += hpR > 0.5 ? 8 : 2;
   if (mv.tgtStage) for (var k2 in mv.tgtStage) if (foe.stages[k2] > -4 && !foe.tm.mist) s += 9 * Math.abs(mv.tgtStage[k2]);
   var stImmune = mv.status && ((mv.status.k === '寄生' && typesOf(foe).indexOf('草') >= 0) || (mv.status.k === '流血' && typesOf(foe).indexOf('机械') >= 0));
   if (mv.status && !stImmune && (!foe.st[mv.status.k] || mv.status.k === '中毒') && !foe.tm.immune && !foe.tm.reflect) s += 38 * mv.status.chance;

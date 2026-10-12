@@ -923,7 +923,7 @@
           var n = document.createElement('div'); n.className = 'float ' + (f.a === 'heal' ? 'heal' : f.c ? 'crit' : ''); n.textContent = (f.a === 'heal' ? '+' : '-') + f.n + (f.c ? '!' : '');
           mon.appendChild(n); setTimeout(function () { n.remove(); }, 950);
         } else if (f.a === 'throw') wtAnim(mon, 'throw');
-        else if (f.a === 'emote' && typeof emoteOf === 'function' && emoteOf(f.e)) { var ob = mon.querySelector('.emote-bub'); if (ob) ob.remove(); var eb = document.createElement('div'); eb.className = 'emote-bub'; eb.innerHTML = '<img src="' + emoteOf(f.e).img + '" alt="">'; mon.appendChild(eb); setTimeout(function () { eb.remove(); }, 3200); }
+        else if (f.a === 'emote' && typeof emoteOf === 'function' && emoteOf(f.e)) { var ob = mon.querySelector('.emote-bub'); if (ob) ob.remove(); var eb = document.createElement('div'); eb.className = 'emote-bub' + (f.i ? '' : ' flip'); eb.innerHTML = '<img src="' + emoteOf(f.e).img + '" alt="">'; mon.appendChild(eb); setTimeout(function () { eb.remove(); }, 3200); }
       }, k * 120);
     });
   }

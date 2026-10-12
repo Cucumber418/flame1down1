@@ -908,7 +908,8 @@
     var E0 = typeof emoteOf === 'function' ? emoteOf(id) : null; if (!E0) return;
     var mon = $('mon' + i); if (!mon) return;
     var old = mon.querySelector('.emote-bub'); if (old) old.remove();
-    var b = document.createElement('div'); b.className = 'emote-bub'; b.innerHTML = '<img src="' + E0.img + '" alt="' + esc(E0.n) + '">';
+    var b = document.createElement('div'); b.className = 'emote-bub' + (i === 0 ? ' flip' : '');   // 立绘差分都朝左：左边的自己翻过来，朝向对手
+    b.innerHTML = '<img src="' + E0.img + '" alt="' + esc(E0.n) + '">';
     mon.appendChild(b); setTimeout(function () { b.remove(); }, 3200);
   }
   $('btn-emote').addEventListener('click', function (e) {

@@ -144,7 +144,7 @@ var TM_DESC = {
   weak: '造成的伤害降低30%', swamp: '施加异常状态的成功率×1.5', mist: '免疫能力下降',
   jungle: '对体力比例低于自己的敌人伤害提升70%', siren: '倒计时结束时，若自己还在场，对方失去全部体力',
   dr40: '受到的伤害减免40%', crit2: '攻击必定致命一击', retal: '受到攻击时降低对方1级物攻、特攻、命中',
-  block: '每回合获得100点护盾，抵挡伤害', recoil: '受到攻击时反弹对方1/4最大体力的伤害',
+  block: '每回合获得100点护盾，抵挡伤害', recoil: '受到攻击时对对方造成75点固定伤害',
   sure3: '攻击必定命中', ear: '攻击必定命中；对方若试图主动闪避，其下一次受到的攻击威力翻倍', noHeal: '无法恢复体力'
 };
 function stageText(k, v) {
@@ -728,7 +728,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   }
   if (total > 0 && !me.fainted) {
     if (ability(foe) === '感电' && mv.cat === '物攻') loseHp(S, evs, i, Math.max(1, Math.floor(total * 0.15)), nm(foe) + '的「感电」反弹了部分伤害');
-    if (foe.tm.recoil > 0 && !me.fainted) loseHp(S, evs, i, Math.floor(me.maxhp / 4), nm(foe) + '的磁暴反冲造成了反弹伤害');
+    if (foe.tm.recoil > 0 && !me.fainted) loseHp(S, evs, i, 75, nm(foe) + '的磁暴反冲造成了 75 点反弹伤害');
     if (foe.tm.retal > 0 && !foe.fainted && !me.fainted) { log(S, evs, nm(foe) + '的寂灭幽映发动了', 'fxl'); changeStages(S, evs, i, { atk: -1, spa: -1, acc: -1 }, j); }
   }
   if (mv.fixedOnly === 'selfBlast' && !me.fainted) { log(S, evs, nm(me) + '舍身爆破，牺牲了自己'); me.hp = 0; faint(S, evs, i); }
@@ -789,6 +789,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
     } else changeStages(S, evs, i, { acc: -2 });
   }
   if (mv.selfStage && RNG() < (mv.selfChance || 1)) changeStages(S, evs, i, mv.selfStage);
+  if (mv.selfStageOne) changeStages(S, evs, i, mv.selfStageOne[Math.floor(RNG() * mv.selfStageOne.length)]);   // 几项里随机提升一项（勇猛盾击）
   if (mv.heal) heal(S, evs, i, me.maxhp * (mv.lowHeal && me.hp < me.maxhp / 4 ? mv.lowHeal : mv.heal));
   if (mv.healLost) heal(S, evs, i, (me.maxhp - me.hp) * mv.healLost);   // 按已损失体力回复（生命遁迹）
   if (me.tm.tri > 0 && (mt === '草' || mt === '水' || mt === '火')) { log(S, evs, '三相归元生效', 'fxl'); heal(S, evs, i, me.maxhp / 3); }
