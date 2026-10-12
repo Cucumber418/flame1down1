@@ -444,7 +444,7 @@
     if (pvp) return pvp.brawl ? '精灵大乱斗' : '切磋 · ' + (pvp.label || pvp.mode + 'v' + pvp.mode);
     if (S.training) return '竞技对战 · 训练';
     if (S.wild) return '野外 · ' + (S.wild.where || '');
-    if (S.story) { var a0 = S.sides[1].team[0]; return S.story.foe === '首领' ? '首领战 · ' + (a0.nick || SPMAP[a0.id].name) : '对战 · ' + S.story.foe; }
+    if (S.story) { var a0 = S.sides[1].team[0]; return S.story.foe === '首领' ? '首领战 · ' + (a0.nick || SPMAP[a0.id].name) + (S.story.diff ? '（' + S.story.diff + '）' : '') : '对战 · ' + S.story.foe; }
     return S.mode === 'rank' ? '竞技对战 · 平衡排位 · ' + RANKS[S.rankAt] : '竞技对战 · 沙盒';
   }
   function castFoe() { var S = app.S; return pvp ? pvp.foe : S.training ? '训练木桩' : S.wild ? '野生精灵' : S.story ? S.story.foe : '电脑'; }
@@ -544,7 +544,7 @@
   function setFieldBg(src) { var f = $('field'); f.classList.toggle('scene', !!src); f.style.backgroundImage = src ? 'linear-gradient(rgba(251,250,243,.32), rgba(251,250,243,.18)), url(' + src + ')' : ''; }
   function startStory(opt) {
     setFieldBg(opt.bg || null); bgm(opt.bgm || 'normal');
-    app.S = newBattle(opt.p, opt.a); app.S.story = { foe: opt.foe, back: opt.back || null };
+    app.S = newBattle(opt.p, opt.a); app.S.story = { foe: opt.foe, back: opt.back || null, diff: opt.diff || null };
     if (opt.items) app.S.items = opt.items;
     if (opt.env) app.S.env = opt.env;
     if (opt.wild) app.S.wild = opt.wild;
@@ -555,7 +555,7 @@
     shownIds = [null, null]; castBegin();
     var nn = function (x) { return x.nick || SPMAP[x.id].name; };
     if (opt.wild) { addLog('野生的【' + nn(opt.a[0]) + '】（LV' + opt.a[0].lv + '）出现了！你派出了【' + nn(opt.p[0]) + '】！', ''); addLog(opt.wild.where + ' · 野外对战', 'turn'); }
-    else { addLog(opt.foe + '派出了【' + nn(opt.a[0]) + '】，你派出了【' + nn(opt.p[0]) + '】！', ''); addLog('剧情对战 · ' + opt.foe, 'turn'); }
+    else { addLog(opt.foe + '派出了【' + nn(opt.a[0]) + '】，你派出了【' + nn(opt.p[0]) + '】！', ''); addLog(opt.diff ? '首领战 · ' + opt.diff : '剧情对战 · ' + opt.foe, 'turn'); }
     if (opt.env === 'miasma') addLog('这里弥漫着瘴气：每回合结束时，场上的精灵各获得 1 层瘴气（每层物攻、特攻 +5%，物防、特防 −5%）', 'bad');
     renderSnap(snap(app.S), true);
     showTab('moves'); refreshCmd();
@@ -641,7 +641,7 @@
       var html = '<span class="tape ' + (i ? 'r' : 'l') + '"></span>' +
         '<div class="row1"><span class="pn">' + esc(sd.name) + '</span>' + typeTips(sd, sn.sides[1 - i]) + statTip(sd, i === 1 && rankOn()) +
           '<span class="abil" tabindex="0" aria-label="特性 ' + esc(sd.ability.n) + '：' + esc(sd.ability.d) + '">特性 · ' + esc(sd.ability.n) +
-          '<span class="tip" role="tooltip"><b>特性 · ' + esc(sd.ability.n) + '</b>' + esc(sd.ability.d) + (sd.ability.extra ? '<span class="tipx">' + esc(sd.ability.extra) + '</span>' : '') + '<span class="tipx">当前是否生效，看血条下方状态栏里的特性</span></span></span><span class="who">' + esc(sd.dummy ? '训练木桩' : i ? (pvp ? pvp.foe : app.S && app.S.story ? app.S.story.foe : '对手') : '你') + '</span></div>' +
+          '<span class="tip" role="tooltip"><b>特性 · ' + esc(sd.ability.n) + '</b>' + esc(sd.ability.d) + (sd.ability.extra ? '<span class="tipx">' + esc(sd.ability.extra) + '</span>' : '') + '<span class="tipx">当前是否生效，看血条下方状态栏里的特性</span></span></span><span class="who">' + esc(sd.dummy ? '训练木桩' : i ? (pvp ? pvp.foe : app.S && app.S.story ? app.S.story.foe + (app.S.story.diff ? ' · ' + app.S.story.diff : '') : '对手') : '你') + '</span></div>' +
         '<div class="hpbar"><i class="' + hpClass(sd.hp, sd.maxhp) + '" style="width:' + (sd.hp / sd.maxhp * 100) + '%"></i></div>' +
         '<div class="hprow"><span>' + (sd.dummy ? '体力 ∞' : sd.hp + ' / ' + sd.maxhp) + '</span><span class="pips">' +
         sd.team.map(function (t) { var hide = i === 1 && rankOn() && !t.seen; return '<span class="' + (hide ? 'unk' : t.fainted ? 'dead' : '') + (t.active ? ' cur' : '') + '" title="' + esc(hide ? '还没派出' : t.nick || SPMAP[t.id].name) + '">' + (hide ? '?' : '') + '</span>'; }).join('') + '</span></div>' +

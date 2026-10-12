@@ -1274,6 +1274,9 @@
   }
   function invCopy() { var o = {}; ITEM_ORDER.forEach(function (k) { o[k] = acc.items[k] || 0; }); return o; }
   function useInv(k) { acc.items[k] = Math.max(0, (acc.items[k] || 0) - 1); save(); }
+  // 每天通过 PVE 战斗直接获得的经验上限（击败精灵的经验，含进经验背包的那部分；首领首通、任务等奖励不算）
+  var PVE_XP_CAP = 120000;
+  function pveLeft() { var d = dayStr(); if (!acc.pveXp || acc.pveXp.d !== d) acc.pveXp = { d: d, n: 0 }; return Math.max(0, PVE_XP_CAP - acc.pveXp.n); }
   // 击败一只精灵：经验 = 等级² × 2 + 20；学习力按对方等级 1 / 2 / 3 点
   function foeExp(lv) { return lv * lv * 2 + 20; }
   function foeEv(lv) { return lv <= 25 ? 1 : lv <= 50 ? 2 : 3; }
@@ -1281,12 +1284,15 @@
     downs = downs || []; if (!downs.length) return [];
     var parts = team.filter(function (x, i) { return seen && seen[i]; }); if (!parts.length) parts = team.slice(0, 1);
     var xp = 0, ev = 0; downs.forEach(function (d) { xp += foeExp(d.lv); ev += foeEv(d.lv); });
+    var raw = xp, left = pveLeft(); xp = Math.min(xp, left); acc.pveXp.n += xp;
     var share = Math.floor(xp * 0.7 / parts.length), pool = xp - share * parts.length, out = [];
-    acc.exp = (acc.exp || 0) + pool;
-    out.push('击败了 ' + downs.length + ' 只精灵，共获得 ' + fmt(xp) + ' 点经验：');
-    var lines = parts.map(function (m) { return gainExp(m, share); }).filter(Boolean);
-    out.push(lines.join(''));
-    out.push('经验背包 +' + fmt(pool) + '。');
+    if (xp > 0) {
+      acc.exp = (acc.exp || 0) + pool;
+      out.push('击败了 ' + downs.length + ' 只精灵，共获得 ' + fmt(xp) + ' 点经验' + (xp < raw ? '（今天的战斗经验已达上限 ' + fmt(PVE_XP_CAP) + '）' : '') + '：');
+      var lines = parts.map(function (m) { return gainExp(m, share); }).filter(Boolean);
+      out.push(lines.join(''));
+      out.push('经验背包 +' + fmt(pool) + '。');
+    } else out.push('击败了 ' + downs.length + ' 只精灵。今天通过战斗获得的经验已达上限（' + fmt(PVE_XP_CAP) + '），明天再来吧。');
     var got = giveEv(parts.map(function (x) { return x.u; }), ev);
     if (got.length) out.push(got.join('、') + (got.length > 1 ? ' 各' : ' ') + '获得 ' + ev + ' 点学习力。');
     save(); return out;
@@ -2413,7 +2419,7 @@
     var rec = bossRec(k, weekly ? 'w' : d); rec.tries++; save();
     stopTimers(); ex.fighting = true; document.body.classList.add('story-fight'); syncBattle();
     $('pg-explore').hidden = true; $('pg-arena').hidden = false;
-    window.HSBATTLE.start({ p: p, a: a, foe: '首领', bgm: L.bgm, items: invCopy(), onItem: useInv, bg: BG[B.bg], back: weekly ? '每周挑战' : bossWhere(B),
+    window.HSBATTLE.start({ p: p, a: a, foe: '首领', diff: weekly ? '每周挑战' : L.diff + '难度', bgm: L.bgm, items: invCopy(), onItem: useInv, bg: BG[B.bg], back: weekly ? '每周挑战' : bossWhere(B),
       onEnd: function (res, seen, downs) {
         var msg = [], first = false, wasWeekly = weeklyOpen();
         dailyHit('boss'); dailyHit('pve');
