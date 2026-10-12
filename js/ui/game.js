@@ -424,7 +424,7 @@
     var s = SPMAP[m.sid], st = stageOf(s, m.lv);
     return '<div class="evo-line">' + s.evo.map(function (e, i) {
       var n = formRawName(s, i); n = n ? n.replace('?', '') : s.name + '·' + stageLabel(s, i);
-      if (s.placeholder && i > 0) n = '？';
+      if ((s.placeholder || s.tbdForms) && i > 0) n = '？';
       return (i ? '<span>→ LV' + e.lv + ' →</span>' : '') + '<b class="' + (i === st ? 'cur' : '') + '">' + esc(n) + '</b>';
     }).join('') + '</div>';
   }
@@ -462,9 +462,9 @@
       '<div class="d-head"><button type="button" class="d-art" data-abig="' + m.sid + '|' + f.stage + '" title="点击查看大图" aria-label="查看' + esc(f.name) + '的大图"><img src="' + f.img + '" alt="' + esc(f.name) + '"></button><div>' +
       '<h3>' + (f.no ? '<span class="dexno">No.' + f.no + '</span>' : '') + esc(f.name) + (f.unsure ? '<i class="q" title="字迹没看清">?</i>' : '') + (m.shiny ? '<span class="shiny-tag big" title="异色精灵：和同类长得不一样的稀有配色">异色</span>' : '') + '</h3>' +
       '<p style="margin:0 0 6px"><span class="lvbig">LV' + m.lv + '</span>' + tchips(s.types) + '</p>' +
-      '<p class="hint">' + stageLabel(s, f.stage) + (!isFin(s, f.stage) ? ' · 最终进化为' + (s.placeholder ? '？' : s.name) : '') +
+      '<p class="hint">' + stageLabel(s, f.stage) + (!isFin(s, f.stage) ? ' · 最终进化为' + (s.placeholder || s.tbdForms ? '？' : s.name) : '') +
       (ts.length ? ' · ' + ts.map(function (x) { return TEAM_NAME[x.t] + (x.lead ? '首发' : ''); }).join('、') : ' · 未加入配队') + '</p>' +
-      (f.d ? '<p class="formdesc">' + esc(f.d) + '</p>' : '') + evoLine(m) + (s.placeholder ? '<p class="placeholder-note" style="margin-top:6px">数值和技能还是占位，二阶和最终形态还没画出来</p>' : '') + '</div></div>' +
+      (f.d ? '<p class="formdesc">' + esc(f.d) + '</p>' : '') + evoLine(m) + (s.placeholder ? '<p class="placeholder-note" style="margin-top:6px">数值和技能还是占位，二阶和最终形态还没画出来</p>' : s.tbdForms ? '<p class="placeholder-note" style="margin-top:6px">二阶和最终形态还没画出来</p>' : '') + '</div></div>' +
       expBox(m) + stats +
       '<div class="trait"><p><b>特性 · ' + esc(s.ability.n) + '</b>　<span class="blue">' + esc(s.ability.d) + '</span></p>' + (s.ability.extra ? '<p class="blue" style="font-size:13px">' + esc(s.ability.extra) + '</p>' : '') +
       (acc.emblems && acc.emblems[m.sid] && EMBLEMS[m.sid] ? '<p><b>纹章 · ' + EMBLEMS[m.sid].m + '</b>　<span class="blue">' + esc(EMBLEMS[m.sid].d) + '</span></p>' : '') + '</div>' +
@@ -878,7 +878,7 @@
     if (!sid) return '<p class="empty-note">点击已点亮的精灵，查看秘鉴里记载的资料。灰色的精灵还没有带回来过。</p>';
     var s = SPMAP[sid];
     var forms = s.evo.map(function (e, i) {
-      var n = formRawName(s, i); n = n ? n.replace('?', '') : s.name + '·' + stageLabel(s, i); if (s.placeholder && i > 0) n = '？';
+      var n = formRawName(s, i); n = n ? n.replace('?', '') : s.name + '·' + stageLabel(s, i); if ((s.placeholder || s.tbdForms) && i > 0) n = '？';
       var img = formImg(s, i), kn = formKnown(s.id, i);
       if (!kn) return '<li class="unk"><span class="hgf">' + silTag(s.id, i) + '</span><b>' + (e.no ? '<span class="dexno">No.' + e.no + '</span>' : '') + '？？？</b><small>' + stageLabel(s, i) + ' · ' + (i === 0 ? 'LV1 起' : 'LV' + e.lv + ' 进化') + '</small><p class="hint">还没有见过这一形态。</p></li>';
       return '<li><button type="button" class="hgf" data-abig="' + s.id + '|' + i + '"><img src="' + img + '" alt=""></button><b>' + (e.no ? '<span class="dexno">No.' + e.no + '</span>' : '') + esc(n) + '</b><small>' + stageLabel(s, i) + ' · ' + (i === 0 ? 'LV1 起' : 'LV' + e.lv + ' 进化') + '</small>' + (e.d ? '<p>' + esc(e.d) + '</p>' : '') + '</li>';

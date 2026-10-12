@@ -44,7 +44,8 @@ function sp(m) { return m.id === 'dummy' ? (m.dummySpec || DUMMY) : SPMAP[m.id];
 function ability(m) { return sp(m).ability ? sp(m).ability.n : '无'; }
 // 纹章：账号里获得过某类精灵的纹章后，带进战斗的这类精灵会带上 emblem（见 EMBLEMS）
 var EMBLEMS = {
-  tagore: { m: '普通拳', n: '普通拳纹章', d: '每场战斗第一次使用普通拳时，不会降低自身命中，并解除自身的能力下降和异常状态' }
+  tagore: { m: '普通拳', n: '普通拳纹章', d: '每场战斗第一次使用普通拳时，不会降低自身命中，并解除自身的能力下降和异常状态' },
+  shroom: { m: '净化之焰', n: '净化之焰纹章', d: '使用净化之焰时，额外降低对方1级物攻、特攻' }
 };
 function hasEmblem(m, mv) { return (m.emblem && m.emblem === mv) || !!(sp(m).emblem && sp(m).emblem.m === mv); }
 
@@ -200,6 +201,8 @@ function abilityLive(m, foe) {
       on = f.hp <= f.maxhp / 3; return on ? '生效中：对手体力已低于1/3，造成伤害 +25%' : '未生效：对手体力降到 ' + Math.floor(f.maxhp / 3) + ' 以下时，造成伤害 +25%';
     case '踏浪': return m.tm.prio > 0 && !(m.tm.prio > 1 && false) ? '生效中：本回合技能先制 +1' : '已结束：出场时的先制 +1 已用完';
     case '盾甲': return '持续生效：受到伤害 -10%';
+    case '熔岩': if (!f) return '对手不在场，暂不生效';
+      on = f.st['烧伤'] > 0; return on ? '生效中：对手处于烧伤，造成伤害 +25%' : '未生效：对手烧伤时，造成伤害 +25%';
     case '幻叶': return lowSelf ? '生效中：体力已低于1/3，受到伤害 -15%' : '未生效：体力降到 ' + Math.floor(m.maxhp / 3) + ' 以下时，受到伤害 -15%';
   }
   return sp(m).ability ? sp(m).ability.d : '';
@@ -269,6 +272,7 @@ function statSheet(m, foe) {
   if (ab === '起源' && f && speedOf(m) > speedOf(f)) dmgOut *= 1.15;
   if (ab === '熔炼') dmgOut *= 1 + 0.06 * Math.min(5, t + 1);
   if (ab === '追猎' && f && f.hp <= f.maxhp / 3) dmgOut *= 1.25;
+  if (ab === '熔岩' && f && f.st['烧伤'] > 0) dmgOut *= 1.25;
   if (m.fx.moonNext) dmgOut *= 1.15;
   if (m.perm && m.perm.moonFull) dmgOut *= 1.15;
   if (m.tm.weak > 0) dmgOut *= 0.7;
@@ -457,7 +461,8 @@ function calcDamage(me, foe, mv, firstMover, est) {
   if (est) mod *= 236 / 255;
   else {
     var cr = (mv.crit === 'high' ? 0.25 : 1 / 16) * (ab === '虚空' ? 2 : 1);
-    if (me.fx.sureCrit) { crit = true; me.fx.sureCrit = 0; }
+    if (mv.alwaysCrit) crit = true;   // 淬命之焰：必定致命一击（不消耗「下次必暴」）
+    else if (me.fx.sureCrit) { crit = true; me.fx.sureCrit = 0; }
     else if (me.tm.crit2 > 0) crit = true;
     else crit = RNG() < cr;
     if (crit) mod *= 1.5;
@@ -470,6 +475,7 @@ function calcDamage(me, foe, mv, firstMover, est) {
   if (ab === '起源' && speedOf(me) > speedOf(foe)) mod *= 1.15;
   if (ab === '熔炼') mod *= 1 + 0.06 * Math.min(5, (me.fx.fieldT || 0) + 1);
   if (ab === '追猎' && foe.hp <= foe.maxhp / 3) mod *= 1.25;
+  if (ab === '熔岩' && foe.st['烧伤'] > 0) mod *= 1.25;
   if (me.fx.moonNext) mod *= 1.15;
   if (me.perm.moonFull) mod *= 1.15;
   if (fab === '枯萎') mod *= Math.max(0.7, 1 - 0.05 * (foe.fx.fieldT || 0));
@@ -480,6 +486,7 @@ function calcDamage(me, foe, mv, firstMover, est) {
     case 'halfHpBoost': if (foe.hp < foe.maxhp / 2) mod *= 1.5; break;
     case 'poisonBoost': if (foe.st['中毒'] > 0) mod *= 1.5; break;
     case 'lowHpX2': if (me.hp < me.maxhp / 3) mod *= 2; break;
+    case 'lateX2': if (!firstMover) mod *= 2; break;   // 回转之焰：后出手时威力翻倍
   }
   if (me.tm.jungle > 0 && foe.hp / foe.maxhp < me.hp / me.maxhp) mod *= 1.7;
   if (me.fx.boostNext) mod *= 1.5;
@@ -672,7 +679,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   if (foe.tm.dodge > 0 && RNG() < 0.4) { log(S, evs, nm(foe) + '用光滑皮肤闪开了攻击！', 'fxl'); me.fx.boostNext = 0; return; }
   if (mv.cat === '物攻' && foe.tm.voidPhys > 0) { log(S, evs, nm(foe) + '处于虚空化，物理攻击穿过了它的身体！', 'fxl'); me.fx.boostNext = 0; return; }
 
-  var total = 0, lastEff = 1, n = 0, hits = 1;
+  var total = 0, lastEff = 1, n = 0, hits = 1, raw = 0;
   if (mv.fixedOnly) {
     var fa = fixedAmount(me, foe, mv);
     log(S, evs, '造成 ' + fa + ' 点固定伤害', 'fxl');
@@ -686,7 +693,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
     }
     for (var h = 0; h < hits && foe.hp > 0; h++) {
       var res = calcDamage(me, foe, mv, firstMover, false);
-      lastEff = res.eff; n++;
+      lastEff = res.eff; n++; raw += res.dmg;
       if (res.crit) log(S, evs, '致命一击！', 'crit');
       total += applyDamage(S, evs, j, res.dmg, i, { crit: res.crit, eff: res.eff, noFaint: true });
       if (me.fainted) break;
@@ -740,7 +747,9 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   if (me.fainted) return;
   if (mv.drain && total > 0) { var dh = heal(S, evs, i, total * mv.drain); hqR(me).h[mv.name] = (hqR(me).h[mv.name] || 0) + dh; }
   if (mv.struggle && total > 0) loseHp(S, evs, i, Math.max(1, Math.floor(total / 4)), nm(me) + '受到了反作用伤害');
+  if (mv.recoil && total > 0 && !me.fainted) loseHp(S, evs, i, Math.max(1, Math.floor(total * mv.recoil)), nm(me) + '受到了反弹伤害');   // 烈焰冲锋
   if (total > 0 && me.tm.induct > 0) { log(S, evs, '电磁感应生效', 'fxl'); changeStages(S, evs, i, { spa: 1 }); }
+  me.fx.hqRaw = raw;   // 这一招算出来的伤害（不按对方剩余体力截断），隐藏技能「淬命之焰」的领悟条件用
   if (foe.fainted) {
     if (i === 0) hqKO(S, evs, me, foe, mv);
     if (mv.koHeal) heal(S, evs, i, me.maxhp * mv.koHeal);
@@ -818,7 +827,7 @@ function clearUps(S, evs, j) {
 }
 
 var FOE_CUSTOM = { noSwitch: 1, stealDef: 1, stealAtk: 1, hail: 0, noBoostFoe: 1, melt: 1, burnout: 1, wither: 1, weak2: 1, seal: 1, silentSea: 1, selfDestruct: 0, bunker: 0, dielectric: 1, chaosWater: 1 };
-function targetsFoe(mv) { return !!(mv.tgtStage || mv.status || FOE_CUSTOM[mv.custom]); }
+function targetsFoe(mv) { return !!(mv.tgtStage || mv.status || mv.clearTgtUp || FOE_CUSTOM[mv.custom]); }
 
 var EVADE_CUSTOM = { dodge: 1, absDef: 1, dodgeOne: 1, voidPhys: 1 };
 function doStatus(S, evs, i, mv) {
@@ -844,6 +853,10 @@ function doStatus(S, evs, i, mv) {
     if (mv.status) {
       if (statusRoll(me, mv.status.chance)) addStatus(S, evs, j, mv.status.k, rint(mv.status.min, mv.status.max), i, false, mv.status.refresh);
       else if (!mv.tgtStage) log(S, evs, '但是对方没有受到影响');
+    }
+    if (mv.clearTgtUp) {   // 净化之焰
+      if (STG.some(function (k) { return foe.stages[k] > 0; })) clearUps(S, evs, j); else log(S, evs, nm(foe) + '没有能力提升效果可以消除');
+      if (mv.emblemDown && hasEmblem(me, mv.name)) { log(S, evs, nm(me) + '的纹章发动了', 'fxl'); changeStages(S, evs, j, mv.emblemDown, i); }
     }
   }
   var sst = mv.selfStage;
@@ -1040,7 +1053,9 @@ function hqKO(S, evs, me, foe, mv) {
     唤潮之佑: !!(by['浪花'] && by['海浪']) && foe.stages.acc <= -3,
     戳刺: n === '至高剑锋' && !!(fu['盾墙'] || fu['坚不可摧'] || fu['勇猛盾击']),
     生命榨取: (q.h['幻境汲取'] || 0) >= me.maxhp * 0.5,
-    万灵封印: fu['生命遁迹'] > 0 && me.stages.spa >= 3 && me.stages.def >= 3 && me.stages.spd >= 3
+    万灵封印: fu['生命遁迹'] > 0 && me.stages.spa >= 3 && me.stages.def >= 3 && me.stages.spd >= 3,
+    淬命之焰: n === '火焰车' && (me.fx.hqRaw || 0) > foe.maxhp,
+    高温禁锢: Math.min(me.fx.fieldT || 0, foe.fx.fieldT || 0) >= 10
   };
   for (var k in R) if (R[k]) hqGet(S, evs, me, k);
 }

@@ -48,6 +48,7 @@ function scoreMove(S, me, foe, mv) {
   var stImmune = mv.status && ((mv.status.k === '寄生' && typesOf(foe).indexOf('草') >= 0) || (mv.status.k === '流血' && typesOf(foe).indexOf('机械') >= 0));
   if (mv.status && !stImmune && (!foe.st[mv.status.k] || mv.status.k === '中毒' || (mv.status.refresh && foe.st[mv.status.k] <= 2)) && !foe.tm.immune && !foe.tm.reflect) s += 38 * mv.status.chance;
   if (stImmune && !mv.tgtStage) s -= 40;
+  if (mv.clearTgtUp && mv.cat === '变化') { var up = 0; STG.forEach(function (k) { if (foe.stages[k] > 0) up += foe.stages[k]; }); s += up ? 14 * up : -25; }
   if (mv.status && foe.tm.reflect) s -= 30;
   var faster = speedOf(me) > speedOf(foe);
   var c = mv.custom;
