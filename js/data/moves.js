@@ -286,7 +286,7 @@ var M = {
   光之杖: { type: '光', cat: '变化', selfStage: { spa: 1 }, custom: 'lightStaff', pp: 10, d: '提升1级特攻，并随机提升1级物防或特防（各50%）；使对方2回合内无法恢复体力（禁疗）' },
   闪光飞叶: { type: '草', cat: '特攻', power: 100, custom: 'flashLeaf', pp: 10, d: '威力100，命中后使对方下一次受到攻击时，额外降低其1级命中' },
   灵耳谛听: { type: '普通', cat: '变化', hidden: true, custom: 'ear', pp: 5, d: '3回合内攻击必定命中；期间对方若试图主动闪避（使用提升闪避或闪避攻击的技能），则使其下一次受到的攻击威力翻倍' },
-  星星魔法: { type: '光', cat: '特攻', power: 25, hidden: true, custom: 'starMagic', pp: 15, d: '威力25，每使用一次，威力比上一次提升25点，最高200；换下场也会保留' }
+  星星魔法: { type: '光', cat: '特攻', power: 25, hidden: true, custom: 'starMagic', pp: 15, d: '威力25，每使用一次，威力比上一次提升25点，最高125；换下场也会保留。达到最高威力后，命中时有50%概率降低对方1级速度' }
 };
 (function () {
   for (var n in M) {

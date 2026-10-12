@@ -25,6 +25,7 @@ function mvType(me, mv) {
   if (mv.custom === 'lightside') return '光'; return me.tm && me.tm.darkside > 0 ? '暗影' : mv.type;
 }
 // 光影之月下，月之暗面 / 月之亮面不能再使用
+var STAR_MAX = 125;   // 星星魔法的最高威力（2026-10-12 从 200 削弱到 125；达到后命中有 50% 概率降低对方 1 级速度）
 function moveBlocked(me, slot) { return !!(slot && M[slot.n] && ((me.perm && me.perm.moonFull && M[slot.n].custom === 'darkside') || (me.flags && me.flags.sy && M[slot.n].cat === '变化'))); }
 // 技能为什么不能用（界面上显示）：光影之月 / 沈阳大街（复活后的困难泰戈尔的场地效果，变化技能都不能用）
 function blockWhy(me, slot) { return !moveBlocked(me, slot) ? '' : me.flags && me.flags.sy && M[slot.n].cat === '变化' ? '沈阳大街中不可用' : '光影之月中不可用'; }
@@ -223,7 +224,7 @@ function chipsOf(m, foe) {
   if (m.shiny) c.push({ t: '异色', k: 'fx', h: '异色精灵', d: '和同类长得不一样的稀有配色，能力和普通的一样' });
   if (m.puppet) c.push({ t: '瘴毒傀儡', k: 'st', h: '瘴毒傀儡', d: '荒芜召唤出来的傀儡，只会使用攻击技能。被击败后荒芜会重新上场。' });
   if (m.emblem && EMBLEMS[m.id]) c.push({ t: '纹章 · ' + m.emblem, k: 'fx' + (m.flags.punch ? '' : ' on'), h: EMBLEMS[m.id].n, d: EMBLEMS[m.id].d + (m.flags.punch ? '（本场已经生效过）' : '') });
-  if (m.perm && m.perm.star) c.push({ t: '星星魔法 ×' + m.perm.star, k: 'fx', h: '星星魔法 · 已使用 ' + m.perm.star + ' 次', d: '下一次星星魔法威力 ' + Math.min(200, 25 * (m.perm.star + 1)) + '（换下场也会保留）' });
+  if (m.perm && m.perm.star) c.push({ t: '星星魔法 ×' + m.perm.star, k: 'fx', h: '星星魔法 · 已使用 ' + m.perm.star + ' 次', d: '下一次星星魔法威力 ' + Math.min(STAR_MAX, 25 * (m.perm.star + 1)) + (25 * (m.perm.star + 1) >= STAR_MAX ? '（已达最高，命中时 50% 降低对方 1 级速度）' : '') + '（换下场也会保留）' });
   if (m.fx.flash) c.push({ t: '闪光', k: 'st', h: '闪光飞叶', d: '下一次受到攻击时，额外降低1级命中' });
   if (m.fx.earMark) c.push({ t: '被听穿', k: 'st', h: '灵耳谛听', d: '试图闪避被识破：下一次受到的攻击威力翻倍' });
   if (miaN(m)) c.push({ t: '瘴气 ×' + miaN(m), k: 'st', h: '瘴气 · ' + miaN(m) + ' 层', d: '物攻、特攻 +' + (miaN(m) * 5) + '%，物防、特防 −' + Math.min(90, miaN(m) * 5) + '%（每层 ±5%，防御最低降到 10%）。持续到战斗结束，换下场也不会消失；在瘴气环境中每回合结束时再获得 1 层。' });
@@ -430,7 +431,7 @@ function movePower(me, foe, mv) {
     case 'originStorm': power += 15 * Math.max(0, -foe.stages.spe); break;
     case 'punish': power += 20 * posSum(foe); break;
     case 'canyue': power = Math.min(160, 10 * Math.pow(2, me.flags.canyue || 0)); break;
-    case 'starMagic': var sn = me.perm.star || 0; power = Math.min(200, 25 * (me.fx.starNow ? sn : sn + 1)); break;
+    case 'starMagic': var sn = me.perm.star || 0; power = Math.min(STAR_MAX, 25 * (me.fx.starNow ? sn : sn + 1)); break;
   }
   if (foe.fx && foe.fx.earMark) power *= 2;
   return power;
@@ -696,6 +697,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
     else log(S, evs, '灭却没有发动（成功率 ' + Math.round(pk * 100) + '%）');
   }
   if (mv.custom === 'originBlade' && !foe.fainted && foe.stages.spe <= -6) { log(S, evs, '起源巨刃斩断了速度降到最低的敌人！', 'crit'); applyDamage(S, evs, j, foe.hp + (foe.fx.shield || 0), i, {}); }
+  if (mv.custom === 'starMagic' && total > 0 && !foe.fainted && 25 * (me.perm.star || 0) >= STAR_MAX && RNG() < 0.5) { log(S, evs, '星光缠住了' + nm(foe) + '的脚步', 'fxl'); changeStages(S, evs, j, { spe: -1 }, i); }   // 达到最高威力后：50% 降速
   if (total > 0) {
     hqLand(me, foe, mv.name, i);
     if (foe.fx.earMark) foe.fx.earMark = 0;
