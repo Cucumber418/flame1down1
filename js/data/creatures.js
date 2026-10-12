@@ -156,7 +156,7 @@ var DUMMY = { id: 'dummy', name: '木桩', types: ['无'], type: '无', base: { 
 // 只在账号系统里出现的精灵（不进入竞技对战，也不参与强度测算）：占位精灵，以及竞技名单固定之后新加的所有精灵
 var EXTRA_SP = [
   { id: 'shroom', name: '方头蘑菇', types: ['火'], base: { hp: 80, atk: 80, def: 80, spa: 80, spd: 80, spe: 80 }, unsure: ['hp', 'atk', 'def', 'spa', 'spd', 'spe'], placeholder: true,
-    evo: [{ n: '方头蘑菇', lv: 1, no: '007' }, { n: null, lv: 25 }, { lv: 50 }], evoLvSure: false,
+    evo: [{ n: '方头蘑菇', lv: 1, no: '007', d: '在武汉的酷暑下长大的火系蘑菇，头顶上的不是火焰，而是火焰花纹的伞盖。' }, { n: null, lv: 25 }, { lv: 50 }], evoLvSure: false,
     ability: { n: '（待设定）', d: '特性暂未设定，目前没有效果' },
     lore: '一阶「方头蘑菇」的形象已经画好；二阶、最终形态的形象，以及数值和技能还是占位。',
     moves: ['火之刃', '流火', '爆炎斩', '火焰漩涡', '焚烧', '火焰能量', '猛冲击', '磨刀'],
