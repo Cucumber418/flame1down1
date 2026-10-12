@@ -1079,6 +1079,7 @@ function reviveTiger(S, evs, j, t) {
   delete b.feud; b.eternal = 1; b.relive = 1; b.sy = 1;
   t.stats.atk = Math.floor((b.atk0 || t.stats.atk) * 1.6);
   t.nick = '热血·' + (t.nick || sp(t).name).replace(/^热血·/, '');
+  if (typeof AWAKE_SPRITES !== 'undefined' && AWAKE_SPRITES[t.id]) t.img = AWAKE_SPRITES[t.id];   // 换成复活后的形态，一直保持到战斗结束
   [0, 1].forEach(function (i) { S.sides[i].team.forEach(function (m) { if (!m.flags) m.flags = {}; m.flags.sy = 1; }); });
   log(S, evs, '「东北的往事」：' + nm(t) + '不屈地复活了！（体力 3000）', 'crit');
   log(S, evs, '「东北的纷争」变成了「永续的纷争」：物攻永久提升 60%，但受到的伤害增加 20%', 'fxl');

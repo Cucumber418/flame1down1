@@ -299,3 +299,8 @@ var EMOTES = [
 function emoteOf(id) { for (var i = 0; i < EMOTES.length; i++) if (EMOTES[i].id === id) return EMOTES[i]; return null; }
 // 私信里的表情写成「[[e:表情id]]」这样一条消息
 function emoteMsg(text) { var m = /^\[\[e:([a-z_]+)\]\]$/.exec(text || ''); return m ? emoteOf(m[1]) : null; }
+
+// 首领在战斗中途换的形态（只在对应的战斗里出现，不进图鉴）
+var AWAKE_SPRITES = {
+  "tagore": "images/sprites/tagore_awake.webp"
+};

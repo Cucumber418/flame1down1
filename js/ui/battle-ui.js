@@ -660,8 +660,8 @@
         if (lv && nlv) { var open = lv.matches(':hover') || lv === document.activeElement; lv.querySelector('.tip').innerHTML = nlv.querySelector('.tip').innerHTML; if (open) fitTip({ target: lv }); }
       }
       var mon = $('mon' + i), img = mon.querySelector('img');
-      if (shownIds[i] !== sd.id + (sd.img ? '*' : '')) {
-        shownIds[i] = sd.id + (sd.img ? '*' : ''); img.src = sd.img || SPRITES[sd.id]; img.alt = sd.name;
+      if (shownIds[i] !== sd.id + '|' + (sd.img || '')) {   // 换了图（比如首领中途换形态）也要重画
+        shownIds[i] = sd.id + '|' + (sd.img || ''); img.src = sd.img || SPRITES[sd.id]; img.alt = sd.name;
         mon.classList.remove('fainted'); if (!instant) restartAnim(mon, 'enter');
       }
       if (sd.fainted) mon.classList.add('fainted'); else mon.classList.remove('fainted');
