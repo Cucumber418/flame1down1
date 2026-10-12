@@ -71,7 +71,7 @@ var PRE_SPRITES = {
   "gorgon_s2": "images/pre_sprites/gorgon_s2.png",
   "squid_s1": "images/pre_sprites/squid_s1.png",
   "squid_s2": "images/pre_sprites/squid_s2.png",
-  "wind_s1": "images/pre_sprites/wind_s1.png",
+  "wind_s1": "images/pre_sprites/wind_s1.webp",
   "wind_s2": "images/pre_sprites/wind_s2.png",
   "pluto_s1": "images/pre_sprites/pluto_s1.png",
   "pluto_s2": "images/pre_sprites/pluto_s2.png",
