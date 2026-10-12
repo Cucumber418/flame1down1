@@ -306,7 +306,7 @@ ffmpeg -i 原曲.mp3 -vn -map_metadata -1 -af loudnorm=I=-16:TP=-1.5:LRA=11 -ar 
 
 ## 支线 · 伟大的种植园（恩施 · 生态舱）
 
-`SITES.plant`（剧本 `STORY_SCRIPT.plant`）：读完主线「降临芙罗拉」（flora1）后出现在恩施，读完开放太空种植园（`farmOpen()`），奖励能量 ×200、药草种子 ×2。这条支线上线前已经在种植园种过东西（`acc.farm.plots` 里有作物）的存档照常能进。恩施还没有专门的背景图，剧情暂用 `cabin_p`，站点的 `spot: '试验田'` 让剧情顶部的地点名显示「试验田」而不是背景图原本的名字（`setBg` 里优先用 `SITES[id].spot`）。
+`SITES.plant`（剧本 `STORY_SCRIPT.plant`）：读完主线「降临芙罗拉」（flora1）后出现在恩施，读完开放太空种植园（`farmOpen()`），奖励能量 ×200、药草种子 ×2。这条支线上线前已经在种植园种过东西（`acc.farm.plots` 里有作物）的存档照常能进。恩施的背景是 `greenhouse_p`（太空温室，参考图用 `tools/stylize_bg.py` 统一画风，原图较小先放大 3 倍再转）。站点可以写 `spot: '地点名'`，剧情顶部的地点名就优先显示它而不是背景图的名字（`setBg` 里），适合借用别处背景的剧情。
 
 ## 精灵推荐（航行日志）
 
