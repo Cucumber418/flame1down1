@@ -173,6 +173,7 @@ function abilityLive(m, foe) {
   var lowSelf = m.hp <= m.maxhp / 3;
   switch (ab) {
     case '旅行': return '每次被替换上场时，提升1级速度（首发上场不触发）';
+    case '饭香': return '每回合结束时 20% 概率吃一口米饭' + (m.perm.rice ? '（本场已吃 ' + m.perm.rice + ' 口）' : '');
     case '龙啸': if (!f) return '对手不在场，暂不生效';
       on = f.hp < m.hp; return on ? '生效中：对手体力 ' + f.hp + ' 低于自己 ' + m.hp + '，造成伤害 +15%' : '未生效：对手体力 ' + f.hp + ' 不低于自己 ' + m.hp;
     case '复苏': return lowSelf ? '生效中：体力已低于1/3，造成伤害 +30%' : '未生效：体力降到 ' + Math.floor(m.maxhp / 3) + ' 以下时，造成伤害 +30%';
@@ -675,6 +676,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   } else {
     if (mv.hits) {
       if (mv.custom === 'fireHits' && foe.st['烧伤'] > 0) hits = 9;
+      else if (mv.custom === 'riceHits') hits = Math.min(15, rint(mv.hits[0], mv.hits[1]) + (me.perm.rice || 0));   // 非凡连击：每吃过一口米饭 +1 次
       else if (mv.hits[0] === 2 && mv.hits[1] === 5) { var r = RNG(); hits = r < 0.35 ? 2 : r < 0.7 ? 3 : r < 0.85 ? 4 : 5; }
       else hits = rint(mv.hits[0], mv.hits[1]);
     }
@@ -686,6 +688,8 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
       if (me.fainted) break;
     }
     if (lastEff > 1) log(S, evs, '效果拔群！', 'good'); else if (lastEff < 1) log(S, evs, '效果不太好……');
+    // 每次攻击附带的固定伤害（飞空连击、非凡连击）：按命中次数合起来结算一次，免得十几次连击动画太长
+    if (mv.fixedHit && n && foe.hp > 0 && !me.fainted) { log(S, evs, '每次攻击附带 ' + mv.fixedHit + ' 点固定伤害，共 ' + (mv.fixedHit * n) + ' 点', 'fxl'); total += applyDamage(S, evs, j, mv.fixedHit * n, i, { noFaint: true }); }
   }
   log(S, evs, '对' + nm(foe) + '造成 ' + total + ' 点伤害', 'dmg');
   if (foe.hp <= 0 && !foe.fainted) faint(S, evs, j);
@@ -740,7 +744,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   } else {
     if (mv.tgtStage && RNG() < (mv.tgtChance || 1)) changeStages(S, evs, j, mv.tgtStage, i);
     if (mv.status && statusRoll(me, mv.status.chance)) addStatus(S, evs, j, mv.status.k, rint(mv.status.min, mv.status.max), i);
-    if (mv.clearTgtUp) clearUps(S, evs, j);
+    if (mv.clearTgtUp && RNG() < (mv.clearTgtChance || 1)) clearUps(S, evs, j);
     switch (mv.custom) {
       case 'brand':
         // 叠满 2 层必定麻痹 2 回合；之后对方进入烙印冷却（麻痹期间 + 解除后 1 回合），这段时间叠不上烙印
@@ -789,6 +793,17 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   if (me.tm.tri > 0 && (mt === '草' || mt === '水' || mt === '火')) { log(S, evs, '三相归元生效', 'fxl'); heal(S, evs, i, me.maxhp / 3); }
 }
 
+// 吃一口米饭（吃米饭、米饭香、特性「饭香」）：随机回复 1/5 体力 / 物攻 +1 / 速度 +1，并记下吃了几口（非凡连击用）
+function eatRice(S, evs, i, why) {
+  var m = act(S, i); if (m.fainted) return;
+  m.perm.rice = (m.perm.rice || 0) + 1;
+  log(S, evs, (why || nm(m) + '吃了一口米饭') + '（第 ' + m.perm.rice + ' 口）', 'fxl');
+  var r = RNG();
+  if (r < 1 / 3) { if (!heal(S, evs, i, m.maxhp / 5)) log(S, evs, '但是没有恢复体力'); }
+  else if (r < 2 / 3) changeStages(S, evs, i, { atk: 1 });
+  else changeStages(S, evs, i, { spe: 1 });
+  E(S, evs, 'stage', { side: i });
+}
 function clearUps(S, evs, j) {
   var t = act(S, j), any = false;
   STG.forEach(function (k) { if (t.stages[k] > 0) { t.stages[k] = 0; any = true; } });
@@ -926,6 +941,8 @@ function doStatus(S, evs, i, mv) {
     case 'retal': timer('retal', 3, nm(me) + '展开寂灭幽映（3回合）'); break;
     case 'block100': me.fx.shield = Math.max(me.fx.shield || 0, 100); timer('block', 3, nm(me) + '坚不可摧：3回合内每回合抵挡100点伤害'); break;
     case 'recoilQ': timer('recoil', 4, nm(me) + '充能磁暴反冲（4回合）'); break;
+    case 'rice': eatRice(S, evs, i); break;
+    case 'rice3': log(S, evs, '米饭太香了！'); for (var rk = 0; rk < 3 && !me.fainted; rk++) eatRice(S, evs, i); break;
   }
   if (i === 0) hqAfterStatus(S, evs, me, foe, mv);
 }
@@ -1134,6 +1151,7 @@ function endOfTurn(S, evs) {
       if (!o.fainted && S.sides[1 - i].active === m.fx.sirenFoe) { log(S, evs, '海妖之歌唱完了，' + nm(o) + '失去了全部体力！', 'crit'); S.dotSrc = '海妖之歌'; applyDamage(S, evs, 1 - i, o.hp + (o.fx.shield || 0), null, {}); S.dotSrc = null; }
       else log(S, evs, '海妖之歌唱完了，但听歌的对手已经不在场上');
     }
+    if (!m.fainted && ability(m) === '饭香' && !S.over && RNG() < 0.2) eatRice(S, evs, i, nm(m) + '的「饭香」发动了，吃了一口米饭');
     if (!m.fainted) m.fx.fieldT = (m.fx.fieldT || 0) + 1;
   });
   [0, 1].forEach(function (i) {

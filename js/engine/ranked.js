@@ -51,7 +51,7 @@ function randomLoadout(id) {
 }
 var ALL_TYPES = null;
 function loadoutScore(id, mv, mates) {
-  if (!ALL_TYPES) ALL_TYPES = Object.keys(TYPE_COLOR);
+  if (!ALL_TYPES) { var rt = {}; SP.forEach(function (x) { x.types.forEach(function (t) { rt[t] = 1; }); }); ALL_TYPES = Object.keys(TYPE_COLOR).filter(function (t) { return rt[t]; }); }   // 只算竞技名单里有的属性：新属性不影响平衡排位
   var s = SPMAP[id], sc = 0, cover = {}, util = 0, phys = s.base.atk >= s.base.spa;
   mv.forEach(function (n) {
     var m = M[n];

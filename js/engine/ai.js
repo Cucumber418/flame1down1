@@ -10,7 +10,7 @@ function estAttack(me, foe, mv) {
   if (mv.fixedOnly) return fixedAmount(me, foe, mv) * hitChance(me, foe, mv);
   if (mv.custom === 'originBlade' && foe.stages.spe <= -6) return foe.hp + 1;
   var d = calcDamage(me, foe, mv, true, true).dmg;
-  if (mv.hits) d *= mv.custom === 'fireHits' && foe.st['烧伤'] > 0 ? 9 : (mv.hits[0] + mv.hits[1]) / 2;
+  if (mv.hits) { var hn = mv.custom === 'fireHits' && foe.st['烧伤'] > 0 ? 9 : mv.custom === 'riceHits' ? Math.min(15, (mv.hits[0] + mv.hits[1]) / 2 + ((me.perm && me.perm.rice) || 0)) : (mv.hits[0] + mv.hits[1]) / 2; d = d * hn + (mv.fixedHit || 0) * hn; }
   if (mv.custom === 'annihilate') d += foe.hp * Math.min(0.6, 0.05 + 0.1 * negCount(foe));
   return (d + addFixed(me, mv)) * hitChance(me, foe, mv);
 }
@@ -21,7 +21,7 @@ function bestEst(me, foe) {
 }
 var CUSTOM_SCORE = { nextCrit: 18, voidPhys: 22, induct: 16, stealDef: 22, stealAtk: 24, darkside: 26, hail: 28, mystic: 34, noBoostFoe: 12,
   seal: 14, melt: 30, calm: 26, halfPhys5: 22, halfPhys3: 18, chaosWater: 30, wither: 34, swamp: 10, mist: 10, jungle: 22, siren: 36,
-  silentSea: 0, dr40: 22, weak2: 18, crit2: 30, endure: 16, sureHitNext: 0, retal: 20, block100: 24, recoilQ: 18, dodgeOne: 18, capacitor: 0 };
+  silentSea: 0, dr40: 22, weak2: 18, crit2: 30, endure: 16, sureHitNext: 0, retal: 20, block100: 24, recoilQ: 18, dodgeOne: 18, capacitor: 0, rice: 16, rice3: 34 };
 function scoreMove(S, me, foe, mv) {
   var hpR = me.hp / me.maxhp, s = 0;
   if (mv.cat !== '变化') {

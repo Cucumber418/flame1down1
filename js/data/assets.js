@@ -30,6 +30,7 @@ var SPRITES = {
   "leafcat": "images/sprites/leafcat.webp",
   "phantom": "images/sprites/phantom.png",
   "shroom": "images/sprites/shroom.svg",
+  "turkey": "images/sprites/turkey.svg",   // 立绘待补，暂用问号占位
   "dummy": "images/sprites/dummy.svg"
 };
 
@@ -111,7 +112,9 @@ var PRE_SPRITES = {
   "phantom_s1": "images/pre_sprites/phantom_s1.png",
   "phantom_s2": "images/pre_sprites/phantom_s2.png",
   "shroom_s1": "images/pre_sprites/shroom_s1.svg",
-  "shroom_s2": "images/pre_sprites/shroom_s2.svg"
+  "shroom_s2": "images/pre_sprites/shroom_s2.svg",
+  "turkey_s1": "images/pre_sprites/turkey_s1.svg",
+  "turkey_s2": "images/pre_sprites/turkey_s2.svg"
 };
 
 // 剧情、探索、对战背景  →  images/backgrounds/
