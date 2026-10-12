@@ -1512,3 +1512,4 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .av-opt.on { border-color: var(--red); box-shadow: 2px 2px 0 var(--red); }
 .av-opt .pav { width: 56px; height: 56px; font-size: 28px; }
 .av-opt small { font-size: 12px; line-height: 1.35; text-align: center; }
+.rk-rules { margin: 10px 0 6px; } .rk-prog { margin-bottom: 10px; } .rk-prog .pbar i { background: var(--blue); }

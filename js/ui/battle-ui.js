@@ -70,10 +70,17 @@
       var R = app.rank, ladder = RANKS.map(function (n, i) { return '<li class="' + (i < R.r ? 'done' : i === R.r ? 'cur' : '') + '" style="--rc:' + RANK_COLOR[i] + '" title="' + n + '">' + n + '</li>'; }).join('');
       rc.innerHTML = '<div class="rc-main">' + rankBadge(R.r) + starsHTML(R.stars, R.r) +
         '<div class="rc-txt"><b>当前段位：' + RANKS[R.r] + '</b><span>对手特点：' + esc(rankDesc(R.r, R.stars)) + '</span>' +
-        '<span class="rc-rule">每局胜利获得 1 星，集满 3 星晋级；每局失败扣除 1 星，0 星时失败将降级。' + (R.r === RANKS.length - 1 ? '王者段位不封顶，星数越高，电脑越强、越会玩，对手阵容也会比你稍强（最多算到 ' + KING_CAP + ' 星）。' : '双方阵容的综合实力相当。') + (window.HSACC && HSACC.rankToday ? '每天前 ' + HSACC.RANK_EXP.n + ' 局各奖励 ' + HSACC.RANK_EXP.exp + ' 累积经验（认输不算），今天已领 ' + Math.min(HSACC.rankToday(), HSACC.RANK_EXP.n) + ' / ' + HSACC.RANK_EXP.n + ' 局。' : '') + '对手精灵在出场后才会揭晓。每局最多 ' + MAX_TURNS + ' 回合，届时剩余精灵多的一方获胜，数量相同则为平局，星数不变。</span></div>' +
+        '<span class="rc-rule">每局胜利获得 1 星，集满 3 星晋级；每局失败扣除 1 星，0 星时失败将降级。' + (R.r === RANKS.length - 1 ? '王者段位不封顶，星数越高，电脑越强、越会玩，对手阵容也会比你稍强（最多算到 ' + KING_CAP + ' 星）。' : '双方阵容的综合实力相当。') + '对手精灵在出场后才会揭晓。每局最多 ' + MAX_TURNS + ' 回合，届时剩余精灵多的一方获胜，数量相同则为平局，星数不变。</span></div>' +
         '<div class="rc-rec"><span>战绩：' + R.w + ' 胜 ' + R.l + ' 负</span><span>最高段位：' + RANKS[R.best || 0] + ((R.best || 0) === RANKS.length - 1 ? ' ' + Math.max(R.kingBest || 0, R.r === RANKS.length - 1 ? R.stars : 0) + ' 星' : '') + '</span><button type="button" class="btn ghost" id="btn-reset">' + (Date.now() - resetArmed < 3000 ? '再点一次确认' : '重置段位') + '</button></div></div>' +
-        '<ol class="ladder">' + ladder + '</ol>';
+        rankExpHTML() + '<ol class="ladder">' + ladder + '</ol>';
     }
+  }
+  // 平衡排位的经验：和精灵大乱斗一样写清楚规则，并显示今天的进度
+  function rankExpHTML() {
+    if (!(window.HSACC && HSACC.rankToday && HSACC.ready && HSACC.ready())) return '';
+    var E = HSACC.RANK_EXP, n = Math.min(HSACC.rankToday(), E.n);
+    return '<ul class="bw-rules rk-rules"><li>每局奖励 <b>' + HSACC.fmt(E.exp) + '</b> 累积经验（胜负、平局都算，认输没有），每天前 <b>' + E.n + '</b> 局有奖励，0 点（北京时间）刷新。</li></ul>' +
+      '<div class="bw-prog rk-prog"><span>今天的平衡排位经验</span><b>' + n + ' / ' + E.n + ' 局 · ' + HSACC.fmt(n * E.exp) + ' / ' + HSACC.fmt(E.n * E.exp) + '</b><span class="pbar"><i style="width:' + (n / E.n * 100) + '%"></i></span></div>';
   }
   $('sub-battle').addEventListener('click', function () { app.sub = 'battle'; saveTrain(); renderMode(); renderBuilder(); });
   $('sub-train').addEventListener('click', function () { app.sub = 'train'; saveTrain(); renderMode(); renderBuilder(); });
