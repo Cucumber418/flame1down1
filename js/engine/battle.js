@@ -213,7 +213,7 @@ function chipsOf(m, foe) {
   if (m.fx.leiyin) c.push({ t: '引雷', k: 'st', h: '引雷', d: '下一次受到的伤害提升20%' });
   if (m.fx.sureHit && !m.fx.sureCrit) c.push({ t: '下次必中', k: 'fx', h: '下次必中', d: '下一次攻击必定命中' });
   if (m.perm && m.perm.melt) c.push({ t: '熔化 ×' + m.perm.melt, k: 'st', h: '熔化 · ' + m.perm.melt + ' 层', d: '受到的伤害提升 ' + m.perm.melt * 20 + '%（每层20%，最多5层），持续到战斗结束，换下场也不会消失' });
-  if (m.onlyHit) c.push({ t: '首领 · 只受' + m.onlyHit.join('/') + '系', k: 'fx', h: '首领', d: '只有' + m.onlyHit.join('、') + '系技能才能命中它，其他属性的技能都会被挡下' });
+  if (m.onlyHit) c.push({ t: '元素亲和', k: 'fx', h: '首领 · 元素亲和', d: '只有' + m.onlyHit.join('、') + '系技能才能命中它，其他属性的技能都会被挡下' });
   if (m.boss) BOSS_FX.forEach(function (f) { if (m.boss[f.k]) c.push({ t: f.t, k: 'fx', h: f.h, d: f.d(m) }); });
   if (m.shiny) c.push({ t: '异色', k: 'fx', h: '异色精灵', d: '和同类长得不一样的稀有配色，能力和普通的一样' });
   if (m.puppet) c.push({ t: '瘴毒傀儡', k: 'st', h: '瘴毒傀儡', d: '荒芜召唤出来的傀儡，只会使用攻击技能。被击败后荒芜会重新上场。' });

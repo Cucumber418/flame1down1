@@ -1704,7 +1704,7 @@
   }
   function fxRules(L) {
     var fake = { boss: L.boss || {}, hp: L.hp }, out = [];
-    if (L.only) out.push(['只受' + L.only.join('、') + '系', '只有' + L.only.join('、') + '系技能才能命中它']);
+    if (L.only) out.push(['【元素亲和】', '只有' + L.only.join('、') + '系技能才能命中它']);
     if (L.boss) BOSS_FX.forEach(function (f) { if (L.boss[f.k]) out.push(['【' + f.h + '】', f.d(fake).split('\n')[0]]); });
     return out;
   }
