@@ -56,7 +56,7 @@ function loadoutScore(id, mv, mates) {
   mv.forEach(function (n) {
     var m = M[n];
     if (isAtk(n)) {
-      var p = m.fixedOnly ? 90 : (m.power || 0) + (m.fixed || 0) * 0.6;
+      var p = m.fixedOnly ? 90 : (m.power || 0) + (m.fixed || (m.fixedLv || 0) * LV) * 0.6;
       if (m.hits) p *= (m.hits[0] + m.hits[1]) / 2;
       if (s.types.indexOf(m.type) >= 0) p *= STAB;
       if ((m.cat === '物攻') === phys) p *= 1.2;

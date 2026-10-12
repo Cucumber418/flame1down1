@@ -500,6 +500,8 @@ function hitChance(me, foe, mv) {
   if (ability(foe) === '光滑') p *= 0.9;
   return Math.min(1, p);
 }
+// 攻击技能附加的固定伤害：fixed 是固定数值，fixedLv 是「自身等级 × 倍数」（如盛宴）
+function addFixed(me, mv) { return mv.fixedLv ? (me.lv || LV) * mv.fixedLv : mv.fixed || 0; }
 function fixedAmount(me, foe, mv) {
   if (mv.fixedOnly === 'smile') return Math.floor((me.lv || LV) * 2.5);
   if (mv.fixedOnly === 'selfBlast') return Math.max(me.hp, Math.ceil(me.maxhp / 3));   // 等于当前体力，但不低于最大体力的 1/3
@@ -690,7 +692,8 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   if (hits > 1) log(S, evs, '连续命中 ' + n + ' 次！');
   me.flags.firstAtk = true; me.fx.boostNext = 0; me.fx.moonNext = 0;
   if (mv.custom === 'canyue') me.flags.canyue = (me.flags.canyue || 0) + 1;
-  if (mv.fixed && !foe.fainted) { log(S, evs, '附加 ' + mv.fixed + ' 点固定伤害', 'fxl'); applyDamage(S, evs, j, mv.fixed, i, {}); }
+  var fxd = addFixed(me, mv);
+  if (fxd && !foe.fainted) { log(S, evs, '附加 ' + fxd + ' 点固定伤害', 'fxl'); applyDamage(S, evs, j, fxd, i, {}); }
   if (mv.custom === 'zeroBreak' && !foe.fainted && foe.st['冰冻'] > 0) { var zb = Math.floor(foe.maxhp / 8); log(S, evs, '冰破附带 ' + zb + ' 点固定伤害', 'fxl'); applyDamage(S, evs, j, zb, i, {}); }
   if (mv.custom === 'annihilate' && !foe.fainted) {
     var pk = Math.min(0.6, 0.05 + 0.1 * negCount(foe));

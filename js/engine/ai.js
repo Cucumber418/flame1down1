@@ -12,7 +12,7 @@ function estAttack(me, foe, mv) {
   var d = calcDamage(me, foe, mv, true, true).dmg;
   if (mv.hits) d *= mv.custom === 'fireHits' && foe.st['烧伤'] > 0 ? 9 : (mv.hits[0] + mv.hits[1]) / 2;
   if (mv.custom === 'annihilate') d += foe.hp * Math.min(0.6, 0.05 + 0.1 * negCount(foe));
-  return (d + (mv.fixed || 0)) * hitChance(me, foe, mv);
+  return (d + addFixed(me, mv)) * hitChance(me, foe, mv);
 }
 function bestEst(me, foe) {
   var b = 0;
