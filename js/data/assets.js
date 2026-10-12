@@ -97,7 +97,7 @@ var PRE_SPRITES = {
   "inkarm_s2": "images/pre_sprites/inkarm_s2.png",
   "barren_s1": "images/pre_sprites/barren_s1.png",
   "barren_s2": "images/pre_sprites/barren_s2.png",
-  "mush_s1": "images/pre_sprites/mush_s1.png",
+  "mush_s1": "images/pre_sprites/mush_s1.webp",
   "mush_s2": "images/pre_sprites/mush_s2.png",
   "kaleo_s1": "images/pre_sprites/kaleo_s1.png",
   "kaleo_s2": "images/pre_sprites/kaleo_s2.png",
@@ -268,13 +268,16 @@ var SILHOUETTES = {
 };
 
 // 异色精灵的立绘（只有部分形态有）：键名规则和 PRE_SPRITES 一样，最终形态用精灵 id
+// 有两种异色的精灵：第二种（更稀有，存档里 shiny: 2）在键名后加 _2，没有 _2 图时用第一种异色图
 var SHINY_SPRITES = {
   "leigong_s1": "images/shiny/leigong_s1.webp",
   "leigong_s2": "images/shiny/leigong_s2.webp",
   "leigong": "images/shiny/leigong.webp",
   "hauris_s1": "images/shiny/hauris_s1.webp",
   "hauris_s2": "images/shiny/hauris_s2.webp",
-  "hauris": "images/shiny/hauris.webp"
+  "hauris": "images/shiny/hauris.webp",
+  "mush_s1": "images/shiny/mush_s1.webp",
+  "mush_s1_2": "images/shiny/mush_s1_2.webp"
 };
 
 // 剧情里出现的道具图（储存箱里的剧情道具也用这些图）

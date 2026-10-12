@@ -31,7 +31,7 @@ function cleared(acc, key) { var r = acc && acc.bosses && acc.bosses[key]; retur
 function avatarOf(acc) {
   if (!acc || acc.avatar == null || !Array.isArray(acc.mons)) return null;
   var m = acc.mons.filter(function (x) { return x && x.u === acc.avatar; })[0];
-  return m ? { sid: String(m.sid).slice(0, 32), lv: Math.max(1, Math.min(100, m.lv | 0)), shiny: !!m.shiny } : null;
+  return m ? { sid: String(m.sid).slice(0, 32), lv: Math.max(1, Math.min(100, m.lv | 0)), shiny: m.shiny === 2 ? 2 : !!m.shiny } : null;
 }
 function clean(t) {
   t = String(t || '').replace(/\r\n?/g, '\n').replace(/[\u0000-\u0008\u000b-\u001f\u007f]/g, '').replace(/\n{3,}/g, '\n\n').trim();

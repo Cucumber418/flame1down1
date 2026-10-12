@@ -102,14 +102,17 @@
   /* ---------- 精灵实例 ---------- */
   function mon(u) { if (!acc) return null; for (var i = 0; i < acc.mons.length; i++) if (acc.mons[i].u === u) return acc.mons[i]; return null; }
   function stageOf(s, lv) { for (var i = evoLast(s); i > 0; i--) if (lv >= s.evo[i].lv) return i; return 0; }
+  // 异色：true 是第一种异色，2 是第二种（更稀有）
+  function shinyV(v) { return v === 2 ? 2 : !!v; }
+  function rollShiny(w) { var r = Math.random(); return w.shiny2 && r < w.shiny2 ? 2 : !!(w.shiny && r < (w.shiny2 || 0) + w.shiny); }
   function form(m) {
     var s = SPMAP[m.sid], st = stageOf(s, m.lv), n = formRawName(s, st), unsure = false;
     if (n && n.slice(-1) === '?') { n = n.slice(0, -1); unsure = true; }
     if (!n) n = s.name + '·' + stageLabel(s, st);
     var img = formImg(s, st), sk = isFin(s, st) ? s.id : s.id + '_s' + (st + 1);
     // 异色：有这一形态的异色立绘就用异色图，没有就照常显示（精灵身上仍然标着「异色」）
-    if (m.shiny && typeof SHINY_SPRITES !== 'undefined' && SHINY_SPRITES[sk]) img = SHINY_SPRITES[sk];
-    return { name: n, img: img, stage: st, unsure: unsure, no: s.evo[st].no || '', d: s.evo[st].d || '', shiny: !!m.shiny };
+    if (m.shiny && typeof SHINY_SPRITES !== 'undefined') { if (m.shiny === 2 && SHINY_SPRITES[sk + '_2']) img = SHINY_SPRITES[sk + '_2']; else if (SHINY_SPRITES[sk]) img = SHINY_SPRITES[sk]; }
+    return { name: n, img: img, stage: st, unsure: unsure, no: s.evo[st].no || '', d: s.evo[st].d || '', shiny: shinyV(m.shiny) };
   }
   // 普通技能：第 1 个 LV1 习得，之后每 5 级学会下一个（LV5、LV10、LV15……）；隐藏技能暂按 LV50
   function learnLv(i) { return i === 0 ? 1 : i * 5; }
@@ -1054,7 +1057,7 @@
     karo: { foe: '被瘴气污染的野生精灵', team: [{ sid: 'wind', lv: 3, miasma: 5 }], env: 'miasma', bg: 'fl_salt', desc: '被瘴气污染的卡罗（LV3）' },
     hunter: { foe: '神秘的猎杀者', team: [{ sid: 'kaleo', lv: 15 }], bg: 'fl_maple', desc: '猎杀者卡莱（LV15）' }
   };
-  function storyMon(m) { var f = form(m), hl = m.u != null ? (m.hl || []) : undefined, mv = m.moves.length ? m.moves.slice() : defaultMoves(m.sid, m.lv, hl); return { id: m.sid, lv: m.lv, moves: mv, nick: f.name, img: f.img, ev: m.ev || null, nat: m.nat || null, u: m.u, hl: hl, shiny: !!m.shiny, emblem: m.u != null && acc.emblems && acc.emblems[m.sid] && EMBLEMS[m.sid] ? EMBLEMS[m.sid].m : null }; }
+  function storyMon(m) { var f = form(m), hl = m.u != null ? (m.hl || []) : undefined, mv = m.moves.length ? m.moves.slice() : defaultMoves(m.sid, m.lv, hl); return { id: m.sid, lv: m.lv, moves: mv, nick: f.name, img: f.img, ev: m.ev || null, nat: m.nat || null, u: m.u, hl: hl, shiny: shinyV(m.shiny), emblem: m.u != null && acc.emblems && acc.emblems[m.sid] && EMBLEMS[m.sid] ? EMBLEMS[m.sid].m : null }; }
   function startFight(key) {
     var F = FIGHTS[key], team = (acc.teams[acc.active] || []).map(mon).filter(Boolean);
     if (!team.length) team = acc.mons.slice(0, 1);
@@ -1357,7 +1360,7 @@
     if (m.x > prev + 0.02) m.face = 1; else if (m.x < prev - 0.02) m.face = -1;
   }
   function spawnFieldMon(R, slot) {
-    var hit = rollWild(R.pool), shiny = !!(hit.w.shiny && Math.random() < hit.w.shiny);
+    var hit = rollWild(R.pool), shiny = rollShiny(hit.w);
     var f = form({ sid: hit.w.sid, lv: hit.lv, shiny: shiny });
     var m = { id: 0, sid: hit.w.sid, lv: hit.lv, rate: hit.w.rate, shiny: shiny, img: f.img, name: (shiny ? '异色' : '') + f.name,
       hx: slot.hx, hy: slot.hy, r: slot.r, t: Math.random() * Math.PI * 2, spd: 0.55 + Math.random() * 0.5, x: slot.hx, y: slot.hy, face: 1 };
@@ -1461,7 +1464,7 @@
     var R = regionById(ex.region), F = R && fields[R.id]; if (!F || !regionOpen(R)) return;
     var sc = F.scenes[F.scene], m = null; sc.slots.forEach(function (sl) { if (sl.mon && sl.mon.id === id) m = sl.mon; }); if (!m || m.out) return;
     var P = planetOf(R.planet);
-    var o = { sid: m.sid, lv: m.lv, rate: m.rate, shiny: !!m.shiny, bg: sc.bg || null, back: R.name, where: P.name + ' · ' + R.name, fieldId: m.id, fieldRid: R.id };
+    var o = { sid: m.sid, lv: m.lv, rate: m.rate, shiny: shinyV(m.shiny), bg: sc.bg || null, back: R.name, where: P.name + ' · ' + R.name, fieldId: m.id, fieldRid: R.id };
     if (R.planet === 'flora' && purgeActive() && Math.random() < PURGE.chance) { o.taint = true; o.miasma = 5; o.noCatch = true; o.foe = '被瘴气污染的野生精灵'; o.where += ' · 瘴气精灵'; }
     if (R.planet === 'flora' && spareActive()) { o.spare = true; o.where += ' · 手下留情'; }
     stopField();
@@ -1481,7 +1484,7 @@
     var team = (acc.teams[acc.active] || []).map(mon).filter(Boolean);
     if (!team.length) team = acc.mons.slice(0, 1);
     team = team.slice(0, TEAM_SIZE);
-    var p = team.map(storyMon), a = [storyMon({ sid: o.sid, lv: o.lv, moves: [], shiny: !!o.shiny })];
+    var p = team.map(storyMon), a = [storyMon({ sid: o.sid, lv: o.lv, moves: [], shiny: shinyV(o.shiny) })];
     if (o.shiny) a[0].nick = '异色' + a[0].nick;
     if (o.taint) { a[0].miasma = o.miasma; a[0].nick = '被污染的' + a[0].nick; }
     seeMon(o.sid, o.lv);
@@ -1500,7 +1503,7 @@
         }
         if (res === 'caught') {
           var m = newMon(o.sid, o.lv), T = acc.teams[acc.active], added = T.length < TEAM_SIZE;
-          if (o.shiny) m.shiny = true;
+          if (o.shiny) m.shiny = shinyV(o.shiny);
           if (added) T.push(m.u);
           msg.push('捕捉到了 ' + (m.shiny ? '异色的' : '') + form(m).name + '（LV' + o.lv + '，' + m.nat + '）！' + (added ? '已加入' + TEAM_NAME[acc.active] + '。' : '已收入精灵仓库。'));
           dailyHit('catch');
@@ -1605,7 +1608,7 @@
     L.sort(function (a, b) { var ia = ord.indexOf(a.k), ib = ord.indexOf(b.k); return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib); });
     return L;
   }
-  function helperSpec(Hp) { var hm = storyMon({ sid: Hp.mon.sid, lv: Hp.mon.lv, moves: Hp.mon.moves || [], ev: Hp.mon.ev || null, nat: Hp.mon.nat || null, shiny: !!Hp.mon.shiny }); hm.nick = hm.nick + '（' + Hp.owner + '）'; return hm; }
+  function helperSpec(Hp) { var hm = storyMon({ sid: Hp.mon.sid, lv: Hp.mon.lv, moves: Hp.mon.moves || [], ev: Hp.mon.ev || null, nat: Hp.mon.nat || null, shiny: shinyV(Hp.mon.shiny) }); hm.nick = hm.nick + '（' + Hp.owner + '）'; return hm; }
   // 首发选择面板：选好精灵、点「开始挑战」后弹出，拖动（或点「设为首发」）调整出战顺序
   function openLineup(P, i) {
     var x = CHAL[P][i]; if (!x) return;
@@ -3362,7 +3365,7 @@
   /* ---------- 给社交页（social.js）用的接口 ---------- */
   window.HSACC = {
     acc: function () { return acc; }, ready: ready, save: save, toast: toast, go: go, page: function () { return page; }, renderRes: renderRes,
-    titleName: titleName, mon: mon, fmt: fmt, avatarInner: avatarInner, avatarSpec: function () { var m = avatarMon(); return m ? { sid: m.sid, lv: m.lv, shiny: !!m.shiny } : null; },
+    titleName: titleName, mon: mon, fmt: fmt, avatarInner: avatarInner, avatarSpec: function () { var m = avatarMon(); return m ? { sid: m.sid, lv: m.lv, shiny: shinyV(m.shiny) } : null; },
     npcPlan: npcPlan, npcHome: npcHome,
     sendMail: sendMail, openMailbox: openMailbox,
     rankToday: rankToday, RANK_EXP: { exp: RANK_EXP, n: RANK_EXP_N }, rankRwHTML: rankRwHTML, openQuests: openQuests, gender: gender,
@@ -3390,8 +3393,8 @@
       var mv = (raw.moves || []).filter(function (n, i, a) { return M[n] && own.indexOf(n) >= 0 && a.indexOf(n) === i; }).slice(0, 4);
       if (!mv.length) mv = defaultMoves(raw.sid, lv, []);
       var ev = {}; STAT_KEYS.forEach(function (k) { var v = raw.ev && +raw.ev[k]; if (v > 0) ev[k] = Math.min(300, Math.round(v)); });
-      var f = form({ sid: raw.sid, lv: lv, shiny: !!raw.shiny });
-      return { id: raw.sid, lv: lv, moves: mv, nick: f.name, img: f.img, shiny: !!raw.shiny, ev: ev, nat: raw.nat && NATURES[raw.nat] ? raw.nat : null, emblem: raw.emblem && EMBLEMS[raw.sid] ? EMBLEMS[raw.sid].m : null };
+      var f = form({ sid: raw.sid, lv: lv, shiny: shinyV(raw.shiny) });
+      return { id: raw.sid, lv: lv, moves: mv, nick: f.name, img: f.img, shiny: shinyV(raw.shiny), ev: ev, nat: raw.nat && NATURES[raw.nat] ? raw.nat : null, emblem: raw.emblem && EMBLEMS[raw.sid] ? EMBLEMS[raw.sid].m : null };
     },
     inBattle: function () { return !$('battle').hidden; },
     // 联网切磋：像剧情对战一样切到对战画面，锁住其他大栏

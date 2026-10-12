@@ -79,7 +79,7 @@ function mkFrom(t) {
   if (t.nick) m.nick = t.nick; if (t.img) m.img = t.img; if (t.miasma) m.perm.miasma = t.miasma;
   if (t.maxhp) m.maxhp = m.hp = t.maxhp;          // 首领：固定体力
   if (t.onlyHit) m.onlyHit = t.onlyHit;           // 首领：只有这些属性的技能能命中它
-  if (t.shiny) m.shiny = true;   // 异色精灵（只是配色不同，能力一样）
+  if (t.shiny) m.shiny = t.shiny === 2 ? 2 : true;   // 异色精灵（只是配色不同，能力一样）
   if (t.emblem && EMBLEMS[t.id] && EMBLEMS[t.id].m === t.emblem) m.emblem = t.emblem;
   // 首领的特殊能力（见 BOSS_FX）；pp：首领技能的 PP（长时间战斗不会用光）
   if (t.boss) { m.boss = JSON.parse(JSON.stringify(t.boss)); if (m.boss.pp) m.moves.forEach(function (x) { if (M[x.n].custom !== 'annihilate') x.pp = x.max = m.boss.pp; }); }   // 灭却除外，仍按原本的 PP

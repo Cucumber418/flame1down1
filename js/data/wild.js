@@ -5,14 +5,14 @@
 
 var WILD_POOLS = {
   forest: [
-    { sid: 'mush', lv: [1, 5], w: 64.25, rate: 0.65, tag: '较高' },
+    { sid: 'mush', lv: [1, 5], w: 64.25, rate: 0.65, tag: '较高', shiny: 0.05, shiny2: 0.005 },   // 5% 蓝色异色，0.5% 黄色异色
     { sid: 'wind', lv: [1, 3], w: 35, rate: 0.85, tag: '极高' },
     { sid: 'kaleo', lv: [5, 5], w: 0.5, rate: 0.45, tag: '中等', rare: true },
     { sid: 'leaf', lv: [5, 5], w: 0.25, rate: 0.45, tag: '中等', rare: true }   // 三主宠：各在对应属性的星球 0.25% 出现（野外场景里一次能看到好几只精灵，稀有精灵的概率调得很低）
   ],
   grass: [
     { sid: 'wind', lv: [1, 3], w: 64.75, rate: 0.85, tag: '极高' },
-    { sid: 'mush', lv: [1, 5], w: 35, rate: 0.65, tag: '较高' },
+    { sid: 'mush', lv: [1, 5], w: 35, rate: 0.65, tag: '较高', shiny: 0.05, shiny2: 0.005 },
     { sid: 'leaf', lv: [5, 5], w: 0.25, rate: 0.45, tag: '中等', rare: true }
   ],
   // 坎布尔星（水系）

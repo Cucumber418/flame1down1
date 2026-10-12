@@ -189,8 +189,8 @@
     var ed = st.edit;
     return { user: st.me || (C.user && C.user()), name: acc.name, avatar: A.avatarSpec(), gender: A.gender ? A.gender() : 'm', title: acc.title && (acc.titles || []).indexOf(acc.title) >= 0 ? acc.title : null, monsN: acc.mons.length, speciesN: Object.keys(species).length,
       created: acc.created, motto: ed.motto, rankInfo: R,
-      show: ed.show.map(function (u) { var m = A.mon(u); return m && { sid: m.sid, lv: m.lv, nat: m.nat, moves: m.moves, shiny: !!m.shiny }; }).filter(Boolean),
-      helper: ed.helper != null && A.mon(ed.helper) ? (function (m) { return { sid: m.sid, lv: m.lv, nat: m.nat, shiny: !!m.shiny }; })(A.mon(ed.helper)) : null };
+      show: ed.show.map(function (u) { var m = A.mon(u); return m && { sid: m.sid, lv: m.lv, nat: m.nat, moves: m.moves, shiny: m.shiny === 2 ? 2 : !!m.shiny }; }).filter(Boolean),
+      helper: ed.helper != null && A.mon(ed.helper) ? (function (m) { return { sid: m.sid, lv: m.lv, nat: m.nat, shiny: m.shiny === 2 ? 2 : !!m.shiny }; })(A.mon(ed.helper)) : null };
   }
   function startEdit() {
     var cd = A.acc().card || {};
