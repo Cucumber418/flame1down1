@@ -240,7 +240,7 @@ var M = {
   白雾: { type: '普通', cat: '变化', custom: 'mist', pp: 10, d: '5回合内免疫能力下降状态' },
   千叶斩: { type: '草', cat: '物攻', power: 85, custom: 'lowHpX2', d: '威力85，自身体力低于1/3时伤害提升100%' },
   草木皆兵: { type: '草', cat: '变化', tgtStage: { atk: -1, spa: -1, def: -1, spd: -1 }, pp: 10, d: '降低对方1级物攻、特攻、物防、特防' },
-  盛宴: { type: '普通', cat: '物攻', power: 10, fixedLv: 2, hidden: true, pp: 2, custom: 'feast', d: '威力10，附加等同于自身等级×2的固定伤害；用盛宴击败对方时，恢复本技能全部PP' },
+  盛宴: { type: '普通', cat: '物攻', power: 10, fixedLv: 2, hidden: true, pp: 2, custom: 'feast', d: '威力10，附加等同于自身等级×2的固定伤害；用盛宴击败对方时，恢复本技能全部PP，并且体力上限+50、回复50点体力（可无限叠加）' },
   丛林法则: { type: '草', cat: '变化', hidden: true, custom: 'jungle', pp: 10, d: '3回合内对（体力值与最大体力的比值）低于自己的敌人伤害提升70%' },
 
   // —— 塞壬（水）

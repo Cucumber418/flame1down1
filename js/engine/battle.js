@@ -704,8 +704,11 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
     }
     else log(S, evs, '灭却没有发动（成功率 ' + Math.round(pk * 100) + '%）');
   }
-  // 盛宴：吃掉（击败）对方时，恢复本技能全部 PP
-  if (mv.custom === 'feast' && foe.fainted && slotIdx >= 0 && me.moves[slotIdx] && me.moves[slotIdx].pp < me.moves[slotIdx].max) { me.moves[slotIdx].pp = me.moves[slotIdx].max; log(S, evs, nm(me) + '饱餐了一顿，盛宴的 PP 全部恢复了！', 'fxl'); }
+  // 盛宴：吃掉（击败）对方时，恢复本技能全部 PP；体力上限 +50 并回复 50 体力（本场战斗内可以无限叠加）
+  if (mv.custom === 'feast' && foe.fainted) {
+    if (slotIdx >= 0 && me.moves[slotIdx] && me.moves[slotIdx].pp < me.moves[slotIdx].max) { me.moves[slotIdx].pp = me.moves[slotIdx].max; log(S, evs, nm(me) + '饱餐了一顿，盛宴的 PP 全部恢复了！', 'fxl'); }
+    if (!me.fainted) { me.maxhp += 50; log(S, evs, nm(me) + '吃饱了，体力上限 +50（现在是 ' + me.maxhp + '）', 'fxl'); heal(S, evs, i, 50); }
+  }
   if (mv.custom === 'originBlade' && !foe.fainted && foe.stages.spe <= -6) { log(S, evs, '起源巨刃斩断了速度降到最低的敌人！', 'crit'); applyDamage(S, evs, j, foe.hp + (foe.fx.shield || 0), i, {}); }
   if (mv.custom === 'starMagic' && total > 0 && !foe.fainted && 25 * (me.perm.star || 0) >= STAR_MAX && RNG() < 0.5) { log(S, evs, '星光缠住了' + nm(foe) + '的脚步', 'fxl'); changeStages(S, evs, j, { spe: -1 }, i); }   // 达到最高威力后：50% 降速
   if (total > 0) {
