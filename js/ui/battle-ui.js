@@ -254,7 +254,7 @@
     return '<label class="mrow' + (on ? ' on' : '') + (m.hidden ? ' hid' : '') + '" for="' + id + '">' +
       '<input type="checkbox" id="' + id + '" data-move="' + n + '"' + (on ? ' checked' : '') + '>' +
       '<span class="l1"><span class="mn">' + m.name + '</span>' + atkTip(m.type) + '<span class="mm">' + meta + '</span>' +
-      (m.hidden ? '<span class="tag sc hidtag" tabindex="0">隐藏<span class="tip" role="tooltip"><b>隐藏技能</b>' + (LEARN[n] ? '要在战斗中满足特定条件才能领悟' : '达到 LV50 时习得') + '<span class="tipx">试验版里可以直接选用</span></span></span>' : '') + emb + '</span>' +
+      (m.hidden ? '<span class="tag sc hidtag" tabindex="0">隐藏<span class="tip" role="tooltip"><b>隐藏技能</b>' + (LEARN[n] ? '要在战斗中满足特定条件才能领悟（精灵需 LV' + HIDDEN_MIN_LV + ' 以上）' : '达到 LV50 时习得') + '<span class="tipx">试验版里可以直接选用</span></span></span>' : '') + emb + '</span>' +
       '<span class="md">' + esc(m.d) + '</span></label>';
   }
   function renderDetail() {

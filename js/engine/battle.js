@@ -1017,8 +1017,10 @@ function bombTick(S, evs) {
   });
   S.bombs = keep;
 }
+var HIDDEN_MIN_LV = 40;   // 隐藏技能最低 LV40 才能领悟（条件满足但等级不够时不会领悟）
 function hqGet(S, evs, m, name) {
   if (!m || m.u == null || !LEARN[name]) return;
+  if ((m.lv || LV) < HIDDEN_MIN_LV) return;
   var s = SPMAP[m.id]; if (!s || s.hidden.indexOf(name) < 0) return;
   if (m.hl && m.hl.indexOf(name) >= 0) return;
   if (!m.hqGot) m.hqGot = []; if (m.hqGot.indexOf(name) >= 0) return;

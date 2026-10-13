@@ -119,7 +119,7 @@
   function moveLv(sid, mv) { var s = SPMAP[sid], i = s.moves.indexOf(mv); return i >= 0 ? learnLv(i) : 50; }
   // hl：这只精灵已领悟的隐藏技能。有领悟条件的隐藏技能只能在战斗中领悟；没写条件的仍然 LV50 习得。
   // 不传 hl（剧情里的对手）时沿用旧规则：LV50 起隐藏技能全部可用。
-  function hidOk(lv, hl, n) { return hl && LEARN[n] ? hl.indexOf(n) >= 0 : lv >= 50; }
+  function hidOk(lv, hl, n) { return hl && LEARN[n] ? hl.indexOf(n) >= 0 && lv >= HIDDEN_MIN_LV : lv >= 50; }   // 战斗中领悟的隐藏技能也要 LV40 以上才能用（HIDDEN_MIN_LV 在 battle.js）
   function avail(sid, lv, hl) { var s = SPMAP[sid]; return s.moves.filter(function (n, i) { return lv >= learnLv(i); }).concat(s.hidden.filter(function (n) { return hidOk(lv, hl, n); })); }
   function defaultMoves(sid, lv, hl) {
     var s = SPMAP[sid], a = avail(sid, lv, hl), out = s.def.filter(function (n) { return a.indexOf(n) >= 0; });
@@ -450,7 +450,7 @@
       return '<label class="mrow' + (on ? ' on' : '') + (M_.hidden ? ' hid' : '') + (ok ? '' : ' locked') + '" for="' + id + '">' +
         '<input type="checkbox" id="' + id + '" data-amove="' + mv + '"' + (on ? ' checked' : '') + (ok ? '' : ' disabled') + '>' +
         '<span class="l1"><span class="mn">' + M_.name + '</span>' + atkTip(M_.type) + '<span class="mm">' + meta + '</span>' +
-        (M_.hidden ? '<span class="tag sc hidtag" tabindex="0">隐藏<span class="tip" role="tooltip"><b>隐藏技能</b>' + (LEARN[mv] ? '在战斗中领悟的特殊技能' : '达到 LV50 时习得') + '</span></span>' : '') +
+        (M_.hidden ? '<span class="tag sc hidtag" tabindex="0">隐藏<span class="tip" role="tooltip"><b>隐藏技能</b>' + (LEARN[mv] ? '在战斗中领悟的特殊技能，精灵要到 LV' + HIDDEN_MIN_LV + ' 以上才能领悟' : '达到 LV50 时习得') + '</span></span>' : '') +
         (ok ? '' : '<span class="lock">LV' + moveLv(m.sid, mv) + ' 习得</span>') + '</span><span class="md">' + esc(M_.d) + '</span></label>';
     };
     var acts = acc.teams.map(function (t, i) {
