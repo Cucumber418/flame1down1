@@ -365,6 +365,10 @@ ffmpeg -i 原曲.mp3 -vn -map_metadata -1 -af loudnorm=I=-16:TP=-1.5:LRA=11 -ar 
 - 经验：`spaTick()` 每 `SPA_TICK`（20 秒）结算一次，每只每小时 `spaRate(m) = 120 + 等级 × 24`，按小数累计（`SPA.carry`），用 `gainExp(m, n, false)` 直接加给精灵，不占 `PVE_XP_CAP`。上次结算时间 `SPA.last` 只在内存里，两次结算间隔超过 `SPA_GAP`（3 分钟）就不算，所以关掉游戏、电脑睡眠期间没有经验。
 - 场景是 CSS 画的（池水、蒸汽动画），温泉背景图待补。
 
+## 战斗中按状态换图（2026-10-13）
+
+`assets.js` 的 `FORM_FX_SPRITES`（键是 `PRE_SPRITES` 里的形态名）：`dark` 月之暗面期间、`full` 光影之月之后。`battle.js` 的 `liveImg(m)` 在战斗快照里替换图片（只认 `m.img` 等于这个形态图的精灵，所以竞技对战里按最终形态显示的不受影响）。目前只有朔望月灵（小月亮二阶，LV30 进化）。
+
 ## 首领攻略板
 
 每个首领的每个难度页面下方（每周挑战没有）。服务器在 `server/bossboard.js`，留言存在存档目录的 `bossboard.json`。

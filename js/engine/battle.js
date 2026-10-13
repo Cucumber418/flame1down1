@@ -31,6 +31,12 @@ function moveBlocked(me, slot) { return !!(slot && M[slot.n] && ((me.perm && me.
 function blockWhy(me, slot) { return !moveBlocked(me, slot) ? '' : me.flags && me.flags.sy && M[slot.n].cat === '变化' ? '沈阳大街中不可用' : '光影之月中不可用'; }
 // 处于月之暗面时，「月之暗面」变为「月之亮面」
 var LIGHTSIDE = { name: '月之亮面', type: '光', cat: '变化', custom: 'lightside', pri: 0, pp: 5, hidden: true, d: '结束月之暗面，将精灵属性、技能属性切换回光系' };
+// 战斗中按状态换图（见 assets.js 的 FORM_FX_SPRITES）：朔望月灵在月之暗面期间换暗影形态，光影之月后换光影形态
+function liveImg(m) {
+  if (!m.img || typeof FORM_FX_SPRITES === 'undefined') return m.img || null;
+  for (var k in FORM_FX_SPRITES) if (PRE_SPRITES[k] === m.img) { var F = FORM_FX_SPRITES[k]; if (m.perm && m.perm.moonFull && F.full) return F.full; if (m.tm && m.tm.darkside > 0 && F.dark) return F.dark; }
+  return m.img;
+}
 function liveMove(me, mv) { return mv && mv.custom === 'darkside' && me.tm && me.tm.darkside > 0 ? LIGHTSIDE : mv; }
 
 function stageMult(n) { return n >= 0 ? (2 + n) / 2 : 2 / (2 - n); }
@@ -302,7 +308,7 @@ function snap(S) {
     sides: S.sides.map(function (sd) {
       var m = sd.team[sd.active];
       var ab = sp(m).ability || { n: '无', d: '图鉴里还没写特性' };
-      return { id: m.id, name: m.nick || sp(m).name, img: m.img || null, types: typesOf(m), lv: m.lv || LV, dummy: m.id === 'dummy', ability: { n: ab.n, d: ab.d, extra: ab.extra || '' }, stats: statSheet(m, S.sides[1 - S.sides.indexOf(sd)].team[S.sides[1 - S.sides.indexOf(sd)].active]), hp: m.hp, maxhp: m.maxhp, fainted: m.fainted, chips: chipsOf(m, S.sides[1 - S.sides.indexOf(sd)].team[S.sides[1 - S.sides.indexOf(sd)].active]),
+      return { id: m.id, name: m.nick || sp(m).name, img: liveImg(m), types: typesOf(m), lv: m.lv || LV, dummy: m.id === 'dummy', ability: { n: ab.n, d: ab.d, extra: ab.extra || '' }, stats: statSheet(m, S.sides[1 - S.sides.indexOf(sd)].team[S.sides[1 - S.sides.indexOf(sd)].active]), hp: m.hp, maxhp: m.maxhp, fainted: m.fainted, chips: chipsOf(m, S.sides[1 - S.sides.indexOf(sd)].team[S.sides[1 - S.sides.indexOf(sd)].active]),
         team: sd.team.map(function (x, k) { return { id: x.id, nick: x.nick || null, fainted: x.fainted, active: k === sd.active, hp: x.hp, maxhp: x.maxhp, seen: !!x.seen }; }) };
     })
   };
