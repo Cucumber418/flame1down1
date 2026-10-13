@@ -357,7 +357,7 @@ ffmpeg -i 原曲.mp3 -vn -map_metadata -1 -af loudnorm=I=-16:TP=-1.5:LRA=11 -ar 
 - 本地测试：在 localhost / 双击打开时，网址加 `?test=tea` 切到测试账号「测试」（补满道具和材料），`?test=restore` 换回原来的存档。服务器网址上不生效。
 
 
-星球立绘：`PLANETS` 里写 `img`（如庞贝星 `images/planets/pompeii.webp`，用 `tools/stylize_bg.py` 的 `stylize` 转画风后裁成圆形透明图），星球列表和星球页就用图，没有的画示意图。场景名：`BG_NAME[背景键]` 有名字时，野外场景标题显示「场景 1 / 2 · 熔浆大湖」。庞贝星熔岩原目前两个场景：熔浆大湖 `pp_lake`、熔渣矿区 `pp_slag`（湖心堡垒、炙热核心等干净的图到了再加，新场景加在 `bgs` 末尾，免得已经放下的「一碗饭」换了场景）。
+星球立绘：`PLANETS` 里写 `img`（如庞贝星 `images/planets/pompeii.webp`，用 `tools/stylize_bg.py` 的 `stylize` 转画风后裁成圆形透明图），星球列表和星球页就用图，没有的画示意图。场景名：`BG_NAME[背景键]` 有名字时，野外场景标题显示「场景 1 / 2 · 熔浆大湖」。庞贝星两个区域：熔岩原 `pp_lava`（熔浆大湖 `pp_lake`、熔渣矿区 `pp_slag`，米饭火鸡只在这里，`RICE.regions`）和饮火城 `pp_city`（湖心堡垒 `pp_fort`、炙热核心 `pp_core`，野外表 `pp_city` 没有米饭火鸡）。以后给区域加场景，加在 `bgs` 末尾，免得已经放下的「一碗饭」换了场景。星球页的野生精灵列表里，同一种精灵在几个区域都有时合成一条。
 ## 星球挑战（芙罗拉星）
 
 代码在 `js/ui/game.js` 搜「星球挑战」，关卡表是 `CHAL.flora`（每关 `foes` 敌人、`s2` / `s3` 第二三颗星的条件、`reward` 首通奖励）。

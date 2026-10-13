@@ -28,6 +28,10 @@ var WILD_POOLS = {
     { sid: 'turkey', lv: [12, 12], w: 0, rate: 0.45, tag: '中等', rare: true, bait: 'rice' },   // 米饭火鸡：平时不出现；在熔岩原的某个场景放一碗饭后，那个场景每次刷新精灵有 2% 是它（见 game.js 的 RICE）
     { sid: 'shroom', lv: [12, 12], w: 0.25, rate: 0.45, tag: '中等', rare: true }
   ],
+  pp_city: [   // 饮火城：没有米饭火鸡
+    { sid: 'hephaestus', lv: [10, 16], w: 99.75, rate: 0.6, tag: '较高' },
+    { sid: 'shroom', lv: [12, 12], w: 0.25, rate: 0.45, tag: '中等', rare: true }
+  ],
   // 莱汀陨石带（电系）
   lt_belt: [
     { sid: 'leigong', lv: [10, 15], w: 55, rate: 0.6, tag: '较高', shiny: 0.03 },   // 3% 是异色（红色）
@@ -45,7 +49,8 @@ var WILD_REGIONS = [
   { id: 'salt', planet: 'flora', name: '盐碱地', en: 'Saline-alkali Land', d: '寸草不生的白色荒原，四处飘着灰紫色的瘴气。着陆舱就是在这里迫降的。瘴气的源头——草系首领「荒芜」就潜伏在地底。这里没有野生精灵。', boss: '荒芜', bgs: ['fl_salt'] }
 ,
   { id: 'kb_sea', planet: 'kamble', name: '环礁浅海', en: 'Atoll Shallows', d: '温暖的浅海和一圈圈环礁，海水清得能看见底。佩恩和水球常在这里出没，偶尔能听见塞米的歌声。', pool: 'kb_sea' },
-  { id: 'pp_lava', planet: 'pompeii', name: '熔岩原', en: 'Lava Field', d: '黑色的火山岩一直铺到天边，脚下的裂缝里还在冒着红光。赫菲斯喜欢在热气里打盹。', pool: 'pp_lava', bgs: ['pp_lake', 'pp_slag'] },
+  { id: 'pp_lava', planet: 'pompeii', name: '熔岩原', en: 'Lava Field', d: '熔浆汇成的大湖一眼望不到边，湖岸上是堆满熔渣的旧矿区。赫菲斯喜欢在热气里打盹。', pool: 'pp_lava', bgs: ['pp_lake', 'pp_slag'] },
+  { id: 'pp_city', planet: 'pompeii', name: '饮火城', en: 'Firedrink City', d: '熔岩湖中央矗立着一座古老的堡垒，再往里走就是星球炙热的核心。赫菲斯在这里长得更壮实。', pool: 'pp_city', bgs: ['pp_fort', 'pp_core'] },
   { id: 'lt_belt', planet: 'laiting', name: '雷暴陨石群', en: 'Storm Belt', d: '大大小小的陨石在电弧里漂浮，到处噼啪作响。锰怪和雷天使在石头之间穿梭。', pool: 'lt_belt' },
   { id: 'wh_snow', planet: 'white', name: '永冻冰原', en: 'Permafrost', d: '一望无际的白色冰原，风里夹着冰晶。铸冰者在冰面下游荡，传说还有一只很少露面的亚当。', pool: 'wh_snow' }
 ];

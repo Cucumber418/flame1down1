@@ -963,7 +963,7 @@
   // 已有画面的舰内区域；其余区域先用占位画面
   var AREA_BG = { 黄冈: 'pod_p', 鄂州: 'hangar_p', 孝感: 'xiaogan', 武汉: 'cockpit_p', 咸宁: 'cabin_p', 仙桃: 'gym_p', 荆门: 'storage_p', 恩施: 'greenhouse_p', 天门: 'teahall', 随州: 'bridge2_p', 襄阳: 'bridge_p' };
   var BG_POS = { qiyi: '50% 42%', desert: '50% 40%', jslc: '50% 38%', street: '50% 55%', bridge: '45% 55%', tower: '50% 55%' };
-  var BG_NAME = { gate: '校门', school: '校门', flag: '教学楼', garden: '牌坊花园', qiyi: '起义门', street: '彭刘杨路', bridge: '长江大桥', desert: '鸣沙山 · 月牙泉', jslc: '发射中心', tower: '发射塔', launch: '火箭升空', orbit: '地球轨道', hangar: '鄂州港 · 停泊区', cockpit_p: '武汉 · 指挥中枢', hangar_p: '鄂州港 · 停泊区', cabin_p: '温泉生活区', greenhouse_p: '太空温室', pp_lake: '熔浆大湖', pp_slag: '熔渣矿区', gym_p: '体能馆', storage_p: '物资仓储', pod_p: '学院部 · 资料室', tea_p: '陆羽茶室 · 04 号舱', teahall: '陆羽茶室 · 大厅', bridge2_p: '编钟通讯站', bridge_p: '古城防卫部', xiaogan: '孝感大厅', paifang: '惟楚有材牌坊', hall: '报告厅', field: '操场', aerial: '校园全景' };
+  var BG_NAME = { gate: '校门', school: '校门', flag: '教学楼', garden: '牌坊花园', qiyi: '起义门', street: '彭刘杨路', bridge: '长江大桥', desert: '鸣沙山 · 月牙泉', jslc: '发射中心', tower: '发射塔', launch: '火箭升空', orbit: '地球轨道', hangar: '鄂州港 · 停泊区', cockpit_p: '武汉 · 指挥中枢', hangar_p: '鄂州港 · 停泊区', cabin_p: '温泉生活区', greenhouse_p: '太空温室', pp_lake: '熔浆大湖', pp_slag: '熔渣矿区', pp_fort: '湖心堡垒', pp_core: '炙热核心', gym_p: '体能馆', storage_p: '物资仓储', pod_p: '学院部 · 资料室', tea_p: '陆羽茶室 · 04 号舱', teahall: '陆羽茶室 · 大厅', bridge2_p: '编钟通讯站', bridge_p: '古城防卫部', xiaogan: '孝感大厅', paifang: '惟楚有材牌坊', hall: '报告厅', field: '操场', aerial: '校园全景' };
   // 角色（立绘为占位）
   var CAST = {
     p: { name: function () { return acc.name; }, color: '#c42f3a', tall: 0.92, get img() { return playerArt(); } },   // 主角立绘按性别：pm 男主 / pf 女主（差分见 CHARS 的 pm_xxx）
@@ -1245,7 +1245,7 @@
       '<ellipse cx="60" cy="60" rx="54" ry="13" fill="none" stroke="#3f7d4a" stroke-width="2.5" stroke-dasharray="6 5" transform="rotate(14 60 60)"/></svg>';
   }
   function regionArt(id) {
-    var bgc = { forest: '#cfe5c4', grass: '#e4f1cf', salt: '#efece4', kb_sea: '#cfe8f6', pp_lava: '#f4d1b8', lt_belt: '#2e3142', wh_snow: '#eef6fb' }[id], g = '';
+    var bgc = { forest: '#cfe5c4', grass: '#e4f1cf', salt: '#efece4', kb_sea: '#cfe8f6', pp_lava: '#f4d1b8', pp_city: '#f2c2a8', lt_belt: '#2e3142', wh_snow: '#eef6fb' }[id], g = '';
     if (id === 'kb_sea') g = '<path d="M0 60h160v40H0z" fill="#6fb3dd"/>' + [64, 74, 84, 94].map(function (y, k) { return '<path d="M0 ' + y + 'c20-6 20 6 40 0s20-6 40 0 20 6 40 0 20-6 40 0" stroke="#fff" stroke-width="2" fill="none" opacity="' + (0.9 - k * 0.15) + '"/>'; }).join('') + '<ellipse cx="112" cy="58" rx="26" ry="5" fill="#f4e3b2" stroke="#23222b" stroke-width="2"/><path d="M108 56c0-12 4-18 4-22M108 40c-6-4-12-2-14 2M110 38c4-6 12-6 14-2" stroke="#4f9159" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
     else if (id === 'pp_lava') g = '<path d="M0 70h160v30H0z" fill="#3a2f2b"/><path d="M40 70l30-44 12 12 10-8 28 40z" fill="#5a4038" stroke="#23222b" stroke-width="2"/><path d="M76 30c-4-8 0-14 6-18" stroke="#9a9a9a" stroke-width="5" fill="none" opacity=".6" stroke-linecap="round"/><path d="M10 84c20-4 30 6 50 2s30-8 50 0 30 4 40 0" stroke="#f26b2a" stroke-width="4" fill="none"/>';
     else if (id === 'lt_belt') g = [[24, 40, 12], [60, 66, 18], [104, 34, 10], [132, 70, 14], [86, 86, 8]].map(function (r) { return '<ellipse cx="' + r[0] + '" cy="' + r[1] + '" rx="' + r[2] + '" ry="' + (r[2] * 0.75) + '" fill="#8b8576" stroke="#111" stroke-width="2"/>'; }).join('') + '<path d="M36 40l14 10-6 4 12 10M114 36l8 14-6 2 8 14" stroke="#f1dd73" stroke-width="2.5" fill="none" stroke-linejoin="round"/>' + [[12, 14], [148, 20], [80, 12], [140, 92]].map(function (s) { return '<circle cx="' + s[0] + '" cy="' + s[1] + '" r="1.5" fill="#fff"/>'; }).join('');
@@ -1347,7 +1347,7 @@
   ];
   var GATHER = {
     forest: { item: 'g_sand', n: 12 }, grass: { item: 'g_sand', n: 12 },
-    kb_sea: { item: 'g_sand', n: 12 }, pp_lava: { item: 'g_sand', n: 12 },
+    kb_sea: { item: 'g_sand', n: 12 }, pp_lava: { item: 'g_sand', n: 12 }, pp_city: { item: 'g_sand', n: 12 },
     lt_belt: { item: 'g_core', n: 1 }, wh_snow: { item: 'g_core', n: 1 }
   };
   function gatherRec() {
@@ -1414,7 +1414,7 @@
    * 全服共享的时间表（按北京时间每个整点算，所有人算出来都一样，不需要服务器）：每小时在某个区域的某个场景停留连续 20 分钟。
    * 每次出现（按小时编号 h 区分）每人只能挑战 1 次（开战就算，acc.travel = { h }），LV30，不能捕捉。
    * 击败：累积经验 ×3000，50% 掉落叶子喵的叶片（5 片在冶炼坊合成精元，精元在神农架 · 精灵保育仓孵化）。 */
-  var TRAVEL = { sid: 'leafcat', lv: 30, exp: 3000, leaf: 0.5, dur: 20, regions: ['forest', 'grass', 'kb_sea', 'pp_lava', 'lt_belt', 'wh_snow'],
+  var TRAVEL = { sid: 'leafcat', lv: 30, exp: 3000, leaf: 0.5, dur: 20, regions: ['forest', 'grass', 'kb_sea', 'pp_lava', 'pp_city', 'lt_belt', 'wh_snow'],
     spots: [{ x: 50, y: 64 }, { x: 32, y: 62 }, { x: 70, y: 66 }] };
   function thash(h) { var x = (h * 2654435761) >>> 0; x ^= x >>> 13; x = Math.imul(x, 0x5bd1e995) >>> 0; x ^= x >>> 15; return x >>> 0; }
   function sceneCount(R) { return Math.max(2, (R.bgs || []).filter(function (k) { return BG[k]; }).length); }
@@ -1883,10 +1883,13 @@
         '<button type="button" class="btn primary" data-field="' + R.id + '">进入' + R.name + '</button></div></article>';
     }).join('');
     var list = [];
+    var seenSid = {};   // 同一种精灵在几个区域都有时，合成一条，「出现」里列出各个区域
     regs.forEach(function (R) { (WILD[R.pool] || []).forEach(function (w) {
+      if (seenSid[w.sid]) return; seenSid[w.sid] = 1;
       var k = wildKnown(w.sid), f = form({ sid: w.sid, lv: w.lv[0] }), sid_ = w.sid;
+      var where = []; regs.forEach(function (R2) { (WILD[R2.pool] || []).forEach(function (x) { if (x.sid === w.sid) where.push(x.bait ? R2.name + '（放了一碗饭的场景）' + Math.round(RICE.chance * 100) + '%' : R2.name + ' ' + x.w + '%'); }); });
       list.push('<li class="wl ' + (k || 'unk') + '">' + (k ? '<img src="' + f.img + '" alt="">' : silTag(sid_, f.stage)) + '<span><b>' + (k ? esc(f.name) : '？？？') + '</b>' + (w.rare ? '<span class="chip rare">稀有</span>' : '') +
-        '<small>LV' + (w.lv[0] === w.lv[1] ? w.lv[0] + '（固定）' : w.lv[0] + '–' + w.lv[1]) + ' · 捕捉率' + w.tag + '</small><small>出现：' + (w.bait ? R.name + '（放了一碗饭的场景）' + Math.round(RICE.chance * 100) + '%' : R.name + ' ' + w.w + '%') + '</small>' +
+        '<small>LV' + (w.lv[0] === w.lv[1] ? w.lv[0] + '（固定）' : w.lv[0] + '–' + w.lv[1]) + ' · 捕捉率' + w.tag + '</small><small>出现：' + where.join(' · ') + '</small>' +
         '<small class="wk">' + (k === 'own' ? '已捕捉' : k === 'seen' ? '见过 · 未捕捉' : '未遇见') + '</small></span></li>');
     }); });
     return head + invLine() + '<div class="regions">' + cards + '</div>' +
