@@ -80,8 +80,10 @@ function str(v, n) { return typeof v === 'string' ? v.slice(0, n) : ''; }
 function monOut(m, acc) {
   var ev = {};
   if (m.ev && typeof m.ev === 'object') ['hp', 'atk', 'def', 'spa', 'spd', 'spe'].forEach(function (k) { if (m.ev[k]) ev[k] = int(m.ev[k], 0, 300); });
+  var iv = null;   // 天赋：六项 0~31，缺项就整套不发（对方按满天赋算）
+  if (m.iv && typeof m.iv === 'object' && ['hp', 'atk', 'def', 'spa', 'spd', 'spe'].every(function (k) { return typeof m.iv[k] === 'number' && isFinite(m.iv[k]); })) { iv = {}; ['hp', 'atk', 'def', 'spa', 'spd', 'spe'].forEach(function (k) { iv[k] = int(m.iv[k], 0, 31); }); }
   return {
-    sid: str(m.sid, 32), lv: int(m.lv, 1, 100), nat: str(m.nat, 8) || null, ev: ev,
+    sid: str(m.sid, 32), lv: int(m.lv, 1, 100), nat: str(m.nat, 8) || null, ev: ev, iv: iv,
     emblem: !!(acc && acc.emblems && acc.emblems[m.sid]),
     shiny: m.shiny === 2 ? 2 : !!m.shiny,   // 击败普通难度泰戈尔得到的纹章（按精灵种类）
     moves: Array.isArray(m.moves) ? m.moves.filter(function (x) { return typeof x === 'string'; }).slice(0, 4).map(function (x) { return x.slice(0, 32); }) : []

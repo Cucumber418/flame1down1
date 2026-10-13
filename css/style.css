@@ -795,7 +795,11 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .evc button:disabled { opacity: .35; cursor: default; }
 .evc b { min-width: 4.4em; text-align: center; font-size: 12.5px; font-variant-numeric: tabular-nums; }
 .evc b small { color: var(--blue); font-weight: 400; margin-left: 3px; font-size: 11px; }
-@media (max-width: 560px) { .evstats { grid-template-columns: auto 5ch minmax(30px, 1fr) auto; } .evstats .real { display: none; } }
+.ivhead { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; font-size: 13px; }
+.ivhead > b { font-size: 15px; }
+.ivv { font-variant-numeric: tabular-nums; }
+.ivv.max { color: var(--red); font-weight: 700; } .ivv.hi { color: var(--red); } .ivv.lo { color: var(--blue); }
+@media (max-width: 560px) { .evstats { grid-template-columns: auto 5ch minmax(24px, 1fr) auto auto; } .evstats .real .bs { display: none; } }
 .dexno { font-family: var(--f-body); font-size: 14px; font-weight: 700; color: var(--pencil); margin-right: 8px; vertical-align: middle; }
 .evo-desc { margin: 10px 0 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; font-size: 13px; }
 .evo-desc dt { font-weight: 700; color: var(--red); white-space: nowrap; }

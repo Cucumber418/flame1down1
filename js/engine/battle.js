@@ -38,7 +38,8 @@ function stageMult(n) { return n >= 0 ? (2 + n) / 2 : 2 / (2 - n); }
 function accMult(n) { n = Math.max(-6, Math.min(6, n)); return n >= 0 ? (3 + n) / 3 : 4 / (4 - n); }
 var STAB = 1.2;      // 本系加成：技能属性与精灵属性相同时伤害 ×1.2
 var HP_MULT = 1.75;   // 体力在原公式基础上 ×1.75
-function calcStat(b, k, lv) { lv = lv || LV; var v = Math.floor((2 * b + 31) * lv / 100); return k === 'hp' ? Math.floor((v + lv + 10) * HP_MULT) : v + 5; }
+// iv：天赋（0~31），不传时按满天赋 31 计算（野怪、剧情对手、首领、平衡排位）
+function calcStat(b, k, lv, iv) { lv = lv || LV; var v = Math.floor((2 * b + (iv == null ? 31 : iv)) * lv / 100); return k === 'hp' ? Math.floor((v + lv + 10) * HP_MULT) : v + 5; }
 function blankStages() { var o = {}; STG.forEach(function (k) { o[k] = 0; }); return o; }
 function sp(m) { return m.id === 'dummy' ? (m.dummySpec || DUMMY) : SPMAP[m.id]; }
 function ability(m) { return sp(m).ability ? sp(m).ability.n : '无'; }
@@ -61,14 +62,14 @@ var NATURES = {
 function natureMult(nat, k) { var n = nat && NATURES[nat]; if (!n) return 1; return n[0] === k ? 1.1 : n[1] === k ? 0.9 : 1; }
 /* 学习力：每 10 点 = 1 点能力值；单项最多 300，总和最多 750 */
 var EV_MAX = 300, EV_TOTAL = 750;
-function fullStat(b, k, lv, ev, nat) {
-  var v = calcStat(b, k, lv) + Math.floor(((ev && ev[k]) || 0) / 10);
+function fullStat(b, k, lv, ev, nat, iv) {
+  var v = calcStat(b, k, lv, iv && iv[k] != null ? iv[k] : null) + Math.floor(((ev && ev[k]) || 0) / 10);
   return k === 'hp' ? v : Math.floor(v * natureMult(nat, k));
 }
-function makeMon(id, moveNames, mult, lv, ev, nat) {
+function makeMon(id, moveNames, mult, lv, ev, nat, iv) {
   var s = SPMAP[id], stats = {}; mult = mult || 1; lv = lv || LV;
-  ['atk', 'def', 'spa', 'spd', 'spe'].forEach(function (k) { stats[k] = Math.round(fullStat(s.base[k], k, lv, ev, nat) * mult); });
-  var maxhp = Math.round(fullStat(s.base.hp, 'hp', lv, ev, nat) * mult);
+  ['atk', 'def', 'spa', 'spd', 'spe'].forEach(function (k) { stats[k] = Math.round(fullStat(s.base[k], k, lv, ev, nat, iv) * mult); });
+  var maxhp = Math.round(fullStat(s.base.hp, 'hp', lv, ev, nat, iv) * mult);
   return { id: id, lv: lv, maxhp: maxhp, hp: maxhp, stats: stats,
     moves: moveNames.map(moveName).filter(function (n) { return M[n]; }).map(function (n) { return { n: n, pp: M[n].pp, max: M[n].pp }; }),
     stages: blankStages(), st: {}, tm: {}, fx: {}, flags: {}, perm: {}, fainted: false };
@@ -76,7 +77,7 @@ function makeMon(id, moveNames, mult, lv, ev, nat) {
 
 // 剧情对战可以给精灵起显示名（如进化前的形态名）和换图
 function mkFrom(t) {
-  var m = makeMon(t.id, t.moves, t.mult, t.lv, t.ev, t.nat);
+  var m = makeMon(t.id, t.moves, t.mult, t.lv, t.ev, t.nat, t.iv);
   if (t.nick) m.nick = t.nick; if (t.img) m.img = t.img; if (t.miasma) m.perm.miasma = t.miasma;
   if (t.maxhp) m.maxhp = m.hp = t.maxhp;          // 首领：固定体力
   if (t.onlyHit) m.onlyHit = t.onlyHit;           // 首领：只有这些属性的技能能命中它

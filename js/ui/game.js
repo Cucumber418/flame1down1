@@ -30,6 +30,7 @@
     acc.mons.forEach(function (m) {
       if (!m.nat || !(m.nat in NATURES)) m.nat = NAT_KEYS[Math.floor(Math.random() * NAT_KEYS.length)];
       if (!m.ev) m.ev = {}; if (!(m.evFree >= 0)) m.evFree = 0;
+      if (!ivOk(m.iv)) m.iv = randIv();   // 天赋系统上线前的精灵：补一套随机天赋
       if (acc.expV !== expV() && m.lv >= 1) {   // 经验曲线换版：等级不变，本级进度按比例换算
         var o0 = oldExpAt(m.lv), o1 = oldExpAt(Math.min(100, m.lv + 1)), fr = m.lv >= 100 ? 0 : Math.max(0, Math.min(0.999, ((m.exp || 0) - o0) / (o1 - o0)));
         m.exp = m.lv >= 100 ? expAt(100) : Math.floor(expAt(m.lv) + fr * (expAt(m.lv + 1) - expAt(m.lv)));
@@ -127,7 +128,11 @@
     return out;
   }
   function randNat() { return NAT_KEYS[Math.floor(Math.random() * NAT_KEYS.length)]; }
-  function newMon(sid, lv) { var m = { u: acc.next++, sid: sid, lv: lv, exp: expAt(lv), moves: defaultMoves(sid, lv, []), got: Date.now(), nat: randNat(), ev: {}, evFree: 0, hl: [] }; acc.mons.push(m); markForm(sid, stageOf(SPMAP[sid], lv)); return m; }
+  function newMon(sid, lv) { var m = { u: acc.next++, sid: sid, lv: lv, exp: expAt(lv), moves: defaultMoves(sid, lv, []), got: Date.now(), nat: randNat(), iv: randIv(), ev: {}, evFree: 0, hl: [] }; acc.mons.push(m); markForm(sid, stageOf(SPMAP[sid], lv)); return m; }
+  // 天赋：六项能力各一个 0~31 的随机数，越高越强（满 31 和天赋系统上线前一样）
+  function randIv() { var o = {}; STAT_KEYS.forEach(function (k) { o[k] = Math.floor(Math.random() * 32); }); return o; }
+  function ivOk(iv) { return !!iv && typeof iv === 'object' && STAT_KEYS.every(function (k) { return iv[k] >= 0 && iv[k] <= 31 && iv[k] === Math.floor(iv[k]); }); }
+  function ivOf(m) { return ivOk(m.iv) ? m.iv : null; }
   function evSum(m) { return STAT_KEYS.reduce(function (a, k) { return a + ((m.ev && m.ev[k]) || 0); }, 0); }
   function natText(nat) { var n = NATURES[nat]; return n ? BASE_NAME[n[0]] + ' +10%，' + BASE_NAME[n[1]] + ' −10%' : '各项能力无修正'; }
   // 胜利后，出战过的精灵各得 1 点可分配学习力（总量不超过 750）
@@ -173,7 +178,7 @@
     return msg;
   }
   function teamsOf(u) { var r = []; acc.teams.forEach(function (t, i) { var k = t.indexOf(u); if (k >= 0) r.push({ t: i, lead: k === 0 }); }); return r; }
-  function stat(m, k) { return fullStat(SPMAP[m.sid].base[k], k, m.lv, m.ev, m.nat); }
+  function stat(m, k) { return fullStat(SPMAP[m.sid].base[k], k, m.lv, m.ev, m.nat, ivOf(m)); }
 
   /* ---------- 顶栏、导航 ---------- */
   function renderTop() {
@@ -431,19 +436,19 @@
   function monDetail(m) {
     if (!m) return '<p class="empty-note">点击一只精灵查看资料、配置技能。</p>';
     var s = SPMAP[m.sid], f = form(m), a = avail(m.sid, m.lv, m.hl || []), n = m.moves.length, ts = teamsOf(m.u);
-    var free = m.evFree || 0, sum = evSum(m), stats = '';
+    var free = m.evFree || 0, sum = evSum(m), stats = '', iv = ivOf(m), ivSum = iv ? STAT_KEYS.reduce(function (a, k) { return a + iv[k]; }, 0) : 0;
     STAT_KEYS.forEach(function (k) {
       var b = s.base[k], v = stat(m, k), ev = (m.ev && m.ev[k]) || 0, nm = natureMult(m.nat, k), room = Math.min(free, EV_MAX - ev, EV_TOTAL - sum);
       stats += '<span>' + BASE_NAME[k] + '</span><span class="sv' + (nm > 1 ? ' up' : nm < 1 ? ' dn' : '') + '" title="' + (nm > 1 ? '性格加成 +10%' : nm < 1 ? '性格修正 −10%' : '') + '">' + v + (nm > 1 ? '↑' : nm < 1 ? '↓' : '') + '</span>' +
-        '<span class="bar"><i style="width:' + Math.min(100, b / 150 * 100) + '%"></i></span><span class="real">种族值 ' + b + '</span>' +
-        '<span class="evc"><button type="button" data-ev="' + k + '" data-d="-10"' + (ev ? '' : ' disabled') + ' aria-label="' + BASE_NAME[k] + '学习力 −10">−10</button><button type="button" data-ev="' + k + '" data-d="-1"' + (ev ? '' : ' disabled') + ' aria-label="' + BASE_NAME[k] + '学习力 −1">−1</button>' +
+        '<span class="bar"><i style="width:' + Math.min(100, b / 150 * 100) + '%"></i></span><span class="real"><span class="bs">种族值 ' + b + (iv ? ' · ' : '') + '</span>' + (iv ? '<span class="ivv' + (iv[k] >= 31 ? ' max' : iv[k] >= 26 ? ' hi' : iv[k] <= 5 ? ' lo' : '') + '" title="天赋 0~31，越高越强">天赋 ' + iv[k] + '</span>' : '') + '</span>' +
+        '<span class="evc">' +
         '<b title="学习力 ' + ev + ' / ' + EV_MAX + '，能力值 +' + Math.floor(ev / 10) + '">' + ev + '<small>+' + Math.floor(ev / 10) + '</small></b>' +
         '<button type="button" data-ev="' + k + '" data-d="1"' + (room > 0 ? '' : ' disabled') + ' aria-label="' + BASE_NAME[k] + '学习力 +1">+1</button><button type="button" data-ev="' + k + '" data-d="10"' + (room > 0 ? '' : ' disabled') + ' aria-label="' + BASE_NAME[k] + '学习力 +10">+10</button></span>';
     });
     stats = '<div class="nat"><b>性格 · ' + m.nat + '</b><span>' + natText(m.nat) + '</span></div>' +
-      '<div class="evhead"><b>学习力</b><span>可分配 <b class="' + (free ? 'red' : '') + '">' + free + '</b> · 已分配 ' + sum + ' / ' + EV_TOTAL + '</span><span class="hint">每 10 点学习力 = 1 点能力值，单项最多 ' + EV_MAX + '。战斗胜利后，出战过的精灵各得 1 点。</span>' +
-      (sum ? '<button type="button" class="btn ghost" data-evreset="1">全部收回</button>' : '') + '</div>' +
-      '<div class="stats evstats">' + stats + '<span class="sum">实际能力值 = LV' + m.lv + ' 的数值 + 学习力加成，再乘性格修正' + (s.placeholder ? ' · 数值为占位' : s.unsure && s.unsure.length >= 6 ? ' · 种族值暂定' : '') + '</span></div>';
+      '<div class="evhead"><b>学习力</b><span>可分配 <b class="' + (free ? 'red' : '') + '">' + free + '</b> · 已分配 ' + sum + ' / ' + EV_TOTAL + '</span><span class="hint">每 10 点学习力 = 1 点能力值，单项最多 ' + EV_MAX + '。战斗胜利后，出战过的精灵各得 1 点。<b>已经分配的学习力不能退回</b>，想好再加。</span></div>' +
+      (iv ? '<div class="ivhead"><b>天赋</b><span>合计 ' + ivSum + ' / 186</span><span class="hint">每项能力的天赋是 0~31 的随机数，越高越强。用「天赋重组合剂」可以把六项天赋全部重新随机。</span></div>' : '') +
+      '<div class="stats evstats">' + stats + '<span class="sum">实际能力值 = LV' + m.lv + ' 的数值（受种族值和天赋影响） + 学习力加成，再乘性格修正' + (s.placeholder ? ' · 数值为占位' : s.unsure && s.unsure.length >= 6 ? ' · 种族值暂定' : '') + '</span></div>';
     var row = function (mv) {
       var M_ = M[mv], on = m.moves.indexOf(mv) >= 0, ok = a.indexOf(mv) >= 0, id = 'am-' + m.u + '-' + mv;
       var meta = M_.cat + (M_.power ? ' · 威力' + M_.power : '') + (M_.pri ? ' · 先制+' + M_.pri : '') + ' · PP' + M_.pp;
@@ -495,15 +500,14 @@
     if (b.dataset.abig) { var q = b.dataset.abig.split('|'); H.big(q[0], +q[1]); return; }
     if (b.dataset.ev) {
       var k = b.dataset.ev, d = +b.dataset.d, ev = m.ev[k] || 0, free = m.evFree || 0;
-      if (d > 0) d = Math.min(d, free, EV_MAX - ev, EV_TOTAL - evSum(m)); else d = -Math.min(-d, ev);
-      if (d) { m.ev[k] = ev + d; m.evFree = free - d; }
+      d = d > 0 ? Math.min(d, free, EV_MAX - ev, EV_TOTAL - evSum(m)) : 0;   // 已分配的学习力不能退回
+      if (d > 0) { m.ev[k] = ev + d; m.evFree = free - d; }
       save(); renderTop(); return;
     }
     if (b.dataset.muse) {
       var ns = b.closest('.md-it') && b.closest('.md-it').querySelector('[data-mnat]'), r = applyMonItem(b.dataset.muse, m, ns && ns.value);
       toast(r.msg); if (r.ok) renderTop(); return;
     }
-    if (b.dataset.evreset) { m.evFree = (m.evFree || 0) + evSum(m); m.ev = {}; save(); renderTop(); return; }
     if (b.dataset.in != null) { var t = acc.teams[+b.dataset.in]; if (t.length < TEAM_SIZE && t.indexOf(m.u) < 0) t.push(m.u); }
     else if (b.dataset.out != null) { var t2 = acc.teams[+b.dataset.out]; t2.splice(t2.indexOf(m.u), 1); }
     else if (b.dataset.lead != null) { var t3 = acc.teams[+b.dataset.lead]; t3.splice(t3.indexOf(m.u), 1); t3.unshift(m.u); }
@@ -536,11 +540,12 @@
    * 一般道具：捕捉装置、补药（对战中用）、改名卡、自律训练装置、挑战许可
    * 储存箱（主菜单，黄冈秘鉴和社交中间）列出所有道具 */
   var USE_ITEMS = {
+    ivReroll: { name: '天赋重组合剂', sid: null, kind: 'iv', d: '把你的任意一只精灵的六项天赋（0~31）全部重新随机。新的天赋可能更高，也可能更低。' },
     natTagore: { name: '泰戈尔性格药剂', sid: 'tagore', kind: 'nat', d: '把你的一只泰戈尔（小胖虎、胖虎也可以）的性格改成你指定的性格。' },
     evAny: { name: '通用学习力合剂', sid: null, kind: 'ev', d: '为你的任意一只精灵直接增加 100 点学习力。加进「可分配学习力」，再在精灵资料里自己分配；学习力总量最多 ' + EV_TOTAL + '。' },
     evTagore: { name: '泰戈尔学习力合剂', sid: 'tagore', kind: 'ev', d: '为你的一只泰戈尔（小胖虎、胖虎也可以）直接增加 100 点学习力。加进「可分配学习力」，再在精灵资料里自己分配；学习力总量最多 ' + EV_TOTAL + '。' }
   };
-  var MON_ORDER = ['evAny', 'evTagore', 'natTagore'], GEN_ORDER = ['trans', 'helmet', 'auto', 'rename', 'cap1', 'cap2', 'cap3', 'pot1', 'pot2', 'pot200'];
+  var MON_ORDER = ['ivReroll', 'evAny', 'evTagore', 'natTagore'], GEN_ORDER = ['trans', 'helmet', 'auto', 'rename', 'cap1', 'cap2', 'cap3', 'pot1', 'pot2', 'pot200'];
   // 剧情道具：主线里拿到的，不能使用也不会消耗
   var KEY_ITEMS = {
     trans: { name: '精灵翻译器', d: '汉街总部国际A座的情报显示，这个翻译器能凭一己之力考到雅思 6.5 分。这样一来，翻译精灵的语言也一定能行吧……', img: 'translator' },
@@ -583,6 +588,10 @@
       var old = m.nat; m.nat = nat; acc.items[k]--; save();
       return { ok: true, msg: form(m).name + ' 的性格从「' + old + '」变成了「' + nat + '」（' + natText(nat) + '）。' };
     }
+    if (it.kind === 'iv') {
+      var o = ivOf(m), n = randIv(); m.iv = n; acc.items[k]--; save();
+      return { ok: true, msg: form(m).name + ' 的天赋重组了：' + STAT_KEYS.map(function (x) { return BASE_NAME[x] + ' ' + (o ? o[x] + '→' : '') + n[x]; }).join('，') + '。' };
+    }
     var add = Math.min(100, evRoom(m));
     if (!add) return { ok: false, msg: '这只的学习力已经到上限了。' };
     m.evFree = (m.evFree || 0) + add; acc.items[k]--; save();
@@ -595,8 +604,9 @@
     return '<div class="md-items"><h4>精灵道具 <span class="hint">直接用在' + esc(form(m).name) + '身上</span></h4>' + ks.map(function (k) {
       var it = USE_ITEMS[k], act;
       if (it.kind === 'nat') act = '<select data-mnat="1" aria-label="新的性格">' + NAT_KEYS.filter(function (n) { return n !== m.nat; }).map(function (n) { return '<option value="' + n + '">' + n + '（' + natText(n) + '）</option>'; }).join('') + '</select><button type="button" class="btn" data-muse="' + k + '">改性格</button>';
+      else if (it.kind === 'iv') act = '<button type="button" class="btn" data-muse="' + k + '">使用 · 重组天赋</button>';
       else { var room = evRoom(m); act = '<button type="button" class="btn" data-muse="' + k + '"' + (room ? '' : ' disabled title="学习力已经到上限了"') + '>' + (room ? '使用 · +' + Math.min(100, room) + ' 学习力' : '学习力已满') + '</button>'; }
-      return '<div class="md-it"><b>' + it.name + ' <span class="cnt">×' + acc.items[k] + '</span></b><span class="hint">' + esc(it.kind === 'nat' ? '把性格改成你选的性格' : '直接增加 100 点可分配学习力') + '</span><span class="md-act">' + act + '</span></div>';
+      return '<div class="md-it"><b>' + it.name + ' <span class="cnt">×' + acc.items[k] + '</span></b><span class="hint">' + esc(it.kind === 'nat' ? '把性格改成你选的性格' : it.kind === 'iv' ? '六项天赋全部重新随机' : '直接增加 100 点可分配学习力') + '</span><span class="md-act">' + act + '</span></div>';
     }).join('') + '</div>';
   }
   function growText(min) { return min >= 60 && min % 60 === 0 ? (min / 60) + ' 小时' : min + ' 分钟'; }
@@ -643,10 +653,11 @@
         if (!mons.some(function (m) { return m.u === ui.itTarget; })) ui.itTarget = mons.length ? mons[0].u : null;
         var tm = mon(ui.itTarget);
         body = '<p>' + esc(it.d) + '</p>' + (mons.length ? '<div class="it-step"><b>1. 选择精灵</b><div class="it-mons">' + mons.map(function (m) {
-          var f = form(m), sub = it.kind === 'nat' ? '性格 ' + m.nat : '可再加 ' + evRoom(m) + ' 点';
+          var f = form(m), sub = it.kind === 'nat' ? '性格 ' + m.nat : it.kind === 'iv' ? '天赋合计 ' + (ivOf(m) ? STAT_KEYS.reduce(function (a, x) { return a + m.iv[x]; }, 0) : '？') : '可再加 ' + evRoom(m) + ' 点';
           return '<label class="it-mon' + (m.u === ui.itTarget ? ' on' : '') + '"><input type="radio" name="it-t" value="' + m.u + '"' + (m.u === ui.itTarget ? ' checked' : '') + '><img src="' + f.img + '" alt=""><span><b>' + esc(f.name) + '</b><small>LV' + m.lv + ' · ' + sub + '</small></span></label>';
         }).join('') + '</div></div>' +
           (it.kind === 'nat' ? '<div class="it-step"><b>2. 选择性格</b><select id="it-nat" aria-label="新的性格">' + NAT_KEYS.map(function (n) { var cur = tm && tm.nat === n, pick = ui.itNat && (!tm || ui.itNat !== tm.nat) ? ui.itNat : NAT_KEYS.filter(function (x) { return !tm || x !== tm.nat; })[0]; return '<option value="' + n + '"' + (pick === n ? ' selected' : '') + (cur ? ' disabled' : '') + '>' + n + '（' + natText(n) + '）' + (cur ? ' · 当前' : '') + '</option>'; }).join('') + '</select></div>'
+            : it.kind === 'iv' ? '<p class="hint">' + (tm && ivOf(tm) ? esc(form(tm).name) + ' 现在的天赋：' + STAT_KEYS.map(function (x) { return BASE_NAME[x] + ' ' + tm.iv[x]; }).join('，') + '。' : '') + '</p>'
             : '<p class="hint">' + (tm ? esc(form(tm).name) + ' 学习力：已分配 ' + evSum(tm) + '，可分配 ' + (tm.evFree || 0) + '，还能再加 ' + evRoom(tm) + ' 点。' : '') + '</p>') +
           '<button type="button" class="btn primary" data-ituse="' + k + '"' + (it.kind === 'ev' && tm && !evRoom(tm) ? ' disabled' : '') + '>使用 1 个' + itemName(k) + '</button>'
           : '<p class="hint red">你还没有' + SPMAP[it.sid].name + '（小胖虎、胖虎也算）。击败简单难度的首领「泰戈尔」可以领养一只小胖虎。</p>');
@@ -1087,7 +1098,7 @@
     hunter: { foe: '神秘的猎杀者', team: [{ sid: 'kaleo', lv: 15 }], bg: 'fl_maple', desc: '猎杀者卡莱（LV15）' },
     kaleo4: { foe: '瘴气卡莱群', team: [{ sid: 'kaleo', lv: 20, miasma: 5 }, { sid: 'kaleo', lv: 20, miasma: 5 }, { sid: 'kaleo', lv: 20, miasma: 5 }, { sid: 'kaleo', lv: 20, miasma: 5 }], bg: 'fl_beech', desc: '被瘴气侵染的卡莱 ×4（LV20）' }
   };
-  function storyMon(m) { var f = form(m), hl = m.u != null ? (m.hl || []) : undefined, mv = m.moves.length ? m.moves.slice() : defaultMoves(m.sid, m.lv, hl); return { id: m.sid, lv: m.lv, moves: mv, nick: f.name, img: f.img, ev: m.ev || null, nat: m.nat || null, u: m.u, hl: hl, shiny: shinyV(m.shiny), emblem: m.u != null && acc.emblems && acc.emblems[m.sid] && EMBLEMS[m.sid] ? EMBLEMS[m.sid].m : null }; }
+  function storyMon(m) { var f = form(m), hl = m.u != null ? (m.hl || []) : undefined, mv = m.moves.length ? m.moves.slice() : defaultMoves(m.sid, m.lv, hl); return { id: m.sid, lv: m.lv, moves: mv, nick: f.name, img: f.img, ev: m.ev || null, nat: m.nat || null, iv: ivOf(m), u: m.u, hl: hl, shiny: shinyV(m.shiny), emblem: m.u != null && acc.emblems && acc.emblems[m.sid] && EMBLEMS[m.sid] ? EMBLEMS[m.sid].m : null }; }
   function startFight(key) {
     var F = FIGHTS[key], team = (acc.teams[acc.active] || []).map(mon).filter(Boolean);
     if (!team.length) team = acc.mons.slice(0, 1);
@@ -1764,7 +1775,7 @@
     L.sort(function (a, b) { var ia = ord.indexOf(a.k), ib = ord.indexOf(b.k); return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib); });
     return L;
   }
-  function helperSpec(Hp) { var hm = storyMon({ sid: Hp.mon.sid, lv: Hp.mon.lv, moves: Hp.mon.moves || [], ev: Hp.mon.ev || null, nat: Hp.mon.nat || null, shiny: shinyV(Hp.mon.shiny) }); hm.nick = hm.nick + '（' + Hp.owner + '）'; return hm; }
+  function helperSpec(Hp) { var hm = storyMon({ sid: Hp.mon.sid, lv: Hp.mon.lv, moves: Hp.mon.moves || [], ev: Hp.mon.ev || null, nat: Hp.mon.nat || null, iv: Hp.mon.iv || null, shiny: shinyV(Hp.mon.shiny) }); hm.nick = hm.nick + '（' + Hp.owner + '）'; return hm; }
   // 首发选择面板：选好精灵、点「开始挑战」后弹出，拖动（或点「设为首发」）调整出战顺序
   function openLineup(P, i) {
     var x = CHAL[P][i]; if (!x) return;
@@ -3656,8 +3667,9 @@
       var mv = (raw.moves || []).filter(function (n, i, a) { return M[n] && own.indexOf(n) >= 0 && a.indexOf(n) === i; }).slice(0, 4);
       if (!mv.length) mv = defaultMoves(raw.sid, lv, []);
       var ev = {}; STAT_KEYS.forEach(function (k) { var v = raw.ev && +raw.ev[k]; if (v > 0) ev[k] = Math.min(300, Math.round(v)); });
+      var iv = ivOk(raw.iv) ? STAT_KEYS.reduce(function (o, k) { o[k] = raw.iv[k]; return o; }, {}) : null;   // 没带天赋的按满天赋
       var f = form({ sid: raw.sid, lv: lv, shiny: shinyV(raw.shiny) });
-      return { id: raw.sid, lv: lv, moves: mv, nick: f.name, img: f.img, shiny: shinyV(raw.shiny), ev: ev, nat: raw.nat && NATURES[raw.nat] ? raw.nat : null, emblem: raw.emblem && EMBLEMS[raw.sid] ? EMBLEMS[raw.sid].m : null };
+      return { id: raw.sid, lv: lv, moves: mv, nick: f.name, img: f.img, shiny: shinyV(raw.shiny), ev: ev, iv: iv, nat: raw.nat && NATURES[raw.nat] ? raw.nat : null, emblem: raw.emblem && EMBLEMS[raw.sid] ? EMBLEMS[raw.sid].m : null };
     },
     inBattle: function () { return !$('battle').hidden; },
     // 联网切磋：像剧情对战一样切到对战画面，锁住其他大栏
