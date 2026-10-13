@@ -1036,6 +1036,7 @@
     storage: { name: '物资仓储', planet: 'jingchu', dept: '荆门', chapter: '支线 · 物资仓储', side: true, bg: 'storage_p', d: '荆楚号即将抵达芙罗拉星，新船员要去物资仓储领取探索物资。读完后，物资仓储里的「商城」开放。', after: 'board', pos: [50, 62], reward: { exp: 0, energy: 300, items: { cap1: 10 } } },
     brawl: { name: '孝感大厅', planet: 'jingchu', dept: '孝感', chapter: '支线 · 精灵大乱斗', side: true, bg: 'xiaogan', d: 'Dr.黄 在孝感大厅里鼓捣着一台新搬来的机器，听说你身边已经有 3 只精灵了，想让你试试。读完后开放「精灵大乱斗」。', after: 'xiaogan', pos: [76, 56], need: function () { return acc.mons.length >= 3; }, needText: '持有 3 只精灵后开放' },
     draft: { name: '孝感大厅', planet: 'jingchu', dept: '孝感', chapter: '支线 · 竞技征召', side: true, bg: 'xiaogan', d: 'Dr.黄 听说你已经收集了 10 种精灵，神神秘秘地说要教你一种「真正的切磋」。', after: 'xiaogan', pos: [24, 50], need: function () { return speciesN() >= 10; }, needText: '收集 10 种精灵后开放' },
+    spa: { name: '温泉生活区', planet: 'jingchu', dept: '咸宁', chapter: '支线 · 温泉疗养', side: true, bg: 'cabin_p', d: 'Vanber 发现荆楚号的咸宁居然藏着一片温泉疗养区，非要拉你去泡一泡。读完后开放「温泉疗养」。', after: 'flora1', pos: [30, 62] },
     plant: { name: '生态舱', planet: 'jingchu', dept: '恩施', chapter: '支线 · 伟大的种植园', side: true, bg: 'greenhouse_p', d: 'Threego 在地球上最爱种菜，被大家叫作「叶伯伯」。她把荆楚号生态舱的种植业研究了个遍，迫不及待地想带你参观。读完后开放「太空种植园」。', after: 'flora1', pos: [26, 62], reward: { energy: 200, items: { s_herb: 2 } } },
     travelcat: { name: '山毛榉林', planet: 'flora', chapter: '世界任务 · 旅行猫', side: true, bg: 'fl_beech', spot: '林子深处', d: '独自在芙罗拉星做调研的你，听见山毛榉林深处传来一阵打斗声……读完后，旅行精灵叶子喵会开始在各个星球出现。', after: 'flora2' },
     xiaogan: { name: '孝感大厅', planet: 'jingchu', dept: '孝感', chapter: '支线 · 孝感大厅', side: true, bg: 'xiaogan', d: '舰上切磋对战的地方。听说那里有个奇怪的家伙在等着新船员。读完后开放「竞技对战」。', after: 'board', pos: [50, 66], reward: { exp: 0, energy: 200 } }
@@ -1070,7 +1071,7 @@
   // 稀有精灵：野外表里标了 rare 的种类。三主宠也算，但这个账号开局选的那只不算。拥有几类按种类去重
   function rareKinds() { var R = rareList(), o = {}; acc.mons.forEach(function (m) { if (R.indexOf(m.sid) >= 0) o[m.sid] = 1; }); return Object.keys(o).length; }
   function planetOpen(P) { return !P.after || prog(P.after).done; }
-  var UNLOCK = { xiaogan: '竞技对战', academy: '黄冈秘鉴', storage: '商城', tea: '茶室', brawl: '精灵大乱斗', tiger2: '泰戈尔 · 普通难度', fl_chal: '芙罗拉星 · 挑战', fl_chal2: '助战精灵', plant: '太空种植园', medal: '授勋馆' };
+  var UNLOCK = { xiaogan: '竞技对战', academy: '黄冈秘鉴', storage: '商城', tea: '茶室', brawl: '精灵大乱斗', tiger2: '泰戈尔 · 普通难度', fl_chal: '芙罗拉星 · 挑战', fl_chal2: '助战精灵', plant: '太空种植园', medal: '授勋馆', spa: '温泉疗养' };
   function brawlOpen() { return !!(acc && acc.story && acc.story.brawl && acc.story.brawl.done); }
   function brawlPlayed() { return !!(acc && acc.stats && acc.stats.brawls > 0); }
   // 平衡模式切磋统一的等级；拥有的精灵种类数（「收集」）；是否参加过竞技征召
@@ -1213,6 +1214,7 @@
     if (ex.view === 'nursery') { renderNursery(); return; }
     if (ex.view === 'medal') { if (medalOpen()) { renderMedal(); return; } ex.view = 'area'; ex.area = '黄冈'; }
     if (ex.view === 'farm') { if (farmOpen()) { renderFarm(); return; } ex.view = 'area'; ex.area = '恩施'; }
+    if (ex.view === 'spa') { if (spaOpen()) { renderSpa(); return; } ex.view = 'area'; ex.area = '咸宁'; }
     var Pp = ex.view === 'sites' && PLANETS.filter(function (p) { return p.id === ex.planet; })[0];
     var html = exHead(ex.view === 'planets' ? '选择要前往的星球。' : Pp && Pp.ship ? '点击舰上的区域，即可传送过去。' : '选择要前往的地点。');
     if (ex.view === 'planets') {
@@ -1289,10 +1291,11 @@
       mk + (n === '天门' ? hallSpots() : '') + bossSpots(n) +
       (n === '荆门' ? '<button type="button" class="mk shop' + (shopOpen() ? '' : ' locked') + '"' + (shopOpen() ? ' data-shop="1"' : ' disabled') + ' style="left:74%;top:40%"><span class="mk-dot">' + (shopOpen() ? '商' : '锁') + '</span><span class="mk-lab"><b>商城 · 物资兑换</b><small>' + (shopOpen() ? '普通捕捉装置和补药' : '读完「物资仓储」支线后开放') + '</small></span></button>' : '') +
       (n === '黄石' ? '<button type="button" class="mk shop" data-forge="1" style="left:50%;top:58%"><span class="mk-dot">炼</span><span class="mk-lab"><b>冶炼坊</b><small>合成捕捉装置、200血药等</small></span></button>' : '') +
+      (n === '咸宁' ? '<button type="button" class="mk shop' + (spaOpen() ? '' : ' locked') + '"' + (spaOpen() ? ' data-spa="1"' : ' disabled') + ' style="left:66%;top:52%"><span class="mk-dot">' + (spaOpen() ? '泉' : '锁') + '</span><span class="mk-lab"><b>温泉疗养</b><small>' + (spaOpen() ? spaSummary() : '读完支线「温泉疗养」后开放') + '</small></span></button>' : '') +
       (n === '恩施' ? '<button type="button" class="mk shop' + (farmOpen() ? '' : ' locked') + '"' + (farmOpen() ? ' data-farm="1"' : ' disabled') + ' style="left:62%;top:58%"><span class="mk-dot">' + (farmOpen() ? '种' : '锁') + '</span><span class="mk-lab"><b>太空种植园</b><small>' + (farmOpen() ? '种药草，用来做 200血药' : '读完支线「伟大的种植园」后开放') + '</small></span></button>' : '') +
       (n === '黄冈' ? '<button type="button" class="mk shop' + (medalOpen() ? '' : ' locked') + '"' + (medalOpen() ? ' data-medal="1"' : ' disabled') + ' style="left:50%;top:18%"><span class="mk-dot">' + (medalOpen() ? '勋' : '锁') + '</span><span class="mk-lab"><b>授勋馆</b><small>' + (medalOpen() ? '所有称号和获得方式' : '读完支线「授勋馆」后开放') + '</small></span></button>' : '') +
       (n === '神农架' ? '<button type="button" class="mk shop" data-nursery="1" style="left:50%;top:58%"><span class="mk-dot">育</span><span class="mk-lab"><b>精灵保育仓</b><small>孵化精灵的精元</small></span></button>' : '') +
-      (ids.length || n === '黄石' || n === '恩施' || n === '神农架' ? '' : '<p class="area-empty">这里暂时没有剧情。</p>') +
+      (ids.length || n === '黄石' || n === '恩施' || n === '神农架' || n === '咸宁' ? '' : '<p class="area-empty">这里暂时没有剧情。</p>') +
       '<div class="tp-fx" aria-hidden="true"><span>传送至 ' + d[0] + '……</span></div></div>' +
       (ids.length ? '<ul class="area-list">' + rw + '</ul>' : '') + '</div>';
     ex.tp = false;
@@ -2832,6 +2835,73 @@
     return acc.nursery;
   }
   function hatchLeft(x) { return Math.max(0, x.t + MATS[x.k].hatch.min * 60000 - Date.now()); }
+  /* ---------- 温泉疗养（荆楚号 · 咸宁 · 温泉生活区）----------
+   * 带 2 只精灵泡温泉：只要游戏开着（在线），它们就一直涨经验，离线不算。
+   * 效率：每只每小时 120 + 等级 × 24 点（茶室展示是 30 + 等级 × 6，离线经验是每分钟 6 点进经验背包）。数额暂定
+   * 存档 acc.spa = { u: [精灵编号或 null, ...], got: { 编号: 累计获得 } }；SPA.last 只在内存里，所以关掉游戏期间不会算经验 */
+  var SPA_N = 2, SPA_TICK = 20000, SPA_GAP = 3 * 60000;
+  var SPA = { last: 0, carry: {}, sess: {} };
+  function spaOpen() { return !!(acc && prog('spa').done); }
+  function spa() { if (!acc.spa || !Array.isArray(acc.spa.u)) acc.spa = { u: [], got: {} }; while (acc.spa.u.length < SPA_N) acc.spa.u.push(null); acc.spa.u = acc.spa.u.slice(0, SPA_N).map(function (u) { return u != null && mon(u) ? u : null; }); if (!acc.spa.got) acc.spa.got = {}; return acc.spa; }
+  function spaRate(m) { return 120 + m.lv * 24; }
+  function spaMons() { return spa().u.map(mon).filter(Boolean); }
+  function inTea(u) { return !!(acc.home && Array.isArray(acc.home.mons) && acc.home.mons.some(function (x) { return (typeof x === 'number' ? x : x.u) === u; })); }
+  function spaSummary() { var L = spaMons(); return L.length ? L.map(function (m) { return form(m).name; }).join('、') + ' 正在泡温泉' : '带 2 只精灵一起泡温泉，在线就涨经验'; }
+  function spaPut(i, u) {
+    var S = spa(); if (!(i >= 0 && i < SPA_N)) return;
+    if (u != null) {
+      var m = mon(u); if (!m) return;
+      if (inTea(u)) { toast('它正在茶室里展示，先从茶室收回来吧。'); return; }
+      var j = S.u.indexOf(u); if (j >= 0) S.u[j] = null;
+      S.u[i] = u; toast(form(m).name + ' 泡进了温泉，舒服得眯起了眼睛。');
+    } else if (S.u[i] != null) { var m2 = mon(S.u[i]); S.u[i] = null; if (m2) toast(form(m2).name + ' 从温泉里出来了，浑身冒着热气。'); }
+    ex.spaPick = null; spaTick(true); save(); renderSpa();
+  }
+  // 每 20 秒结算一次；两次结算间隔超过 3 分钟（关掉游戏、电脑睡眠）就不算这段时间
+  function spaTick(reset) {
+    if (!ready() || !spaOpen()) { SPA.last = 0; return; }
+    var now = Date.now(), dt = SPA.last && !reset ? now - SPA.last : 0, msgs = [], any = false;
+    SPA.last = now;
+    if (dt <= 0 || dt > SPA_GAP) return;
+    spaMons().forEach(function (m) {
+      if (m.lv >= MAX_LV) return;
+      var c = (SPA.carry[m.u] || 0) + spaRate(m) * dt / 3600000, n = Math.floor(c); SPA.carry[m.u] = c - n;
+      if (n <= 0) return;
+      var lv0 = m.lv, r = gainExp(m, n, false); if (!r) return;
+      any = true; spa().got[m.u] = (spa().got[m.u] || 0) + n; SPA.sess[m.u] = (SPA.sess[m.u] || 0) + n;
+      if (m.lv > lv0) msgs.push(r);
+    });
+    if (!any) return;
+    save();
+    if (msgs.length) toast('温泉疗养：' + msgs.join(' '));
+    if (page === 'explore' && ex.view === 'spa') renderSpa();
+  }
+  setInterval(function () { spaTick(false); }, SPA_TICK);
+  function renderSpa() {
+    var S = spa(), pick = ex.spaPick;
+    var slot = function (i) {
+      var m = mon(S.u[i]);
+      if (!m) return '<div class="spa-slot empty"><button type="button" class="spa-add' + (pick === i ? ' on' : '') + '" data-spaslot="' + i + '"><b>＋</b><span>带一只精灵来泡</span></button></div>';
+      var f = form(m), maxed = m.lv >= MAX_LV, need = maxed ? 0 : expAt(m.lv + 1) - m.exp, span = maxed ? 1 : expAt(m.lv + 1) - expAt(m.lv);
+      return '<div class="spa-slot"><div class="spa-mon"><img src="' + f.img + '" alt="' + esc(f.name) + '"><span class="spa-water"></span></div>' +
+        '<div class="spa-info"><b>' + esc(f.name) + ' <span class="lvbig">LV' + m.lv + '</span></b>' +
+        (maxed ? '<small>已经满级了，泡温泉只是为了放松。</small>' : '<div class="exp-bar"><i style="width:' + Math.min(100, (span - need) / span * 100) + '%"></i></div><small>每小时 +' + fmt(spaRate(m)) + ' 经验 · 距 LV' + (m.lv + 1) + ' 还需 ' + fmt(need) + '</small>') +
+        '<small>这次在线泡了 +' + fmt(SPA.sess[m.u] || 0) + ' · 累计 +' + fmt(S.got[m.u] || 0) + '</small>' +
+        '<span class="spa-acts"><button type="button" class="btn ghost" data-spaslot="' + i + '">换一只</button><button type="button" class="btn ghost" data-spaout="' + i + '">起身</button></span></div></div>';
+    };
+    var list = '';
+    if (pick != null) {
+      var L = acc.mons.slice().sort(function (a, b) { return b.lv - a.lv; });
+      list = '<div class="spa-pick"><h4>选一只精灵泡进 ' + (pick + 1) + ' 号位 <span class="hint">茶室里展示中的精灵要先收回</span></h4><div class="spa-list">' + L.map(function (m) {
+        var f = form(m), on = S.u.indexOf(m.u) >= 0, tea = inTea(m.u);
+        return '<button type="button" class="spa-it' + (on ? ' on' : '') + '" data-spain="' + m.u + '"' + (tea ? ' disabled' : '') + '><img src="' + f.img + '" alt=""><b>' + esc(f.name) + '</b><small>LV' + m.lv + (tea ? ' · 茶室展示中' : on ? ' · 泡着呢' : ' · 每小时 +' + fmt(spaRate(m))) + '</small></button>';
+      }).join('') + '</div></div>';
+    }
+    $('pg-explore').innerHTML = exHead('带 2 只精灵一起泡温泉。只要游戏开着，它们就会一直涨经验；关掉游戏就不算了。') +
+      '<div class="crumb"><button type="button" class="btn ghost" id="spa-back">‹ 返回温泉生活区</button><b>咸宁 · 温泉疗养</b></div>' +
+      '<div class="spa-scene"><div class="spa-steam" aria-hidden="true"><i></i><i></i><i></i><i></i></div>' + slot(0) + '<div class="spa-me"><img src="' + CHARS[playerArt()] + '" alt="' + esc(acc.name) + '"><span class="spa-water"></span></div>' + slot(1) + '</div>' +
+      '<p class="hint spa-note">温泉经验：每只每小时 <b>120 + 等级 × 24</b> 点，直接加给精灵（不占每日战斗经验上限）。比茶室展示和离线经验都快，但必须保持在线。</p>' + list;
+  }
   /* ---------- 授勋馆（荆楚号 · 黄冈 · 学院部）：展示所有称号和获得方式 ---------- */
   function medalOpen() { return !!(acc && prog('medal').done); }
   function renderMedal() {
@@ -3304,7 +3374,7 @@
   $('pg-explore').addEventListener('keydown', function (e) { if (e.target.id === 'home-name') { if (e.key === 'Enter') { e.preventDefault(); saveHomeName(); } else if (e.key === 'Escape') { ex.homeEdit = false; renderHome(); } } });
 
   /* ---------- 任务：主线 / 支线 / 世界 ---------- */
-  var MAIN_Q = ['school', 'river', 'jiuquan', 'board', 'flora1', 'flora2', 'flora3'], SIDE_Q = ['academy', 'xiaogan', 'brawl', 'draft', 'storage', 'tiger', 'tiger2', 'tea', 'rare', 'mingming', 'medal', 'fl_chal'];
+  var MAIN_Q = ['school', 'river', 'jiuquan', 'board', 'flora1', 'flora2', 'flora3'], SIDE_Q = ['academy', 'xiaogan', 'brawl', 'draft', 'storage', 'tiger', 'tiger2', 'tea', 'rare', 'mingming', 'medal', 'spa', 'fl_chal'];
   // 世界任务（奖励暂定）
   var WQ = [
     { id: 'w_first', n: '初到芙罗拉', d: '荆楚号已经抵达芙罗拉星。去丛林或草甸，和那里的野生精灵过过招吧。', where: '芙罗拉星 · 丛林 / 草甸', steps: [{ t: '在芙罗拉星击败 1 只野生精灵', k: 'wins', n: 1 }], reward: { energy: 100 }, after: 'flora1', go: 'flora' },
@@ -3556,6 +3626,11 @@
     if (b.dataset.hpoke) { var f = b.closest('.hm-fig'); f.classList.remove('hop'); void f.offsetWidth; f.classList.add('hop'); return; }
     if (b.dataset.shop) { ex.view = 'shop'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
     if (b.dataset.nursery) { ex.view = 'nursery'; ex.area = '神农架'; ex.planet = 'jingchu'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
+    if (b.dataset.spa) { if (!spaOpen()) return; ex.view = 'spa'; ex.area = '咸宁'; ex.planet = 'jingchu'; ex.spaPick = null; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
+    if (b.id === 'spa-back') { ex.view = 'area'; ex.area = '咸宁'; ex.planet = 'jingchu'; renderExplore(); return; }
+    if (b.dataset.spaslot != null && b.dataset.spaslot !== '') { ex.spaPick = ex.spaPick === +b.dataset.spaslot ? null : +b.dataset.spaslot; renderSpa(); return; }
+    if (b.dataset.spain) { spaPut(ex.spaPick, +b.dataset.spain); return; }
+    if (b.dataset.spaout != null && b.dataset.spaout !== '') { spaPut(+b.dataset.spaout, null); return; }
     if (b.dataset.medal) { if (!medalOpen()) return; ex.view = 'medal'; ex.area = '黄冈'; ex.planet = 'jingchu'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
     if (b.id === 'medal-back') { ex.view = 'area'; ex.area = '黄冈'; ex.planet = 'jingchu'; renderExplore(); return; }
     if (b.dataset.promote) { promote(); return; }

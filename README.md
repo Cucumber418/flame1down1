@@ -358,6 +358,13 @@ ffmpeg -i 原曲.mp3 -vn -map_metadata -1 -af loudnorm=I=-16:TP=-1.5:LRA=11 -ar 
 - 服务器 `server/artvote.js`：`GET /api/artvote` 票数和自己的选择，`POST /api/artvote { picks }` 提交（最多 5 只，可修改，空数组撤回）。票存在 `DATA_DIR/artvote.json`，截止时间 `DEADLINE`（北京时间 10 月 16 日 24:00），前端 `AV_END` 要和它一致。
 - 看结果：服务器上 `cat $DATA_DIR/artvote.json`，或截止后航行日志里按票数排序显示。
 
+## 支线 · 温泉疗养（咸宁 · 温泉生活区，2026-10-13）
+
+- 支线 `spa`（Vanber 介绍，`after: 'flora1'`）读完后开放（`spaOpen()`），咸宁场景里的「温泉疗养」点 → `ex.view = 'spa'` → `renderSpa()`。
+- 带 `SPA_N = 2` 只精灵，存档 `acc.spa = { u: [编号或 null], got: { 编号: 累计经验 } }`。茶室展示中的精灵不能泡（`inTea()`）。
+- 经验：`spaTick()` 每 `SPA_TICK`（20 秒）结算一次，每只每小时 `spaRate(m) = 120 + 等级 × 24`，按小数累计（`SPA.carry`），用 `gainExp(m, n, false)` 直接加给精灵，不占 `PVE_XP_CAP`。上次结算时间 `SPA.last` 只在内存里，两次结算间隔超过 `SPA_GAP`（3 分钟）就不算，所以关掉游戏、电脑睡眠期间没有经验。
+- 场景是 CSS 画的（池水、蒸汽动画），温泉背景图待补。
+
 ## 首领攻略板
 
 每个首领的每个难度页面下方（每周挑战没有）。服务器在 `server/bossboard.js`，留言存在存档目录的 `bossboard.json`。
