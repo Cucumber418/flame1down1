@@ -83,9 +83,9 @@ function smartLoadout(id, tries, mates) {
   return best;
 }
 // 隐藏强度值：由 5v5 模拟对战拟合得到（双方每局都随机配招），界面上不显示
-// 隐藏强度值（对胜负的贡献，logit 尺度）：由 10000 场 5v5 模拟对战拟合，界面上不显示
+// 隐藏强度值（对胜负的贡献，logit 尺度）：由 12000 场 5v5 模拟对战拟合（2026-10-13，S1 第二期名单：叶子喵移出、方头蘑菇加入），界面上不显示
 // 预测胜率：P(A 胜 B) = 1 / (1 + e^-(ΣA − ΣB))
-var STRENGTH = {"dragon": 0.252, "leaf": 0.166, "gorgon": -0.254, "squid": -0.224, "wind": 0.045, "pluto": 0.247, "pede": -0.226, "tagore": -0.261, "hauris": -0.221, "faraday": -0.155, "moon": 0.294, "frost": 0.094, "wild": -0.057, "hephaestus": 0.063, "leigong": -0.101, "inkarm": -0.164, "barren": 0.121, "mush": 0.021, "kaleo": 0.174, "siren": -0.157, "bone": -0.292, "aegis": -0.016, "leafcat": 0.337, "phantom": 0.316};
+var STRENGTH = {"dragon": 0.351, "leaf": 0.157, "gorgon": -0.195, "squid": -0.044, "wind": 0.023, "pluto": 0.221, "pede": -0.245, "tagore": -0.208, "hauris": -0.166, "faraday": -0.043, "moon": 0.023, "frost": -0.02, "wild": 0.02, "hephaestus": 0.046, "leigong": -0.289, "inkarm": -0.001, "barren": 0.217, "mush": 0.016, "kaleo": 0.079, "siren": 0.003, "bone": -0.159, "aegis": -0.167, "shroom": -0.002, "phantom": 0.382};
 var TEAM_BAND = 0.15;          // 阵容强度总和须接近平均水平（|Σ| ≤ 0.15，约等于对平均阵容 46%~54%）
 var MATCH_TOL = 0.04;          // 两套阵容的强度差上限：预测胜率 50% ± 1%
 var ALL_TEAMS = null;

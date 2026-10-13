@@ -381,6 +381,8 @@ ffmpeg -i 原曲.mp3 -vn -map_metadata -1 -af loudnorm=I=-16:TP=-1.5:LRA=11 -ar 
   - 火鸡冲锋：`clearTgtUp` + `clearTgtChance: 0.4`。
 - **飞行系**（`types.js`）：克制草，打电、机械减半；被电、冰克制（暂定，参考赛尔号）。
 
+
+2026-10-13（S1 第二期）：`ARENA_ROSTER` 里叶子喵换成方头蘑菇（`shroom`，原先在 `EXTRA_SP` 字面量里；分组 IIFE 现在把 `SP` 和 `EXTRA_SP` 合起来按名单重新分）。`STRENGTH` 用 12000 场 5v5 重新拟合（双方随机 5 只、随机配招、电脑对电脑，logistic 回归，均值归零）。注意模拟脚本要用 `Math.random`，之前手写的线性同余随机数在 JS 浮点下精度不够，会让结果偏掉。
 ## 等级成就称号
 
 `game.js` 的 `TITLES` 后面循环生成：有 1 只精灵达到 25 / 50 / 75 / 100 级得「单科达人 / 高手 / 狂人 / 神人」，有 5 只达到同样等级得「全科达人 / 高手 / 狂人 / 神人」。精灵升级时（`gainExp`）和每次打开游戏时都会检查。

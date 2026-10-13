@@ -155,18 +155,18 @@ var SP = [
 var DUMMY = { id: 'dummy', name: '木桩', types: ['无'], type: '无', base: { hp: 100, atk: 0, def: 50, spa: 0, spd: 50, spe: 0 }, ability: { n: '无', d: '训练用木桩，不会攻击，体力无限' }, moves: [], hidden: [], def: [] };
 // 只在账号系统里出现的精灵（不进入竞技对战，也不参与强度测算）：占位精灵，以及竞技名单固定之后新加的所有精灵
 var EXTRA_SP = [
-  { id: 'shroom', name: '方头蘑菇', types: ['火'], base: { hp: 98, atk: 75, def: 68, spa: 115, spd: 75, spe: 94 }, tbdForms: true,   // tbdForms：二阶、最终形态的名字还没定，图鉴里显示「？」
-    evo: [{ n: '方头蘑菇', lv: 1, no: '007', d: '在武汉的酷暑下长大的火系蘑菇，头顶上的不是火焰，而是火焰花纹的伞盖。' }, { n: null, lv: 25 }, { lv: 50 }], evoLvSure: false,
+  { id: 'shroom', name: '涅槃蘑菇', types: ['火'], base: { hp: 98, atk: 75, def: 68, spa: 115, spd: 75, spe: 94 },
+    evo: [{ n: '方头蘑菇', lv: 1, no: '007', d: '在武汉的酷暑下长大的火系蘑菇，头顶上的不是火焰，而是火焰花纹的伞盖。' }, { n: '红烧蘑菇', lv: 25 }, { lv: 50 }], evoLvSure: false,
     ability: { n: '熔岩', d: '对烧伤状态的敌人造成的伤害提升25%' },
-    lore: '一阶「方头蘑菇」的形象已经画好；二阶、最终形态的名字和形象还没有定。',
+    lore: '方头蘑菇 → 红烧蘑菇 → 涅槃蘑菇。二阶、最终形态的形象还在绘制中。',
     moves: ['火球', '加温', '旋转冲撞', '火焰漩涡', '火焰车', '净化之焰', '回转之焰', '烈焰冲锋', '凝神'],
     hidden: ['淬命之焰', '高温禁锢'], def: ['火焰车', '回转之焰', '火焰漩涡', '凝神'] }
 ];
 // 竞技对战的精灵名单已经固定为下面这些。以后新加的精灵即使写进 SP，也会自动转到 EXTRA_SP：
 // 不会出现在竞技对战的配队、对手和图鉴里，只能在星际探索中遇到，在背包 / 黄冈秘鉴里查看。
 var ARENA_ROSTER = ['dragon', 'leaf', 'gorgon', 'squid', 'wind', 'pluto', 'pede', 'tagore', 'hauris', 'faraday', 'moon', 'frost',
-  'wild', 'hephaestus', 'leigong', 'inkarm', 'barren', 'mush', 'kaleo', 'siren', 'bone', 'aegis', 'leafcat', 'phantom'];
-(function () { var keep = []; SP.forEach(function (s) { (ARENA_ROSTER.indexOf(s.id) >= 0 ? keep : EXTRA_SP).push(s); }); SP = keep; })();
+  'wild', 'hephaestus', 'leigong', 'inkarm', 'barren', 'mush', 'kaleo', 'siren', 'bone', 'aegis', 'shroom', 'phantom'];   // S1 第二期：叶子喵移出，方头蘑菇（涅槃蘑菇）加入
+(function () { var all = SP.concat(EXTRA_SP), keep = []; EXTRA_SP = []; all.forEach(function (s) { (ARENA_ROSTER.indexOf(s.id) >= 0 ? keep : EXTRA_SP).push(s); }); SP = keep; })();   // 名单里的进 SP（竞技对战），其余进 EXTRA_SP
 var SPMAP = {};
 EXTRA_SP.concat(SP).forEach(function (s) { if (!s.types) s.types = [s.type]; s.type = s.types[0]; SPMAP[s.id] = s; });
 SPMAP.dummy = DUMMY;   // 只用于显示名字与图像，不进入图鉴和阵容
