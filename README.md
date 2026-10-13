@@ -318,6 +318,7 @@ ffmpeg -i 原曲.mp3 -vn -map_metadata -1 -af loudnorm=I=-16:TP=-1.5:LRA=11 -ar 
 
 ## 旅行精灵、精灵素材、精灵保育仓（2026-10-13）
 
+- 前置：芙罗拉星的世界任务「旅行猫」（剧情 `SITES.travelcat` / `STORY_SCRIPT.travelcat`，剧情对战 `FIGHTS.kaleo4` 四只 LV20 瘴气卡莱，世界任务 `WQ.w_travel` 用 `story:travelcat` 判定完成）。`travelOpen()` 为假时场景里不刷叶子喵，航行日志卡片提示先去做任务。
 - `TRAVEL`（game.js）：全服共享的时间表，不走服务器。按 `Date.now()` 的小时编号 h 哈希（`thash`）出这一小时的开始分钟（0–40）、区域（`TRAVEL.regions`）、场景序号、站位，停留 20 分钟。场景里由 `travelHTML` 画出（发光 + 「旅行精灵」标签），点它走 `engageTravel`：开战即记 `acc.travel = { h }`，每次出现每人一次。LV30、`noCatch`；赢了累积经验 ×3000，50% 掉 `m_lcleaf`。航行日志卡 `travelLogHTML()` 只显示在不在、下次大约几点，不显示位置。
 - `MATS` / `MAT_ORDER`：精灵素材（叶片、精元），储存箱「精灵素材」一栏；冶炼坊配方 `lcEssence`：5 叶片 → `e_leafcat`。
 - 精灵保育仓（神农架，`renderNursery`）：`NURSERY_N = 3` 个孵化槽，存档 `acc.nursery.slots[i] = { k, t }`。精元的 `hatch: { sid, lv, min }` 决定孵出什么、要多久（叶子喵的精元：LV1 叶子小小喵，480 分钟）。以后新精元只要在 `MATS` 里加一条带 `hatch` 的。

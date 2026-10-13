@@ -919,7 +919,7 @@
   var PLANETS = [
     { id: 'earth', name: '地球', d: '我们出发的地方。', sites: ['school', 'river', 'jiuquan'] },
     { id: 'jingchu', name: '荆楚号', d: '环绕地球运行的星际探索舰，轮廓和湖北省一模一样。', sites: ['board', 'xiaogan', 'academy', 'storage'], ship: true, after: 'jiuquan' },
-    { id: 'flora', name: '芙罗拉星', d: '草系星球。丛林、草甸和盐碱地里栖息着许多野生精灵。', sites: ['flora1', 'flora2', 'flora3'], wild: true, ptype: '草系星球', color: ['#9fd08a', '#3f7d4a'], after: 'board' },
+    { id: 'flora', name: '芙罗拉星', d: '草系星球。丛林、草甸和盐碱地里栖息着许多野生精灵。', sites: ['flora1', 'flora2', 'flora3', 'travelcat'], wild: true, ptype: '草系星球', color: ['#9fd08a', '#3f7d4a'], after: 'board' },
     { id: 'kamble', name: '坎布尔星', d: '水系星球。大半个星球都被温暖的浅海覆盖。', sites: [], wild: true, ptype: '水系星球', color: ['#8cc6ea', '#2a6fb0'], after: 'flora1' },
     { id: 'pompeii', name: '庞贝星', d: '火系星球。火山终年喷发，地面被熔岩烤得发烫。', sites: [], wild: true, ptype: '火系星球', color: ['#f2a46b', '#b3401f'], after: 'flora1' },
     { id: 'laiting', name: '莱汀陨石带', d: '电系区域。无数陨石在雷暴中漂浮。', sites: [], wild: true, ptype: '电系陨石带', color: ['#f1dd73', '#7a6a1a'], belt: true, after: 'flora1' },
@@ -957,6 +957,7 @@
     brawl: { name: '孝感大厅', planet: 'jingchu', dept: '孝感', chapter: '支线 · 精灵大乱斗', side: true, bg: 'xiaogan', d: 'Dr.黄 在孝感大厅里鼓捣着一台新搬来的机器，听说你身边已经有 3 只精灵了，想让你试试。读完后开放「精灵大乱斗」。', after: 'xiaogan', pos: [76, 56], need: function () { return acc.mons.length >= 3; }, needText: '持有 3 只精灵后开放' },
     draft: { name: '孝感大厅', planet: 'jingchu', dept: '孝感', chapter: '支线 · 竞技征召', side: true, bg: 'xiaogan', d: 'Dr.黄 听说你已经收集了 10 种精灵，神神秘秘地说要教你一种「真正的切磋」。', after: 'xiaogan', pos: [24, 50], need: function () { return speciesN() >= 10; }, needText: '收集 10 种精灵后开放' },
     plant: { name: '生态舱', planet: 'jingchu', dept: '恩施', chapter: '支线 · 伟大的种植园', side: true, bg: 'greenhouse_p', d: 'Threego 在地球上最爱种菜，被大家叫作「叶伯伯」。她把荆楚号生态舱的种植业研究了个遍，迫不及待地想带你参观。读完后开放「太空种植园」。', after: 'flora1', pos: [26, 62], reward: { energy: 200, items: { s_herb: 2 } } },
+    travelcat: { name: '山毛榉林', planet: 'flora', chapter: '世界任务 · 旅行猫', side: true, bg: 'fl_beech', spot: '林子深处', d: '独自在芙罗拉星做调研的你，听见山毛榉林深处传来一阵打斗声……读完后，旅行精灵叶子喵会开始在各个星球出现。', after: 'flora2' },
     xiaogan: { name: '孝感大厅', planet: 'jingchu', dept: '孝感', chapter: '支线 · 孝感大厅', side: true, bg: 'xiaogan', d: '舰上切磋对战的地方。听说那里有个奇怪的家伙在等着新船员。读完后开放「竞技对战」。', after: 'board', pos: [50, 66], reward: { exp: 0, energy: 200 } }
   };
   // 已有画面的舰内区域；其余区域先用占位画面
@@ -976,7 +977,8 @@
     mm: { name: function () { return '明明教官'; }, color: '#4a6a8a', tall: 1.0 },
     tg: { name: function () { return '泰戈尔'; }, color: '#b0702a', tall: 0.92, spr: 'tagore' },
     kr: { name: function () { return '卡罗'; }, color: '#4f9159', tall: 0.55, spr: 'wind', sprLv: 3 },     // 戴上精灵翻译器之后能听懂的卡罗
-    kl: { name: function () { return '卡莱'; }, color: '#3f6d3a', tall: 0.7, spr: 'kaleo', sprLv: 15 }
+    kl: { name: function () { return '卡莱'; }, color: '#3f6d3a', tall: 0.7, spr: 'kaleo', sprLv: 15 },
+    lc: { name: function () { return '叶子喵'; }, color: '#5f9a3e', tall: 0.8, spr: 'leafcat', sprLv: 30 }   // 世界任务「旅行猫」里的叶子喵（戴着翻译器能听懂）
   };
   var SCRIPT = STORY_SCRIPT;   // 剧本内容见 js/data/story.js
   function unlocked(id) { var S = SITES[id], a = S.after; return (!a || prog(a).done) && (!S.need || S.need()); }
@@ -1072,7 +1074,8 @@
   var FIGHTS = {
     threego: { foe: 'Threego', team: [{ sid: 'tagore', lv: 3 }] },
     karo: { foe: '被瘴气污染的野生精灵', team: [{ sid: 'wind', lv: 3, miasma: 5 }], env: 'miasma', bg: 'fl_salt', desc: '被瘴气污染的卡罗（LV3）' },
-    hunter: { foe: '神秘的猎杀者', team: [{ sid: 'kaleo', lv: 15 }], bg: 'fl_maple', desc: '猎杀者卡莱（LV15）' }
+    hunter: { foe: '神秘的猎杀者', team: [{ sid: 'kaleo', lv: 15 }], bg: 'fl_maple', desc: '猎杀者卡莱（LV15）' },
+    kaleo4: { foe: '瘴气卡莱群', team: [{ sid: 'kaleo', lv: 20, miasma: 5 }, { sid: 'kaleo', lv: 20, miasma: 5 }, { sid: 'kaleo', lv: 20, miasma: 5 }, { sid: 'kaleo', lv: 20, miasma: 5 }], bg: 'fl_beech', desc: '被瘴气侵染的卡莱 ×4（LV20）' }
   };
   function storyMon(m) { var f = form(m), hl = m.u != null ? (m.hl || []) : undefined, mv = m.moves.length ? m.moves.slice() : defaultMoves(m.sid, m.lv, hl); return { id: m.sid, lv: m.lv, moves: mv, nick: f.name, img: f.img, ev: m.ev || null, nat: m.nat || null, u: m.u, hl: hl, shiny: shinyV(m.shiny), emblem: m.u != null && acc.emblems && acc.emblems[m.sid] && EMBLEMS[m.sid] ? EMBLEMS[m.sid].m : null }; }
   function startFight(key) {
@@ -1409,9 +1412,10 @@
     var R = regionById(TRAVEL.regions[(s >>> 8) % TRAVEL.regions.length]);
     return { h: h, start: start, end: start + TRAVEL.dur * 60000, rid: R.id, si: (s >>> 16) % sceneCount(R), spot: TRAVEL.spots[(s >>> 20) % TRAVEL.spots.length], active: now >= start && now < start + TRAVEL.dur * 60000 };
   }
+  function travelOpen() { return !!acc && prog('travelcat').done; }   // 读完世界任务「旅行猫」后才会出现
   function travelDone(h) { return !!(acc && acc.travel && acc.travel.h === h); }
   function travelHTML(R, si) {
-    var t = travelAt(Date.now()); if (!t.active || t.rid !== R.id || t.si !== si || travelDone(t.h)) return '';
+    var t = travelAt(Date.now()); if (!travelOpen() || !t.active || t.rid !== R.id || t.si !== si || travelDone(t.h)) return '';
     var f = form({ sid: TRAVEL.sid, lv: TRAVEL.lv });
     return '<button type="button" class="wf-mon wf-travel" data-travel="' + t.h + '" title="旅行精灵 · ' + esc(f.name) + ' LV' + TRAVEL.lv + '" aria-label="和旅行精灵' + esc(f.name) + '对战" style="left:' + t.spot.x + '%;top:' + t.spot.y + '%;z-index:' + t.spot.y + '"><i class="wf-sh" aria-hidden="true"></i><img src="' + f.img + '" alt=""><span class="wf-tag">旅行精灵</span></button>';
   }
@@ -1419,6 +1423,7 @@
     if (ex.fighting) return;
     var R = regionById(ex.region), F = R && fields[R.id], t = travelAt(Date.now());
     if (!F || t.h !== h || !t.active || t.rid !== R.id || t.si !== F.scene) { toast('叶子喵已经背起行囊，去别的地方旅行了。'); renderField(); return; }
+    if (!travelOpen()) return;
     if (travelDone(h)) { toast('这次的叶子喵你已经挑战过了，等它下次出现吧。'); renderField(); return; }
     acc.travel = { h: h }; save();
     var P = planetOf(R.planet), sc = F.scenes[F.scene];
@@ -2231,14 +2236,14 @@
   function travelLogHTML() {
     var now = Date.now(), t = travelAt(now), f = form({ sid: TRAVEL.sid, lv: TRAVEL.lv }), hm = function (ms) { var d = new Date(ms); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); };
     var nx = t.start > now ? t : travelAt((t.h + 1) * 3600000);
-    var st = t.active ? (travelDone(t.h) ? '这一次的叶子喵你已经挑战过了，下一次大约在 ' + hm(travelAt((t.h + 1) * 3600000).start) + ' 出现。' : '叶子喵正在某个星球旅行！还会停留 ' + Math.max(1, Math.ceil((t.end - now) / 60000)) + ' 分钟——它在哪儿？问问其他船员吧。')
+    var st = !travelOpen() ? '先去完成芙罗拉星的世界任务「旅行猫」，叶子喵才会开始在各个星球旅行。' : t.active ? (travelDone(t.h) ? '这一次的叶子喵你已经挑战过了，下一次大约在 ' + hm(travelAt((t.h + 1) * 3600000).start) + ' 出现。' : '叶子喵正在某个星球旅行！还会停留 ' + Math.max(1, Math.ceil((t.end - now) / 60000)) + ' 分钟——它在哪儿？问问其他船员吧。')
       : '叶子喵正在赶路，下一次大约在 ' + hm(nx.start) + ' 出现，停留 ' + TRAVEL.dur + ' 分钟。';
     return '<article class="log-card travel"><span class="tape r"></span><span class="chip log-tag">旅行精灵</span><h3>旅行精灵叶子喵</h3>' +
       '<div class="pick-row"><div class="pick-art travel-art"><img src="' + f.img + '" alt="' + esc(f.name) + '"></div><div class="pick-txt">' +
       '<p>叶子喵背着魔杖到处旅行，每个小时都会在某个星球的某个场景里停留<b>连续 20 分钟</b>。所有船员看到的都是同一只，发现了记得告诉大家！</p>' +
       '<p>它是 <b>LV30</b> 的强敌，不能捕捉；每次出现，每名船员只能挑战 <b>1 次</b>。击败它可以获得<b>累积经验 ×3,000</b>，还有 <b>50%</b> 的概率掉落「叶子喵的叶片」。</p>' +
       '<p><b>5 片叶片</b>在黄石 · 冶炼坊合成「叶子喵的精元」，放进神农架 · <b>精灵保育仓</b>孵化 <b>8 小时</b>，就能得到属于你的叶子喵！</p>' +
-      '</div></div><p class="log-st' + (t.active && !travelDone(t.h) ? ' on' : '') + '">' + st + '</p></article>';
+      '</div></div><p class="log-st' + (travelOpen() && t.active && !travelDone(t.h) ? ' on' : '') + '">' + st + '</p>' + (!travelOpen() ? (prog('flora2').done ? '<button type="button" class="btn primary" data-golog="travelcat">去做世界任务「旅行猫」</button>' : '<p class="hint">读完芙罗拉星主线「卡罗的不安」后，世界任务「旅行猫」就会开放。</p>') : '') + '</article>';
   }
   // 航行日志 · 稀有野怪：爱吃米饭的米饭火鸡（规则见 RICE）
   function riceLogHTML() {
@@ -2298,6 +2303,7 @@
   $('pg-log').addEventListener('click', function (e) {
     var c = e.target.closest('[data-dclaim]'); if (c) { claimDaily(+c.dataset.dclaim); renderLog(); return; }
     var g = e.target.closest('[data-golog]'); if (g) { if (g.dataset.golog === 'boss-barren') { ex.view = 'boss'; ex.boss = 'barren'; go('explore'); return; }
+      if (g.dataset.golog === 'travelcat') { ex.planet = 'flora'; ex.view = 'sites'; ex.fpart = 'story'; go('explore'); renderExplore(); return; }
       if (g.dataset.golog === 'boss-tiger') { ex.view = 'boss'; ex.boss = 'tiger'; ex.bossK = 'tiger'; ex.bossD = 2; go('explore'); return; } go(g.dataset.golog); }
   });
 
@@ -3041,12 +3047,14 @@
     { id: 'w_mush', n: '林下的蘑菇', d: '丛林的树荫下，常能看到玛西的身影。', where: '芙罗拉星 · 丛林', steps: [{ t: '捕捉 1 只玛西', k: 'own:mush', n: 1 }], reward: { items: { pot1: 2 } }, after: 'flora1', go: 'flora' },
     { id: 'w_hunt', n: '荒野试炼', d: '多和野生精灵交手，伙伴们才会变强。', where: '芙罗拉星 · 丛林 / 草甸', steps: [{ t: '在芙罗拉星击败 10 只野生精灵', k: 'wins', n: 10 }], reward: { energy: 300 }, after: 'flora1', go: 'flora' },
     { id: 'w_kaleo', n: '丛林里的掠食者', d: '有人在丛林深处见过一只卡莱。它只在丛林出现，而且很少露面。', where: '芙罗拉星 · 丛林', steps: [{ t: '捕捉 1 只卡莱', k: 'own:kaleo', n: 1 }], reward: { energy: 500 }, after: 'flora1', go: 'flora' },
+    { id: 'w_travel', n: '旅行猫', d: '叶子喵是芙罗拉星上很少见的精灵。听说最近有人在山毛榉林里见过一只……', where: '芙罗拉星 · 剧情', steps: [{ t: '读完芙罗拉星的剧情「旅行猫」', k: 'story:travelcat', n: 1 }], reward: { exp: 3000, energy: 500 }, after: 'flora2', go: 'flora', fpart: 'story' },
     { id: 'w_dex', n: '见习做题家', d: '黄冈秘鉴里亮起的页数越多，做题家就越受人尊敬。', where: '黄冈秘鉴', steps: [{ t: '在黄冈秘鉴中点亮 3 类精灵', k: 'lit', n: 3 }], reward: { energy: 200 }, after: 'academy', go: 'dex' }
   ];
   function qStat(k) {
     if (!acc.stats) acc.stats = {};
     if (k === 'wins') return acc.stats.wildWins || 0;
     if (k === 'lit') return litCount();
+    if (k.indexOf('story:') === 0) return prog(k.slice(6)).done ? 1 : 0;
     if (k.indexOf('own:') === 0) { var sid = k.slice(4); return acc.mons.filter(function (m) { return m.sid === sid; }).length; }
     return 0;
   }
@@ -3153,7 +3161,7 @@
     var W = wq(id); closeQuests();
     if (W) {
       if (W.go === 'dex') { if (dexOpen()) go('dex'); return; }
-      ex.planet = W.go; ex.view = 'sites'; ex.fpart = 'catch'; go('explore'); renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return;
+      ex.planet = W.go; ex.view = 'sites'; ex.fpart = W.fpart || 'catch'; go('explore'); renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return;
     }
     var S = SITES[id]; ex.planet = S.planet; go('explore');
     if (id === 'fl_chal' && prog('fl_chal').done) { if (chalStars('fl2') > 0 && !helperSet()) { go('social'); toast('在「我的名片」里选一只助战精灵，保存名片即可。'); return; } ex.planet = 'flora'; ex.view = 'sites'; ex.fpart = 'challenge'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
