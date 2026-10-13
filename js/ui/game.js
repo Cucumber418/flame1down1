@@ -2427,12 +2427,63 @@
       (M0 ? '<p class="pick-mv"><b>' + esc(PICK.move) + '</b> · ' + esc(M0.type) + '系 · ' + esc(M0.cat) + ' · 威力 ' + M0.power + '</p>' : '') + '</div></div>' +
       '<p class="hint">' + PICK.how + '</p></article>';
   }
+  /* 航行日志 · 立绘更新投票（服务器 server/artvote.js 计票；每人最多 5 只，截止前可以改）
+   * ART_VOTE：还没有完全换上新立绘的精灵（某一阶还是旧图或占位图）。新立绘换上后从这里删掉即可 */
+  var ART_VOTE = ['dragon', 'gorgon', 'squid', 'wind', 'pluto', 'pede', 'tagore', 'faraday', 'moon', 'frost', 'wild', 'hephaestus', 'inkarm', 'barren', 'mush', 'kaleo', 'siren', 'bone', 'aegis', 'phantom', 'shroom', 'turkey', 'firemouse'];
+  // 已经换上新立绘的形态（其余形态待更新）
+  var ART_NEW = { gorgon: [0], wind: [0], tagore: [1, 2], faraday: [0], moon: [0], mush: [0], kaleo: [0], shroom: [0], turkey: [0] };
+  var AV_END = Date.UTC(2026, 9, 16, 16, 0, 0);   // 北京时间 10 月 16 日 24:00 截止（服务器也按这个时间）
+  var AV = { data: null, picks: null, busy: false, err: '', t: 0 };
+  function avOnline() { return !!(window.CLOUD && CLOUD.user && CLOUD.user()); }
+  function avLoad() {
+    if (!avOnline() || AV.busy) return;
+    AV.busy = true;
+    CLOUD.api('GET', '/api/artvote').then(function (r) {
+      AV.busy = false;
+      if (r._code !== 200) { AV.err = r.error || '读取失败'; avDraw(); return; }
+      AV.data = r; AV.t = Date.now(); AV.err = ''; if (!AV.picks) AV.picks = r.mine.slice(); avDraw();
+    }).catch(function () { AV.busy = false; AV.err = '连不上服务器'; avDraw(); });
+  }
+  function avDraw() { var el = $('artvote'); if (el) el.innerHTML = artVoteInner(); }
+  function artVoteInner() {
+    var closed = Date.now() >= AV_END || !!(AV.data && AV.data.closed);
+    if (!avOnline()) return '<p class="hint">投票需要联网：用服务器网址打开游戏并登录后才能投票。</p>';
+    if (AV.err) return '<p class="hint red">' + esc(AV.err) + '</p>';
+    if (!AV.data) return '<p class="hint">正在读取投票……</p>';
+    var T = AV.data.tally || {}, picks = AV.picks || [], mine = AV.data.mine || [], max = Math.max(1, Math.max.apply(null, ART_VOTE.map(function (k) { return T[k] || 0; })));
+    var L = ART_VOTE.filter(function (k) { return SPMAP[k]; });
+    var kn = function (k) { return owned(k) || !!(acc.forms && acc.forms[k] && acc.forms[k].some(Boolean)) || !!(acc.seen && acc.seen[k] !== undefined); };
+    // 截止后按票数排；投票中把见过的精灵排在前面（没见过的和图鉴一样只显示剪影）
+    L = L.slice().sort(closed ? function (a, b) { return (T[b] || 0) - (T[a] || 0); } : function (a, b) { return kn(b) - kn(a); });
+    var changed = picks.length !== mine.length || picks.some(function (k) { return mine.indexOf(k) < 0; });
+    var tiles = L.map(function (k) {
+      var s = SPMAP[k], known = kn(k);
+      var i = known ? (function () { var j = evoLast(s); while (j > 0 && !formKnown(k, j)) j--; return j; })() : 0;
+      var nm = known ? topName(s) : '？？？', img = known ? '<img src="' + formImg(s, i) + '" alt="">' : silTag(k, 0);
+      var done = ART_NEW[k] || [], todo = s.evo.map(function (e, j) { return j; }).filter(function (j) { return done.indexOf(j) < 0; });
+      var on = picks.indexOf(k) >= 0, n = T[k] || 0;
+      return '<button type="button" class="av-it' + (on ? ' on' : '') + '" data-avpick="' + k + '"' + (closed ? ' disabled' : '') + ' aria-pressed="' + on + '">' +
+        '<span class="av-img">' + img + '</span><b>' + esc(nm) + '</b><small>待更新：' + (todo.length === s.evo.length ? '全部形态' : todo.map(function (j) { return stageLabel(s, j); }).join('、')) + '</small>' +
+        '<span class="av-bar"><i style="width:' + (n / max * 100) + '%"></i></span><small class="av-n">' + n + ' 票</small>' + (on ? '<span class="av-ck">✓</span>' : '') + '</button>';
+    }).join('');
+    return '<p class="av-top"><span>已选 <b class="' + (picks.length ? 'red' : '') + '">' + picks.length + '</b> / ' + AV.data.max + '</span><span class="hint">已有 ' + AV.data.voters + ' 名船员投票' + (mine.length ? ' · 你已投票' : '') + '</span>' +
+      (closed ? '<b class="red">投票已截止</b>' : '<button type="button" class="btn primary" data-avsend="1"' + (changed ? '' : ' disabled') + '>' + (mine.length ? '修改投票' : '提交投票') + '</button>') + '</p>' +
+      '<div class="av-grid">' + tiles + '</div>';
+  }
+  function artVoteHTML() {
+    if (avOnline() && (!AV.data || Date.now() - AV.t > 60000)) setTimeout(avLoad, 0);   // 打开航行日志时，超过 1 分钟就刷新票数
+    var closed = Date.now() >= AV_END;
+    return '<article class="log-card wide artvote"><span class="tape l"></span><span class="chip log-tag">立绘更新投票</span><h3>下一批想先换新立绘的精灵</h3>' +
+      '<p>这些精灵还有形态没换上新立绘。选出你最想先看到新样子的精灵，<b>每人最多选 5 只</b>，截止前可以随时修改。票数最高的会优先安排！</p>' +
+      '<p class="log-st' + (closed ? '' : ' on') + '">' + (closed ? '投票已于 10 月 16 日截止，感谢参与！' : '10 月 16 日 24:00 截止') + '</p>' +
+      '<div id="artvote">' + artVoteInner() + '</div></article>';
+  }
   function renderLog() {
     var now = new Date(), h = now.getHours(), on = mysteryTime();
     var wait = on ? '' : (function () { var t = new Date(now); t.setHours(MYSTERY.from, 0, 0, 0); var m = Math.max(0, Math.round((t - now) / 60000)); return '距离今天的活动开始还有 ' + Math.floor(m / 60) + ' 小时 ' + (m % 60) + ' 分钟'; })();
     $('pg-log').innerHTML = '<div class="page-head"><h2 class="sec">航行日志</h2><p class="hint">荆楚号的公告板：更新公告、限时活动、每日任务和新首领。</p></div>' +
       '<div class="log-grid">' + '<article class="log-card wide qq-card"><span class="tape l"></span><span class="tape r"></span><div class="qq-txt"><span class="chip log-tag">船员交流</span><h3>QQ 群：<b class="qq-no">' + QQ_GROUP + '</b></h3><p class="hint">攻略、组队切磋、bug 反馈、新精灵立绘抢先看，都在群里。</p></div><button type="button" class="btn primary" data-copyqq="1">复制群号</button></article>' + changelogHTML() +
-      travelLogHTML() + pickHTML() + riceLogHTML() +
+      artVoteHTML() + travelLogHTML() + pickHTML() + riceLogHTML() +
       '<article class="log-card ev"><span class="tape l"></span><span class="chip log-tag">限时活动</span><h3>神秘精灵出没</h3>' +
         '<p>每天 <b>16:00–24:00</b>，在星际探索的任何场景，都有 <b>3%</b> 的概率刷出一只神秘精灵！</p><p class="hint">它是什么？只有遇到过的人才知道。</p>' +
         '<p class="log-st ' + (on ? 'on' : '') + '">' + (on ? '活动进行中，今天 24:00 结束' : wait) + '</p></article>' +
@@ -2464,6 +2515,21 @@
   }
   $('pg-log').addEventListener('click', function (e) {
     var c = e.target.closest('[data-dclaim]'); if (c) { claimDaily(+c.dataset.dclaim); renderLog(); return; }
+    var ap = e.target.closest('[data-avpick]');
+    if (ap && !ap.disabled && AV.data) {
+      var k = ap.dataset.avpick, P = AV.picks || (AV.picks = []), i = P.indexOf(k);
+      if (i >= 0) P.splice(i, 1); else if (P.length >= AV.data.max) { toast('最多只能选 ' + AV.data.max + ' 只，先取消一只吧。'); return; } else P.push(k);
+      avDraw(); return;
+    }
+    if (e.target.closest('[data-avsend]') && AV.data && !AV.busy) {
+      AV.busy = true;
+      CLOUD.api('POST', '/api/artvote', { picks: AV.picks || [] }).then(function (r) {
+        AV.busy = false;
+        if (r._code !== 200) { toast(r.error || '投票失败'); return; }
+        AV.data = r; AV.picks = r.mine.slice(); avDraw(); toast(r.mine.length ? '投票成功！截止前还可以修改。' : '已经撤回了你的投票。');
+      }).catch(function () { AV.busy = false; toast('连不上服务器，稍后再试'); });
+      return;
+    }
     var g = e.target.closest('[data-golog]'); if (g) { if (g.dataset.golog === 'boss-barren') { ex.view = 'boss'; ex.boss = 'barren'; go('explore'); return; }
       if (g.dataset.golog === 'travelcat') { ex.planet = 'flora'; ex.view = 'sites'; ex.fpart = 'story'; go('explore'); renderExplore(); return; }
       if (g.dataset.golog === 'boss-tiger') { ex.view = 'boss'; ex.boss = 'tiger'; ex.bossK = 'tiger'; ex.bossD = 2; go('explore'); return; } go(g.dataset.golog); }

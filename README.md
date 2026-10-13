@@ -352,6 +352,12 @@ ffmpeg -i 原曲.mp3 -vn -map_metadata -1 -af loudnorm=I=-16:TP=-1.5:LRA=11 -ar 
 - **右上角名字菜单**（`renderTitle()`）只列已获得的称号。
 - **授勋馆**：支线 `medal`（学院部，`after: 'mingming'`，Bttp 介绍）读完后开放（`medalOpen()`）。学院部场景里的「授勋馆」点 → `ex.view = 'medal'` → `renderMedal()`：剧情、等级、赛季三组直接列出；属性称号按属性分页签（`ex.mdType`，默认打开拥有种类最多的属性），每档显示还差几种。
 
+## 立绘更新投票（航行日志，2026-10-13 ~ 10-16）
+
+- 前端 `game.js`：`ART_VOTE` 候选名单（还有形态没换上新立绘的精灵），`ART_NEW` 记哪些形态已经是新立绘（卡片上显示「待更新：二阶、最终形态」）。换上新立绘后改这两个表。没见过的精灵和图鉴一样只显示剪影和「？？？」。
+- 服务器 `server/artvote.js`：`GET /api/artvote` 票数和自己的选择，`POST /api/artvote { picks }` 提交（最多 5 只，可修改，空数组撤回）。票存在 `DATA_DIR/artvote.json`，截止时间 `DEADLINE`（北京时间 10 月 16 日 24:00），前端 `AV_END` 要和它一致。
+- 看结果：服务器上 `cat $DATA_DIR/artvote.json`，或截止后航行日志里按票数排序显示。
+
 ## 首领攻略板
 
 每个首领的每个难度页面下方（每周挑战没有）。服务器在 `server/bossboard.js`，留言存在存档目录的 `bossboard.json`。
