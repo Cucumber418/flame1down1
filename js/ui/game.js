@@ -921,7 +921,7 @@
     { id: 'jingchu', name: '荆楚号', d: '环绕地球运行的星际探索舰，轮廓和湖北省一模一样。', sites: ['board', 'xiaogan', 'academy', 'storage'], ship: true, after: 'jiuquan' },
     { id: 'flora', name: '芙罗拉星', d: '草系星球。丛林、草甸和盐碱地里栖息着许多野生精灵。', sites: ['flora1', 'flora2', 'flora3', 'travelcat'], wild: true, ptype: '草系星球', color: ['#9fd08a', '#3f7d4a'], after: 'board' },
     { id: 'kamble', name: '坎布尔星', d: '水系星球。大半个星球都被温暖的浅海覆盖。', sites: [], wild: true, ptype: '水系星球', color: ['#8cc6ea', '#2a6fb0'], after: 'flora1' },
-    { id: 'pompeii', name: '庞贝星', d: '火系星球。火山终年喷发，地面被熔岩烤得发烫。', sites: [], wild: true, ptype: '火系星球', color: ['#f2a46b', '#b3401f'], after: 'flora1' },
+    { id: 'pompeii', name: '庞贝星', d: '火系星球。火山终年喷发，地面被熔岩烤得发烫。', sites: [], wild: true, ptype: '火系星球', color: ['#f2a46b', '#b3401f'], img: 'images/planets/pompeii.webp', after: 'flora1' },
     { id: 'laiting', name: '莱汀陨石带', d: '电系区域。无数陨石在雷暴中漂浮。', sites: [], wild: true, ptype: '电系陨石带', color: ['#f1dd73', '#7a6a1a'], belt: true, after: 'flora1' },
     { id: 'white', name: '白之星', d: '冰系星球。整颗星球都裹在冰雪里。', sites: [], wild: true, ptype: '冰系星球', color: ['#e4f2fa', '#6aa6c8'], after: 'flora1' }
   ];
@@ -963,7 +963,7 @@
   // 已有画面的舰内区域；其余区域先用占位画面
   var AREA_BG = { 黄冈: 'pod_p', 鄂州: 'hangar_p', 孝感: 'xiaogan', 武汉: 'cockpit_p', 咸宁: 'cabin_p', 仙桃: 'gym_p', 荆门: 'storage_p', 恩施: 'greenhouse_p', 天门: 'teahall', 随州: 'bridge2_p', 襄阳: 'bridge_p' };
   var BG_POS = { qiyi: '50% 42%', desert: '50% 40%', jslc: '50% 38%', street: '50% 55%', bridge: '45% 55%', tower: '50% 55%' };
-  var BG_NAME = { gate: '校门', school: '校门', flag: '教学楼', garden: '牌坊花园', qiyi: '起义门', street: '彭刘杨路', bridge: '长江大桥', desert: '鸣沙山 · 月牙泉', jslc: '发射中心', tower: '发射塔', launch: '火箭升空', orbit: '地球轨道', hangar: '鄂州港 · 停泊区', cockpit_p: '武汉 · 指挥中枢', hangar_p: '鄂州港 · 停泊区', cabin_p: '温泉生活区', greenhouse_p: '太空温室', gym_p: '体能馆', storage_p: '物资仓储', pod_p: '学院部 · 资料室', tea_p: '陆羽茶室 · 04 号舱', teahall: '陆羽茶室 · 大厅', bridge2_p: '编钟通讯站', bridge_p: '古城防卫部', xiaogan: '孝感大厅', paifang: '惟楚有材牌坊', hall: '报告厅', field: '操场', aerial: '校园全景' };
+  var BG_NAME = { gate: '校门', school: '校门', flag: '教学楼', garden: '牌坊花园', qiyi: '起义门', street: '彭刘杨路', bridge: '长江大桥', desert: '鸣沙山 · 月牙泉', jslc: '发射中心', tower: '发射塔', launch: '火箭升空', orbit: '地球轨道', hangar: '鄂州港 · 停泊区', cockpit_p: '武汉 · 指挥中枢', hangar_p: '鄂州港 · 停泊区', cabin_p: '温泉生活区', greenhouse_p: '太空温室', pp_lake: '熔浆大湖', pp_slag: '熔渣矿区', gym_p: '体能馆', storage_p: '物资仓储', pod_p: '学院部 · 资料室', tea_p: '陆羽茶室 · 04 号舱', teahall: '陆羽茶室 · 大厅', bridge2_p: '编钟通讯站', bridge_p: '古城防卫部', xiaogan: '孝感大厅', paifang: '惟楚有材牌坊', hall: '报告厅', field: '操场', aerial: '校园全景' };
   // 角色（立绘为占位）
   var CAST = {
     p: { name: function () { return acc.name; }, color: '#c42f3a', tall: 0.92, get img() { return playerArt(); } },   // 主角立绘按性别：pm 男主 / pf 女主（差分见 CHARS 的 pm_xxx）
@@ -1214,7 +1214,7 @@
   function teleport(n) { ex.view = 'area'; ex.area = n; ex.tp = true; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); mysteryRoll('荆楚号 · ' + DEPTS[n][0]); }
   function planetSvg(id) {
     if (id === 'flora') return floraSvg(120);
-    var P = planetOf(id); if (P && P.color) return planetSvgC(P, 120);
+    var P = planetOf(id); if (P && P.img) return planetImg(P, 120); if (P && P.color) return planetSvgC(P, 120);
     return '<svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="36" fill="#cfe0f2" stroke="#23222b" stroke-width="3"/>' +
       '<path d="M36 44c8-6 16-4 20 2s12 4 14 10-6 12-14 12-6 10-14 10-14-8-12-16 0-14 6-18z M74 30c6 2 10 8 8 12s-8 2-10-2 0-10 2-10z M78 66c8-2 14 4 12 10s-10 8-14 4-4-12 2-14z" fill="#9cc79a" stroke="#23222b" stroke-width="2" stroke-linejoin="round"/>' +
       '<ellipse cx="60" cy="60" rx="54" ry="14" fill="none" stroke="#c42f3a" stroke-width="2.5" stroke-dasharray="6 5" transform="rotate(-16 60 60)"/></svg>';
@@ -1222,6 +1222,7 @@
   /* ---------- 芙罗拉星：挑战（关卡副本，未开放）+ 捕捉（随机野生精灵） ---------- */
   var WILD = WILD_POOLS, REGIONS = regionsOf('flora');   // 野外精灵表见 js/data/wild.js
   // 其他星球的示意图（立绘待补）：按星球主色画一个带纹路的圆
+  function planetImg(P, w) { return '<img class="planet-img" src="' + P.img + '" alt="' + esc(P.name) + '" width="' + w + '" height="' + w + '">'; }   // 有星球立绘（P.img）的用图，没有的画示意图
   function planetSvgC(P, w) {
     var c = P.color, id = 'pc-' + P.id + w;
     var deco = { kamble: '<path d="M20 52c10-6 20 6 30 0s20-6 30 0 20 6 30 0M20 70c10-6 20 6 30 0s20-6 30 0 20 6 30 0" stroke="#fff" stroke-width="3" fill="none" opacity=".7"/>',
@@ -1560,7 +1561,7 @@
       '<span class="wf-dots" aria-label="场景 ' + (F.scene + 1) + ' / ' + n + '">' + F.scenes.map(function (x, i) { return '<i class="' + (i === F.scene ? 'on' : '') + '"></i>'; }).join('') + '</span>' : '';
     var spareTip = R.planet === 'flora' && spareActive() ? '<div class="spare-note"><span class="tape l"></span><b>主线任务 · 引出猎杀者</b>　手下留情：这些精灵不会倒下，体力剩 1 点时就会逃走，算作「假装击败」。已完成 <b>' + spareN() + ' / ' + SPARE_N + '</b>。</div>' : '';
     $('pg-explore').innerHTML = exHead('点击场景里走动的精灵，就会和它开战。') +
-      '<div class="crumb"><button type="button" class="btn ghost" id="field-back">‹ 返回' + esc(P.name) + '</button><b>' + esc(P.name) + ' · ' + esc(R.name) + '</b>' + (n > 1 ? '<span class="hint">场景 ' + (F.scene + 1) + ' / ' + n + '</span>' : '') + '</div>' +
+      '<div class="crumb"><button type="button" class="btn ghost" id="field-back">‹ 返回' + esc(P.name) + '</button><b>' + esc(P.name) + ' · ' + esc(R.name) + '</b>' + (n > 1 ? '<span class="hint">场景 ' + (F.scene + 1) + ' / ' + n + (BG_NAME[sc.bgKey] ? ' · ' + BG_NAME[sc.bgKey] : '') + '</span>' : '') + '</div>' +
       invLine() + spareTip + '<div class="wf-scene" id="wf-scene">' + bg + mons + gatherNodesHTML(R.id, F.scene, n) + riceBowlHTML(R, F.scene) + travelHTML(R, F.scene) + nav + '</div>' +
       '<p class="hint">点左右两边的箭头可以切换场景。每只精灵在自己的一小片范围里走动，待一会儿就会离开，过一阵又会有新的精灵出现，各走各的。点中哪只，就和哪只对战；打完、抓到或逃走之后，这只离开，过一会儿会有新的一只补上。采集点固定在场景里，每个每天可以采集 1 次：芙罗拉、坎布尔、庞贝采到星砂 ×12，莱汀和白之星采到星核 ×1。' + (RICE.regions.indexOf(R.id) >= 0 ? '带着「一碗饭」来的话，可以在任意一个场景里放下它。' : '') + '</p>';
     startFieldMove();
@@ -1873,11 +1874,12 @@
   function wildPage(P) {
     var regs = regionsOf(P.id);
     var part = ex.fpart === 'task' ? 'task' : 'catch';
-    var head = '<div class="flora-hero"><span class="tape l"></span>' + planetSvgC(P, 150) + '<div><h3 style="color:' + P.color[1] + '">' + P.name + ' <span class="chip ptype">' + P.ptype + '</span></h3><p class="hint">' + P.d + '星球立绘还在绘制中，这里先用示意图。</p>' +
+    var head = '<div class="flora-hero"><span class="tape l"></span>' + (P.img ? planetImg(P, 150) : planetSvgC(P, 150)) + '<div><h3 style="color:' + P.color[1] + '">' + P.name + ' <span class="chip ptype">' + P.ptype + '</span></h3><p class="hint">' + P.d + (P.img ? '' : '星球立绘还在绘制中，这里先用示意图。') + '</p>' +
       '<div class="fparts" role="tablist"><button type="button" role="tab" class="tab' + (part === 'catch' ? ' on' : '') + '" data-fpart="catch" aria-selected="' + (part === 'catch') + '">捕捉</button>' + taskTab(P.id, part) + '</div></div></div>';
     if (part === 'task') return head + planetTasks(P.id);
     var cards = regs.map(function (R) {
-      return '<article class="region"><div class="rg-art">' + regionArt(R.id) + '</div><div class="rg-txt"><h4>' + R.name + ' <small>' + R.en + '</small></h4><p class="hint">' + R.d + '</p>' +
+      var bgs = (R.bgs || []).filter(function (k) { return BG[k]; });
+      return '<article class="region"><div class="rg-art">' + (bgs.length ? '<img src="' + BG[bgs[0]] + '" alt="' + R.name + '">' : regionArt(R.id)) + '</div><div class="rg-txt"><h4>' + R.name + ' <small>' + R.en + '</small></h4><p class="hint">' + R.d + '</p>' +
         '<button type="button" class="btn primary" data-field="' + R.id + '">进入' + R.name + '</button></div></article>';
     }).join('');
     var list = [];

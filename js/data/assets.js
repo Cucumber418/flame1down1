@@ -138,6 +138,8 @@ var BG = {
   "xiaogan": "images/backgrounds/xiaogan.jpg?v=2",
   "cabin_p": "images/backgrounds/cabin_p.jpg",
   "greenhouse_p": "images/backgrounds/greenhouse_p.jpg",
+  "pp_lake": "images/backgrounds/pp_lake.jpg",
+  "pp_slag": "images/backgrounds/pp_slag.jpg",
   "bridge_p": "images/backgrounds/bridge_p.jpg",
   "gym_p": "images/backgrounds/gym_p.jpg",
   "hangar_p": "images/backgrounds/hangar_p.jpg",

@@ -356,6 +356,8 @@ ffmpeg -i 原曲.mp3 -vn -map_metadata -1 -af loudnorm=I=-16:TP=-1.5:LRA=11 -ar 
 - **冶炼坊**（黄石 · 冶炼工坊，`FORGE`）：星砂 ×2 → 加强捕捉装置，星核 ×4 → 华为捕捉装置，药草 ×2 → 200血药（`ITEMS.pot200`，`flat: true` 表示按固定点数回血）。这三样商城不再出售，排位段位奖励也改发普通捕捉装置。
 - 本地测试：在 localhost / 双击打开时，网址加 `?test=tea` 切到测试账号「测试」（补满道具和材料），`?test=restore` 换回原来的存档。服务器网址上不生效。
 
+
+星球立绘：`PLANETS` 里写 `img`（如庞贝星 `images/planets/pompeii.webp`，用 `tools/stylize_bg.py` 的 `stylize` 转画风后裁成圆形透明图），星球列表和星球页就用图，没有的画示意图。场景名：`BG_NAME[背景键]` 有名字时，野外场景标题显示「场景 1 / 2 · 熔浆大湖」。庞贝星熔岩原目前两个场景：熔浆大湖 `pp_lake`、熔渣矿区 `pp_slag`（湖心堡垒、炙热核心等干净的图到了再加，新场景加在 `bgs` 末尾，免得已经放下的「一碗饭」换了场景）。
 ## 星球挑战（芙罗拉星）
 
 代码在 `js/ui/game.js` 搜「星球挑战」，关卡表是 `CHAL.flora`（每关 `foes` 敌人、`s2` / `s3` 第二三颗星的条件、`reward` 首通奖励）。
