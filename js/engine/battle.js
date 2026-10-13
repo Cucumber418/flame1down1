@@ -31,11 +31,12 @@ function moveBlocked(me, slot) { return !!(slot && M[slot.n] && ((me.perm && me.
 function blockWhy(me, slot) { return !moveBlocked(me, slot) ? '' : me.flags && me.flags.sy && M[slot.n].cat === '变化' ? '沈阳大街中不可用' : '光影之月中不可用'; }
 // 处于月之暗面时，「月之暗面」变为「月之亮面」
 var LIGHTSIDE = { name: '月之亮面', type: '光', cat: '变化', custom: 'lightside', pri: 0, pp: 5, hidden: true, d: '结束月之暗面，将精灵属性、技能属性切换回光系' };
-// 战斗中按状态换图（见 assets.js 的 FORM_FX_SPRITES）：朔望月灵在月之暗面期间换暗影形态，光影之月后换光影形态
+// 战斗中按状态换图（见 assets.js 的 FORM_FX_SPRITES）：朔望月灵在月之暗面期间换暗影形态，光影之月后换光影形态（没设 img 时按最终形态图比对）
 function liveImg(m) {
-  if (!m.img || typeof FORM_FX_SPRITES === 'undefined') return m.img || null;
-  for (var k in FORM_FX_SPRITES) if (PRE_SPRITES[k] === m.img) { var F = FORM_FX_SPRITES[k]; if (m.perm && m.perm.moonFull && F.full) return F.full; if (m.tm && m.tm.darkside > 0 && F.dark) return F.dark; }
-  return m.img;
+  if (typeof FORM_FX_SPRITES === 'undefined') return m.img || null;
+  var cur = m.img || (typeof SPRITES !== 'undefined' ? SPRITES[m.id] : null);
+  for (var k in FORM_FX_SPRITES) if (cur && (PRE_SPRITES[k] === cur || SPRITES[k] === cur)) { var F = FORM_FX_SPRITES[k]; if (m.perm && m.perm.moonFull && F.full) return F.full; if (m.tm && m.tm.darkside > 0 && F.dark) return F.dark; }
+  return m.img || null;
 }
 function liveMove(me, mv) { return mv && mv.custom === 'darkside' && me.tm && me.tm.darkside > 0 ? LIGHTSIDE : mv; }
 

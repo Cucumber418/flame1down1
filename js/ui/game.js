@@ -2432,9 +2432,9 @@
   }
   /* 航行日志 · 立绘更新投票（服务器 server/artvote.js 计票；每人最多 5 只，截止前可以改）
    * ART_VOTE：还没有完全换上新立绘的精灵（某一阶还是旧图或占位图）。新立绘换上后从这里删掉即可 */
-  var ART_VOTE = ['dragon', 'squid', 'wind', 'pluto', 'pede', 'tagore', 'faraday', 'moon', 'frost', 'wild', 'hephaestus', 'inkarm', 'barren', 'mush', 'kaleo', 'siren', 'bone', 'aegis', 'phantom', 'shroom', 'turkey', 'firemouse'];
+  var ART_VOTE = ['dragon', 'squid', 'wind', 'pluto', 'pede', 'tagore', 'faraday', 'frost', 'wild', 'hephaestus', 'inkarm', 'barren', 'mush', 'kaleo', 'siren', 'bone', 'aegis', 'phantom', 'shroom', 'turkey', 'firemouse'];
   // 已经换上新立绘的形态（其余形态待更新）
-  var ART_NEW = { wind: [0], tagore: [1, 2], faraday: [0], moon: [0, 1], mush: [0], kaleo: [0], shroom: [0], turkey: [0] };
+  var ART_NEW = { wind: [0], tagore: [1, 2], faraday: [0], mush: [0], kaleo: [0], shroom: [0], turkey: [0] };
   var AV_END = Date.UTC(2026, 9, 16, 16, 0, 0);   // 北京时间 10 月 16 日 24:00 截止（服务器也按这个时间）
   var AV = { data: null, picks: null, busy: false, err: '', t: 0 };
   function avOnline() { return !!(window.CLOUD && CLOUD.user && CLOUD.user()); }

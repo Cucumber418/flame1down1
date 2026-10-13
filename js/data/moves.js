@@ -137,7 +137,7 @@ var M = {
   闪电漩涡: { type: '电', cat: '特攻', power: 80, hidden: true, custom: 'vortex', d: '威力80，3回合内每回合降低对方1级命中' },
   介电崩坏: { type: '电', cat: '变化', hidden: true, tgtStage: { def: -1, spd: -1 }, custom: 'dielectric', d: '降低对方1级物防、特防，对方麻痹时效果翻倍' },
 
-  // —— 寒淬月神（光）
+  // —— 朔望月灵（光）
   光刃: { type: '光', cat: '物攻', power: 45, d: '威力45' },
   迷光: { type: '光', cat: '变化', tgtStage: { acc: -1 }, d: '降低对方1级命中' },
   微光射线: { type: '光', cat: '特攻', power: 60, d: '威力60' },

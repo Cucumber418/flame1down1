@@ -15,7 +15,7 @@ var SPRITES = {
   "tagore": "images/sprites/tagore_v2.webp",
   "hauris": "images/sprites/hauris.webp",
   "faraday": "images/sprites/faraday.png",
-  "moon": "images/sprites/moon.png",
+  "moon": "images/sprites/moon_v2.webp",
   "frost": "images/sprites/frost.png",
   "wild": "images/sprites/wild.png",
   "hephaestus": "images/sprites/hephaestus.png",
@@ -47,7 +47,6 @@ var LINEART = {
   "tagore": "images/lineart/tagore.png",
   "hauris": "images/lineart/hauris.png",
   "faraday": "images/lineart/faraday.png",
-  "moon": "images/lineart/moon.png",
   "frost": "images/lineart/frost.png",
   "wild": "images/lineart/wild.png",
   "hephaestus": "images/lineart/hephaestus.png",
@@ -85,7 +84,6 @@ var PRE_SPRITES = {
   "faraday_s1": "images/pre_sprites/faraday_s1.webp",
   "faraday_s2": "images/pre_sprites/faraday_s2.png",
   "moon_s1": "images/pre_sprites/moon_s1.webp",
-  "moon_s2": "images/pre_sprites/moon_s2_v2.webp",
   "frost_s1": "images/pre_sprites/frost_s1.png",
   "frost_s2": "images/pre_sprites/frost_s2.png",
   "wild_s1": "images/pre_sprites/wild_s1.png",
@@ -233,7 +231,6 @@ var SILHOUETTES = {
   "faraday_2": "images/silhouettes/faraday_2.png",
   "moon_0": "images/silhouettes/moon_0.png",
   "moon_1": "images/silhouettes/moon_1_v2.png",
-  "moon_2": "images/silhouettes/moon_2.png",
   "frost_0": "images/silhouettes/frost_0.png",
   "frost_1": "images/silhouettes/frost_1.png",
   "frost_2": "images/silhouettes/frost_2.png",
@@ -316,9 +313,9 @@ function emoteOf(id) { for (var i = 0; i < EMOTES.length; i++) if (EMOTES[i].id 
 function emoteMsg(text) { var m = /^\[\[e:([a-z_]+)\]\]$/.exec(text || ''); return m ? emoteOf(m[1]) : null; }
 
 // 首领在战斗中途换的形态（只在对应的战斗里出现，不进图鉴）
-// 战斗中按状态换图的形态（键是 PRE_SPRITES 里的形态）：dark 月之暗面（暗影系）期间，full 特性触发「光影之月」之后
+// 战斗中按状态换图的形态（键是 SPRITES / PRE_SPRITES 里的形态名）：dark 月之暗面（暗影系）期间，full 特性触发「光影之月」之后
 var FORM_FX_SPRITES = {
-  "moon_s2": { "dark": "images/pre_sprites/moon_s2_dark.webp", "full": "images/pre_sprites/moon_s2_full.webp" }
+  "moon": { "dark": "images/sprites/moon_dark.webp", "full": "images/sprites/moon_full.webp" }
 };
 var AWAKE_SPRITES = {
   "tagore": "images/sprites/tagore_awake_v2.webp"
