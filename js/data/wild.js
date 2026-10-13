@@ -24,8 +24,8 @@ var WILD_POOLS = {
   ],
   // 庞贝星（火系）
   pp_lava: [
-    { sid: 'hephaestus', lv: [8, 14], w: 99.25, rate: 0.6, tag: '较高' },
-    { sid: 'turkey', lv: [12, 12], w: 0.5, rate: 0.45, tag: '中等', rare: true },
+    { sid: 'hephaestus', lv: [8, 14], w: 99.75, rate: 0.6, tag: '较高' },
+    { sid: 'turkey', lv: [12, 12], w: 0, rate: 0.45, tag: '中等', rare: true, bait: 'rice' },   // 米饭火鸡：平时不出现；在熔岩原的某个场景放一碗饭后，那个场景每次刷新精灵有 2% 是它（见 game.js 的 RICE）
     { sid: 'shroom', lv: [12, 12], w: 0.25, rate: 0.45, tag: '中等', rare: true }
   ],
   // 莱汀陨石带（电系）
