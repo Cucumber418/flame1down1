@@ -1813,3 +1813,12 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .log-card.rice h3 { color: #b4471f; }
 .rice-art { background: linear-gradient(160deg, #ffe3c2, #f6c08f); }
 .rice-steps { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+
+/* 旅行精灵叶子喵：野外场景里发光的旅行者 + 航行日志卡片 */
+.wf-mon.wf-travel img { filter: drop-shadow(0 0 10px rgba(180, 255, 150, .95)) drop-shadow(0 0 3px #fff); animation: travelGlow 2.2s ease-in-out infinite; }
+.wf-tag { position: absolute; left: 50%; bottom: -18px; transform: translateX(-50%); white-space: nowrap; padding: 1px 8px; border-radius: 999px; background: #3f8f4a; color: #fff; font-size: 11px; font-weight: 700; }
+@keyframes travelGlow { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+@media (prefers-reduced-motion: reduce) { .wf-mon.wf-travel img { animation: none; } }
+.log-card.travel { background: linear-gradient(135deg, #eef8e6, #fff); }
+.log-card.travel h3 { color: #3f7a2f; }
+.travel-art { background: linear-gradient(160deg, #e3f5d6, #bfe3a8); }

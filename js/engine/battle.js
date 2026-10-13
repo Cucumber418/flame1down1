@@ -710,6 +710,10 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   if (mv.custom === 'canyue') me.flags.canyue = (me.flags.canyue || 0) + 1;
   var fxd = addFixed(me, mv);
   if (fxd && !foe.fainted) { log(S, evs, '附加 ' + fxd + ' 点固定伤害', 'fxl'); applyDamage(S, evs, j, fxd, i, {}); }
+  if (mv.custom === 'drown' && !foe.fainted) {   // 溺毙：对方每有一项能力下降，附加 30 点固定伤害
+    var dn = STG.filter(function (k) { return foe.stages[k] < 0; }).length;
+    if (dn) { log(S, evs, '对方有 ' + dn + ' 项能力下降，溺毙附加 ' + (30 * dn) + ' 点固定伤害', 'fxl'); applyDamage(S, evs, j, 30 * dn, i, {}); }
+  }
   if (mv.custom === 'zeroBreak' && !foe.fainted && foe.st['冰冻'] > 0) { var zb = Math.floor(foe.maxhp / 8); log(S, evs, '冰破附带 ' + zb + ' 点固定伤害', 'fxl'); applyDamage(S, evs, j, zb, i, {}); }
   if (mv.custom === 'annihilate' && !foe.fainted) {
     var pk = Math.min(0.6, 0.05 + 0.1 * negCount(foe));

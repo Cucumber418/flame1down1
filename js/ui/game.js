@@ -552,6 +552,12 @@
     g_core: { name: '星核', d: '雷暴和永冻里凝出来的核，四颗可以合成一个华为捕捉装置。', from: '莱汀陨石带的雷暴陨石群、白之星的永冻冰原', n: 1 }
   };
   var GATHER_ORDER = ['g_sand', 'g_core'];
+  // 精灵素材：旅行精灵掉落的叶片，以及合成出来的精元（精元放进神农架 · 精灵保育仓孵化，见 NURSERY）
+  var MATS = {
+    m_lcleaf: { name: '叶子喵的叶片', d: '旅行精灵叶子喵身上掉下来的叶片，还带着一点光。5 片可以在冶炼坊合成叶子喵的精元。' },
+    e_leafcat: { name: '叶子喵的精元', d: '用 5 片叶子喵的叶片凝成的精元。放进神农架 · 精灵保育仓，孵化 8 小时后会诞生一只叶子小小喵。', hatch: { sid: 'leafcat', lv: 1, min: 480 } }
+  };
+  var MAT_ORDER = ['m_lcleaf', 'e_leafcat'];
   // 太空种植园只种药草。min 是成熟分钟，yield 是收获数量。收获时退回种子。
   var SEEDS = {
     s_herb: { name: '药草种子', d: '生态舱里种的药草籽。种下去要 8 小时，收获时这颗种子会退回来。', crop: 'c_herb', min: 480, yield: 50 },
@@ -594,11 +600,11 @@
     }).join('') + '</div>';
   }
   function growText(min) { return min >= 60 && min % 60 === 0 ? (min / 60) + ' 小时' : min + ' 分钟'; }
-  function itemName(k) { var it = ITEMS[k] || USE_ITEMS[k] || SHOP_X[k] || TEA_SHOP[k] || KEY_ITEMS[k] || GATHER_ITEMS[k] || SEEDS[k] || CROPS[k]; return it ? it.name : k; }
+  function itemName(k) { var it = ITEMS[k] || USE_ITEMS[k] || SHOP_X[k] || TEA_SHOP[k] || KEY_ITEMS[k] || GATHER_ITEMS[k] || SEEDS[k] || CROPS[k] || MATS[k]; return it ? it.name : k; }
   function evRoom(m) { return Math.max(0, EV_TOTAL - evSum(m) - (m.evFree || 0)); }
   function itemsHTML() {
-    var have = BAG_ORDER.filter(function (k) { return acc.items[k] > 0; }), gHave = GATHER_ORDER.filter(function (k) { return acc.items[k] > 0; }), sHave = SEED_ORDER.filter(function (k) { return acc.items[k] > 0; }), cHave = CROP_ORDER.filter(function (k) { return acc.items[k] > 0; }), wk = weeklyOpen(), pn = wk ? permits() : 0;
-    if (ui.itSel && ui.itSel !== 'permit' && have.indexOf(ui.itSel) < 0 && gHave.indexOf(ui.itSel) < 0 && sHave.indexOf(ui.itSel) < 0 && cHave.indexOf(ui.itSel) < 0) ui.itSel = null;
+    var have = BAG_ORDER.filter(function (k) { return acc.items[k] > 0; }), gHave = GATHER_ORDER.filter(function (k) { return acc.items[k] > 0; }), sHave = SEED_ORDER.filter(function (k) { return acc.items[k] > 0; }), cHave = CROP_ORDER.filter(function (k) { return acc.items[k] > 0; }), mHave = MAT_ORDER.filter(function (k) { return acc.items[k] > 0; }), wk = weeklyOpen(), pn = wk ? permits() : 0;
+    if (ui.itSel && ui.itSel !== 'permit' && have.indexOf(ui.itSel) < 0 && gHave.indexOf(ui.itSel) < 0 && sHave.indexOf(ui.itSel) < 0 && cHave.indexOf(ui.itSel) < 0 && mHave.indexOf(ui.itSel) < 0) ui.itSel = null;
     if (ui.itSel === 'permit' && !wk) ui.itSel = null;
     var cell = function (k) {
       var use = !!USE_ITEMS[k] || k === 'rename' || k === 'auto';
@@ -616,7 +622,9 @@
       '<div class="ib-head"><h3>种子</h3><span class="hint">第一次在芙罗拉星的丛林或草甸采集时得到 4 颗药草种子；在芙罗拉星击败野生精灵，每只有 10% 的概率掉落水稻种子。种在恩施 · 太空种植园（读完支线「伟大的种植园」后开放），收获时种子会退回。</span></div>' +
       (sHave.length ? '<div class="ib-grid">' + sHave.map(cell).join('') + '</div>' : '<p class="empty-note">还没有种子。去芙罗拉星的丛林或草甸采集一次。</p>') +
       '<div class="ib-head"><h3>作物</h3><span class="hint">太空种植园收获的作物。在黄石 · 冶炼坊，两份药草合成一瓶 200血药，500 粒米饭盛成一碗饭。</span></div>' +
-      (cHave.length ? '<div class="ib-grid">' + cHave.map(cell).join('') + '</div>' : '<p class="empty-note">还没有作物。种子成熟后，在太空种植园收获。</p>');
+      (cHave.length ? '<div class="ib-grid">' + cHave.map(cell).join('') + '</div>' : '<p class="empty-note">还没有作物。种子成熟后，在太空种植园收获。</p>') +
+      '<div class="ib-head"><h3>精灵素材</h3><span class="hint">击败旅行精灵掉落的叶片，5 片在黄石 · 冶炼坊合成精元；精元放进神农架 · 精灵保育仓孵化。</span></div>' +
+      (mHave.length ? '<div class="ib-grid">' + mHave.map(cell).join('') + '</div>' : '<p class="empty-note">还没有精灵素材。留意航行日志里的「旅行精灵」。</p>');
     var k = ui.itSel;
     if (k) {
       var it = USE_ITEMS[k], body = '';
@@ -627,6 +635,7 @@
       else if (KEY_ITEMS[k]) body = (KEY_ITEMS[k].img && ITEM_IMG[KEY_ITEMS[k].img] ? '<img class="ib-big" src="' + ITEM_IMG[KEY_ITEMS[k].img] + '" alt="">' : '') + '<p>' + esc(KEY_ITEMS[k].d) + '</p><p class="hint">剧情道具，在主线剧情里获得。不能使用，也不会消耗。</p>';
       else if (GATHER_ITEMS[k]) body = '<p>' + esc(GATHER_ITEMS[k].d) + '</p><p class="hint">在' + esc(GATHER_ITEMS[k].from) + '的采集点获得，已放入储存箱。拿到荆楚号 · 黄石 · 冶炼坊可以合成道具。</p>';
       else if (SEEDS[k]) body = '<p>' + esc(SEEDS[k].d) + '</p><p class="hint">在太空种植园种下，' + growText(SEEDS[k].min) + '后收获「' + itemName(SEEDS[k].crop) + '」×' + SEEDS[k].yield + '，并把这颗种子退回来。</p>';
+      else if (MATS[k]) body = '<p>' + esc(MATS[k].d) + '</p>' + (MATS[k].hatch ? '<button type="button" class="btn" data-itgo="nursery">去精灵保育仓</button>' : '<p class="hint">击败旅行精灵叶子喵时有 50% 的概率掉落。</p>');
       else if (k === 'c_bowl') body = '<p>' + esc(CROPS[k].d) + '</p><p class="hint">在黄石 · 冶炼坊用 500 粒米饭合成。进入庞贝星 · 熔岩原，在想放的场景里点「放下一碗饭」。之后这个场景里有 2% 的概率出现稀有的米饭火鸡；捕捉或击败它之后，这碗饭就被吃掉了。</p>';
       else if (CROPS[k]) body = '<p>' + esc(CROPS[k].d) + '</p><p class="hint">在太空种植园收获，已放入储存箱。可以在冶炼坊当合成材料。</p>';
       else if (it) {
@@ -711,6 +720,7 @@
     if (b.dataset.ituse) { useBagItem(b.dataset.ituse); return; }
     if (b.dataset.itgo === 'weekly') { ex.view = 'weekly'; go('explore'); return; }
     if (b.dataset.itgo === 'home') { HSACC.goHome(); return; }
+    if (b.dataset.itgo === 'nursery') { ex.view = 'nursery'; ex.area = '神农架'; ex.planet = 'jingchu'; go('explore'); return; }
   });
   $('pg-items').addEventListener('change', function (e) {
     if (e.target.name === 'it-t') { ui.itTarget = +e.target.value; ui.itMsg = ''; renderItems(); return; }
@@ -1103,6 +1113,7 @@
     if (ex.view === 'teashop') { if (homeOpen()) { renderTeaShop(); return; } ex.view = 'area'; renderArea(); return; }
     if (ex.view === 'shop') { if (shopOpen()) { renderShop(); return; } ex.view = 'area'; renderArea(); return; }
     if (ex.view === 'forge') { renderForge(); return; }
+    if (ex.view === 'nursery') { renderNursery(); return; }
     if (ex.view === 'farm') { if (farmOpen()) { renderFarm(); return; } ex.view = 'area'; ex.area = '恩施'; }
     var Pp = ex.view === 'sites' && PLANETS.filter(function (p) { return p.id === ex.planet; })[0];
     var html = exHead(ex.view === 'planets' ? '选择要前往的星球。' : Pp && Pp.ship ? '点击舰上的区域，即可传送过去。' : '选择要前往的地点。');
@@ -1179,9 +1190,10 @@
       (bg ? '<img src="' + BG[bg] + '" alt="' + d[0] + '">' : '<div class="area-ph"><img src="' + CHARS.ship_icon + '" alt=""><b>' + d[0] + '</b><span>这片区域的具体样子还在建造中</span></div>') +
       mk + (n === '天门' ? hallSpots() : '') + bossSpots(n) +
       (n === '荆门' ? '<button type="button" class="mk shop' + (shopOpen() ? '' : ' locked') + '"' + (shopOpen() ? ' data-shop="1"' : ' disabled') + ' style="left:74%;top:40%"><span class="mk-dot">' + (shopOpen() ? '商' : '锁') + '</span><span class="mk-lab"><b>商城 · 物资兑换</b><small>' + (shopOpen() ? '普通捕捉装置和补药' : '读完「物资仓储」支线后开放') + '</small></span></button>' : '') +
-      (n === '黄石' ? '<button type="button" class="mk shop" data-forge="1" style="left:50%;top:58%"><span class="mk-dot">炼</span><span class="mk-lab"><b>冶炼坊</b><small>合成捕捉装置和 200血药</small></span></button>' : '') +
+      (n === '黄石' ? '<button type="button" class="mk shop" data-forge="1" style="left:50%;top:58%"><span class="mk-dot">炼</span><span class="mk-lab"><b>冶炼坊</b><small>合成捕捉装置、200血药等</small></span></button>' : '') +
       (n === '恩施' ? '<button type="button" class="mk shop' + (farmOpen() ? '' : ' locked') + '"' + (farmOpen() ? ' data-farm="1"' : ' disabled') + ' style="left:62%;top:58%"><span class="mk-dot">' + (farmOpen() ? '种' : '锁') + '</span><span class="mk-lab"><b>太空种植园</b><small>' + (farmOpen() ? '种药草，用来做 200血药' : '读完支线「伟大的种植园」后开放') + '</small></span></button>' : '') +
-      (ids.length || n === '黄石' || n === '恩施' ? '' : '<p class="area-empty">这里暂时没有剧情。</p>') +
+      (n === '神农架' ? '<button type="button" class="mk shop" data-nursery="1" style="left:50%;top:58%"><span class="mk-dot">育</span><span class="mk-lab"><b>精灵保育仓</b><small>孵化精灵的精元</small></span></button>' : '') +
+      (ids.length || n === '黄石' || n === '恩施' || n === '神农架' ? '' : '<p class="area-empty">这里暂时没有剧情。</p>') +
       '<div class="tp-fx" aria-hidden="true"><span>传送至 ' + d[0] + '……</span></div></div>' +
       (ids.length ? '<ul class="area-list">' + rw + '</ul>' : '') + '</div>';
     ex.tp = false;
@@ -1384,6 +1396,35 @@
     toast('你在这里放下了一碗香喷喷的米饭。等一等，说不定会有爱吃米饭的精灵闻着味道过来……');
     renderField();
   }
+  /* ---------- 旅行精灵叶子喵 ----------
+   * 全服共享的时间表（按北京时间每个整点算，所有人算出来都一样，不需要服务器）：每小时在某个区域的某个场景停留连续 20 分钟。
+   * 每次出现（按小时编号 h 区分）每人只能挑战 1 次（开战就算，acc.travel = { h }），LV30，不能捕捉。
+   * 击败：累积经验 ×3000，50% 掉落叶子喵的叶片（5 片在冶炼坊合成精元，精元在神农架 · 精灵保育仓孵化）。 */
+  var TRAVEL = { sid: 'leafcat', lv: 30, exp: 3000, leaf: 0.5, dur: 20, regions: ['forest', 'grass', 'kb_sea', 'pp_lava', 'lt_belt', 'wh_snow'],
+    spots: [{ x: 50, y: 64 }, { x: 32, y: 62 }, { x: 70, y: 66 }] };
+  function thash(h) { var x = (h * 2654435761) >>> 0; x ^= x >>> 13; x = Math.imul(x, 0x5bd1e995) >>> 0; x ^= x >>> 15; return x >>> 0; }
+  function sceneCount(R) { return Math.max(2, (R.bgs || []).filter(function (k) { return BG[k]; }).length); }
+  function travelAt(now) {
+    var h = Math.floor(now / 3600000), s = thash(h + 7919), start = h * 3600000 + (s % 41) * 60000;
+    var R = regionById(TRAVEL.regions[(s >>> 8) % TRAVEL.regions.length]);
+    return { h: h, start: start, end: start + TRAVEL.dur * 60000, rid: R.id, si: (s >>> 16) % sceneCount(R), spot: TRAVEL.spots[(s >>> 20) % TRAVEL.spots.length], active: now >= start && now < start + TRAVEL.dur * 60000 };
+  }
+  function travelDone(h) { return !!(acc && acc.travel && acc.travel.h === h); }
+  function travelHTML(R, si) {
+    var t = travelAt(Date.now()); if (!t.active || t.rid !== R.id || t.si !== si || travelDone(t.h)) return '';
+    var f = form({ sid: TRAVEL.sid, lv: TRAVEL.lv });
+    return '<button type="button" class="wf-mon wf-travel" data-travel="' + t.h + '" title="旅行精灵 · ' + esc(f.name) + ' LV' + TRAVEL.lv + '" aria-label="和旅行精灵' + esc(f.name) + '对战" style="left:' + t.spot.x + '%;top:' + t.spot.y + '%;z-index:' + t.spot.y + '"><i class="wf-sh" aria-hidden="true"></i><img src="' + f.img + '" alt=""><span class="wf-tag">旅行精灵</span></button>';
+  }
+  function engageTravel(h) {
+    if (ex.fighting) return;
+    var R = regionById(ex.region), F = R && fields[R.id], t = travelAt(Date.now());
+    if (!F || t.h !== h || !t.active || t.rid !== R.id || t.si !== F.scene) { toast('叶子喵已经背起行囊，去别的地方旅行了。'); renderField(); return; }
+    if (travelDone(h)) { toast('这次的叶子喵你已经挑战过了，等它下次出现吧。'); renderField(); return; }
+    acc.travel = { h: h }; save();
+    var P = planetOf(R.planet), sc = F.scenes[F.scene];
+    stopField();
+    startWildBattle({ sid: TRAVEL.sid, lv: TRAVEL.lv, rate: 0, noCatch: true, foe: '旅行精灵', bg: sc.bg || null, back: R.name, where: P.name + ' · ' + R.name + ' · 旅行精灵', travel: true });
+  }
   function regionById(rid) { for (var i = 0; i < WILD_REGIONS.length; i++) if (WILD_REGIONS[i].id === rid) return WILD_REGIONS[i]; return null; }
   function stopField() {
     if (fieldTick) { clearInterval(fieldTick); fieldTick = null; }
@@ -1461,7 +1502,7 @@
     var spareTip = R.planet === 'flora' && spareActive() ? '<div class="spare-note"><span class="tape l"></span><b>主线任务 · 引出猎杀者</b>　手下留情：这些精灵不会倒下，体力剩 1 点时就会逃走，算作「假装击败」。已完成 <b>' + spareN() + ' / ' + SPARE_N + '</b>。</div>' : '';
     $('pg-explore').innerHTML = exHead('点击场景里走动的精灵，就会和它开战。') +
       '<div class="crumb"><button type="button" class="btn ghost" id="field-back">‹ 返回' + esc(P.name) + '</button><b>' + esc(P.name) + ' · ' + esc(R.name) + '</b>' + (n > 1 ? '<span class="hint">场景 ' + (F.scene + 1) + ' / ' + n + '</span>' : '') + '</div>' +
-      invLine() + spareTip + '<div class="wf-scene" id="wf-scene">' + bg + mons + gatherNodesHTML(R.id, F.scene, n) + riceBowlHTML(R, F.scene) + nav + '</div>' +
+      invLine() + spareTip + '<div class="wf-scene" id="wf-scene">' + bg + mons + gatherNodesHTML(R.id, F.scene, n) + riceBowlHTML(R, F.scene) + travelHTML(R, F.scene) + nav + '</div>' +
       '<p class="hint">点左右两边的箭头可以切换场景。每只精灵在自己的一小片范围里走动，待一会儿就会离开，过一阵又会有新的精灵出现，各走各的。点中哪只，就和哪只对战；打完、抓到或逃走之后，这只离开，过一会儿会有新的一只补上。采集点固定在场景里，每个每天可以采集 1 次：芙罗拉、坎布尔、庞贝采到星砂 ×12，莱汀和白之星采到星核 ×1。' + (RICE.regions.indexOf(R.id) >= 0 ? '带着「一碗饭」来的话，可以在任意一个场景里放下它。' : '') + '</p>';
     startFieldMove();
   }
@@ -1547,6 +1588,11 @@
         }
         if (downs && downs.length) { if (!acc.stats) acc.stats = {}; acc.stats.wildWins = (acc.stats.wildWins || 0) + downs.length; dailyHit('wildWin', downs.length); }
         if (o.taint && downs && downs.length) msg = msg.concat(purgeHit());
+        if (o.travel && downs && downs.length) {   // 旅行精灵：累积经验 ×3000，50% 掉落叶片
+          acc.exp = (acc.exp || 0) + TRAVEL.exp; var lf = Math.random() < TRAVEL.leaf;
+          if (lf) giveItems({ m_lcleaf: 1 });
+          msg.push('击败了旅行精灵叶子喵！获得累积经验 ×' + fmt(TRAVEL.exp) + (lf ? '，它留下了一片「叶子喵的叶片」' : '') + '。');
+        }
         if (o.bait && (res === 'caught' || (downs && downs.length))) { acc.riceBowl = null; msg.push('放在熔岩原的那碗米饭被吃得一粒不剩。'); }
         if (o.flora && downs && downs.length) {   // 芙罗拉星野外：每击败一只，10% 掉落水稻种子
           var seeds = 0; downs.forEach(function () { if (Math.random() < RICE.seedDrop) seeds++; });
@@ -2181,6 +2227,19 @@
     body: ['想抓的精灵总是一不小心就被打倒？试试胖虎的<b>「慈悲气波」</b>：就算这一下足以击败对方，也会给它留下 <b>1 点体力</b>。',
       '对方体力越低越好抓。先用慈悲气波把野生精灵打到只剩 1 点体力，再扔捕捉装置，稀有精灵和异色精灵都不怕失手。'],
     how: '击败古城防卫部简单难度的泰戈尔，可以领养一只小胖虎。它在 LV15 学会慈悲气波，LV25 进化成胖虎。' };
+  // 航行日志 · 旅行精灵叶子喵（规则见 TRAVEL；只说在不在，不说在哪，让船员们互相通知）
+  function travelLogHTML() {
+    var now = Date.now(), t = travelAt(now), f = form({ sid: TRAVEL.sid, lv: TRAVEL.lv }), hm = function (ms) { var d = new Date(ms); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); };
+    var nx = t.start > now ? t : travelAt((t.h + 1) * 3600000);
+    var st = t.active ? (travelDone(t.h) ? '这一次的叶子喵你已经挑战过了，下一次大约在 ' + hm(travelAt((t.h + 1) * 3600000).start) + ' 出现。' : '叶子喵正在某个星球旅行！还会停留 ' + Math.max(1, Math.ceil((t.end - now) / 60000)) + ' 分钟——它在哪儿？问问其他船员吧。')
+      : '叶子喵正在赶路，下一次大约在 ' + hm(nx.start) + ' 出现，停留 ' + TRAVEL.dur + ' 分钟。';
+    return '<article class="log-card travel"><span class="tape r"></span><span class="chip log-tag">旅行精灵</span><h3>旅行精灵叶子喵</h3>' +
+      '<div class="pick-row"><div class="pick-art travel-art"><img src="' + f.img + '" alt="' + esc(f.name) + '"></div><div class="pick-txt">' +
+      '<p>叶子喵背着魔杖到处旅行，每个小时都会在某个星球的某个场景里停留<b>连续 20 分钟</b>。所有船员看到的都是同一只，发现了记得告诉大家！</p>' +
+      '<p>它是 <b>LV30</b> 的强敌，不能捕捉；每次出现，每名船员只能挑战 <b>1 次</b>。击败它可以获得<b>累积经验 ×3,000</b>，还有 <b>50%</b> 的概率掉落「叶子喵的叶片」。</p>' +
+      '<p><b>5 片叶片</b>在黄石 · 冶炼坊合成「叶子喵的精元」，放进神农架 · <b>精灵保育仓</b>孵化 <b>8 小时</b>，就能得到属于你的叶子喵！</p>' +
+      '</div></div><p class="log-st' + (t.active && !travelDone(t.h) ? ' on' : '') + '">' + st + '</p></article>';
+  }
   // 航行日志 · 稀有野怪：爱吃米饭的米饭火鸡（规则见 RICE）
   function riceLogHTML() {
     var f = form({ sid: RICE.sid, lv: RICE.lv }), b = acc && acc.riceBowl;
@@ -2206,7 +2265,7 @@
     var wait = on ? '' : (function () { var t = new Date(now); t.setHours(MYSTERY.from, 0, 0, 0); var m = Math.max(0, Math.round((t - now) / 60000)); return '距离今天的活动开始还有 ' + Math.floor(m / 60) + ' 小时 ' + (m % 60) + ' 分钟'; })();
     $('pg-log').innerHTML = '<div class="page-head"><h2 class="sec">航行日志</h2><p class="hint">荆楚号的公告板：更新公告、限时活动、每日任务和新首领。</p></div>' +
       '<div class="log-grid">' + '<article class="log-card wide qq-card"><span class="tape l"></span><span class="tape r"></span><div class="qq-txt"><span class="chip log-tag">船员交流</span><h3>QQ 群：<b class="qq-no">' + QQ_GROUP + '</b></h3><p class="hint">攻略、组队切磋、bug 反馈、新精灵立绘抢先看，都在群里。</p></div><button type="button" class="btn primary" data-copyqq="1">复制群号</button></article>' + changelogHTML() +
-      pickHTML() + riceLogHTML() +
+      travelLogHTML() + pickHTML() + riceLogHTML() +
       '<article class="log-card ev"><span class="tape l"></span><span class="chip log-tag">限时活动</span><h3>神秘精灵出没</h3>' +
         '<p>每天 <b>16:00–24:00</b>，在星际探索的任何场景，都有 <b>3%</b> 的概率刷出一只神秘精灵！</p><p class="hint">它是什么？只有遇到过的人才知道。</p>' +
         '<p class="log-st ' + (on ? 'on' : '') + '">' + (on ? '活动进行中，今天 24:00 结束' : wait) + '</p></article>' +
@@ -2529,13 +2588,58 @@
     return true;
   }
 
+  /* ---------- 精灵保育仓：神农架 · 精灵保育区 ----------
+   * 3 个孵化槽，放入精元后开始计时（MATS[k].hatch.min 分钟），时间到了点「孵化」得到精灵。存档 acc.nursery = { slots: [{ k, t } | null ×3] } */
+  var NURSERY_N = 3;
+  function nursery() {
+    if (!acc.nursery || !Array.isArray(acc.nursery.slots)) acc.nursery = { slots: [] };
+    while (acc.nursery.slots.length < NURSERY_N) acc.nursery.slots.push(null);
+    acc.nursery.slots = acc.nursery.slots.slice(0, NURSERY_N).map(function (x) { return x && MATS[x.k] && MATS[x.k].hatch ? x : null; });
+    return acc.nursery;
+  }
+  function hatchLeft(x) { return Math.max(0, x.t + MATS[x.k].hatch.min * 60000 - Date.now()); }
+  function renderNursery() {
+    var N = nursery(), ess = MAT_ORDER.filter(function (k) { return MATS[k].hatch && acc.items[k] > 0; });
+    var cards = N.slots.map(function (x, i) {
+      if (!x) return '<article class="farm-plot"><b>孵化槽 ' + (i + 1) + '</b><p class="hint">空着</p>' + (ess.length ? '<div class="farm-acts">' + ess.map(function (k) { return '<button type="button" class="btn" data-incub="' + i + '|' + k + '">放入' + itemName(k) + '</button>'; }).join('') + '</div>' : '<p class="hint">没有可以孵化的精元。</p>') + '</article>';
+      var H_ = MATS[x.k].hatch, left = hatchLeft(x), nm = form({ sid: H_.sid, lv: H_.lv }).name;
+      return '<article class="farm-plot' + (left ? ' grow' : ' ready') + '"><b>孵化槽 ' + (i + 1) + ' · ' + itemName(x.k) + '</b>' +
+        (left ? '<p class="hint">还要 <span data-hatchleft="' + i + '">' + farmLeftText({ t: x.t, seed: null, _ms: left }) + '</span>，会诞生一只' + esc(nm) + '。</p>' : '<p class="hint">精元在发光……可以孵化了！</p><div class="farm-acts"><button type="button" class="btn primary" data-hatch="' + i + '">孵化</button></div>') + '</article>';
+    }).join('');
+    $('pg-explore').innerHTML = exHead('精灵保育仓有 3 个孵化槽。把精元放进去，过一段时间就会孵化出精灵（叶子喵的精元要 8 小时）。') +
+      '<div class="crumb"><button type="button" class="btn ghost" id="nursery-back">‹ 返回精灵保育区</button><b>神农架 · 精灵保育仓</b></div>' +
+      stockBar('精元', MAT_ORDER.filter(function (k) { return MATS[k].hatch; })) + '<div class="farm-plots">' + cards + '</div>';
+    clearInterval(ex.farmTick);
+    ex.farmTick = setInterval(function () {
+      if (ex.view !== 'nursery' || !document.querySelector('.farm-plots')) { clearInterval(ex.farmTick); return; }
+      var flip = false;
+      nursery().slots.forEach(function (x, i) { if (!x) return; var el = document.querySelector('[data-hatchleft="' + i + '"]'), left = hatchLeft(x); if (!left && el) flip = true; else if (el) el.textContent = farmLeftText({ _ms: left }); });
+      if (flip) renderNursery();
+    }, 1000);
+  }
+  function nurseryPut(i, k) {
+    var N = nursery(); if (i < 0 || i >= NURSERY_N || N.slots[i] || !MATS[k] || !MATS[k].hatch || !(acc.items[k] > 0)) return;
+    acc.items[k]--; N.slots[i] = { k: k, t: Date.now() }; save();
+    toast('把「' + itemName(k) + '」放进了孵化槽 ' + (i + 1) + '，' + growText(MATS[k].hatch.min) + '后可以孵化。');
+    renderNursery();
+  }
+  function nurseryHatch(i) {
+    var N = nursery(), x = N.slots[i]; if (!x || hatchLeft(x)) return;
+    var H_ = MATS[x.k].hatch, m = newMon(H_.sid, H_.lv), T = acc.teams[acc.active], added = T.length < TEAM_SIZE;
+    if (added) T.push(m.u);
+    N.slots[i] = null; save();
+    toast('精元裂开了——诞生了一只' + form(m).name + '（LV' + H_.lv + '，' + m.nat + '）！' + (added ? '已加入' + TEAM_NAME[acc.active] + '。' : '已收入精灵仓库。'));
+    renderNursery(); renderRes && renderRes();
+  }
+
   /* ---------- 冶炼坊：黄石 · 冶炼工坊 ----------
    * 加强装置吃星砂，华为装置吃星核，200血药吃药草。商城不卖这三样。 */
   var FORGE = [
     { id: 'cap2', out: { cap2: 1 }, need: { g_sand: 2 } },
     { id: 'cap3', out: { cap3: 1 }, need: { g_core: 4 } },
     { id: 'pot200', out: { pot200: 1 }, need: { c_herb: 2 } },
-    { id: 'bowl', out: { c_bowl: 1 }, need: { c_rice: 500 } }
+    { id: 'bowl', out: { c_bowl: 1 }, need: { c_rice: 500 } },
+    { id: 'lcEssence', out: { e_leafcat: 1 }, need: { m_lcleaf: 5 } }
   ];
   var FORGE_Q = 120;
   function forgeOf(id) { for (var i = 0; i < FORGE.length; i++) if (FORGE[i].id === id) return FORGE[i]; return null; }
@@ -2555,7 +2659,7 @@
     }).join('') + '</div>';
   }
   function renderForge() {
-    var stock = stockBar('采集物', GATHER_ORDER) + stockBar('作物', CROP_ORDER);
+    var stock = stockBar('采集物', GATHER_ORDER) + stockBar('作物', CROP_ORDER) + stockBar('精灵素材', MAT_ORDER);
     var cards = FORGE.map(function (r) {
       var max = forgeMax(r), q = Math.max(1, Math.min(FORGE_Q, shopQty['fg-' + r.id] || 1));
       if (q > max && max > 0) q = max;
@@ -2565,13 +2669,13 @@
         var have = acc.items[k] || 0, ask = r.need[k] * q;
         return itemName(k) + ' <b class="' + (have >= ask ? 'ok' : 'short') + '">' + have + '</b>/' + ask;
       }).join(' · ');
-      return '<article class="shop-it"><span class="tape r"></span>' + H.itemIcon(outK) + '<div class="si-txt"><b>' + forgeOutText(r, 1) + '</b><p class="hint">' + esc((ITEMS[outK] || CROPS[outK] || {}).d || '') + '</p>' +
+      return '<article class="shop-it"><span class="tape r"></span>' + H.itemIcon(outK) + '<div class="si-txt"><b>' + forgeOutText(r, 1) + '</b><p class="hint">' + esc((ITEMS[outK] || CROPS[outK] || MATS[outK] || {}).d || '') + '</p>' +
         '<p class="forge-need">消耗 ' + needs + '</p><p class="si-own">持有 <b>' + (acc.items[outK] || 0) + '</b></p></div>' +
         '<div class="si-buy"><span class="si-price">合成</span>' +
         '<div class="qty"><button type="button" class="btn ghost" data-fq="' + r.id + '|-1" aria-label="减少"' + (q <= 1 ? ' disabled' : '') + '>−</button><span aria-live="polite">' + q + '</span><button type="button" class="btn ghost" data-fq="' + r.id + '|1" aria-label="增加"' + (q >= Math.min(FORGE_Q, Math.max(1, max)) ? ' disabled' : '') + '>+</button></div>' +
         '<button type="button" class="btn primary" data-smelt="' + r.id + '"' + (ok ? '' : ' disabled') + '>' + (ok ? '合成' : '材料不足') + '</button></div></article>';
     }).join('');
-    $('pg-explore').innerHTML = exHead('星砂合成加强捕捉装置，星核合成华为捕捉装置，药草合成 200血药，米饭盛成一碗饭。这些都不在商城出售。') +
+    $('pg-explore').innerHTML = exHead('星砂合成加强捕捉装置，星核合成华为捕捉装置，药草合成 200血药，米饭盛成一碗饭，叶子喵的叶片凝成精元。这些都不在商城出售。') +
       '<div class="crumb"><button type="button" class="btn ghost" id="forge-back">‹ 返回冶炼工坊</button><b>黄石 · 冶炼坊</b></div>' +
       stock + '<div class="shop-grid">' + cards + '</div>';
   }
@@ -2599,7 +2703,7 @@
   }
   function farmReady(p) { return !!(p && Date.now() - p.t >= SEEDS[p.seed].min * 60000); }
   function farmLeftText(p) {
-    var sec = Math.max(0, Math.ceil((SEEDS[p.seed].min * 60000 - (Date.now() - p.t)) / 1000));
+    var sec = p._ms != null ? Math.ceil(p._ms / 1000) : Math.max(0, Math.ceil((SEEDS[p.seed].min * 60000 - (Date.now() - p.t)) / 1000));   // _ms：直接给剩余毫秒（精灵保育仓用）
     var h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60;
     return (h ? h + ' 小时 ' : '') + (h || m ? m + ' 分 ' : '') + s + ' 秒';
   }
@@ -3177,6 +3281,10 @@
     if (b.id === 'ts-back') { ex.view = 'area'; ex.area = '天门'; renderExplore(); return; }
     if (b.dataset.hpoke) { var f = b.closest('.hm-fig'); f.classList.remove('hop'); void f.offsetWidth; f.classList.add('hop'); return; }
     if (b.dataset.shop) { ex.view = 'shop'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
+    if (b.dataset.nursery) { ex.view = 'nursery'; ex.area = '神农架'; ex.planet = 'jingchu'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
+    if (b.id === 'nursery-back') { ex.view = 'area'; ex.area = '神农架'; ex.planet = 'jingchu'; renderExplore(); return; }
+    if (b.dataset.incub) { nurseryPut(+b.dataset.incub.split('|')[0], b.dataset.incub.split('|')[1]); return; }
+    if (b.dataset.hatch) { nurseryHatch(+b.dataset.hatch); return; }
     if (b.dataset.forge) { ex.view = 'forge'; ex.area = '黄石'; ex.planet = 'jingchu'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
     if (b.dataset.fq) { var fq = b.dataset.fq.split('|'), fr = forgeOf(fq[0]); if (fr && !b.disabled) { shopQty['fg-' + fq[0]] = Math.max(1, Math.min(FORGE_Q, (shopQty['fg-' + fq[0]] || 1) + +fq[1])); renderForge(); } return; }
     if (b.dataset.smelt) { forgeCraft(b.dataset.smelt); return; }
@@ -3189,6 +3297,7 @@
     if (b.dataset.field && !b.disabled) { enterField(b.dataset.field); return; }
     if (b.dataset.gather != null && b.dataset.gather !== '') { gatherAt(+b.dataset.gather); return; }
     if (b.dataset.bowl) { putBowl(); return; }
+    if (b.dataset.travel) { engageTravel(+b.dataset.travel); return; }
     if (b.dataset.wfid) { engageField(+b.dataset.wfid); return; }
     if (b.dataset.wfnav) { fieldNav(+b.dataset.wfnav); return; }
     if (b.id === 'field-back') { var FR = regionById(ex.region); ex.view = 'sites'; if (FR) ex.planet = FR.planet; ex.fpart = 'catch'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
