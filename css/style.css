@@ -1822,3 +1822,6 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .log-card.travel { background: linear-gradient(135deg, #eef8e6, #fff); }
 .log-card.travel h3 { color: #3f7a2f; }
 .travel-art { background: linear-gradient(160deg, #e3f5d6, #bfe3a8); }
+.wf-mon.wf-travel.met img { filter: drop-shadow(0 0 6px rgba(180, 255, 150, .7)); animation-duration: 3.2s; }
+.wf-mon.wf-travel.met .wf-tag { background: #6f8f5a; }
+.travel-face { object-fit: contain; background: linear-gradient(160deg, #e3f5d6, #bfe3a8); border-radius: 12px; }

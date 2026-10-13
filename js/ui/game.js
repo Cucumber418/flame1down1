@@ -1425,20 +1425,64 @@
   function travelOpen() { return !!acc && prog('travelcat').done; }   // 读完世界任务「旅行猫」后才会出现
   function travelDone(h) { return !!(acc && acc.travel && acc.travel.h === h); }
   function travelHTML(R, si) {
-    var t = travelAt(Date.now()); if (!travelOpen() || !t.active || t.rid !== R.id || t.si !== si || travelDone(t.h)) return '';
-    var f = form({ sid: TRAVEL.sid, lv: TRAVEL.lv });
-    return '<button type="button" class="wf-mon wf-travel" data-travel="' + t.h + '" title="旅行精灵 · ' + esc(f.name) + ' LV' + TRAVEL.lv + '" aria-label="和旅行精灵' + esc(f.name) + '对战" style="left:' + t.spot.x + '%;top:' + t.spot.y + '%;z-index:' + t.spot.y + '"><i class="wf-sh" aria-hidden="true"></i><img src="' + f.img + '" alt=""><span class="wf-tag">旅行精灵</span></button>';
+    var t = travelAt(Date.now()); if (!travelOpen() || !t.active || t.rid !== R.id || t.si !== si) return '';   // 切磋过也不会消失，停留满 20 分钟才走
+    var f = form({ sid: TRAVEL.sid, lv: TRAVEL.lv }), met = travelDone(t.h);
+    return '<button type="button" class="wf-mon wf-travel' + (met ? ' met' : '') + '" data-travel="' + t.h + '" title="旅行精灵 · ' + esc(f.name) + ' LV' + TRAVEL.lv + '" aria-label="和旅行精灵' + esc(f.name) + '对战" style="left:' + t.spot.x + '%;top:' + t.spot.y + '%;z-index:' + t.spot.y + '"><i class="wf-sh" aria-hidden="true"></i><img src="' + f.img + '" alt=""><span class="wf-tag">' + (met ? '旅行精灵 · 已切磋' : '旅行精灵') + '</span></button>';
   }
   function engageTravel(h) {
     if (ex.fighting) return;
     var R = regionById(ex.region), F = R && fields[R.id], t = travelAt(Date.now());
     if (!F || t.h !== h || !t.active || t.rid !== R.id || t.si !== F.scene) { toast('叶子喵已经背起行囊，去别的地方旅行了。'); renderField(); return; }
     if (!travelOpen()) return;
-    if (travelDone(h)) { toast('这次的叶子喵你已经挑战过了，等它下次出现吧。'); renderField(); return; }
-    acc.travel = { h: h }; save();
-    var P = planetOf(R.planet), sc = F.scenes[F.scene];
-    stopField();
-    startWildBattle({ sid: TRAVEL.sid, lv: TRAVEL.lv, rate: 0, noCatch: true, foe: '旅行精灵', bg: sc.bg || null, back: R.name, where: P.name + ' · ' + R.name + ' · 旅行精灵', travel: true });
+    var P = planetOf(R.planet), left = Math.max(1, Math.ceil((t.end - Date.now()) / 60000));
+    if (travelDone(h)) {   // 已经切磋过：聊两句，不能再打
+      travelDlg(pickOne(TRAVEL_TALK.after).map(function (x) { return x.replace('{left}', left); }), [['再见', null]]);
+      return;
+    }
+    travelDlg(pickOne(TRAVEL_TALK.hello).map(function (x) { return x.replace('{where}', R.name).replace('{planet}', P.name); }), [['下次再说', null], ['开始切磋', function () {
+      var t2 = travelAt(Date.now());
+      if (t2.h !== h || !t2.active || travelDone(h) || ex.fighting) { toast('叶子喵已经背起行囊，去别的地方旅行了。'); renderField(); return; }
+      acc.travel = { h: h }; save();
+      var sc = F.scenes[F.scene];
+      stopField();
+      startWildBattle({ sid: TRAVEL.sid, lv: TRAVEL.lv, rate: 0, noCatch: true, foe: '旅行精灵', bg: sc.bg || null, back: R.name, where: P.name + ' · ' + R.name + ' · 旅行精灵', travel: true });
+    }]]);
+  }
+  // 叶子喵的台词：hello 开战前（{where} 区域、{planet} 星球），win / lose / quit 战斗结束后，after 切磋过之后再点她（{left} 剩余分钟）
+  var TRAVEL_TALK = {
+    hello: [
+      ['{name}！我们又见面啦！', '我刚旅行到{where}，就碰到你了。上次你帮了我，这次我可要拿出真本事了——来切磋一下吧！'],
+      ['咦，这不是{name}吗？真巧！', '{planet}的风景好特别，我一路走一路练，已经变强好多了。要不要比划比划？'],
+      ['嘿！{name}，这边这边！', '我就知道会在旅行的路上遇见你。别忘了我们说好的——碰到了就要切磋一下！'],
+      ['又见面啦，{name}！', '你看，我已经走到{where}了！族里的长辈要是知道，肯定会吓一跳吧。来吧，让我看看你变强了多少！']
+    ],
+    win: [
+      ['好、好厉害……！', '你和你的精灵配合得真好，我输得心服口服。我在这儿再看看风景，过一会儿才出发——下次我一定会赢你的！'],
+      ['唔……又输给你了。', '不过我一点都不沮丧哦！跟你切磋，比一个人练习有意思多了。我会在这里再待一阵子，下次见！']
+    ],
+    lose: [
+      ['嘿嘿，这次是我赢啦！', '你的精灵也很努力哦。我会在这里再待一会儿，下次见面，我们再好好比一场！'],
+      ['看到了吗？这就是旅行的成果！', '别灰心，你已经很强了。等你再练练，下次说不定就是你赢啦！']
+    ],
+    quit: [
+      ['诶？你要走了吗？', '那下次见面再好好比一场吧！我会在这里再待一会儿。']
+    ],
+    after: [
+      ['今天的切磋就到这里吧！', '我在这儿看看风景，大概再过 {left} 分钟就要出发去下一个地方了。路上碰到我，记得再来找我哦！'],
+      ['嗯？还想再比一场吗？', '今天不行啦，我得留点力气赶路。再过 {left} 分钟我就要出发了，下次见！']
+    ]
+  };
+  function pickOne(a) { return a[Math.floor(Math.random() * a.length)]; }
+  function travelDlg(lines, btns) {
+    var f = form({ sid: TRAVEL.sid, lv: TRAVEL.lv }), d = document.createElement('div'); d.className = 'soc-dlg npc-dlg travel-dlg';
+    d.innerHTML = '<div class="soc-box npc-box" role="dialog" aria-modal="true" aria-label="叶子喵"><span class="tape l"></span><span class="tape r"></span>' +
+      '<img class="npc-face travel-face" src="' + f.img + '" alt="叶子喵"><div class="npc-say"><span class="step">叶子喵</span>' + lines.map(function (x, i) { return '<p class="' + (i ? 'hint' : 'npc-line') + '">' + esc(fill(x)) + '</p>'; }).join('') +
+      '<div class="soc-foot">' + btns.map(function (b, i) { return '<button type="button" class="btn' + (i === btns.length - 1 ? ' primary' : ' ghost') + '" data-tbtn="' + i + '">' + esc(b[0]) + '</button>'; }).join('') + '</div></div></div>';
+    document.body.appendChild(d);
+    d.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-tbtn]');
+      if (e.target === d || b) { d.remove(); var fn = b && btns[+b.dataset.tbtn][1]; if (fn) fn(); }
+    });
   }
   function regionById(rid) { for (var i = 0; i < WILD_REGIONS.length; i++) if (WILD_REGIONS[i].id === rid) return WILD_REGIONS[i]; return null; }
   function stopField() {
@@ -1606,8 +1650,9 @@
         if (o.travel && downs && downs.length) {   // 旅行精灵：累积经验 ×3000，50% 掉落叶片
           acc.exp = (acc.exp || 0) + TRAVEL.exp; var lf = Math.random() < TRAVEL.leaf;
           if (lf) giveItems({ m_lcleaf: 1 });
-          msg.push('击败了旅行精灵叶子喵！获得累积经验 ×' + fmt(TRAVEL.exp) + (lf ? '，它留下了一片「叶子喵的叶片」' : '') + '。');
+          msg.push('击败了旅行精灵叶子喵！获得累积经验 ×' + fmt(TRAVEL.exp) + (lf ? '，她留下了一片「叶子喵的叶片」' : '') + '。');
         }
+        if (o.travel) setTimeout(function () { travelDlg(pickOne(downs && downs.length ? TRAVEL_TALK.win : res === 'lose' ? TRAVEL_TALK.lose : TRAVEL_TALK.quit), [['知道了', null]]); }, 700);   // 打完夸一句；她会留在原地，满 20 分钟才走
         if (o.bait && (res === 'caught' || (downs && downs.length))) { acc.riceBowl = null; msg.push('放在熔岩原的那碗米饭被吃得一粒不剩。'); }
         if (o.flora && downs && downs.length) {   // 芙罗拉星野外：每击败一只，10% 掉落水稻种子
           var seeds = 0; downs.forEach(function () { if (Math.random() < RICE.seedDrop) seeds++; });
