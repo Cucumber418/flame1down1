@@ -344,7 +344,9 @@ ffmpeg -i 原曲.mp3 -vn -map_metadata -1 -af loudnorm=I=-16:TP=-1.5:LRA=11 -ar 
 
 ## 称号与授勋馆（2026-10-13）
 
-- 图鉴称号：点亮 3 / 10 / 30 / 50 / 100 类（`litCount()`）= 见习 / 资深 / 精英 / 大师做题家 / 学习王。稀有精灵称号：实验班收藏家（id 仍是 `collector`，支线「稀有精灵」汇报后获得）、考点收藏家 `rare5`、必刷题收藏家 `rare15`（`rareKinds()`：野外表里标了 `rare` 的种类，三主宠不算）。
+- 图鉴称号：点亮 3 / 10 / 30 / 50 / 100 类（`litCount()`）= 见习 / 资深 / 精英 / 大师做题家 / 学习王。稀有精灵称号：实验班收藏家（id 仍是 `collector`，支线「稀有精灵」汇报后获得）、考点收藏家 `rare5`、必刷题收藏家 `rare15`（`rareKinds()`：野外表里标了 `rare` 的种类；三主宠也算，但 `acc.starter` 那只不算，见 `rareList()`）。
+- **称号奖励**：`titleRw(T)`（`TITLE_RW` 按 id、`TYPE_RW` 属性称号、赛季按段位）= 累积经验（进经验背包）+ 能量 + 功勋点。`checkTitles()` 里用 `acc.titleRw` 记已发奖励的称号；这个字段第一次出现时，已有称号的奖励用邮件 `title-rw-back` 补发（邮件附件支持 `merit`）。
+- **功勋与军衔**：`acc.merit` 功勋点余额（暂无用途），`acc.meritXp` 功勋经验（`giveMerit()` 两个一起加），`acc.milRank` 军衔下标（`RANKS_MIL` 列兵…将军，`MIL_COST` 每级晋升消耗）。授勋馆顶部 `milHTML()` 显示并可「晋升」（`promote()`）；名字菜单的信息行显示军衔。
 - 称号都在 `game.js` 的 `TITLES`，每个有 `grp`（`story` 剧情与探索 / `lv` 等级 / `season` 排位赛季 / `type` 属性），授勋馆按它分组。
 - **属性称号**：`TITLE_TYPES`（`TYPE_COLOR` 里除「无」以外的全部属性）× `TYPE_TIERS`：收藏家 3/6/10/15 种、训练师 LV50 以上 1/3/5/10 种、专家 LV80 以上 5 种。`typeKinds(属性, 等级)` 按精灵种类（`sid`）去重计数，双属性两边都算。id 形如 `tyc3-草`、`tyt10-水`、`tyx5-火`。
 - **右上角名字菜单**（`renderTitle()`）只列已获得的称号。

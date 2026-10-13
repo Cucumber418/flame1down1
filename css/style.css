@@ -829,6 +829,14 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .md-tab { cursor: pointer; display: inline-flex; gap: 4px; align-items: baseline; padding: 5px 10px; border-radius: 999px; border: 1.5px solid var(--tc); background: var(--paper-2); color: var(--ink); font-size: 13px; }
 .md-tab small { font-size: 11px; color: var(--pencil); }
 .md-tab.on { background: var(--tc); color: #fff; } .md-tab.on small { color: rgba(255,255,255,.85); }
+.md-tx small.md-rw { color: var(--blue); font-size: 11px; }
+.mil { display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center; margin: 12px 0 6px; padding: 12px 14px; border: 1.5px solid var(--ink); border-radius: 12px; background: var(--paper-2); box-shadow: 3px 3px 0 var(--ink); }
+.mil-badge { display: grid; place-items: center; min-width: 86px; padding: 8px 10px; border-radius: 10px; background: var(--red); color: #fff; }
+.mil-badge small { font-size: 11px; opacity: .85; } .mil-badge b { font-size: 20px; letter-spacing: 1px; }
+.mil-tx p { margin: 2px 0; font-size: 13.5px; } .mil-tx .exp-bar { margin: 4px 0; }
+.mil-path { display: flex; flex-wrap: wrap; gap: 2px 4px; font-size: 11.5px; color: var(--pencil); }
+.mil-path i { font-style: normal; opacity: .6; } .mil-path .past { color: var(--ink); } .mil-path .cur { color: var(--red); font-weight: 700; }
+@media (max-width: 560px) { .mil { grid-template-columns: auto 1fr; } .mil .btn { grid-column: 1 / -1; } }
 .md-row { margin: 10px 0 12px; } .md-row h4 { margin: 0 0 6px; font-size: 14.5px; }
 .dex-prog { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px 16px; align-items: center; background: var(--paper-2); border: 1.5px solid var(--ink); border-radius: 14px; padding: 12px 16px; margin-bottom: 14px; }
 .dex-prog b { font-size: 26px; color: var(--red); }

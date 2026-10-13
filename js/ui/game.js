@@ -191,7 +191,7 @@
     $('who-name').textContent = acc.name;
     renderRes();
     renderAvatar(); renderGender();
-    $('who-info').textContent = '做题家「' + acc.name + '」 · 拥有精灵 ' + acc.mons.length + ' 只 · 创建于 ' + new Date(acc.created).toLocaleDateString('zh-CN');
+    $('who-info').textContent = '做题家「' + acc.name + '」 · 军衔 ' + milName() + ' · 拥有精灵 ' + acc.mons.length + ' 只 · 创建于 ' + new Date(acc.created).toLocaleDateString('zh-CN');
     checkTitles(); renderTitle();
     if (page === 'arena' && !arenaOpen()) page = 'bag';
     if (page === 'dex' && !dexOpen()) page = 'bag';
@@ -295,12 +295,56 @@
       });
     });
   });
+  /* 称号奖励：每获得一个称号，得累积经验（进经验背包）、能量和功勋点（数额暂定）
+   * 功勋点：存档 acc.merit（余额，暂时还没有用途）；每得 1 功勋点同时得 1 功勋经验 acc.meritXp，攒够了在授勋馆晋升军衔 */
+  var TITLE_RW = {
+    trainee: [1000, 200, 10], senior: [3000, 500, 30], elite: [8000, 1000, 60], master: [15000, 2000, 100], scholar: [30000, 5000, 200],
+    collector: [2000, 300, 20], rare5: [8000, 1000, 60], rare15: [30000, 5000, 200], purifier: [5000, 800, 50], force: [10000, 1500, 80],
+    one25: [1000, 200, 10], one50: [3000, 400, 20], one75: [6000, 800, 40], one100: [10000, 1500, 80],
+    all25: [3000, 400, 20], all50: [8000, 1000, 50], all75: [15000, 2000, 100], all100: [30000, 4000, 200]
+  };
+  var TYPE_RW = { 1: [1000, 200, 10], 3: [1000, 200, 10], 5: [8000, 1000, 50], 6: [3000, 500, 25], 10: [8000, 1000, 50], 15: [20000, 3000, 100] };
+  function titleRw(T) {
+    var r = TITLE_RW[T.id];
+    if (!r && T.season) { var k = +T.id.split('-')[1]; r = [500 * k, 100 * k, 5 * k]; }
+    if (!r && T.grp === 'type') r = T.tier === 'x' ? [15000, 2000, 80] : T.tier === 't' && T.need === 3 ? [3000, 500, 25] : T.tier === 't' && T.need === 5 ? [8000, 1000, 50] : T.tier === 't' && T.need === 10 ? [20000, 3000, 100] : TYPE_RW[T.need];
+    r = r || [1000, 200, 10];
+    return { exp: r[0], energy: r[1], merit: r[2] };
+  }
+  function rwText(r) { return '累积经验 ×' + fmt(r.exp) + '、能量 ×' + fmt(r.energy) + '、功勋点 ×' + fmt(r.merit); }
+  function giveMerit(n) { acc.merit = (acc.merit || 0) + n; acc.meritXp = (acc.meritXp || 0) + n; }
+  // 军衔：功勋经验攒够当前军衔的晋升所需，就能在授勋馆晋升（消耗功勋经验）。数额暂定
+  var RANKS_MIL = ['列兵', '上等兵', '下士', '中士', '上士', '少尉', '中尉', '上尉', '少校', '中校', '上校', '大校', '将军'];
+  var MIL_COST = [20, 40, 60, 100, 150, 200, 300, 400, 500, 700, 900, 1200];   // 第 i 级晋升到第 i+1 级要的功勋经验
+  function milRank() { return Math.max(0, Math.min(RANKS_MIL.length - 1, acc.milRank | 0)); }
+  function milName() { return RANKS_MIL[milRank()]; }
+  function promote() {
+    var r = milRank(), c = MIL_COST[r];
+    if (r >= RANKS_MIL.length - 1 || !((acc.meritXp || 0) >= c)) return;
+    acc.meritXp -= c; acc.milRank = r + 1; save();
+    toast('晋升成功！你的军衔现在是「' + milName() + '」。'); renderTop(); if (ex.view === 'medal') renderMedal();
+  }
   function checkTitles() {
     if (!acc.titles) acc.titles = [];
     var got = [];
     TITLES.forEach(function (T) { if (acc.titles.indexOf(T.id) < 0 && T.ok()) { acc.titles.push(T.id); got.push(T.n); } });
+    // 称号奖励：acc.titleRw 记已经发过奖励的称号。奖励上线前已经有的称号，第一次用邮件一起补发
+    var back = !acc.titleRw;
+    if (back) acc.titleRw = [];
+    var sum = { exp: 0, energy: 0, merit: 0 }, n = 0;
+    TITLES.forEach(function (T) {
+      if (acc.titles.indexOf(T.id) < 0 || acc.titleRw.indexOf(T.id) >= 0) return;
+      acc.titleRw.push(T.id); var r = titleRw(T); sum.exp += r.exp; sum.energy += r.energy; sum.merit += r.merit; n++;
+    });
+    if (n && back) {
+      sendMail({ id: 'title-rw-back', title: '称号奖励补发', body: '{name}，你好！\n从现在起，每获得一个称号都会得到累积经验、能量和功勋点奖励。功勋点同时会变成等额的功勋经验，可以在荆楚号 · 黄冈 · 学院部的授勋馆里晋升军衔。\n你之前已经获得了 ' + n + ' 个称号，奖励一起补发，请领取附件。', att: sum });
+      renderMailBadge(); save();
+    } else if (n) {
+      acc.exp = (acc.exp || 0) + sum.exp; acc.energy = (acc.energy || 0) + sum.energy; giveMerit(sum.merit); save(); renderRes();
+    }
     // 一次拿到好几个（比如老玩家第一次看到赛季称号）时合成一条提示
-    if (got.length) { save(); setTimeout(function () { toast('获得称号「' + got.join('」「') + '」！点右上角的名字即可佩戴。'); }, 400); }
+    if (got.length) { save(); var rt = !back && n ? '奖励：' + rwText(sum) + '。' : ''; setTimeout(function () { toast('获得称号「' + got.join('」「') + '」！' + rt + '点右上角的名字即可佩戴。'); }, 400); }
+    else if (n && !back) setTimeout(function () { toast('称号奖励到账：' + rwText(sum) + '。'); }, 600);
   }
   function titleName(id) { var T = TITLES.filter(function (x) { return x.id === id; })[0]; return T ? T.n : ''; }
   function renderTitle() {
@@ -1020,9 +1064,10 @@
   function unlocked(id) { var S = SITES[id], a = S.after; return (!a || prog(a).done) && (!S.need || S.need()); }
   // 稀有精灵：野外精灵表里标了 rare 的种类
   // 三主宠虽然也在野外以稀有精灵出现，但开局就有一只，不算支线「稀有精灵」要找的那种
-  function rareList() { var R = []; for (var k in WILD) WILD[k].forEach(function (w) { if (w.rare && STARTERS.indexOf(w.sid) < 0 && R.indexOf(w.sid) < 0) R.push(w.sid); }); return R; }
+  // （rareList 见上方说明）
+  function rareList() { var R = []; for (var k in WILD) WILD[k].forEach(function (w) { if (w.rare && w.sid !== acc.starter && R.indexOf(w.sid) < 0) R.push(w.sid); }); return R; }
   function rareOwned() { var R = rareList(); return acc.mons.filter(function (m) { return R.indexOf(m.sid) >= 0; })[0] || null; }
-  // 拥有几类稀有精灵（按种类去重，三主宠不算）
+  // 稀有精灵：野外表里标了 rare 的种类。三主宠也算，但这个账号开局选的那只不算。拥有几类按种类去重
   function rareKinds() { var R = rareList(), o = {}; acc.mons.forEach(function (m) { if (R.indexOf(m.sid) >= 0) o[m.sid] = 1; }); return Object.keys(o).length; }
   function planetOpen(P) { return !P.after || prog(P.after).done; }
   var UNLOCK = { xiaogan: '竞技对战', academy: '黄冈秘鉴', storage: '商城', tea: '茶室', brawl: '精灵大乱斗', tiger2: '泰戈尔 · 普通难度', fl_chal: '芙罗拉星 · 挑战', fl_chal2: '助战精灵', plant: '太空种植园', medal: '授勋馆' };
@@ -2041,10 +2086,10 @@
   var MAIL_MAX = 100;
   function dayStr() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
   function mails() { if (!Array.isArray(acc.mail)) acc.mail = []; if (!acc.mailSeen) acc.mailSeen = {}; return acc.mail; }
-  function hasAtt(a) { return !!(a && (a.exp || a.energy || (a.items && Object.keys(a.items).length) || (a.mons && a.mons.length))); }
+  function hasAtt(a) { return !!(a && (a.exp || a.energy || a.merit || (a.items && Object.keys(a.items).length) || (a.mons && a.mons.length))); }
   function attList(a) {
     var r = []; if (!a) return r;
-    if (a.exp) r.push('累积经验 ×' + fmt(a.exp)); if (a.energy) r.push('能量 ×' + fmt(a.energy));
+    if (a.exp) r.push('累积经验 ×' + fmt(a.exp)); if (a.energy) r.push('能量 ×' + fmt(a.energy)); if (a.merit) r.push('功勋点 ×' + fmt(a.merit));
     if (a.items) for (var k in a.items) r.push(itemName(k) + ' ×' + a.items[k]);
     (a.mons || []).forEach(function (g) { if (SPMAP[g.sid]) r.push(form(g).name + ' LV' + g.lv); });
     return r;
@@ -2152,6 +2197,7 @@
     var a = m.att || {}, got = attList(a);
     if (a.exp) acc.exp = (acc.exp || 0) + a.exp;
     if (a.energy) acc.energy = (acc.energy || 0) + a.energy;
+    if (a.merit) giveMerit(a.merit);
     if (a.items) giveItems(a.items);
     (a.mons || []).forEach(function (g) { if (!SPMAP[g.sid]) return; var nm = newMon(g.sid, g.lv), T = acc.teams[acc.active]; if (T.length < TEAM_SIZE) T.push(nm.u); });
     m.got = true; m.read = true;
@@ -2727,7 +2773,8 @@
     var has = function (T) { return acc.titles.indexOf(T.id) >= 0; };
     var card = function (T, sub) {
       var own = has(T);
-      return '<div class="md-card' + (own ? ' own' : '') + '"><span class="md-ic" aria-hidden="true">' + (own ? '★' : '☆') + '</span><span class="md-tx"><b>' + T.n + '</b><small>' + T.d + (sub ? ' · ' + sub : '') + '</small></span><span class="md-st">' + (own ? '已获得' : '未获得') + '</span></div>';
+      var rw = titleRw(T);
+      return '<div class="md-card' + (own ? ' own' : '') + '"><span class="md-ic" aria-hidden="true">' + (own ? '★' : '☆') + '</span><span class="md-tx"><b>' + T.n + '</b><small>' + T.d + (sub ? ' · ' + sub : '') + '</small><small class="md-rw">经验 ' + fmt(rw.exp) + ' · 能量 ' + fmt(rw.energy) + ' · 功勋 ' + rw.merit + '</small></span><span class="md-st">' + (own ? '已获得' : '未获得') + '</span></div>';
     };
     var grp = function (g) { return TITLES.filter(function (T) { return T.grp === g; }); };
     var sec = function (h, L, note) { var n = L.filter(has).length; return '<section class="md-sec"><h3>' + h + ' <small>' + n + ' / ' + L.length + '</small></h3>' + (note ? '<p class="hint">' + note + '</p>' : '') + '<div class="md-grid">' + L.map(function (T) { return card(T); }).join('') + '</div></section>'; };
@@ -2745,8 +2792,16 @@
     var nT = TT.filter(has).length;
     $('pg-explore').innerHTML = exHead('授勋馆里记录着荆楚号上所有的称号。已经获得的称号可以在右上角的名字菜单里佩戴。') +
       '<div class="crumb"><button type="button" class="btn ghost" id="medal-back">‹ 返回学院部</button><b>黄冈 · 授勋馆</b><span class="hint">已获得 ' + got + ' / ' + all + '</span></div>' +
-      sec('剧情与探索', grp('story')) + sec('等级', grp('lv')) + sec('排位赛季 S1', grp('season'), '每达到一个新段位获得一个。') +
+      milHTML() + sec('剧情与探索', grp('story')) + sec('等级', grp('lv')) + sec('排位赛季 S1', grp('season'), '每达到一个新段位获得一个。') +
       '<section class="md-sec"><h3>属性称号 <small>' + nT + ' / ' + TT.length + '</small></h3><p class="hint">按精灵的种类数计算：同一条进化线的精灵算 1 种，有两个属性的精灵两个属性都算。</p>' + tabs + rows + '</section>';
+  }
+  function milHTML() {
+    var r = milRank(), top = r >= RANKS_MIL.length - 1, c = MIL_COST[r], xp = acc.meritXp || 0;
+    return '<section class="mil"><div class="mil-badge"><small>军衔</small><b>' + milName() + '</b></div><div class="mil-tx">' +
+      '<p>功勋点 <b>' + fmt(acc.merit || 0) + '</b> · 功勋经验 <b>' + fmt(xp) + '</b>' + (top ? '' : ' / ' + fmt(c)) + '</p>' +
+      (top ? '<p class="hint">已经是最高军衔了。</p>' : '<div class="exp-bar"><i style="width:' + Math.min(100, xp / c * 100) + '%"></i></div><p class="hint">下一级：' + RANKS_MIL[r + 1] + '（晋升消耗 ' + fmt(c) + ' 功勋经验）。每获得一个称号都会得到功勋点，同时得到等额的功勋经验。</p>') +
+      '<p class="mil-path">' + RANKS_MIL.map(function (n, i) { return '<span class="' + (i < r ? 'past' : i === r ? 'cur' : '') + '">' + n + '</span>'; }).join('<i>›</i>') + '</p></div>' +
+      (top ? '' : '<button type="button" class="btn primary" data-promote="1"' + (xp >= c ? '' : ' disabled') + '>晋升</button>') + '</section>';
   }
   function renderNursery() {
     var N = nursery(), ess = MAT_ORDER.filter(function (k) { return MATS[k].hatch && acc.items[k] > 0; });
@@ -3437,6 +3492,7 @@
     if (b.dataset.nursery) { ex.view = 'nursery'; ex.area = '神农架'; ex.planet = 'jingchu'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
     if (b.dataset.medal) { if (!medalOpen()) return; ex.view = 'medal'; ex.area = '黄冈'; ex.planet = 'jingchu'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
     if (b.id === 'medal-back') { ex.view = 'area'; ex.area = '黄冈'; ex.planet = 'jingchu'; renderExplore(); return; }
+    if (b.dataset.promote) { promote(); return; }
     if (b.dataset.mdtype) { ex.mdType = b.dataset.mdtype; renderMedal(); return; }
     if (b.id === 'nursery-back') { ex.view = 'area'; ex.area = '神农架'; ex.planet = 'jingchu'; renderExplore(); return; }
     if (b.dataset.incub) { nurseryPut(+b.dataset.incub.split('|')[0], b.dataset.incub.split('|')[1]); return; }
