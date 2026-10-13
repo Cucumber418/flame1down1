@@ -113,7 +113,7 @@ var PRE_SPRITES = {
   "phantom_s2": "images/pre_sprites/phantom_s2.png",
   "shroom_s1": "images/pre_sprites/shroom_s1.webp",
   "shroom_s2": "images/pre_sprites/shroom_s2.svg",
-  "turkey_s1": "images/pre_sprites/turkey_s1.svg",
+  "turkey_s1": "images/pre_sprites/turkey_s1.webp",
   "turkey_s2": "images/pre_sprites/turkey_s2.svg"
 };
 
@@ -262,6 +262,7 @@ var SILHOUETTES = {
   "aegis_1": "images/silhouettes/aegis_1.png",
   "aegis_2": "images/silhouettes/aegis_2.png",
   "leafcat_0": "images/silhouettes/leafcat_0.png",
+  "turkey_0": "images/silhouettes/turkey_0.png",
   "leafcat_1": "images/silhouettes/leafcat_1.png",
   "phantom_0": "images/silhouettes/phantom_0.png",
   "phantom_1": "images/silhouettes/phantom_1.png",
