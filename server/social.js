@@ -157,7 +157,7 @@ function card(u, me) {
   o.show = showMons(acc).map(function (m) { return monOut(m, acc); });
   var hp = helperOf(acc); o.helper = hp ? monOut(hp, acc) : null;
   o.rankInfo = rankOut(parseSave(u).rank);
-  o.titles = Array.isArray(acc.titles) ? acc.titles.filter(function (x) { return typeof x === 'string'; }).slice(0, 20) : [];
+  o.titles = Array.isArray(acc.titles) ? acc.titles.filter(function (x) { return typeof x === 'string'; }).slice(0, 300) : [];
   return o;
 }
 function gameName(name) { var u = A.loadUser(name), acc = u && parseSave(u).acc; return acc ? str(acc.name, 20) : name; }

@@ -252,6 +252,7 @@
   document.addEventListener('click', function (e) { if (!e.target.closest('#who')) { $('who-menu').hidden = true; $('who-btn').setAttribute('aria-expanded', false); } });
   /* ---------- 称号 ---------- */
   var TITLES = [
+    // grp：授勋馆里的分组（story 剧情与探索 / lv 等级 / season 排位赛季 / type 属性）
     { id: 'trainee', n: '见习做题家', d: '在黄冈秘鉴中点亮 3 类精灵', ok: function () { return litCount() >= 3; } },
     { id: 'collector', n: '见习收藏家', d: '捕捉一种稀有精灵，并在学院部汇报', ok: function () { return !!(acc.story && acc.story.rare_r && acc.story.rare_r.done); } },
     { id: 'senior', n: '资深做题家', d: '在黄冈秘鉴中点亮 10 类精灵', ok: function () { return litCount() >= 10; } },
@@ -259,17 +260,36 @@
     { id: 'force', n: '原力掌控者', d: '击败困难难度的首领「泰戈尔」', ok: function () { return bossWon('tiger', 2); } }
   ];
   // 等级成就：有 1 只 / 5 只精灵达到 25、50、75、100 级
+  TITLES.forEach(function (T) { T.grp = 'story'; });
   function lvCount(lv) { return acc.mons.filter(function (m) { return m.lv >= lv; }).length; }
   [[25, '达人'], [50, '高手'], [75, '狂人'], [100, '神人']].forEach(function (L) {
-    TITLES.push({ id: 'one' + L[0], n: '单科' + L[1], d: '有 1 只精灵达到 ' + L[0] + ' 级', ok: function () { return lvCount(L[0]) >= 1; } });
+    TITLES.push({ id: 'one' + L[0], grp: 'lv', n: '单科' + L[1], d: '有 1 只精灵达到 ' + L[0] + ' 级', ok: function () { return lvCount(L[0]) >= 1; } });
   });
   [[25, '达人'], [50, '高手'], [75, '狂人'], [100, '神人']].forEach(function (L) {
-    TITLES.push({ id: 'all' + L[0], n: '全科' + L[1], d: '有 5 只精灵达到 ' + L[0] + ' 级', ok: function () { return lvCount(L[0]) >= 5; } });
+    TITLES.push({ id: 'all' + L[0], grp: 'lv', n: '全科' + L[1], d: '有 5 只精灵达到 ' + L[0] + ' 级', ok: function () { return lvCount(L[0]) >= 5; } });
   });
   // 排位赛季称号：本赛季（S1）达到某个段位就获得「S1 + 段位名」，例如「S1翡翠」（黑铁是起始段位，不发）
   for (var sr = 1; sr < RANKS.length; sr++) (function (r) {
-    TITLES.push({ id: 'S1-' + r, n: 'S1' + RANKS[r], d: '排位赛季 S1 达到' + RANKS[r] + '段位', season: true, ok: function () { return rankBest() >= r; } });
+    TITLES.push({ id: 'S1-' + r, grp: 'season', n: 'S1' + RANKS[r], d: '排位赛季 S1 达到' + RANKS[r] + '段位', season: true, ok: function () { return rankBest() >= r; } });
   })(sr);
+  /* 属性称号：按精灵种类数统计（同一条进化线算 1 种，双属性精灵两个属性都算）
+   * 收藏家：拥有 N 种该属性的精灵；训练师：N 种 LV50 以上；专家：5 种 LV80 以上 */
+  var TITLE_TYPES = Object.keys(TYPE_COLOR).filter(function (t) { return t !== '无'; });
+  var TYPE_TIERS = [
+    { k: 'c', n: '收藏家', lv: 0, steps: [[3, '见习'], [6, '资深'], [10, '精英'], [15, '大师']] },
+    { k: 't', n: '训练师', lv: 50, steps: [[1, '见习'], [3, '资深'], [5, '精英'], [10, '大师']] },
+    { k: 'x', n: '专家', lv: 80, steps: [[5, '']] }
+  ];
+  function typeKinds(t, lv) { var o = {}; acc.mons.forEach(function (m) { var s = SPMAP[m.sid]; if (s && s.types.indexOf(t) >= 0 && m.lv >= lv) o[m.sid] = 1; }); return Object.keys(o).length; }
+  TITLE_TYPES.forEach(function (t) {
+    TYPE_TIERS.forEach(function (G) {
+      G.steps.forEach(function (st) {
+        TITLES.push({ id: 'ty' + G.k + st[0] + '-' + t, grp: 'type', type: t, tier: G.k, need: st[0], n: st[1] + t + '系' + G.n,
+          d: '拥有 ' + st[0] + ' 种' + (G.lv ? ' LV' + G.lv + ' 以上的' : '') + t + '属性精灵',
+          prog: function () { return typeKinds(t, G.lv); }, ok: function () { return typeKinds(t, G.lv) >= st[0]; } });
+      });
+    });
+  });
   function checkTitles() {
     if (!acc.titles) acc.titles = [];
     var got = [];
@@ -282,13 +302,12 @@
     var cur = acc.title && acc.titles.indexOf(acc.title) >= 0 ? acc.title : '';
     $('who-title').textContent = cur ? titleName(cur) : '做题家';
     $('who-title').classList.toggle('has', !!cur);
-    var nS = TITLES.filter(function (T) { return T.season; }).length, ownS = TITLES.filter(function (T) { return T.season && acc.titles.indexOf(T.id) >= 0; }).length;
-    $('title-box').innerHTML = '<b>称号</b>' + TITLES.map(function (T) {
-      var own = acc.titles.indexOf(T.id) >= 0;
-      if (T.season && !own) return '';   // 没拿到的赛季称号不一个个列出来，下面汇总一行
-      return '<label class="tt-opt' + (own ? '' : ' lock') + '"><input type="radio" name="title" value="' + T.id + '"' + (cur === T.id ? ' checked' : '') + (own ? '' : ' disabled') + '><span><b>' + T.n + '</b><small>' + (own ? '已获得' : '未获得 · ' + T.d) + '</small></span></label>';
-    }).join('') + '<p class="tt-season">排位赛季 S1 段位称号：已获得 ' + ownS + ' / ' + nS + '（每达到一个新段位获得一个）</p>' +
-      '<label class="tt-opt"><input type="radio" name="title" value=""' + (cur ? '' : ' checked') + '><span><b>不佩戴</b></span></label>';
+    // 名字菜单里只列出已经获得的称号；全部称号和获得方式在学院部的授勋馆
+    var own = TITLES.filter(function (T) { return acc.titles.indexOf(T.id) >= 0; });
+    $('title-box').innerHTML = '<b>称号 <small class="tt-n">' + own.length + '</small></b><div class="tt-list">' + own.map(function (T) {
+      return '<label class="tt-opt"><input type="radio" name="title" value="' + T.id + '"' + (cur === T.id ? ' checked' : '') + '><span><b>' + T.n + '</b><small>' + T.d + '</small></span></label>';
+    }).join('') + '<label class="tt-opt"><input type="radio" name="title" value=""' + (cur ? '' : ' checked') + '><span><b>不佩戴</b></span></label></div>' +
+      '<p class="tt-season">' + (own.length ? '' : '还没有获得称号。') + '所有称号和获得方式，可以在荆楚号 · 黄冈 · 学院部的「授勋馆」查看' + (medalOpen() ? '' : '（读完支线「授勋馆」后开放）') + '。</p>';
   }
   /* ---------- 头像：用自己拥有的一只精灵当头像（存档 acc.avatar = 精灵的编号 u；精灵不在了就用名字首字） ----------
    * 社交的玩家列表、名片、讨论区都会显示（服务器从存档里读，见 server/social.js 的 avatarOf） */
@@ -962,6 +981,7 @@
     tiger2: { name: '古城防卫部', planet: 'jingchu', dept: '襄阳', chapter: '支线 · 来东北试试', side: true, bg: 'bridge_p', d: '被你打败的泰戈尔一屁股坐在地上，好像有话要说……读完后开放首领「泰戈尔」的普通难度。', after: 'tiger', pos: [84, 72], need: function () { return bossWon('tiger'); }, needText: '击败简单难度的泰戈尔后开放' },
     fl_chal: { name: '古城防卫部', planet: 'jingchu', dept: '襄阳', chapter: '支线 · 芙罗拉星挑战', side: true, bg: 'bridge_p', d: '明明教官在芙罗拉星上划出了一条「挑战路线」，一关接一关，每关最多评三颗星。读完后开放芙罗拉星的「挑战」。', after: 'flora1', pos: [66, 56], reward: { energy: 300 }, endText: '「芙罗拉星 · 挑战」已开放：去星际探索 · 芙罗拉星的「挑战」页，从第一关开始。' },
     fl_chal2: { name: '挑战路线 · 第二关', planet: 'flora', chapter: '支线 · 借来的力量', side: true, bg: 'fl_lake', d: '第二关的入口前，明明教官打来了通讯。', after: 'fl_chal', need: function () { return chalStars('fl1') > 0; }, needText: '通过芙罗拉星挑战第一关', fpart: 'challenge', endText: '现在可以带助战精灵出战了。回到第二关，挑 4 只自己的精灵，再带上明明教官的赫菲托斯试试吧。' },
+    medal: { name: '学院部', planet: 'jingchu', dept: '黄冈', chapter: '支线 · 授勋馆', side: true, bg: 'pod_p', d: '听说你从明明教官那里领到了董之马，Bttp 想带你去学院部新布置好的一间展厅看看。读完后开放「授勋馆」。', after: 'mingming', pos: [50, 40] },
     rare: { name: '学院部', planet: 'jingchu', dept: '黄冈', chapter: '支线 · 稀有精灵', side: true, bg: 'pod_p', d: 'Bttp 在黄冈秘鉴里发现了几页几乎空白的记录，想请你帮学院部找一只稀有精灵。', after: 'flora1', pos: [26, 58] },
     rare_r: { name: '学院部', planet: 'jingchu', dept: '黄冈', chapter: '支线 · 稀有精灵（汇报）', side: true, bg: 'pod_p', d: '把捕捉到的稀有精灵带回学院部，向 Bttp 汇报。', after: 'rare', pos: [74, 58], need: function () { return !!rareOwned(); }, needText: '捕捉一种稀有精灵后来汇报', reward: { title: 'collector' } },
     storage: { name: '物资仓储', planet: 'jingchu', dept: '荆门', chapter: '支线 · 物资仓储', side: true, bg: 'storage_p', d: '荆楚号即将抵达芙罗拉星，新船员要去物资仓储领取探索物资。读完后，物资仓储里的「商城」开放。', after: 'board', pos: [50, 62], reward: { exp: 0, energy: 300, items: { cap1: 10 } } },
@@ -997,7 +1017,7 @@
   // 三主宠虽然也在野外以稀有精灵出现，但开局就有一只，不算支线「稀有精灵」要找的那种
   function rareOwned() { var R = []; for (var k in WILD) WILD[k].forEach(function (w) { if (w.rare && STARTERS.indexOf(w.sid) < 0 && R.indexOf(w.sid) < 0) R.push(w.sid); }); return acc.mons.filter(function (m) { return R.indexOf(m.sid) >= 0; })[0] || null; }
   function planetOpen(P) { return !P.after || prog(P.after).done; }
-  var UNLOCK = { xiaogan: '竞技对战', academy: '黄冈秘鉴', storage: '商城', tea: '茶室', brawl: '精灵大乱斗', tiger2: '泰戈尔 · 普通难度', fl_chal: '芙罗拉星 · 挑战', fl_chal2: '助战精灵', plant: '太空种植园' };
+  var UNLOCK = { xiaogan: '竞技对战', academy: '黄冈秘鉴', storage: '商城', tea: '茶室', brawl: '精灵大乱斗', tiger2: '泰戈尔 · 普通难度', fl_chal: '芙罗拉星 · 挑战', fl_chal2: '助战精灵', plant: '太空种植园', medal: '授勋馆' };
   function brawlOpen() { return !!(acc && acc.story && acc.story.brawl && acc.story.brawl.done); }
   function brawlPlayed() { return !!(acc && acc.stats && acc.stats.brawls > 0); }
   // 平衡模式切磋统一的等级；拥有的精灵种类数（「收集」）；是否参加过竞技征召
@@ -1138,6 +1158,7 @@
     if (ex.view === 'shop') { if (shopOpen()) { renderShop(); return; } ex.view = 'area'; renderArea(); return; }
     if (ex.view === 'forge') { renderForge(); return; }
     if (ex.view === 'nursery') { renderNursery(); return; }
+    if (ex.view === 'medal') { if (medalOpen()) { renderMedal(); return; } ex.view = 'area'; ex.area = '黄冈'; }
     if (ex.view === 'farm') { if (farmOpen()) { renderFarm(); return; } ex.view = 'area'; ex.area = '恩施'; }
     var Pp = ex.view === 'sites' && PLANETS.filter(function (p) { return p.id === ex.planet; })[0];
     var html = exHead(ex.view === 'planets' ? '选择要前往的星球。' : Pp && Pp.ship ? '点击舰上的区域，即可传送过去。' : '选择要前往的地点。');
@@ -1216,6 +1237,7 @@
       (n === '荆门' ? '<button type="button" class="mk shop' + (shopOpen() ? '' : ' locked') + '"' + (shopOpen() ? ' data-shop="1"' : ' disabled') + ' style="left:74%;top:40%"><span class="mk-dot">' + (shopOpen() ? '商' : '锁') + '</span><span class="mk-lab"><b>商城 · 物资兑换</b><small>' + (shopOpen() ? '普通捕捉装置和补药' : '读完「物资仓储」支线后开放') + '</small></span></button>' : '') +
       (n === '黄石' ? '<button type="button" class="mk shop" data-forge="1" style="left:50%;top:58%"><span class="mk-dot">炼</span><span class="mk-lab"><b>冶炼坊</b><small>合成捕捉装置、200血药等</small></span></button>' : '') +
       (n === '恩施' ? '<button type="button" class="mk shop' + (farmOpen() ? '' : ' locked') + '"' + (farmOpen() ? ' data-farm="1"' : ' disabled') + ' style="left:62%;top:58%"><span class="mk-dot">' + (farmOpen() ? '种' : '锁') + '</span><span class="mk-lab"><b>太空种植园</b><small>' + (farmOpen() ? '种药草，用来做 200血药' : '读完支线「伟大的种植园」后开放') + '</small></span></button>' : '') +
+      (n === '黄冈' ? '<button type="button" class="mk shop' + (medalOpen() ? '' : ' locked') + '"' + (medalOpen() ? ' data-medal="1"' : ' disabled') + ' style="left:50%;top:18%"><span class="mk-dot">' + (medalOpen() ? '勋' : '锁') + '</span><span class="mk-lab"><b>授勋馆</b><small>' + (medalOpen() ? '所有称号和获得方式' : '读完支线「授勋馆」后开放') + '</small></span></button>' : '') +
       (n === '神农架' ? '<button type="button" class="mk shop" data-nursery="1" style="left:50%;top:58%"><span class="mk-dot">育</span><span class="mk-lab"><b>精灵保育仓</b><small>孵化精灵的精元</small></span></button>' : '') +
       (ids.length || n === '黄石' || n === '恩施' || n === '神农架' ? '' : '<p class="area-empty">这里暂时没有剧情。</p>') +
       '<div class="tp-fx" aria-hidden="true"><span>传送至 ' + d[0] + '……</span></div></div>' +
@@ -2690,6 +2712,34 @@
     return acc.nursery;
   }
   function hatchLeft(x) { return Math.max(0, x.t + MATS[x.k].hatch.min * 60000 - Date.now()); }
+  /* ---------- 授勋馆（荆楚号 · 黄冈 · 学院部）：展示所有称号和获得方式 ---------- */
+  function medalOpen() { return !!(acc && prog('medal').done); }
+  function renderMedal() {
+    if (!acc.titles) acc.titles = [];
+    var has = function (T) { return acc.titles.indexOf(T.id) >= 0; };
+    var card = function (T, sub) {
+      var own = has(T);
+      return '<div class="md-card' + (own ? ' own' : '') + '"><span class="md-ic" aria-hidden="true">' + (own ? '★' : '☆') + '</span><span class="md-tx"><b>' + T.n + '</b><small>' + T.d + (sub ? ' · ' + sub : '') + '</small></span><span class="md-st">' + (own ? '已获得' : '未获得') + '</span></div>';
+    };
+    var grp = function (g) { return TITLES.filter(function (T) { return T.grp === g; }); };
+    var sec = function (h, L, note) { var n = L.filter(has).length; return '<section class="md-sec"><h3>' + h + ' <small>' + n + ' / ' + L.length + '</small></h3>' + (note ? '<p class="hint">' + note + '</p>' : '') + '<div class="md-grid">' + L.map(function (T) { return card(T); }).join('') + '</div></section>'; };
+    var all = TITLES.length, got = TITLES.filter(has).length;
+    if (TITLE_TYPES.indexOf(ex.mdType) < 0) ex.mdType = TITLE_TYPES.reduce(function (b, x) { return typeKinds(x, 0) > typeKinds(b, 0) ? x : b; }, TITLE_TYPES[0]);   // 默认打开精灵种类最多的属性
+    var t = ex.mdType, TT = grp('type');
+    var tabs = '<div class="md-tabs" role="tablist">' + TITLE_TYPES.map(function (x) {
+      var L = TT.filter(function (T) { return T.type === x; }), n = L.filter(has).length;
+      return '<button type="button" role="tab" aria-selected="' + (x === t) + '" class="md-tab' + (x === t ? ' on' : '') + '" data-mdtype="' + x + '" style="--tc:' + TYPE_COLOR[x] + '">' + x + '<small>' + n + '/' + L.length + '</small></button>';
+    }).join('') + '</div>';
+    var rows = TYPE_TIERS.map(function (G) {
+      var L = TT.filter(function (T) { return T.type === t && T.tier === G.k; }), cur = L[0].prog();
+      return '<div class="md-row"><h4>' + t + '系' + G.n + ' <small>' + (G.lv ? 'LV' + G.lv + ' 以上的' : '') + t + '属性精灵：现在 ' + cur + ' 种</small></h4><div class="md-grid">' + L.map(function (T) { return card(T, has(T) || cur >= T.need ? '' : '还差 ' + (T.need - cur) + ' 种'); }).join('') + '</div></div>';
+    }).join('');
+    var nT = TT.filter(has).length;
+    $('pg-explore').innerHTML = exHead('授勋馆里记录着荆楚号上所有的称号。已经获得的称号可以在右上角的名字菜单里佩戴。') +
+      '<div class="crumb"><button type="button" class="btn ghost" id="medal-back">‹ 返回学院部</button><b>黄冈 · 授勋馆</b><span class="hint">已获得 ' + got + ' / ' + all + '</span></div>' +
+      sec('剧情与探索', grp('story')) + sec('等级', grp('lv')) + sec('排位赛季 S1', grp('season'), '每达到一个新段位获得一个。') +
+      '<section class="md-sec"><h3>属性称号 <small>' + nT + ' / ' + TT.length + '</small></h3><p class="hint">按精灵的种类数计算：同一条进化线的精灵算 1 种，有两个属性的精灵两个属性都算。</p>' + tabs + rows + '</section>';
+  }
   function renderNursery() {
     var N = nursery(), ess = MAT_ORDER.filter(function (k) { return MATS[k].hatch && acc.items[k] > 0; });
     var cards = N.slots.map(function (x, i) {
@@ -3125,7 +3175,7 @@
   $('pg-explore').addEventListener('keydown', function (e) { if (e.target.id === 'home-name') { if (e.key === 'Enter') { e.preventDefault(); saveHomeName(); } else if (e.key === 'Escape') { ex.homeEdit = false; renderHome(); } } });
 
   /* ---------- 任务：主线 / 支线 / 世界 ---------- */
-  var MAIN_Q = ['school', 'river', 'jiuquan', 'board', 'flora1', 'flora2', 'flora3'], SIDE_Q = ['academy', 'xiaogan', 'brawl', 'draft', 'storage', 'tiger', 'tiger2', 'tea', 'rare', 'mingming', 'fl_chal'];
+  var MAIN_Q = ['school', 'river', 'jiuquan', 'board', 'flora1', 'flora2', 'flora3'], SIDE_Q = ['academy', 'xiaogan', 'brawl', 'draft', 'storage', 'tiger', 'tiger2', 'tea', 'rare', 'mingming', 'medal', 'fl_chal'];
   // 世界任务（奖励暂定）
   var WQ = [
     { id: 'w_first', n: '初到芙罗拉', d: '荆楚号已经抵达芙罗拉星。去丛林或草甸，和那里的野生精灵过过招吧。', where: '芙罗拉星 · 丛林 / 草甸', steps: [{ t: '在芙罗拉星击败 1 只野生精灵', k: 'wins', n: 1 }], reward: { energy: 100 }, after: 'flora1', go: 'flora' },
@@ -3377,6 +3427,9 @@
     if (b.dataset.hpoke) { var f = b.closest('.hm-fig'); f.classList.remove('hop'); void f.offsetWidth; f.classList.add('hop'); return; }
     if (b.dataset.shop) { ex.view = 'shop'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
     if (b.dataset.nursery) { ex.view = 'nursery'; ex.area = '神农架'; ex.planet = 'jingchu'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
+    if (b.dataset.medal) { if (!medalOpen()) return; ex.view = 'medal'; ex.area = '黄冈'; ex.planet = 'jingchu'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
+    if (b.id === 'medal-back') { ex.view = 'area'; ex.area = '黄冈'; ex.planet = 'jingchu'; renderExplore(); return; }
+    if (b.dataset.mdtype) { ex.mdType = b.dataset.mdtype; renderMedal(); return; }
     if (b.id === 'nursery-back') { ex.view = 'area'; ex.area = '神农架'; ex.planet = 'jingchu'; renderExplore(); return; }
     if (b.dataset.incub) { nurseryPut(+b.dataset.incub.split('|')[0], b.dataset.incub.split('|')[1]); return; }
     if (b.dataset.hatch) { nurseryHatch(+b.dataset.hatch); return; }
@@ -3537,7 +3590,7 @@
       (ex.site === 'rare' && !nxt ? '<p><b class="red">任务：捕捉一种稀有精灵，然后回学院部汇报。</b></p>' : '') + (R && R.title ? '<p><b class="red">获得称号「' + TITLES.filter(function (x) { return x.id === R.title; })[0].n + '」！</b><br><span class="hint">点击右上角的名字即可佩戴</span></p>' : '') +
       (chPaid ? '<div class="vn-chap"><b>「' + chPaid.n + '」完成！</b><p>章节大奖</p><div class="vn-reward">' + rwList(chPaid.reward).map(function (x) { return '<span>' + x + '</span>'; }).join('') + '</div></div>' : '') +
       (nxt && !unlocked(nxt) && SITES[nxt].needText && !SITES[ex.site].endText ? '<p><b class="red">任务：' + SITES[nxt].needText + '。</b></p>' : '') +
-      (UNLOCK[ex.site] && !SITES[ex.site].endText ? '<p><b class="red">「' + UNLOCK[ex.site] + '」已开放！</b>' + (ex.site === 'storage' ? '<br><span class="hint">在荆楚号 · 荆门 · 物资仓储里进入</span>' : '') + '</p>' : '') +
+      (UNLOCK[ex.site] && !SITES[ex.site].endText ? '<p><b class="red">「' + UNLOCK[ex.site] + '」已开放！</b>' + (ex.site === 'storage' ? '<br><span class="hint">在荆楚号 · 荆门 · 物资仓储里进入</span>' : ex.site === 'medal' ? '<br><span class="hint">在荆楚号 · 黄冈 · 学院部里进入</span>' : '') + '</p>' : '') +
       '<p>' + (SITES[ex.site].endText ? SITES[ex.site].endText : nxt && !unlocked(nxt) ? '完成任务后，下一段「' + SITES[nxt].chapter.split(' · ')[1] + '」就会开放。' : nxt ? (SITES[nxt].side ? '支线「' : '下一段「') + SITES[nxt].chapter.split(' · ')[1] + '」已解锁，可在星际探索 · ' + nxtP.name + (SITES[nxt].dept ? ' · ' + DEPTS[SITES[nxt].dept][0] : '') + '中继续。' : '后续剧情正在制作中。') + '</p>' +
       '<div class="row">' + (intro ? '<button type="button" class="btn primary" data-vn="enter">进入游戏</button>'
         : '<button type="button" class="btn" data-vn="replay">重温一遍</button>' + (nxt && unlocked(nxt) ? '<button type="button" class="btn" data-vn="next" data-nx="' + nxt + '">继续下一段</button>' : '') + '<button type="button" class="btn primary" data-vn="exit">' + (SITES[ex.site].dept ? '返回区域' : '返回地点') + '</button>') + '</div></div>';

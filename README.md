@@ -342,6 +342,13 @@ ffmpeg -i 原曲.mp3 -vn -map_metadata -1 -af loudnorm=I=-16:TP=-1.5:LRA=11 -ar 
 - **天赋重组合剂**（`USE_ITEMS.ivReroll`，kind `iv`）：把六项天赋全部重新随机。上线时用邮件 `iv-launch` 给全服送 10 个。
 - **学习力**：已分配的不能退回（精灵资料里只有 +1 / +10，没有「全部收回」）。
 
+## 称号与授勋馆（2026-10-13）
+
+- 称号都在 `game.js` 的 `TITLES`，每个有 `grp`（`story` 剧情与探索 / `lv` 等级 / `season` 排位赛季 / `type` 属性），授勋馆按它分组。
+- **属性称号**：`TITLE_TYPES`（`TYPE_COLOR` 里除「无」以外的全部属性）× `TYPE_TIERS`：收藏家 3/6/10/15 种、训练师 LV50 以上 1/3/5/10 种、专家 LV80 以上 5 种。`typeKinds(属性, 等级)` 按精灵种类（`sid`）去重计数，双属性两边都算。id 形如 `tyc3-草`、`tyt10-水`、`tyx5-火`。
+- **右上角名字菜单**（`renderTitle()`）只列已获得的称号。
+- **授勋馆**：支线 `medal`（学院部，`after: 'mingming'`，Bttp 介绍）读完后开放（`medalOpen()`）。学院部场景里的「授勋馆」点 → `ex.view = 'medal'` → `renderMedal()`：剧情、等级、赛季三组直接列出；属性称号按属性分页签（`ex.mdType`，默认打开拥有种类最多的属性），每档显示还差几种。
+
 ## 首领攻略板
 
 每个首领的每个难度页面下方（每周挑战没有）。服务器在 `server/bossboard.js`，留言存在存档目录的 `bossboard.json`。
