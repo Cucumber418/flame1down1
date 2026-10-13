@@ -254,8 +254,13 @@
   var TITLES = [
     // grp：授勋馆里的分组（story 剧情与探索 / lv 等级 / season 排位赛季 / type 属性）
     { id: 'trainee', n: '见习做题家', d: '在黄冈秘鉴中点亮 3 类精灵', ok: function () { return litCount() >= 3; } },
-    { id: 'collector', n: '见习收藏家', d: '捕捉一种稀有精灵，并在学院部汇报', ok: function () { return !!(acc.story && acc.story.rare_r && acc.story.rare_r.done); } },
     { id: 'senior', n: '资深做题家', d: '在黄冈秘鉴中点亮 10 类精灵', ok: function () { return litCount() >= 10; } },
+    { id: 'elite', n: '精英做题家', d: '在黄冈秘鉴中点亮 30 类精灵', ok: function () { return litCount() >= 30; } },
+    { id: 'master', n: '大师做题家', d: '在黄冈秘鉴中点亮 50 类精灵', ok: function () { return litCount() >= 50; } },
+    { id: 'scholar', n: '学习王', d: '在黄冈秘鉴中点亮 100 类精灵', ok: function () { return litCount() >= 100; } },
+    { id: 'collector', n: '实验班收藏家', d: '拥有 1 类稀有精灵（捕捉后在学院部汇报）', ok: function () { return !!(acc.story && acc.story.rare_r && acc.story.rare_r.done); } },
+    { id: 'rare5', n: '考点收藏家', d: '拥有 5 类稀有精灵', ok: function () { return rareKinds() >= 5; } },
+    { id: 'rare15', n: '必刷题收藏家', d: '拥有 15 类稀有精灵', ok: function () { return rareKinds() >= 15; } },
     { id: 'purifier', n: '芙罗拉净化者', d: '完成芙罗拉星的星球任务「祛除瘴气」', ok: function () { return !!(acc.purge && acc.purge.n >= 30); } },
     { id: 'force', n: '原力掌控者', d: '击败困难难度的首领「泰戈尔」', ok: function () { return bossWon('tiger', 2); } }
   ];
@@ -1015,7 +1020,10 @@
   function unlocked(id) { var S = SITES[id], a = S.after; return (!a || prog(a).done) && (!S.need || S.need()); }
   // 稀有精灵：野外精灵表里标了 rare 的种类
   // 三主宠虽然也在野外以稀有精灵出现，但开局就有一只，不算支线「稀有精灵」要找的那种
-  function rareOwned() { var R = []; for (var k in WILD) WILD[k].forEach(function (w) { if (w.rare && STARTERS.indexOf(w.sid) < 0 && R.indexOf(w.sid) < 0) R.push(w.sid); }); return acc.mons.filter(function (m) { return R.indexOf(m.sid) >= 0; })[0] || null; }
+  function rareList() { var R = []; for (var k in WILD) WILD[k].forEach(function (w) { if (w.rare && STARTERS.indexOf(w.sid) < 0 && R.indexOf(w.sid) < 0) R.push(w.sid); }); return R; }
+  function rareOwned() { var R = rareList(); return acc.mons.filter(function (m) { return R.indexOf(m.sid) >= 0; })[0] || null; }
+  // 拥有几类稀有精灵（按种类去重，三主宠不算）
+  function rareKinds() { var R = rareList(), o = {}; acc.mons.forEach(function (m) { if (R.indexOf(m.sid) >= 0) o[m.sid] = 1; }); return Object.keys(o).length; }
   function planetOpen(P) { return !P.after || prog(P.after).done; }
   var UNLOCK = { xiaogan: '竞技对战', academy: '黄冈秘鉴', storage: '商城', tea: '茶室', brawl: '精灵大乱斗', tiger2: '泰戈尔 · 普通难度', fl_chal: '芙罗拉星 · 挑战', fl_chal2: '助战精灵', plant: '太空种植园', medal: '授勋馆' };
   function brawlOpen() { return !!(acc && acc.story && acc.story.brawl && acc.story.brawl.done); }
