@@ -1285,10 +1285,10 @@
     if (part === 'task') return head + planetTasks('flora');
     if (part === 'challenge') return head + chalPage('flora');
     var regs = REGIONS.map(function (R) {
-      var BK = Object.keys(BOSSES).filter(function (k) { return BOSSES[k].region === R.id; })[0], locked = !!R.boss && !(BK && bossOpen(BK));
+      var BK = Object.keys(BOSSES).filter(function (k) { return BOSSES[k].region === R.id; })[0], locked = !prog('flora1').done;
       return '<article class="region' + (locked ? ' locked' : '') + '"><div class="rg-art">' + (R.bgs && BG[R.bgs[0]] ? '<img src="' + BG[R.bgs[0]] + '" alt="' + R.name + '">' + (R.bgs.length > 1 ? '<span class="rg-more">' + R.bgs.slice(1).map(function (k) { return '<img src="' + BG[k] + '" alt="">'; }).join('') + '</span>' : '') : regionArt(R.id)) + '</div><div class="rg-txt"><h4>' + R.name + ' <small>' + R.en + '</small></h4><p class="hint">' + R.d + '</p>' +
         (BK ? '<p class="rg-boss">首领 · ' + BOSSES[BK].name + '　<span>' + (bossOpen(BK) ? BOSSES[BK].lv.filter(function (L, i) { return levelOpen(BK, i); }).map(function (L) { return L.diff; }).join(' / ') + ' 难度可挑战' : '暂未开放') + '</span></p>' +
-          (bossOpen(BK) ? '<button type="button" class="btn primary" data-boss="' + BK + '">挑战首领 · ' + BOSSES[BK].name + '</button>' : '<button type="button" class="btn" disabled>' + BOSSES[BK].lv[0].lockText + '</button>') :
+          (prog('flora1').done ? '<button type="button" class="btn primary" data-field="' + R.id + '">进入' + R.name + '</button>' + (bossOpen(BK) ? '' : '<p class="hint">首领「' + BOSSES[BK].name + '」：' + BOSSES[BK].lv[0].lockText + '</p>') : '<button type="button" class="btn" disabled>读完主线「降临芙罗拉」后开放</button>') :
           locked ? '<p class="rg-boss">首领 · ' + R.boss + '　<span>暂未开放</span></p>' : prog('flora1').done ? '<button type="button" class="btn primary" data-field="' + R.id + '">进入' + R.name + '</button>' : '<button type="button" class="btn" disabled>读完主线「降临芙罗拉」后开放</button>') + '</div></article>';
     }).join('');
     var sids = [];
@@ -1417,7 +1417,7 @@
   var TRAVEL = { sid: 'leafcat', lv: 30, exp: 3000, leaf: 0.5, dur: 20, regions: ['forest', 'grass', 'kb_sea', 'pp_lava', 'pp_city', 'lt_belt', 'wh_snow'],
     spots: [{ x: 50, y: 64 }, { x: 32, y: 62 }, { x: 70, y: 66 }] };
   function thash(h) { var x = (h * 2654435761) >>> 0; x ^= x >>> 13; x = Math.imul(x, 0x5bd1e995) >>> 0; x ^= x >>> 15; return x >>> 0; }
-  function sceneCount(R) { return Math.max(2, (R.bgs || []).filter(function (k) { return BG[k]; }).length); }
+  function sceneCount(R) { return Math.max(R.pool ? 2 : 1, (R.bgs || []).filter(function (k) { return BG[k]; }).length); }
   function travelAt(now) {
     var h = Math.floor(now / 3600000), s = thash(h + 7919), start = h * 3600000 + (s % 41) * 60000;
     var R = regionById(TRAVEL.regions[(s >>> 8) % TRAVEL.regions.length]);
@@ -1429,6 +1429,13 @@
     var t = travelAt(Date.now()); if (!travelOpen() || !t.active || t.rid !== R.id || t.si !== si) return '';   // 切磋过也不会消失，停留满 20 分钟才走
     var f = form({ sid: TRAVEL.sid, lv: TRAVEL.lv }), met = travelDone(t.h);
     return '<button type="button" class="wf-mon wf-travel' + (met ? ' met' : '') + '" data-travel="' + t.h + '" title="旅行精灵 · ' + esc(f.name) + ' LV' + TRAVEL.lv + '" aria-label="和旅行精灵' + esc(f.name) + '对战" style="left:' + t.spot.x + '%;top:' + t.spot.y + '%;z-index:' + t.spot.y + '"><i class="wf-sh" aria-hidden="true"></i><img src="' + f.img + '" alt=""><span class="wf-tag">' + (met ? '旅行精灵 · 已切磋' : '旅行精灵') + '</span></button>';
+  }
+  // 区域里的首领（盐碱地的荒芜）：直接画在场景里，点它进首领页；没开放时显示开放条件
+  function fieldBossHTML(R) {
+    var BK = Object.keys(BOSSES).filter(function (k) { return BOSSES[k].region === R.id; })[0]; if (!BK) return '';
+    var B = BOSSES[BK], open = bossOpen(BK);
+    return '<button type="button" class="wf-mon wf-boss' + (open ? '' : ' locked') + '"' + (open ? ' data-boss="' + BK + '" data-from="field"' : ' disabled') + ' title="首领 · ' + esc(B.name) + '" style="left:58%;top:78%;z-index:78"><i class="wf-sh" aria-hidden="true"></i><img src="' + SPRITES[B.sid] + '" alt="' + esc(B.name) + '">' +
+      '<span class="wf-tag">' + (open ? '首领 · ' + esc(B.name) + '（点击挑战）' : '首领 · ' + esc(B.name) + ' · ' + esc(B.lv[0].lockText)) + '</span></button>';
   }
   function engageTravel(h) {
     if (ex.fighting) return;
@@ -1517,13 +1524,13 @@
     slot.mon = m; slot.next = 0; return m;
   }
   function fieldState(rid) {
-    var R = regionById(rid); if (!R || !R.pool) return null;
+    var R = regionById(rid); if (!R) return null;   // 没有野外表（R.pool）的区域（盐碱地）也能进，只是没有野生精灵
     if (!fields[rid]) {
-      var bgs = (R.bgs || []).filter(function (k) { return BG[k]; }), n = Math.max(2, bgs.length), now = Date.now();
+      var bgs = (R.bgs || []).filter(function (k) { return BG[k]; }), n = sceneCount(R), now = Date.now();
       var F = fields[rid] = { seq: 0, scene: Math.floor(Math.random() * n), scenes: [] };
       for (var i = 0; i < n; i++) {
         var sc = { bgKey: bgs.length ? bgs[i % bgs.length] : '', bg: bgs.length ? BG[bgs[i % bgs.length]] : '', flip: i >= bgs.length && i % 2 === 1, slots: FIELD_SLOTS.map(function (s) { return { hx: s.hx, hy: s.hy, r: s.r, mon: null, next: 0 }; }) };
-        sc.slots.forEach(function (sl) { sl.si = i; fillSlot(R, F, sl, now, true); });
+        sc.slots.forEach(function (sl) { sl.si = i; if (R.pool) fillSlot(R, F, sl, now, true); });
         F.scenes.push(sc);
       }
     }
@@ -1534,7 +1541,7 @@
   function catchUp(R, F, sc, now) {
     sc.slots.forEach(function (sl) {
       if (sl.mon && now >= sl.mon.die + FIELD_FADE) { sl.next = sl.mon.die + FIELD_FADE + between(FIELD_GAP); sl.mon = null; }
-      if (!sl.mon && now >= sl.next) fillSlot(R, F, sl, now);
+      if (!sl.mon && now >= sl.next && R.pool) fillSlot(R, F, sl, now);
     });
   }
   function replaceFieldMon(rid, id) {   // 打完、抓到或逃走：这只离开，过一会儿再补一只
@@ -1542,7 +1549,7 @@
     F.scenes.forEach(function (sc) { sc.slots.forEach(function (sl) { if (sl.mon && sl.mon.id === id) { sl.mon = null; sl.next = Date.now() + between(FIELD_GAP); } }); });
   }
   function enterField(rid) {
-    var R = regionById(rid); if (!R || R.boss || !R.pool || !regionOpen(R)) return;
+    var R = regionById(rid); if (!R || !regionOpen(R)) return;
     loadField(rid);
     ex.view = 'field'; ex.region = rid; ex.planet = R.planet;
     renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8);
@@ -1552,18 +1559,18 @@
   }
   function renderField() {
     var R = regionById(ex.region);
-    if (!R || !R.pool || !regionOpen(R)) { ex.view = 'sites'; renderExplore(); return; }
+    if (!R || !regionOpen(R)) { ex.view = 'sites'; renderExplore(); return; }
     var F = fieldState(R.id), P = planetOf(R.planet), sc = F.scenes[F.scene], n = F.scenes.length;
     catchUp(R, F, sc, Date.now());
     var bg = sc.bg ? '<img class="wf-bg' + (sc.flip ? ' flip' : '') + '" src="' + sc.bg + '" alt="">' : '<div class="wf-ph' + (sc.flip ? ' flip' : '') + '">' + regionArt(R.id) + '</div>';
     var mons = sc.slots.filter(function (sl) { return sl.mon; }).map(function (sl) { return fieldMonHTML(sl.mon); }).join('');
     var nav = n > 1 ? '<button type="button" class="wf-arrow l" data-wfnav="-1" aria-label="上一个场景">‹</button><button type="button" class="wf-arrow r" data-wfnav="1" aria-label="下一个场景">›</button>' +
       '<span class="wf-dots" aria-label="场景 ' + (F.scene + 1) + ' / ' + n + '">' + F.scenes.map(function (x, i) { return '<i class="' + (i === F.scene ? 'on' : '') + '"></i>'; }).join('') + '</span>' : '';
-    var spareTip = R.planet === 'flora' && spareActive() ? '<div class="spare-note"><span class="tape l"></span><b>主线任务 · 引出猎杀者</b>　手下留情：这些精灵不会倒下，体力剩 1 点时就会逃走，算作「假装击败」。已完成 <b>' + spareN() + ' / ' + SPARE_N + '</b>。</div>' : '';
-    $('pg-explore').innerHTML = exHead('点击场景里走动的精灵，就会和它开战。') +
+    var spareTip = R.pool && R.planet === 'flora' && spareActive() ? '<div class="spare-note"><span class="tape l"></span><b>主线任务 · 引出猎杀者</b>　手下留情：这些精灵不会倒下，体力剩 1 点时就会逃走，算作「假装击败」。已完成 <b>' + spareN() + ' / ' + SPARE_N + '</b>。</div>' : '';
+    $('pg-explore').innerHTML = exHead(R.pool ? '点击场景里走动的精灵，就会和它开战。' : '这里没有野生精灵。点击场景里的首领就能挑战它。') +
       '<div class="crumb"><button type="button" class="btn ghost" id="field-back">‹ 返回' + esc(P.name) + '</button><b>' + esc(P.name) + ' · ' + esc(R.name) + '</b>' + (n > 1 ? '<span class="hint">场景 ' + (F.scene + 1) + ' / ' + n + (BG_NAME[sc.bgKey] ? ' · ' + BG_NAME[sc.bgKey] : '') + '</span>' : '') + '</div>' +
-      invLine() + spareTip + '<div class="wf-scene" id="wf-scene">' + bg + mons + gatherNodesHTML(R.id, F.scene, n) + riceBowlHTML(R, F.scene) + travelHTML(R, F.scene) + nav + '</div>' +
-      '<p class="hint">点左右两边的箭头可以切换场景。每只精灵在自己的一小片范围里走动，待一会儿就会离开，过一阵又会有新的精灵出现，各走各的。点中哪只，就和哪只对战；打完、抓到或逃走之后，这只离开，过一会儿会有新的一只补上。采集点固定在场景里，每个每天可以采集 1 次：芙罗拉、坎布尔、庞贝采到星砂 ×12，莱汀和白之星采到星核 ×1。' + (RICE.regions.indexOf(R.id) >= 0 ? '带着「一碗饭」来的话，可以在任意一个场景里放下它。' : '') + '</p>';
+      invLine() + spareTip + '<div class="wf-scene" id="wf-scene">' + bg + mons + gatherNodesHTML(R.id, F.scene, n) + riceBowlHTML(R, F.scene) + travelHTML(R, F.scene) + fieldBossHTML(R) + nav + '</div>' +
+      (R.pool ? '<p class="hint">点左右两边的箭头可以切换场景。每只精灵在自己的一小片范围里走动，待一会儿就会离开，过一阵又会有新的精灵出现，各走各的。点中哪只，就和哪只对战；打完、抓到或逃走之后，这只离开，过一会儿会有新的一只补上。采集点固定在场景里，每个每天可以采集 1 次：芙罗拉、坎布尔、庞贝采到星砂 ×12，莱汀和白之星采到星核 ×1。' + (RICE.regions.indexOf(R.id) >= 0 ? '带着「一碗饭」来的话，可以在任意一个场景里放下它。' : '') + '</p>' : '');
     startFieldMove();
   }
   function startFieldMove() {
@@ -1577,7 +1584,7 @@
       sc.slots.forEach(function (sl) {
         var m = sl.mon;
         if (!m) {   // 空位：时间到了就出现一只新的（淡入）
-          if (now >= sl.next) { var nm_ = fillSlot(R, F, sl, now); scene.insertAdjacentHTML('beforeend', fieldMonHTML(nm_, 'wf-in')); }
+          if (R.pool && now >= sl.next) { var nm_ = fillSlot(R, F, sl, now); scene.insertAdjacentHTML('beforeend', fieldMonHTML(nm_, 'wf-in')); }
           return;
         }
         var el = scene.querySelector('[data-wfid="' + m.id + '"]');
@@ -2335,7 +2342,7 @@
         '<p>每天 <b>16:00–24:00</b>，在星际探索的任何场景，都有 <b>3%</b> 的概率刷出一只神秘精灵！</p><p class="hint">它是什么？只有遇到过的人才知道。</p>' +
         '<p class="log-st ' + (on ? 'on' : '') + '">' + (on ? '活动进行中，今天 24:00 结束' : wait) + '</p></article>' +
       '<article class="log-card next"><span class="tape r"></span><span class="chip log-tag">新首领</span><h3>草系首领「荒芜」现身盐碱地</h3>' +
-        '<div class="next-art"><img src="' + SPRITES.barren + '" alt=""></div><p>芙罗拉星盐碱地深处的瘴气，源头就是它。简单难度击败可以领养一只枯叶灵。</p><p class="hint">' + (bossOpen('barren') ? '在星际探索 · 芙罗拉星 · 盐碱地挑战。' : '读完主线「降临芙罗拉」后可以挑战。') + '</p>' +
+        '<div class="next-art"><img src="' + SPRITES.barren + '" alt=""></div><p>芙罗拉星盐碱地深处的瘴气，源头就是它。简单难度击败可以领养一只枯叶灵。</p><p class="hint">' + (bossOpen('barren') ? '进入星际探索 · 芙罗拉星 · 盐碱地，在里面挑战。' : '通过芙罗拉星挑战第五关「猎手的领地」后可以挑战。') + '</p>' +
         (bossOpen('barren') ? '<button type="button" class="btn" data-golog="boss-barren">去挑战</button>' : '') + '</article>' +
       (function () {   // 困难泰戈尔上线：按玩家进度提示下一步（不剧透隐藏特效）
         var h = levelOpen('tiger', 2), won = bossWon('tiger', 2), tip = won ? '你已经击败了困难难度的泰戈尔，每周挑战已开放。' : h ? '在荆楚号 · 襄阳 · 古城防卫部挑战。' : bossWon('tiger', 1) ? '' : bossOpen('tiger') ? '先击败普通难度的泰戈尔，困难难度就会开放。' : '读完荆楚号 · 襄阳 · 古城防卫部的支线「东北来的泰戈尔」后，就能开始挑战泰戈尔。';
@@ -2383,7 +2390,7 @@
     barren: { name: '荒芜', sid: 'barren', planet: 'flora', region: 'salt', bg: 'fl_salt',
       d: '潜伏在芙罗拉星盐碱地地底的草系首领。盐碱地里的瘴气，就是从它身上散出来的。',
       lv: [
-        { diff: '简单', lv: 40, hp: 1000, boss: { dr: 0.15, mia: 1, pp: 99 }, bgm: 'boss', open: function () { return prog('flora1').done; }, lockText: '读完主线「降临芙罗拉」后开放', reward: { mon: { sid: 'barren', lv: 10 } } },
+        { diff: '简单', lv: 40, hp: 1000, boss: { dr: 0.15, mia: 1, pp: 99 }, bgm: 'boss', open: function () { return prog('flora1').done && (chalStars('fl5') > 0 || bossWon('barren', 0)); }, lockText: '通过芙罗拉星挑战第五关「猎手的领地」后开放', reward: { mon: { sid: 'barren', lv: 10 } } },
         { diff: '普通', lv: 65, hp: 3000, boss: { dr: 0.15, mia: 1, puppet: 1, pp: 99 }, bgm: 'boss2', open: function () { return bossWon('barren', 0); }, lockText: '击败简单难度后开放', reward: { later: true } }
       ] }
   };
@@ -3328,6 +3335,7 @@
       var BK2 = BOSSES[ex.boss];
       if (ex.view === 'weekly') ex.view = 'planets';
       else if (ex.bossFrom === 'hub') ex.view = 'bosshub';
+      else if (ex.bossFrom === 'field' && BK2.region) { enterField(BK2.region); return; }
       else if (BK2.dept) { ex.view = 'area'; ex.area = BK2.dept; }
       else { ex.view = 'sites'; ex.planet = BK2.planet; ex.fpart = 'catch'; }
       renderExplore(); return;

@@ -358,6 +358,10 @@ ffmpeg -i 原曲.mp3 -vn -map_metadata -1 -af loudnorm=I=-16:TP=-1.5:LRA=11 -ar 
 
 
 星球立绘：`PLANETS` 里写 `img`（如庞贝星 `images/planets/pompeii.webp`，用 `tools/stylize_bg.py` 的 `stylize` 转画风后裁成圆形透明图），星球列表和星球页就用图，没有的画示意图。场景名：`BG_NAME[背景键]` 有名字时，野外场景标题显示「场景 1 / 2 · 熔浆大湖」。庞贝星两个区域：熔岩原 `pp_lava`（熔浆大湖 `pp_lake`、熔渣矿区 `pp_slag`，米饭火鸡只在这里，`RICE.regions`）和饮火城 `pp_city`（湖心堡垒 `pp_fort`、炙热核心 `pp_core`，野外表 `pp_city` 没有米饭火鸡）。以后给区域加场景，加在 `bgs` 末尾，免得已经放下的「一碗饭」换了场景。星球页的野生精灵列表里，同一种精灵在几个区域都有时合成一条。
+## 盐碱地与首领荒芜（2026-10-13）
+
+盐碱地 `salt` 没有野外表（`R.pool`），现在也能像别的区域一样进入（`enterField` / `fieldState` 不再要求 `pool`，没有 `pool` 时不刷精灵，场景数按背景张数、最少 1 个）。区域里有首领时由 `fieldBossHTML` 画在场景中央，开放了点它进首领页（`data-from="field"`，首领页「返回」回到这个区域），没开放时灰掉并写开放条件。荒芜简单难度的开放条件：读完「降临芙罗拉」且通过挑战第五关 `fl5`（或以前已经击败过荒芜）。
+
 ## 星球挑战（芙罗拉星）
 
 代码在 `js/ui/game.js` 搜「星球挑战」，关卡表是 `CHAL.flora`（每关 `foes` 敌人、`s2` / `s3` 第二三颗星的条件、`reward` 首通奖励）。
