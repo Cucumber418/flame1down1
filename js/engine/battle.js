@@ -490,6 +490,7 @@ function calcDamage(me, foe, mv, firstMover, est) {
   }
   if (me.tm.jungle > 0 && foe.hp / foe.maxhp < me.hp / me.maxhp) mod *= 1.7;
   if (me.fx.boostNext) mod *= 1.5;
+  if (me.fx.x2Next) mod *= 2;   // 岩洞藏匿成功后的下一次直接攻击
   if (me.tm.weak > 0) mod *= 0.7;
   if (me.st['溺水'] > 0) mod *= 0.3;
   if (foe.tm.soul > 0) mod *= 1.2;
@@ -675,11 +676,18 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   if (me.tm.sure3 > 0 || me.tm.ear > 0) sure = 1;
   if (!sure && me.st['失明'] > 0 && RNG() < 0.5) { log(S, evs, nm(me) + '看不清目标，攻击落空了！'); me.fx.boostNext = 0; return; }
   if (!sure && RNG() >= hitChance(me, foe, mv)) { log(S, evs, '但是没有命中！'); me.fx.boostNext = 0; return; }
+  if (foe.fx.cave === S.turn) { foe.fx.x2Next = 1; E(S, evs, 'stage', { side: j }); log(S, evs, nm(foe) + '躲进岩洞，规避了这次攻击！下一次直接攻击伤害翻倍', 'fxl'); me.fx.boostNext = 0; return; }   // 岩洞藏匿：只管这一回合
   if (foe.fx.absDef) { foe.fx.absDef = 0; log(S, evs, nm(foe) + '闪开了这次攻击！', 'fxl'); me.fx.boostNext = 0; return; }
   if (foe.tm.dodge > 0 && RNG() < 0.4) { log(S, evs, nm(foe) + '用光滑皮肤闪开了攻击！', 'fxl'); me.fx.boostNext = 0; return; }
   if (mv.cat === '物攻' && foe.tm.voidPhys > 0) { log(S, evs, nm(foe) + '处于虚空化，物理攻击穿过了它的身体！', 'fxl'); me.fx.boostNext = 0; return; }
 
-  var total = 0, lastEff = 1, n = 0, hits = 1, raw = 0;
+  if (mv.bomb) {   // 爆燃炸弹 / 火灵炸弹：先埋下，下回合结束时在 endOfTurn 里爆炸（按爆炸时的对手算伤害，扔炸弹的倒下了也照样炸）
+    if (!S.bombs) S.bombs = [];
+    S.bombs.push({ from: i, mon: me, mv: mv, at: S.turn + 1 });
+    log(S, evs, nm(me) + '在' + nm(foe) + '脚下埋了一颗炸弹！下回合结束时会爆炸', 'fxl');
+    me.flags.firstAtk = true; me.fx.boostNext = 0; return;
+  }
+  var total = 0, lastEff = 1, n = 0, hits = 1, raw = 0, burnX = 0;
   if (mv.fixedOnly) {
     var fa = fixedAmount(me, foe, mv);
     log(S, evs, '造成 ' + fa + ' 点固定伤害', 'fxl');
@@ -694,6 +702,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
     for (var h = 0; h < hits && foe.hp > 0; h++) {
       var res = calcDamage(me, foe, mv, firstMover, false);
       lastEff = res.eff; n++; raw += res.dmg;
+      if (mv.custom === 'burnExtend' && foe.st['烧伤'] > 0 && foe.hp > res.dmg) { foe.st['烧伤']++; burnX = (burnX || 0) + 1; }   // 烈焰风暴：每次命中延长 1 回合烧伤
       if (res.crit) log(S, evs, '致命一击！', 'crit');
       total += applyDamage(S, evs, j, res.dmg, i, { crit: res.crit, eff: res.eff, noFaint: true });
       if (me.fainted) break;
@@ -706,7 +715,8 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   log(S, evs, '对' + nm(foe) + '造成 ' + total + ' 点伤害', 'dmg');
   if (foe.hp <= 0 && !foe.fainted) faint(S, evs, j);
   if (hits > 1) log(S, evs, '连续命中 ' + n + ' 次！');
-  me.flags.firstAtk = true; me.fx.boostNext = 0; me.fx.moonNext = 0;
+  if (burnX && !foe.fainted) { E(S, evs, 'stage', { side: j }); log(S, evs, nm(foe) + '的烧伤延长了 ' + burnX + ' 回合（剩 ' + foe.st['烧伤'] + ' 回合）', 'fxl'); }
+  me.flags.firstAtk = true; me.fx.boostNext = 0; me.fx.moonNext = 0; if (me.fx.x2Next) { me.fx.x2Next = 0; E(S, evs, 'stage', { side: i }); }
   if (mv.custom === 'canyue') me.flags.canyue = (me.flags.canyue || 0) + 1;
   var fxd = addFixed(me, mv);
   if (fxd && !foe.fainted) { log(S, evs, '附加 ' + fxd + ' 点固定伤害', 'fxl'); applyDamage(S, evs, j, fxd, i, {}); }
@@ -833,7 +843,7 @@ function clearUps(S, evs, j) {
 var FOE_CUSTOM = { noSwitch: 1, stealDef: 1, stealAtk: 1, hail: 0, noBoostFoe: 1, melt: 1, burnout: 1, wither: 1, weak2: 1, seal: 1, silentSea: 1, selfDestruct: 0, bunker: 0, dielectric: 1, chaosWater: 1 };
 function targetsFoe(mv) { return !!(mv.tgtStage || mv.status || mv.clearTgtUp || FOE_CUSTOM[mv.custom]); }
 
-var EVADE_CUSTOM = { dodge: 1, absDef: 1, dodgeOne: 1, voidPhys: 1 };
+var EVADE_CUSTOM = { dodge: 1, absDef: 1, dodgeOne: 1, voidPhys: 1, cave: 1 };
 function doStatus(S, evs, i, mv) {
   var me = act(S, i), j = 1 - i, foe = act(S, j);
   var c = mv.custom;
@@ -890,6 +900,7 @@ function doStatus(S, evs, i, mv) {
     case 'priorityUp': timer('prio', 5, nm(me) + '与水天融为一色：5回合内技能先制+1'); break;
     case 'dodge': timer('dodge', 3, nm(me) + '的皮肤变得光滑（3回合）'); break;
     case 'absDef': me.fx.absDef = 1; flag(nm(me) + '摆出了绝对防御的架势'); break;
+    case 'cave': me.fx.cave = S.turn; flag(nm(me) + '躲进了岩洞，这一回合的攻击都打不到它'); break;
     case 'dodgeOne': me.fx.absDef = 1; flag(nm(me) + '准备遁走，会闪避下1次攻击'); break;
     case 'immune': timer('immune', 5, nm(me) + '被香甜气息包围，5回合内免疫异常状态'); break;
     case 'reflect': timer('reflect', 5, nm(me) + '展开了风王结界（5回合）'); break;
@@ -980,6 +991,32 @@ function doStatus(S, evs, i, mv) {
  * 达成时战斗记录里只会出现「似乎领悟了什么……」，结算时才写出领悟了哪个技能。
  * 没有写领悟条件的隐藏技能（叶子喵）仍然是 LV50 自动习得，不走这里。 */
 function hqR(m) { if (!m.hq) m.hq = { u: {}, n: {}, h: {} }; return m.hq; }
+// 炸弹爆炸：到了 at 回合的结束时，对那一边当前在场的精灵造成伤害（火灵炸弹还会清空能力提升，每级附加固定伤害）
+function bombTick(S, evs) {
+  if (!S.bombs || !S.bombs.length) return;
+  var keep = [];
+  S.bombs.forEach(function (b) {
+    if (b.at > S.turn) { keep.push(b); return; }
+    var j = 1 - b.from, t = act(S, j); if (t.fainted || S.over) return;
+    log(S, evs, nm(b.mon) + '埋下的「' + b.mv.name + '」爆炸了！', 'use');
+    E(S, evs, 'use', { side: b.from, move: b.mv.name, type: b.mv.type });
+    if (hitBlocked(t, b.mv.type)) { log(S, evs, nm(t) + '毫发无伤！', 'bad'); return; }
+    var res = calcDamage(b.mon, t, b.mv, false, false);
+    if (res.crit) log(S, evs, '致命一击！', 'crit');
+    var dmg = applyDamage(S, evs, j, res.dmg, b.from, { crit: res.crit, eff: res.eff, noFaint: true });
+    log(S, evs, '对' + nm(t) + '造成 ' + dmg + ' 点伤害', 'dmg');
+    if (b.mv.bombClear && t.hp > 0) {
+      var lv = 0; STG.forEach(function (k) { if (t.stages[k] > 0) lv += t.stages[k]; });
+      if (lv) { clearUps(S, evs, j); log(S, evs, '火灵炸弹清除了 ' + lv + ' 级能力提升，附加 ' + (lv * b.mv.bombClear) + ' 点固定伤害', 'fxl'); applyDamage(S, evs, j, lv * b.mv.bombClear, b.from, { noFaint: true }); }
+    }
+    if (t.hp <= 0 && !t.fainted) {
+      faint(S, evs, j);
+      if (b.from === 0 && b.mv.name === '爆燃炸弹') hqGet(S, evs, b.mon, '火灵炸弹');   // 隐藏技能：用爆燃炸弹的爆炸击败敌人
+    }
+    checkOver(S, evs);
+  });
+  S.bombs = keep;
+}
 function hqGet(S, evs, m, name) {
   if (!m || m.u == null || !LEARN[name]) return;
   var s = SPMAP[m.id]; if (!s || s.hidden.indexOf(name) < 0) return;
@@ -1059,6 +1096,7 @@ function hqKO(S, evs, me, foe, mv) {
     生命榨取: (q.h['幻境汲取'] || 0) >= me.maxhp * 0.5,
     万灵封印: fu['生命遁迹'] > 0 && me.stages.spa >= 3 && me.stages.def >= 3 && me.stages.spd >= 3,
     淬命之焰: n === '火焰车' && (me.fx.hqRaw || 0) > foe.maxhp,
+    烈焰风暴: n === '烈焰云' && foe.st['烧伤'] > 0,
     高温禁锢: Math.min(me.fx.fieldT || 0, foe.fx.fieldT || 0) >= 10
   };
   for (var k in R) if (R[k]) hqGet(S, evs, me, k);
@@ -1156,6 +1194,8 @@ function miasmaTick(S, evs) {
 }
 function endOfTurn(S, evs) {
   S.curMove = null;
+  bombTick(S, evs);
+  if (S.over) return;
   miasmaTick(S, evs);
   miasmaField(S, evs);
   [0, 1].forEach(function (i) {

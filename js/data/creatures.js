@@ -155,6 +155,12 @@ var SP = [
 var DUMMY = { id: 'dummy', name: '木桩', types: ['无'], type: '无', base: { hp: 100, atk: 0, def: 50, spa: 0, spd: 50, spe: 0 }, ability: { n: '无', d: '训练用木桩，不会攻击，体力无限' }, moves: [], hidden: [], def: [] };
 // 只在账号系统里出现的精灵（不进入竞技对战，也不参与强度测算）：占位精灵，以及竞技名单固定之后新加的所有精灵
 var EXTRA_SP = [
+  { id: 'firemouse', name: '费尔茅斯', types: ['火'], base: { hp: 79, atk: 122, def: 53, spa: 112, spd: 116, spe: 74 },
+    evo: [{ n: '火月鼠', lv: 1 }, { lv: 30 }], evoLvSure: false,
+    ability: { n: '（待设定）', d: '特性暂未设定，目前没有效果' },
+    lore: '庞贝星饮火城 · 炙热核心的野生精灵。立绘还在绘制中。',
+    moves: ['旋转冲撞', '磨刀', '加温', '火焰漩涡', '火焰车', '硬化利爪', '爆燃炸弹', '烈焰云', '岩洞藏匿'],
+    hidden: ['烈焰风暴', '火灵炸弹'], def: ['爆燃炸弹', '烈焰云', '硬化利爪', '岩洞藏匿'] },
   { id: 'shroom', name: '涅槃蘑菇', types: ['火'], base: { hp: 98, atk: 75, def: 68, spa: 115, spd: 75, spe: 94 },
     evo: [{ n: '方头蘑菇', lv: 1, no: '007', d: '在武汉的酷暑下长大的火系蘑菇，头顶上的不是火焰，而是火焰花纹的伞盖。' }, { n: '红烧蘑菇', lv: 25 }, { lv: 50 }], evoLvSure: false,
     ability: { n: '熔岩', d: '对烧伤状态的敌人造成的伤害提升25%' },

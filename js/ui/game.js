@@ -1505,7 +1505,7 @@
     if (m.x > prev + 0.02) m.face = 1; else if (m.x < prev - 0.02) m.face = -1;
   }
   function spawnFieldMon(R, slot) {
-    var hit = riceSpawn(R, slot) || rollWild(R.pool), shiny = rollShiny(hit.w);
+    var hit = riceSpawn(R, slot) || rollWild(R.pool, (typeof WILD_SCENE !== 'undefined' && WILD_SCENE[slot.bgKey]) || null), shiny = rollShiny(hit.w);
     var f = form({ sid: hit.w.sid, lv: hit.lv, shiny: shiny });
     var m = { id: 0, sid: hit.w.sid, lv: hit.lv, rate: hit.w.rate, shiny: shiny, img: f.img, name: (shiny ? '异色' : '') + f.name, bait: !!hit.bait,
       hx: slot.hx, hy: slot.hy, r: slot.r, t: Math.random() * Math.PI * 2, spd: 0.55 + Math.random() * 0.5, x: slot.hx, y: slot.hy, face: 1 };
@@ -1530,7 +1530,7 @@
       var F = fields[rid] = { seq: 0, scene: Math.floor(Math.random() * n), scenes: [] };
       for (var i = 0; i < n; i++) {
         var sc = { bgKey: bgs.length ? bgs[i % bgs.length] : '', bg: bgs.length ? BG[bgs[i % bgs.length]] : '', flip: i >= bgs.length && i % 2 === 1, slots: FIELD_SLOTS.map(function (s) { return { hx: s.hx, hy: s.hy, r: s.r, mon: null, next: 0 }; }) };
-        sc.slots.forEach(function (sl) { sl.si = i; if (R.pool) fillSlot(R, F, sl, now, true); });
+        sc.slots.forEach(function (sl) { sl.si = i; sl.bgKey = sc.bgKey; if (R.pool) fillSlot(R, F, sl, now, true); });
         F.scenes.push(sc);
       }
     }
@@ -1615,8 +1615,8 @@
     stopField();
     startWildBattle(o);
   }
-  function rollWild(pool) {
-    var P = WILD[pool], tot = P.reduce(function (a, w) { return a + w.w; }, 0), r = Math.random() * tot, w = P[0];
+  function rollWild(pool, extra) {   // extra：只在这个场景出现的精灵（WILD_SCENE），和区域表合在一起抽
+    var P = extra ? WILD[pool].concat(extra) : WILD[pool], tot = P.reduce(function (a, w) { return a + w.w; }, 0), r = Math.random() * tot, w = P[0];
     for (var i = 0; i < P.length; i++) { r -= P[i].w; if (r < 0) { w = P[i]; break; } }
     return { w: w, lv: w.lv[0] + Math.floor(Math.random() * (w.lv[1] - w.lv[0] + 1)) };
   }
@@ -1899,6 +1899,14 @@
         '<small>LV' + (w.lv[0] === w.lv[1] ? w.lv[0] + '（固定）' : w.lv[0] + '–' + w.lv[1]) + ' · 捕捉率' + w.tag + '</small><small>出现：' + where.join(' · ') + '</small>' +
         '<small class="wk">' + (k === 'own' ? '已捕捉' : k === 'seen' ? '见过 · 未捕捉' : '未遇见') + '</small></span></li>');
     }); });
+    regs.forEach(function (R) { (R.bgs || []).forEach(function (bk) { ((typeof WILD_SCENE !== 'undefined' && WILD_SCENE[bk]) || []).forEach(function (w) {   // 只在某个场景出现的精灵
+      if (seenSid[w.sid]) return; seenSid[w.sid] = 1;
+      var tot = (WILD[R.pool] || []).reduce(function (a, x) { return a + x.w; }, 0), pct = Math.round(w.w / (tot + w.w) * 100);
+      var k = wildKnown(w.sid), f = form({ sid: w.sid, lv: w.lv[0] });
+      list.push('<li class="wl ' + (k || 'unk') + '">' + (k ? '<img src="' + f.img + '" alt="">' : silTag(w.sid, f.stage)) + '<span><b>' + (k ? esc(f.name) : '？？？') + '</b>' + (w.rare ? '<span class="chip rare">稀有</span>' : '') +
+        '<small>LV' + (w.lv[0] === w.lv[1] ? w.lv[0] + '（固定）' : w.lv[0] + '–' + w.lv[1]) + ' · 捕捉率' + w.tag + '</small><small>出现：' + R.name + ' · ' + (BG_NAME[bk] || '某个场景') + ' ' + pct + '%</small>' +
+        '<small class="wk">' + (k === 'own' ? '已捕捉' : k === 'seen' ? '见过 · 未捕捉' : '未遇见') + '</small></span></li>');
+    }); }); });
     return head + invLine() + '<div class="regions">' + cards + '</div>' +
       '<div class="wild-list"><h4>' + P.name + '的野生精灵</h4><ul>' + list.join('') + '</ul><p class="hint">进入区域后，精灵会在场景里走动，点中哪只就和哪只对战。捕捉、经验和学习力的规则和芙罗拉星一样。</p></div>';
   }
