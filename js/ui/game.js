@@ -966,7 +966,7 @@
   var BG_NAME = { gate: '校门', school: '校门', flag: '教学楼', garden: '牌坊花园', qiyi: '起义门', street: '彭刘杨路', bridge: '长江大桥', desert: '鸣沙山 · 月牙泉', jslc: '发射中心', tower: '发射塔', launch: '火箭升空', orbit: '地球轨道', hangar: '鄂州港 · 停泊区', cockpit_p: '武汉 · 指挥中枢', hangar_p: '鄂州港 · 停泊区', cabin_p: '温泉生活区', greenhouse_p: '太空温室', gym_p: '体能馆', storage_p: '物资仓储', pod_p: '学院部 · 资料室', tea_p: '陆羽茶室 · 04 号舱', teahall: '陆羽茶室 · 大厅', bridge2_p: '编钟通讯站', bridge_p: '古城防卫部', xiaogan: '孝感大厅', paifang: '惟楚有材牌坊', hall: '报告厅', field: '操场', aerial: '校园全景' };
   // 角色（立绘为占位）
   var CAST = {
-    p: { name: function () { return acc.name; }, color: '#c42f3a', tall: 1.0, get img() { return playerArt(); } },   // 主角立绘按性别：pm 男主 / pf 女主（差分见 CHARS 的 pm_xxx）
+    p: { name: function () { return acc.name; }, color: '#c42f3a', tall: 0.92, get img() { return playerArt(); } },   // 主角立绘按性别：pm 男主 / pf 女主（差分见 CHARS 的 pm_xxx）
     v: { name: function () { return 'Vanber'; }, color: '#2a4ca0', tall: 0.98 },
     z: { name: function () { return '张卫国'; }, color: '#5b5866', tall: 1.0, img: 'zwg' },
     t: { name: function () { return 'Threego'; }, color: '#6f8f2a', tall: 1.0, img: 'threego' },
@@ -1068,6 +1068,16 @@
       '<path d="' + head + '" fill="#fbfaf3" fill-opacity=".94"/><path d="' + head + '" fill="' + col + '" fill-opacity=".22" stroke-dasharray="11 7"/></g>' +
       '<text x="100" y="86" text-anchor="middle" font-size="40" fill="' + col + '" font-family="Long Cang, KaiTi, cursive">?</text>' +
       '<text x="100" y="250" text-anchor="middle" font-size="22" fill="#75737e" font-family="-apple-system, PingFang SC, sans-serif">立绘占位</text></svg>';
+  }
+  // 主角的表情：这一句没写 f.p 时，沿用前面几句（最多往回 4 句）里最近的表情，免得别人说话时主角一直是默认的笑脸。
+  // 遇到换背景、或者主角自己说了一句没写表情的话，就回到默认立绘。
+  function pFace(arr, i) {
+    for (var j = i; j >= 0 && j >= i - 4; j--) {
+      var s = arr[j];
+      if (s.f && s.f.p !== undefined) return s.f.p;
+      if (j < i && (s.bg || s.s === 'p')) return null;
+    }
+    return null;
   }
   function skipStep(st, p) { return (st.only && st.only !== p.ch) || (st.pick && acc.starter) || (st.res && st.res !== (p.bt === 'win' ? 'win' : 'lose')); }
   // 剧情对战的对手配置
@@ -3377,7 +3387,7 @@
     var monsH = monsHTML(mons); if ($('vn-mons').dataset.k !== mons + acc.starter) { $('vn-mons').innerHTML = monsH; $('vn-mons').dataset.k = mons + acc.starter; }
     $('vn-chars').innerHTML = on.map(function (o) {
       var k = o[0], pos = o[1], speak = st.s === k;
-      return '<div class="vn-fig ' + pos + (CAST[k].img || CAST[k].spr ? ' art' : '') + (CAST[k].full ? ' full' : '') + (speak ? ' speak' : st.s && st.s !== 'n' && !st.choice ? ' dim' : '') + '" style="--cc:' + CAST[k].color + '">' + standee(k, st.f && st.f[k]) + '<span class="vn-tag">' + esc(CAST[k].name()) + '</span></div>';
+      return '<div class="vn-fig ' + pos + (CAST[k].img || CAST[k].spr ? ' art' : '') + (CAST[k].full ? ' full' : '') + (speak ? ' speak' : st.s && st.s !== 'n' && !st.choice ? ' dim' : '') + '" style="--cc:' + CAST[k].color + '">' + standee(k, k === 'p' ? pFace(arr, ex.i) : st.f && st.f[k]) + '<span class="vn-tag">' + esc(CAST[k].name()) + '</span></div>';
     }).join('');
     $('vn-choices').hidden = true; $('vn-pick').hidden = true; $('vn-box').classList.remove('wait');
     if (st.choice) {
