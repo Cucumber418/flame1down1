@@ -147,7 +147,7 @@ var M = {
   望月: { type: '光', cat: '变化', custom: 'stealAtk', d: '吸取对方1级物攻' },
   迷之微笑: { type: '普通', cat: '特攻', power: 0, fixedOnly: 'smile', pp: 3, d: '造成自身等级×2.5的固定伤害（LV100 时为 250）' },
   月神降临: { type: '光', cat: '变化', selfStage: { atk: 2, def: 1, spd: 1 }, pp: 10, d: '提升2级物攻、1级物防、特防' },
-  残月之痕: { type: '光', cat: '物攻', power: 10, hidden: true, custom: 'canyue', pp: 15, d: '威力10，每使用一次，威力较上一次翻倍，至多达到160威力' },
+  残月之痕: { type: '光', cat: '物攻', power: 20, hidden: true, custom: 'canyue', pp: 15, d: '威力20，每使用一次，威力较上一次翻倍（20→40→80→160），最高160；换下场也会保留，已使用的次数显示在状态栏' },
   月之暗面: { type: '暗影', cat: '变化', hidden: true, custom: 'darkside', pp: 5, d: '将精灵属性、技能属性切换为暗影系，持续5回合；处于暗影系时，此技能变为「月之亮面」，可切换回光系' },
 
   // —— 霜冻之冠（冰）

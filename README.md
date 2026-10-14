@@ -379,6 +379,8 @@ ffmpeg -i 原曲.mp3 -vn -map_metadata -1 -af loudnorm=I=-16:TP=-1.5:LRA=11 -ar 
 
 ## 战斗中按状态换图（2026-10-13）
 
+小月亮系（2026-10-14 加强）：残月之痕 `custom: 'canyue'` 威力 `canyuePow(n)` = 20 × 2^n（最高 160），次数记在 `flags.canyue`（换下场保留），使用时就 +1，`fx.canyueNow` 标记本回合正在用（回合结束在 `endOfTurn` 清掉，星星魔法的 `starNow` 同理），状态栏显示「残月之痕 ×n」。月蚀的强化攻击（`fx.moonNext`）命中后恢复 1/6 最大体力；光影之月（`perm.moonFull`）每次使用技能恢复 1/6 最大体力。
+
 `assets.js` 的 `FORM_FX_SPRITES`（键是 `PRE_SPRITES` 里的形态名）：`dark` 月之暗面期间、`full` 光影之月之后。`battle.js` 的 `liveImg(m)` 在战斗快照里替换图片（只认 `m.img` 等于这个形态图的精灵，所以竞技对战里按最终形态显示的不受影响）。目前只有朔望月灵（小月亮 LV30 进化的最终形态；`liveImg` 在没设 `m.img` 时按 `SPRITES` 最终形态图比对，所以竞技对战里也会换）。
 
 ## 首领攻略板

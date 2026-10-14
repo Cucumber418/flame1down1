@@ -25,6 +25,9 @@ function mvType(me, mv) {
   if (mv.custom === 'lightside') return '光'; return me.tm && me.tm.darkside > 0 ? '暗影' : mv.type;
 }
 // 光影之月下，月之暗面 / 月之亮面不能再使用
+// 残月之痕：初始威力 20，每使用一次翻倍（20 → 40 → 80 → 160），最高 160；次数记在 flags.canyue，换下场也保留（2026-10-14 从 10 起步改为 20 起步，并改成使用就计数）
+var CANYUE_BASE = 20, CANYUE_MAX = 160;
+function canyuePow(n) { return Math.min(CANYUE_MAX, CANYUE_BASE * Math.pow(2, n)); }
 var STAR_MAX = 125;   // 星星魔法的最高威力（2026-10-12 从 200 削弱到 125；达到后命中有 50% 概率降低对方 1 级速度）
 function moveBlocked(me, slot) { return !!(slot && M[slot.n] && ((me.perm && me.perm.moonFull && M[slot.n].custom === 'darkside') || (me.flags && me.flags.sy && M[slot.n].cat === '变化'))); }
 // 技能为什么不能用（界面上显示）：光影之月 / 沈阳大街（复活后的困难泰戈尔的场地效果，变化技能都不能用）
@@ -244,14 +247,15 @@ function chipsOf(m, foe) {
   if (m.puppet) c.push({ t: '瘴毒傀儡', k: 'st', h: '瘴毒傀儡', d: '荒芜召唤出来的傀儡，只会使用攻击技能。被击败后荒芜会重新上场。' });
   if (m.emblem && EMBLEMS[m.id]) c.push({ t: '纹章 · ' + m.emblem, k: 'fx' + (m.flags.punch ? '' : ' on'), h: EMBLEMS[m.id].n, d: EMBLEMS[m.id].d + (m.flags.punch ? '（本场已经生效过）' : '') });
   if (m.perm && m.perm.star) c.push({ t: '星星魔法 ×' + m.perm.star, k: 'fx', h: '星星魔法 · 已使用 ' + m.perm.star + ' 次', d: '下一次星星魔法威力 ' + Math.min(STAR_MAX, 25 * (m.perm.star + 1)) + (25 * (m.perm.star + 1) >= STAR_MAX ? '（已达最高，命中时 50% 降低对方 1 级速度）' : '') + '（换下场也会保留）' });
+  if (m.flags && m.flags.canyue) c.push({ t: '残月之痕 ×' + m.flags.canyue, k: 'fx', h: '残月之痕 · 已使用 ' + m.flags.canyue + ' 次', d: '下一次残月之痕威力 ' + canyuePow(m.flags.canyue) + (canyuePow(m.flags.canyue) >= CANYUE_MAX ? '（已达最高）' : '') + '（每使用一次翻倍，最高 ' + CANYUE_MAX + '；换下场也会保留）' });
   if (m.fx.flash) c.push({ t: '闪光', k: 'st', h: '闪光飞叶', d: '下一次受到攻击时，额外降低1级命中' });
   if (m.fx.earMark) c.push({ t: '被听穿', k: 'st', h: '灵耳谛听', d: '试图闪避被识破：下一次受到的攻击威力翻倍' });
   if (miaN(m)) c.push({ t: '瘴气 ×' + miaN(m), k: 'st', h: '瘴气 · ' + miaN(m) + ' 层', d: '物攻、特攻 +' + (miaN(m) * 5) + '%，物防、特防 −' + Math.min(90, miaN(m) * 5) + '%（每层 ±5%，防御最低降到 10%）。持续到战斗结束，换下场也不会消失；在瘴气环境中每回合结束时再获得 1 层。' });
   if (m.perm && m.perm.wither) c.push({ t: '凋零之蚀' + (witherN(m) > 1 ? ' ×' + witherN(m) : ''), k: 'st', h: '凋零之蚀 · ' + witherN(m) + ' 层', d: '每回合结束损失 ' + witherN(m) + '/' + WITHER_DIV + ' 最大体力（每层 1/' + WITHER_DIV + '，最多 ' + WITHER_MAX + ' 层），持续到战斗结束。当前每回合损失 ' + witherDot(m) + ' 点' });
   if (m.fx.boostNext) c.push({ t: '潜水蓄力', k: 'fx', h: '潜水蓄力', d: '下一次攻击伤害提升50%' });
   if (m.fx.moon) c.push({ t: '月升 ×' + m.fx.moon, k: 'fx', h: '月升 · ' + m.fx.moon + ' / 5', d: '达到5层时转化为光影之月。下场时清空。' });
-  if (m.fx.moonNext) c.push({ t: '月蚀 · 下次攻击+15%', k: 'fx', h: '月蚀', d: '刚转换过属性，下一次攻击伤害提升15%' });
-  if (m.perm && m.perm.moonFull) c.push({ t: '光影之月', k: 'fx', h: '光影之月（永久，下场保留）', d: '属性：光 + 暗影\n技能属性：固定为' + (m.perm.moonMv ? '暗影系' : '原属性') + '\n伤害 +15%\n使用技能时，其余技能各恢复1点PP\n无法使用月之暗面 / 月之亮面' });
+  if (m.fx.moonNext) c.push({ t: '月蚀 · 下次攻击+15%', k: 'fx', h: '月蚀', d: '刚转换过属性，下一次攻击伤害提升15%，命中后恢复 1/6 最大体力' });
+  if (m.perm && m.perm.moonFull) c.push({ t: '光影之月', k: 'fx', h: '光影之月（永久，下场保留）', d: '属性：光 + 暗影\n技能属性：固定为' + (m.perm.moonMv ? '暗影系' : '原属性') + '\n伤害 +15%\n使用技能时，其余技能各恢复1点PP，并恢复 1/6 最大体力\n无法使用月之暗面 / 月之亮面' });
   if (m.fx.sureCrit) c.push({ t: m.fx.sureHit ? '必中必暴' : '下次暴击', k: 'fx', h: m.fx.sureHit ? '必中必暴' : '下次暴击', d: m.fx.sureHit ? '下一次攻击必定命中并造成致命一击' : '下一次攻击必定致命一击' });
   for (var t in m.tm) if (m.tm[t] > 0) c.push({ t: (TM_NAME[t] || t) + ' ' + m.tm[t], k: FOE_TM[t] ? 'st' : 'fx', h: (TM_NAME[t] || t) + ' · 剩 ' + m.tm[t] + ' 回合', d: TM_DESC[t] || '' });
   return c;
@@ -452,7 +456,7 @@ function movePower(me, foe, mv) {
     case 'iceSpike': if (foe.st['冰冻'] > 0) power += 50; break;
     case 'originStorm': power += 15 * Math.max(0, -foe.stages.spe); break;
     case 'punish': power += 20 * posSum(foe); break;
-    case 'canyue': power = Math.min(160, 10 * Math.pow(2, me.flags.canyue || 0)); break;
+    case 'canyue': power = canyuePow(me.fx.canyueNow ? (me.flags.canyue || 1) - 1 : me.flags.canyue || 0); break;
     case 'starMagic': var sn = me.perm.star || 0; power = Math.min(STAR_MAX, 25 * (me.fx.starNow ? sn : sn + 1)); break;
   }
   if (foe.fx && foe.fx.earMark) power *= 2;
@@ -673,10 +677,12 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   if (!extra && me.perm.moonFull && slotIdx >= 0) {
     var got = 0; me.moves.forEach(function (sl, k) { if (k !== slotIdx && sl.pp < sl.max) { sl.pp++; got++; } });
     if (got) log(S, evs, '光影之月：其余技能各恢复1点PP', 'fxl');
+    if (me.hp < me.maxhp) { log(S, evs, '光影之月：使用技能恢复 1/6 最大体力', 'fxl'); heal(S, evs, i, me.maxhp / 6); }
   }
   if (ability(me) === '孢子' && mv.name.indexOf('孢子') >= 0) heal(S, evs, i, me.maxhp / 10);
-  me.fx.starNow = 0;
+  me.fx.starNow = 0; me.fx.canyueNow = 0;
   if (mv.custom === 'starMagic') { me.perm.star = (me.perm.star || 0) + 1; me.fx.starNow = 1; }
+  if (mv.custom === 'canyue') { me.flags.canyue = (me.flags.canyue || 0) + 1; me.fx.canyueNow = 1; E(S, evs, 'stage', { side: i }); }   // 和星星魔法一样：使用就计数（打空也算）
   if (mv.cat === '变化') { doStatus(S, evs, i, mv); return; }
 
   if (foe.fainted) { log(S, evs, '但是没有目标'); return; }
@@ -726,8 +732,9 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   if (foe.hp <= 0 && !foe.fainted) faint(S, evs, j);
   if (hits > 1) log(S, evs, '连续命中 ' + n + ' 次！');
   if (burnX && !foe.fainted) { E(S, evs, 'stage', { side: j }); log(S, evs, nm(foe) + '的烧伤延长了 ' + burnX + ' 回合（剩 ' + foe.st['烧伤'] + ' 回合）', 'fxl'); }
+  // 月蚀的强化攻击（转换属性后的下一次攻击）命中后，恢复 1/6 最大体力
+  if (me.fx.moonNext && ability(me) === '月蚀' && !me.fainted && me.hp < me.maxhp) { log(S, evs, nm(me) + '的「月蚀」：强化攻击命中，恢复 1/6 最大体力', 'fxl'); heal(S, evs, i, me.maxhp / 6); }
   me.flags.firstAtk = true; me.fx.boostNext = 0; me.fx.moonNext = 0; if (me.fx.x2Next) { me.fx.x2Next = 0; E(S, evs, 'stage', { side: i }); }
-  if (mv.custom === 'canyue') me.flags.canyue = (me.flags.canyue || 0) + 1;
   var fxd = addFixed(me, mv);
   if (fxd && !foe.fainted) { log(S, evs, '附加 ' + fxd + ' 点固定伤害', 'fxl'); applyDamage(S, evs, j, fxd, i, {}); }
   if (mv.custom === 'drown' && !foe.fainted) {   // 溺毙：对方每有一项能力下降，附加 30 点固定伤害
@@ -1206,6 +1213,8 @@ function miasmaTick(S, evs) {
 }
 function endOfTurn(S, evs) {
   S.curMove = null;
+  // 星星魔法 / 残月之痕的「本次使用中」标记只在出招的这一回合有效，回合结束清掉，免得之后的威力预估（电脑估分、界面）少算一档
+  S.sides.forEach(function (sd) { sd.team.forEach(function (m) { if (m.fx) { m.fx.starNow = 0; m.fx.canyueNow = 0; } }); });
   bombTick(S, evs);
   if (S.over) return;
   miasmaTick(S, evs);
