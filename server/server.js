@@ -22,6 +22,7 @@ var social = require('./social');
 require('./board');   // 讨论区（公开留言板）
 require('./bossboard');
 require('./artvote');   // 航行日志 · 立绘更新投票
+require('./homelog');   // 茶室动态与留言板
 require('./dm');   // 私信   // 首领攻略板（已通过的玩家、攻略、评分、点赞）
 
 var PORT = parseInt(process.env.PORT, 10) || 80;

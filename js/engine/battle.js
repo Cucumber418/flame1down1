@@ -41,8 +41,10 @@ function liveImg(m) {
 function liveMove(me, mv) { return mv && mv.custom === 'darkside' && me.tm && me.tm.darkside > 0 ? LIGHTSIDE : mv; }
 
 function stageMult(n) { return n >= 0 ? (2 + n) / 2 : 2 / (2 - n); }
-// 命中修正：提升命中维持原样；闪避提高 / 命中下降（净等级为负）的效果减弱（-1 级 80%，-6 级 40%）
-function accMult(n) { n = Math.max(-6, Math.min(6, n)); return n >= 0 ? (3 + n) / 3 : 4 / (4 - n); }
+// 命中修正：先算净等级（自己的命中等级 − 对方的闪避等级），提升命中维持原样（每级 +1/3）。
+// 净等级为负时查表：-1、-2 级影响不大（80%、66%），叠到 -4 以下明显打不中（-4 级 43%，-6 级只剩 25%）
+var ACC_DOWN = [1, 0.8, 0.66, 0.54, 0.43, 0.33, 0.25];
+function accMult(n) { n = Math.max(-6, Math.min(6, Math.round(n) || 0)); return n >= 0 ? (3 + n) / 3 : ACC_DOWN[-n]; }
 var STAB = 1.2;      // 本系加成：技能属性与精灵属性相同时伤害 ×1.2
 var HP_MULT = 1.75;   // 体力在原公式基础上 ×1.75
 // iv：天赋（0~31），不传时按满天赋 31 计算（野怪、剧情对手、首领、平衡排位）

@@ -8,7 +8,7 @@
  *   GET  /api/players            所有玩家的简要信息 + 在线状态 + 是否好友
  *   GET  /api/card?user=账号名    某个玩家的完整名片
  *   POST /api/friends { user, on }   加好友 / 删好友（单向，像「关注」）
- *   GET  /api/home?user=账号名    拜访某人的茶室：茶室名字、展示中的精灵（用于观看和挑战）
+ *   GET  /api/home?user=账号名    拜访某人的茶室：茶室名字、展示中的精灵（用于观看和挑战）；同时记进主人的茶室动态（见 homelog.js）
  *   GET  /api/helpers            好友名片里的助战精灵（星球挑战里可以借用）
  *
  * WebSocket 消息（在 server.js 的 /ws 上）：
@@ -128,8 +128,9 @@ function homeOf(acc) {
 var KING_R = 10;   // 王者（段位表见 js/engine/ranked.js 的 RANKS）
 function rankOut(r) {
   if (!r) return { r: 0, best: 0, w: 0, l: 0, stars: 0, kingBest: 0 };
-  var cur = int(r.r, 0, 99), stars = int(r.stars, 0, 1e6);
-  return { r: cur, best: int(Math.max(r.best || 0, r.r || 0), 0, 99), w: int(r.w, 0, 1e7), l: int(r.l, 0, 1e7), stars: stars,
+  var cur = int(r.r, 0, 99), stars = int(r.stars, 0, 1e6), best = int(Math.max(r.best || 0, r.r || 0), 0, 99);
+  var div = function (t, v) { return t >= 4 && t <= 9 ? (v >= 1 && v <= 5 ? int(v, 1, 5) : 1) : null; };   // 铂金到宗师的小段（V=5 … I=1），旧存档没有就按 I 段
+  return { r: cur, dv: div(cur, r.dv), best: best, bestDv: div(best, best === cur && !(r.bestDv >= 1) ? r.dv : r.bestDv), w: int(r.w, 0, 1e7), l: int(r.l, 0, 1e7), stars: stars,
     kingBest: Math.max(int(r.kingBest, 0, 1e6), cur === KING_R ? stars : 0) };   // 王者达到过的最高星数
 }
 
@@ -142,7 +143,7 @@ function summary(u, me) {
   o.name = str(acc.name, 20); o.title = str(acc.title, 20) || null; o.avatar = avatarOf(acc); o.gender = acc.gender === 'f' ? 'f' : 'm';   // 主角形象（名片上显示）
   o.monsN = acc.mons.length; o.teamN = activeTeam(acc).length;
   o.show = showMons(acc).map(function (m) { return { sid: str(m.sid, 32), lv: int(m.lv, 1, 100) }; });
-  var ro = rankOut(p.rank); o.rank = ro.best; if (ro.best === KING_R) o.rankStars = ro.kingBest;
+  var ro = rankOut(p.rank); o.rank = ro.best; o.rankDv = ro.bestDv; if (ro.best === KING_R) o.rankStars = ro.kingBest;
   var hm = homeOf(acc); o.homeOpen = hm.open; o.homeN = hm.mons.length;
   o.brawl = brawlOk(acc);
   return o;
@@ -569,6 +570,7 @@ A.use(function (req, res, url) {
     var ha = parseSave(hu).acc;
     if (!ha || !ha.introDone) { A.reply(res, 200, { user: hu.name, noChar: true }); return true; }
     var hm = homeOf(ha);
+    if (hm.open && hu.name !== me.name) require('./homelog').visit(hu.name, me.name);   // 记进主人的茶室动态
     A.reply(res, 200, { user: hu.name, name: str(ha.name, 20), me: hu.name === me.name, open: hm.open, homeName: hm.name, bgm: hm.bgm, mons: hm.mons.map(function (m) { return monOut(m, ha); }), online: isOnline(hu.name) });
     return true;
   }

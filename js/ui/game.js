@@ -611,9 +611,16 @@
     ivReroll: { name: '天赋重组合剂', sid: null, kind: 'iv', d: '把你的任意一只精灵的六项天赋（0~31）全部重新随机。新的天赋可能更高，也可能更低。' },
     natTagore: { name: '泰戈尔性格药剂', sid: 'tagore', kind: 'nat', d: '把你的一只泰戈尔（小胖虎、胖虎也可以）的性格改成你指定的性格。' },
     evAny: { name: '通用学习力合剂', sid: null, kind: 'ev', d: '为你的任意一只精灵直接增加 100 点学习力。加进「可分配学习力」，再在精灵资料里自己分配；学习力总量最多 ' + EV_TOTAL + '。' },
-    evTagore: { name: '泰戈尔学习力合剂', sid: 'tagore', kind: 'ev', d: '为你的一只泰戈尔（小胖虎、胖虎也可以）直接增加 100 点学习力。加进「可分配学习力」，再在精灵资料里自己分配；学习力总量最多 ' + EV_TOTAL + '。' }
+    evTagore: { name: '泰戈尔学习力合剂', sid: 'tagore', kind: 'ev', d: '为你的一只泰戈尔（小胖虎、胖虎也可以）直接增加 100 点学习力。加进「可分配学习力」，再在精灵资料里自己分配；学习力总量最多 ' + EV_TOTAL + '。' },
+    // 竞技代币商店（2026-10-14）
+    ivMoon: { name: '小月亮专属天赋重置药剂', sid: 'moon', kind: 'iv2', d: '只能用在小月亮（朔望月灵也可以）身上。把六项天赋全部重新随机，每一项都会掷两次、取较高的一次，比普通的天赋重组合剂更容易出高天赋。', none: '你还没有小月亮。平衡排位第一次达到铂金时会送一只。' },
+    ivBone: { name: '凶骨专属天赋重置药剂', sid: 'bone', kind: 'iv2', d: '只能用在凶骨（骨刃一系都可以）身上。把六项天赋全部重新随机，每一项都会掷两次、取较高的一次，比普通的天赋重组合剂更容易出高天赋。', none: '你还没有凶骨。平衡排位第一次达到王者时会送一只。' },
+    natAny: { name: '性格胶囊', sid: null, kind: 'nat', d: '把你的任意一只精灵的性格改成你指定的性格。' },
+    evReset: { name: '学习力重置胶囊', sid: null, kind: 'evreset', d: '把一只精灵已经分配的学习力全部退回「可分配学习力」，可以重新分配。' },
+    fruit1: { name: '成长果实', sid: null, kind: 'exp', rate: 100, d: '给一只精灵直接增加经验：等级 × 100 点（LV30 吃一颗得 3,000 点）。等级越高，得到的经验越多。' },
+    fruit2: { name: '迅速成长果实', sid: null, kind: 'exp', rate: 250, d: '给一只精灵直接增加经验：等级 × 250 点（LV30 吃一颗得 7,500 点）。比成长果实效果更好。' }
   };
-  var MON_ORDER = ['ivReroll', 'evAny', 'evTagore', 'natTagore'], GEN_ORDER = ['trans', 'helmet', 'auto', 'rename', 'cap1', 'cap2', 'cap3', 'pot1', 'pot2', 'pot200'];
+  var MON_ORDER = ['ivMoon', 'ivBone', 'ivReroll', 'evAny', 'evTagore', 'natAny', 'natTagore', 'evReset', 'fruit1', 'fruit2'], GEN_ORDER = ['trans', 'helmet', 'auto', 'rename', 'cap1', 'cap2', 'cap3', 'pot1', 'pot2', 'pot200'];
   // 剧情道具：主线里拿到的，不能使用也不会消耗
   var KEY_ITEMS = {
     trans: { name: '精灵翻译器', d: '汉街总部国际A座的情报显示，这个翻译器能凭一己之力考到雅思 6.5 分。这样一来，翻译精灵的语言也一定能行吧……', img: 'translator' },
@@ -656,9 +663,23 @@
       var old = m.nat; m.nat = nat; acc.items[k]--; save();
       return { ok: true, msg: form(m).name + ' 的性格从「' + old + '」变成了「' + nat + '」（' + natText(nat) + '）。' };
     }
-    if (it.kind === 'iv') {
-      var o = ivOf(m), n = randIv(); m.iv = n; acc.items[k]--; save();
+    if (it.kind === 'iv' || it.kind === 'iv2') {
+      var o = ivOf(m), n = randIv();
+      if (it.kind === 'iv2') { var n2 = randIv(); STAT_KEYS.forEach(function (x) { n[x] = Math.max(n[x], n2[x]); }); }   // 专属药剂：每项掷两次取高
+      m.iv = n; acc.items[k]--; save();
       return { ok: true, msg: form(m).name + ' 的天赋重组了：' + STAT_KEYS.map(function (x) { return BASE_NAME[x] + ' ' + (o ? o[x] + '→' : '') + n[x]; }).join('，') + '。' };
+    }
+    if (it.kind === 'exp') {
+      var amt = m.lv * it.rate, r0 = gainExp(m, amt);
+      if (!r0) return { ok: false, msg: '这只已经满级了，吃不下了。' };
+      acc.items[k]--; save(); renderTitle();
+      return { ok: true, msg: r0 };
+    }
+    if (it.kind === 'evreset') {
+      var back = evSum(m);
+      if (!back) return { ok: false, msg: '这只还没有分配过学习力。' };
+      m.evFree = (m.evFree || 0) + back; m.ev = {}; acc.items[k]--; save();
+      return { ok: true, msg: form(m).name + ' 已分配的 ' + back + ' 点学习力全部退回，现在有 ' + m.evFree + ' 点可分配学习力，在精灵资料的「学习力」一栏重新分配。' };
     }
     var add = Math.min(100, evRoom(m));
     if (!add) return { ok: false, msg: '这只的学习力已经到上限了。' };
@@ -672,9 +693,11 @@
     return '<div class="md-items"><h4>精灵道具 <span class="hint">直接用在' + esc(form(m).name) + '身上</span></h4>' + ks.map(function (k) {
       var it = USE_ITEMS[k], act;
       if (it.kind === 'nat') act = '<select data-mnat="1" aria-label="新的性格">' + NAT_KEYS.filter(function (n) { return n !== m.nat; }).map(function (n) { return '<option value="' + n + '">' + n + '（' + natText(n) + '）</option>'; }).join('') + '</select><button type="button" class="btn" data-muse="' + k + '">改性格</button>';
-      else if (it.kind === 'iv') act = '<button type="button" class="btn" data-muse="' + k + '">使用 · 重组天赋</button>';
+      else if (it.kind === 'iv' || it.kind === 'iv2') act = '<button type="button" class="btn" data-muse="' + k + '">使用 · 重组天赋</button>';
+      else if (it.kind === 'exp') act = '<button type="button" class="btn" data-muse="' + k + '"' + (m.lv >= MAX_LV ? ' disabled' : '') + '>' + (m.lv >= MAX_LV ? '已满级' : '使用 · +' + fmt(m.lv * it.rate) + ' 经验') + '</button>';
+      else if (it.kind === 'evreset') act = '<button type="button" class="btn" data-muse="' + k + '"' + (evSum(m) ? '' : ' disabled') + '>' + (evSum(m) ? '使用 · 退回 ' + evSum(m) + ' 点' : '没有分配过学习力') + '</button>';
       else { var room = evRoom(m); act = '<button type="button" class="btn" data-muse="' + k + '"' + (room ? '' : ' disabled title="学习力已经到上限了"') + '>' + (room ? '使用 · +' + Math.min(100, room) + ' 学习力' : '学习力已满') + '</button>'; }
-      return '<div class="md-it"><b>' + it.name + ' <span class="cnt">×' + acc.items[k] + '</span></b><span class="hint">' + esc(it.kind === 'nat' ? '把性格改成你选的性格' : it.kind === 'iv' ? '六项天赋全部重新随机' : '直接增加 100 点可分配学习力') + '</span><span class="md-act">' + act + '</span></div>';
+      return '<div class="md-it"><b>' + it.name + ' <span class="cnt">×' + acc.items[k] + '</span></b><span class="hint">' + esc(it.kind === 'nat' ? '把性格改成你选的性格' : it.kind === 'iv' ? '六项天赋全部重新随机' : it.kind === 'iv2' ? '六项天赋重新随机，每项掷两次取高' : it.kind === 'exp' ? '直接增加等级 × ' + it.rate + ' 点经验' : it.kind === 'evreset' ? '已分配的学习力全部退回' : '直接增加 100 点可分配学习力') + '</span><span class="md-act">' + act + '</span></div>';
     }).join('') + '</div>';
   }
   function growText(min) { return min >= 60 && min % 60 === 0 ? (min / 60) + ' 小时' : min + ' 分钟'; }
@@ -692,7 +715,7 @@
     var monCells = have.filter(function (k) { return USE_ITEMS[k]; }).map(cell), genCells = have.filter(function (k) { return !USE_ITEMS[k]; }).map(cell);
     if (wk) genCells.unshift('<button type="button" class="ib-it permit' + (ui.itSel === 'permit' ? ' sel' : '') + '" data-itsel="permit"><b>挑战许可</b><span class="cnt">' + pn + ' / ' + PERMIT.max + '</span><small>每周挑战用</small></button>');
     var html = '<section class="itembox"><span class="tape r"></span><div class="ib-head"><h3>精灵道具</h3><span class="hint">直接用在精灵身上的道具。也可以在精灵背包、精灵仓库里点开一只精灵，在它的资料里直接使用。</span></div>' +
-      (monCells.length ? '<div class="ib-grid">' + monCells.join('') + '</div>' : '<p class="empty-note">还没有精灵道具。排位段位奖励、首领挑战会获得学习力合剂、性格药剂。</p>') +
+      (monCells.length ? '<div class="ib-grid">' + monCells.join('') + '</div>' : '<p class="empty-note">还没有精灵道具。排位段位奖励、首领挑战会获得学习力合剂、性格药剂；竞技代币商店也能兑换。</p>') +
       '<div class="ib-head"><h3>一般道具</h3><span class="hint">捕捉装置和补药在剧情、野外、首领对战的「道具」页使用；改名卡、自律训练装置点开后使用。</span></div>' +
       (genCells.length ? '<div class="ib-grid">' + genCells.join('') + '</div>' : '<p class="empty-note">还没有一般道具。在荆楚号 · 荆门 · 物资仓储的商城可以兑换。</p>') +
       '<div class="ib-head"><h3>采集物</h3><span class="hint">野外采集点每天可以采集 1 次。芙罗拉、坎布尔、庞贝每个点得到星砂 ×12；莱汀、白之星每个点得到星核 ×1。拿到黄石 · 冶炼坊合成捕捉装置。</span></div>' +
@@ -721,14 +744,15 @@
         if (!mons.some(function (m) { return m.u === ui.itTarget; })) ui.itTarget = mons.length ? mons[0].u : null;
         var tm = mon(ui.itTarget);
         body = '<p>' + esc(it.d) + '</p>' + (mons.length ? '<div class="it-step"><b>1. 选择精灵</b><div class="it-mons">' + mons.map(function (m) {
-          var f = form(m), sub = it.kind === 'nat' ? '性格 ' + m.nat : it.kind === 'iv' ? '天赋合计 ' + (ivOf(m) ? STAT_KEYS.reduce(function (a, x) { return a + m.iv[x]; }, 0) : '？') : '可再加 ' + evRoom(m) + ' 点';
+          var f = form(m), sub = it.kind === 'nat' ? '性格 ' + m.nat : it.kind === 'exp' ? (m.lv >= MAX_LV ? '已满级' : '可得 ' + fmt(m.lv * it.rate) + ' 经验') : it.kind === 'evreset' ? '已分配 ' + evSum(m) + ' 点' : it.kind === 'iv' || it.kind === 'iv2' ? '天赋合计 ' + (ivOf(m) ? STAT_KEYS.reduce(function (a, x) { return a + m.iv[x]; }, 0) : '？') : '可再加 ' + evRoom(m) + ' 点';
           return '<label class="it-mon' + (m.u === ui.itTarget ? ' on' : '') + '"><input type="radio" name="it-t" value="' + m.u + '"' + (m.u === ui.itTarget ? ' checked' : '') + '><img src="' + f.img + '" alt=""><span><b>' + esc(f.name) + '</b><small>LV' + m.lv + ' · ' + sub + '</small></span></label>';
         }).join('') + '</div></div>' +
           (it.kind === 'nat' ? '<div class="it-step"><b>2. 选择性格</b><select id="it-nat" aria-label="新的性格">' + NAT_KEYS.map(function (n) { var cur = tm && tm.nat === n, pick = ui.itNat && (!tm || ui.itNat !== tm.nat) ? ui.itNat : NAT_KEYS.filter(function (x) { return !tm || x !== tm.nat; })[0]; return '<option value="' + n + '"' + (pick === n ? ' selected' : '') + (cur ? ' disabled' : '') + '>' + n + '（' + natText(n) + '）' + (cur ? ' · 当前' : '') + '</option>'; }).join('') + '</select></div>'
-            : it.kind === 'iv' ? '<p class="hint">' + (tm && ivOf(tm) ? esc(form(tm).name) + ' 现在的天赋：' + STAT_KEYS.map(function (x) { return BASE_NAME[x] + ' ' + tm.iv[x]; }).join('，') + '。' : '') + '</p>'
+            : it.kind === 'iv' || it.kind === 'iv2' ? '<p class="hint">' + (tm && ivOf(tm) ? esc(form(tm).name) + ' 现在的天赋：' + STAT_KEYS.map(function (x) { return BASE_NAME[x] + ' ' + tm.iv[x]; }).join('，') + '。' : '') + '</p>'
+            : it.kind === 'exp' ? '<p class="hint">' + (tm ? esc(form(tm).name) + ' 现在 LV' + tm.lv + '，吃一颗得到 ' + fmt(tm.lv * it.rate) + ' 点经验。' : '') + '</p>'
             : '<p class="hint">' + (tm ? esc(form(tm).name) + ' 学习力：已分配 ' + evSum(tm) + '，可分配 ' + (tm.evFree || 0) + '，还能再加 ' + evRoom(tm) + ' 点。' : '') + '</p>') +
-          '<button type="button" class="btn primary" data-ituse="' + k + '"' + (it.kind === 'ev' && tm && !evRoom(tm) ? ' disabled' : '') + '>使用 1 个' + itemName(k) + '</button>'
-          : '<p class="hint red">你还没有' + SPMAP[it.sid].name + '（小胖虎、胖虎也算）。击败简单难度的首领「泰戈尔」可以领养一只小胖虎。</p>');
+          '<button type="button" class="btn primary" data-ituse="' + k + '"' + ((it.kind === 'ev' && tm && !evRoom(tm)) || (it.kind === 'exp' && tm && tm.lv >= MAX_LV) || (it.kind === 'evreset' && tm && !evSum(tm)) ? ' disabled' : '') + '>使用 1 个' + itemName(k) + '</button>'
+          : '<p class="hint red">' + esc(it.none || '你还没有' + SPMAP[it.sid].name + '（小胖虎、胖虎也算）。击败简单难度的首领「泰戈尔」可以领养一只小胖虎。') + '</p>');
       }
       html += '<div class="ib-detail"><h4>' + (k === 'permit' ? '挑战许可' : itemName(k)) + '</h4>' + body + (ui.itMsg ? '<p class="exp-msg">' + esc(ui.itMsg) + '</p>' : '') + '</div>';
     }
@@ -2089,10 +2113,10 @@
   var MAIL_MAX = 100;
   function dayStr() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
   function mails() { if (!Array.isArray(acc.mail)) acc.mail = []; if (!acc.mailSeen) acc.mailSeen = {}; return acc.mail; }
-  function hasAtt(a) { return !!(a && (a.exp || a.energy || a.merit || (a.items && Object.keys(a.items).length) || (a.mons && a.mons.length))); }
+  function hasAtt(a) { return !!(a && (a.exp || a.energy || a.merit || a.tokens || (a.items && Object.keys(a.items).length) || (a.mons && a.mons.length))); }
   function attList(a) {
     var r = []; if (!a) return r;
-    if (a.exp) r.push('累积经验 ×' + fmt(a.exp)); if (a.energy) r.push('能量 ×' + fmt(a.energy)); if (a.merit) r.push('功勋点 ×' + fmt(a.merit));
+    if (a.exp) r.push('累积经验 ×' + fmt(a.exp)); if (a.energy) r.push('能量 ×' + fmt(a.energy)); if (a.merit) r.push('功勋点 ×' + fmt(a.merit)); if (a.tokens) r.push('竞技代币 ×' + fmt(a.tokens));
     if (a.items) for (var k in a.items) r.push(itemName(k) + ' ×' + a.items[k]);
     (a.mons || []).forEach(function (g) { if (SPMAP[g.sid]) r.push(form(g).name + ' LV' + g.lv); });
     return r;
@@ -2184,6 +2208,20 @@
       rec.kingGift = true; changed = true;
       if (rec.got[10]) sendMail({ id: SEASON + '-king-gift', title: '王者段位奖励补发：凶骨', body: '{name}，你好！\n排位赛季 ' + SEASON + ' 的王者段位奖励新增了 LV10 的凶骨。你之前已经达到王者，现在补发给你，请领取附件。', att: { mons: [{ sid: 'bone', lv: 10 }] } });
     }
+    // 竞技代币上线（2026-10-14）：领过排位奖励的局每局补 20 代币；今天已经按 600 经验领过的局，补经验差额
+    if (!acc.tokenBack) {
+      acc.tokenBack = Date.now(); changed = true;
+      var RK = null; try { RK = JSON.parse(localStorage.getItem('hs-rank-v1') || 'null'); } catch (e) {}
+      // 只补「当时本来就有奖励」的局：排位经验从 2026-10-12 开始发，每天前 10 局有奖。
+      // 以前每天打了几局没有逐日记录，所以按「战绩里的总局数」和「10-12 起到昨天每天 10 局」取较小的一个，再加上今天已经领过奖的局
+      var total = RK ? (RK.w || 0) + (RK.l || 0) : 0, tdy = rankToday();
+      var past = Math.max(0, Math.round((Date.parse(bjDay().replace(/-(\d)(?=-|$)/g, '-0$1') + 'T00:00:00Z') - Date.parse('2026-10-12T00:00:00Z')) / 864e5)) * RANK_EXP_N;
+      var games = tdy + Math.min(Math.max(0, total - tdy), past || 0);
+      if (games) sendMail({ id: 'arena-token-back', title: '平衡排位奖励提升 · 竞技代币补发',
+        body: '{name}，你好！\n从今天起，平衡排位每天前 ' + RANK_EXP_N + ' 局每局奖励 ' + fmt(RANK_EXP) + ' 累积经验（每天共 ' + fmt(RANK_EXP * RANK_EXP_N) + '），并额外掉落 ' + RANK_TOKEN + ' 竞技代币。竞技代币可以在竞技对战 · 平衡排位的「竞技代币商店」兑换道具。\n' +
+          '平衡排位奖励上线以来，你有 ' + games + ' 局领过排位奖励（每天前 ' + RANK_EXP_N + ' 局），每局补发 ' + RANK_TOKEN + ' 竞技代币。' + (tdy ? '其中今天的 ' + tdy + ' 局按新标准补发经验差额。' : '') + '请领取附件。',
+        att: { tokens: games * RANK_TOKEN, exp: tdy * (RANK_EXP - RANK_EXP_OLD) } });
+    }
     // 每日任务奖励翻倍：今天已经按旧标准领过的任务，补发差额（之前的日子没有逐日记录，补不了）
     var DL = daily();
     if (DL) {
@@ -2201,6 +2239,7 @@
     if (a.exp) acc.exp = (acc.exp || 0) + a.exp;
     if (a.energy) acc.energy = (acc.energy || 0) + a.energy;
     if (a.merit) giveMerit(a.merit);
+    if (a.tokens) acc.tokens = (acc.tokens || 0) + a.tokens;
     if (a.items) giveItems(a.items);
     (a.mons || []).forEach(function (g) { if (!SPMAP[g.sid]) return; var nm = newMon(g.sid, g.lv), T = acc.teams[acc.active]; if (T.length < TEAM_SIZE) T.push(nm.u); });
     m.got = true; m.read = true;
@@ -2321,14 +2360,15 @@
     if (type !== 'arena') return;
     dailyHit('arena');
     if (d.rank) { dailyHit('rankPlay'); if (d.result === 'win') dailyHit('rankWin'); } else dailyHit('sandbox');
-    // 平衡排位：每天前 10 局各给 600 累积经验（认输不算）
+    // 平衡排位：每天前 10 局各给 1000 累积经验和 20 竞技代币（认输不算）
     if (d.rank && !d.quit) {
       var n = rankToday();
-      if (n < RANK_EXP_N) { acc.rankExp = { d: bjDay(), n: n + 1 }; acc.exp = (acc.exp || 0) + RANK_EXP; save(); renderRes(); return '平衡排位奖励：累积经验 +' + fmt(RANK_EXP) + '（今天第 ' + (n + 1) + ' / ' + RANK_EXP_N + ' 局）'; }
-      return '今天的 ' + RANK_EXP_N + ' 局平衡排位经验已经领完了';
+      if (n < RANK_EXP_N) { acc.rankExp = { d: bjDay(), n: n + 1 }; acc.exp = (acc.exp || 0) + RANK_EXP; acc.tokens = (acc.tokens || 0) + RANK_TOKEN; save(); renderRes(); return '平衡排位奖励：累积经验 +' + fmt(RANK_EXP) + '，竞技代币 +' + RANK_TOKEN + '（今天第 ' + (n + 1) + ' / ' + RANK_EXP_N + ' 局）'; }
+      return '今天的 ' + RANK_EXP_N + ' 局平衡排位奖励已经领完了';
     }
   };
-  var RANK_EXP = 600, RANK_EXP_N = 10;
+  // 2026-10-14 起每局 1000 经验（每天 10 局共 10000）并掉落 20 竞技代币；RANK_EXP_OLD 用来给当天已经打过的局补差额
+  var RANK_EXP = 1000, RANK_EXP_N = 10, RANK_TOKEN = 20, RANK_EXP_OLD = 600;
   function rankToday() { return acc && acc.rankExp && acc.rankExp.d === bjDay() ? acc.rankExp.n || 0 : 0; }
   function dailyHTML() {
     var D = daily(); if (!D) return '';
@@ -2503,6 +2543,58 @@
       '<article class="log-card wide"><span class="tape l"></span><span class="chip log-tag">每日任务</span><h3>今天的任务</h3>' + dailyHTML() + '</article>' +
       '</div>';
   }
+  /* ---------- 竞技代币商店（2026-10-14） ----------
+   * 竞技代币：平衡排位每天前 10 局每局掉 20 个。商店在竞技对战 · 平衡排位的段位卡里打开（弹窗）。
+   * 卖的都是精灵道具，买到后放进储存箱，在储存箱或精灵资料里使用。 */
+  var TOKEN_SHOP = [
+    { k: 'ivMoon', price: 100 }, { k: 'ivBone', price: 100 }, { k: 'evAny', price: 100 },
+    { k: 'fruit1', price: 30 }, { k: 'fruit2', price: 60 },
+    { k: 'natAny', price: 150 }, { k: 'evReset', price: 80 }, { k: 'evTagore', price: 60 }, { k: 'natTagore', price: 80 },
+    { k: 'ivReroll', price: 200 }
+  ];
+  function tokens() { return (acc && acc.tokens) || 0; }
+  function tokenBarHTML() {
+    if (!ready()) return '';
+    return '<div class="tk-bar"><span class="tape l"></span><span class="tk-coin" aria-hidden="true">代</span><span class="tk-txt"><b>竞技代币 ' + fmt(tokens()) + '</b><small>平衡排位每天前 ' + RANK_EXP_N + ' 局每局掉落 ' + RANK_TOKEN + ' 个，可以兑换天赋药剂、学习力合剂、成长果实等</small></span>' +
+      '<button type="button" class="btn primary" data-tkshop="1">竞技代币商店</button></div>';
+  }
+  var tkQty = {};
+  function tokenShopHTML() {
+    var bal = tokens();
+    return '<span class="tape l"></span><span class="tape r"></span><span class="step">荆楚号 · 孝感大厅</span><h2>竞技代币商店</h2>' +
+      '<div class="shop-bal tk-bal">持有竞技代币 <b>' + fmt(bal) + '</b><span class="hint">兑换的道具放进储存箱，在储存箱或精灵资料里使用</span></div>' +
+      '<div class="tk-list">' + TOKEN_SHOP.map(function (T) {
+        var it = USE_ITEMS[T.k], q = tkQty[T.k] || 1, cost = T.price * q, ok = bal >= cost;
+        return '<article class="tk-it"><div class="si-txt"><b>' + esc(it.name) + '</b><p class="hint">' + esc(it.d) + '</p><p class="si-own">持有 <b>' + (acc.items[T.k] || 0) + '</b></p></div>' +
+          '<div class="si-buy"><span class="si-price">' + T.price + ' <small>代币</small></span>' +
+          '<div class="qty"><button type="button" class="btn ghost" data-tkq="' + T.k + '" data-d="-1" aria-label="减少"' + (q <= 1 ? ' disabled' : '') + '>−</button><span aria-live="polite">' + q + '</span><button type="button" class="btn ghost" data-tkq="' + T.k + '" data-d="1" aria-label="增加"' + (q >= 20 ? ' disabled' : '') + '>+</button></div>' +
+          '<button type="button" class="btn primary" data-tkbuy="' + T.k + '"' + (ok ? '' : ' disabled') + '>' + (ok ? '兑换 · ' + cost : '代币不足') + '</button></div></article>';
+      }).join('') + '</div>' +
+      '<div class="soc-foot"><button type="button" class="btn ghost" data-tkx="1">关闭</button></div>';
+  }
+  function openTokenShop() {
+    if (!ready() || $('tkshop')) return;
+    var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'tkshop';
+    var box = document.createElement('div'); box.className = 'soc-box mailbox tkshop'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', '竞技代币商店');
+    d.appendChild(box); document.body.appendChild(d);
+    function draw() { box.innerHTML = tokenShopHTML(); }
+    function close() { d.remove(); if (window.HSBATTLE && HSBATTLE.renderMode && $('battle').hidden) HSBATTLE.renderMode(); }
+    draw();
+    d.addEventListener('click', function (e) {
+      if (e.target === d || e.target.closest('[data-tkx]')) { close(); return; }
+      var t;
+      if ((t = e.target.closest('[data-tkq]'))) { var k0 = t.dataset.tkq; tkQty[k0] = Math.max(1, Math.min(20, (tkQty[k0] || 1) + +t.dataset.d)); draw(); return; }
+      if ((t = e.target.closest('[data-tkbuy]')) && !t.disabled) {
+        var k = t.dataset.tkbuy, T = TOKEN_SHOP.filter(function (x) { return x.k === k; })[0], q = tkQty[k] || 1, cost = T ? T.price * q : 0;
+        if (!T || tokens() < cost) return;
+        acc.tokens = tokens() - cost; var g0 = {}; g0[k] = q; giveItems(g0); tkQty[k] = 1; save(); draw();
+        toast('兑换成功：' + itemName(k) + ' ×' + q + '，消耗 ' + cost + ' 竞技代币。已放进储存箱。');
+      }
+    });
+  }
+  document.addEventListener('click', function (e) { if (e.target.closest('[data-tkshop]')) openTokenShop(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && $('tkshop')) $('tkshop').remove(); });
+
   // 排位赛季的段位奖励表：显示在竞技对战 · 平衡排位的段位卡下面（battle-ui.js 通过 HSACC.rankRwHTML 调用）
   function rankRwHTML() {
     if (!ready()) return '';
@@ -2513,7 +2605,7 @@
       return '<tr class="' + (got ? 'got' : r <= best ? 'ok' : '') + (R.gift ? ' big' : '') + '"><td>' + RANKS[r] + '</td><td>累积经验 ×' + fmt(R.exp) + '，能量 ×' + fmt(R.energy) + '，称号「' + titleName(R.title) + '」' + (R.items ? '，' + itemsText(R.items) : '') + (R.gift ? '，<b class="red">' + R.gift.map(function (g) { return form(g).name + ' LV' + g.lv; }).join('、') + '</b>' : '') + '</td><td>' + (got ? '已领取' : '未达成') + '</td></tr>';
     }).join('');
     return '<details class="rk-rw" open><summary><b>排位赛季 ' + SEASON + ' · 首次达到段位的奖励</b><span class="hint">已领取 ' + gotN + ' / ' + allN + '</span></summary>' +
-      '<p>本赛季最高段位：<b>' + RANKS[best] + '</b>。每个段位第一次达到时发放一次，并获得赛季称号（如「S1翡翠」）；<b>达到铂金送 LV10 的' + form({ sid: 'moon', lv: 10 }).name + '，达到王者送 LV10 的' + form({ sid: 'bone', lv: 10 }).name + '</b>。</p>' +
+      '<p>本赛季最高段位：<b>' + rankFull(best, (function () { try { var r = fixRank(JSON.parse(localStorage.getItem('hs-rank-v1') || 'null')); return r && r.bestDv; } catch (e) { return 0; } })()) + '</b>。每个段位第一次达到时发放一次，并获得赛季称号（如「S1翡翠」）；<b>达到铂金送 LV10 的' + form({ sid: 'moon', lv: 10 }).name + '，达到王者送 LV10 的' + form({ sid: 'bone', lv: 10 }).name + '</b>。</p>' +
       '<table class="rank-rw"><thead><tr><th>段位</th><th>奖励</th><th>状态</th></tr></thead><tbody>' + rows + '</tbody></table></details>';
   }
   $('pg-log').addEventListener('click', function (e) {
@@ -3185,6 +3277,7 @@
       '<div class="crumb"><button type="button" class="btn ghost" id="home-back">‹ 返回大厅</button>' + title + '</div>' +
       '<div class="home-room"><img class="home-bg" src="' + BG.tea_p + '" alt="' + esc(H.name) + '">' + figs +
       (H.mons.length ? '' : '<p class="home-empty">茶室里空荡荡的。从下面选几只精灵，放出来展示吧。</p>') + '</div>' +
+      (window.HSSOCIAL && HSSOCIAL.homeBoard ? HSSOCIAL.homeBoard() : '') +   // 茶室信息栏与留言板（联网时才有，见 social.js）
       homeBgmBar() + autoBar + '<div class="home-pick"><h4>展示的精灵 <span class="hint">' + H.mons.length + ' / ' + homeMax() + ' · 每小时经验 = 30 + 等级 × 6，最多累计 ' + HOME_CAP_H + ' 小时 · 点击卡片放出或收回，点茶室里的精灵可以摸摸它</span></h4><div class="hm-grid">' + cards + '</div></div>';
   }
   function renderTeaShop() {
@@ -3868,7 +3961,7 @@
       } else msg = '今天的 ' + TEA_DAILY + ' 次茶室对战奖励已经领完了，明天 0 点刷新。';
       go('social');
       setTimeout(function () { toast(msg); }, 300);
-      if (opt.onDone) opt.onDone(res);
+      if (opt.onDone) opt.onDone(res, quit);
     } });
   }
 
@@ -3900,7 +3993,7 @@
     titleName: titleName, mon: mon, fmt: fmt, avatarInner: avatarInner, avatarSpec: function () { var m = avatarMon(); return m ? { sid: m.sid, lv: m.lv, shiny: shinyV(m.shiny) } : null; },
     npcPlan: npcPlan, npcHome: npcHome,
     sendMail: sendMail, openMailbox: openMailbox,
-    rankToday: rankToday, RANK_EXP: { exp: RANK_EXP, n: RANK_EXP_N }, rankRwHTML: rankRwHTML, openQuests: openQuests, gender: gender,
+    rankToday: rankToday, RANK_EXP: { exp: RANK_EXP, n: RANK_EXP_N, token: RANK_TOKEN }, tokenBarHTML: tokenBarHTML, openTokenShop: openTokenShop, rankRwHTML: rankRwHTML, openQuests: openQuests, gender: gender,
     brawlOpen: brawlOpen, brawlSpec: brawlSpec, brawlReward: brawlReward, brawlToday: brawlToday, BRAWL: { win: BRAWL_WIN, lose: BRAWL_LOSE, cap: BRAWL_CAP, lv: BRAWL_LV },
     // 平衡模式切磋：LV60、性格无修正、没有学习力和纹章，技能可以从全部技能里选（没选就用竞技对战里记住的配招）
     balSpec: function (raw) {
@@ -3912,6 +4005,7 @@
       return { id: raw.sid, lv: BAL_LV, moves: mv, nick: f.name, img: f.img, ev: {}, nat: null };
     },
     BAL_LV: BAL_LV, speciesN: speciesN, homeOpen: homeOpen,
+    homeRefresh: function () { if (page === 'explore' && ex.view === 'home' && !ex.fighting && document.querySelector('.home-room')) renderHome(); },
     goHome: function () { if (!homeOpen()) { toast('读完星际探索 · 荆楚号 · 天门「陆羽茶室」支线后，才有自己的茶室。'); return; } ex.planet = 'jingchu'; ex.area = '天门'; ex.view = 'home'; go('explore'); },
     // 参加过一次竞技征召（支线任务「竞技征召」用）
     noteDraft: function () { if (!acc.stats) acc.stats = {}; acc.stats.drafts = (acc.stats.drafts || 0) + 1; save(); },

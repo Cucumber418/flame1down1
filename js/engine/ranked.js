@@ -6,36 +6,63 @@
 /* ---------- 平衡排位：段位与电脑强度 ---------- */
 var RANKS = ['黑铁', '青铜', '白银', '黄金', '铂金', '翡翠', '钻石', '星耀', '大师', '宗师', '王者'];
 var RANK_COLOR = ['#5b5650', '#9a6436', '#8d97a3', '#c49a1c', '#3f8f8a', '#2f9a5e', '#3a6fc4', '#7b4fc9', '#b0398f', '#c4392f', '#d18a12'];
-// 王者段位里，电脑随星数继续变强（每星一档，最多算到 KING_CAP 星）：能力值、阵容、配招、失误和换人都会提升
-var KING = RANKS.length - 1, KING_CAP = 30;
+// 铂金到宗师每个段位分成 V、IV、III、II、I 五个小段（V 最低），每个小段 3 星
+var DIV_FROM = 4, DIV_TO = 9, DIVS = 5, ROMAN = ['', 'I', 'II', 'III', 'IV', 'V'];
+function hasDiv(r) { return r >= DIV_FROM && r <= DIV_TO; }
+function rankFull(r, dv) { return (RANKS[r] || '') + (hasDiv(r) && dv ? ' ' + ROMAN[dv] : ''); }
+// 补齐小段（旧存档没有小段：留在这个段位的 I 段，进度不变）
+function fixRank(R) {
+  if (!R) return R;
+  if (hasDiv(R.r)) { if (!(R.dv >= 1 && R.dv <= DIVS)) R.dv = 1; } else delete R.dv;
+  R.best = Math.max(R.best || 0, R.r || 0);
+  if (hasDiv(R.best)) {
+    if (!(R.bestDv >= 1 && R.bestDv <= DIVS)) R.bestDv = R.best === R.r ? R.dv : 1;
+    if (R.best === R.r && R.dv < R.bestDv) R.bestDv = R.dv;
+  } else delete R.bestDv;
+  return R;
+}
+// 王者段位里，电脑随星数继续变强（最多算到 KING_CAP 星）。增长先快后慢，到封顶时自然停下，不会突然卡住
+var KING = RANKS.length - 1, KING_CAP = 50;
+// 起始斜率：宗师每个小段 3 星、倍率 +0.01，即每星 +0.01/3；换算到 0~1 曲线上（王者封顶共 +0.30）
+var KING_M0 = (0.01 / 3) * KING_CAP / 0.30;
 function kingK(r, stars) { return r === KING ? Math.min(KING_CAP, Math.max(0, Math.floor(stars || 0))) : 0; }
-function rankAI(r, stars) {
-  var a = rankAI0(r), k = kingK(r, stars);
-  if (k) {
-    a.mult = Math.round((1.15 + 0.01 * k) * 100) / 100;   // 能力值倍率：王者 0 星 ×1.15，30 星 ×1.45
-    a.noise = Math.max(0.02, 0.05 - 0.001 * k);           // 估分越来越准
-    a.switchP = Math.min(0.8, 0.55 + 0.01 * k);           // 更常考虑换人
-    a.threat = Math.max(0.6, 1 - 0.015 * k);              // 受到的威胁没那么大时也会提前换人躲克制
-    a.picks = 12 + k;                                     // 配招时比较更多方案
-    a.edge = Math.min(0.3, 0.01 * k);                     // 阵容强度比你高一点（30 星时预测胜率约 57%）
+// 段位的连续刻度：黑铁 0 … 宗师 9；铂金到宗师每个小段 +0.2（铂金 V = 4.0，铂金 I = 4.8）；王者 0 星 = 10
+function rankX(r, dv) { return hasDiv(r) ? r + (DIVS - (dv || 1)) / DIVS : r; }
+function lerp(a, b, t) { return a + (b - a) * t; }
+function rankAI(r, stars, dv) {
+  if (r === KING) {
+    // 0 → 1 的平滑曲线：刚进王者时每星的增长速度和宗师里一样（宗师每星约 +0.0033 倍率），中段稍快，接近封顶时慢慢停下
+    var t = kingK(r, stars) / KING_CAP, m0 = KING_M0, e = (t * t * t - 2 * t * t + t) * m0 + (-2 * t * t * t + 3 * t * t);
+    var a = rankAI0(KING);
+    a.mult = Math.round((1.15 + 0.30 * e) * 1000) / 1000;   // 能力值倍率：王者 0 星 ×1.15，封顶 ×1.45
+    a.noise = Math.round((0.05 - 0.03 * e) * 1000) / 1000;  // 估分越来越准
+    a.switchP = 0.5 + 0.3 * e;                              // 更常考虑换人
+    a.threat = 1 - 0.4 * e;                                 // 受到的威胁没那么大时也会提前换人躲克制
+    a.picks = Math.round(12 + 30 * e);                      // 配招时比较更多方案
+    a.edge = Math.round(0.3 * e * 1000) / 1000;             // 阵容强度比你高一点（封顶时预测胜率约 57%）
+    return a;
   }
-  return a;
+  // 其他段位：在相邻两个段位之间按小段插值，铂金 V → 铂金 I → 翡翠 V 一格一格平滑变强
+  var x = rankX(r, dv), lo = Math.floor(x), hi = Math.min(KING, lo + 1), f = x - lo, A0 = rankAI0(lo), A1 = rankAI0(hi), o = {};
+  Object.keys(A0).forEach(function (k) { o[k] = lerp(A0[k], A1[k], f); });
+  o.mult = Math.round(o.mult * 1000) / 1000; o.picks = Math.round(o.picks);
+  return o;
 }
 function rankAI0(r) {
   return {
     randomP: Math.max(0, 0.5 - 0.06 * r),          // 黑铁一半招式随便放，宗师以上不乱放
     noise: Math.max(0.05, 0.45 - 0.04 * r),         // 估分噪声越来越小
-    switchP: Math.min(0.55, 0.05 * r),              // 越高越会换人躲克制
+    switchP: Math.min(0.5, 0.05 * r),               // 越高越会换人躲克制
     dumbRepl: Math.max(0, 0.9 - 0.3 * r),           // 倒下后随便派人的概率
     picks: [0, 1, 1, 2, 3, 4, 5, 6, 8, 10, 12][r],  // 配招时比较的候选方案数（0 = 完全随机配招）
     mult: [0.82, 0.85, 0.88, 0.91, 0.94, 0.97, 1.0, 1.03, 1.06, 1.1, 1.15][r]   // 对手能力值倍率
   };
 }
-function rankDesc(r, stars) {
-  var a = rankAI(r, stars), k = kingK(r, stars);
-  if (k) return '王者 ' + stars + ' 星：电脑能力值 ×' + a.mult + ' · 对手阵容比你稍强' + ' · 几乎不失误 · 配招针对性强 · 更会换人躲克制' + (k >= KING_CAP ? ' · 已到最强' : ' · 星数越高越强');
-  return '电脑能力值 ×' + a.mult + ' · ' + (r < 2 ? '经常乱放技能' : r < 5 ? '偶尔乱放技能' : r < 8 ? '很少失误' : '几乎不失误') +
-    ' · ' + (r < 1 ? '技能完全随机配置' : r < 4 ? '配招较为随意' : r < 8 ? '会根据阵容调整配招' : '配招针对性强') + (r >= 4 ? ' · 会换人躲克制' : '');
+function rankDesc(r, stars, dv) {
+  var a = rankAI(r, stars, dv), k = kingK(r, stars), x = rankX(r, dv);
+  if (r === KING) return '王者 ' + (stars || 0) + ' 星：电脑能力值 ×' + a.mult + (a.edge >= 0.01 ? ' · 对手阵容比你稍强' : '') + ' · 几乎不失误 · 配招针对性强 · 更会换人躲克制' + (k >= KING_CAP ? ' · 已到最强' : ' · 星数越高越强');
+  return '电脑能力值 ×' + a.mult + ' · ' + (x < 2 ? '经常乱放技能' : x < 5 ? '偶尔乱放技能' : x < 8 ? '很少失误' : '几乎不失误') +
+    ' · ' + (x < 1 ? '技能完全随机配置' : x < 4 ? '配招较为随意' : x < 8 ? '会根据阵容调整配招' : '配招针对性强') + (x >= 4 ? ' · 会换人躲克制' : '');
 }
 /* ---------- 配招 ----------
    每只精灵有 11 个技能可选 4 个，没有唯一最优解。
@@ -112,8 +139,8 @@ function drawFairTeam(avoid, target) {
   return shuffled(pool[Math.floor(RNG() * pool.length)].ids);
 }
 function drawDraft() { var a = drawFairTeam(); return [a, drawFairTeam(a, teamPower(a))]; }
-function buildAITeam(r, vsIds, stars) {
-  var a = rankAI(r, stars);
+function buildAITeam(r, vsIds, stars, dv) {
+  var a = rankAI(r, stars, dv);
   return (vsIds ? drawFairTeam(null, teamPower(vsIds) + (a.edge || 0)) : drawFairTeam()).map(function (id) {
     return { id: id, moves: null, mult: a.mult };
   }).map(function (t, k, team) {
@@ -121,4 +148,4 @@ function buildAITeam(r, vsIds, stars) {
     return t;
   });
 }
-if (typeof module !== 'undefined') module.exports = { predictWin: predictWin, teamPower: teamPower, allTeams: allTeams, newTraining: newTraining, MAX_TURNS: MAX_TURNS, randomLoadout: randomLoadout, smartLoadout: smartLoadout, drawDraft: drawDraft, fairTeams: fairTeams, STRENGTH: STRENGTH, RANKS: RANKS, rankAI: rankAI, buildAITeam: buildAITeam, eff: eff, effT: effT, typesOf: typesOf, M: M, SP: SP, EXTRA_SP: EXTRA_SP, SPMAP: SPMAP, NATURES: NATURES, fullStat: fullStat, accMult: accMult, newBattle: newBattle, resolveTurn: resolveTurn, aiChoose: aiChoose, playerReplace: playerReplace, pvpReplace: pvpReplace, snap: snap, aiPickReplacement: aiPickReplacement, act: act, aliveIdx: aliveIdx, setRNG: function (f) { RNG = f; } };
+if (typeof module !== 'undefined') module.exports = { predictWin: predictWin, teamPower: teamPower, allTeams: allTeams, newTraining: newTraining, MAX_TURNS: MAX_TURNS, randomLoadout: randomLoadout, smartLoadout: smartLoadout, drawDraft: drawDraft, fairTeams: fairTeams, STRENGTH: STRENGTH, RANKS: RANKS, rankAI: rankAI, rankX: rankX, fixRank: fixRank, rankFull: rankFull, hasDiv: hasDiv, buildAITeam: buildAITeam, eff: eff, effT: effT, typesOf: typesOf, M: M, SP: SP, EXTRA_SP: EXTRA_SP, SPMAP: SPMAP, NATURES: NATURES, fullStat: fullStat, accMult: accMult, newBattle: newBattle, resolveTurn: resolveTurn, aiChoose: aiChoose, playerReplace: playerReplace, pvpReplace: pvpReplace, snap: snap, aiPickReplacement: aiPickReplacement, act: act, aliveIdx: aliveIdx, setRNG: function (f) { RNG = f; } };

@@ -29,6 +29,8 @@
   app.mode = 'sandbox';
   app.rank = { r: 0, stars: 0, w: 0, l: 0, best: 0 };
   try { var savedR = JSON.parse(localStorage.getItem('hs-rank-v1') || 'null'); if (savedR && savedR.r != null) app.rank = savedR; } catch (e) {}
+  if (app.rank.r >= DIV_FROM && !app.rank.dv || app.rank.best >= DIV_FROM && !app.rank.bestDv && app.rank.best <= DIV_TO) { fixRank(app.rank); try { localStorage.setItem('hs-rank-v1', JSON.stringify(app.rank)); } catch (e) {} }   // 铂金到宗师分小段：旧存档补上小段
+  fixRank(app.rank);
   try { var sm = localStorage.getItem('hs-mode'); if (sm === 'rank' || sm === 'brawl') app.mode = sm; } catch (e) {}
   // 平衡排位：每局系统给出两套强度相同的阵容，二选一
   app.draft = null;
@@ -47,7 +49,7 @@
     if (r === RANKS.length - 1) return '<span class="stars king">★ ×' + n + '</span>';
     var h = ''; for (var i = 0; i < 3; i++) h += '<i class="' + (i < n ? 'on' : '') + '">★</i>'; return '<span class="stars">' + h + '</span>';
   }
-  function rankBadge(r) { return '<span class="rbadge" style="--rc:' + RANK_COLOR[r] + '">' + RANKS[r] + '</span>'; }
+  function rankBadge(r, dv) { return '<span class="rbadge" style="--rc:' + RANK_COLOR[r] + '">' + rankFull(r, dv) + '</span>'; }
   var resetArmed = 0;
   function renderMode() {
     $('mode-sandbox').classList.toggle('on', app.mode === 'sandbox'); $('mode-sandbox').setAttribute('aria-selected', app.mode === 'sandbox');
@@ -68,18 +70,18 @@
     $('sub-hint').textContent = app.sub === 'train' ? '对木桩练习出招，统计每个技能造成的伤害' : '与随机配置的电脑对战';
     if (app.mode === 'rank') {
       var R = app.rank, ladder = RANKS.map(function (n, i) { return '<li class="' + (i < R.r ? 'done' : i === R.r ? 'cur' : '') + '" style="--rc:' + RANK_COLOR[i] + '" title="' + n + '">' + n + '</li>'; }).join('');
-      rc.innerHTML = '<div class="rc-main">' + rankBadge(R.r) + starsHTML(R.stars, R.r) +
-        '<div class="rc-txt"><b>当前段位：' + RANKS[R.r] + '</b><span>对手特点：' + esc(rankDesc(R.r, R.stars)) + '</span>' +
-        '<span class="rc-rule">每局胜利获得 1 星，集满 3 星晋级；每局失败扣除 1 星，0 星时失败将降级。' + (R.r === RANKS.length - 1 ? '王者段位不封顶，星数越高，电脑越强、越会玩，对手阵容也会比你稍强（最多算到 ' + KING_CAP + ' 星）。' : '双方阵容的综合实力相当。') + '对手精灵在出场后才会揭晓。每局最多 ' + MAX_TURNS + ' 回合，届时剩余精灵多的一方获胜，数量相同则为平局，星数不变。</span></div>' +
-        '<div class="rc-rec"><span>战绩：' + R.w + ' 胜 ' + R.l + ' 负</span><span>最高段位：' + RANKS[R.best || 0] + ((R.best || 0) === RANKS.length - 1 ? ' ' + Math.max(R.kingBest || 0, R.r === RANKS.length - 1 ? R.stars : 0) + ' 星' : '') + '</span><button type="button" class="btn ghost" id="btn-reset">' + (Date.now() - resetArmed < 3000 ? '再点一次确认' : '重置段位') + '</button></div></div>' +
-        rankExpHTML() + '<ol class="ladder">' + ladder + '</ol>' + (window.HSACC && HSACC.rankRwHTML ? HSACC.rankRwHTML() : '');
+      rc.innerHTML = '<div class="rc-main">' + rankBadge(R.r, R.dv) + starsHTML(R.stars, R.r) +
+        '<div class="rc-txt"><b>当前段位：' + rankFull(R.r, R.dv) + '</b><span>对手特点：' + esc(rankDesc(R.r, R.stars, R.dv)) + '</span>' +
+        '<span class="rc-rule">每局胜利获得 1 星，集满 3 星晋级；每局失败扣除 1 星，0 星时失败将降级。铂金到宗师每个段位分为 V、IV、III、II、I 五个小段，从 V 开始往上升，每个小段 3 星，小段越高电脑越强。' + (R.r === RANKS.length - 1 ? '王者段位不封顶，星数越高，电脑越强、越会玩，对手阵容也会比你稍强（最多算到 ' + KING_CAP + ' 星）。' : '双方阵容的综合实力相当。') + '对手精灵在出场后才会揭晓。每局最多 ' + MAX_TURNS + ' 回合，届时剩余精灵多的一方获胜，数量相同则为平局，星数不变。</span></div>' +
+        '<div class="rc-rec"><span>战绩：' + R.w + ' 胜 ' + R.l + ' 负</span><span>最高段位：' + rankFull(R.best || 0, R.bestDv) + ((R.best || 0) === RANKS.length - 1 ? ' ' + Math.max(R.kingBest || 0, R.r === RANKS.length - 1 ? R.stars : 0) + ' 星' : '') + '</span><button type="button" class="btn ghost" id="btn-reset">' + (Date.now() - resetArmed < 3000 ? '再点一次确认' : '重置段位') + '</button></div></div>' +
+        rankExpHTML() + '<ol class="ladder">' + ladder + '</ol>' + (window.HSACC && HSACC.tokenBarHTML ? HSACC.tokenBarHTML() : '') + (window.HSACC && HSACC.rankRwHTML ? HSACC.rankRwHTML() : '');
     }
   }
   // 平衡排位的经验：和精灵大乱斗一样写清楚规则，并显示今天的进度
   function rankExpHTML() {
     if (!(window.HSACC && HSACC.rankToday && HSACC.ready && HSACC.ready())) return '';
     var E = HSACC.RANK_EXP, n = Math.min(HSACC.rankToday(), E.n);
-    return '<ul class="bw-rules rk-rules"><li>每局奖励 <b>' + HSACC.fmt(E.exp) + '</b> 累积经验（胜负、平局都算，认输没有），每天前 <b>' + E.n + '</b> 局有奖励，0 点（北京时间）刷新。</li></ul>' +
+    return '<ul class="bw-rules rk-rules"><li>每局奖励 <b>' + HSACC.fmt(E.exp) + '</b> 累积经验和 <b>' + (E.token || 0) + '</b> 竞技代币（胜负、平局都算，认输没有），每天前 <b>' + E.n + '</b> 局有奖励，0 点（北京时间）刷新。</li></ul>' +
       '<div class="bw-prog rk-prog"><span>今天的平衡排位经验</span><b>' + n + ' / ' + E.n + ' 局 · ' + HSACC.fmt(n * E.exp) + ' / ' + HSACC.fmt(E.n * E.exp) + '</b><span class="pbar"><i style="width:' + (n / E.n * 100) + '%"></i></span></div>';
   }
   $('sub-battle').addEventListener('click', function () { app.sub = 'battle'; saveTrain(); renderMode(); renderBuilder(); });
@@ -172,7 +174,7 @@
   }
   function rankOn() { return !!(app.S && app.S.mode === 'rank'); }
   function statTip(sd, hidden) {
-    if (hidden) return '<span class="chip sc lvc" tabindex="0">LV ??<span class="tip" role="tooltip"><b>' + esc(sd.name) + ' · 能力值未知</b>平衡排位中不公开对手的具体能力值。<span class="tipx">' + RANKS[app.S.rankAt] + '段位的对手能力值 ×' + rankAI(app.S.rankAt).mult + '</span></span></span>';
+    if (hidden) return '<span class="chip sc lvc" tabindex="0">LV ??<span class="tip" role="tooltip"><b>' + esc(sd.name) + ' · 能力值未知</b>平衡排位中不公开对手的具体能力值。<span class="tipx">' + rankFull(app.S.rankAt, app.S.rankDv) + '段位的对手能力值 ×' + (app.S.ai && app.S.ai.mult || rankAI(app.S.rankAt, 0, app.S.rankDv).mult) + '</span></span></span>';
     var rows = sd.stats.map(function (r) {
       var stg = r.st ? '<span class="sg ' + (r.st > 0 ? 'up' : 'dn') + '">' + (r.st > 0 ? '+' : '') + r.st + '</span>' : '';
       var sub = r.raw != null && r.st ? '<span class="sr">原 ' + r.raw + '</span>' : (r.base != null ? '<span class="sr">种族 ' + r.base + '</span>' : '');
@@ -212,7 +214,7 @@
     $('btn-random').hidden = rank;
     $('bag-title').textContent = rank ? (drafting ? '本局阵容选择' : '本局出战阵容（阵容 ' + 'AB'[d.pick] + '）') : '我的背包';
     $('bag-hint').textContent = rank ? (drafting ? '点击精灵可在下方查看资料。' : '阵容已锁定。可拖动精灵调整出场顺序（第 1 位为首发），并为每只精灵选择 4 个技能。') : '拖动背包里的精灵可调整顺序（触屏长按后拖动），排在第 1 位的为首发。点击精灵即可选中并查看资料；选中后，卡片右上角可直接「移出」或「放进背包」。';
-    if (drafting) { renderDraft(); $('bag-msg').textContent = '请先选择一套阵容'; $('bag-msg').className = 'hint red'; $('btn-start').disabled = true; $('btn-start').textContent = '开始平衡排位 · ' + RANKS[app.rank.r]; return; }
+    if (drafting) { renderDraft(); $('bag-msg').textContent = '请先选择一套阵容'; $('bag-msg').className = 'hint red'; $('btn-start').disabled = true; $('btn-start').textContent = '开始平衡排位 · ' + rankFull(app.rank.r, app.rank.dv); return; }
     var html = '';
     for (var i = 0; i < 5; i++) {
       var id = B()[i];
@@ -234,7 +236,7 @@
     var blocked = !B().length || bad.length > 0 || need;
     $('bag-msg').className = 'hint' + (blocked ? ' red' : '');
     $('btn-start').disabled = blocked;
-    $('btn-start').textContent = rank ? '开始平衡排位 · ' + RANKS[app.rank.r] : '开始对战';
+    $('btn-start').textContent = rank ? '开始平衡排位 · ' + rankFull(app.rank.r, app.rank.dv) : '开始对战';
   }
   function renderDex() {
     var quick = !training() && app.mode !== 'rank';
@@ -448,7 +450,7 @@
     if (S.training) return '竞技对战 · 训练';
     if (S.wild) return '野外 · ' + (S.wild.where || '');
     if (S.story) { var a0 = S.sides[1].team[0]; return S.story.foe === '首领' ? '首领战 · ' + (a0.nick || SPMAP[a0.id].name) + (S.story.diff ? '（' + S.story.diff + '）' : '') : '对战 · ' + S.story.foe; }
-    return S.mode === 'rank' ? '竞技对战 · 平衡排位 · ' + RANKS[S.rankAt] : '竞技对战 · 沙盒';
+    return S.mode === 'rank' ? '竞技对战 · 平衡排位 · ' + rankFull(S.rankAt, S.rankDv) : '竞技对战 · 沙盒';
   }
   function castFoe() { var S = app.S; return pvp ? pvp.foe : S.training ? '训练木桩' : S.wild ? '野生精灵' : S.story ? S.story.foe : '电脑'; }
   // 发出去的快照：去掉能力值明细（太长，观众用不到）；平衡排位里对手还没派出的精灵不公开
@@ -528,15 +530,15 @@
     bgm('pvp');
     var p = B().map(function (id) { return { id: id, moves: app.loadout[id].slice() }; });
     var rank = app.mode === 'rank';
-    var a = rank ? buildAITeam(app.rank.r, B(), app.rank.stars) : (function () { var ids = shuffle(SP.map(function (s) { return s.id; })).slice(0, 5); return ids.map(function (id) { return { id: id, moves: smartLoadout(id, 6, ids) }; }); })();
+    var a = rank ? buildAITeam(app.rank.r, B(), app.rank.stars, app.rank.dv) : (function () { var ids = shuffle(SP.map(function (s) { return s.id; })).slice(0, 5); return ids.map(function (id) { return { id: id, moves: smartLoadout(id, 6, ids) }; }); })();
     app.lastP = p;
     app.S = newBattle(p, a);
-    if (rank) { app.S.mode = 'rank'; app.S.rankAt = app.rank.r; app.S.ai = rankAI(app.rank.r, app.rank.stars); app.draft.used = true; saveDraft(); }
+    if (rank) { app.S.mode = 'rank'; app.S.rankAt = app.rank.r; app.S.rankDv = app.rank.dv; app.S.ai = rankAI(app.rank.r, app.rank.stars, app.rank.dv); app.draft.used = true; saveDraft(); }
     app.screen = 'battle'; app.logHTML = ''; $('log').innerHTML = '';
     $('builder').hidden = true; $('battle').hidden = false; $('endcard').hidden = true;
     shownIds = [null, null]; castBegin();
     addLog('对手派出了【' + SPMAP[a[0].id].name + '】，你派出了【' + SPMAP[p[0].id].name + '】！', '');
-    if (rank) addLog('平衡排位 · ' + RANKS[app.rank.r] + '段位 · 对手其余 4 只精灵尚未公开', 'turn');
+    if (rank) addLog('平衡排位 · ' + rankFull(app.rank.r, app.rank.dv) + '段位 · 对手其余 4 只精灵尚未公开', 'turn');
     else { addLog('对手背包：' + a.map(function (x) { return SPMAP[x.id].name; }).join('、'), 'dmg'); a.forEach(function (x) { addLog('　' + SPMAP[x.id].name + '：' + x.moves.map(function (n) { return M[n].name; }).join('、'), 'dmg'); }); }
     renderSnap(snap(app.S), true);
     showTab('moves'); refreshCmd();
@@ -815,20 +817,25 @@
     refreshCmd();
   }
   function applyRank(result) {
-    var R = app.rank, x = { from: R.r, fromStars: R.stars };
+    var R = fixRank(app.rank), x = { from: R.r, fromDv: R.dv, fromStars: R.stars };
     if (result === 'win') {
       R.w++; R.stars++;
-      if (R.r < RANKS.length - 1 && R.stars >= 3) { R.r++; R.stars = 0; x.kind = 'up'; x.msg = '晋级成功，进入' + RANKS[R.r] + '段位'; }
-      else x.msg = R.r === RANKS.length - 1 ? '王者段位，星数 +1' : '星数 +1，再胜 ' + (3 - R.stars) + ' 局即可晋级';
+      if (R.r < KING && R.stars >= 3) {
+        R.stars = 0;
+        if (hasDiv(R.r) && R.dv > 1) { R.dv--; x.kind = 'up'; x.msg = '晋级成功，升入' + rankFull(R.r, R.dv); }
+        else { R.r++; if (hasDiv(R.r)) R.dv = DIVS; else delete R.dv; x.kind = 'up'; x.msg = '晋级成功，进入' + rankFull(R.r, R.dv) + (hasDiv(R.r) ? '' : '段位'); }
+      } else x.msg = R.r === KING ? '王者段位，星数 +1' : '星数 +1，再胜 ' + (3 - R.stars) + ' 局即可晋级';
     } else if (result === 'lose') {
       R.l++;
       if (R.stars > 0) { R.stars--; x.msg = '星数 −1'; }
-      else if (R.r > 0) { R.r--; R.stars = 2; x.kind = 'down'; x.msg = '降级至' + RANKS[R.r] + '段位'; }
+      else if (hasDiv(R.r) && R.dv < DIVS) { R.dv++; R.stars = 2; x.kind = 'down'; x.msg = '降至' + rankFull(R.r, R.dv); }
+      else if (R.r > 0) { R.r--; if (hasDiv(R.r)) R.dv = 1; else delete R.dv; R.stars = 2; x.kind = 'down'; x.msg = '降级至' + rankFull(R.r, R.dv) + (hasDiv(R.r) ? '' : '段位'); }
       else x.msg = '黑铁为最低段位，不再降级';
     } else x.msg = '平局，星数不变';
-    R.best = Math.max(R.best || 0, R.r);
-    if (R.r === RANKS.length - 1) R.kingBest = Math.max(R.kingBest || 0, R.stars);   // 王者达到过的最高星数（社交名片里显示）
-    x.to = R.r; x.toStars = R.stars; saveRank(); return x;
+    if (R.r > (R.best || 0)) { R.best = R.r; if (hasDiv(R.r)) R.bestDv = R.dv; else delete R.bestDv; }
+    else if (R.r === R.best && hasDiv(R.r) && R.dv < (R.bestDv || DIVS + 1)) R.bestDv = R.dv;
+    if (R.r === KING) R.kingBest = Math.max(R.kingBest || 0, R.stars);   // 王者达到过的最高星数（社交名片里显示）
+    x.to = R.r; x.toDv = R.dv; x.toStars = R.stars; saveRank(); return x;
   }
   function showEnd() { showEnd0(); castEnd($('end-title').textContent, $('end-sub').textContent); }
   function showEnd0() {
@@ -869,7 +876,7 @@
     if (rankOn()) {
       if (!S.rankApplied) { S.rankApplied = applyRank(r); }
       var x = S.rankApplied;
-      rr.innerHTML = '<div class="er-row">' + rankBadge(x.from) + starsHTML(x.fromStars, x.from) + '<span class="er-arrow">→</span>' + rankBadge(x.to) + starsHTML(x.toStars, x.to) + '</div>' +
+      rr.innerHTML = '<div class="er-row">' + rankBadge(x.from, x.fromDv) + starsHTML(x.fromStars, x.from) + '<span class="er-arrow">→</span>' + rankBadge(x.to, x.toDv) + starsHTML(x.toStars, x.to) + '</div>' +
         '<p class="er-msg ' + (x.kind === 'up' ? 'up' : x.kind === 'down' ? 'down' : '') + '">' + esc(x.msg) + '</p>' +
         '<p class="hint">对手阵容：' + S.sides[1].team.map(function (t) { return SPMAP[t.id].name; }).join('、') + '</p>';
     }
