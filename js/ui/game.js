@@ -1048,7 +1048,7 @@
   // 角色（立绘为占位）
   var CAST = {
     p: { name: function () { return acc.name; }, color: '#c42f3a', tall: 0.92, get img() { return playerArt(); } },   // 主角立绘按性别：pm 男主 / pf 女主（差分见 CHARS 的 pm_xxx）
-    v: { name: function () { return 'Vanber'; }, color: '#2a4ca0', tall: 0.98 },
+    v: { name: function () { return 'Vanber'; }, color: '#2a4ca0', tall: 0.88, img: 'vanber' },   // 差分：sweat 无语、shock 惊讶、smile 笑、shy 慌张
     z: { name: function () { return '张卫国'; }, color: '#5b5866', tall: 1.0, img: 'zwg' },
     t: { name: function () { return 'Threego'; }, color: '#6f8f2a', tall: 1.0, img: 'threego' },
     y: { name: function () { return '点点'; }, color: '#b0603a', tall: 1.0, img: 'dd' },
