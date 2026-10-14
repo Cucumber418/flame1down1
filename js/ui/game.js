@@ -2549,7 +2549,7 @@
   var TOKEN_SHOP = [
     { k: 'ivMoon', price: 100 }, { k: 'ivBone', price: 100 }, { k: 'evAny', price: 100 },
     { k: 'fruit1', price: 30 }, { k: 'fruit2', price: 60 },
-    { k: 'natAny', price: 150 }, { k: 'evReset', price: 80 }, { k: 'evTagore', price: 60 }, { k: 'natTagore', price: 80 },
+    { k: 'evReset', price: 80 },
     { k: 'ivReroll', price: 200 }
   ];
   function tokens() { return (acc && acc.tokens) || 0; }
