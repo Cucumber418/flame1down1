@@ -31,7 +31,7 @@ var SPRITES = {
   "phantom": "images/sprites/phantom.png",
   "shroom": "images/sprites/shroom.svg",
   "firemouse": "images/sprites/firemouse.svg",   // 立绘待补，暂用问号占位
-  "turkey": "images/sprites/turkey.svg",   // 立绘待补，暂用问号占位
+  "turkey": "images/sprites/turkey.webp",
   "dummy": "images/sprites/dummy.svg"
 };
 
@@ -69,7 +69,7 @@ var PRE_SPRITES = {
   "leaf_s2": "images/pre_sprites/leaf_s2.webp",
   "gorgon_s1": "images/pre_sprites/gorgon_s1.webp",
   "gorgon_s2": "images/pre_sprites/gorgon_s2_v2.webp",
-  "squid_s1": "images/pre_sprites/squid_s1.png",
+  "squid_s1": "images/pre_sprites/squid_s1_v2.webp",
   "squid_s2": "images/pre_sprites/squid_s2.png",
   "wind_s1": "images/pre_sprites/wind_s1.webp",
   "wind_s2": "images/pre_sprites/wind_s2.png",
@@ -113,7 +113,7 @@ var PRE_SPRITES = {
   "firemouse_s1": "images/pre_sprites/firemouse_s1.svg",
   "shroom_s2": "images/pre_sprites/shroom_s2.svg",
   "turkey_s1": "images/pre_sprites/turkey_s1_v2.webp",
-  "turkey_s2": "images/pre_sprites/turkey_s2.svg"
+  "turkey_s2": "images/pre_sprites/turkey_s2_v2.webp"
 };
 
 // 剧情、探索、对战背景  →  images/backgrounds/
@@ -269,6 +269,8 @@ var SILHOUETTES = {
   "aegis_2": "images/silhouettes/aegis_2.png",
   "leafcat_0": "images/silhouettes/leafcat_0.png",
   "turkey_0": "images/silhouettes/turkey_0.png",
+  "turkey_1": "images/silhouettes/turkey_1.png",
+  "turkey_2": "images/silhouettes/turkey_2.png",
   "leafcat_1": "images/silhouettes/leafcat_1.png",
   "phantom_0": "images/silhouettes/phantom_0.png",
   "phantom_1": "images/silhouettes/phantom_1.png",
