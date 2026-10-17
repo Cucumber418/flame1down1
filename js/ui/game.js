@@ -3471,7 +3471,7 @@
   var WQ = [
     { id: 'w_first', n: '初到芙罗拉', d: '荆楚号已经抵达芙罗拉星。去丛林或草甸，和那里的野生精灵过过招吧。', where: '芙罗拉星 · 丛林 / 草甸', steps: [{ t: '在芙罗拉星击败 1 只野生精灵', k: 'wins', n: 1 }], reward: { energy: 100 }, after: 'flora1', go: 'flora' },
     { id: 'w_karo', n: '草甸上的奔跑者', d: '卡罗成群地在草甸上奔跑，捕捉率很高，很适合用来练习捕捉。', where: '芙罗拉星 · 草甸', steps: [{ t: '捕捉 1 只卡罗', k: 'own:wind', n: 1 }], reward: { items: { cap1: 3 } }, after: 'flora1', go: 'flora' },
-    { id: 'w_mush', n: '林下的蘑菇', d: '丛林的树荫下，常能看到玛西的身影。', where: '芙罗拉星 · 丛林', steps: [{ t: '捕捉 1 只玛西', k: 'own:mush', n: 1 }], reward: { items: { pot1: 2 } }, after: 'flora1', go: 'flora' },
+    { id: 'w_mush', n: '林下的蘑菇', d: '丛林的树荫下，常能看到玛西西的身影。', where: '芙罗拉星 · 丛林', steps: [{ t: '捕捉 1 只玛西西', k: 'own:mush', n: 1 }], reward: { items: { pot1: 2 } }, after: 'flora1', go: 'flora' },
     { id: 'w_hunt', n: '荒野试炼', d: '多和野生精灵交手，伙伴们才会变强。', where: '芙罗拉星 · 丛林 / 草甸', steps: [{ t: '在芙罗拉星击败 10 只野生精灵', k: 'wins', n: 10 }], reward: { energy: 300 }, after: 'flora1', go: 'flora' },
     { id: 'w_kaleo', n: '丛林里的掠食者', d: '有人在丛林深处见过一只卡莱。它只在丛林出现，而且很少露面。', where: '芙罗拉星 · 丛林', steps: [{ t: '捕捉 1 只卡莱', k: 'own:kaleo', n: 1 }], reward: { energy: 500 }, after: 'flora1', go: 'flora' },
     { id: 'w_travel', n: '旅行猫', d: '叶子喵是芙罗拉星上很少见的精灵。听说最近有人在山毛榉林里见过一只……', where: '芙罗拉星 · 剧情', steps: [{ t: '读完芙罗拉星的剧情「旅行猫」', k: 'story:travelcat', n: 1 }], reward: { exp: 3000, energy: 500 }, after: 'flora2', go: 'flora', fpart: 'story' },

@@ -9,7 +9,7 @@ var SPRITES = {
   "leaf": "images/sprites/leaf.webp",
   "gorgon": "images/sprites/gorgon_v2.webp",
   "squid": "images/sprites/squid.webp",
-  "wind": "images/sprites/wind.png",
+  "wind": "images/sprites/wind.webp",
   "pluto": "images/sprites/pluto.png",
   "pede": "images/sprites/pede.png",
   "tagore": "images/sprites/tagore_v2.webp",
@@ -22,7 +22,7 @@ var SPRITES = {
   "leigong": "images/sprites/leigong.webp",
   "inkarm": "images/sprites/inkarm.png",
   "barren": "images/sprites/barren_v2.webp",
-  "mush": "images/sprites/mush.png",
+  "mush": "images/sprites/mush.webp",
   "kaleo": "images/sprites/kaleo.png",
   "siren": "images/sprites/siren.png",
   "bone": "images/sprites/bone.png",
@@ -72,7 +72,7 @@ var PRE_SPRITES = {
   "squid_s1": "images/pre_sprites/squid_s1_v2.webp",
   "squid_s2": "images/pre_sprites/squid_s2_v2.webp",
   "wind_s1": "images/pre_sprites/wind_s1.webp",
-  "wind_s2": "images/pre_sprites/wind_s2.png",
+  "wind_s2": "images/pre_sprites/wind_s2.webp",
   "pluto_s1": "images/pre_sprites/pluto_s1.png",
   "pluto_s2": "images/pre_sprites/pluto_s2.png",
   "pede_s1": "images/pre_sprites/pede_s1.png",
@@ -288,7 +288,9 @@ var SHINY_SPRITES = {
   "hauris_s2": "images/shiny/hauris_s2.webp",
   "hauris": "images/shiny/hauris.webp",
   "mush_s1": "images/shiny/mush_s1.webp",
-  "mush_s1_2": "images/shiny/mush_s1_2.webp"
+  "mush_s1_2": "images/shiny/mush_s1_2.webp",
+  "mush": "images/shiny/mush.webp",
+  "mush_2": "images/shiny/mush_2.webp"
 };
 
 // 剧情里出现的道具图（储存箱里的剧情道具也用这些图）
@@ -318,9 +320,11 @@ function emoteOf(id) { for (var i = 0; i < EMOTES.length; i++) if (EMOTES[i].id 
 function emoteMsg(text) { var m = /^\[\[e:([a-z_]+)\]\]$/.exec(text || ''); return m ? emoteOf(m[1]) : null; }
 
 // 首领在战斗中途换的形态（只在对应的战斗里出现，不进图鉴）
-// 战斗中按状态换图的形态（键是 SPRITES / PRE_SPRITES 里的形态名）：dark 月之暗面（暗影系）期间，full 特性触发「光影之月」之后
+// 战斗中按状态换图的形态（键是 SPRITES / PRE_SPRITES 里的形态名）：dark 月之暗面（暗影系）期间，full 特性触发「光影之月」之后，
+// miasma / miasmaShiny / miasmaShiny2 瘴气侵染（瘴气层数 > 0）期间换成被污染的样子（没有眼白），按异色区分普通/蓝异色/黄异色
 var FORM_FX_SPRITES = {
-  "moon": { "dark": "images/sprites/moon_dark.webp", "full": "images/sprites/moon_full.webp" }
+  "moon": { "dark": "images/sprites/moon_dark.webp", "full": "images/sprites/moon_full.webp" },
+  "mush": { "miasma": "images/sprites/mush_miasma.webp", "miasmaShiny": "images/sprites/mush_miasma_shiny.webp", "miasmaShiny2": "images/sprites/mush_miasma_shiny2.webp" }
 };
 var AWAKE_SPRITES = {
   "tagore": "images/sprites/tagore_awake_v2.webp"
