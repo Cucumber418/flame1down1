@@ -1501,7 +1501,9 @@
     var part = ex.fpart || 'catch';
     var head = '<div class="flora-hero"><span class="tape l"></span>' + planetImg(planetOf('flora'), 150) + '<div><h3>芙罗拉星 <span class="chip ptype">草系星球</span></h3><p class="hint">地表分为丛林、草甸、盐碱地三片区域。</p>' +
       '<div class="fparts" role="tablist"><button type="button" role="tab" class="tab' + (part === 'challenge' ? ' on' : '') + '" data-fpart="challenge" aria-selected="' + (part === 'challenge') + '">挑战</button><button type="button" role="tab" class="tab' + (part === 'catch' ? ' on' : '') + '" data-fpart="catch" aria-selected="' + (part === 'catch') + '">捕捉</button>' + taskTab('flora', part) + '</div></div></div>';
-    var sp = PLANETS.filter(function (p) { return p.id === 'flora'; })[0].sites.map(function (id) {
+    // 剧情页（2026-10-17）：分「主线」「支线」两栏，从上往下是 新 → 旧
+    var flSites = PLANETS.filter(function (p) { return p.id === 'flora'; })[0].sites, stab = ex.flSt === 'side' ? 'side' : 'main';
+    var stCard = function (id) {
       var S = SITES[id], pr = prog(id), started = pr.at > 0 && !pr.done, lock = !unlocked(id);
       if (lock && !prog(S.after).done) return '';   // 前一段还没读完的不显示
       if (lock) return '<article class="site fl-story locked"><span class="tape r"></span><div class="site-img"><img src="' + BG[S.bg] + '" alt=""></div><div class="site-txt"><span class="sc-tag">' + S.chapter + '</span><h3>' + S.name + '</h3><p class="hint">' + S.d + '</p>' +
@@ -1510,10 +1512,17 @@
         (S.reward ? '<p class="hint">首次读完奖励：' + rwList(S.reward).join('、') + (pr.rewarded ? '（已领取）' : '') + '</p>' : '') +
         '<p class="site-st ' + (pr.done ? 'blue' : started ? 'red' : '') + '">' + (pr.done ? '已读完' : started ? '读到一半' : '未读') + '</p><div class="site-act">' +
         (started ? '<button type="button" class="btn primary" data-go="' + id + '" data-from="cont">继续剧情</button><button type="button" class="btn" data-go="' + id + '" data-from="0">从头开始</button>' : '<button type="button" class="btn primary" data-go="' + id + '" data-from="0">' + (pr.done ? '重温剧情' : '进入') + '</button>') + '</div></div></article>';
-    }).join('');
-    head = head + (prog('flora1').done ? '' : sp);
+    };
+    var isNew = function (id) { return unlocked(id) && !prog(id).done; };
+    var mainIds = flSites.filter(function (id) { return !SITES[id].side; }), sideIds = flSites.filter(function (id) { return SITES[id].side; });
+    var listOf = function (ids) { var h = ids.slice().reverse().map(stCard).join(''); return h || '<p class="hint fl-none">暂时还没有可以阅读的剧情。</p>'; };
+    var nM = mainIds.some(isNew), nS = sideIds.some(isNew);
+    var sp = '<div class="fparts st-tabs" role="tablist"><button type="button" role="tab" class="tab' + (stab === 'main' ? ' on' : '') + '" data-flst="main" aria-selected="' + (stab === 'main') + '">主线' + (nM ? '<i class="q-badge">!</i>' : '') + '</button>' +
+      '<button type="button" role="tab" class="tab' + (stab === 'side' ? ' on' : '') + '" data-flst="side" aria-selected="' + (stab === 'side') + '">支线' + (nS ? '<i class="q-badge">!</i>' : '') + '</button></div>' +
+      listOf(stab === 'side' ? sideIds : mainIds);
+    head = head + (prog('flora1').done ? '' : listOf(mainIds));
     // 有新的主线可以读时，「剧情」页签上显示红点
-    var newMain = PLANETS.filter(function (p) { return p.id === 'flora'; })[0].sites.some(function (id) { return unlocked(id) && !prog(id).done; });
+    var newMain = flSites.some(isNew);
     if (prog('flora1').done) head = head.replace('<div class="fparts" role="tablist">', '<div class="fparts" role="tablist"><button type="button" class="tab' + (part === 'story' ? ' on' : '') + '" data-fpart="story">剧情' + (newMain ? '<i class="q-badge">!</i>' : '') + '</button>');
     if (part === 'story') return head + sp;
     if (part === 'task') return head + planetTasks('flora');
@@ -3116,7 +3125,7 @@
     }
     var g = e.target.closest('[data-golog]'); if (g) { if (g.dataset.golog === 'boss-barren') { ex.view = 'boss'; ex.boss = 'barren'; go('explore'); return; }
       if (g.dataset.golog === 'flora-catch') { ex.planet = 'flora'; ex.view = 'sites'; ex.fpart = 'catch'; go('explore'); renderExplore(); return; }
-      if (g.dataset.golog === 'travelcat') { ex.planet = 'flora'; ex.view = 'sites'; ex.fpart = 'story'; go('explore'); renderExplore(); return; }
+      if (g.dataset.golog === 'travelcat') { ex.planet = 'flora'; ex.view = 'sites'; ex.fpart = 'story'; ex.flSt = 'side'; go('explore'); renderExplore(); return; }
       if (g.dataset.golog === 'boss-tiger') { ex.view = 'boss'; ex.boss = 'tiger'; ex.bossK = 'tiger'; ex.bossD = 2; go('explore'); return; } go(g.dataset.golog); }
   });
 
@@ -4267,6 +4276,7 @@
     if (b.dataset.reap != null && b.dataset.reap !== '') { farmHarvest(+b.dataset.reap); return; }
     if (b.id === 'farm-back') { ex.view = 'area'; ex.area = '恩施'; ex.planet = 'jingchu'; renderExplore(); return; }
     if (b.dataset.fpart) { ex.fpart = b.dataset.fpart; renderExplore(); return; }
+    if (b.dataset.flst) { ex.flSt = b.dataset.flst; renderExplore(); return; }
     if (b.dataset.field && !b.disabled) { enterField(b.dataset.field); return; }
     if (b.dataset.gather != null && b.dataset.gather !== '') { gatherAt(+b.dataset.gather); return; }
     if (b.dataset.jade != null) { jadeAt(+b.dataset.jade); return; }

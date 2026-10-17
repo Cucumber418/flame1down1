@@ -2095,3 +2095,5 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .pc-prog ul { list-style: none; margin: 4px 0 6px; padding: 0; display: grid; gap: 4px; }
 .pc-prog li { display: grid; gap: 1px; font-size: 13px; }
 .pc-prog li span { color: #555; font-size: 12.5px; }
+.st-tabs { margin: 10px 0 6px; }
+.fl-none { margin: 10px 4px; }
