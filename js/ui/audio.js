@@ -86,8 +86,14 @@
     fadeTo(target(), fromStart ? 900 : 1200);
   }
   // 让正在放的曲子和「应该放的」一致：不一样就先淡出再换
+  // 换的是同一首曲子（只是键名不同，比如剧情里的 disComScene 和战斗里的 disCommunication）：不重新开始，接着往下放
+  function sameTrack(k) {
+    if (!k || !cur || k === cur || TRACKS[k] !== TRACKS[cur] || el.paused) return false;
+    cur = k; el.dataset.k = k; el.loop = !ONESHOT[k]; return true;
+  }
   function sync(fromStart, outMs) {
     var k = want();
+    if (sameTrack(k)) return;
     if (k === cur && !fromStart) {
       if (k && unlocked && el.paused && document.visibilityState !== 'hidden') { var p = el.play(); if (p) p.catch(function () {}); fadeTo(target(), 600); }
       return;
