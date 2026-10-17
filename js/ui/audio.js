@@ -21,8 +21,7 @@
  *   tigerFinal  泰戈尔困难最终形态：困难泰戈尔复活（东北的往事）之后切换成这首
  *   stage       关卡战斗：星球挑战的所有关卡
  *   pvp         竞技对战、切磋、精灵大乱斗
- *   faceEnemy   剧情遇敌（FaceTheEnemy）：剧情对战（非野外、非首领）开始时先放一遍，播完自动接回 normal，
- *               不循环；由 battle-ui.js 在 startStory() 里用 HSAUDIO.play('faceEnemy', 'normal') 触发
+ *   faceEnemy   剧情遇敌（FaceTheEnemy）：2026-10-17 起不再在战斗里放；只在剧情对话里遇敌前后用（剧本行 bgm: 'faceEnemyScene'）
  *   disCommunication 瘴气化之后芙罗拉星的野外对战曲（dis-communication）：取代 normal，由 game.js 的 startWildBattle 按 o.corrupt 传入
  * 切歌时先淡出再淡入；界面音乐切回来时从上次停下的地方接着放。切到别的标签页会暂停。
  * 声音设置（战斗音乐、界面音乐两个开关和音量）存在这台设备的浏览器里，不跟账号同步。

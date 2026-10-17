@@ -549,8 +549,9 @@
   function setFieldBg(src, corrupt) { var f = $('field'); f.classList.toggle('scene', !!src); f.classList.toggle('miasma-bg', !!corrupt); f.style.backgroundImage = src ? 'linear-gradient(rgba(251,250,243,.32), rgba(251,250,243,.18)), url(' + src + ')' : ''; }
   function startStory(opt) {
     setFieldBg(opt.bg || null, opt.corrupt);
-    if (opt.wild || opt.diff || opt.bgmDirect) bgm(opt.bgm || 'normal');   // bgmDirect：剧情指定了这一战的专属战斗曲（如第八段的巨大化玛西露姆用 dis-communication），不先放遇敌曲
-    else bgm('faceEnemy', opt.bgm || 'normal');   // 剧情对战（非野外、非首领）：先放一遍遇敌曲，播完自动接回去
+    // 战斗里一律放战斗曲：默认「寻常」，剧情可以指定专属曲（如第八段的变异玛西露姆用 dis-communication）。
+    // FaceTheEnemy（遇敌曲）只在剧情对话里遇敌前后用来渲染气氛（剧本行 bgm: 'faceEnemyScene'），进入战斗后不再放（2026-10-17）
+    bgm(opt.bgm || 'normal');
     app.S = newBattle(opt.p, opt.a); app.S.story = { foe: opt.foe, back: opt.back || null, diff: opt.diff || null };
     if (opt.items) app.S.items = opt.items;
     if (opt.env) app.S.env = opt.env;
