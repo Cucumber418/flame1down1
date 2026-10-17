@@ -4417,6 +4417,12 @@
       var k = o[0], pos = o[1], speak = st.s === k;
       return '<div class="vn-fig ' + pos + (CAST[k].img || CAST[k].spr ? ' art' : '') + (CAST[k].full ? ' full' : '') + (speak ? ' speak' : st.s && st.s !== 'n' && !st.choice ? ' dim' : '') + '" style="--cc:' + CAST[k].color + '">' + standee(k, k === 'p' ? pFace(arr, ex.i) : st.f && st.f[k]) + '<span class="vn-tag">' + esc(CAST[k].name()) + '</span></div>';
     }).join('');
+    // Bttp 不在现场、通过无线电说话时：在画面右上方显示他的全息投影（荆楚号上的剧情是当面说话，不显示）
+    if (st.s === 'b' && !on.some(function (o) { return o[0] === 'b'; }) && SITES[ex.site].planet !== 'jingchu') {
+      var hk = 'holo:' + ex.site, hold = $('vn-chars').dataset.holo === hk;
+      $('vn-chars').insertAdjacentHTML('beforeend', '<div class="vn-fig holo art' + (hold ? ' still' : '') + '" style="--cc:' + CAST.b.color + '">' + standee('b', st.f && st.f.b) + '<span class="vn-tag">' + esc(CAST.b.name()) + ' · 全息通讯</span><i class="holo-base" aria-hidden="true"></i></div>');
+      $('vn-chars').dataset.holo = hk;
+    } else $('vn-chars').dataset.holo = '';
     $('vn-choices').hidden = true; $('vn-pick').hidden = true; $('vn-box').classList.remove('wait');
     if (st.choice) {
       $('vn-box').classList.add('wait'); $('vn-choices').hidden = false;

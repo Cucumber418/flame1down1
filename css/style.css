@@ -2110,3 +2110,14 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .sp-done em, .sp-now em, .sp-keep em { background: #d9f0d4; color: #2d6b2a; }
 .sp-fail em, .sp-not em { background: #f6d6d6; color: #a12a2a; }
 .sp-panel .hint { margin: 2px 0 0; font-size: 12px; }
+/* Bttp 的全息投影（无线电通讯时，2026-10-17） */
+.vn-fig.holo { right: 3%; left: auto; bottom: 8%; height: 78%; width: 30%; opacity: .82; filter: sepia(1) hue-rotate(150deg) saturate(2.2) brightness(1.15) drop-shadow(0 0 10px rgba(80, 220, 255, .8)); animation: holoIn .45s ease-out, holoFlicker 3.2s infinite steps(1) .5s; mix-blend-mode: screen; }
+.vn-fig.holo.still { animation: holoFlicker 3.2s infinite steps(1); }
+.vn-fig.holo::after { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, rgba(120, 230, 255, .22) 0 2px, transparent 2px 5px); pointer-events: none; animation: holoScan 2.4s linear infinite; }
+.vn-fig.holo .vn-tag { filter: none; }
+.vn-fig.holo .holo-base { position: absolute; bottom: -4%; left: 20%; right: 20%; height: 10%; border-radius: 50%; background: radial-gradient(ellipse, rgba(110, 230, 255, .75), rgba(110, 230, 255, 0) 70%); }
+@keyframes holoIn { from { opacity: 0; transform: scaleY(.04); } 60% { opacity: .9; transform: scaleY(1.04); } to { opacity: .82; transform: none; } }
+@keyframes holoFlicker { 0%, 100% { opacity: .82; } 47% { opacity: .82; } 48% { opacity: .45; } 49% { opacity: .85; } 50% { opacity: .6; } 51% { opacity: .82; } }
+@keyframes holoScan { from { background-position: 0 0; } to { background-position: 0 40px; } }
+@media (prefers-reduced-motion: reduce) { .vn-fig.holo, .vn-fig.holo::after { animation: none; } }
+@media (max-width: 640px) { .vn-fig.holo { width: 36%; right: 0; } }
