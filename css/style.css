@@ -2076,3 +2076,22 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .tw-item { display: grid; gap: 6px; align-content: start; padding: 12px; background: #fff; border: 1.5px solid var(--ink); border-radius: 10px; }
 .tw-item .hint { font-size: 12px; }
 .tw-cost { margin: 0; font-weight: 700; color: #c42f3a; }
+/* 全服挑战进度 · 名片挑战进度（2026-10-17） */
+.cb-card { margin-top: 14px; padding: 12px 14px; background: #fff; border: 1.5px solid var(--ink); border-radius: 12px; }
+.cb-card h4 { margin: 0 0 4px; }
+.cb-bars { list-style: none; margin: 8px 0; padding: 0; display: grid; gap: 4px; }
+.cb-bars li { display: grid; grid-template-columns: 92px 1fr 48px; gap: 8px; align-items: center; font-size: 12.5px; }
+.cb-bars i { height: 12px; background: var(--paper-2); border-radius: 99px; overflow: hidden; }
+.cb-bars em { display: block; height: 100%; background: linear-gradient(90deg, #f2c46b, #c42f3a); }
+.cb-bars b { text-align: right; }
+.cb-top { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 3px; }
+.cb-top li { display: grid; grid-template-columns: 24px 1fr auto; gap: 6px; align-items: center; padding: 3px 8px; font-size: 13px; background: var(--paper-2); border-radius: 6px; }
+.cb-top li.me { background: #fff3d6; box-shadow: inset 0 0 0 1.5px var(--red); }
+.cb-rk { font-weight: 700; text-align: center; color: #c42f3a; }
+.cb-nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cb-v { font-size: 12px; color: #555; }
+.pc-prog { margin: 8px 0; border: 1.5px dashed var(--rule); border-radius: 10px; padding: 4px 10px; background: #fff; }
+.pc-prog summary { cursor: pointer; font-weight: 700; padding: 4px 0; }
+.pc-prog ul { list-style: none; margin: 4px 0 6px; padding: 0; display: grid; gap: 4px; }
+.pc-prog li { display: grid; gap: 1px; font-size: 13px; }
+.pc-prog li span { color: #555; font-size: 12.5px; }

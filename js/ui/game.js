@@ -2115,7 +2115,7 @@
       '<p class="ch-rw"><b>首次通关奖励</b>　' + rwList(x.reward).map(function (t) { return '<span class="chip">' + t + '</span>'; }).join(' ') + (rec && rec.got ? '<span class="hint">（已领取）</span>' : '') + '</p></div>' +
       '<div><h4>出战精灵 <span class="hint">' + (T.helper ? '自己的 ' + T.own.length + ' / 4 只 + 1 只助战' : '自己的 ' + T.own.length + ' / 5 只') + '，点一下选上或取下</span></h4><div class="ch-mons">' + (ownHTML || '<p class="hint">当前配队是空的。</p>') + '</div>' +
       '<h4>助战精灵</h4>' + helpHTML + '</div></div>' +
-      '<div class="ch-go"><button type="button" class="btn primary" data-chgo="' + sel + '"' + (ready_ ? '' : ' disabled') + '>开始挑战</button><span class="hint">战斗中可以使用补药；挑战失败不会有任何损失，可以反复挑战。</span></div></article></div>';
+      '<div class="ch-go"><button type="button" class="btn primary" data-chgo="' + sel + '"' + (ready_ ? '' : ' disabled') + '>开始挑战</button><span class="hint">战斗中可以使用补药；挑战失败不会有任何损失，可以反复挑战。</span></div></article>' + cbHTML(P) + '</div>';
   }
   // 出战顺序：自己的精灵用 'u' + 编号，助战精灵用 'h'；排在第一个的就是首发
   function chalLineup() {
@@ -2235,6 +2235,28 @@
     return false;
   }
 
+
+  /* ---------- 全服挑战进度（2026-10-17）：星球挑战页、先驱之塔页下方，服务器见 server/chalboard.js ---------- */
+  var CB = {};
+  function cbFetch(k) {
+    var C = CB[k] || (CB[k] = { data: null, at: 0, busy: false });
+    if (!pwOnline() || C.busy || (C.data && Date.now() - C.at < 30000)) return;
+    C.busy = true;
+    CLOUD.api('GET', '/api/chalboard?k=' + k).then(function (r) { C.busy = false; if (r._code === 200) { C.data = r; C.at = Date.now(); var el = $('cb-' + k); if (el) el.innerHTML = cbInner(k); } })
+      .catch(function () { C.busy = false; });
+  }
+  function cbVal(k, r) { return k === 'tower' ? (r.s ? '通关 ' + r.s + ' 次' : '最高第 ' + r.v + ' 层') : '第 ' + r.v + ' 关 · ★' + r.s; }
+  function cbInner(k) {
+    var h = '<h4>全服挑战进度</h4>';
+    if (!pwOnline()) return h + '<p class="hint">联网登录后，可以看到全服船员的挑战进度。</p>';
+    var d = CB[k] && CB[k].data; if (!d) return h + '<p class="hint">正在读取……</p>';
+    if (!d.players) return h + '<p class="hint">还没有船员开始挑战。来做第一个吧！</p>';
+    var mx = Math.max.apply(null, d.buckets.map(function (b) { return b.n; }).concat([1]));
+    return h + '<p class="hint">共 ' + d.players + ' 位船员参与' + (d.me ? '，你排第 <b>' + d.me.rank + '</b> 名（' + cbVal(k, d.me) + '）' : '') + '。' + (k === 'tower' ? '按通关次数、最高层数排名。' : '按最远关卡、星数排名。') + '</p>' +
+      '<ul class="cb-bars">' + d.buckets.map(function (b) { return '<li><span>' + esc(b.label) + '</span><i><em style="width:' + (b.n / mx * 100).toFixed(1) + '%"></em></i><b>' + b.n + ' 人</b></li>'; }).join('') + '</ul>' +
+      '<ol class="cb-top">' + d.top.map(function (r, i) { return '<li class="' + (d.me && r.user === d.me.user ? 'me' : '') + '"><span class="cb-rk">' + (i + 1) + '</span><span class="cb-nm">' + esc(r.name) + '</span><span class="cb-v">' + cbVal(k, r) + '</span></li>'; }).join('') + '</ol>';
+  }
+  function cbHTML(k) { setTimeout(function () { cbFetch(k); }, 0); return '<article class="cb-card" id="cb-' + k + '">' + cbInner(k) + '</article>'; }
   /* ---------- 先驱之塔（2026-10-17） ----------
    * 星球列表里排在荆楚号后面，读完第五段「降临芙罗拉」后开放。共 60 层，从下往上一层一层打。
    * 第 1、11、21、31、41、51 层自动存档；挑战失败（或中途退出）回到最近的存档点。
@@ -2307,7 +2329,7 @@
       '<p class="ch-rw"><b>通过奖励</b>　<span class="chip">累积经验 ×' + fmt(twExp(T.f)) + '</span> <span class="chip">先驱代币 ×' + twTok(T.f) + '</span>' + (F.boss ? ' <span class="chip">死神代币 ×1（' + T.death + ' / ' + TOWER.deathMax + '）</span> <span class="chip">称号「死神」</span>' : '') +
       (ge < twExp(T.f) || gt < twTok(T.f) ? '<span class="hint">（今天的塔内奖励快到上限了：这一层实际只能拿到经验 ×' + fmt(ge) + '、代币 ×' + gt + '）</span>' : '') + '</p>' +
       teamHTML +
-      '<div class="ch-go"><button type="button" class="btn primary" data-twgo="1"' + (team.length ? '' : ' disabled') + '>挑战第 ' + T.f + ' 层</button><span class="hint">第 1、11、21、31、41、51 层自动存档；挑战失败或中途退出，会回到存档点第 ' + T.cp + ' 层。' + (F.boss ? '击败死神后回到第 1 层。' : '') + '</span></div></article></div>';
+      '<div class="ch-go"><button type="button" class="btn primary" data-twgo="1"' + (team.length ? '' : ' disabled') + '>挑战第 ' + T.f + ' 层</button><span class="hint">第 1、11、21、31、41、51 层自动存档；挑战失败或中途退出，会回到存档点第 ' + T.cp + ' 层。' + (F.boss ? '击败死神后回到第 1 层。' : '') + '</span></div></article></div>' + cbHTML('tower');
   }
   function towerShop(T) {
     return '<p class="hint">用先驱代币兑换道具。性格在这个世界里格外珍稀，所以性格胶囊很贵。</p><div class="tw-shop">' + TW_SHOP.map(function (x, i) {

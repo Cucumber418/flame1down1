@@ -92,6 +92,21 @@
   }
 
   /* ---------- 名片 ---------- */
+  // 挑战进度（2026-10-17）：名片里默认收起，点开才显示
+  function progOf(acc) {
+    var stars = 0, max = 0, c = acc.chal || {};
+    for (var i = 1; i <= 50; i++) { var r = c['fl' + i], n = r && r.s ? r.s.filter(Boolean).length : 0; if (n) { stars += n; max = i; } }
+    var T = acc.tower || {};
+    return { flora: { stars: stars, max: max, total: 150, levels: 50 }, tower: { best: T.best || 0, clears: T.clears || 0, cur: T.f || 1, top: 60 } };
+  }
+  function progHTML(p) {
+    if (!p) return '';
+    var F = p.flora || {}, T = p.tower || {};
+    return '<details class="pc-prog"><summary>挑战进度</summary><ul>' +
+      '<li><b>芙罗拉星 · 挑战</b><span>' + (F.max ? '最远第 ' + F.max + ' / ' + (F.levels || 50) + ' 关 · ★ ' + F.stars + ' / ' + (F.total || 150) : '还没有开始') + '</span></li>' +
+      '<li><b>先驱之塔</b><span>' + (T.best || T.clears ? '最高第 ' + T.best + ' / ' + (T.top || 60) + ' 层 · 通关 ' + T.clears + ' 次 · 当前第 ' + T.cur + ' 层' : '还没有开始') + '</span></li>' +
+      '</ul></details>';
+  }
   function cardHTML(c, opt) {
     opt = opt || {};
     if (c.noChar) return '<div class="pcard"><p class="hint">@' + esc(c.user) + ' 还没有创建游戏角色。</p></div>';
@@ -114,6 +129,7 @@
       '<span>最高段位 <b>' + (rankLabel(R.best, R.best === RANKS.length - 1 ? R.kingBest || 0 : null, R.bestDv) || '—') + '</b>' + (R.r === RANKS.length - 1 && (R.stars || 0) !== (R.kingBest || 0) ? '（当前 ' + R.stars + ' 星）' : '') + '</span><span>竞技 <b>' + R.w + '</b> 胜 <b>' + R.l + '</b> 负</span>' +
       (c.created ? '<span>' + new Date(c.created).toLocaleDateString('zh-CN') + ' 登船</span>' : '') + '</p>' +
       '<blockquote class="pc-motto' + (c.motto ? '' : ' empty') + '">' + (c.motto ? esc(c.motto) : '这位船员还没有写个人宣言。') + '</blockquote>' +
+      progHTML(c.prog) +
       '<h4 class="pc-h">展示精灵</h4><ol class="pc-show">' + slots + '</ol>' +
       (c.helper && SPMAP[c.helper.sid] ? (function (h) { var v = A.view({ sid: h.sid, lv: h.lv, shiny: h.shiny });
         return '<h4 class="pc-h">助战精灵 <span class="hint">好友可以在星球挑战里借用</span></h4><div class="pc-helper"><img src="' + v.img + '" alt=""><b>' + esc(v.name) + (h.shiny ? '<span class="shiny-tag">异色</span>' : '') + '</b><span class="pc-lv">LV' + h.lv + (h.nat ? ' · ' + esc(h.nat) : '') + '</span><span class="tc">' + tchips(SPMAP[h.sid].types) + '</span></div>'; })(c.helper) : '') + '</div>';
@@ -191,7 +207,7 @@
     var R = rk ? { r: rk.r || 0, dv: rk.dv, bestDv: rk.bestDv, best: Math.max(rk.best || 0, rk.r || 0), w: rk.w || 0, l: rk.l || 0, stars: rk.stars || 0, kingBest: Math.max(rk.kingBest || 0, rk.r === RANKS.length - 1 ? rk.stars || 0 : 0) } : { r: 0, best: 0, w: 0, l: 0 };
     var ed = st.edit;
     return { user: st.me || (C.user && C.user()), name: acc.name, avatar: A.avatarSpec(), gender: A.gender ? A.gender() : 'm', title: acc.title && (acc.titles || []).indexOf(acc.title) >= 0 ? acc.title : null, monsN: acc.mons.length, speciesN: Object.keys(species).length,
-      created: acc.created, motto: ed.motto, rankInfo: R,
+      created: acc.created, motto: ed.motto, rankInfo: R, prog: progOf(acc),
       show: ed.show.map(function (u) { var m = A.mon(u); return m && { sid: m.sid, lv: m.lv, nat: m.nat, moves: m.moves, shiny: m.shiny === 2 ? 2 : !!m.shiny }; }).filter(Boolean),
       helper: ed.helper != null && A.mon(ed.helper) ? (function (m) { return { sid: m.sid, lv: m.lv, nat: m.nat, shiny: m.shiny === 2 ? 2 : !!m.shiny }; })(A.mon(ed.helper)) : null };
   }

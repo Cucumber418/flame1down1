@@ -159,6 +159,7 @@ function card(u, me) {
   o.show = showMons(acc).map(function (m) { return monOut(m, acc); });
   var hp = helperOf(acc); o.helper = hp ? monOut(hp, acc) : null;
   o.rankInfo = rankOut(parseSave(u).rank);
+  try { o.prog = require('./chalboard').progOf(acc); } catch (e) {}   // 挑战进度（名片里二级点开）
   o.titles = Array.isArray(acc.titles) ? acc.titles.filter(function (x) { return typeof x === 'string'; }).slice(0, 300) : [];
   return o;
 }
