@@ -262,7 +262,8 @@
     { id: 'rare5', n: '考点收藏家', d: '拥有 5 类稀有精灵', ok: function () { return rareKinds() >= 5; } },
     { id: 'rare15', n: '必刷题收藏家', d: '拥有 15 类稀有精灵', ok: function () { return rareKinds() >= 15; } },
     { id: 'purifier', n: '芙罗拉净化者', d: '完成芙罗拉星的星球任务「祛除瘴气」', ok: function () { return !!(acc.purge && acc.purge.n >= 30); } },
-    { id: 'force', n: '原力掌控者', d: '击败困难难度的首领「泰戈尔」', ok: function () { return bossWon('tiger', 2); } }
+    { id: 'force', n: '原力掌控者', d: '击败困难难度的首领「泰戈尔」', ok: function () { return bossWon('tiger', 2); } },
+    { id: 'guardian', n: '净土守护', d: '击败困难难度的首领「荒芜」', ok: function () { return bossWon('barren', 2); } }
   ];
   // 等级成就：有 1 只 / 5 只精灵达到 25、50、75、100 级
   TITLES.forEach(function (T) { T.grp = 'story'; });
@@ -299,7 +300,7 @@
    * 功勋点：存档 acc.merit（余额，暂时还没有用途）；每得 1 功勋点同时得 1 功勋经验 acc.meritXp，攒够了在授勋馆晋升军衔 */
   var TITLE_RW = {
     trainee: [1000, 200, 10], senior: [3000, 500, 30], elite: [8000, 1000, 60], master: [15000, 2000, 100], scholar: [30000, 5000, 200],
-    collector: [2000, 300, 20], rare5: [8000, 1000, 60], rare15: [30000, 5000, 200], purifier: [5000, 800, 50], force: [10000, 1500, 80],
+    collector: [2000, 300, 20], rare5: [8000, 1000, 60], rare15: [30000, 5000, 200], purifier: [5000, 800, 50], force: [10000, 1500, 80], guardian: [10000, 1500, 80],
     one25: [1000, 200, 10], one50: [3000, 400, 20], one75: [6000, 800, 40], one100: [10000, 1500, 80],
     all25: [3000, 400, 20], all50: [8000, 1000, 50], all75: [15000, 2000, 100], all100: [30000, 4000, 200]
   };
@@ -2723,7 +2724,11 @@
       d: '潜伏在芙罗拉星盐碱地地底的草系首领。盐碱地里的瘴气，就是从它身上散出来的。',
       lv: [
         { diff: '简单', lv: 40, hp: 1000, boss: { dr: 0.15, mia: 1, pp: 99 }, bgm: 'boss', open: function () { return prog('flora1').done && (chalStars('fl5') > 0 || bossWon('barren', 0)); }, lockText: '通过芙罗拉星挑战第五关「猎手的领地」后开放', reward: { mon: { sid: 'barren', lv: 10 } } },
-        { diff: '普通', lv: 65, hp: 3000, boss: { dr: 0.15, mia: 1, puppet: 1, pp: 99 }, bgm: 'boss2', open: function () { return bossWon('barren', 0); }, lockText: '击败简单难度后开放', reward: { later: true } }
+        { diff: '普通', lv: 65, hp: 3000, boss: { dr: 0.15, mia: 1, puppet: 1, pp: 99 }, bgm: 'boss2', open: function () { return bossWon('barren', 0); }, lockText: '击败简单难度后开放', reward: { later: true } },
+        // 困难：完成主线「第八段 · 深入丛林」后，2026-10-18 16:00（北京时间）解锁
+        { diff: '困难', lv: 70, hp: 10000, boss: { dr: 0.15, mia: 1, immortal: 1, puppet: 1, puppetLv: 70, humus: 1, weed: 1, weedDmg: 50, rebirth: 1, pp: 99 }, bgm: 'floraFallen',
+          open: function () { return prog('flora4').done && Date.now() >= Date.UTC(2026, 9, 18, 8, 0, 0); },
+          lockText: '完成主线「第八段 · 深入丛林」后，2026-10-18 16:00 开放', reward: { title: 'guardian', exp: 50000 } }
       ] }
   };
   // 每周挑战：击败困难难度的泰戈尔后开放，规则和困难难度一样，每次消耗 1 枚挑战许可
@@ -2762,12 +2767,18 @@
         (open ? B.lv.slice(0, opened).map(function (L) { return L.diff; }).join(' / ') + (won ? ' · 已击败 ' + won + ' 档' : '') : B.lv[0].lockText) + '</small></span></button>';
     }).join('');
   }
+  // SECRET_FX：第一次发动前只显示「？？？」的隐藏首领特效（触发后 acc.seenFx[键名] 会被 HSEV('bossfx',...) 记下）
+  var SECRET_FX = { past: 1, rebirth: 1 };
   function fxRules(L) {
     var fake = { boss: L.boss || {}, hp: L.hp }, out = [];
     if (L.only) out.push(['【元素亲和】', '只有' + L.only.join('、') + '系技能才能命中它']);
-    var known = !!(acc.seenFx && acc.seenFx.past);
-    if (L.boss) BOSS_FX.forEach(function (f) { if (L.boss[f.k]) out.push(f.k === 'past' && !known ? ['【？？？】', '尚未揭晓。它好像还藏着什么本事……'] : ['【' + f.h + '】', f.d(fake).split('\n')[0]]); });
-    if (L.boss && L.boss.past && known) ['eternal', 'relive', 'sy'].forEach(function (k) { var f = BOSS_FX.filter(function (x) { return x.k === k; })[0]; out.push(['复活后 · 【' + f.h + '】', f.d(fake)]); });
+    if (L.boss) BOSS_FX.forEach(function (f) {
+      if (!L.boss[f.k]) return;
+      if (SECRET_FX[f.k] && !(acc.seenFx && acc.seenFx[f.k])) { out.push(['【？？？】', '尚未揭晓。它好像还藏着什么本事……']); return; }
+      out.push(['【' + f.h + '】', f.d(fake).split('\n')[0]]);
+    });
+    var pastKnown = !!(acc.seenFx && acc.seenFx.past);
+    if (L.boss && L.boss.past && pastKnown) ['eternal', 'relive', 'sy'].forEach(function (k) { var f = BOSS_FX.filter(function (x) { return x.k === k; })[0]; out.push(['复活后 · 【' + f.h + '】', f.d(fake)]); });
     return out;
   }
   function rewardText(R) {
@@ -2927,6 +2938,7 @@
     var p = team.map(storyMon);
     var bossFx = L.boss ? JSON.parse(JSON.stringify(L.boss)) : null;
     if (bossFx && bossFx.past && acc.seenFx && acc.seenFx.past) bossFx.pastKnown = 1;   // 「东北的往事」第一次发动之前不显示
+    if (bossFx && bossFx.rebirth && acc.seenFx && acc.seenFx.rebirth) bossFx.rebirthKnown = 1;   // 「枯萎中蜕生」第一次发动之前不显示
     var a = [{ id: B.sid, lv: L.lv, moves: defaultMoves(B.sid, L.lv), nick: B.name, img: SPRITES[B.sid], maxhp: L.hp, onlyHit: L.only, boss: bossFx }];
     seeMon(B.sid, L.lv);
     var rec = bossRec(k, weekly ? 'w' : d); rec.tries++; save();

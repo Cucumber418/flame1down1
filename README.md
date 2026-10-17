@@ -563,3 +563,17 @@ sudo bash /opt/flame1down1/server/restore.sh 文件名      # 恢复到指定的
 - **动画效果**（`style.css` 的 `.vn-cgwrap` / `.vn-cg-pic`，`game.js` 的 `setCG()`）：图片先用 `background-size: cover` 从顶部开始，`background-position` 用 CSS 关键帧从 `center 0%` 动画到 `center 100%`，相当于镜头从上往下扫过这张竖图（2.2 秒）；扫完之后用一个短促的 `translate`/`rotate` 抖动关键帧做一下画面震动（0.45 秒）；震动结束后切到 `background-size: contain`，画面定格展示完整的 CG。三段全部靠 `animationend` 事件串联（`vncgScroll` → 加 `shake` 类 → `vncgShake` → 加 `full` 类），不用写死时间的 `setTimeout`。
 - **层级**：`vn-cgwrap` 插在 `vn-mons` 和 `vn-top` 之间，`pointer-events: none`，盖住背景和立绘但不挡住顶栏和对话框，点击照常能穿透到 `#vn` 推进剧情。
 - 这套机制是通用的，以后别的剧情要用弹图 CG，只要把图放进 `images/cg/`、在 `CG` 表里加一条、在对应的剧情行上写 `cg: '键名'` 就行。
+
+## 首领「荒芜」困难难度（2026-10-17）
+
+`BOSSES.barren.lv[2]`，LV70、体力 10000。解锁条件（`open()`）：完成主线「第八段 · 深入丛林」（`prog('flora4').done`）且时间到了 2026-10-18 16:00（北京时间，代码里用 `Date.UTC(2026, 9, 18, 8, 0, 0)` 存成 UTC 时间戳，不依赖浏览器时区设置），和是否打过普通难度无关。开场 BGM 直接复用 `floraFallen`（素材还是 flora3_the_great_cover.mp3）。
+
+沿用简单 / 普通难度的特效（`dr: 0.15` 星球聚能、`mia: 1` 瘴气领域——每回合结束时给对手在场精灵加 1 层瘴气），再加上新增的：
+
+- **不朽** `immortal`：免疫任何异常状态（复用 `addStatus()` 里 `noStatus` 的判断分支），也免疫自身能力等级的下降（`changeStages()` 里新增一条：`v < 0 && m.boss.immortal` 时直接跳过，不影响能力提升）。
+- **瘴毒傀儡** `puppet` + `puppetLv: 70`：机制和普通难度一样（30% 几率下场召唤，15 回合冷却，体力低于 1000 后 7 回合），但召唤出来的傀儡等级可以按难度配置了——`summonPuppet()` 原来写死 LV50，现在改成读 `b.boss.puppetLv || 50`。
+- **腐殖质 / 腐殖乐园** `humus`（`humusField()`，端游每回合结束时触发一次）：每回合结束，从「速度 −1 / 物攻 −1 / 特攻 −1 / 寄生 3 回合 / 瘴气 +4 层」里随机抽 1 项（不重复）施加给对手；「枯萎中蜕生」发动后 `humusN` 变成 2，改成同时抽 2 项，描述和日志里的名字也自动换成「腐殖乐园」。
+- **除草机 / 抹除装置** `weed`（`weedField()`，同样每回合结束触发）：每回合结束附带固定伤害，初始 50，每次 +2（存在 `b.boss.weedDmg`，活的战斗实例上会持续增长）；对草系精灵伤害翻倍。「枯萎中蜕生」发动后把触发那一刻的伤害值 ×1.5 后冻结（`weedFrozen`），不再增长，名字也换成「抹除装置」。
+- **枯萎中蜕生** `rebirth`（`rebirthBarren()`，挂在 `loseHp()`/`applyDamage()` 里）：体力第一次低于 4444 时触发（只触发一次，`b.reborn` 防重复），不是靠「即将倒下」判定，而是在每次扣血之后立刻检查阈值，哪怕一刀打到 4444 以下甚至 0 也会先转化再判断是否倒下。效果：恢复 1000 体力、对玩家造成其最大体力 60% 的固定伤害，并把「腐殖质」「除草机」永久升级成「腐殖乐园」「抹除装置」。这个特效在账号第一次真正触发之前，首领信息页和战斗中的状态栏都只显示「？？？」（复用困难泰戈尔「东北的往事」那一套 `acc.seenFx` + `BOSS_FX[].hide()` 机制，`game.js` 的 `fxRules()` 这次改成了通用的 `SECRET_FX` 查表，不再单独写死 `past`）。
+- 击败后首次奖励：称号「净土守护」+ 累积经验 ×50000（`TITLES` 里也加了对应的 `guardian` 条目，供授勋馆显示进度）；具体经验数额和有没有道具奖励目前是暂定，用户后续可以再调整。
+- **遗留事项**：按设定，「枯萎中蜕生」发动的瞬间战斗音乐应该换成《before the end》，但这首曲子还没有上传进 `audio/library/`，所以这次只接好了触发钩子（`battle.js` 里 `rebirthBarren()` 发出 `fx:'rebirth'` 的 scene 事件，`battle-ui.js` 里对应分支已经写好、注释掉了），等曲子传上来之后把 `audio.js` 的 `TRACKS` 加一条、`battle-ui.js` 那行注释取消就能接上，不用再改别的地方。

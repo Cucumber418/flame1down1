@@ -351,6 +351,7 @@ function loseHp(S, evs, j, amt, why) {
   amt = Math.min(t.hp, Math.floor(amt)); t.hp -= amt;
   E(S, evs, 'hit', { side: j, amount: amt });
   if (why) log(S, evs, why);
+  if (t.boss && t.boss.rebirth && !t.boss.reborn && t.hp < 4444) { rebirthBarren(S, evs, j, t); return amt; }
   if (t.hp <= 0 && why) hqDot(S, evs, t, why);
   if (t.hp <= 0) faint(S, evs, j);
   return amt;
@@ -375,6 +376,7 @@ function applyDamage(S, evs, j, amount, src, o) {
     log(S, evs, nm(t) + '的龙之逆鳞把 ' + excess + ' 点伤害反馈给了对方！', 'fxl');
     loseHp(S, evs, src, excess);
   }
+  if (t.boss && t.boss.rebirth && !t.boss.reborn && t.hp < 4444) { rebirthBarren(S, evs, j, t); return amt; }
   if (t.hp <= 0 && !o.noFaint) faint(S, evs, j);
   return amt;
 }
@@ -395,6 +397,7 @@ function changeStages(S, evs, i, obj, src) {
   for (var k in obj) {
     var v = obj[k];
     if (v > 0 && (m.tm.noBoost > 0 || m.tm.seal > 0)) { tried = true; continue; }
+    if (v < 0 && m.boss && m.boss.immortal) { parts.push(STG_NAME[k] + '被「不朽」免疫'); continue; }
     if (v < 0 && m.tm.mist > 0) { parts.push(STG_NAME[k] + '被白雾保护'); continue; }
     var old = m.stages[k], nv = Math.max(-6, Math.min(6, old + v));
     m.stages[k] = nv;
@@ -412,7 +415,7 @@ var CONTROL = { 害怕: 1, 石化: 1, 睡眠: 1, 麻痹: 1, 冰冻: 1, 疲惫: 1
 var CANT_ACT = { 害怕: '害怕得无法行动', 石化: '被石化了，无法行动', 睡眠: '正在睡觉', 麻痹: '身体麻痹，无法行动', 冰冻: '被冻住了，无法行动', 疲惫: '疲惫得无法行动' };
 function addStatus(S, evs, j, k, turns, src, noReflect, refresh) {
   var t = act(S, j); if (t.fainted) return;
-  if (t.boss && t.boss.noStatus) { log(S, evs, nm(t) + '免疫异常状态，「' + k + '」没有效果'); return; }
+  if (t.boss && (t.boss.noStatus || t.boss.immortal)) { log(S, evs, nm(t) + '免疫异常状态，「' + k + '」没有效果'); return; }
   if (k === '寄生' && typesOf(t).indexOf('草') >= 0) { log(S, evs, nm(t) + '是草系精灵，不会被寄生'); return; }
   if (t.tm.reflect > 0) {
     if (!noReflect && src != null && !act(S, src).fainted) {
@@ -1144,10 +1147,14 @@ var BOSS_FX = [
   { k: 'dr', t: '星球聚能', h: '星球聚能', d: function (m) { return '受到的伤害减少 ' + Math.round(m.boss.dr * 100) + '%'; } },
   { k: 'mia', t: '瘴气领域', h: '瘴气领域', d: function () { return '只要它还没倒下，每回合结束时为对手在场的精灵添加 1 层瘴气'; } },
   { k: 'puppet', t: '瘴毒傀儡', h: '瘴毒傀儡', d: function (m) { var cd = puppetCd(m), left = m.boss.last == null ? 0 : Math.max(0, cd - (m.boss.now - m.boss.last));
-    return '每回合有 30% 的几率下场，召唤一只 LV50 的瘴毒傀儡（芙罗拉星的草系精灵，带 10 层瘴气，只会用攻击技能）。召唤后冷却 15 回合，体力低于 1000 后冷却缩短为 7 回合。' + (left ? '\n当前冷却：还剩 ' + left + ' 回合' : '\n当前：可以召唤'); } },
+    return '每回合有 30% 的几率下场，召唤一只 LV' + (m.boss.puppetLv || 50) + ' 的瘴毒傀儡（芙罗拉星的草系精灵，带 10 层瘴气，只会用攻击技能）。召唤后冷却 15 回合，体力低于 1000 后冷却缩短为 7 回合。' + (left ? '\n当前冷却：还剩 ' + left + ' 回合' : '\n当前：可以召唤'); } },
   { k: 'erode', t: '深度侵蚀', h: '深度侵蚀', d: function () { return '物攻、特攻永久提升 100%（直接算进能力值，不会被消除）'; } },
   { k: 'mute', t: '无法交流', h: '无法交流', d: function () { return '完全失去理智，只会使用攻击技能'; } },
-  { k: 'purify', t: '净化光芒', h: '净化光芒', d: function () { return '对沾染瘴气的目标造成的伤害提升 100%'; } }
+  { k: 'purify', t: '净化光芒', h: '净化光芒', d: function () { return '对沾染瘴气的目标造成的伤害提升 100%'; } },
+  { k: 'immortal', t: '不朽', h: '不朽', d: function () { return '免疫任何异常状态，也免疫自身能力等级的下降（提升不受影响）'; } },
+  { k: 'humus', t: '腐殖质', h: '腐殖质', d: function (m) { return '每回合结束时随机给对手附加 1 项：速度 −1 / 物攻 −1 / 特攻 −1 / 寄生 3 回合 / 瘴气 +4 层（「枯萎中蜕生」发动后变成「腐殖乐园」，同时附加其中 2 项）'; } },
+  { k: 'weed', t: '除草机', h: '除草机', d: function (m) { var d0 = (m.boss && m.boss.weedDmg) || 50; return '每回合结束时附带 ' + d0 + ' 点固定伤害，每回合 +2（对草系精灵伤害翻倍）。「枯萎中蜕生」发动后变成「抹除装置」：伤害定格在当时数值的 1.5 倍，不再增长'; } },
+  { k: 'rebirth', t: '枯萎中蜕生', h: '枯萎中蜕生', hide: function (m) { return !m.boss.rebirthKnown; }, d: function () { return '体力首次低于 4444 时发动：恢复 1000 体力，并对敌方造成其最大体力 60% 的固定伤害；「腐殖质」「除草机」从此分别变成「腐殖乐园」「抹除装置」'; } }
 ];
 /* 困难泰戈尔「东北的往事」：第一次被击败时不屈复活（只复活一次）
  * 复活：LV60、体力 3000（回满），清掉能力等级和异常状态；东北的纷争 → 永续的纷争（物攻 +60%、受伤 +20%），新增往日重现，场地变成沈阳大街（双方都不能用变化技能）
@@ -1193,12 +1200,54 @@ function puppetMoves(id) {
     .sort(function (a, b) { return (M[b].power || 0) - (M[a].power || 0); }).slice(0, 4);
 }
 function summonPuppet(S, evs) {
-  var side = S.sides[1], b = act(S, 1), id = PUPPETS[Math.floor(RNG() * PUPPETS.length)];
-  var m = mkFrom({ id: id, lv: 50, moves: puppetMoves(id), nick: '瘴毒傀儡·' + SPMAP[id].name, miasma: 10 });
+  var side = S.sides[1], b = act(S, 1), id = PUPPETS[Math.floor(RNG() * PUPPETS.length)], plv = (b.boss && b.boss.puppetLv) || 50;
+  var m = mkFrom({ id: id, lv: plv, moves: puppetMoves(id), nick: '瘴毒傀儡·' + SPMAP[id].name, miasma: 10 });
   m.puppet = true; side.team.push(m);
   b.boss.last = S.turn;
   log(S, evs, nm(b) + '沉入地底，召唤出了瘴毒傀儡！', 'crit');
   doSwitch(S, evs, 1, side.team.length - 1, true);
+}
+/* 困难荒芜「枯萎中蜕生」：体力首次低于 4444 时触发（只触发一次）。
+ * 恢复 1000 体力，对敌方造成其最大体力 60% 的固定伤害；「腐殖质」变成「腐殖乐园」（humusN 1→2，每回合同时附加 2 项负面效果）；
+ * 「除草机」变成「抹除装置」：把触发那一刻的伤害数值 ×1.5 后冻结，不再逐回合增长（weedFrozen） */
+function rebirthBarren(S, evs, j, t) {
+  var b = t.boss; b.reborn = 1; b.rebirthKnown = 1;
+  var i = 1 - j, foe = act(S, i);
+  log(S, evs, nm(t) + '的身躯剧烈地颤动起来，枯萎的组织重新编织了一遍……「枯萎中蜕生」发动了！', 'crit');
+  heal(S, evs, j, 1000);
+  var dmg = Math.floor(foe.maxhp * 0.6);
+  loseHp(S, evs, i, dmg, nm(t) + '释放出毁灭性的力量，对' + nm(foe) + '造成了 ' + dmg + ' 点固定伤害');
+  b.humusN = 2;
+  b.weedDmg = Math.round((b.weedDmg || 50) * 1.5);
+  b.weedFrozen = 1;
+  log(S, evs, '「腐殖质」化为了「腐殖乐园」：此后每回合会同时附加 2 项负面效果', 'fxl');
+  log(S, evs, '「除草机」化为了「抹除装置」：固定伤害定格在 ' + b.weedDmg + '，不会再增长', 'fxl');
+  E(S, evs, 'scene', { side: j, lines: [], fx: 'rebirth' });   // 给界面一个钩子：第一次发动时记进 acc.seenFx.rebirth（之后图鉴/首领页不再显示「？？？」），以及将来接《before the end》BGM 用
+}
+// 腐殖质 / 腐殖乐园：每回合结束时随机给对手附加 1 项（蜕生后 2 项）：速度-1 / 物攻-1 / 特攻-1 / 寄生3回合 / 瘴气+4层
+var HUMUS_OPTS = ['spe', 'atk', 'spa', 'parasite', 'miasma'];
+function humusField(S, evs) {
+  var b = bossOf(S); if (!b || !b.boss || !b.boss.humus || b.fainted) return;
+  var m = act(S, 0); if (m.fainted) return;
+  var n = b.boss.humusN || 1, label = n > 1 ? '腐殖乐园' : '腐殖质';
+  var pool = HUMUS_OPTS.slice(), picks = [];
+  for (var c = 0; c < n && pool.length; c++) picks.push(pool.splice(Math.floor(RNG() * pool.length), 1)[0]);
+  log(S, evs, nm(b) + '的「' + label + '」发动了！', 'fxl');
+  picks.forEach(function (opt) {
+    if (m.fainted) return;
+    if (opt === 'parasite') addStatus(S, evs, 0, '寄生', 3, 1);
+    else if (opt === 'miasma') { m.perm.miasma = miaN(m) + 4; E(S, evs, 'stage', { side: 0 }); log(S, evs, nm(m) + '受到瘴气侵染（瘴气 ×' + m.perm.miasma + '）', 'bad'); }
+    else { var o = {}; o[opt] = -1; changeStages(S, evs, 0, o, 1); }
+  });
+}
+// 除草机 / 抹除装置：每回合结束时附带固定伤害（除草机会逐回合 +2，抹除装置冻结不再增长），对草系精灵伤害翻倍
+function weedField(S, evs) {
+  var b = bossOf(S); if (!b || !b.boss || !b.boss.weed || b.fainted) return;
+  var m = act(S, 0); if (m.fainted) return;
+  var label = b.boss.weedFrozen ? '抹除装置' : '除草机', dmg = b.boss.weedDmg || 50;
+  if (typesOf(m).indexOf('草') >= 0) dmg *= 2;
+  loseHp(S, evs, 0, dmg, nm(b) + '的「' + label + '」对' + nm(m) + '造成了 ' + dmg + ' 点固定伤害');
+  if (!b.boss.weedFrozen) b.boss.weedDmg = (b.boss.weedDmg || 50) + 2;
 }
 function miasmaField(S, evs) {
   var b = bossOf(S); if (!b || !b.boss.mia || b.fainted) return;
@@ -1231,6 +1280,8 @@ function endOfTurn(S, evs) {
   if (S.over) return;
   miasmaTick(S, evs);
   miasmaField(S, evs);
+  humusField(S, evs);
+  weedField(S, evs);
   [0, 1].forEach(function (i) {
     var m = act(S, i); if (m.fainted) return;
     var o = act(S, 1 - i);
