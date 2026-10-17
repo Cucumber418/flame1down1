@@ -1502,7 +1502,7 @@
     var head = '<div class="flora-hero"><span class="tape l"></span>' + planetImg(planetOf('flora'), 150) + '<div><h3>芙罗拉星 <span class="chip ptype">草系星球</span></h3><p class="hint">地表分为丛林、草甸、盐碱地三片区域。</p>' +
       '<div class="fparts" role="tablist"><button type="button" role="tab" class="tab' + (part === 'challenge' ? ' on' : '') + '" data-fpart="challenge" aria-selected="' + (part === 'challenge') + '">挑战</button><button type="button" role="tab" class="tab' + (part === 'catch' ? ' on' : '') + '" data-fpart="catch" aria-selected="' + (part === 'catch') + '">捕捉</button>' + taskTab('flora', part) + '</div></div></div>';
     // 剧情页（2026-10-17）：分「主线」「支线」两栏，从上往下是 新 → 旧
-    var flSites = PLANETS.filter(function (p) { return p.id === 'flora'; })[0].sites, stab = ex.flSt === 'side' ? 'side' : 'main';
+    var flSites = PLANETS.filter(function (p) { return p.id === 'flora'; })[0].sites, stab = ex.flSt === 'side' ? 'side' : ex.flSt === 'cg' ? 'cg' : 'main';
     var stCard = function (id) {
       var S = SITES[id], pr = prog(id), started = pr.at > 0 && !pr.done, lock = !unlocked(id);
       if (lock && !prog(S.after).done) return '';   // 前一段还没读完的不显示
@@ -1518,8 +1518,9 @@
     var listOf = function (ids) { var h = ids.slice().reverse().map(stCard).join(''); return h || '<p class="hint fl-none">暂时还没有可以阅读的剧情。</p>'; };
     var nM = mainIds.some(isNew), nS = sideIds.some(isNew);
     var sp = '<div class="fparts st-tabs" role="tablist"><button type="button" role="tab" class="tab' + (stab === 'main' ? ' on' : '') + '" data-flst="main" aria-selected="' + (stab === 'main') + '">主线' + (nM ? '<i class="q-badge">!</i>' : '') + '</button>' +
-      '<button type="button" role="tab" class="tab' + (stab === 'side' ? ' on' : '') + '" data-flst="side" aria-selected="' + (stab === 'side') + '">支线' + (nS ? '<i class="q-badge">!</i>' : '') + '</button></div>' +
-      listOf(stab === 'side' ? sideIds : mainIds);
+      '<button type="button" role="tab" class="tab' + (stab === 'side' ? ' on' : '') + '" data-flst="side" aria-selected="' + (stab === 'side') + '">支线' + (nS ? '<i class="q-badge">!</i>' : '') + '</button>' +
+      '<button type="button" role="tab" class="tab' + (stab === 'cg' ? ' on' : '') + '" data-flst="cg" aria-selected="' + (stab === 'cg') + '">CG</button></div>' +
+      (stab === 'cg' ? cgGallery(flSites) : listOf(stab === 'side' ? sideIds : mainIds));
     head = head + (prog('flora1').done ? '' : listOf(mainIds));
     // 有新的主线可以读时，「剧情」页签上显示红点
     var newMain = flSites.some(isNew);
@@ -2275,6 +2276,38 @@
   }
 
 
+
+  /* ---------- CG 画廊（2026-10-17）：星球剧情页的第三栏，展示这颗星球的剧情里已经看过的 CG ---------- */
+  var CG_NAME = { travelcat: '初遇叶子喵', leafsave: '光芒乍现' };
+  function cgSrc(k, land) { var c = CG[k]; if (!c) return ''; var o = land ? c.land : c; return o ? (o[gender()] || o.m) : ''; }
+  function cgList(sites) {   // 按剧情顺序列出这些剧情里出现的 CG：[{ k, site }]
+    var out = [];
+    sites.forEach(function (id) { (SCRIPT[id] || []).forEach(function (st) { if (st.cg && CG[st.cg] && !out.some(function (x) { return x.k === st.cg; })) out.push({ k: st.cg, site: id }); }); });
+    return out;
+  }
+  function cgGot(k, site) { return !!((acc.cgSeen && acc.cgSeen[k]) || prog(site).done); }
+  function cgGallery(sites) {
+    var L = cgList(sites), n = L.filter(function (x) { return cgGot(x.k, x.site); }).length;
+    if (!L.length) return '<p class="hint fl-none">这颗星球的剧情里还没有 CG。</p>';
+    return '<p class="hint cg-count">已解锁 ' + n + ' / ' + L.length + ' 张 · 点击查看大图</p><div class="cg-grid">' + L.map(function (x) {
+      var S = SITES[x.site], got = cgGot(x.k, x.site);
+      return got ? '<button type="button" class="cg-th" data-cgview="' + x.k + '"><span class="cg-img" style="background-image:url(' + cgSrc(x.k) + ')"></span><b>' + esc(CG_NAME[x.k] || x.k) + '</b><small>' + esc(S.chapter) + '</small></button>'
+        : '<div class="cg-th locked"><span class="cg-img"><i>？</i></span><b>？？？</b><small>在「' + esc(S.chapter) + '」中解锁</small></div>';
+    }).join('') + '</div>';
+  }
+  function openCgView(k) {
+    var old = $('cgv-dlg'); if (old) old.remove();
+    var land = cgSrc(k, true), d = document.createElement('div'); d.className = 'cgv-dlg'; d.id = 'cgv-dlg';
+    d.innerHTML = '<div class="cgv-box" role="dialog" aria-modal="true" aria-label="' + esc(CG_NAME[k] || 'CG') + '"><img id="cgv-img" src="' + cgSrc(k) + '" alt="' + esc(CG_NAME[k] || '') + '">' +
+      '<div class="cgv-bar"><b>' + esc(CG_NAME[k] || k) + '</b>' + (land ? '<button type="button" class="btn" data-cgflip="1">切换横版 / 竖版</button>' : '') + '<button type="button" class="btn primary" data-cgx="1">关闭</button></div></div>';
+    document.body.appendChild(d);
+    var isLand = false;
+    d.addEventListener('click', function (e) {
+      if (e.target.closest('[data-cgflip]')) { isLand = !isLand; $('cgv-img').src = cgSrc(k, isLand); return; }
+      if (e.target === d || e.target.closest('[data-cgx]')) d.remove();
+    });
+  }
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && $('cgv-dlg')) $('cgv-dlg').remove(); });
   /* ---------- 全服挑战进度（2026-10-17）：星球挑战页、先驱之塔页下方，服务器见 server/chalboard.js ---------- */
   var CB = {};
   function cbFetch(k) {
@@ -4305,6 +4338,7 @@
     if (b.id === 'farm-back') { ex.view = 'area'; ex.area = '恩施'; ex.planet = 'jingchu'; renderExplore(); return; }
     if (b.dataset.fpart) { ex.fpart = b.dataset.fpart; renderExplore(); return; }
     if (b.dataset.flst) { ex.flSt = b.dataset.flst; renderExplore(); return; }
+    if (b.dataset.cgview) { openCgView(b.dataset.cgview); return; }
     if (b.dataset.field && !b.disabled) { enterField(b.dataset.field); return; }
     if (b.dataset.gather != null && b.dataset.gather !== '') { gatherAt(+b.dataset.gather); return; }
     if (b.dataset.jade != null) { jadeAt(+b.dataset.jade); return; }
@@ -4390,6 +4424,7 @@
     if (!k) { if (ex.curCg) { w.classList.remove('show', 'play', 'shake', 'full', 'land'); ex.curCg = null; } return; }
     if (ex.curCg === k) return;
     ex.curCg = k;
+    if (!acc.cgSeen) acc.cgSeen = {}; if (!acc.cgSeen[k]) { acc.cgSeen[k] = Date.now(); save(); }   // CG 画廊：记下看过的
     var src = CG[k] ? (CG[k][gender()] || CG[k].m) : '';
     $('vn-cg-pic').style.backgroundImage = src ? 'url(' + src + ')' : 'none';
     w.classList.remove('play', 'shake', 'full', 'land');

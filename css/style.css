@@ -2121,3 +2121,18 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 @keyframes holoScan { from { background-position: 0 0; } to { background-position: 0 40px; } }
 @media (prefers-reduced-motion: reduce) { .vn-fig.holo, .vn-fig.holo::after { animation: none; } }
 @media (max-width: 640px) { .vn-fig.holo { width: 36%; right: 0; } }
+/* CG 画廊（2026-10-17） */
+.cg-count { margin: 6px 4px; }
+.cg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-top: 6px; }
+.cg-th { display: grid; gap: 4px; padding: 8px; text-align: left; background: #fff; border: 1.5px solid var(--ink); border-radius: 12px; box-shadow: 3px 3px 0 var(--ink); font: inherit; color: var(--ink); cursor: pointer; transition: transform .15s; }
+.cg-th:hover { transform: translateY(-2px); }
+.cg-th .cg-img { display: grid; place-items: center; aspect-ratio: 3 / 4; border-radius: 8px; background: #23222b center / cover no-repeat; }
+.cg-th small { color: #777; font-size: 12px; }
+.cg-th.locked { cursor: default; opacity: .7; box-shadow: none; border-style: dashed; }
+.cg-th.locked .cg-img { background: repeating-linear-gradient(45deg, #d9d6cc 0 8px, #e6e3da 8px 16px); }
+.cg-th.locked i { font-style: normal; font-size: 34px; color: #9a968a; font-family: var(--f-hand); }
+.cgv-dlg { position: fixed; inset: 0; z-index: 9000; display: grid; place-items: center; padding: 16px; background: rgba(20, 18, 26, .86); }
+.cgv-box { display: grid; gap: 10px; justify-items: center; max-width: 100%; max-height: 100%; }
+.cgv-box img { max-width: min(96vw, 1100px); max-height: calc(100vh - 110px); object-fit: contain; border-radius: 10px; box-shadow: 0 8px 30px rgba(0,0,0,.5); }
+.cgv-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: center; color: #fff; }
+.cgv-bar b { font-size: 16px; }
