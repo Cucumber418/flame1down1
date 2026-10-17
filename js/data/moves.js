@@ -220,6 +220,8 @@ var M = {
   枯萎之壤: { type: '草', cat: '变化', tgtStage: { atk: -1, spa: -1, acc: -1 }, d: '降低对方1级物攻、特攻、命中' },
   腐败枷锁: { type: '草', cat: '变化', tgtStage: { spe: -1 }, custom: 'noBoostFoe', pp: 10, d: '降低对方1级速度，使对方5回合内无法提升能力等级' },
   灭却: { type: '普通', cat: '特攻', power: 1, hidden: true, custom: 'annihilate', pp: 2, d: '威力1，PP 2，秒杀成功后恢复本技能全部 PP；5%概率秒杀对方，对方存在的不利状态越多，成功率越高（每多1种不利状态 +10%，最高60%）' },
+  瘴毒灭却: { type: '草', cat: '特攻', power: 1, pri: 9, pp: 20, always: true, custom: 'annihilateSure', d: '剧情限定技能：先制 +9，必定命中，直接秒杀目标' },
+  按兵不动: { type: '普通', cat: '变化', power: 0, pp: 99, d: '原地不动，不会造成任何效果（剧情限定，用于不会攻击的对象）' },
 
   // —— 玛西露姆（草）
   毒孢子: { type: '草', cat: '特攻', power: 30, status: { k: '中毒', min: 2, max: 4, chance: 0.5 }, d: '威力30，50%概率使对方中毒2-4回合' },

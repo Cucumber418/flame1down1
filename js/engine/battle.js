@@ -105,6 +105,7 @@ function mkFrom(t) {
   if (t.boss) { m.boss = JSON.parse(JSON.stringify(t.boss)); if (m.boss.pp) m.moves.forEach(function (x) { if (M[x.n].custom !== 'annihilate') x.pp = x.max = m.boss.pp; }); }   // 灭却除外，仍按原本的 PP
   if (m.boss) m.boss.atk0 = m.stats.atk;
   if (m.boss && m.boss.feud) m.stats.atk = Math.floor(m.stats.atk * 1.3);   // 「东北的纷争」：物攻永久 +30%（直接算进能力值，不是能力等级，不会被消除）
+  if (m.boss && m.boss.erode) { m.stats.atk = Math.floor(m.stats.atk * 2); m.stats.spa = Math.floor(m.stats.spa * 2); }   // 「深度侵蚀」：物攻、特攻永久 +100%
   if (t.u != null) { m.u = t.u; m.hl = t.hl || []; }   // 账号里的精灵：可以在战斗中领悟隐藏技能
   return m;
 }
@@ -521,6 +522,7 @@ function calcDamage(me, foe, mv, firstMover, est) {
   if (foe.tm.dr40 > 0) mod *= 0.6;
   if (foe.boss && foe.boss.dr) mod *= 1 - foe.boss.dr;   // 首领「星球聚能」
   if (foe.boss && foe.boss.eternal) mod *= 1.2;   // 复活后的泰戈尔「永续的纷争」：受到的伤害 +20%
+  if (me.boss && me.boss.purify && miaN(foe) > 0) mod *= 2;   // 叶子喵剧情限定特性「净化光芒」：对沾染瘴气的目标伤害 +100%
   return { dmg: Math.max(1, Math.floor(base * mod)), crit: crit, eff: e };
 }
 function hitChance(me, foe, mv) {
@@ -757,6 +759,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
     }
     else log(S, evs, '灭却没有发动（成功率 ' + Math.round(pk * 100) + '%）');
   }
+  if (mv.custom === 'annihilateSure' && !foe.fainted) { log(S, evs, '瘴毒灭却！' + nm(foe) + '被一击吞噬！', 'crit'); applyDamage(S, evs, j, foe.hp + (foe.fx.shield || 0), i, {}); }
   // 盛宴：吃掉（击败）对方时，恢复本技能全部 PP；体力上限 +50 并回复 50 体力（本场战斗内可以无限叠加）
   if (mv.custom === 'feast' && foe.fainted) {
     if (slotIdx >= 0 && me.moves[slotIdx] && me.moves[slotIdx].pp < me.moves[slotIdx].max) { me.moves[slotIdx].pp = me.moves[slotIdx].max; log(S, evs, nm(me) + '饱餐了一顿，盛宴的 PP 全部恢复了！', 'fxl'); }
@@ -1141,7 +1144,10 @@ var BOSS_FX = [
   { k: 'dr', t: '星球聚能', h: '星球聚能', d: function (m) { return '受到的伤害减少 ' + Math.round(m.boss.dr * 100) + '%'; } },
   { k: 'mia', t: '瘴气领域', h: '瘴气领域', d: function () { return '只要它还没倒下，每回合结束时为对手在场的精灵添加 1 层瘴气'; } },
   { k: 'puppet', t: '瘴毒傀儡', h: '瘴毒傀儡', d: function (m) { var cd = puppetCd(m), left = m.boss.last == null ? 0 : Math.max(0, cd - (m.boss.now - m.boss.last));
-    return '每回合有 30% 的几率下场，召唤一只 LV50 的瘴毒傀儡（芙罗拉星的草系精灵，带 10 层瘴气，只会用攻击技能）。召唤后冷却 15 回合，体力低于 1000 后冷却缩短为 7 回合。' + (left ? '\n当前冷却：还剩 ' + left + ' 回合' : '\n当前：可以召唤'); } }
+    return '每回合有 30% 的几率下场，召唤一只 LV50 的瘴毒傀儡（芙罗拉星的草系精灵，带 10 层瘴气，只会用攻击技能）。召唤后冷却 15 回合，体力低于 1000 后冷却缩短为 7 回合。' + (left ? '\n当前冷却：还剩 ' + left + ' 回合' : '\n当前：可以召唤'); } },
+  { k: 'erode', t: '深度侵蚀', h: '深度侵蚀', d: function () { return '物攻、特攻永久提升 100%（直接算进能力值，不会被消除）'; } },
+  { k: 'mute', t: '无法交流', h: '无法交流', d: function () { return '完全失去理智，只会使用攻击技能'; } },
+  { k: 'purify', t: '净化光芒', h: '净化光芒', d: function () { return '对沾染瘴气的目标造成的伤害提升 100%'; } }
 ];
 /* 困难泰戈尔「东北的往事」：第一次被击败时不屈复活（只复活一次）
  * 复活：LV60、体力 3000（回满），清掉能力等级和异常状态；东北的纷争 → 永续的纷争（物攻 +60%、受伤 +20%），新增往日重现，场地变成沈阳大街（双方都不能用变化技能）

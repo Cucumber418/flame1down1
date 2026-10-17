@@ -546,9 +546,9 @@
   }
 
   // 剧情对战（由星际探索调用）：opt = { p, a, foe, onEnd(result) }
-  function setFieldBg(src) { var f = $('field'); f.classList.toggle('scene', !!src); f.style.backgroundImage = src ? 'linear-gradient(rgba(251,250,243,.32), rgba(251,250,243,.18)), url(' + src + ')' : ''; }
+  function setFieldBg(src, corrupt) { var f = $('field'); f.classList.toggle('scene', !!src); f.classList.toggle('miasma-bg', !!corrupt); f.style.backgroundImage = src ? 'linear-gradient(rgba(251,250,243,.32), rgba(251,250,243,.18)), url(' + src + ')' : ''; }
   function startStory(opt) {
-    setFieldBg(opt.bg || null);
+    setFieldBg(opt.bg || null, opt.corrupt);
     if (opt.wild || opt.diff) bgm(opt.bgm || 'normal');
     else bgm('faceEnemy', opt.bgm || 'normal');   // 剧情对战（非野外、非首领）：先放一遍遇敌曲，播完自动接回去
     app.S = newBattle(opt.p, opt.a); app.S.story = { foe: opt.foe, back: opt.back || null, diff: opt.diff || null };

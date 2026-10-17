@@ -9,6 +9,7 @@
  *   flora       芙罗拉星界面：芙罗拉星主页、剧情、盐碱地、荒芜首领页（FloraBackground）
  *   floraGrass  芙罗拉星 · 草甸：草甸野外场景（Flora1）
  *   floraForest 芙罗拉星 · 丛林：丛林野外场景（Flora2）
+ *   floraFallen 芙罗拉星 · 瘴气化：第八段结尾全星瘴气化之后，替换上面三首 flora/floraGrass/floraForest（flora3-TheGreatCover）
  * 茶室里放主人选的「茶室音乐」（大厅 = ui、地球 = earth、芙罗拉星 = flora），自己和来拜访的船员都听得到（见 game.js 的 HOME_BGM）。
  * 战斗音乐（对战开始时由 battle-ui.js 调用 HSAUDIO.play，对战结束后回到界面音乐）：
  *   normal      寻常：野外对战、剧情对战、茶室和朋友家的对战
@@ -20,6 +21,7 @@
  *   pvp         竞技对战、切磋、精灵大乱斗
  *   faceEnemy   剧情遇敌（FaceTheEnemy）：剧情对战（非野外、非首领）开始时先放一遍，播完自动接回 normal，
  *               不循环；由 battle-ui.js 在 startStory() 里用 HSAUDIO.play('faceEnemy', 'normal') 触发
+ *   disCommunication 瘴气化之后芙罗拉星的野外对战曲（dis-communication）：取代 normal，由 game.js 的 startWildBattle 按 o.corrupt 传入
  * 切歌时先淡出再淡入；界面音乐切回来时从上次停下的地方接着放。切到别的标签页会暂停。
  * 声音设置（战斗音乐、界面音乐两个开关和音量）存在这台设备的浏览器里，不跟账号同步。
  * 对外：window.HSAUDIO.play(战斗曲目[, 播完后接的曲目]) / stop(淡出毫秒) / scene(界面曲目)
@@ -29,11 +31,11 @@
   var V = '?v=4';
   var TRACKS = {
     normal: 'audio/bgm_normal.mp3', boss: 'audio/bgm_boss.mp3', boss2: 'audio/bgm_boss2.mp3', boss3: 'audio/bgm_boss3.mp3', tigerFinal: 'audio/bgm_tiger_final.mp3',
-    stage: 'audio/bgm_stage.mp3', pvp: 'audio/bgm_pvp.mp3', faceEnemy: 'audio/bgm_face_enemy.mp3',
+    stage: 'audio/bgm_stage.mp3', pvp: 'audio/bgm_pvp.mp3', faceEnemy: 'audio/bgm_face_enemy.mp3', disCommunication: 'audio/bgm_dis_communication.mp3',
     ui: 'audio/bgm_ui.mp3', arena: 'audio/bgm_arena.mp3', earth: 'audio/bgm_earth.mp3',
-    flora: 'audio/bgm_flora.mp3', floraGrass: 'audio/bgm_flora_grass.mp3', floraForest: 'audio/bgm_flora_forest.mp3'
+    flora: 'audio/bgm_flora.mp3', floraGrass: 'audio/bgm_flora_grass.mp3', floraForest: 'audio/bgm_flora_forest.mp3', floraFallen: 'audio/bgm_flora_fallen.mp3'
   };
-  var SCENES = { ui: 1, arena: 1, earth: 1, flora: 1, floraGrass: 1, floraForest: 1 };
+  var SCENES = { ui: 1, arena: 1, earth: 1, flora: 1, floraGrass: 1, floraForest: 1, floraFallen: 1 };
   var ONESHOT = { faceEnemy: 1 };   // 不循环；播完触发 chainNext 指定的下一首
   var KEY = 'hs-sound-v1';
   var cfg = { music: true, ui: true, vol: 60 };

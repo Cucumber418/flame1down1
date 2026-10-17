@@ -368,6 +368,9 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .mon.fainted img { animation: faint .6s forwards; }
 .mon.miasma img, .field.scene .mon.miasma img { filter: drop-shadow(0 0 3px #b48fd6) drop-shadow(0 0 10px rgba(107,63,143,.85)) drop-shadow(0 6px 0 rgba(0,0,0,.2)); }
 @keyframes faint { to { transform: translateY(25%) scaleY(.6); opacity: 0; } }
+/* 芙罗拉星整体瘴气化（第八段后）：没有专门瘴气版画面的场景（草甸、盐碱地）用滤镜叠一层紫色侵蚀，丛林有专门的 fl_jungle_corrupt 背景图，不需要这个 */
+.wf-scene.miasma-bg .wf-bg, .field.miasma-bg { filter: saturate(0.55) sepia(0.35) hue-rotate(220deg) brightness(0.8) contrast(1.05); }
+.wf-scene.miasma-bg::after, .field.miasma-bg::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 30%, rgba(107,63,143,.22), rgba(60,30,80,.4) 85%); mix-blend-mode: multiply; }
 .mon.enter img { animation: enter .45s ease-out; }
 @keyframes enter { from { transform: scale(.4); opacity: 0; } to { transform: none; opacity: 1; } }
 .mon.lunge0 img { animation: lunge0 .38s ease-in-out; } .mon.lunge1 img { animation: lunge1 .38s ease-in-out; }

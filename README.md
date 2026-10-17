@@ -206,7 +206,7 @@ sudo git clone --depth 1 https://github.com/Cucumber418/flame1down1 /opt/flame1d
 
 野外精灵表（`js/data/wild.js`）里给某种精灵写 `shiny: 0.03`，遇到的这只就有 3% 概率是异色。异色的立绘放在 `images/shiny/`，在 `js/data/assets.js` 的 `SHINY_SPRITES` 里登记（键名和 `PRE_SPRITES` 一样，最终形态用精灵 id）。抓到后精灵身上记 `shiny: true`，卡片、资料、名片、对战里都标「异色」；某个形态没有异色立绘时显示普通立绘。目前：锰怪（雷公一阶）3%；锰怪、三合一锰怪是红色异色，最终形态雷公是橙色异色，三个形态都有异色立绘。
 
-有些精灵有两种异色：野外表里再写 `shiny2: 0.005`，遇到时先按 shiny2 判定第二种异色（存档里记 `shiny: 2`），再按 shiny 判定第一种（`shiny: true`）。第二种异色的立绘在 `SHINY_SPRITES` 里键名后加 `_2`（如 `mush_s1_2`），某个形态没有 `_2` 图时退回第一种异色图。代码里用 `shinyV()` 统一取值（2 / true / false），名片、助战、首领攻略板、联网对战都会原样传 2；服务器 `server/social.js`、`server/bossboard.js` 也保留 2。目前：玛西（玛西露姆一阶）蓝色 5%、黄色 0.5%，只有一阶有异色立绘。
+有些精灵有两种异色：野外表里再写 `shiny2: 0.005`，遇到时先按 shiny2 判定第二种异色（存档里记 `shiny: 2`），再按 shiny 判定第一种（`shiny: true`）。第二种异色的立绘在 `SHINY_SPRITES` 里键名后加 `_2`（如 `mush_s1_2`），某个形态没有 `_2` 图时退回第一种异色图。代码里用 `shinyV()` 统一取值（2 / true / false），名片、助战、首领攻略板、联网对战都会原样传 2；服务器 `server/social.js`、`server/bossboard.js` 也保留 2。目前：玛西一系蓝色 5%、黄色 0.5%（野外表按一阶「玛西」的权重写），二阶「玛西西」和最终形态「玛西露姆」都有专属的蓝 / 黄异色立绘，一阶「玛西」暂时还没有。
 
 ## 茶室商店（陆羽茶室大厅）
 
@@ -529,3 +529,25 @@ sudo bash /opt/flame1down1/server/restore.sh 文件名      # 恢复到指定的
 - **双击 `index.html` 本地打开**：不用登录，进度只保存在这台电脑的浏览器里，换电脑或换浏览器不会同步。
 
 注意：浏览器按「网址」分开保存存档。双击 `index.html` 打开的本地版和 `http://服务器IP` 打开的联网版是两份独立的存档，互相看不到。
+
+## 第八段 · 深入丛林 + 芙罗拉星全星瘴气化（2026-10-17）
+
+主线来到 `SITES.flora4`（前置：完成世界任务「旅行猫」`prog('travelcat').done`）。这一段读完的瞬间，芙罗拉星从「局部瘴气」变成「全星瘴气化」，是个不可逆的世界状态分水岭：
+
+- **判定**：`game.js` 的 `floraFallen() { return prog('flora4').done; }`。只要读完这一段剧情（VN 脚本播完会自动写 `prog('flora4').done = true`，和别的站点一样，不用额外代码），之后全局即时生效。
+- **芙罗拉星图标**：`PLANETS` 里 flora 条目的 `img` 改成 `get img()` getter，按 `floraFallen()` 在 `images/planets/flora.webp`（常态）/ `flora_corrupt.webp`（瘴气化）之间切换。
+- **野外全部强制瘴气化**（`spawnFieldMon`）：`floraFallen()` 为真时，芙罗拉星三个区域刷出来的全部是强制最终形态、强制 LV40–50、挂 `boss: { erode: 1, mute: 1 }`（深度侵蚀双攻 +100%、无法交流只会攻击）的瘴气精灵，`noCatch: true` 不能捕捉，不吃「假装击败」奖励。立绘按 `SHINY_SPRITES` / `SPRITES` 直接取最终形态图（绕开 `form()` 的阶段门槛，因为战斗数值本来就和「形态」无关，只看等级）。
+- **场景背景**：丛林（`forest`）换成专门画的瘴气化背景 `fl_jungle_corrupt`（`fieldState` 里按 `R.id==='forest'` 直接整体替换 `bgs`）；草甸、盐碱地暂时没有专门的瘴气化图，改用 CSS 滤镜叠一层紫色侵蚀（`.wf-scene.miasma-bg` / `.field.miasma-bg`，`style.css`），场景对象上带 `corrupt` 标记，`renderField()` 据此加 `miasma-bg` 这个 class。
+- **音乐**：`audio.js` 新增 `floraFallen`（flora3-TheGreatCover，替代瘴气化后 flora / floraGrass / floraForest 三首界面音乐，`SCENES` 里的 `floraFallen: 1`；`game.js` 的 `sceneNow()` 包了一层 `sceneNowRaw()`，命中三首旧 flora 曲且 `floraFallen()` 为真就统一换这首）和 `disCommunication`（瘴气化后的野外遇敌战斗曲，`startWildBattle` 按 `o.corrupt` 传 `bgm: 'disCommunication'`，取代平时的 `normal`）。两首曲子原本存在 `audio/library/`（上个版本留的「有曲子暂未分配用途」），响度本来就在 -16 LUFS 左右，这次直接复制成 `bgm_flora_fallen.mp3` / `bgm_dis_communication.mp3`，没有再重新处理。
+- **新背景图**：`fl_village`（叶子村，剧情专用，不在任何区域的 `bgs` 表里，没有野生精灵）、`fl_horizon`（草甸第三张背景，已加进 `wild.js` 的 `grass` 区域 `bgs`）、`fl_jungle_corrupt`（见上）。`fl_lake` / `fl_path` / `fl_beech` / `fl_meadow` / `fl_salt` 五张原图也一并换成新画的。
+- **BOSS_FX 新增**（`battle.js`，剧情限定，写在 `FIGHTS[key].team[x].boss` 里）：`erode`（深度侵蚀：物攻特攻永久 +100%，直接乘进 `mkFrom()` 的能力值，不会被清除）、`mute`（无法交流：配合 `puppetMoves(sid)` 只给攻击技能达到「只会攻击」的效果，不是独立的 AI 逻辑）、`purify`（净化光芒：剧情限定的叶子喵特性，对瘴气在身的目标伤害 +100%，`calcDamage()` 里判）。
+- **新技能**（`moves.js`）：`瘴毒灭却`（先制 +9、必定命中、直接秒杀，剧情首领灭杀技，`custom: 'annihilateSure'`，`battle.js` 里直接把目标体力打到 0）、`按兵不动`（威力 0 的变化技能，纯粹用来保证训练木桩之类的对象绝对不会用替补技能打人）。
+- **`FIGHTS` 写法通用化**（`game.js`）：为了支持这一段的几场特殊剧情对战（巨大化首领、辰爷的瘴毒炸弹、Threego 独自作战），`FIGHTS[key]` 现在支持：
+  - `pteam`：用一支写死的队伍代替玩家自己的配队出战（Threego 独自对战用的「小胖虎」），不计经验/学习力；
+  - `allyMon`：在玩家配队最后加一只写死的助战精灵（叶子村救援战的旅行叶子喵，带 `purify`），战斗结束同样不计经验；
+  - `team` 除了精灵数组，也可以写成一个函数，在真正开战时才算——巨大化瘴气玛西露姆的等级是「玩家首发精灵等级 + 20」，就是这么实现的；
+  - `team` 的每一项除了 `sid`/`lv`，还能单独给 `moves`（固定技能表，绕开按等级计算的默认技能）、`boss`、`maxhp`（固定体力，瘴毒炸弹用这个把「木桩」体力锁定成一个阶段性的数字）、`nick`、`img`、`miasma`。
+  - 具体实现见 `resolveFoeEntry()` / `fightTeam()` / `startFight()` / `openFight()`。
+- **「瘴毒炸弹」的分段引爆**：剧情里「反复攻击木桩，打到一定血量会有插入对话，再继续打」这种没有现成机制支持，改成三场连续的剧情对战（`cyBomb1`/`cyBomb2`/`cyBomb3`，同一个训练木桩 `sid: 'dummy'`，`maxhp` 分别是 300/400/300，`moves: ['按兵不动']` 保证它绝对不会反击），中间穿插两段插叙对话，效果上就是「打一段、剧情插一句、再打一段」。
+- **CG 过场的简化**：旅行叶子喵最后一刻出手救下主角一行的那段「漫画分镜 + 大立绘」CG，这版引擎没有弹图系统，用换背景 + 对话节奏来还原这个高光时刻，没有专门做新的弹图机制。
+- **辰爷 / 常春藤组织**：`CAST.cy`（立绘 `images/characters/cy.webp`，初版，直接用原照片做了墨线 + 双色滤镜处理，不是和其他角色一样的抠图立绘，等正式立绘再替换）。身份设定（常春藤组织的真实目的等）记在 claude.ai 项目文档「角色与剧情设定」里，不在代码注释里展开。

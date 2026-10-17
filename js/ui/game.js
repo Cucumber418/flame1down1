@@ -1022,7 +1022,7 @@
   var PLANETS = [
     { id: 'earth', name: '地球', d: '我们出发的地方。', sites: ['school', 'river', 'jiuquan'] },
     { id: 'jingchu', name: '荆楚号', d: '环绕地球运行的星际探索舰，轮廓和湖北省一模一样。', sites: ['board', 'xiaogan', 'academy', 'storage'], ship: true, after: 'jiuquan' },
-    { id: 'flora', name: '芙罗拉星', d: '草系星球。丛林、草甸和盐碱地里栖息着许多野生精灵。', sites: ['flora1', 'flora2', 'flora3', 'travelcat'], wild: true, ptype: '草系星球', color: ['#9fd08a', '#3f7d4a'], after: 'board' },
+    { id: 'flora', name: '芙罗拉星', d: '草系星球。丛林、草甸和盐碱地里栖息着许多野生精灵。', sites: ['flora1', 'flora2', 'flora3', 'flora4', 'travelcat'], wild: true, ptype: '草系星球', color: ['#9fd08a', '#3f7d4a'], get img() { return floraFallen() ? 'images/planets/flora_corrupt.webp' : 'images/planets/flora.webp'; }, after: 'board' },
     { id: 'kamble', name: '坎布尔星', d: '水系星球。大半个星球都被温暖的浅海覆盖。', sites: [], wild: true, ptype: '水系星球', color: ['#8cc6ea', '#2a6fb0'], after: 'flora1' },
     { id: 'pompeii', name: '庞贝星', d: '火系星球。火山终年喷发，地面被熔岩烤得发烫。', sites: [], wild: true, ptype: '火系星球', color: ['#f2a46b', '#b3401f'], img: 'images/planets/pompeii.webp', after: 'flora1' },
     { id: 'laiting', name: '莱汀陨石带', d: '电系区域。无数陨石在雷暴中漂浮。', sites: [], wild: true, ptype: '电系陨石带', color: ['#f1dd73', '#7a6a1a'], belt: true, after: 'flora1' },
@@ -1048,6 +1048,7 @@
     flora1: { name: '盐碱地', planet: 'flora', chapter: '第五段 · 降临芙罗拉', bg: 'fl_salt', d: '第一支地面探索小队降落在了芙罗拉星。可着陆舱偏离了坐标，落进了弥漫着瘴气的盐碱地……', after: 'board', reward: { exp: 1000, energy: 500 } },
     flora2: { name: '卡罗聚集地', planet: 'flora', chapter: '第六段 · 卡罗的不安', bg: 'fl_meadow', d: '小队回到草甸上的卡罗聚集地，却听说有不知名的生物在猎杀被瘴气侵染的精灵。', after: 'flora1', reward: { exp: 1500, energy: 600, items: { trans: 1 } } },
     flora3: { name: '丛林边缘', planet: 'flora', chapter: '第七段 · 猎杀者', bg: 'fl_maple', d: '野外的精灵们「败下阵来」的消息传开了。傍晚，丛林边缘的草丛里，三人和卡罗屏住了呼吸……', after: 'flora2', need: function () { return spareN() >= SPARE_N; }, needText: '在芙罗拉星的丛林或草甸「假装击败」' + 5 + ' 只野生精灵，引出猎杀者', reward: { exp: 2000, energy: 800, items: { helmet: 1 } } },
+    flora4: { name: '丛林深处', planet: 'flora', chapter: '第八段 · 深入丛林', bg: 'fl_path', d: 'Threego 循着点点的气味独自闯进了丛林，再也没有回来……', after: 'flora3', need: function () { return prog('travelcat').done; }, needText: '完成世界任务「旅行猫」', reward: { exp: 3000, energy: 1200 } },
     tea: { name: '陆羽茶室', planet: 'jingchu', dept: '天门', chapter: '支线 · 陆羽茶室', side: true, bg: 'tea_p', d: '从芙罗拉星回来后，舰上要给第一支地面小队分配休息舱。读完后开放你自己的「茶室」（家园）。', after: 'flora1', pos: [50, 84] },
     mingming: { name: '古城防卫部', planet: 'jingchu', dept: '襄阳', chapter: '支线 · 明明教官的礼物', side: true, bg: 'bridge_p', d: '古城防卫部的明明教官听说你在黄冈秘鉴里点亮了十类精灵，想见见你。', after: 'board', pos: [48, 82], need: function () { return litCount() >= 10; }, needText: '在黄冈秘鉴中点亮 10 类精灵后开放', reward: { gift: [{ sid: 'aegis', lv: 10 }] } },
     tiger: { name: '古城防卫部', planet: 'jingchu', dept: '襄阳', chapter: '支线 · 东北来的泰戈尔', side: true, bg: 'bridge_p', d: '古城防卫部来了一只从东北招募的特殊虎系精灵，专门辅助船员训练。读完后开放首领「泰戈尔」的挑战。', after: 'board', pos: [30, 70] },
@@ -1083,7 +1084,8 @@
     tg: { name: function () { return '泰戈尔'; }, color: '#b0702a', tall: 0.92, spr: 'tagore' },
     kr: { name: function () { return '卡罗'; }, color: '#4f9159', tall: 0.55, spr: 'wind', sprLv: 3 },     // 戴上精灵翻译器之后能听懂的卡罗
     kl: { name: function () { return '卡莱'; }, color: '#3f6d3a', tall: 0.7, spr: 'kaleo', sprLv: 15 },
-    lc: { name: function () { return '叶子喵'; }, color: '#5f9a3e', tall: 0.8, spr: 'leafcat', sprLv: 30 }   // 世界任务「旅行猫」里的叶子喵（戴着翻译器能听懂）
+    lc: { name: function () { return '叶子喵'; }, color: '#5f9a3e', tall: 0.8, spr: 'leafcat', sprLv: 30 },   // 世界任务「旅行猫」里的叶子喵（戴着翻译器能听懂）
+    cy: { name: function () { return '辰爷'; }, color: '#3a4a66', tall: 1.0, img: 'cy' }   // 「常春藤怀克」，常春藤组织的特工（第八段登场）
   };
   var SCRIPT = STORY_SCRIPT;   // 剧本内容见 js/data/story.js
   function unlocked(id) { var S = SITES[id], a = S.after; return (!a || prog(a).done) && (!S.need || S.need()); }
@@ -1126,7 +1128,7 @@
    * wip 表示这一章还没写完（未完待续），写完之前不算通关 */
   var CHAPTERS = [
     { id: 'prologue', n: '序章', d: '从省实验中学出发，一路到登上荆楚号。', sites: ['school', 'river', 'jiuquan', 'board'], reward: { exp: 5000 } },
-    { id: 'ch1', n: '第一章 · 芙罗拉星', d: '降落芙罗拉星，追查瘴气和猎杀者的真相。', sites: ['flora1', 'flora2', 'flora3'], wip: true, reward: { bgm: 'flora' } }
+    { id: 'ch1', n: '第一章 · 芙罗拉星', d: '降落芙罗拉星，追查瘴气和猎杀者的真相。', sites: ['flora1', 'flora2', 'flora3', 'flora4'], wip: true, reward: { bgm: 'flora' } }
   ];
   function chapterOf(site) { return CHAPTERS.filter(function (C) { return C.sites.indexOf(site) >= 0; })[0] || null; }
   function chapterDone(C) { return !C.wip && C.sites.every(function (id) { return prog(id).done; }); }
@@ -1194,22 +1196,78 @@
     threego: { foe: 'Threego', team: [{ sid: 'tagore', lv: 3 }] },
     karo: { foe: '被瘴气污染的野生精灵', team: [{ sid: 'wind', lv: 3, miasma: 5 }], env: 'miasma', bg: 'fl_salt', desc: '被瘴气污染的卡罗（LV3）' },
     hunter: { foe: '神秘的猎杀者', team: [{ sid: 'kaleo', lv: 15 }], bg: 'fl_maple', desc: '猎杀者卡莱（LV15）' },
-    kaleo4: { foe: '瘴气卡莱群', team: [{ sid: 'kaleo', lv: 20, miasma: 5 }, { sid: 'kaleo', lv: 20, miasma: 5 }, { sid: 'kaleo', lv: 20, miasma: 5 }, { sid: 'kaleo', lv: 20, miasma: 5 }], bg: 'fl_beech', desc: '被瘴气侵染的卡莱 ×4（LV20）' }
+    kaleo4: { foe: '瘴气卡莱群', team: [{ sid: 'kaleo', lv: 20, miasma: 5 }, { sid: 'kaleo', lv: 20, miasma: 5 }, { sid: 'kaleo', lv: 20, miasma: 5 }, { sid: 'kaleo', lv: 20, miasma: 5 }], bg: 'fl_beech', desc: '被瘴气侵染的卡莱 ×4（LV20）' },
+    // ↓ 第八段 · 深入丛林（flora4）专用
+    cyThreego: { foe: '瘴气侵蚀的玛西', pteam: [{ sid: 'tagore', lv: 12, nick: '小胖虎' }],
+      team: [{ sid: 'mush', lv: 24, nick: '瘴气侵蚀的玛西', miasma: 8, boss: { erode: 1, mute: 1 } }],
+      env: 'miasma', bg: 'fl_maple', desc: '瘴气侵蚀的玛西（LV24）' },
+    cyRescue: { foe: '瘴气侵蚀的玛西',
+      team: [{ sid: 'mush', lv: 19, nick: '瘴气侵蚀的玛西', miasma: 6, boss: { erode: 1, mute: 1 } }, { sid: 'mush', lv: 19, nick: '瘴气侵蚀的玛西', miasma: 6, boss: { erode: 1, mute: 1 } }],
+      env: 'miasma', bg: 'fl_beech', desc: '瘴气侵蚀的玛西 ×2（LV19）' },
+    cyBoss: { foe: '巨大化的瘴气玛西露姆',
+      team: function () {
+        var lead = (acc.teams[acc.active] || []).map(mon).filter(Boolean)[0] || acc.mons[0];
+        var lv = Math.min(60, (lead ? lead.lv : 20) + 20);
+        return [{ sid: 'mush', lv: lv, nick: '巨大化的瘴气玛西露姆', img: SPRITES.mush, miasma: 10, boss: { erode: 1, mute: 1 }, moves: ['瘴毒灭却'] }];
+      },
+      env: 'miasma', bg: 'fl_path', desc: '巨大化的瘴气玛西露姆' },
+    cyAmbushCat: { foe: '瘴气侵蚀的叶子小小喵',
+      team: [{ sid: 'leafcat', lv: 18, nick: '瘴气侵蚀的叶子小小喵', miasma: 6, boss: { erode: 1, mute: 1 } }],
+      env: 'miasma', bg: 'fl_village', desc: '瘴气侵蚀的叶子小小喵（LV18）' },
+    cyVillage: { foe: '瘴气侵蚀的精灵群',
+      team: [{ sid: 'mush', lv: 20, nick: '瘴气侵蚀的玛西', miasma: 6, boss: { erode: 1, mute: 1 } }, { sid: 'mush', lv: 20, nick: '瘴气侵蚀的玛西', miasma: 6, boss: { erode: 1, mute: 1 } },
+        { sid: 'mush', lv: 20, nick: '瘴气侵蚀的玛西', miasma: 6, boss: { erode: 1, mute: 1 } }, { sid: 'leafcat', lv: 20, nick: '瘴气侵蚀的叶子小小喵', miasma: 6, boss: { erode: 1, mute: 1 } }],
+      allyMon: { sid: 'leafcat', lv: 35, nick: '旅行叶子喵', boss: { purify: 1 } },
+      env: 'miasma', bg: 'fl_village', desc: '瘴气侵蚀的精灵群（LV20）' },
+    cyAmbushKaleo: { foe: '辰爷驯服的卡莱',
+      team: [{ sid: 'kaleo', lv: 22, nick: '被驯服的卡莱', boss: { erode: 1 } }, { sid: 'kaleo', lv: 23, nick: '被驯服的卡莱', boss: { erode: 1 } }, { sid: 'kaleo', lv: 24, nick: '被驯服的卡莱', boss: { erode: 1 } }],
+      bg: 'fl_salt', desc: '辰爷驯服的卡莱 ×3' },
+    cyChenye: { foe: '辰爷',
+      team: [{ sid: 'kaleo', lv: 35, nick: '卡莱奥', boss: { erode: 1 } }, { sid: 'squid', lv: 40, nick: '邪恶水臂', boss: { erode: 1 } }],
+      bg: 'fl_salt', desc: '辰爷的卡莱奥（LV35）、邪恶水臂（LV40）' },
+    cyBomb1: { foe: '瘴毒炸弹', team: [{ sid: 'dummy', lv: 30, nick: '瘴毒炸弹', img: SPRITES.dummy, maxhp: 300, moves: ['按兵不动'] }], bg: 'fl_salt', desc: '瘴毒炸弹（充能中）' },
+    cyBomb2: { foe: '瘴毒炸弹', team: [{ sid: 'dummy', lv: 30, nick: '瘴毒炸弹', img: SPRITES.dummy, maxhp: 400, moves: ['按兵不动'] }], bg: 'fl_salt', desc: '瘴毒炸弹（充能中）' },
+    cyBomb3: { foe: '瘴毒炸弹', team: [{ sid: 'dummy', lv: 30, nick: '瘴毒炸弹', img: SPRITES.dummy, maxhp: 300, moves: ['按兵不动'] }], bg: 'fl_salt', desc: '瘴毒炸弹（即将引爆）' },
+    cyGuards: { foe: '瘴气守卫',
+      team: [{ sid: 'wind', lv: 36, nick: '瘴气守卫', miasma: 8, boss: { erode: 1, mute: 1 } }, { sid: 'kaleo', lv: 38, nick: '瘴气守卫', miasma: 8, boss: { erode: 1, mute: 1 } }],
+      env: 'miasma', bg: 'fl_salt', desc: '瘴气守卫 ×2（LV36/38）' }
   };
   function storyMon(m) { var f = form(m), hl = m.u != null ? (m.hl || []) : undefined, mv = m.moves.length ? m.moves.slice() : defaultMoves(m.sid, m.lv, hl); return { id: m.sid, lv: m.lv, moves: mv, nick: f.name, img: f.img, ev: m.ev || null, nat: m.nat || null, iv: ivOf(m), u: m.u, hl: hl, shiny: shinyV(m.shiny), emblem: m.u != null && acc.emblems && acc.emblems[m.sid] && EMBLEMS[m.sid] ? EMBLEMS[m.sid].m : null }; }
+  // F.pteam：剧情限定，用一支固定的队伍代替玩家自己的配队出战（如操控 Threego 的精灵），不计入经验/学习力
+  // F.allyMon：在玩家自己配队的最后加一只固定的助战精灵（如旅行叶子喵），本场战斗结束后也不计入经验/学习力；写法和 F.team 的项一样
+  // F.team：精灵数组，或一个返回精灵数组的函数（用于体力/等级要跟玩家首发精灵联动的首领，如瘴气玛西露姆）
+  // F.team / F.allyMon 的每一项：sid、lv 之外，还可以给 moves（固定技能表）、boss（见 battle.js 的 BOSS_FX）、maxhp（固定体力）、nick（显示名）、img（立绘）、miasma
+  function fightTeam(F) { return typeof F.team === 'function' ? F.team() : F.team; }
+  function resolveFoeEntry(x) {
+    if (x.moves || x.boss || x.maxhp || x.nick || x.img) {
+      var defImg = x.sid === 'dummy' ? null : formImg(SPMAP[x.sid], stageOf(SPMAP[x.sid], x.lv));
+      return { id: x.sid, lv: x.lv, moves: x.moves || defaultMoves(x.sid, x.lv), nick: x.nick, img: x.img || defImg, maxhp: x.maxhp, boss: x.boss, miasma: x.miasma };
+    }
+    var o = storyMon({ sid: x.sid, lv: x.lv, moves: [] }); if (x.miasma) o.miasma = x.miasma; return o;
+  }
   function startFight(key) {
-    var F = FIGHTS[key], team = (acc.teams[acc.active] || []).map(mon).filter(Boolean);
-    if (!team.length) team = acc.mons.slice(0, 1);
-    var p = team.slice(0, TEAM_SIZE).map(storyMon);
-    var a = F.team.map(function (x) { var o = storyMon({ sid: x.sid, lv: x.lv, moves: [] }); if (x.miasma) o.miasma = x.miasma; return o; });
+    var F = FIGHTS[key], team, realN;
+    if (F.pteam) {
+      team = F.pteam.map(function (x) { return { id: x.sid, lv: x.lv, moves: x.moves || defaultMoves(x.sid, x.lv), nick: x.nick, img: x.img || formImg(SPMAP[x.sid], stageOf(SPMAP[x.sid], x.lv)) }; });
+      realN = 0;
+    } else {
+      team = (acc.teams[acc.active] || []).map(mon).filter(Boolean);
+      if (!team.length) team = acc.mons.slice(0, 1);
+      team = team.slice(0, TEAM_SIZE).map(storyMon);
+      realN = team.length;
+      if (F.allyMon) { team = team.slice(0, TEAM_SIZE - 1).concat([resolveFoeEntry(F.allyMon)]); realN = team.length - 1; }
+    }
+    var a = fightTeam(F).map(resolveFoeEntry);
     stopTimers(); ex.fighting = true; document.body.classList.add('story-fight'); syncBattle();
     var host = ex.host; host.hidden = true;
     if (ex.mode === 'replay') $('pg-explore').hidden = true;
     $('pg-arena').hidden = false;
-    window.HSBATTLE.start({ p: p, a: a, foe: F.foe, items: invCopy(), env: F.env || null, bg: F.bg ? BG[F.bg] : null, onItem: useInv, onEnd: function (res, seen, downs) {
-      var got = battleRewards(team.slice(0, TEAM_SIZE), seen, downs);
-      dailyHit('pve');
-      if (got.length) setTimeout(function () { toast(got.join('')); }, 300);
+    window.HSBATTLE.start({ p: team, a: a, foe: F.foe, items: invCopy(), env: F.env || null, bg: F.bg ? BG[F.bg] : null, corrupt: !!F.corrupt, onItem: useInv, onEnd: function (res, seen, downs) {
+      if (realN > 0) {
+        var got = battleRewards(team.slice(0, realN), (seen || []).slice(0, realN), downs);
+        dailyHit('pve');
+        if (got.length) setTimeout(function () { toast(got.join('')); }, 300);
+      }
       ex.fighting = false; document.body.classList.remove('story-fight'); prog(ex.site).bt = res; save();
       $('pg-arena').hidden = page !== 'arena' || ex.mode === 'intro' || ex.mode === 'replay';
       host.hidden = false; if (ex.mode === 'replay') $('pg-explore').hidden = false;
@@ -1619,8 +1677,16 @@
   }
   function spawnFieldMon(R, slot) {
     var hit = riceSpawn(R, slot) || rollWild(R.pool, (typeof WILD_SCENE !== 'undefined' && WILD_SCENE[slot.bgKey]) || null), shiny = rollShiny(hit.w);
+    var corrupt = R.planet === 'flora' && floraFallen();
+    if (corrupt) hit = { w: hit.w, lv: 40 + Math.floor(Math.random() * 11) };   // 瘴气化后：强制 LV40–50
     var f = form({ sid: hit.w.sid, lv: hit.lv, shiny: shiny });
-    var m = { id: 0, sid: hit.w.sid, lv: hit.lv, rate: hit.w.rate, shiny: shiny, img: f.img, name: (shiny ? '异色' : '') + f.name, bait: !!hit.bait,
+    var img = f.img, name = f.name;
+    if (corrupt) {   // 不论实际等级，一律显示最高阶段的立绘（本作里形态只影响显示，不影响能力值，见 assets.js 的说明）
+      var s = SPMAP[hit.w.sid];
+      img = shiny === 2 ? (SHINY_SPRITES[hit.w.sid + '_2'] || SHINY_SPRITES[hit.w.sid] || SPRITES[hit.w.sid]) : shiny ? (SHINY_SPRITES[hit.w.sid] || SPRITES[hit.w.sid]) : SPRITES[hit.w.sid];
+      name = '瘴气' + s.name;
+    }
+    var m = { id: 0, sid: hit.w.sid, lv: hit.lv, rate: hit.w.rate, shiny: shiny, img: img, name: (shiny && !corrupt ? '异色' : '') + name, bait: !!hit.bait, corrupt: corrupt,
       hx: slot.hx, hy: slot.hy, r: slot.r, t: Math.random() * Math.PI * 2, spd: 0.55 + Math.random() * 0.5, x: slot.hx, y: slot.hy, face: 1 };
     stepFieldMon(m, 0);
     return m;
@@ -1639,9 +1705,11 @@
     var R = regionById(rid); if (!R) return null;   // 没有野外表（R.pool）的区域（盐碱地）也能进，只是没有野生精灵
     if (!fields[rid]) {
       var bgs = (R.bgs || []).filter(function (k) { return BG[k]; }), n = sceneCount(R), now = Date.now();
+      var fallen = R.planet === 'flora' && floraFallen();
+      if (fallen && R.id === 'forest') bgs = ['fl_jungle_corrupt'];   // 丛林有专门的瘴气化场景图；草甸、盐碱地暂时用原图叠加瘴气滤镜（见 .miasma-bg）
       var F = fields[rid] = { seq: 0, scene: Math.floor(Math.random() * n), scenes: [] };
       for (var i = 0; i < n; i++) {
-        var sc = { bgKey: bgs.length ? bgs[i % bgs.length] : '', bg: bgs.length ? BG[bgs[i % bgs.length]] : '', flip: i >= bgs.length && i % 2 === 1, slots: FIELD_SLOTS.map(function (s) { return { hx: s.hx, hy: s.hy, r: s.r, mon: null, next: 0 }; }) };
+        var sc = { bgKey: bgs.length ? bgs[i % bgs.length] : '', bg: bgs.length ? BG[bgs[i % bgs.length]] : '', flip: i >= bgs.length && i % 2 === 1, corrupt: fallen, slots: FIELD_SLOTS.map(function (s) { return { hx: s.hx, hy: s.hy, r: s.r, mon: null, next: 0 }; }) };
         sc.slots.forEach(function (sl) { sl.si = i; sl.bgKey = sc.bgKey; if (R.pool) fillSlot(R, F, sl, now, true); });
         F.scenes.push(sc);
       }
@@ -1681,7 +1749,7 @@
     var spareTip = R.pool && R.planet === 'flora' && spareActive() ? '<div class="spare-note"><span class="tape l"></span><b>主线任务 · 引出猎杀者</b>　手下留情：这些精灵不会倒下，体力剩 1 点时就会逃走，算作「假装击败」。已完成 <b>' + spareN() + ' / ' + SPARE_N + '</b>。</div>' : '';
     $('pg-explore').innerHTML = exHead(R.pool ? '点击场景里走动的精灵，就会和它开战。' : '这里没有野生精灵。点击场景里的首领就能挑战它。') +
       '<div class="crumb"><button type="button" class="btn ghost" id="field-back">‹ 返回' + esc(P.name) + '</button><b>' + esc(P.name) + ' · ' + esc(R.name) + '</b>' + (n > 1 ? '<span class="hint">场景 ' + (F.scene + 1) + ' / ' + n + (BG_NAME[sc.bgKey] ? ' · ' + BG_NAME[sc.bgKey] : '') + '</span>' : '') + '</div>' +
-      invLine() + spareTip + '<div class="wf-scene" id="wf-scene">' + bg + mons + gatherNodesHTML(R.id, F.scene, n) + riceBowlHTML(R, F.scene) + travelHTML(R, F.scene) + fieldBossHTML(R) + nav + '</div>' +
+      invLine() + spareTip + '<div class="wf-scene' + (sc.corrupt ? ' miasma-bg' : '') + '" id="wf-scene">' + bg + mons + gatherNodesHTML(R.id, F.scene, n) + riceBowlHTML(R, F.scene) + travelHTML(R, F.scene) + fieldBossHTML(R) + nav + '</div>' +
       (R.pool ? '<p class="hint">点左右两边的箭头可以切换场景。每只精灵在自己的一小片范围里走动，待一会儿就会离开，过一阵又会有新的精灵出现，各走各的。点中哪只，就和哪只对战；打完、抓到或逃走之后，这只离开，过一会儿会有新的一只补上。采集点固定在场景里，每个每天可以采集 1 次：芙罗拉、坎布尔、庞贝采到星砂 ×12，莱汀和白之星采到星核 ×1。' + (RICE.regions.indexOf(R.id) >= 0 ? '带着「一碗饭」来的话，可以在任意一个场景里放下它。' : '') + '</p>' : '');
     startFieldMove();
   }
@@ -1722,8 +1790,9 @@
     var sc = F.scenes[F.scene], m = null; sc.slots.forEach(function (sl) { if (sl.mon && sl.mon.id === id) m = sl.mon; }); if (!m || m.out) return;
     var P = planetOf(R.planet);
     var o = { sid: m.sid, lv: m.lv, rate: m.rate, shiny: shinyV(m.shiny), bg: sc.bg || null, back: R.name, where: P.name + ' · ' + R.name, fieldId: m.id, fieldRid: R.id, bait: !!m.bait, flora: R.planet === 'flora' };
-    if (R.planet === 'flora' && purgeActive() && Math.random() < PURGE.chance) { o.taint = true; o.miasma = 5; o.noCatch = true; o.foe = '被瘴气污染的野生精灵'; o.where += ' · 瘴气精灵'; }
-    if (R.planet === 'flora' && spareActive()) { o.spare = true; o.where += ' · 手下留情'; }
+    if (m.corrupt) { o.corrupt = true; o.miasma = 10; o.noCatch = true; o.foe = '瘴气侵蚀的狂暴精灵'; o.where += ' · 瘴气异变'; }
+    else if (R.planet === 'flora' && purgeActive() && Math.random() < PURGE.chance) { o.taint = true; o.miasma = 5; o.noCatch = true; o.foe = '被瘴气污染的野生精灵'; o.where += ' · 瘴气精灵'; }
+    if (R.planet === 'flora' && spareActive() && !m.corrupt) { o.spare = true; o.where += ' · 手下留情'; }
     stopField();
     startWildBattle(o);
   }
@@ -1736,18 +1805,26 @@
   var SPARE_N = 5;
   function spareN() { return (acc && acc.story && acc.story.flora2 && acc.story.flora2.spare) || 0; }
   function spareActive() { return prog('flora2').done && spareN() < SPARE_N; }
+  // 第八段「深入丛林」读完后：芙罗拉星整体瘴气化，野外精灵强制变成瘴气异变的最高阶段（见 spawnFieldMon），bgm 也随之切换
+  function floraFallen() { return prog('flora4').done; }
   function regionOpen(R) { return R.planet === 'flora' ? prog('flora1').done : planetOpen(planetOf(R.planet)); }
   function startWildBattle(o) {
     var team = (acc.teams[acc.active] || []).map(mon).filter(Boolean);
     if (!team.length) team = acc.mons.slice(0, 1);
     team = team.slice(0, TEAM_SIZE);
-    var p = team.map(storyMon), a = [storyMon({ sid: o.sid, lv: o.lv, moves: [], shiny: shinyV(o.shiny) })];
-    if (o.shiny) a[0].nick = '异色' + a[0].nick;
-    if (o.taint) { a[0].miasma = o.miasma; a[0].nick = '被污染的' + a[0].nick; }
+    var p = team.map(storyMon), a;
+    if (o.corrupt) {   // 瘴气异变：强制最高阶段立绘、只会用攻击技能、深度侵蚀双攻 +100%
+      var s = SPMAP[o.sid];
+      a = [{ id: o.sid, lv: o.lv, moves: puppetMoves(o.sid), nick: '瘴气' + s.name, img: o.shiny === 2 ? (SHINY_SPRITES[o.sid + '_2'] || SHINY_SPRITES[o.sid] || SPRITES[o.sid]) : o.shiny ? (SHINY_SPRITES[o.sid] || SPRITES[o.sid]) : SPRITES[o.sid], shiny: shinyV(o.shiny), miasma: o.miasma, boss: { erode: 1, mute: 1 } }];
+    } else {
+      a = [storyMon({ sid: o.sid, lv: o.lv, moves: [], shiny: shinyV(o.shiny) })];
+      if (o.shiny) a[0].nick = '异色' + a[0].nick;
+      if (o.taint) { a[0].miasma = o.miasma; a[0].nick = '被污染的' + a[0].nick; }
+    }
     seeMon(o.sid, o.lv);
     stopTimers(); ex.fighting = true; document.body.classList.add('story-fight'); syncBattle();
     $('pg-explore').hidden = true; $('pg-arena').hidden = false;
-    window.HSBATTLE.start({ p: p, a: a, foe: o.foe || '野生精灵', items: invCopy(), bg: o.bg || null,
+    window.HSBATTLE.start({ p: p, a: a, foe: o.foe || '野生精灵', items: invCopy(), bg: o.bg || null, corrupt: !!o.corrupt, bgm: o.corrupt ? 'disCommunication' : null,
       wild: { rate: o.rate, back: o.back, where: o.where, noCatch: !!o.noCatch, spare: !!o.spare },
       onItem: useInv,
       onEnd: function (res, seen, downs) {
@@ -3471,7 +3548,7 @@
   var WQ = [
     { id: 'w_first', n: '初到芙罗拉', d: '荆楚号已经抵达芙罗拉星。去丛林或草甸，和那里的野生精灵过过招吧。', where: '芙罗拉星 · 丛林 / 草甸', steps: [{ t: '在芙罗拉星击败 1 只野生精灵', k: 'wins', n: 1 }], reward: { energy: 100 }, after: 'flora1', go: 'flora' },
     { id: 'w_karo', n: '草甸上的奔跑者', d: '卡罗成群地在草甸上奔跑，捕捉率很高，很适合用来练习捕捉。', where: '芙罗拉星 · 草甸', steps: [{ t: '捕捉 1 只卡罗', k: 'own:wind', n: 1 }], reward: { items: { cap1: 3 } }, after: 'flora1', go: 'flora' },
-    { id: 'w_mush', n: '林下的蘑菇', d: '丛林的树荫下，常能看到玛西西的身影。', where: '芙罗拉星 · 丛林', steps: [{ t: '捕捉 1 只玛西西', k: 'own:mush', n: 1 }], reward: { items: { pot1: 2 } }, after: 'flora1', go: 'flora' },
+    { id: 'w_mush', n: '林下的蘑菇', d: '丛林的树荫下，常能看到玛西的身影。', where: '芙罗拉星 · 丛林', steps: [{ t: '捕捉 1 只玛西', k: 'own:mush', n: 1 }], reward: { items: { pot1: 2 } }, after: 'flora1', go: 'flora' },
     { id: 'w_hunt', n: '荒野试炼', d: '多和野生精灵交手，伙伴们才会变强。', where: '芙罗拉星 · 丛林 / 草甸', steps: [{ t: '在芙罗拉星击败 10 只野生精灵', k: 'wins', n: 10 }], reward: { energy: 300 }, after: 'flora1', go: 'flora' },
     { id: 'w_kaleo', n: '丛林里的掠食者', d: '有人在丛林深处见过一只卡莱。它只在丛林出现，而且很少露面。', where: '芙罗拉星 · 丛林', steps: [{ t: '捕捉 1 只卡莱', k: 'own:kaleo', n: 1 }], reward: { energy: 500 }, after: 'flora1', go: 'flora' },
     { id: 'w_travel', n: '旅行猫', d: '叶子喵是芙罗拉星上很少见的精灵。听说最近有人在山毛榉林里见过一只……', where: '芙罗拉星 · 剧情', steps: [{ t: '读完芙罗拉星的剧情「旅行猫」', k: 'story:travelcat', n: 1 }], reward: { exp: 3000, energy: 500 }, after: 'flora2', go: 'flora', fpart: 'story' },
@@ -3843,11 +3920,13 @@
     if (ex.auto) ex.timer = setTimeout(next, 1200 + Array.from(ex.full).length * 45);
   }
   function openFight(key) {
-    var F = FIGHTS[key], el = $('vn-pick'), mine = (acc.teams[acc.active] || []).map(mon).filter(Boolean)[0] || acc.mons[0];
-    var foe = form({ sid: F.team[0].sid, lv: F.team[0].lv });
+    var F = FIGHTS[key], el = $('vn-pick'), fteam = fightTeam(F), f0 = fteam[0];
+    var mineImg = F.pteam ? (F.pteam[0].img || formImg(SPMAP[F.pteam[0].sid], stageOf(SPMAP[F.pteam[0].sid], F.pteam[0].lv))) : (((acc.teams[acc.active] || []).map(mon).filter(Boolean)[0] || acc.mons[0]) ? form((acc.teams[acc.active] || []).map(mon).filter(Boolean)[0] || acc.mons[0]).img : '');
+    var foeImg = f0.img || (f0.moves || f0.boss ? (f0.sid === 'dummy' ? '' : formImg(SPMAP[f0.sid], stageOf(SPMAP[f0.sid], f0.lv))) : form({ sid: f0.sid, lv: f0.lv }).img);
+    var foeName = f0.nick || form({ sid: f0.sid, lv: f0.lv }).name;
     el.hidden = false;
-    el.innerHTML = '<div class="vn-fight"><b>剧情对战</b><div class="vf-row"><img src="' + form(mine).img + '" alt=""><span class="vs">VS</span><img src="' + foe.img + '" alt=""></div>' +
-      '<p>你的出战配队（' + TEAM_NAME[acc.active] + '）对阵 ' + (F.desc ? esc(F.desc) : esc(F.foe) + ' 的 ' + esc(foe.name) + '（LV' + F.team[0].lv + '）') + '</p>' +
+    el.innerHTML = '<div class="vn-fight"><b>剧情对战</b><div class="vf-row"><img src="' + mineImg + '" alt=""><span class="vs">VS</span><img src="' + foeImg + '" alt=""></div>' +
+      '<p>' + (F.pteam ? esc(F.pteam[0].nick || SPMAP[F.pteam[0].sid].name) + '（LV' + F.pteam[0].lv + '）' : '你的出战配队（' + TEAM_NAME[acc.active] + '）') + '对阵 ' + (F.desc ? esc(F.desc) : esc(F.foe) + ' 的 ' + esc(foeName) + '（LV' + f0.lv + '）') + '</p>' +
       '<button type="button" class="btn primary" data-vn="fight" data-fk="' + key + '">开始对战</button></div>';
   }
   function openPick() {
@@ -4033,7 +4112,12 @@
   };
 
   /* ---------- 界面音乐：按当前所在的界面选曲（对战中由战斗音乐盖过，见 js/ui/audio.js） ---------- */
+  var FLORA_SCENES = { flora: 1, floraGrass: 1, floraForest: 1 };
   function sceneNow() {
+    var k = sceneNowRaw();
+    return FLORA_SCENES[k] && floraFallen() ? 'floraFallen' : k;   // 第八段结尾瘴气化之后，芙罗拉星的界面音乐统一换成 floraFallen（flora3-TheGreatCover）
+  }
+  function sceneNowRaw() {
     var vnSite = ex.site && SITES[ex.site] && (ex.mode === 'intro' || (ex.mode === 'replay' && ex.view === 'vn')) ? SITES[ex.site].planet : null;
     if (vnSite === 'earth') return 'earth';            // 地球上的剧情（含序章）
     if (!ready()) return 'ui';
