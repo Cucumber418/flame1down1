@@ -4323,8 +4323,19 @@
 
   $('pg-explore').addEventListener('keydown', function (e) { var g = e.target.closest && e.target.closest('.dept.open'); if (g && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); g.dispatchEvent(new MouseEvent('click', { bubbles: true })); } });
   /* ----- 对话舞台 ----- */
+  // 剧情开始时在后台静默预加载这一段要用到的 CG 和背景图，免得播到时才开始下载（2026-10-17）
+  var PRELOAD = {};
+  function preloadImg(src) { if (!src || PRELOAD[src]) return PRELOAD[src]; var im = new Image(); im.decoding = 'async'; im.src = src; PRELOAD[src] = im; return im; }
+  function preloadVN(site) {
+    var arr = SCRIPT[site] || [];
+    arr.forEach(function (st) {
+      if (st.cg && CG[st.cg]) preloadImg(CG[st.cg][gender()] || CG[st.cg].m);
+      if (st.bg && BG[st.bg]) preloadImg(BG[st.bg]);
+    });
+  }
   function startVN(site, mode, host, fromStart) {
     var pr; ex.site = site; pr = prog(site);
+    setTimeout(function () { preloadVN(site); }, 0);
     if (mode !== 'intro') $('onboard').innerHTML = '';
     if (fromStart) { pr.at = 0; pr.ch = null; }
     ex.mode = mode; ex.host = host; ex.view = mode === 'replay' ? 'vn' : ex.view;
@@ -4384,8 +4395,10 @@
     w.classList.remove('play', 'shake', 'full', 'land');
     void w.offsetWidth;
     w.classList.add('show');
-    void w.offsetWidth;
-    w.classList.add('play');
+    var go_ = function () { if (ex.curCg !== k) return; void w.offsetWidth; w.classList.add('play'); };
+    var im = src && preloadImg(src);
+    if (im && !im.complete) { var t0 = setTimeout(go_, 4000); im.addEventListener('load', function () { clearTimeout(t0); go_(); }, { once: true }); }   // 还没下载完：等图到了再开始运镜（最多等 4 秒）
+    else go_();
   }
   function monsHTML(mode) {
     var img = function (sid, cls, label) { return '<figure class="vn-mon ' + cls + '"><img src="' + form({ sid: sid, lv: START_LV }).img + '" alt=""><figcaption>' + esc(label) + '</figcaption></figure>'; };
