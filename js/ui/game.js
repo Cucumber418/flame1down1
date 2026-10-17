@@ -3838,7 +3838,7 @@
     if (mode !== 'intro') $('onboard').innerHTML = '';
     if (fromStart) { pr.at = 0; pr.ch = null; }
     ex.mode = mode; ex.host = host; ex.view = mode === 'replay' ? 'vn' : ex.view;
-    ex.i = stepAt(pr.at); ex.log = []; ex.auto = false; ex.skip = false; ex.pickSel = null; ex.curBg = null;
+    ex.i = stepAt(pr.at); ex.log = []; ex.auto = false; ex.skip = false; ex.pickSel = null; ex.curBg = null; ex.curCg = null;
     renderVN(); bgmScene();
   }
   function renderVN() {
@@ -3848,6 +3848,7 @@
       '<img class="vn-bg" id="vn-bg" alt=""><img class="vn-bg vn-bg2" id="vn-bg2" alt="">' +
       '<div class="vn-chars" id="vn-chars"></div>' +
       '<div class="vn-mons" id="vn-mons"></div>' +
+      '<div class="vn-cgwrap" id="vn-cg"><div class="vn-cg-pic" id="vn-cg-pic"></div></div>' +
       '<div class="vn-top"><span class="vn-loc">' + P.name + ' · ' + S.name + '<small id="vn-spot"></small></span><span class="vn-ch">' + S.chapter + '</span>' +
       '<span class="vn-btns"><button type="button" data-vn="hide" title="隐藏界面，欣赏背景和立绘（H 键）">隐藏</button><button type="button" data-vn="log">记录</button><button type="button" data-vn="auto" id="vn-auto">自动</button><button type="button" data-vn="skip" id="vn-skip">跳过</button>' + (intro ? '' : '<button type="button" data-vn="exit">退出</button>') + '</span></div>' +
       '<div class="vn-box" id="vn-box"><div class="vn-name" id="vn-name"></div><p class="vn-text" id="vn-text"></p><span class="vn-next" id="vn-next" aria-hidden="true">▼</span></div>' +
@@ -3856,6 +3857,11 @@
       '<div class="vn-log" id="vn-log" hidden></div>' +
       '<div class="vn-end" id="vn-end" hidden></div><div class="vn-restore" aria-hidden="true">点击任意处恢复界面</div></div>' +
       (intro ? '' : '<p class="hint vn-tip">点击画面、按空格或回车继续；人物立绘目前为占位。</p>');
+    var cgPic = $('vn-cg-pic'), cgWrap = $('vn-cg');
+    cgPic.addEventListener('animationend', function (e) {
+      if (e.animationName === 'vncgScroll') { cgWrap.classList.remove('play'); cgWrap.classList.add('shake'); }
+      else if (e.animationName === 'vncgShake') { cgWrap.classList.remove('shake'); cgWrap.classList.add('full'); }
+    });
     show();
     try { $('vn').focus({ preventScroll: true }); } catch (er) {}
   }
@@ -3866,6 +3872,20 @@
     if (!ex.curBg) { a.src = BG[k]; } else { b.src = BG[k]; b.classList.remove('in'); void b.offsetWidth; b.classList.add('in'); setTimeout(function () { if (a.isConnected) { a.src = BG[k]; b.classList.remove('in'); } }, 520); }
     a.style.objectPosition = b.style.objectPosition = BG_POS[k] || '';
     ex.curBg = k; $('vn-spot').textContent = ' · ' + ((ex.site && SITES[ex.site] && SITES[ex.site].spot) || BG_NAME[k] || '');   // spot：画面借用别处背景时，地点名按剧情写
+  }
+  // 剧情 CG：整屏竖图，出现时先从上往下「扫」过一遍，接一下screen shake，再定格展示完整画面；按主角性别选图
+  function setCG(k) {
+    var w = $('vn-cg'); if (!w) return;
+    if (!k) { if (ex.curCg) { w.classList.remove('show', 'play', 'shake', 'full'); ex.curCg = null; } return; }
+    if (ex.curCg === k) return;
+    ex.curCg = k;
+    var src = CG[k] ? (CG[k][gender()] || CG[k].m) : '';
+    $('vn-cg-pic').style.backgroundImage = src ? 'url(' + src + ')' : 'none';
+    w.classList.remove('play', 'shake', 'full');
+    void w.offsetWidth;
+    w.classList.add('show');
+    void w.offsetWidth;
+    w.classList.add('play');
   }
   function monsHTML(mode) {
     var img = function (sid, cls, label) { return '<figure class="vn-mon ' + cls + '"><img src="' + form({ sid: sid, lv: START_LV }).img + '" alt=""><figcaption>' + esc(label) + '</figcaption></figure>'; };
@@ -3886,6 +3906,7 @@
     var st = arr[ex.i], on = carry(ex.i, 'on', []), mons = carry(ex.i, 'mons', '');
     $('vn').classList.toggle('memory', !!carry(ex.i, 'memory', false));
     setBg(carry(ex.i, 'bg', SITES[ex.site].bg));
+    setCG(carry(ex.i, 'cg', null));
     seeStep(st, st.mons !== undefined ? st.mons : mons);
     if (st.give) storyGive(ex.site, st.give);
     var monsH = monsHTML(mons); if ($('vn-mons').dataset.k !== mons + acc.starter) { $('vn-mons').innerHTML = monsH; $('vn-mons').dataset.k = mons + acc.starter; }

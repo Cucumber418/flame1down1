@@ -307,6 +307,11 @@ var ITEM_IMG = {
   "drone": "images/items/drone.webp"
 };
 
+// 剧情 CG（竖版大图，按主角性别分男 / 女两版；m 男主，f 女主）
+var CG = {
+  "travelcat": { m: "images/cg/travelcat_m.webp", f: "images/cg/travelcat_f.webp" }
+};
+
 // 表情（从人物立绘的各个差分里截出头像）：聊天私信和联网对战里都能发
 var EMOTES = [
   { id: "threego", n: "Threego · 开心", img: "images/emotes/threego.webp" },

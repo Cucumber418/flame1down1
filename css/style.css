@@ -650,6 +650,22 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .vn-mon.tw { left: 50%; transform: translateX(-50%); }
 .vn-mon.tw img { filter: drop-shadow(0 0 6px #6b3f8f) drop-shadow(0 0 14px #9a6bbf) saturate(.7) brightness(.85); }
 .vn-mon.tw figcaption { background: #3a2a4a; color: #e8dcf5; border-color: #6b3f8f; }
+.vn-cgwrap { position: absolute; inset: 0; overflow: hidden; background: #000; opacity: 0; pointer-events: none; transition: opacity .25s; }
+.vn-cgwrap.show { opacity: 1; }
+.vn-cg-pic { position: absolute; inset: 0; background-repeat: no-repeat; background-size: cover; background-position: center 0%; }
+.vn-cgwrap.play .vn-cg-pic { animation: vncgScroll 2.2s cubic-bezier(.45,0,.3,1) forwards; }
+.vn-cgwrap.shake .vn-cg-pic { animation: vncgShake .45s ease; }
+.vn-cgwrap.full .vn-cg-pic { background-size: contain; background-position: center center; transition: background-size .35s ease, background-position .35s ease; }
+@keyframes vncgScroll { from { background-position: center 0%; } to { background-position: center 100%; } }
+@keyframes vncgShake {
+  0%, 100% { transform: translate(0,0) rotate(0); }
+  15% { transform: translate(-9px,-5px) rotate(-.4deg); }
+  30% { transform: translate(8px,5px) rotate(.4deg); }
+  45% { transform: translate(-7px,3px) rotate(-.25deg); }
+  60% { transform: translate(6px,-4px) rotate(.25deg); }
+  75% { transform: translate(-4px,2px); }
+  90% { transform: translate(2px,-1px); }
+}
 .vn-pick { position: absolute; inset: 0; background: rgba(35,34,43,.42); display: grid; align-content: center; justify-items: center; gap: 12px; padding: 50px 16px 16px; cursor: default; overflow-y: auto; }
 .vp-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 200px)); gap: 12px; justify-content: center; width: 100%; }
 .vp-card { cursor: pointer; display: grid; justify-items: center; gap: 4px; padding: 12px 10px; border: 1.5px solid var(--ink); border-radius: 14px; background: var(--paper-2); text-align: center; box-shadow: 3px 3px 0 var(--ink); }
