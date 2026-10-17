@@ -536,7 +536,7 @@ sudo bash /opt/flame1down1/server/restore.sh 文件名      # 恢复到指定的
 
 主线来到 `SITES.flora4`（前置：完成世界任务「旅行猫」`prog('travelcat').done`）。这一段读完的瞬间，芙罗拉星从「局部瘴气」变成「全星瘴气化」，是个不可逆的世界状态分水岭：
 
-- **判定**：`game.js` 的 `floraFallen() { return prog('flora4').done; }`。只要读完这一段剧情（VN 脚本播完会自动写 `prog('flora4').done = true`，和别的站点一样，不用额外代码），之后全局即时生效。
+- **判定**：`game.js` 的 `floraFallen() { return prog('flora6').done; }`（2026-10-17 第八段拆成 `flora4` 第八段 · 深入丛林 / `flora5` 第九段 · 林中的猎手 / `flora6` 第十段 · 瘴气之源，改为读完第十段才生效；拆分前就读完第八段的存档由 `backfillMain()` 里的 `acc.split8` 迁移，第九、十段直接记为已读）。只要读完这一段剧情（VN 脚本播完会自动写 `prog('flora4').done = true`，和别的站点一样，不用额外代码），之后全局即时生效。
 - **芙罗拉星图标**：`PLANETS` 里 flora 条目的 `img` 改成 `get img()` getter，按 `floraFallen()` 在 `images/planets/flora.webp`（常态）/ `flora_corrupt.webp`（瘴气化）之间切换。
 - **野外全部强制瘴气化**（`spawnFieldMon`）：`floraFallen()` 为真时，芙罗拉星三个区域刷出来的全部是强制最终形态、强制 LV40–50、挂 `boss: { erode: 1, mute: 1 }`（深度侵蚀双攻 +100%、无法交流只会攻击）的瘴气精灵，`noCatch: true` 不能捕捉，不吃「假装击败」奖励。立绘按 `SHINY_SPRITES` / `SPRITES` 直接取最终形态图（绕开 `form()` 的阶段门槛，因为战斗数值本来就和「形态」无关，只看等级）。
 - **场景背景**（2026-10-17 重做）：每张芙罗拉星背景都有一张画了深紫色瘴气脉络的 `*_mia` 版本（`tools/miasma_veins.py` 生成，盐碱地 `fl_salt_mia` 带发光的地底核心）。瘴气化之后 `fieldState()` 把区域的 `bgs` 换成 `floraBg(k)`（有 `_mia` 图就换），丛林再多一张 `fl_jungle_corrupt`；荒芜首领页和首领战背景也走 `floraBg`。有专门图的场景不再叠 CSS 滤镜（`.miasma-bg` 只给没有 `_mia` 图的场景兜底）。
@@ -563,7 +563,7 @@ sudo bash /opt/flame1down1/server/restore.sh 文件名      # 恢复到指定的
 
 ## 首领「荒芜」困难难度（2026-10-17）
 
-`BOSSES.barren.lv[2]`，LV70、体力 10000。解锁条件（`open()`）：完成主线「第八段 · 深入丛林」（`prog('flora4').done`）且时间到了 2026-10-18 16:00（北京时间，代码里用 `Date.UTC(2026, 9, 18, 8, 0, 0)` 存成 UTC 时间戳，不依赖浏览器时区设置），和是否打过普通难度无关。开场 BGM 直接复用 `floraFallen`（素材还是 flora3_the_great_cover.mp3）。
+`BOSSES.barren.lv[2]`，LV70、体力 10000。解锁条件（`open()`）：完成主线「第十段 · 瘴气之源」（`prog('flora6').done`）且时间到了 2026-10-18 16:00（北京时间，代码里用 `Date.UTC(2026, 9, 18, 8, 0, 0)` 存成 UTC 时间戳，不依赖浏览器时区设置），和是否打过普通难度无关。开场 BGM 直接复用 `floraFallen`（素材还是 flora3_the_great_cover.mp3）。
 
 沿用简单 / 普通难度的特效（`dr: 0.15` 星球聚能、`mia: 1` 瘴气领域——每回合结束时给对手在场精灵加 1 层瘴气），再加上新增的：
 
