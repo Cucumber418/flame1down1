@@ -4329,7 +4329,7 @@
   function preloadVN(site) {
     var arr = SCRIPT[site] || [];
     arr.forEach(function (st) {
-      if (st.cg && CG[st.cg]) preloadImg(CG[st.cg][gender()] || CG[st.cg].m);
+      if (st.cg && CG[st.cg]) { preloadImg(CG[st.cg][gender()] || CG[st.cg].m); if (CG[st.cg].land) preloadImg(CG[st.cg].land[gender()] || CG[st.cg].land.m); }   // 横版收尾图也一起预加载
       if (st.bg && BG[st.bg]) preloadImg(BG[st.bg]);
     });
   }
