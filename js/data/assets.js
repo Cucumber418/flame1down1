@@ -96,7 +96,7 @@ var PRE_SPRITES = {
   "inkarm_s2": "images/pre_sprites/inkarm_s2.png",
   "barren_s1": "images/pre_sprites/barren_s1.png",
   "mush_s1": "images/pre_sprites/mush_s1.webp",
-  "mush_s2": "images/pre_sprites/mush_s2.png",
+  "mush_s2": "images/pre_sprites/mush_s2.webp",
   "kaleo_s1": "images/pre_sprites/kaleo_s1_r.webp",
   "kaleo_s2": "images/pre_sprites/kaleo_s2.png",
   "siren_s1": "images/pre_sprites/siren_s1.png",
@@ -155,6 +155,9 @@ var BG = {
   "fl_meadow": "images/backgrounds/fl_meadow.jpg",
   "fl_sun": "images/backgrounds/fl_sun.jpg",
   "fl_salt": "images/backgrounds/fl_salt.jpg",
+  "fl_village": "images/backgrounds/fl_village.jpg",
+  "fl_horizon": "images/backgrounds/fl_horizon.jpg",
+  "fl_jungle_corrupt": "images/backgrounds/fl_jungle_corrupt.jpg",
   "tea_p": "images/backgrounds/tea_p.jpg",
   "teahall": "images/backgrounds/teahall.jpg"
 };
@@ -196,7 +199,9 @@ var CHARS = {
   "pf_huh": "images/characters/pf_huh.webp",
   "pf_angry": "images/characters/pf_angry.webp",
   "pf_sweat": "images/characters/pf_sweat.webp",
-  "pf_shy": "images/characters/pf_shy.webp"
+  "pf_shy": "images/characters/pf_shy.webp",
+  // 辰爷（代号「常春藤怀克」，常春藤组织特工；2026-10-17 初版立绘，照片转描线上色，有待进一步风格化）
+  "cy": "images/characters/cy.webp"
 };
 
 
@@ -289,6 +294,8 @@ var SHINY_SPRITES = {
   "hauris": "images/shiny/hauris.webp",
   "mush_s1": "images/shiny/mush_s1.webp",
   "mush_s1_2": "images/shiny/mush_s1_2.webp",
+  "mush_s2": "images/shiny/mush_s2.webp",
+  "mush_s2_2": "images/shiny/mush_s2_2.webp",
   "mush": "images/shiny/mush.webp",
   "mush_2": "images/shiny/mush_2.webp"
 };
