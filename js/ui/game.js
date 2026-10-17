@@ -1519,7 +1519,7 @@
     var nM = mainIds.some(isNew), nS = sideIds.some(isNew);
     var sp = '<div class="fparts st-tabs" role="tablist"><button type="button" role="tab" class="tab' + (stab === 'main' ? ' on' : '') + '" data-flst="main" aria-selected="' + (stab === 'main') + '">主线' + (nM ? '<i class="q-badge">!</i>' : '') + '</button>' +
       '<button type="button" role="tab" class="tab' + (stab === 'side' ? ' on' : '') + '" data-flst="side" aria-selected="' + (stab === 'side') + '">支线' + (nS ? '<i class="q-badge">!</i>' : '') + '</button>' +
-      '<button type="button" role="tab" class="tab' + (stab === 'cg' ? ' on' : '') + '" data-flst="cg" aria-selected="' + (stab === 'cg') + '">CG</button></div>' +
+      '<button type="button" role="tab" class="tab' + (stab === 'cg' ? ' on' : '') + '" data-flst="cg" aria-selected="' + (stab === 'cg') + '">画廊</button></div>' +
       (stab === 'cg' ? cgGallery(flSites) : listOf(stab === 'side' ? sideIds : mainIds));
     head = head + (prog('flora1').done ? '' : listOf(mainIds));
     // 有新的主线可以读时，「剧情」页签上显示红点
