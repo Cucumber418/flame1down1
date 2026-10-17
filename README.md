@@ -417,6 +417,8 @@ ffmpeg -i 原曲.mp3 -vn -map_metadata -1 -af loudnorm=I=-16:TP=-1.5:LRA=11 -ar 
 - 本地测试：在 localhost / 双击打开时，网址加 `?test=tea` 切到测试账号「测试」（补满道具和材料），`?test=restore` 换回原来的存档。服务器网址上不生效。
 
 
+芙罗拉星的背景 `fl_*`（2026-10-17）全部用 `tools/stylize_bg.py` 统一成手绘画风；宽度不到 1400 的原图先放大 3 倍再转。
+
 星球立绘：`PLANETS` 里写 `img`（如庞贝星 `images/planets/pompeii.webp`，用 `tools/stylize_bg.py` 的 `stylize` 转画风后裁成圆形透明图），星球列表和星球页就用图，没有的画示意图。场景名：`BG_NAME[背景键]` 有名字时，野外场景标题显示「场景 1 / 2 · 熔浆大湖」。庞贝星两个区域：熔岩原 `pp_lava`（熔浆大湖 `pp_lake`、熔渣矿区 `pp_slag`，米饭火鸡只在这里，`RICE.regions`）和饮火城 `pp_city`（湖心堡垒 `pp_fort`、炙热核心 `pp_core`，野外表 `pp_city` 没有米饭火鸡）。以后给区域加场景，加在 `bgs` 末尾，免得已经放下的「一碗饭」换了场景。星球页的野生精灵列表里，同一种精灵在几个区域都有时合成一条。
 ## 盐碱地与首领荒芜（2026-10-13）
 
