@@ -32,7 +32,7 @@
       if (!m.ev) m.ev = {}; if (!(m.evFree >= 0)) m.evFree = 0;
       if (!ivOk(m.iv)) m.iv = randIv();   // 天赋系统上线前的精灵：补一套随机天赋
       if (acc.expV !== expV() && m.lv >= 1) {   // 经验曲线换版：等级不变，本级进度按比例换算
-        var o0 = oldExpAt(m.lv), o1 = oldExpAt(Math.min(100, m.lv + 1)), fr = m.lv >= 100 ? 0 : Math.max(0, Math.min(0.999, ((m.exp || 0) - o0) / (o1 - o0)));
+        var oe = acc.expV === 2 ? v2ExpAt : oldExpAt, o0 = oe(m.lv), o1 = oe(Math.min(100, m.lv + 1)), fr = m.lv >= 100 ? 0 : Math.max(0, Math.min(0.999, ((m.exp || 0) - o0) / (o1 - o0)));
         m.exp = m.lv >= 100 ? expAt(100) : Math.floor(expAt(m.lv) + fr * (expAt(m.lv + 1) - expAt(m.lv)));
       }
       if (!(m.exp >= expAt(m.lv))) m.exp = expAt(m.lv);
@@ -145,8 +145,13 @@
    * 存档 acc.expV 记录经验曲线的版本；曲线改过之后，读档清理坏数据时按「等级不变、本级进度比例不变」换算旧经验
    * （读档清理在文件最上面，比这里先执行，所以表格用到时才生成） */
   var MAX_LV = 100, _expTab = null;
-  function expV() { return 2; }
-  function expK(lv) { return lv < 25 ? 0.6 : lv >= 50 ? 2 : 1; }   // lv → lv+1 这一级的系数
+  function expV() { return 3; }
+  // lv → lv+1 这一级的系数（相对等级³ 的差）。v2：50 级以上 ×2；v3（2026-10-17，隐藏调整）：50 级以上再 ×4，即 ×8
+  function expK(lv) { return lv < 25 ? 0.6 : lv >= 50 ? 8 : 1; }
+  function expKv2(lv) { return lv < 25 ? 0.6 : lv >= 50 ? 2 : 1; }
+  function tabOf(k) { var T = [0, 1]; for (var l = 1; l < 100; l++) T[l + 1] = T[l] + Math.round(((l + 1) * (l + 1) * (l + 1) - l * l * l) * k(l)); return T; }
+  var _v2Tab = null;
+  function v2ExpAt(lv) { if (!_v2Tab) _v2Tab = tabOf(expKv2); return _v2Tab[Math.max(1, Math.min(100, lv))]; }
   function expTab() {
     if (!_expTab) { _expTab = [0, 1]; for (var l = 1; l < 100; l++) _expTab[l + 1] = _expTab[l] + Math.round(((l + 1) * (l + 1) * (l + 1) - l * l * l) * expK(l)); }
     return _expTab;
@@ -619,9 +624,11 @@
     natAny: { name: '性格胶囊', sid: null, kind: 'nat', d: '把你的任意一只精灵的性格改成你指定的性格。' },
     evReset: { name: '学习力重置胶囊', sid: null, kind: 'evreset', d: '把一只精灵已经分配的学习力全部退回「可分配学习力」，可以重新分配。' },
     fruit1: { name: '成长果实', sid: null, kind: 'exp', rate: 100, d: '给一只精灵直接增加经验：等级 × 100 点（LV30 吃一颗得 3,000 点）。等级越高，得到的经验越多。' },
-    fruit2: { name: '迅速成长果实', sid: null, kind: 'exp', rate: 250, d: '给一只精灵直接增加经验：等级 × 250 点（LV30 吃一颗得 7,500 点）。比成长果实效果更好。' }
+    fruit2: { name: '迅速成长果实', sid: null, kind: 'exp', rate: 250, d: '给一只精灵直接增加经验：等级 × 250 点（LV30 吃一颗得 7,500 点）。比成长果实效果更好。' },
+    // 瘴气驱逐战（2026-10-17）：100 个让芙罗拉星三种精灵领悟一个隐藏技能
+    floraJade: { name: '芙罗拉玉', sid: null, sids: ['mush', 'wind', 'kaleo'], kind: 'jade', cost: 100, d: '芙罗拉星深处凝成的绿色玉石。100 个可以让玛西露姆、六尾风王、卡莱奥丹一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能，不用再满足战斗里的领悟条件。隐藏技能要到 LV' + HIDDEN_MIN_LV + ' 才能装备。瘴气驱逐战的全服奖励会发放；芙罗拉星的丛林、草甸里，每天也有机会捡到少量。', none: '你还没有玛西露姆、六尾风王或卡莱奥丹（进化前的形态也算）。去芙罗拉星的丛林、草甸捕捉吧。' }
   };
-  var MON_ORDER = ['ivMoon', 'ivBone', 'ivReroll', 'evAny', 'evTagore', 'natAny', 'natTagore', 'evReset', 'fruit1', 'fruit2'], GEN_ORDER = ['trans', 'helmet', 'auto', 'rename', 'cap1', 'cap2', 'cap3', 'pot1', 'pot2', 'pot200'];
+  var MON_ORDER = ['floraJade', 'ivMoon', 'ivBone', 'ivReroll', 'evAny', 'evTagore', 'natAny', 'natTagore', 'evReset', 'fruit1', 'fruit2'], GEN_ORDER = ['trans', 'helmet', 'auto', 'rename', 'cap1', 'cap2', 'cap3', 'pot1', 'pot2', 'pot200'];
   // 剧情道具：主线里拿到的，不能使用也不会消耗
   var KEY_ITEMS = {
     trans: { name: '精灵翻译器', d: '汉街总部国际A座的情报显示，这个翻译器能凭一己之力考到雅思 6.5 分。这样一来，翻译精灵的语言也一定能行吧……', img: 'translator' },
@@ -652,12 +659,20 @@
   var SEED_ORDER = ['s_herb', 's_rice'];
   var CROP_ORDER = ['c_herb', 'c_rice', 'c_bowl'];
   var BAG_ORDER = MON_ORDER.concat(GEN_ORDER);
-  function itemFits(k, m) { var it = USE_ITEMS[k]; return !!(it && m && (!it.sid || it.sid === m.sid)); }
+  function itemFits(k, m) { var it = USE_ITEMS[k]; return !!(it && m && (it.sids ? it.sids.indexOf(m.sid) >= 0 : !it.sid || it.sid === m.sid)); }
+  function jadeMoves(m) { return SPMAP[m.sid].hidden.filter(function (n) { return (m.hl || []).indexOf(n) < 0; }); }
   // 把精灵道具用在 m 身上；nat 是性格药剂要改成的性格。返回 { ok, msg }
   function applyMonItem(k, m, nat) {
     var it = USE_ITEMS[k];
     if (!it || !(acc.items[k] > 0)) return { ok: false, msg: '没有这个道具了。' };
-    if (!itemFits(k, m)) return { ok: false, msg: '先选一只' + (it.sid ? SPMAP[it.sid].name : '精灵') + '。' };
+    if (!itemFits(k, m)) return { ok: false, msg: '先选一只' + (it.sids ? it.sids.map(function (x) { return SPMAP[x].name; }).join('、') : it.sid ? SPMAP[it.sid].name : '精灵') + '。' };
+    if (it.kind === 'jade') {
+      if (acc.items[k] < it.cost) return { ok: false, msg: '芙罗拉玉不够：需要 ' + it.cost + ' 个，你现在有 ' + acc.items[k] + ' 个。' };
+      var left = jadeMoves(m); if (!left.length) return { ok: false, msg: form(m).name + ' 已经领悟了全部隐藏技能。' };
+      if (left.indexOf(nat) < 0) nat = left[0];
+      if (!Array.isArray(m.hl)) m.hl = []; m.hl.push(nat); acc.items[k] -= it.cost; save();
+      return { ok: true, msg: form(m).name + ' 领悟了隐藏技能「' + nat + '」！' + (m.lv >= HIDDEN_MIN_LV ? '在精灵资料的技能栏里就能装备。' : '到 LV' + HIDDEN_MIN_LV + ' 后就能在技能栏里装备。') };
+    }
     if (it.kind === 'nat') {
       if (!nat || !(nat in NATURES)) return { ok: false, msg: '先选一个性格。' };
       if (nat === m.nat) return { ok: false, msg: '它已经是「' + nat + '」性格了，换一个吧。' };
@@ -693,12 +708,13 @@
     if (!ks.length) return '';
     return '<div class="md-items"><h4>精灵道具 <span class="hint">直接用在' + esc(form(m).name) + '身上</span></h4>' + ks.map(function (k) {
       var it = USE_ITEMS[k], act;
-      if (it.kind === 'nat') act = '<select data-mnat="1" aria-label="新的性格">' + NAT_KEYS.filter(function (n) { return n !== m.nat; }).map(function (n) { return '<option value="' + n + '">' + n + '（' + natText(n) + '）</option>'; }).join('') + '</select><button type="button" class="btn" data-muse="' + k + '">改性格</button>';
+      if (it.kind === 'jade') { var jl = jadeMoves(m), jok = jl.length && acc.items[k] >= it.cost; act = jl.length ? '<select data-mnat="1" aria-label="要领悟的隐藏技能">' + jl.map(function (n) { return '<option value="' + n + '">' + n + '</option>'; }).join('') + '</select><button type="button" class="btn" data-muse="' + k + '"' + (jok ? '' : ' disabled title="需要 ' + it.cost + ' 个"') + '>' + (jok ? '用 ' + it.cost + ' 个领悟' : '需要 ' + it.cost + ' 个') + '</button>' : '<button type="button" class="btn" disabled>隐藏技能已全部领悟</button>'; }
+      else if (it.kind === 'nat') act = '<select data-mnat="1" aria-label="新的性格">' + NAT_KEYS.filter(function (n) { return n !== m.nat; }).map(function (n) { return '<option value="' + n + '">' + n + '（' + natText(n) + '）</option>'; }).join('') + '</select><button type="button" class="btn" data-muse="' + k + '">改性格</button>';
       else if (it.kind === 'iv' || it.kind === 'iv2') act = '<button type="button" class="btn" data-muse="' + k + '">使用 · 重组天赋</button>';
       else if (it.kind === 'exp') act = '<button type="button" class="btn" data-muse="' + k + '"' + (m.lv >= MAX_LV ? ' disabled' : '') + '>' + (m.lv >= MAX_LV ? '已满级' : '使用 · +' + fmt(m.lv * it.rate) + ' 经验') + '</button>';
       else if (it.kind === 'evreset') act = '<button type="button" class="btn" data-muse="' + k + '"' + (evSum(m) ? '' : ' disabled') + '>' + (evSum(m) ? '使用 · 退回 ' + evSum(m) + ' 点' : '没有分配过学习力') + '</button>';
       else { var room = evRoom(m); act = '<button type="button" class="btn" data-muse="' + k + '"' + (room ? '' : ' disabled title="学习力已经到上限了"') + '>' + (room ? '使用 · +' + Math.min(100, room) + ' 学习力' : '学习力已满') + '</button>'; }
-      return '<div class="md-it"><b>' + it.name + ' <span class="cnt">×' + acc.items[k] + '</span></b><span class="hint">' + esc(it.kind === 'nat' ? '把性格改成你选的性格' : it.kind === 'iv' ? '六项天赋全部重新随机' : it.kind === 'iv2' ? '六项天赋重新随机，每项掷两次取高' : it.kind === 'exp' ? '直接增加等级 × ' + it.rate + ' 点经验' : it.kind === 'evreset' ? '已分配的学习力全部退回' : '直接增加 100 点可分配学习力') + '</span><span class="md-act">' + act + '</span></div>';
+      return '<div class="md-it"><b>' + it.name + ' <span class="cnt">×' + acc.items[k] + '</span></b><span class="hint">' + esc(it.kind === 'jade' ? '每 ' + it.cost + ' 个领悟一个隐藏技能' : it.kind === 'nat' ? '把性格改成你选的性格' : it.kind === 'iv' ? '六项天赋全部重新随机' : it.kind === 'iv2' ? '六项天赋重新随机，每项掷两次取高' : it.kind === 'exp' ? '直接增加等级 × ' + it.rate + ' 点经验' : it.kind === 'evreset' ? '已分配的学习力全部退回' : '直接增加 100 点可分配学习力') + '</span><span class="md-act">' + act + '</span></div>';
     }).join('') + '</div>';
   }
   function growText(min) { return min >= 60 && min % 60 === 0 ? (min / 60) + ' 小时' : min + ' 分钟'; }
@@ -741,18 +757,19 @@
       else if (k === 'c_bowl') body = '<p>' + esc(CROPS[k].d) + '</p><p class="hint">在黄石 · 冶炼坊用 500 粒米饭合成。进入庞贝星 · 熔岩原，在想放的场景里点「放下一碗饭」。之后这个场景里有 2% 的概率出现稀有的米饭火鸡；捕捉或击败它之后，这碗饭就被吃掉了。</p>';
       else if (CROPS[k]) body = '<p>' + esc(CROPS[k].d) + '</p><p class="hint">在太空种植园收获，已放入储存箱。可以在冶炼坊当合成材料。</p>';
       else if (it) {
-        var mons = acc.mons.filter(function (m) { return !it.sid || m.sid === it.sid; }).sort(function (a, b) { return b.lv - a.lv; });
+        var mons = acc.mons.filter(function (m) { return itemFits(k, m); }).sort(function (a, b) { return b.lv - a.lv; });
         if (!mons.some(function (m) { return m.u === ui.itTarget; })) ui.itTarget = mons.length ? mons[0].u : null;
         var tm = mon(ui.itTarget);
         body = '<p>' + esc(it.d) + '</p>' + (mons.length ? '<div class="it-step"><b>1. 选择精灵</b><div class="it-mons">' + mons.map(function (m) {
-          var f = form(m), sub = it.kind === 'nat' ? '性格 ' + m.nat : it.kind === 'exp' ? (m.lv >= MAX_LV ? '已满级' : '可得 ' + fmt(m.lv * it.rate) + ' 经验') : it.kind === 'evreset' ? '已分配 ' + evSum(m) + ' 点' : it.kind === 'iv' || it.kind === 'iv2' ? '天赋合计 ' + (ivOf(m) ? STAT_KEYS.reduce(function (a, x) { return a + m.iv[x]; }, 0) : '？') : '可再加 ' + evRoom(m) + ' 点';
+          var f = form(m), sub = it.kind === 'jade' ? (jadeMoves(m).length ? '还有 ' + jadeMoves(m).length + ' 个隐藏技能可领悟' : '隐藏技能已全部领悟') : it.kind === 'nat' ? '性格 ' + m.nat : it.kind === 'exp' ? (m.lv >= MAX_LV ? '已满级' : '可得 ' + fmt(m.lv * it.rate) + ' 经验') : it.kind === 'evreset' ? '已分配 ' + evSum(m) + ' 点' : it.kind === 'iv' || it.kind === 'iv2' ? '天赋合计 ' + (ivOf(m) ? STAT_KEYS.reduce(function (a, x) { return a + m.iv[x]; }, 0) : '？') : '可再加 ' + evRoom(m) + ' 点';
           return '<label class="it-mon' + (m.u === ui.itTarget ? ' on' : '') + '"><input type="radio" name="it-t" value="' + m.u + '"' + (m.u === ui.itTarget ? ' checked' : '') + '><img src="' + f.img + '" alt=""><span><b>' + esc(f.name) + '</b><small>LV' + m.lv + ' · ' + sub + '</small></span></label>';
         }).join('') + '</div></div>' +
-          (it.kind === 'nat' ? '<div class="it-step"><b>2. 选择性格</b><select id="it-nat" aria-label="新的性格">' + NAT_KEYS.map(function (n) { var cur = tm && tm.nat === n, pick = ui.itNat && (!tm || ui.itNat !== tm.nat) ? ui.itNat : NAT_KEYS.filter(function (x) { return !tm || x !== tm.nat; })[0]; return '<option value="' + n + '"' + (pick === n ? ' selected' : '') + (cur ? ' disabled' : '') + '>' + n + '（' + natText(n) + '）' + (cur ? ' · 当前' : '') + '</option>'; }).join('') + '</select></div>'
+          (it.kind === 'jade' ? (tm && jadeMoves(tm).length ? '<div class="it-step"><b>2. 选择隐藏技能</b><select id="it-nat" aria-label="要领悟的隐藏技能">' + jadeMoves(tm).map(function (n) { return '<option value="' + n + '">' + n + '（' + esc(LEARN[n] ? '原本要' + LEARN[n] : '原本 LV50 习得') + '）</option>'; }).join('') + '</select></div>' : '') + '<p class="hint">一次消耗 ' + it.cost + ' 个，你现在有 ' + acc.items[k] + ' 个。</p>'
+            : it.kind === 'nat' ? '<div class="it-step"><b>2. 选择性格</b><select id="it-nat" aria-label="新的性格">' + NAT_KEYS.map(function (n) { var cur = tm && tm.nat === n, pick = ui.itNat && (!tm || ui.itNat !== tm.nat) ? ui.itNat : NAT_KEYS.filter(function (x) { return !tm || x !== tm.nat; })[0]; return '<option value="' + n + '"' + (pick === n ? ' selected' : '') + (cur ? ' disabled' : '') + '>' + n + '（' + natText(n) + '）' + (cur ? ' · 当前' : '') + '</option>'; }).join('') + '</select></div>'
             : it.kind === 'iv' || it.kind === 'iv2' ? '<p class="hint">' + (tm && ivOf(tm) ? esc(form(tm).name) + ' 现在的天赋：' + STAT_KEYS.map(function (x) { return BASE_NAME[x] + ' ' + tm.iv[x]; }).join('，') + '。' : '') + '</p>'
             : it.kind === 'exp' ? '<p class="hint">' + (tm ? esc(form(tm).name) + ' 现在 LV' + tm.lv + '，吃一颗得到 ' + fmt(tm.lv * it.rate) + ' 点经验。' : '') + '</p>'
             : '<p class="hint">' + (tm ? esc(form(tm).name) + ' 学习力：已分配 ' + evSum(tm) + '，可分配 ' + (tm.evFree || 0) + '，还能再加 ' + evRoom(tm) + ' 点。' : '') + '</p>') +
-          '<button type="button" class="btn primary" data-ituse="' + k + '"' + ((it.kind === 'ev' && tm && !evRoom(tm)) || (it.kind === 'exp' && tm && tm.lv >= MAX_LV) || (it.kind === 'evreset' && tm && !evSum(tm)) ? ' disabled' : '') + '>使用 1 个' + itemName(k) + '</button>'
+          '<button type="button" class="btn primary" data-ituse="' + k + '"' + ((it.kind === 'jade' && (!tm || !jadeMoves(tm).length || acc.items[k] < it.cost)) || (it.kind === 'ev' && tm && !evRoom(tm)) || (it.kind === 'exp' && tm && tm.lv >= MAX_LV) || (it.kind === 'evreset' && tm && !evSum(tm)) ? ' disabled' : '') + '>使用 ' + (it.cost || 1) + ' 个' + itemName(k) + '</button>'
           : '<p class="hint red">' + esc(it.none || '你还没有' + SPMAP[it.sid].name + '（小胖虎、胖虎也算）。击败简单难度的首领「泰戈尔」可以领养一只小胖虎。') + '</p>');
       }
       html += '<div class="ib-detail"><h4>' + (k === 'permit' ? '挑战许可' : itemName(k)) + '</h4>' + body + (ui.itMsg ? '<p class="exp-msg">' + esc(ui.itMsg) + '</p>' : '') + '</div>';
@@ -1785,7 +1802,7 @@
     var spareTip = R.pool && R.planet === 'flora' && spareActive() ? '<div class="spare-note"><span class="tape l"></span><b>主线任务 · 引出猎杀者</b>　手下留情：这些精灵不会倒下，体力剩 1 点时就会逃走，算作「假装击败」。已完成 <b>' + spareN() + ' / ' + SPARE_N + '</b>。</div>' : '';
     $('pg-explore').innerHTML = exHead(R.pool ? '点击场景里走动的精灵，就会和它开战。' : '这里没有野生精灵。点击场景里的首领就能挑战它。') +
       '<div class="crumb"><button type="button" class="btn ghost" id="field-back">‹ 返回' + esc(P.name) + '</button><b>' + esc(P.name) + ' · ' + esc(R.name) + '</b>' + (n > 1 ? '<span class="hint">场景 ' + (F.scene + 1) + ' / ' + n + (BG_NAME[sc.bgKey] ? ' · ' + BG_NAME[sc.bgKey] : '') + '</span>' : '') + '</div>' +
-      invLine() + spareTip + '<div class="wf-scene' + (sc.corrupt ? ' miasma-bg' : '') + '" id="wf-scene">' + bg + mons + gatherNodesHTML(R.id, F.scene, n) + riceBowlHTML(R, F.scene) + travelHTML(R, F.scene) + fieldBossHTML(R) + nav + '</div>' +
+      invLine() + spareTip + '<div class="wf-scene' + (sc.corrupt ? ' miasma-bg' : '') + '" id="wf-scene">' + bg + mons + gatherNodesHTML(R.id, F.scene, n) + jadeHTML(R.id, F.scene) + riceBowlHTML(R, F.scene) + travelHTML(R, F.scene) + fieldBossHTML(R) + nav + '</div>' +
       (R.pool ? '<p class="hint">点左右两边的箭头可以切换场景。每只精灵在自己的一小片范围里走动，待一会儿就会离开，过一阵又会有新的精灵出现，各走各的。点中哪只，就和哪只对战；打完、抓到或逃走之后，这只离开，过一会儿会有新的一只补上。采集点固定在场景里，每个每天可以采集 1 次：芙罗拉、坎布尔、庞贝采到星砂 ×12，莱汀和白之星采到星核 ×1。' + (RICE.regions.indexOf(R.id) >= 0 ? '带着「一碗饭」来的话，可以在任意一个场景里放下它。' : '') + '</p>' : '');
     startFieldMove();
   }
@@ -1884,6 +1901,7 @@
         }
         if (downs && downs.length) { if (!acc.stats) acc.stats = {}; acc.stats.wildWins = (acc.stats.wildWins || 0) + downs.length; dailyHit('wildWin', downs.length); }
         if ((o.taint || (o.corrupt && purgeActive())) && downs && downs.length) msg = msg.concat(purgeHit());   // 瘴气化之后的腐化精灵也计入「祛除瘴气」
+        if (o.corrupt && pwOpen() && downs && downs.length) { acc.exp = (acc.exp || 0) + PW.exp; save(); renderRes(); msg.push('瘴气驱逐战：击破 +1，经验背包 +' + fmt(PW.exp) + (pwOnline() ? '。' : '（没有联网，全服进度没有计入）。')); pwHit(); }
         if (o.travel && downs && downs.length) {   // 旅行精灵：累积经验 ×3000，50% 掉落叶片
           acc.exp = (acc.exp || 0) + TRAVEL.exp; var lf = Math.random() < TRAVEL.leaf;
           if (lf) giveItems({ m_lcleaf: 1 });
@@ -2157,7 +2175,7 @@
     });
     save(); return out;
   }
-  function planetTaskList(pid) { return pid === 'flora' ? ['purge'] : []; }
+  function planetTaskList(pid) { return pid === 'flora' ? ['purge', 'war'] : []; }
   function taskTab(pid, part) {
     var n = pid === 'flora' && prog('flora1').done && purgeRec().n < PURGE.goal ? 1 : 0;
     return '<button type="button" role="tab" class="tab' + (part === 'task' ? ' on' : '') + '" data-fpart="task" aria-selected="' + (part === 'task') + '">星球任务' + (n ? '<i class="q-badge">' + n + '</i>' : '') + '</button>';
@@ -2174,7 +2192,91 @@
       '<p class="hint">' + (done ? '任务已完成。' : !open ? '读完主线「降临芙罗拉」后开始。' : floraFallen() ? '芙罗拉星上的精灵已经被腐化了。在丛林、草甸击败这些腐化精灵，也能祛除它们身上的瘴气。' : '在芙罗拉星的丛林、草甸作战时，有 10% 的概率遇到瘴气精灵。它们自带 5 层瘴气，无法捕捉，只能击败。') + '</p>' +
       '<div class="pt-bar"><i style="width:' + Math.min(100, P.n / PURGE.goal * 100) + '%"></i><em>已祛除 ' + Math.min(P.n, PURGE.goal) + ' / ' + PURGE.goal + '</em></div>' +
       '<ol class="pt-steps">' + steps + '</ol>' +
-      (open && !done ? '<p class="hint">去「捕捉」页的丛林或草甸作战即可。</p><button type="button" class="btn primary" data-fpart="catch">去丛林 / 草甸</button>' : '') + '</article>';
+      (open && !done ? '<p class="hint">去「捕捉」页的丛林或草甸作战即可。</p><button type="button" class="btn primary" data-fpart="catch">去丛林 / 草甸</button>' : '') + '</article>' +
+      (pwOpen() ? pwCardHTML('task') : '<article class="pt-card pw-card locked"><span class="tape l"></span><span class="chip log-tag pw-tag">全服任务</span><h3>瘴气驱逐战</h3><p class="hint">完成目前的主线（第十段）后解锁。</p></article>');
+  }
+
+  /* ---------- 瘴气驱逐战（芙罗拉星 · 全服共享进度的星球任务，2026-10-17） ----------
+   * 完成目前主线的最后一段（第十段 · 瘴气之源）后开放。服务器见 server/purgewar.js。
+   * 在芙罗拉星野外击败腐化精灵：自己经验背包 +1000，全服击破 +1。
+   * 全服击破 10 / 50 / 100、之后每 50 只：贡献过（击破 ≥ 1）的船员各收到一封奖励邮件（经验、能量、芙罗拉玉、星砂、星核，数额暂定） */
+  var PW = { exp: 1000, data: null, at: 0, busy: false, err: '' };
+  function pwOpen() { return floraFallen(); }
+  function pwOnline() { return !!(window.CLOUD && CLOUD.user && CLOUD.user()); }
+  function pwMilestones(upTo) { var L = [10, 50, 100]; for (var m = 150; m <= upTo; m += 50) L.push(m); return L.filter(function (x) { return x <= upTo; }); }
+  function pwNext(t) { if (t < 10) return 10; if (t < 50) return 50; if (t < 100) return 100; return (Math.floor(t / 50) + 1) * 50; }
+  function pwPrev(t) { if (t < 10) return 0; if (t < 50) return 10; if (t < 100) return 50; return Math.floor(t / 50) * 50; }
+  function pwReward(m) {
+    if (m === 10) return { exp: 5000, energy: 1000, items: { floraJade: 20, g_sand: 24, g_core: 1 } };
+    if (m === 50) return { exp: 15000, energy: 3000, items: { floraJade: 50, g_sand: 48, g_core: 2 } };
+    if (m === 100) return { exp: 30000, energy: 5000, items: { floraJade: 100, g_sand: 96, g_core: 4 } };
+    return { exp: 20000, energy: 4000, items: { floraJade: 60, g_sand: 48, g_core: 2 } };
+  }
+  function pwRwText(w) { return '累积经验 ×' + fmt(w.exp) + '、能量 ×' + fmt(w.energy) + '、' + Object.keys(w.items).map(function (k) { return itemName(k) + ' ×' + w.items[k]; }).join('、'); }
+  function pwRec() { if (!acc.pw) acc.pw = { got: {} }; if (!acc.pw.got) acc.pw.got = {}; return acc.pw; }
+  function pwApply(d) { PW.data = d; PW.at = Date.now(); PW.err = ''; pwClaim(); pwRedraw(); }
+  function pwFetch(force) {
+    if (!pwOpen() || !pwOnline() || PW.busy) return;
+    if (!force && PW.data && Date.now() - PW.at < 30000) return;
+    PW.busy = true;
+    CLOUD.api('GET', '/api/purgewar').then(function (r) { PW.busy = false; if (r._code === 200) pwApply(r); else { PW.err = r.error || '读取失败'; pwRedraw(); } })
+      .catch(function () { PW.busy = false; PW.err = '连不上服务器'; pwRedraw(); });
+  }
+  function pwHit() { if (!pwOnline()) return; CLOUD.api('POST', '/api/purgewar-hit', {}).then(function (r) { if (r._code === 200) pwApply(r); }).catch(function () {}); }
+  // 全服达到里程碑：给贡献过的自己发奖励邮件（每个里程碑只发一次）
+  function pwClaim() {
+    var d = PW.data; if (!d || !(d.me > 0)) return;
+    var R = pwRec(), any = false;
+    pwMilestones(d.total).forEach(function (m) {
+      if (R.got[m]) return; R.got[m] = 1; any = true;
+      var w = pwReward(m);
+      sendMail({ id: 'pw-' + m, title: '瘴气驱逐战 · 全服击破 ' + m + ' 只', body: '{name}，你好！\n全服船员在瘴气驱逐战中，已经一起击破了 ' + m + ' 只腐化精灵！\n你目前一共击破了 ' + d.me + ' 只，感谢你的贡献。奖励请领取附件。', att: { exp: w.exp, energy: w.energy, items: w.items } });
+    });
+    if (any) { save(); if (typeof renderTop === 'function') setTimeout(renderTop, 0); }
+  }
+  function pwInner() {
+    var d = PW.data, head = '<span class="tape l"></span><span class="tape r"></span><span class="chip log-tag pw-tag">全服任务</span><h3>瘴气驱逐战</h3>' +
+      '<p>芙罗拉星已经被腐化。所有船员一起，在芙罗拉星的丛林、草甸击败腐化精灵：每击破一只，你的经验背包 +' + fmt(PW.exp) + '，全服进度 +1。</p>';
+    if (!pwOnline()) return head + '<p class="hint">瘴气驱逐战是全服任务，需要用服务器网址打开游戏并登录后才能参与。</p>';
+    if (!d) return head + '<p class="hint">' + (PW.err ? esc(PW.err) : '正在读取全服进度……') + '</p>';
+    var prev = pwPrev(d.total), next = pwNext(d.total), pct = Math.min(100, (d.total - prev) / (next - prev) * 100);
+    var ms = [10, 50, 100].concat([150, 200, 250]).filter(function (m) { return m > d.total - 100; }).slice(0, 5);
+    if (ms.indexOf(next) < 0) ms = [next, next + 50, next + 100];
+    return head +
+      '<div class="pw-big"><b class="pw-num">' + fmt(d.total) + '</b><span>全服已击破</span></div>' +
+      '<div class="pw-bar"><i style="width:' + pct.toFixed(1) + '%"></i><em>' + d.total + ' / ' + next + ' · 下一个全服奖励</em></div>' +
+      '<ol class="pw-ms">' + ms.map(function (m) { var ok = d.total >= m; return '<li class="' + (ok ? 'ok' : '') + '"><b>' + m + ' 只</b><span>' + pwRwText(pwReward(m)) + '</span><em>' + (ok ? (d.me > 0 ? '已发放' : '已达成') : '未达成') + '</em></li>'; }).join('') + '</ol>' +
+      '<p class="hint">全服击破 10、50、100 只，之后每 50 只，所有击破过腐化精灵的船员都会收到一封奖励邮件。之后的奖励和 150 只的一样。</p>' +
+      '<div class="pw-me"><span>你的贡献：<b>' + d.me + '</b> 只</span><span>参与船员：<b>' + d.players + '</b> 人</span></div>' +
+      (d.top.length ? '<ol class="pw-top">' + d.top.map(function (x, i) { return '<li><span class="pw-rk">' + (i + 1) + '</span><span class="pw-nm">' + esc(x.name) + '</span><b>' + x.n + '</b></li>'; }).join('') + '</ol>' : '<p class="hint">还没有船员击破腐化精灵，来做第一个吧。</p>') +
+      '<button type="button" class="btn primary" data-golog="flora-catch" data-fpart="catch">去芙罗拉星的丛林 / 草甸</button>';
+  }
+  function pwCardHTML(where) {
+    if (!pwOpen()) return where === 'log' ? '<article class="log-card wide pw-card locked"><span class="tape l"></span><span class="chip log-tag pw-tag">全服任务</span><h3>瘴气驱逐战</h3><p class="hint">完成目前的主线（第十段 · 瘴气之源）后解锁。</p></article>' : '';
+    setTimeout(function () { pwFetch(); }, 0);
+    return '<article class="log-card wide pw-card" id="pw-card-' + where + '">' + pwInner() + '</article>';
+  }
+  function pwRedraw() { ['log', 'task'].forEach(function (w) { var el = $('pw-card-' + w); if (el) el.innerHTML = pwInner(); }); }
+  setInterval(function () { if ($('pw-card-log') || $('pw-card-task')) pwFetch(); }, 30000);
+
+  /* 芙罗拉玉：瘴气驱逐战开放后，芙罗拉星丛林、草甸的场景里每天有一定概率冒出来（每个场景每天最多一块，捡到 1~3 个） */
+  function jadeSpot(rid, scene) {
+    if (!pwOpen() || (rid !== 'forest' && rid !== 'grass')) return null;
+    var g = seeded(bjDay() + ':jade:' + rid + ':' + scene + ':' + (acc.created || 0));
+    return g() < 0.35 ? { x: 15 + Math.floor(g() * 66), y: 68 + Math.floor(g() * 16), n: 1 + Math.floor(g() * 3) } : null;
+  }
+  function jadeRec() { var d = bjDay(); if (!acc.jade || acc.jade.d !== d) acc.jade = { d: d, got: {} }; return acc.jade; }
+  function jadeHTML(rid, scene) {
+    var J = jadeSpot(rid, scene); if (!J) return '';
+    var got = !!jadeRec().got[rid + ':' + scene];
+    return got ? '' : '<button type="button" class="wf-node wf-jade" data-jade="' + scene + '" style="left:' + J.x + '%;top:' + J.y + '%" title="芙罗拉玉 ×' + J.n + '" aria-label="捡起芙罗拉玉 ×' + J.n + '"><i class="wf-gem" aria-hidden="true"></i><span>芙罗拉玉</span></button>';
+  }
+  function jadeAt(scene) {
+    var R = regionById(ex.region), J = R && jadeSpot(R.id, scene); if (!J) return;
+    var rec = jadeRec(), key = R.id + ':' + scene; if (rec.got[key]) return;
+    rec.got[key] = 1; giveItems({ floraJade: J.n }); save();
+    toast('捡到了「芙罗拉玉」×' + J.n + '，已放入储存箱。100 个芙罗拉玉可以让玛西露姆、六尾风王、卡莱奥丹一系领悟一个隐藏技能。');
+    var el = document.querySelector('#wf-scene [data-jade]'); if (el) el.remove();
   }
 
   /* ---------- 神秘精灵：每天 16:00–24:00，切换场景时有 3% 概率出现（真身是 LV10 幽灵鱼） ---------- */
@@ -2654,7 +2756,7 @@
     var wait = on ? '' : (function () { var t = new Date(now); t.setHours(MYSTERY.from, 0, 0, 0); var m = Math.max(0, Math.round((t - now) / 60000)); return '距离今天的活动开始还有 ' + Math.floor(m / 60) + ' 小时 ' + (m % 60) + ' 分钟'; })();
     $('pg-log').innerHTML = '<div class="page-head"><h2 class="sec">航行日志</h2><p class="hint">荆楚号的公告板：更新公告、限时活动、每日任务和新首领。</p></div>' +
       '<div class="log-grid">' + '<article class="log-card wide qq-card"><span class="tape l"></span><span class="tape r"></span><div class="qq-txt"><span class="chip log-tag">船员交流</span><h3>QQ 群：<b class="qq-no">' + QQ_GROUP + '</b></h3><p class="hint">攻略、组队切磋、bug 反馈、新精灵立绘抢先看，都在群里。</p></div><button type="button" class="btn primary" data-copyqq="1">复制群号</button></article>' + changelogHTML() +
-      barrenLogHTML() + travelLogHTML() + pickHTML() + riceLogHTML() +   // 立绘更新投票已结束移除（2026-10-17）；荒芜放在更新公告正下方
+      pwCardHTML('log') + barrenLogHTML() + travelLogHTML() + pickHTML() + riceLogHTML() +   // 立绘更新投票已结束移除（2026-10-17）；荒芜放在更新公告正下方
       '<article class="log-card ev"><span class="tape l"></span><span class="chip log-tag">限时活动</span><h3>神秘精灵出没</h3>' +
         '<p>每天 <b>16:00–24:00</b>，在星际探索的任何场景，都有 <b>3%</b> 的概率刷出一只神秘精灵！</p><p class="hint">它是什么？只有遇到过的人才知道。</p>' +
         '<p class="log-st ' + (on ? 'on' : '') + '">' + (on ? '活动进行中，今天 24:00 结束' : wait) + '</p></article>' +
@@ -2751,6 +2853,7 @@
       return;
     }
     var g = e.target.closest('[data-golog]'); if (g) { if (g.dataset.golog === 'boss-barren') { ex.view = 'boss'; ex.boss = 'barren'; go('explore'); return; }
+      if (g.dataset.golog === 'flora-catch') { ex.planet = 'flora'; ex.view = 'sites'; ex.fpart = 'catch'; go('explore'); renderExplore(); return; }
       if (g.dataset.golog === 'travelcat') { ex.planet = 'flora'; ex.view = 'sites'; ex.fpart = 'story'; go('explore'); renderExplore(); return; }
       if (g.dataset.golog === 'boss-tiger') { ex.view = 'boss'; ex.boss = 'tiger'; ex.bossK = 'tiger'; ex.bossD = 2; go('explore'); return; } go(g.dataset.golog); }
   });
@@ -3892,6 +3995,7 @@
     if (b.dataset.fpart) { ex.fpart = b.dataset.fpart; renderExplore(); return; }
     if (b.dataset.field && !b.disabled) { enterField(b.dataset.field); return; }
     if (b.dataset.gather != null && b.dataset.gather !== '') { gatherAt(+b.dataset.gather); return; }
+    if (b.dataset.jade != null) { jadeAt(+b.dataset.jade); return; }
     if (b.dataset.bowl) { putBowl(); return; }
     if (b.dataset.travel) { engageTravel(+b.dataset.travel); return; }
     if (b.dataset.wfid) { engageField(+b.dataset.wfid); return; }
@@ -4061,11 +4165,14 @@
     if ($('fallen-dlg')) return;
     var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'fallen-dlg';
     d.innerHTML = '<div class="soc-box fallen-box" role="dialog" aria-modal="true" aria-label="芙罗拉星"><span class="step">芙罗拉星</span><h2>腐化</h2>' +
+      '<div class="fallen-planet" aria-hidden="true"><img class="fp-a" src="images/planets/flora.webp?v=2" alt=""><img class="fp-b" src="images/planets/flora_corrupt.webp?v=2" alt=""><i class="fp-fog"></i></div>' +
       '<p>现在，芙罗拉星和星球上的绝大多数精灵，已经被瘴气腐化了。</p>' +
       '<p>尽力驱散这些诅咒吧……如果有用的话。</p>' +
       '<p class="hint">芙罗拉星的野外遇到的精灵都变成了腐化精灵，无法捕捉。击败它们，同样计入星球任务「祛除瘴气」。</p>' +
-      '<div class="soc-foot"><button type="button" class="btn primary" data-fallenx="1">知道了</button></div></div>';
+      '<div class="pw-open"><span class="chip log-tag pw-tag">全服任务</span><b>瘴气驱逐战已开启</b><span>所有船员一起击败腐化精灵，推进全服进度条，达到里程碑就能领取奖励。在航行日志和芙罗拉星的「星球任务」里查看。</span></div>' +
+      '<div class="soc-foot"><button type="button" class="btn" data-fallenlog="1">去看看</button><button type="button" class="btn primary" data-fallenx="1">知道了</button></div></div>';
     document.body.appendChild(d);
+    d.addEventListener('click', function (e) { if (e.target.closest('[data-fallenlog]')) { d.remove(); go('log'); } });
     d.addEventListener('click', function (e) { if (e.target === d || e.target.closest('[data-fallenx]')) d.remove(); });
   }
   function finish() {

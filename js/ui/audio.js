@@ -42,7 +42,8 @@
   };
   // silence：剧情里「音乐突然停止」，没有曲子
   var SCENES = { ui: 1, arena: 1, earth: 1, flora: 1, floraGrass: 1, floraForest: 1, floraFallen: 1, grassTalk: 1, memory: 1, saver: 1, disComScene: 1, faceEnemyScene: 1, silence: 1 };
-  var ONESHOT = { faceEnemy: 1 };   // 不循环；播完触发 chainNext 指定的下一首
+  var ONESHOT = { faceEnemy: 1 };
+  var FRESH = { disComScene: 1 };   // 每次开始放都从头放，不记上次停下的位置（剧情里的 dis-communication）   // 不循环；播完触发 chainNext 指定的下一首
   var KEY = 'hs-sound-v1';
   var cfg = { music: true, ui: true, vol: 60 };
   try {
@@ -101,7 +102,7 @@
     switching = k;
     var go = function () {
       switching = undefined;
-      if (cur && !el.paused) pos[cur] = SCENES[cur] ? el.currentTime : 0;
+      if (cur && !el.paused) pos[cur] = SCENES[cur] && !FRESH[cur] ? el.currentTime : 0;
       el.pause();
       if (want() !== k) { cur = null; sync(); return; }   // 淡出期间又换了界面
       if (k) startTrack(k, fromStart); else cur = null;
