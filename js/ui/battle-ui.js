@@ -440,7 +440,7 @@
 
   /* ---------------- 对战界面 ---------------- */
   // 战斗背景音乐（见 audio.js）
-  function bgm(k) { if (window.HSAUDIO) HSAUDIO.play(k); }
+  function bgm(k, then) { if (window.HSAUDIO) HSAUDIO.play(k, then); }
   function bgmStop(ms) { if (window.HSAUDIO) HSAUDIO.stop(ms); }
   /* ---------- 观战转播：对战画面（战况快照、战斗记录、动画提示）攒一小会儿发给服务器，由服务器转给观众（见 social.js）---------- */
   var CAST = { on: false, head: null, snap: null, log: [], fx: [], timer: null, all: [] }, caster = null;
@@ -548,7 +548,9 @@
   // 剧情对战（由星际探索调用）：opt = { p, a, foe, onEnd(result) }
   function setFieldBg(src) { var f = $('field'); f.classList.toggle('scene', !!src); f.style.backgroundImage = src ? 'linear-gradient(rgba(251,250,243,.32), rgba(251,250,243,.18)), url(' + src + ')' : ''; }
   function startStory(opt) {
-    setFieldBg(opt.bg || null); bgm(opt.bgm || 'normal');
+    setFieldBg(opt.bg || null);
+    if (opt.wild || opt.diff) bgm(opt.bgm || 'normal');
+    else bgm('faceEnemy', opt.bgm || 'normal');   // 剧情对战（非野外、非首领）：先放一遍遇敌曲，播完自动接回去
     app.S = newBattle(opt.p, opt.a); app.S.story = { foe: opt.foe, back: opt.back || null, diff: opt.diff || null };
     if (opt.items) app.S.items = opt.items;
     if (opt.env) app.S.env = opt.env;

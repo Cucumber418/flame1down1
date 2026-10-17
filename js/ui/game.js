@@ -1628,7 +1628,6 @@
   /* 一个区域有好几个场景（有几张背景就有几个，至少 2 个），左右箭头切换；每个场景各有 4 个精灵位置。
    * 每只精灵各自计时：待一会儿（FIELD_LIFE）就淡出离开，隔一小段时间（FIELD_GAP）再在同一片范围里出现一只新的，互不影响。
    * 采集点：第 i 个放在第 i 个场景里（场景比采集点少时轮着放）。 */
-  var FLORA_BRIGHT = { fl_maple: 1, fl_meadow: 1, fl_lake: 1 };   // 芙罗拉星比较明快的场景（放芙罗拉星 2）；落叶小径、山毛榉林、林间阳光比较幽暗（放芙罗拉星 1）
   var FIELD_LIFE = [14000, 32000], FIELD_GAP = [1500, 6000], FIELD_FADE = 600;
   function between(r) { return r[0] + Math.random() * (r[1] - r[0]); }
   function fillSlot(R, F, slot, now, first) {
@@ -4044,9 +4043,9 @@
     if (page === 'explore') {
       if (vnSite === 'flora') return 'flora';
       if (ex.view === 'sites' && ex.planet === 'flora') return 'flora';
-      if (ex.view === 'field' && fields[ex.region] && regionById(ex.region) && regionById(ex.region).planet === 'flora') {   // 芙罗拉星野外：明快的场景放芙 2，黑暗深邃的放芙 1
-        var fs_ = fields[ex.region].scenes[fields[ex.region].scene];
-        return fs_ && FLORA_BRIGHT[fs_.bgKey] ? 'flora2' : 'flora';
+      if (ex.view === 'field' && fields[ex.region] && regionById(ex.region) && regionById(ex.region).planet === 'flora') {   // 芙罗拉星野外：草甸放 floraGrass，丛林放 floraForest
+        var rid_ = regionById(ex.region).id;
+        return rid_ === 'grass' ? 'floraGrass' : rid_ === 'forest' ? 'floraForest' : 'flora';
       }
       if (ex.view === 'boss' && BOSSES[ex.boss] && BOSSES[ex.boss].planet === 'flora') return 'flora';
     }

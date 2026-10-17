@@ -3,33 +3,38 @@
  *
  * 所有曲子都已经调成同样的响度（约 -16 LUFS），切换时不会忽大忽小。
  * 界面音乐（不在对战时播放，由 game.js 按当前所在的界面决定，见 HSAUDIO.scene）：
- *   ui      一般界面：精灵背包、仓库、航行日志、社交、荆楚号等
- *   arena   竞技大厅：竞技对战页面（选精灵、匹配）
- *   earth   地球 1：地球上的剧情（含序章）
- *   flora   芙 1：芙罗拉星的界面和剧情
+ *   ui          一般界面：精灵背包、仓库、航行日志、社交、荆楚号等
+ *   arena       竞技大厅：竞技对战页面（选精灵、匹配）
+ *   earth       地球：地球上的剧情（含序章）
+ *   flora       芙罗拉星界面：芙罗拉星主页、剧情、盐碱地、荒芜首领页（FloraBackground）
+ *   floraGrass  芙罗拉星 · 草甸：草甸野外场景（Flora1）
+ *   floraForest 芙罗拉星 · 丛林：丛林野外场景（Flora2）
  * 茶室里放主人选的「茶室音乐」（大厅 = ui、地球 = earth、芙罗拉星 = flora），自己和来拜访的船员都听得到（见 game.js 的 HOME_BGM）。
  * 战斗音乐（对战开始时由 battle-ui.js 调用 HSAUDIO.play，对战结束后回到界面音乐）：
- *   normal  寻常：野外对战、剧情对战、茶室和朋友家的对战
- *   boss    首领战（简单难度）
- *   boss2   首领战（普通难度）
- *   boss3   首领战（困难难度和每周挑战）
+ *   normal      寻常：野外对战、剧情对战、茶室和朋友家的对战
+ *   boss        首领战（简单难度）
+ *   boss2       首领战（普通难度）
+ *   boss3       首领战（困难难度和每周挑战）
  *   tigerFinal  泰戈尔困难最终形态：困难泰戈尔复活（东北的往事）之后切换成这首
- *   stage   关卡战斗：星球挑战的所有关卡
- *   pvp     竞技对战、切磋、精灵大乱斗
- *   flora2  芙 2：芙罗拉星野外里比较明快的场景（枫树、草甸、湖畔）；比较黑暗深邃的场景（落叶小径、山毛榉林、林间阳光）放芙 1
+ *   stage       关卡战斗：星球挑战的所有关卡
+ *   pvp         竞技对战、切磋、精灵大乱斗
+ *   faceEnemy   剧情遇敌（FaceTheEnemy）：剧情对战（非野外、非首领）开始时先放一遍，播完自动接回 normal，
+ *               不循环；由 battle-ui.js 在 startStory() 里用 HSAUDIO.play('faceEnemy', 'normal') 触发
  * 切歌时先淡出再淡入；界面音乐切回来时从上次停下的地方接着放。切到别的标签页会暂停。
  * 声音设置（战斗音乐、界面音乐两个开关和音量）存在这台设备的浏览器里，不跟账号同步。
- * 对外：window.HSAUDIO.play(战斗曲目) / stop(淡出毫秒) / scene(界面曲目)
+ * 对外：window.HSAUDIO.play(战斗曲目[, 播完后接的曲目]) / stop(淡出毫秒) / scene(界面曲目)
  * ========================================================== */
 (function () {
   'use strict';
-  var V = '?v=3';
+  var V = '?v=4';
   var TRACKS = {
     normal: 'audio/bgm_normal.mp3', boss: 'audio/bgm_boss.mp3', boss2: 'audio/bgm_boss2.mp3', boss3: 'audio/bgm_boss3.mp3', tigerFinal: 'audio/bgm_tiger_final.mp3',
-    stage: 'audio/bgm_stage.mp3', flora2: 'audio/bgm_flora2.mp3', pvp: 'audio/bgm_pvp.mp3',
-    ui: 'audio/bgm_ui.mp3', arena: 'audio/bgm_arena.mp3', earth: 'audio/bgm_earth.mp3', flora: 'audio/bgm_flora.mp3'
+    stage: 'audio/bgm_stage.mp3', pvp: 'audio/bgm_pvp.mp3', faceEnemy: 'audio/bgm_face_enemy.mp3',
+    ui: 'audio/bgm_ui.mp3', arena: 'audio/bgm_arena.mp3', earth: 'audio/bgm_earth.mp3',
+    flora: 'audio/bgm_flora.mp3', floraGrass: 'audio/bgm_flora_grass.mp3', floraForest: 'audio/bgm_flora_forest.mp3'
   };
-  var SCENES = { ui: 1, arena: 1, earth: 1, flora: 1, flora2: 1 };
+  var SCENES = { ui: 1, arena: 1, earth: 1, flora: 1, floraGrass: 1, floraForest: 1 };
+  var ONESHOT = { faceEnemy: 1 };   // 不循环；播完触发 chainNext 指定的下一首
   var KEY = 'hs-sound-v1';
   var cfg = { music: true, ui: true, vol: 60 };
   try {
@@ -41,6 +46,10 @@
   var el = new Audio(); el.loop = true; el.preload = 'none';
   var ctx = null, gain = null, level = 0, fadeT = null, unlocked = false;
   var battle = null, scene = null, cur = null, pos = {}, switching;   // switching：正在淡出、准备换成的曲目（undefined 表示没有在换）
+  var chainNext = null;   // 当前是不循环的一次性曲目时，播完了要自动接上的下一首
+  el.addEventListener('ended', function () {
+    if (ONESHOT[cur] && chainNext) { var nx = chainNext; chainNext = null; play(nx); }
+  });
   // 用 Web Audio 的增益来调音量（iPhone 上直接改 audio.volume 没有效果）
   // 有 Web Audio 时音量只由增益控制，播放器自身的音量固定为 1（否则页面刚打开时设的 0 会一直留着，导致完全没声音）
   function setLevel(v) { level = v; if (gain) { gain.gain.value = v; if (el.volume !== 1) el.volume = 1; } else el.volume = Math.max(0, Math.min(1, v)); }
@@ -59,6 +68,7 @@
   function want() { var k = battle || scene; return allowed(k) ? k : null; }
   function startTrack(k, fromStart) {
     cur = k;
+    el.loop = !ONESHOT[k];
     if (el.dataset.k !== k) { el.src = TRACKS[k] + V; el.dataset.k = k; }
     try { el.currentTime = fromStart ? 0 : (pos[k] || 0); } catch (e) {}
     setLevel(0);
@@ -104,9 +114,10 @@
   document.addEventListener('pointerdown', unlock, true);
   document.addEventListener('keydown', unlock, true);
 
-  function play(kind) {
+  function play(kind, then) {
     if (!TRACKS[kind] || SCENES[kind]) kind = 'normal';
     battle = kind;
+    chainNext = ONESHOT[kind] ? (then || 'normal') : null;
     if (ctx && ctx.state === 'suspended') ctx.resume().catch(function () {});
     sync(true, 300);
   }

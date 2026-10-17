@@ -41,7 +41,8 @@ images/
   lineart/            手绘原画扫描
   backgrounds/        剧情、探索、对战背景
   characters/         剧情角色立绘、表情差分、图标
-audio/                背景音乐（界面：ui / arena / earth / flora；战斗：normal / boss / boss2 / boss3 / tigerFinal / stage / pvp；备用：flora2）
+audio/                背景音乐（界面：ui / arena / earth / flora / floraGrass / floraForest；战斗：normal / boss / boss2 / boss3 / tigerFinal / stage / pvp / faceEnemy）
+  library/            还没接入游戏的原始音乐素材，先存着，接入时再搬进 audio/ 并在 js/ui/audio.js 的 TRACKS 里加一条
 ```
 
 `index.html` 最先加载 `js/net/cloud.js`，其他脚本写在它下面的 `CLOUD.boot([...])` 列表里，登录完成后按列表顺序加载。顺序是固定的：数据 → 引擎 → 界面。后面的文件会用到前面文件里定义的东西，所以不要调换顺序。新增 js 文件时，把路径按这个规则插进列表里合适的位置。
@@ -255,20 +256,24 @@ Threego、Dr.黄、Bttp 每天会在一个随机时段回到自己在陆羽茶�
 | `bgm_ui.mp3`（一般界面） | 精灵背包、仓库、航行日志、社交、荆楚号、星球列表等其他常规界面 |
 | `bgm_arena.mp3`（竞技大厅） | 竞技对战页面 |
 | `bgm_earth.mp3`（地球 1） | 地球上的剧情（含序章） |
-| `bgm_flora.mp3`（芙 1） | 芙罗拉星页面、芙罗拉星剧情、荒芜首领页 |
+| `bgm_flora.mp3`（FloraBackground） | 芙罗拉星页面、芙罗拉星剧情、盐碱地、荒芜首领页 |
+| `bgm_flora_grass.mp3`（Flora1） | 芙罗拉星 · 草甸的野外场景 |
+| `bgm_flora_forest.mp3`（Flora2） | 芙罗拉星 · 丛林的野外场景 |
 
 **战斗音乐**（对战开始时淡入，结束后淡回界面音乐；界面音乐会从上次停下的地方接着放）：
 
 | 文件 | 什么时候放 |
 |---|---|
 | `bgm_normal.mp3`（寻常） | 野外对战、剧情对战、茶室和朋友家（Threego / Dr.黄 / Bttp）的对战 |
+| `bgm_face_enemy.mp3`（FaceTheEnemy） | 剧情对战（非野外、非首领）开始时先放一遍（不循环），播完自动接回「寻常」 |
 | `bgm_boss.mp3`（Boss） | 简单难度的首领战 |
 | `bgm_boss2.mp3`（Boss2） | 普通难度的首领战 |
 | `bgm_boss3.mp3`（Boss3） | 困难难度的首领战和每周挑战 |
 | `bgm_tiger_final.mp3`（泰戈尔困难最终形态） | 困难泰戈尔「东北的往事」复活小剧情播完后切换（`battle-ui.js` 的 `scene` 事件，`fx === 'past'`） |
 | `bgm_stage.mp3`（关卡战斗） | 星球挑战的所有关卡 |
-| `bgm_flora2.mp3`（芙罗拉星 2） | 界面音乐：芙罗拉星野外里明快的场景（红枫、草甸、湖畔，`game.js` 的 `FLORA_BRIGHT`）；幽暗的林子（落叶小径、山毛榉林、林间阳光）放芙罗拉星 1。之后剧情高潮也会用 |
 | `bgm_pvp.mp3`（PVP） | 竞技对战（沙盒、平衡排位、训练）、联网切磋、精灵大乱斗 |
+
+`audio/library/` 放还没接入游戏的原始音乐素材（目前有 Flora3TheGreatCover、Chase、Dis-communication、GrassTalk、Memory、Saver），接入时再搬进 `audio/`、改成 `bgm_xxx.mp3` 命名、调响度，并在 `js/ui/audio.js` 的 `TRACKS` 里加一条。
 
 **以后换曲子也要先调响度**，否则会忽大忽小：
 
