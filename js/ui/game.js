@@ -2266,7 +2266,7 @@
    * 存档：acc.tower = { f 当前层, cp 存档点, best 最高通过层, clears 通关次数, death 已获得的死神代币, tok 先驱代币, day: { d, exp, tok } } */
   var TOWER = { top: 60, cps: [1, 11, 21, 31, 41, 51], dayExp: 150000, dayTok: 1000, deathMax: 3 };
   var TW_POOL = ['leaf', 'squid', 'shroom', 'wind', 'mush', 'kaleo', 'faraday', 'firemouse', 'frost', 'gorgon', 'hephaestus', 'leigong', 'pede', 'siren', 'turkey', 'wild', 'tagore', 'leafcat', 'moon', 'bone', 'aegis'];
-  var TW_FX = ['dr', 'regen', 'thorn', 'rage', 'swift', 'guard', 'noStatus', 'feud'];
+  var TW_FX = ['armor', 'regen', 'thorn', 'rage', 'swift', 'guard', 'noStatus', 'focus'];   // 只用塔里通用的特性，不用首领专属的（星球聚能、东北的纷争等）
   var TW_SHOP = [
     { k: 'floraJade', cost: 10 }, { k: 'fruit2', cost: 60 }, { k: 'cap3', cost: 80 }, { k: 'evAny', cost: 150 }, { k: 'evReset', cost: 200 },
     { k: 'ivReroll', cost: 400 }, { k: 'natAny', cost: 2000 }, { k: 'e_pluto', cost: 3000, death: 1 }
@@ -2286,7 +2286,7 @@
       var sid; do { sid = TW_POOL[Math.floor(g() * TW_POOL.length)]; } while (used[sid]); used[sid] = 1;
       var mult = gate ? 4 : n === 1 ? 3 : n === 2 ? 2 : 1.5, nfx = gate || f >= 30 ? 2 : 1, fx = { pp: 99 }, pick = {};
       while (Object.keys(pick).length < nfx) pick[TW_FX[Math.floor(g() * TW_FX.length)]] = 1;
-      Object.keys(pick).forEach(function (k) { fx[k] = k === 'dr' ? 0.2 : k === 'regen' ? 0.06 : 1; });
+      Object.keys(pick).forEach(function (k) { fx[k] = k === 'regen' ? 0.06 : 1; });
       foes.push({ sid: sid, lv: lv + (gate ? 2 : 0), hp: Math.round(calcStat(SPMAP[sid].base.hp, 'hp', lv) * mult), fx: fx });
     }
     return { gate: gate, foes: foes };

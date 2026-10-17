@@ -538,7 +538,9 @@ function calcDamage(me, foe, mv, firstMover, est) {
   if (foe.boss && foe.boss.dr) mod *= 1 - foe.boss.dr;   // 首领「星球聚能」
   if (foe.boss && foe.boss.eternal) mod *= 1.2;   // 复活后的泰戈尔「永续的纷争」：受到的伤害 +20%
   if (me.boss && me.boss.purify && miaN(foe) > 0) mod *= 2;
-  if (me.boss && me.boss.rage && me.hp < me.maxhp / 2) mod *= 1.3;   // 先驱之塔「狂暴」
+  if (me.boss && me.boss.rage && me.hp < me.maxhp / 2) mod *= 1.3;
+  if (me.boss && me.boss.focus) mod *= 1.2;   // 先驱之塔「专注」
+  if (foe.boss && foe.boss.armor) mod *= 0.8;   // 先驱之塔「厚甲」   // 先驱之塔「狂暴」
   if (me.boss && me.boss.reaper) mod *= 1.25 + 0.02 * Math.max(0, Math.floor((1 - foe.hp / foe.maxhp) * 100));   // 「死神」   // 叶子喵剧情限定特性「净化光芒」：对沾染瘴气的目标伤害 +100%
   return { dmg: Math.max(1, Math.floor(base * mod)), crit: crit, eff: e };
 }
@@ -1171,6 +1173,8 @@ var BOSS_FX = [
   // 先驱之塔（2026-10-17）
   { k: 'regen', t: '再生', h: '再生', d: function (m) { return '每回合结束时恢复 ' + Math.round((m.boss.regen === true ? 0.06 : m.boss.regen) * 100) + '% 最大体力'; } },
   { k: 'thorn', t: '荆棘', h: '荆棘', d: function () { return '受到攻击时，把这次伤害的 15% 反弹给攻击者'; } },
+  { k: 'armor', t: '厚甲', h: '厚甲', d: function () { return '受到的伤害减少 20%'; } },
+  { k: 'focus', t: '专注', h: '专注', d: function () { return '造成的伤害提升 20%'; } },
   { k: 'rage', t: '狂暴', h: '狂暴', d: function () { return '体力低于一半时，造成的伤害提升 30%'; } },
   { k: 'swift', t: '疾行', h: '疾行', d: function () { return '所有技能先制 +1'; } },
   { k: 'guard', t: '坚壁', h: '坚壁', d: function (m) { return m.boss.guardUsed ? '已经发动过了' : '第一次受到致命伤害时，保留 1 点体力（只发动一次）'; } },
