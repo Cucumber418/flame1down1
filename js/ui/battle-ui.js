@@ -725,7 +725,7 @@
         case 'switch': renderSnap(e.snap); await wait(520); break;
         case 'throw': renderSnap(e.snap); castFx({ a: 'throw', i: 1 }); restartAnim($('mon1'), 'throw'); await wait(900); break;
         case 'faint': renderSnap(e.snap); await wait(650); break;
-        case 'scene': renderSnap(e.snap); if (e.fx && window.HSEV) window.HSEV('bossfx', { k: e.fx }); await showScene(e.lines); if (e.fx === 'past') bgm('tigerFinal'); /* else if (e.fx === 'rebirth') bgm('beforeEnd'); —— 困难荒芜「枯萎中蜕生」后按设定应换成《before the end》，这首曲子还没上传进素材库，等上传后把这行取消注释、在 audio.js 的 TRACKS 里加对应曲目键即可 */ break;
+        case 'scene': renderSnap(e.snap); if (e.fx && window.HSEV) window.HSEV('bossfx', { k: e.fx }); await showScene(e.lines); if (e.fx === 'past') bgm('tigerFinal'); else if (e.fx === 'rebirth') bgm('beforeEnd'); break;
         default: renderSnap(e.snap); await wait(60);
       }
     }
