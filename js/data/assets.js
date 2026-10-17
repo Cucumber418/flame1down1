@@ -322,7 +322,6 @@ var ITEM_IMG = {
 // 剧情 CG（竖版大图，按主角性别分男 / 女两版；m 男主，f 女主）
 var CG = {
   // land：定格时换成的横版（上下两格改成左右并排，竖图定格会被对话框挡住）
-  "travelcat": { m: "images/cg/travelcat_f.webp", f: "images/cg/travelcat_m.webp", land: { m: "images/cg/leafsave_f_land.webp", f: "images/cg/leafsave_m_land.webp" } },   // 2026-10-17：文件名里的 m/f 当初标反了，这里对调
   // 第八段（2026-10-17）：先用现有立绘和背景拼的分镜版，之后可以换成画师的正式版（同名替换即可）
   "leafsave": { m: "images/cg/leafsave_f.webp", f: "images/cg/leafsave_m.webp", land: { m: "images/cg/leafsave_f_land.webp", f: "images/cg/leafsave_m_land.webp" } }     // 叶子喵登场救下主角（画师正式版，分男女）
 };
