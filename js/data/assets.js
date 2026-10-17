@@ -211,8 +211,11 @@ var CHARS = {
   "pf_angry": "images/characters/pf_angry.webp",
   "pf_sweat": "images/characters/pf_sweat.webp",
   "pf_shy": "images/characters/pf_shy.webp",
-  // 辰爷（代号「常春藤怀克」，常春藤组织特工；2026-10-17 初版立绘，照片转描线上色，有待进一步风格化）
-  "cy": "images/characters/cy.webp"
+  // 辰爷（代号「常春藤怀克」，常春藤组织特工）：2026-10-18 按原型照片重画成本作的手绘描线风格；默认（傲慢的浅笑）、大笑、恼火、慌张
+  "cy": "images/characters/cy.webp?v=2",
+  "cy_laugh": "images/characters/cy_laugh.webp",
+  "cy_angry": "images/characters/cy_angry.webp",
+  "cy_shock": "images/characters/cy_shock.webp"
 };
 
 
