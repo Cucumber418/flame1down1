@@ -136,6 +136,7 @@
   // 天赋评级（2026-10-17）：按六项天赋合计（0~186）分五档，颜色 白 / 绿 / 蓝 / 紫 / 橙
   var IV_GRADE = [[170, '极品', 'g5'], [150, '稀', 'g4'], [120, '优', 'g3'], [90, '良', 'g2'], [0, '一般', 'g1']];
   function ivGrade(m) { var iv = ivOf(m); if (!iv) return null; var t = STAT_KEYS.reduce(function (a, k) { return a + iv[k]; }, 0); for (var i = 0; i < IV_GRADE.length; i++) if (t >= IV_GRADE[i][0]) return { n: IV_GRADE[i][1], c: IV_GRADE[i][2], s: t }; return null; }
+  function ivSumOf(m) { var iv = ivOf(m); return iv ? STAT_KEYS.reduce(function (a, k) { return a + iv[k]; }, 0) : -1; }
   function gradeTag(m) { var g = ivGrade(m); return g ? '<span class="iv-grade ' + g.c + '" title="天赋评级：' + g.n + '（天赋合计 ' + g.s + ' / 186）">' + g.n + '</span>' : ''; }
   function evSum(m) { return STAT_KEYS.reduce(function (a, k) { return a + ((m.ev && m.ev[k]) || 0); }, 0); }
   function natText(nat) { var n = NATURES[nat]; return n ? BASE_NAME[n[0]] + ' +10%，' + BASE_NAME[n[1]] + ' −10%' : '各项能力无修正'; }
@@ -502,7 +503,7 @@
   /* ---------- 共用：精灵卡片、资料面板 ---------- */
   function monCard(m, cls, extra) {
     var f = form(m), s = SPMAP[m.sid];
-    return '<span class="cimg"><img src="' + f.img + '" alt="">' + (m.shiny ? '<span class="shiny-tag">异色</span>' : '') + '</span><span class="nm">' + esc(f.name) + '</span><span class="lv">LV' + m.lv + gradeTag(m) + '</span><span class="tc">' + tchips(s.types) + '</span>' + (extra || '');
+    return '<span class="cimg"><img src="' + f.img + '" alt="">' + (m.shiny ? '<span class="shiny-tag">异色</span>' : '') + '</span><span class="nm">' + esc(f.name) + '</span><span class="lv">LV' + m.lv + '</span><span class="tc">' + tchips(s.types) + '</span>' + (extra || '');
   }
   function evoLine(m) {
     var s = SPMAP[m.sid], st = stageOf(s, m.lv);
@@ -902,12 +903,13 @@
     var f = ui.f, lo = Math.min(f.min, f.max), hi = Math.max(f.min, f.max);
     var list = acc.mons.filter(function (m) { return (!f.type || SPMAP[m.sid].types.indexOf(f.type) >= 0) && m.lv >= lo && m.lv <= hi; });
     var nm = function (m) { return form(m).name; };
-    var cmp = { lvd: function (a, b) { return b.lv - a.lv || a.u - b.u; }, lva: function (a, b) { return a.lv - b.lv || a.u - b.u; }, got: function (a, b) { return a.u - b.u; }, name: function (a, b) { return nm(a).localeCompare(nm(b), 'zh-CN'); } }[f.sort];
+    var cmp = { lvd: function (a, b) { return b.lv - a.lv || a.u - b.u; }, lva: function (a, b) { return a.lv - b.lv || a.u - b.u; }, got: function (a, b) { return a.u - b.u; }, name: function (a, b) { return nm(a).localeCompare(nm(b), 'zh-CN'); },
+      ivd: function (a, b) { return ivSumOf(b) - ivSumOf(a) || b.lv - a.lv || a.u - b.u; }, iva: function (a, b) { return ivSumOf(a) - ivSumOf(b) || b.lv - a.lv || a.u - b.u; } }[f.sort] || function (a, b) { return b.lv - a.lv || a.u - b.u; };
     return list.sort(cmp);
   }
   var LV_PRE = [[1, 100, '全部'], [1, 24, 'LV1–24'], [25, 49, 'LV25–49'], [50, 100, 'LV50–100']];
   function renderStore() {
-    var f = ui.f, list = filtered(), m = mon(ui.sel);
+    var f = ui.f, list = filtered(), m = mon(ui.sel), ivSort = f.sort === 'ivd' || f.sort === 'iva';   // 按天赋排序时，卡片上直接显示天赋评级
     var cnt = {}; acc.mons.forEach(function (x) { SPMAP[x.sid].types.forEach(function (t) { cnt[t] = (cnt[t] || 0) + 1; }); });
     var html = '<div class="page-head"><h2 class="sec">精灵仓库</h2><p class="hint flash">这里存放着你拥有的全部精灵，可按属性、等级检索。点击精灵查看资料，并可加入配队。</p></div>' +
       '<div class="filters" id="filters">' +
@@ -916,7 +918,7 @@
       '<div class="f-row"><span class="f-lab">等级</span>' + LV_PRE.map(function (p) { return '<button type="button" class="fchip' + (f.min === p[0] && f.max === p[1] ? ' on' : '') + '" data-flv="' + p[0] + '-' + p[1] + '">' + p[2] + '</button>'; }).join('') +
       '<span class="hint" style="margin-left:6px">自定义</span><input type="number" id="f-min" min="1" max="100" value="' + f.min + '" aria-label="最低等级" inputmode="numeric"><span>–</span><input type="number" id="f-max" min="1" max="100" value="' + f.max + '" aria-label="最高等级" inputmode="numeric"></div>' +
       '<div class="f-foot"><div class="f-row"><label class="f-lab" for="f-sort">排序</label><select id="f-sort">' +
-      [['lvd', '等级从高到低'], ['lva', '等级从低到高'], ['got', '获得顺序'], ['name', '名称']].map(function (o) { return '<option value="' + o[0] + '"' + (f.sort === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') +
+      [['lvd', '等级从高到低'], ['lva', '等级从低到高'], ['ivd', '天赋评级从高到低'], ['iva', '天赋评级从低到高'], ['got', '获得顺序'], ['name', '名称']].map(function (o) { return '<option value="' + o[0] + '"' + (f.sort === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') +
       '</select><span class="hint">显示 ' + list.length + ' / ' + acc.mons.length + ' 只</span></div>' +
       '</div></div>' +
       '<div class="build"><div><div class="dex-grid" id="store-grid">' +
@@ -924,7 +926,7 @@
         var ts = teamsOf(x.u);
         return '<button type="button" class="card' + (ui.sel === x.u ? ' sel' : '') + '" data-u="' + x.u + '">' +
           (ts.length ? '<span class="tms">' + ts.map(function (y) { return '<span class="' + (acc.active === y.t ? 'on' : '') + '">' + TEAM_NAME[y.t] + (y.lead ? '·首发' : '') + '</span>'; }).join('') + '</span>' : '') +
-          '<img src="' + form(x).img + '" alt="' + esc(form(x).name) + '"><span class="nm">' + esc(form(x).name) + '</span><span class="lv">LV' + x.lv + '</span><span class="meta">' + tchips(SPMAP[x.sid].types) + '</span></button>';
+          '<img src="' + form(x).img + '" alt="' + esc(form(x).name) + '"><span class="nm">' + esc(form(x).name) + '</span><span class="lv">LV' + x.lv + (ivSort ? gradeTag(x) : '') + '</span><span class="meta">' + tchips(SPMAP[x.sid].types) + '</span></button>';
       }).join('') : '<p class="empty-note">没有符合条件的精灵。</p>') +
       '</div></div><article class="detail" id="store-detail">' + monDetail(m) + '</article></div>';
     $('pg-store').innerHTML = html;
