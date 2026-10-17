@@ -557,7 +557,7 @@
     if (opt.env) app.S.env = opt.env;
     if (opt.wild) app.S.wild = opt.wild;
     if (opt.ai) app.S.ai = opt.ai;   // 电脑的操作水平（例如白银段位）
-    storyEnd = opt.onEnd; itemUsed = opt.onItem || null;
+    storyEnd = opt.onEnd; itemUsed = opt.onItem || null; starOpt = opt.stars || null; starOpen = false;
     app.screen = 'battle'; app.logHTML = ''; $('log').innerHTML = '';
     $('builder').hidden = true; $('battle').hidden = false; $('endcard').hidden = true;
     shownIds = [null, null]; castBegin();
@@ -570,8 +570,21 @@
     window.scrollTo({ top: 0, behavior: 'smooth' });
     storyCuts = (opt.cuts || []).map(function (c) { return { hp: c.hp, lines: c.lines, done: false }; });
     if (opt.preStrike) preStrike();
+    drawStars();
   }
   var storyEnd = null, itemUsed = null, storyCuts = [];
+  // 星球挑战：对战界面顶部可以拉下来的「星级要求」面板（opt.stars = { title, list(S) → [{ t, st, s, had }] }）
+  var starOpt = null, starOpen = false;
+  function drawStars() {
+    var el = $('star-pull');
+    if (!el) { el = document.createElement('div'); el.id = 'star-pull'; el.className = 'star-pull'; $('battle').insertBefore(el, $('battle').firstChild);
+      el.addEventListener('click', function (e) { if (e.target.closest('[data-starpull]')) { starOpen = !starOpen; drawStars(); } }); }
+    if (!starOpt || !app.S) { el.hidden = true; return; }
+    el.hidden = false;
+    var L = starOpt.list(app.S), n = L.filter(function (x) { return x.st === 'done' || x.st === 'keep' || x.st === 'now'; }).length;
+    el.innerHTML = '<button type="button" class="sp-tab" data-starpull="1" aria-expanded="' + starOpen + '">★ 星级要求 <small>' + n + ' / ' + L.length + '</small> ' + (starOpen ? '▴' : '▾') + '</button>' +
+      (starOpen ? '<div class="sp-panel"><b>' + esc(starOpt.title) + '</b><ol>' + L.map(function (x) { return '<li class="sp-' + x.st + '"><span class="sp-star">' + (x.had ? '★' : '☆') + '</span><span class="sp-t">' + esc(x.t) + '</span><em>' + esc(x.s) + '</em></li>'; }).join('') + '</ol><p class="hint">★ 表示之前已经拿到过这颗星。「保持中」「目前满足」要坚持到战斗结束才算数。</p></div>' : '');
+  }
   // 剧情对战：对方偷袭，开场先打出一招（玩家这一回合不行动），然后正常开始。界面上不额外说明
   async function preStrike() {
     var S = app.S; if (!S || S.over) return;
@@ -849,7 +862,7 @@
     busy = false; afterTurn();
   }
   function afterTurn() {
-    var S = app.S; renderStats();
+    var S = app.S; renderStats(); drawStars();
     renderSnap(snap(S));
     if (S.over) return showEnd();
     if (pvp ? S.need && S.need[PV] : S.needSwitch) showTab('team');
@@ -997,6 +1010,7 @@
       if (done) done(); return;
     }
     if (app.S && app.S.story) {
+      starOpt = null; drawStars();
       var endS = app.S, res = app.S.over, quit = !!app.S.quit, cb = storyEnd, seen = app.S.sides[0].team.map(function (x) { return !!x.seen; }), downs = app.S.sides[1].team.filter(function (x) { return x.fainted; }).map(function (x) { return { id: x.id, lv: x.lv }; }); storyEnd = null; itemUsed = null;
       app.screen = 'builder'; app.S = null; $('battle').hidden = true; $('builder').hidden = false; $('log').innerHTML = ''; $('btn-again').hidden = false; setFieldBg(null);
       if (cb) cb(res, seen, downs, quit, endS); return;

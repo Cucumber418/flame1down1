@@ -2060,7 +2060,33 @@
     var R = x.rw; acc.exp = (acc.exp || 0) + (R.exp || 0); acc.energy = (acc.energy || 0) + (R.energy || 0); if (R.items) giveItems(R.items);
     save(); renderTop(); toast('挑战路线累计 ' + n + ' 颗星奖励：' + rwList(R).join('、') + (R.bgm ? '。茶室音乐可以在「我的茶室」里切换。' : '。'));
   }
-  var STAR_TXT = { win: '击败所有敌人', nofaint: '无精灵倒下', half: '战斗结束时，所有出战精灵的体力都高于一半', super: '使用一次克制对方属性的技能（效果拔群）', nostatus: '战斗结束时，所有精灵都不处于异常状态' };
+  var STAR_TXT = { win: '击败所有敌人', nofaint: '无精灵倒下', half: '战斗结束时，所有出战精灵的体力都高于一半', super: '使用一次克制对方属性的技能（效果拔群）', nostatus: '战斗结束时，所有精灵都不处于异常状态',
+    noitem: '整场战斗不使用任何道具', nosw: '整场战斗不主动更换出战精灵', lead: '首发精灵在战斗结束时没有倒下',
+    crit: '至少打出一次致命一击（暴击）', up6: '让我方精灵的任意一项能力等级提升到 +6（如饮血刀光、灵光等强化技能）',
+    down6: '让敌人的任意一项能力等级下降到 −6（如混沌海流、软化粉等削弱技能）', oneshot: '一次攻击造成超过敌人最大体力的伤害（满体力时一击击倒，如淬命之焰）',
+    dotko: '用持续伤害（中毒、烧伤、流血、寄生等）击败一名敌人（如渗透孢子、灭却）' };
+  // 对战中的「星级要求」下拉面板：每一条当前的状态
+  function starLive(c, S, mine) {
+    var cs = S.cs || {}, p = c.split(':');
+    var keep = function (bad) { return bad ? ['fail', '已失败'] : ['keep', '保持中']; }, now = function (ok) { return ok ? ['now', '目前满足'] : ['not', '目前不满足']; }, got = function (ok, t) { return ok ? ['done', '已达成'] : ['todo', t || '未达成']; };
+    if (c === 'win') return ['todo', '进行中'];
+    if (c === 'nofaint') return keep(mine.some(function (m) { return m.fainted; }));
+    if (c === 'half') return now(mine.every(function (m) { return !m.fainted && m.hp > m.maxhp / 2; }));
+    if (c === 'super') return got(S.se && S.se[0] > 0);
+    if (c === 'nostatus') return now(mine.every(function (m) { return m.fainted || !Object.keys(m.st || {}).some(function (k) { return m.st[k] > 0; }); }));
+    if (c === 'noitem') return keep(cs.items > 0);
+    if (c === 'nosw') return keep(cs.sw > 0);
+    if (c === 'lead') return keep(!mine[0] || mine[0].fainted);
+    if (c === 'crit') return got(cs.crit > 0);
+    if (c === 'up6') return got(cs.up6 > 0);
+    if (c === 'down6') return got(cs.down6 > 0);
+    if (c === 'oneshot') return got(cs.oneShot > 0);
+    if (c === 'dotko') return got(cs.dotKO > 0);
+    if (p[0] === 'turns') return S.turn - 1 > +p[1] ? ['fail', '已失败'] : ['keep', '已过 ' + (S.turn - 1) + ' / ' + p[1] + ' 回合'];
+    if (p[0] === 'st') return got(cs.st && cs.st[p[1]] > 0);
+    if (p[0] === 'heal') return got((cs.heal || 0) >= +p[1], (cs.heal || 0) + ' / ' + p[1]);
+    return ['todo', ''];
+  }
   var MM_HELPER = { key: 'mm', owner: '明明教官', mon: { sid: 'hephaestus', lv: 30, moves: [] } };
   function chalRec(id) { if (!acc.chal) acc.chal = {}; return acc.chal[id] || null; }
   function chalStars(id) { var r = acc && acc.chal && acc.chal[id]; return r ? r.s.filter(Boolean).length : 0; }
@@ -2191,7 +2217,9 @@
     var a = x.foes.map(function (f) { seeMon(f.sid, Math.min(f.lv, MAX_LV)); var o = storyMon({ sid: f.sid, lv: f.lv, moves: [] }); if (f.q) o.lvq = 1; return o; });
     stopTimers(); ex.fighting = true; document.body.classList.add('story-fight'); syncBattle();
     $('pg-explore').hidden = true; $('pg-arena').hidden = false;
-    window.HSBATTLE.start({ p: p, a: a, foe: '挑战第 ' + (i + 1) + ' 关「' + x.n + '」', bgm: 'stage', items: invCopy(), bg: BG[x.bg] || null, onItem: useInv,
+    var sconds = ['win', x.s2, x.s3];
+    window.HSBATTLE.start({ p: p, a: a, foe: '挑战第 ' + (i + 1) + ' 关「' + x.n + '」', bgm: 'stage',
+      stars: { title: '第 ' + (i + 1) + ' 关「' + x.n + '」星级要求', list: function (S) { var mine = S.sides[0].team, rec = acc.chal && acc.chal[x.id]; return sconds.map(function (c, k) { var st = starLive(c, S, mine); return { t: starTxt(c), st: st[0], s: st[1], had: !!(rec && rec.s[k]) }; }); } }, items: invCopy(), bg: BG[x.bg] || null, onItem: useInv,
       onEnd: function (res, seen, downs, quit, S) {
         var msg = [];
         if (res === 'win' && S) {

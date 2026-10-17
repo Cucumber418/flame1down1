@@ -2097,3 +2097,16 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .pc-prog li span { color: #555; font-size: 12.5px; }
 .st-tabs { margin: 10px 0 6px; }
 .fl-none { margin: 10px 4px; }
+/* 对战中的星级要求面板（2026-10-17） */
+.star-pull { position: sticky; top: 0; z-index: 30; display: grid; justify-items: center; pointer-events: none; }
+.star-pull > * { pointer-events: auto; }
+.sp-tab { margin: 0; padding: 4px 14px; font: inherit; font-size: 13px; font-weight: 700; color: #23222b; background: #f2c46b; border: 1.5px solid var(--ink); border-top: 0; border-radius: 0 0 10px 10px; cursor: pointer; box-shadow: 0 2px 0 var(--ink); }
+.sp-tab small { font-weight: 400; }
+.sp-panel { width: min(560px, calc(100% - 16px)); margin-top: 4px; padding: 10px 14px; background: #fffdf5; border: 2px solid var(--ink); border-radius: 12px; box-shadow: 4px 4px 0 var(--ink); }
+.sp-panel ol { list-style: none; margin: 6px 0; padding: 0; display: grid; gap: 5px; }
+.sp-panel li { display: grid; grid-template-columns: 18px 1fr auto; gap: 8px; align-items: center; font-size: 13px; }
+.sp-star { color: #c48a12; }
+.sp-panel em { font-style: normal; font-size: 12px; padding: 1px 6px; border-radius: 6px; background: #eee; white-space: nowrap; }
+.sp-done em, .sp-now em, .sp-keep em { background: #d9f0d4; color: #2d6b2a; }
+.sp-fail em, .sp-not em { background: #f6d6d6; color: #a12a2a; }
+.sp-panel .hint { margin: 2px 0 0; font-size: 12px; }
