@@ -101,6 +101,7 @@ function mkFrom(t) {
   if (t.maxhp) m.maxhp = m.hp = t.maxhp;          // 首领：固定体力
   // breakable：剧情里可以被打破的木桩（如第八段的炸弹），体力不再无限，打到 0 就倒下；ability 可以换成剧情里的说明
   if (t.id === 'dummy' && t.breakable) { m.breakable = true; m.dummySpec = Object.assign({}, DUMMY, { name: t.nick || DUMMY.name, ability: t.ability || DUMMY.ability }); }
+  if (t.lvq) m.lvq = 1;                         // 星球挑战：等级显示为「LV.??」
   if (t.onlyHit) m.onlyHit = t.onlyHit;           // 首领：只有这些属性的技能能命中它
   if (t.shiny) m.shiny = t.shiny === 2 ? 2 : true;   // 异色精灵（只是配色不同，能力一样）
   if (t.emblem && EMBLEMS[t.id] && EMBLEMS[t.id].m === t.emblem) m.emblem = t.emblem;
@@ -325,7 +326,7 @@ function snap(S) {
     sides: S.sides.map(function (sd) {
       var m = sd.team[sd.active];
       var ab = sp(m).ability || { n: '无', d: '图鉴里还没写特性' };
-      return { id: m.id, name: m.nick || sp(m).name, img: liveImg(m), types: typesOf(m), lv: m.lv || LV, dummy: m.id === 'dummy' && !m.breakable, ability: { n: ab.n, d: ab.d, extra: ab.extra || '' }, stats: statSheet(m, S.sides[1 - S.sides.indexOf(sd)].team[S.sides[1 - S.sides.indexOf(sd)].active]), hp: m.hp, maxhp: m.maxhp, fainted: m.fainted, chips: chipsOf(m, S.sides[1 - S.sides.indexOf(sd)].team[S.sides[1 - S.sides.indexOf(sd)].active]),
+      return { id: m.id, name: m.nick || sp(m).name, img: liveImg(m), types: typesOf(m), lv: m.lv || LV, lvq: !!m.lvq, dummy: m.id === 'dummy' && !m.breakable, ability: { n: ab.n, d: ab.d, extra: ab.extra || '' }, stats: statSheet(m, S.sides[1 - S.sides.indexOf(sd)].team[S.sides[1 - S.sides.indexOf(sd)].active]), hp: m.hp, maxhp: m.maxhp, fainted: m.fainted, chips: chipsOf(m, S.sides[1 - S.sides.indexOf(sd)].team[S.sides[1 - S.sides.indexOf(sd)].active]),
         team: sd.team.map(function (x, k) { return { id: x.id, nick: x.nick || null, fainted: x.fainted, active: k === sd.active, hp: x.hp, maxhp: x.maxhp, seen: !!x.seen }; }) };
     })
   };
@@ -348,6 +349,8 @@ function faint(S, evs, j) {
   t.fainted = true; t.hp = 0;
   E(S, evs, 'faint', { side: j }); log(S, evs, nm(t) + '倒下了！', 'bad');
 }
+// S.cs：我方（side 0）这场战斗的表现统计，星球挑战的星级要求用（2026-10-17）
+function CS(S) { return S.cs || (S.cs = { crit: 0, st: {}, up6: 0, down6: 0, heal: 0, maxHit: 0, oneShot: 0, dotKO: 0, items: 0, sw: 0 }); }
 function loseHp(S, evs, j, amt, why) {
   var t = act(S, j); if (t.fainted || amt <= 0) return 0;
   if (t.id === 'dummy' && !t.breakable) { amt = Math.floor(amt); recordDummy(S, amt, why ? (S.curMove && why.indexOf('混沌水域') < 0 && why.indexOf('额外吸取') < 0 ? S.curMove : dotLabel(why)) : null); E(S, evs, 'hit', { side: j, amount: amt }); if (why) log(S, evs, why + '（' + amt + '）'); return amt; }
@@ -356,6 +359,7 @@ function loseHp(S, evs, j, amt, why) {
   if (why) log(S, evs, why);
   if (t.boss && t.boss.rebirth && !t.boss.reborn && t.hp < 4444) { rebirthBarren(S, evs, j, t); return amt; }
   if (t.hp <= 0 && why) hqDot(S, evs, t, why);
+  if (t.hp <= 0 && j === 1 && !S.pvp) CS(S).dotKO++;
   if (t.hp <= 0) faint(S, evs, j);
   return amt;
 }
@@ -372,6 +376,7 @@ function applyDamage(S, evs, j, amount, src, o) {
     amt = t.hp - 1; t.fx.endure = 0; log(S, evs, nm(t) + '的不灭之躯撑住了，残留 1 点体力！', 'fxl'); hqGet(S, evs, t, '寂灭幽映');
   }
   if (t.id === 'dummy' && !t.breakable) { recordDummy(S, amt, src == null ? (S.dotSrc || '持续/附加效果') : null); E(S, evs, 'hit', { side: j, amount: amt, crit: o.crit, eff: o.eff }); return amt; }
+  if (j === 1 && src === 0 && !S.pvp) { var cs = CS(S); if (o.crit) cs.crit++; if (amount > cs.maxHit) cs.maxHit = Math.floor(amount); if (t.hp >= t.maxhp && amount >= t.maxhp) cs.oneShot++; }
   amt = Math.min(t.hp, amt); t.hp -= amt;
   if (amt > 0 && t.st['睡眠'] > 0 && src != null) { delete t.st['睡眠']; log(S, evs, nm(t) + '被打醒了'); }
   E(S, evs, 'hit', { side: j, amount: amt, crit: o.crit, eff: o.eff });
@@ -389,6 +394,7 @@ function heal(S, evs, i, amount) {
   var a = Math.min(m.maxhp - m.hp, Math.floor(amount));
   if (a <= 0) return 0;
   m.hp += a; E(S, evs, 'heal', { side: i, amount: a });
+  if (i === 0) CS(S).heal += a;
   log(S, evs, nm(m) + '恢复了 ' + a + ' 点体力', 'good');
   if (ability(m) === '暗潮' && RNG() < 0.3) { log(S, evs, nm(m) + '的「暗潮」发动了', 'fxl'); changeStages(S, evs, i, { eva: 1 }); }
   return a;
@@ -405,7 +411,7 @@ function changeStages(S, evs, i, obj, src) {
     var old = m.stages[k], nv = Math.max(-6, Math.min(6, old + v));
     m.stages[k] = nv;
     if (nv === old) parts.push(STG_NAME[k] + (v > 0 ? '已无法再提升' : '已无法再降低'));
-    else { parts.push(STG_NAME[k] + (nv > old ? ' +' : ' −') + Math.abs(nv - old)); if (nv < old) lowered = true; }
+    else { parts.push(STG_NAME[k] + (nv > old ? ' +' : ' −') + Math.abs(nv - old)); if (nv < old) lowered = true; if (i === 0 && nv >= 6) CS(S).up6++; if (i === 1 && nv <= -6) CS(S).down6++; }
   }
   if (tried) {
     log(S, evs, nm(m) + '被封印，无法提升能力等级', 'bad');
@@ -442,6 +448,7 @@ function addStatus(S, evs, j, k, turns, src, noReflect, refresh) {
   if (t.st[k] > 0) { log(S, evs, nm(t) + '已经处于' + k + '状态'); return; }
   // 控制类状态：如果对方本回合已经行动过，额外+1回合，保证真的能控住
   t.st[k] = turns + (CONTROL[k] && S.turnActed[j] ? 1 : 0);
+  if (j === 1 && src === 0) { var cst = CS(S).st; cst[k] = (cst[k] || 0) + 1; }
   if (src != null && src !== j) hqStatus(S, evs, t, k, act(S, src));
   E(S, evs, 'stage', { side: j });
   log(S, evs, nm(t) + '陷入了「' + k + '」状态（' + turns + '回合）', 'bad');
@@ -610,6 +617,7 @@ function catchChance(S, key) {
 }
 function useItem(S, evs, i, key) {
   var it = ITEMS[key], m = act(S, i); if (!it) return;
+  if (i === 0) CS(S).items++;
   if (it.heal) {
     log(S, evs, '你使用了「' + it.name + '」', 'fxl');
     if (!heal(S, evs, i, it.flat ? it.heal : m.maxhp * it.heal)) log(S, evs, nm(m) + '的体力已经是满的了', 'dmg');
@@ -649,6 +657,7 @@ function onEnter(S, evs, i, midTurn) {
 }
 function doSwitch(S, evs, i, to, midTurn) {
   var side = S.sides[i], out = act(S, i);
+  if (i === 0 && midTurn && !out.fainted) CS(S).sw++;
   if (!out.fainted) { clearVolatile(out); log(S, evs, side.name + '收回了' + nm(out)); }
   side.active = to;
   var inn = act(S, i); inn.seen = true;

@@ -1933,9 +1933,109 @@
       { id: 'fl2', n: '湖畔双影', bg: 'fl_lake', foes: [{ sid: 'wind', lv: 10 }, { sid: 'wind', lv: 10 }], s2: 'nofaint', s3: 'super', reward: { exp: 4000, energy: 800 } },
       { id: 'fl3', n: '林下菌丛', bg: 'fl_path', foes: [{ sid: 'mush', lv: 13 }], s2: 'nofaint', s3: 'half', reward: { exp: 5000, energy: 1000 } },
       { id: 'fl4', n: '密林混战', bg: 'fl_sun', foes: [{ sid: 'mush', lv: 15 }, { sid: 'wind', lv: 15 }], s2: 'nofaint', s3: 'nostatus', reward: { exp: 6500, energy: 1200 } },
-      { id: 'fl5', n: '猎手的领地', bg: 'fl_maple', foes: [{ sid: 'mush', lv: 15 }, { sid: 'kaleo', lv: 20 }], s2: 'nofaint', s3: 'nostatus', reward: { exp: 8000, energy: 1500 } }
+      { id: 'fl5', n: '猎手的领地', bg: 'fl_maple', foes: [{ sid: 'mush', lv: 15 }, { sid: 'kaleo', lv: 20 }], s2: 'nofaint', s3: 'nostatus', reward: { exp: 8000, energy: 1500 } },
+      // 第 6~50 关（2026-10-17）：敌人等级逐关提高，第 40 关到 LV100；之后 q: 1 的敌人显示为「LV.??」，实际超过 LV100
+      { id: 'fl6', n: '叶影小径', bg: 'fl_path', foes: [{ sid: 'wind', lv: 21 }, { sid: 'kaleo', lv: 22 }], s2: 'nofaint', s3: 'super', reward: { exp: 9500, energy: 1580 } },
+      { id: 'fl7', n: '双生风语', bg: 'fl_lake', foes: [{ sid: 'leaf', lv: 24 }, { sid: 'wind', lv: 25 }], s2: 'nofaint', s3: 'noitem', reward: { exp: 11000, energy: 1660 } },
+      { id: 'fl8', n: '孢子迷雾', bg: 'fl_sun', foes: [{ sid: 'phantom', lv: 26 }, { sid: 'leaf', lv: 27 }], s2: 'half', s3: 'st:中毒', reward: { exp: 12500, energy: 1740 } },
+      { id: 'fl9', n: '枫下伏击', bg: 'fl_maple', foes: [{ sid: 'mush', lv: 28 }, { sid: 'phantom', lv: 29 }], s2: 'nofaint', s3: 'crit', reward: { exp: 14000, energy: 1820 } },
+      { id: 'fl10', n: '湖心倒影', bg: 'fl_lake', foes: [{ sid: 'kaleo', lv: 30 }, { sid: 'mush', lv: 31 }], s2: 'noitem', s3: 'st:麻痹', reward: { exp: 15500, energy: 1900 } },
+      { id: 'fl11', n: '山毛榉回廊', bg: 'fl_beech', foes: [{ sid: 'wind', lv: 33 }, { sid: 'kaleo', lv: 34 }], s2: 'nofaint', s3: 'turns:10', reward: { exp: 17000, energy: 1980 } },
+      { id: 'fl12', n: '草甸疾风', bg: 'fl_meadow', foes: [{ sid: 'leaf', lv: 35 }, { sid: 'wind', lv: 36 }], s2: 'half', s3: 'up6', reward: { exp: 18500, energy: 2060 } },
+      { id: 'fl13', n: '蘑菇环', bg: 'fl_path', foes: [{ sid: 'phantom', lv: 37 }, { sid: 'leaf', lv: 38 }], s2: 'nofaint', s3: 'st:睡眠', reward: { exp: 20000, energy: 2140 } },
+      { id: 'fl14', n: '林冠之上', bg: 'fl_horizon', foes: [{ sid: 'mush', lv: 39 }, { sid: 'phantom', lv: 40 }, { sid: 'leaf', lv: 41 }], s2: 'noitem', s3: 'dotko', reward: { exp: 21500, energy: 2220 } },
+      { id: 'fl15', n: '晨露猎场', bg: 'fl_meadow', foes: [{ sid: 'kaleo', lv: 41 }, { sid: 'mush', lv: 42 }, { sid: 'phantom', lv: 43 }], s2: 'nofaint', s3: 'st:烧伤', reward: { exp: 23000, energy: 2300 } },
+      { id: 'fl16', n: '幻叶迷途', bg: 'fl_path', foes: [{ sid: 'phantom', lv: 44 }, { sid: 'firemouse', lv: 45 }], s2: 'lead', s3: 'super', reward: { exp: 24500, energy: 2380 } },
+      { id: 'fl17', n: '三尾合围', bg: 'fl_lake', foes: [{ sid: 'turkey', lv: 45 }, { sid: 'mush', lv: 46 }, { sid: 'phantom', lv: 47 }], s2: 'nofaint', s3: 'down6', reward: { exp: 26000, energy: 2460 } },
+      { id: 'fl18', n: '盐碱边缘', bg: 'fl_sun', foes: [{ sid: 'wind', lv: 48 }, { sid: 'leaf', lv: 49 }, { sid: 'turkey', lv: 50 }], s2: 'half', s3: 'heal:300', reward: { exp: 27500, energy: 2540 } },
+      { id: 'fl19', n: '藤蔓深处', bg: 'fl_maple', foes: [{ sid: 'kaleo', lv: 51 }, { sid: 'leafcat', lv: 52 }], s2: 'noitem', s3: 'st:流血', reward: { exp: 29000, energy: 2620 } },
+      { id: 'fl20', n: '雨后菌林', bg: 'fl_lake', foes: [{ sid: 'phantom', lv: 52 }, { sid: 'firemouse', lv: 53 }, { sid: 'kaleo', lv: 54 }], s2: 'nofaint', s3: 'oneshot', reward: { exp: 30500, energy: 2700 } },
+      { id: 'fl21', n: '光斑林地', bg: 'fl_beech', foes: [{ sid: 'turkey', lv: 55 }, { sid: 'mush', lv: 56 }, { sid: 'phantom', lv: 57 }], s2: 'nosw', s3: 'crit', reward: { exp: 32000, energy: 2780 } },
+      { id: 'fl22', n: '风王的试炼', bg: 'fl_meadow', foes: [{ sid: 'wind', lv: 58 }, { sid: 'leaf', lv: 59 }], s2: 'nofaint', s3: 'st:寄生', reward: { exp: 33500, energy: 2860 } },
+      { id: 'fl23', n: '猎手再临', bg: 'fl_path', foes: [{ sid: 'kaleo', lv: 59 }, { sid: 'leafcat', lv: 60 }, { sid: 'wind', lv: 61 }], s2: 'half', s3: 'turns:12', reward: { exp: 35000, energy: 2940 } },
+      { id: 'fl24', n: '古树根系', bg: 'fl_horizon', foes: [{ sid: 'phantom', lv: 61 }, { sid: 'firemouse', lv: 62 }, { sid: 'kaleo', lv: 63 }], s2: 'noitem', s3: 'up6', reward: { exp: 36500, energy: 3020 } },
+      { id: 'fl25', n: '绿荫长阶', bg: 'fl_meadow', foes: [{ sid: 'turkey', lv: 65 }, { sid: 'mush', lv: 66 }], s2: 'nofaint', s3: 'dotko', reward: { exp: 38000, energy: 3100 } },
+      { id: 'fl26', n: '落叶风暴', bg: 'fl_path', foes: [{ sid: 'wind', lv: 66 }, { sid: 'leaf', lv: 67 }, { sid: 'turkey', lv: 68 }], s2: 'lead', s3: 'st:冰冻', reward: { exp: 39500, energy: 3180 } },
+      { id: 'fl27', n: '迷雾湖畔', bg: 'fl_lake', foes: [{ sid: 'kaleo', lv: 68 }, { sid: 'leafcat', lv: 69 }, { sid: 'wind', lv: 70 }], s2: 'nofaint', s3: 'heal:600', reward: { exp: 41000, energy: 3260 } },
+      { id: 'fl28', n: '丛林法则', bg: 'fl_sun', foes: [{ sid: 'phantom', lv: 72 }, { sid: 'firemouse', lv: 73 }], s2: 'half', s3: 'down6', reward: { exp: 42500, energy: 3340 } },
+      { id: 'fl29', n: '孢子沼泽', bg: 'fl_maple', foes: [{ sid: 'turkey', lv: 73 }, { sid: 'mush', lv: 74 }, { sid: 'phantom', lv: 75 }], s2: 'noitem', s3: 'oneshot', reward: { exp: 44000, energy: 3420 } },
+      { id: 'fl30', n: '叶伞之下', bg: 'fl_lake', foes: [{ sid: 'wind', lv: 75 }, { sid: 'leaf', lv: 76 }, { sid: 'turkey', lv: 77 }], s2: 'nofaint', s3: 'st:害怕', reward: { exp: 45500, energy: 3500 } },
+      { id: 'fl31', n: '翠影连环', bg: 'fl_beech', foes: [{ sid: 'kaleo', lv: 77 }, { sid: 'leafcat', lv: 78 }, { sid: 'wind', lv: 79 }], s2: 'nosw', s3: 'st:中毒', reward: { exp: 47000, energy: 3580 } },
+      { id: 'fl32', n: '深林回声', bg: 'fl_meadow', foes: [{ sid: 'phantom', lv: 80 }, { sid: 'firemouse', lv: 81 }, { sid: 'kaleo', lv: 82 }], s2: 'nofaint', s3: 'turns:12', reward: { exp: 48500, energy: 3660 } },
+      { id: 'fl33', n: '风暴前夕', bg: 'fl_path', foes: [{ sid: 'mush', lv: 82 }, { sid: 'siren', lv: 83 }, { sid: 'kaleo', lv: 84 }], s2: 'half', s3: 'dotko', reward: { exp: 50000, energy: 3740 } },
+      { id: 'fl34', n: '林海守望', bg: 'fl_horizon', foes: [{ sid: 'bone', lv: 84 }, { sid: 'leaf', lv: 85 }, { sid: 'leafcat', lv: 86 }], s2: 'noitem', s3: 'heal:800', reward: { exp: 51500, energy: 3820 } },
+      { id: 'fl35', n: '千叶之门', bg: 'fl_meadow', foes: [{ sid: 'inkarm', lv: 87 }, { sid: 'phantom', lv: 88 }, { sid: 'mush', lv: 89 }], s2: 'nofaint', s3: 'up6', reward: { exp: 53000, energy: 3900 } },
+      { id: 'fl36', n: '幽绿裂谷', bg: 'fl_path', foes: [{ sid: 'kaleo', lv: 89 }, { sid: 'wind', lv: 90 }, { sid: 'bone', lv: 91 }], s2: 'lead', s3: 'oneshot', reward: { exp: 54500, energy: 3980 } },
+      { id: 'fl37', n: '密林王座', bg: 'fl_lake', foes: [{ sid: 'leafcat', lv: 91 }, { sid: 'shroom', lv: 92 }, { sid: 'inkarm', lv: 93 }], s2: 'nofaint', s3: 'st:烧伤', reward: { exp: 56000, energy: 4060 } },
+      { id: 'fl38', n: '群猎之夜', bg: 'fl_sun', foes: [{ sid: 'mush', lv: 93 }, { sid: 'siren', lv: 94 }, { sid: 'kaleo', lv: 95 }], s2: 'noitem', s3: 'down6', reward: { exp: 57500, energy: 4140 } },
+      { id: 'fl39', n: '枯叶回旋', bg: 'fl_maple', foes: [{ sid: 'bone', lv: 96 }, { sid: 'leaf', lv: 97 }, { sid: 'leafcat', lv: 98 }], s2: 'half', s3: 'crit', reward: { exp: 59000, energy: 4220 } },
+      { id: 'fl40', n: '芙罗拉之心', bg: 'fl_lake', foes: [{ sid: 'inkarm', lv: 98 }, { sid: 'phantom', lv: 99 }, { sid: 'mush', lv: 100 }], s2: 'nofaint', s3: 'nostatus', reward: { exp: 60500, energy: 4300 } },
+      { id: 'fl41', n: '瘴雾边境', bg: 'fl_beech', foes: [{ sid: 'kaleo', lv: 102, q: 1 }, { sid: 'wind', lv: 104, q: 1 }, { sid: 'bone', lv: 106, q: 1 }], s2: 'nosw', s3: 'dotko', reward: { exp: 62000, energy: 4380, items: { floraJade: 10 } } },
+      { id: 'fl42', n: '林中暗涌', bg: 'fl_meadow', foes: [{ sid: 'leafcat', lv: 106, q: 1 }, { sid: 'shroom', lv: 108, q: 1 }, { sid: 'inkarm', lv: 110, q: 1 }, { sid: 'phantom', lv: 112, q: 1 }], s2: 'nofaint', s3: 'heal:1000', reward: { exp: 63500, energy: 4460, items: { floraJade: 10 } } },
+      { id: 'fl43', n: '古木低语', bg: 'fl_path', foes: [{ sid: 'mush', lv: 110, q: 1 }, { sid: 'siren', lv: 112, q: 1 }, { sid: 'kaleo', lv: 114, q: 1 }], s2: 'noitem', s3: 'turns:15', reward: { exp: 65000, energy: 4540, items: { floraJade: 10 } } },
+      { id: 'fl44', n: '绿色风暴', bg: 'fl_horizon', foes: [{ sid: 'bone', lv: 114, q: 1 }, { sid: 'leaf', lv: 116, q: 1 }, { sid: 'leafcat', lv: 118, q: 1 }, { sid: 'shroom', lv: 120, q: 1 }], s2: 'half', s3: 'oneshot', reward: { exp: 66500, energy: 4620, items: { floraJade: 10 } } },
+      { id: 'fl45', n: '百级之境', bg: 'fl_meadow', foes: [{ sid: 'inkarm', lv: 118, q: 1 }, { sid: 'phantom', lv: 120, q: 1 }, { sid: 'mush', lv: 122, q: 1 }], s2: 'nofaint', s3: 'noitem', reward: { exp: 68000, energy: 4700, items: { floraJade: 10 } } },
+      { id: 'fl46', n: '？？？之林', bg: 'fl_path', foes: [{ sid: 'kaleo', lv: 122, q: 1 }, { sid: 'wind', lv: 124, q: 1 }, { sid: 'bone', lv: 126, q: 1 }, { sid: 'leaf', lv: 128, q: 1 }], s2: 'lead', s3: 'up6', reward: { exp: 69500, energy: 4780, items: { floraJade: 10 } } },
+      { id: 'fl47', n: '无名猎场', bg: 'fl_lake', foes: [{ sid: 'leafcat', lv: 126, q: 1 }, { sid: 'shroom', lv: 128, q: 1 }, { sid: 'inkarm', lv: 130, q: 1 }], s2: 'nofaint', s3: 'dotko', reward: { exp: 71000, energy: 4860, items: { floraJade: 10 } } },
+      { id: 'fl48', n: '寂静树海', bg: 'fl_sun', foes: [{ sid: 'mush', lv: 130, q: 1 }, { sid: 'siren', lv: 132, q: 1 }, { sid: 'kaleo', lv: 134, q: 1 }, { sid: 'wind', lv: 136, q: 1 }], s2: 'noitem', s3: 'st:麻痹', reward: { exp: 72500, energy: 4940, items: { floraJade: 10 } } },
+      { id: 'fl49', n: '终末之森', bg: 'fl_maple', foes: [{ sid: 'bone', lv: 134, q: 1 }, { sid: 'leaf', lv: 136, q: 1 }, { sid: 'leafcat', lv: 138, q: 1 }], s2: 'nosw', s3: 'oneshot', reward: { exp: 74000, energy: 5020, items: { floraJade: 10 } } },
+      { id: 'fl50', n: '芙罗拉 · 极境', bg: 'fl_horizon', foes: [{ sid: 'inkarm', lv: 138, q: 1 }, { sid: 'phantom', lv: 140, q: 1 }, { sid: 'mush', lv: 142, q: 1 }, { sid: 'siren', lv: 144, q: 1 }], s2: 'nofaint', s3: 'noitem', reward: { exp: 75500, energy: 5100, items: { floraJade: 50 } } }
     ]
   };
+  // 星级要求：固定的几种，加上带参数的 'turns:N'（N 回合内获胜）、'st:状态'（让敌人陷入某种异常）、'heal:N'（累计恢复 N 点体力）
+  var STAR_HINT = { 中毒: '如毒孢子', 麻痹: '如电磁波、麻醉孢子、闪电烙印', 睡眠: '如催眠孢子、魔眼', 烧伤: '如火焰漩涡、烈焰云', 流血: '如怒海疾刺', 寄生: '如寄生之种', 冰冻: '如冰冻打击、霜冻结界', 害怕: '如龙吟崩山震、颤栗' };
+  function starTxt(c) {
+    if (STAR_TXT[c]) return STAR_TXT[c];
+    var p = c.split(':');
+    if (p[0] === 'turns') return '在 ' + p[1] + ' 回合内获胜';
+    if (p[0] === 'st') return '让一名敌人陷入「' + p[1] + '」状态' + (STAR_HINT[p[1]] ? '（' + STAR_HINT[p[1]] + '）' : '');
+    if (p[0] === 'heal') return '战斗中累计恢复 ' + p[1] + ' 点体力（如吸取、光合作用、饮血刀光）';
+    return c;
+  }
+  function starOk(c, S, mine) {
+    var cs = S.cs || {}, p = c.split(':');
+    if (c === 'win') return true;
+    if (c === 'nofaint') return mine.every(function (m) { return !m.fainted; });
+    if (c === 'half') return mine.every(function (m) { return !m.fainted && m.hp > m.maxhp / 2; });
+    if (c === 'super') return !!(S.se && S.se[0] > 0);
+    if (c === 'nostatus') return mine.every(function (m) { return m.fainted || !Object.keys(m.st || {}).some(function (k) { return m.st[k] > 0; }); });
+    if (c === 'noitem') return !cs.items;
+    if (c === 'nosw') return !cs.sw;
+    if (c === 'lead') return !!mine[0] && !mine[0].fainted;
+    if (c === 'crit') return cs.crit > 0;
+    if (c === 'up6') return cs.up6 > 0;
+    if (c === 'down6') return cs.down6 > 0;
+    if (c === 'oneshot') return cs.oneShot > 0;
+    if (c === 'dotko') return cs.dotKO > 0;
+    if (p[0] === 'turns') return S.turn - 1 <= +p[1];
+    if (p[0] === 'st') return !!(cs.st && cs.st[p[1]] > 0);
+    if (p[0] === 'heal') return (cs.heal || 0) >= +p[1];
+    return false;
+  }
+  function lvTxt(f) { return f.q ? 'LV.??' : 'LV' + f.lv; }
+  // 累计星数奖励（2026-10-17）：acc.chalGot[星数] = 领取时间
+  var CHAL_STAR = [
+    { n: 30, rw: { bgm: 'floraGrass', exp: 30000, energy: 3000 } },
+    { n: 60, rw: { bgm: 'floraForest', exp: 60000, energy: 5000 } },
+    { n: 90, rw: { bgm: 'floraFallen', exp: 90000, energy: 8000 } },
+    { n: 120, rw: { exp: 120000, energy: 10000, items: { floraJade: 100, g_core: 4 } } },
+    { n: 150, rw: { exp: 150000, energy: 15000, items: { floraJade: 200, g_core: 8 } } }
+  ];
+  function chalTotal(P) { return CHAL[P || 'flora'].reduce(function (a, x) { return a + chalStars(x.id); }, 0); }
+  function chalGot(n) { return !!(acc && acc.chalGot && acc.chalGot[n]); }
+  function chalStarHTML(total) {
+    return '<div class="ch-mile">' + CHAL_STAR.map(function (x) {
+      var got = chalGot(x.n), can = !got && total >= x.n;
+      return '<div class="ch-mi' + (got ? ' got' : can ? ' can' : '') + '"><b>★ ' + x.n + '</b><span>' + rwList(x.rw).join('、') + '</span>' +
+        (got ? '<em>已领取</em>' : can ? '<button type="button" class="btn primary" data-chstar="' + x.n + '">领取</button>' : '<em>' + total + ' / ' + x.n + '</em>') + '</div>';
+    }).join('') + '</div>';
+  }
+  function claimChalStar(n) {
+    var x = CHAL_STAR.filter(function (y) { return y.n === n; })[0]; if (!x || chalGot(n) || chalTotal() < n) return;
+    if (!acc.chalGot) acc.chalGot = {}; acc.chalGot[n] = Date.now();
+    var R = x.rw; acc.exp = (acc.exp || 0) + (R.exp || 0); acc.energy = (acc.energy || 0) + (R.energy || 0); if (R.items) giveItems(R.items);
+    save(); renderTop(); toast('挑战路线累计 ' + n + ' 颗星奖励：' + rwList(R).join('、') + (R.bgm ? '。茶室音乐可以在「我的茶室」里切换。' : '。'));
+  }
   var STAR_TXT = { win: '击败所有敌人', nofaint: '无精灵倒下', half: '战斗结束时，所有出战精灵的体力都高于一半', super: '使用一次克制对方属性的技能（效果拔群）', nostatus: '战斗结束时，所有精灵都不处于异常状态' };
   var MM_HELPER = { key: 'mm', owner: '明明教官', mon: { sid: 'hephaestus', lv: 30, moves: [] } };
   function chalRec(id) { if (!acc.chal) acc.chal = {}; return acc.chal[id] || null; }
@@ -1977,13 +2077,14 @@
     ex.chal = sel;
     if (helperOk()) loadHelpers();
     var total = L.reduce(function (a, x) { return a + chalStars(x.id); }, 0);
+    setTimeout(function () { var c = document.querySelector('.ch-chain'), n = c && c.querySelector('.ch-node.sel'); if (n) c.scrollLeft = n.offsetLeft - c.clientWidth / 2 + n.offsetWidth / 2; }, 0);   // 50 关横向排开：自动滚到选中的那一关
     var chain = '<ol class="ch-chain">' + L.map(function (x, i) {
       var open = chalLevelOpen(P, i), n = chalStars(x.id), r = acc.chal && acc.chal[x.id];
       return '<li class="ch-node' + (open ? '' : ' locked') + (n ? ' clear' : '') + (i === sel ? ' sel' : '') + '"><button type="button" data-chal="' + i + '"' + (open ? '' : ' disabled') + ' aria-label="第 ' + (i + 1) + ' 关' + (open ? '' : '（未开放）') + '">' +
         '<span class="ch-no">' + (open ? i + 1 : '🔒') + '</span>' + starRow(n, r && r.s) + '<b>' + esc(x.n) + '</b></button></li>';
     }).join('') + '</ol>';
     var x = L[sel], rec = acc.chal && acc.chal[x.id], T = chalTeam(), conds = ['win', x.s2, x.s3];
-    var foes = x.foes.map(function (f) { var k = wildKnown(f.sid), fm = form(f); return '<li>' + (k ? '<img src="' + fm.img + '" alt="">' : silTag(f.sid, fm.stage)) + '<span><b>' + (k ? esc(fm.name) : '？？？') + '</b><small>LV' + f.lv + '</small></span></li>'; }).join('');
+    var foes = x.foes.map(function (f) { var k = wildKnown(f.sid), fm = form(f); return '<li>' + (k ? '<img src="' + fm.img + '" alt="">' : silTag(f.sid, fm.stage)) + '<span><b>' + (k ? esc(fm.name) : '？？？') + '</b><small>' + lvTxt(f) + '</small></span></li>'; }).join('');
     var ownHTML = T.team.map(function (m) {
       var on = T.own.indexOf(m) >= 0, f = form(m), dis = !on && T.own.length >= (T.helper ? 4 : 5);
       return '<button type="button" class="ch-mon' + (on ? ' on' : '') + '" data-chown="' + m.u + '"' + (dis ? ' disabled' : '') + ' aria-pressed="' + on + '"><img src="' + f.img + '" alt=""><b>' + esc(f.name) + '</b><small>LV' + m.lv + '</small></button>';
@@ -1994,10 +2095,10 @@
         return '<button type="button" class="ch-help' + (on ? ' on' : '') + '" data-chhelp="' + esc(h.key) + '"><img src="' + f.img + '" alt=""><b>' + esc(f.name) + '</b><small>LV' + h.mon.lv + ' · ' + esc(h.owner) + '</small></button>';
       }).join('') + '</div><p class="hint">' + (bsOnline() ? (ex.helpers && ex.helpers.length ? '好友在名片里放的助战精灵都在这里。' : '好友在名片里放了助战精灵后，也会出现在这里。') : '联网登录后，还能借用好友名片里的助战精灵。') + '自己也可以在「社交 → 我的名片」里挂一只助战精灵。</p>';
     var ready_ = T.own.length > 0;
-    return '<div class="ch-wrap"><div class="ch-head"><b>芙罗拉星 · 挑战路线</b><span class="hint">共 ' + L.length + ' 关 · 已获得 ' + total + ' / ' + L.length * 3 + ' 颗星</span></div>' + chain +
+    return '<div class="ch-wrap"><div class="ch-head"><b>芙罗拉星 · 挑战路线</b><span class="hint">共 ' + L.length + ' 关 · 已获得 ' + total + ' / ' + L.length * 3 + ' 颗星</span></div>' + chalStarHTML(total) + chain +
       '<article class="ch-detail"><span class="tape r"></span><div class="ch-dh"><span class="sc-tag">第 ' + (sel + 1) + ' 关</span><h3>' + esc(x.n) + '</h3>' + starRow(chalStars(x.id), rec && rec.s) + '</div>' +
       '<div class="ch-cols"><div><h4>敌人</h4><ul class="ch-foes">' + foes + '</ul>' +
-      '<h4>星级要求</h4><ol class="ch-conds">' + conds.map(function (c, k) { var got = rec && rec.s[k]; return '<li class="' + (got ? 'ok' : '') + '"><span class="ch-star">' + (got ? '★' : '☆') + '</span>' + STAR_TXT[c] + '</li>'; }).join('') + '</ol>' +
+      '<h4>星级要求</h4><ol class="ch-conds">' + conds.map(function (c, k) { var got = rec && rec.s[k]; return '<li class="' + (got ? 'ok' : '') + '"><span class="ch-star">' + (got ? '★' : '☆') + '</span>' + starTxt(c) + '</li>'; }).join('') + '</ol>' +
       '<p class="ch-rw"><b>首次通关奖励</b>　' + rwList(x.reward).map(function (t) { return '<span class="chip">' + t + '</span>'; }).join(' ') + (rec && rec.got ? '<span class="hint">（已领取）</span>' : '') + '</p></div>' +
       '<div><h4>出战精灵 <span class="hint">' + (T.helper ? '自己的 ' + T.own.length + ' / 4 只 + 1 只助战' : '自己的 ' + T.own.length + ' / 5 只') + '，点一下选上或取下</span></h4><div class="ch-mons">' + (ownHTML || '<p class="hint">当前配队是空的。</p>') + '</div>' +
       '<h4>助战精灵</h4>' + helpHTML + '</div></div>' +
@@ -2063,7 +2164,7 @@
     ex.chalOrder = ord || ex.chalOrder;
     var L = chalLineup(), own = L.filter(function (e) { return e.m; }).map(function (e) { return e.m; });
     var p = L.map(function (e) { return e.m ? storyMon(e.m) : helperSpec(e.h); });
-    var a = x.foes.map(function (f) { seeMon(f.sid, f.lv); return storyMon({ sid: f.sid, lv: f.lv, moves: [] }); });
+    var a = x.foes.map(function (f) { seeMon(f.sid, Math.min(f.lv, MAX_LV)); var o = storyMon({ sid: f.sid, lv: f.lv, moves: [] }); if (f.q) o.lvq = 1; return o; });
     stopTimers(); ex.fighting = true; document.body.classList.add('story-fight'); syncBattle();
     $('pg-explore').hidden = true; $('pg-arena').hidden = false;
     window.HSBATTLE.start({ p: p, a: a, foe: '挑战第 ' + (i + 1) + ' 关「' + x.n + '」', bgm: 'stage', items: invCopy(), bg: BG[x.bg] || null, onItem: useInv,
@@ -2071,22 +2172,17 @@
         var msg = [];
         if (res === 'win' && S) {
           var mine = S.sides[0].team, conds = ['win', x.s2, x.s3];
-          var ok = conds.map(function (c) {
-            if (c === 'win') return true;
-            if (c === 'nofaint') return mine.every(function (m) { return !m.fainted; });
-            if (c === 'half') return mine.every(function (m) { return !m.fainted && m.hp > m.maxhp / 2; });
-            if (c === 'super') return !!(S.se && S.se[0] > 0);
-            if (c === 'nostatus') return mine.every(function (m) { return m.fainted || !Object.keys(m.st || {}).some(function (k) { return m.st[k] > 0; }); });
-            return false;
-          });
+          var ok = conds.map(function (c) { return starOk(c, S, mine); });
           if (!acc.chal) acc.chal = {};
           var r = acc.chal[x.id] || (acc.chal[x.id] = { s: [false, false, false] }), before = chalStars(x.id);
           ok.forEach(function (v, k) { if (v) r.s[k] = true; });
           msg.push('挑战第 ' + (i + 1) + ' 关「' + x.n + '」通过！本次 ' + ok.filter(Boolean).length + ' 颗星' + (chalStars(x.id) > before && before ? '，最好成绩提升到 ' + chalStars(x.id) + ' 颗星' : '') + '。');
-          var miss = conds.filter(function (c, k) { return !ok[k]; }).map(function (c) { return STAR_TXT[c]; });
+          var miss = conds.filter(function (c, k) { return !ok[k]; }).map(starTxt);
           if (miss.length) msg.push('没拿到的星：' + miss.join('；') + '。');
-          if (!r.got) { r.got = Date.now(); acc.exp = (acc.exp || 0) + (x.reward.exp || 0); acc.energy = (acc.energy || 0) + (x.reward.energy || 0); msg.push('首次通关奖励：' + rwList(x.reward).join('、') + '。'); }
+          if (!r.got) { r.got = Date.now(); acc.exp = (acc.exp || 0) + (x.reward.exp || 0); acc.energy = (acc.energy || 0) + (x.reward.energy || 0); if (x.reward.items) giveItems(x.reward.items); msg.push('首次通关奖励：' + rwList(x.reward).join('、') + '。'); }
           if (CHAL[P][i + 1] && !before) { ex.chal = i + 1; msg.push('第 ' + (i + 2) + ' 关已开放。'); }
+          var tot = chalTotal(P), mi = CHAL_STAR.filter(function (y) { return tot >= y.n && !chalGot(y.n); });
+          if (mi.length) msg.push('累计星数达到 ' + mi[mi.length - 1].n + ' 颗，挑战页上方可以领取星数奖励！');
         } else if (res !== 'win') msg.push(quit ? '退出了挑战。' : '挑战失败了……调整一下出战精灵再来吧。');
         dailyHit('pve');
         var ownSeen = seen ? L.map(function (e, k) { return e.m ? seen[k] : null; }).filter(function (v) { return v !== null; }) : null;
@@ -2100,6 +2196,7 @@
       } });
   }
   function chalClick(b) {
+    if (b.dataset.chstar) { claimChalStar(+b.dataset.chstar); renderExplore(); return true; }
     if (b.dataset.tpgo) { ex.planet = 'jingchu'; teleport(b.dataset.tpgo); return true; }
     if (b.dataset.chal != null && b.dataset.chal !== undefined && !b.disabled) {
       var i = +b.dataset.chal; ex.chal = i;
@@ -3440,7 +3537,10 @@
   var HOME_BGM = [
     { k: 'ui', n: '大厅', d: '默认' },
     { k: 'earth', n: '地球', d: '自动解锁' },
-    { k: 'flora', n: '芙罗拉星', d: '主线第一章「芙罗拉星」通关后获得', own: function () { return chapterGot('ch1') || !!(acc.mailSeen && acc.mailSeen['barren-bgm']); } }   // 之前击败普通荒芜已经拿到的，保留
+    { k: 'flora', n: '芙罗拉星', d: '主线第一章「芙罗拉星」通关后获得', own: function () { return chapterGot('ch1') || !!(acc.mailSeen && acc.mailSeen['barren-bgm']); } },   // 之前击败普通荒芜已经拿到的，保留
+    { k: 'floraGrass', n: 'Flora1', d: '芙罗拉星挑战路线累计 30 颗星后领取', own: function () { return chalGot(30); } },
+    { k: 'floraForest', n: 'Flora2', d: '芙罗拉星挑战路线累计 60 颗星后领取', own: function () { return chalGot(60); } },
+    { k: 'floraFallen', n: 'Flora3', d: '芙罗拉星挑战路线累计 90 颗星后领取', own: function () { return chalGot(90); } }
   ];
   function bgmName(k) { var b = HOME_BGM.filter(function (x) { return x.k === k; })[0]; return b ? b.n : k; }
   function bgmOwned(k) { var b = HOME_BGM.filter(function (x) { return x.k === k; })[0]; return !!b && (!b.own || b.own()); }

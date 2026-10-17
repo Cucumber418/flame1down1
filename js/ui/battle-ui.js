@@ -181,7 +181,7 @@
       return '<span class="srow"><span class="sk">' + r.k + '</span><span class="sv">' + esc(r.v) + stg + sub + '</span>' +
         (r.note ? '<span class="sn">' + esc(r.note) + '</span>' : '') + '</span>';
     }).join('');
-    return '<span class="chip sc lvc" tabindex="0">LV' + (sd.lv || 100) + '<span class="tip tip-stat" role="tooltip"><b>' + esc(sd.name) + ' · 当前能力值</b>' + rows + '</span></span>';
+    return '<span class="chip sc lvc" tabindex="0">' + (sd.lvq ? 'LV.??' : 'LV' + (sd.lv || 100)) + '<span class="tip tip-stat" role="tooltip"><b>' + esc(sd.name) + ' · 当前能力值</b>' + rows + '</span></span>';
   }
   function total(s) { var n = 0; for (var k in s.base) n += s.base[k]; return n; }
   function wait(ms) { return new Promise(function (r) { setTimeout(r, app.fast ? ms * 0.35 : ms); }); }
@@ -457,7 +457,7 @@
   function castSnap(sn) {
     var hide = rankOn();
     return { turn: sn.turn, sides: sn.sides.map(function (sd, i) {
-      return { id: sd.id, name: sd.name, img: sd.img, types: sd.types, lv: hide && i === 1 ? null : sd.lv, dummy: sd.dummy, ability: { n: sd.ability.n, d: sd.ability.d }, hp: sd.hp, maxhp: sd.maxhp, fainted: sd.fainted,
+      return { id: sd.id, name: sd.name, img: sd.img, types: sd.types, lv: hide && i === 1 ? null : sd.lv, lvq: sd.lvq, dummy: sd.dummy, ability: { n: sd.ability.n, d: sd.ability.d }, hp: sd.hp, maxhp: sd.maxhp, fainted: sd.fainted,
         chips: sd.chips.map(function (c) { return { k: c.k, t: c.t, h: c.h, d: c.d }; }),
         team: sd.team.map(function (t) { var u = hide && i === 1 && !t.seen; return { id: u ? null : t.id, nick: u ? null : t.nick, fainted: t.fainted, active: t.active }; }) };
     }) };

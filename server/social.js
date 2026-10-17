@@ -122,7 +122,8 @@ function homeOf(acc) {
   var mons = (Array.isArray(h.mons) ? h.mons : []).slice(0, cap).map(function (x) { return monByU(acc, x && typeof x === 'object' ? x.u : x); }).filter(Boolean);
   // 茶室音乐：大厅（默认）/ 地球 / 芙罗拉星（主线第一章通关后才有）
   var flora = !!((acc.chapters && acc.chapters.ch1) || (acc.mailSeen && acc.mailSeen['barren-bgm']));   // 主线第一章通关（之前击败普通荒芜拿到的也保留）
-  var bgm = h.bgm === 'earth' || (h.bgm === 'flora' && flora) ? h.bgm : 'ui';
+  var cg = acc.chalGot || {}, cbgm = { floraGrass: 30, floraForest: 60, floraFallen: 90 };   // 芙罗拉星挑战累计星数奖励的茶室音乐
+  var bgm = h.bgm === 'earth' || (h.bgm === 'flora' && flora) || (cbgm[h.bgm] && cg[cbgm[h.bgm]]) ? h.bgm : 'ui';
   return { open: open, name: str(h.name, 10) || '陆羽茶室', mons: open ? mons : [], bgm: bgm };
 }
 var KING_R = 10;   // 王者（段位表见 js/engine/ranked.js 的 RANKS）
