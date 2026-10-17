@@ -605,7 +605,7 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .vn-btns { margin-left: auto; display: flex; gap: 6px; }
 .vn-btns button { cursor: pointer; font-size: 12.5px; font-weight: 600; padding: 4px 10px; border: 1.5px solid var(--ink); border-radius: 8px; background: var(--paper-2); }
 .vn-btns button.on { background: var(--ink); color: #fff; }
-.vn-box { position: absolute; left: 3%; right: 3%; bottom: 4%; min-height: 26%; background: rgba(251,250,243,.94); border: 1.5px solid var(--ink); border-radius: 14px; padding: 22px 20px 16px; box-shadow: 3px 3px 0 var(--ink); }
+.vn-box { position: absolute; left: 3%; right: 3%; bottom: 3%; min-height: 0; background: rgba(251,250,243,.94); border: 1.5px solid var(--ink); border-radius: 14px; padding: 20px 20px 12px; box-shadow: 3px 3px 0 var(--ink); }   /* 2026-10-17 变矮：只按两行字的高度，精灵不容易被挡住 */
 .vn-box.wait { opacity: .5; }
 .vn-name { position: absolute; top: -16px; left: 18px; font-family: var(--f-hand); font-size: 24px; line-height: 1; color: #fff; background: var(--cc, var(--ink)); border: 1.5px solid var(--ink); border-radius: 8px; padding: 4px 14px; }
 .vn-text { margin: 0; font-size: 17px; line-height: 1.75; color: var(--ink); min-height: 3.5em; }
@@ -641,7 +641,7 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .vn-bg2 { opacity: 0; transition: opacity .5s; }
 .vn-bg2.in { opacity: 1; }
 .vn-loc small { font-family: var(--f-body); font-size: 12px; color: var(--pencil); }
-.vn-mons { position: absolute; left: 0; right: 0; bottom: 30%; height: 26%; pointer-events: none; }
+.vn-mons { position: absolute; left: 0; right: 0; bottom: 33%; height: 30%; pointer-events: none; }
 .vn-mon { position: absolute; bottom: 0; margin: 0; height: 100%; display: grid; justify-items: center; align-content: end; gap: 2px; animation: vnIn .35s ease-out; }
 .vn-mon img { height: calc(100% - 22px); max-width: 160px; object-fit: contain; filter: drop-shadow(0 3px 0 rgba(251,250,243,.9)) drop-shadow(0 -2px 0 rgba(251,250,243,.9)) drop-shadow(2px 0 0 rgba(251,250,243,.9)) drop-shadow(-2px 0 0 rgba(251,250,243,.9)); }
 .vn-mon figcaption { font-size: 11.5px; font-weight: 700; background: rgba(251,250,243,.92); border: 1px solid var(--ink); border-radius: 6px; padding: 0 6px; white-space: nowrap; }
@@ -679,7 +679,7 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .vp-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; background: var(--paper-2); border: 1.5px solid var(--ink); border-radius: 12px; padding: 8px 12px; }
 .vn-intro-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 4px 0 10px; }
 @media (max-width: 640px) {
-  .vn-mons { bottom: 34%; height: 18%; }
+  .vn-mons { bottom: 36%; height: 20%; }
   .vn-mon img { max-width: 90px; }
   .vn-mon.a1 { left: 4%; } .vn-mon.a2 { left: 36%; } .vn-mon.a3 { left: 68%; }
   .vn-mon.me { left: 10%; } .vn-mon.rv { right: 10%; }
@@ -1980,3 +1980,13 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .vn-mon.mia img { filter: drop-shadow(0 0 6px #b48fd6) drop-shadow(0 0 18px rgba(107,63,143,.9)) saturate(.8); }
 /* 横版定格（上下两格改成左右并排）：放在画面上方，不被对话框挡住 */
 .vn-cgwrap.full.land .vn-cg-pic { background-size: contain; background-position: center 14%; transition: none; }
+
+/* 剧情里的瘴气变异精灵：长得很大，压迫感强（2026-10-17） */
+.vn-mon.mia { height: 175%; }
+.vn-mon.mia img { max-width: 420px; }
+@media (max-width: 760px) { .vn-mon.mia { height: 190%; } .vn-mon.mia img { max-width: 240px; } }
+.soc-box.fallen-box { border-color: #4a2a5e; box-shadow: 4px 4px 0 #6b3f8f; background: linear-gradient(180deg, #fbf8ff, #f1e8f7); }
+.soc-box.fallen-box h2 { color: #5a2f7a; }
+/* 家园精灵走动时转身（只翻转立绘，名牌不翻） */
+.hm-fig .hm-poke { transition: transform .2s ease; }
+.hm-fig.flip .hm-poke { transform: scaleX(-1); }
