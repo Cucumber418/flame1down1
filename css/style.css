@@ -1978,3 +1978,5 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .vf-ally input { width: 18px; height: 18px; accent-color: #5f9a3e; }
 .vf-ally .hint { font-weight: 400; font-size: 12px; }
 .vn-mon.mia img { filter: drop-shadow(0 0 6px #b48fd6) drop-shadow(0 0 18px rgba(107,63,143,.9)) saturate(.8); }
+/* 横版定格（上下两格改成左右并排）：放在画面上方，不被对话框挡住 */
+.vn-cgwrap.full.land .vn-cg-pic { background-size: contain; background-position: center 14%; transition: none; }

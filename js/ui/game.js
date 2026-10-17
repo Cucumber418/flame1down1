@@ -1077,7 +1077,7 @@
   // 角色（立绘为占位）
   var CAST = {
     p: { name: function () { return acc.name; }, color: '#c42f3a', tall: 0.92, get img() { return playerArt(); } },   // 主角立绘按性别：pm 男主 / pf 女主（差分见 CHARS 的 pm_xxx）
-    v: { name: function () { return 'Vanber'; }, color: '#2a4ca0', tall: 0.88, img: 'vanber' },   // 差分：sweat 无语、shock 惊讶、smile 笑、shy 慌张
+    v: { name: function () { return 'Vanber'; }, color: '#2a4ca0', tall: 0.8, img: 'vanber' },   // 差分：sweat 无语、shock 惊讶、smile 笑、shy 慌张
     z: { name: function () { return '张卫国'; }, color: '#5b5866', tall: 1.0, img: 'zwg' },
     t: { name: function () { return 'Threego'; }, color: '#6f8f2a', tall: 1.0, img: 'threego' },
     y: { name: function () { return '点点'; }, color: '#b0603a', tall: 1.0, img: 'dd' },
@@ -3908,7 +3908,7 @@
     var cgPic = $('vn-cg-pic'), cgWrap = $('vn-cg');
     cgPic.addEventListener('animationend', function (e) {
       if (e.animationName === 'vncgScroll') { cgWrap.classList.remove('play'); cgWrap.classList.add('shake'); }
-      else if (e.animationName === 'vncgShake') { cgWrap.classList.remove('shake'); cgWrap.classList.add('full'); }
+      else if (e.animationName === 'vncgShake') { cgWrap.classList.remove('shake'); var L = ex.curCg && CG[ex.curCg] && CG[ex.curCg].land; if (L) { cgPic.style.backgroundImage = 'url(' + (L[gender()] || L.m) + ')'; cgWrap.classList.add('land'); } cgWrap.classList.add('full'); }   // 有横版的：定格时换成横版，放在画面上方
     });
     show();
     try { $('vn').focus({ preventScroll: true }); } catch (er) {}
@@ -3932,12 +3932,12 @@
   // 剧情 CG：整屏竖图，出现时先从上往下「扫」过一遍，接一下screen shake，再定格展示完整画面；按主角性别选图
   function setCG(k) {
     var w = $('vn-cg'); if (!w) return;
-    if (!k) { if (ex.curCg) { w.classList.remove('show', 'play', 'shake', 'full'); ex.curCg = null; } return; }
+    if (!k) { if (ex.curCg) { w.classList.remove('show', 'play', 'shake', 'full', 'land'); ex.curCg = null; } return; }
     if (ex.curCg === k) return;
     ex.curCg = k;
     var src = CG[k] ? (CG[k][gender()] || CG[k].m) : '';
     $('vn-cg-pic').style.backgroundImage = src ? 'url(' + src + ')' : 'none';
-    w.classList.remove('play', 'shake', 'full');
+    w.classList.remove('play', 'shake', 'full', 'land');
     void w.offsetWidth;
     w.classList.add('show');
     void w.offsetWidth;
