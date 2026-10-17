@@ -2032,3 +2032,13 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .ch-mi.can { border: 2px solid var(--red); background: #fff6e6; }
 .ch-mi.got { border-style: solid; opacity: .7; }
 .ch-mi .btn { justify-self: start; padding: 3px 12px; }
+/* 茶室音乐选择（2026-10-17） */
+.bgm-btn { display: inline-flex; align-items: center; gap: 6px; }
+.bgm-btn small { color: #777; font-weight: 400; }
+.bgm-box { max-width: 380px; }
+.bgm-list { list-style: none; margin: 10px 0; padding: 0; display: grid; gap: 6px; }
+.bgm-it { width: 100%; display: grid; grid-template-columns: 28px 1fr; grid-template-rows: auto auto; column-gap: 8px; align-items: center; text-align: left; padding: 8px 12px; background: #fff; border: 1.5px solid var(--ink); border-radius: 10px; cursor: pointer; font: inherit; color: var(--ink); }
+.bgm-it:hover { background: var(--paper-2); }
+.bgm-it.on { background: #fff3d6; box-shadow: 2px 2px 0 var(--red); }
+.bgm-ic { grid-row: span 2; font-size: 18px; text-align: center; }
+.bgm-it small { color: #777; font-size: 12px; }

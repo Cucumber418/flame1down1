@@ -1152,7 +1152,7 @@
    * wip 表示这一章还没写完（未完待续），写完之前不算通关 */
   var CHAPTERS = [
     { id: 'prologue', n: '序章', d: '从省实验中学出发，一路到登上荆楚号。', sites: ['school', 'river', 'jiuquan', 'board'], reward: { exp: 5000 } },
-    { id: 'ch1', n: '第一章 · 芙罗拉星', d: '降落芙罗拉星，追查瘴气和猎杀者的真相。', sites: ['flora1', 'flora2', 'flora3', 'flora4', 'flora5', 'flora6'], wip: true, reward: { bgm: 'flora' } }
+    { id: 'ch1', n: '第一章 · 芙罗拉星', d: '降落芙罗拉星，追查瘴气和猎杀者的真相。', sites: ['flora1', 'flora2', 'flora3', 'flora4', 'flora5', 'flora6'], wip: true, reward: { exp: 20000, energy: 3000 } }   // 2026-10-17：茶室音乐「芙罗拉星」移除，章节大奖改为经验和能量
   ];
   function chapterOf(site) { return CHAPTERS.filter(function (C) { return C.sites.indexOf(site) >= 0; })[0] || null; }
   function chapterDone(C) { return !C.wip && C.sites.every(function (id) { return prog(id).done; }); }
@@ -3537,7 +3537,6 @@
   var HOME_BGM = [
     { k: 'ui', n: '大厅', d: '默认' },
     { k: 'earth', n: '地球', d: '自动解锁' },
-    { k: 'flora', n: '芙罗拉星', d: '主线第一章「芙罗拉星」通关后获得', own: function () { return chapterGot('ch1') || !!(acc.mailSeen && acc.mailSeen['barren-bgm']); } },   // 之前击败普通荒芜已经拿到的，保留
     { k: 'floraGrass', n: 'Flora1', d: '芙罗拉星挑战路线累计 30 颗星后领取', own: function () { return chalGot(30); } },
     { k: 'floraForest', n: 'Flora2', d: '芙罗拉星挑战路线累计 60 颗星后领取', own: function () { return chalGot(60); } },
     { k: 'floraFallen', n: 'Flora3', d: '芙罗拉星挑战路线累计 90 颗星后领取', own: function () { return chalGot(90); } }
@@ -3545,17 +3544,26 @@
   function bgmName(k) { var b = HOME_BGM.filter(function (x) { return x.k === k; })[0]; return b ? b.n : k; }
   function bgmOwned(k) { var b = HOME_BGM.filter(function (x) { return x.k === k; })[0]; return !!b && (!b.own || b.own()); }
   function homeBgm() { var k = acc && acc.home && acc.home.bgm; return k && bgmOwned(k) ? k : 'ui'; }
-  $('pg-explore').addEventListener('change', function (e) {
-    var r = e.target.closest('[data-hbgm]'); if (!r || !r.checked || !bgmOwned(r.dataset.hbgm)) return;
-    home().bgm = r.dataset.hbgm; save(); bgmScene();
-    toast('茶室音乐换成了「' + bgmName(r.dataset.hbgm) + '」，来拜访的船员也会听到。');
-  });
+  // 茶室音乐（2026-10-17 改成一个按钮）：点开后列出所有已解锁的曲目，点一首就换上
+  function openBgmPicker() {
+    var old = $('bgm-dlg'); if (old) old.remove();
+    var cur = homeBgm(), own = HOME_BGM.filter(function (b) { return bgmOwned(b.k); }), lock = HOME_BGM.length - own.length;
+    var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'bgm-dlg';
+    d.innerHTML = '<div class="soc-box bgm-box" role="dialog" aria-modal="true" aria-label="茶室音乐"><span class="tape l"></span><span class="tape r"></span><h2>茶室音乐</h2><p class="hint">选一首放在你的茶室里，来拜访的船员也会听到。</p>' +
+      '<ul class="bgm-list">' + own.map(function (b) { var on = b.k === cur; return '<li><button type="button" class="bgm-it' + (on ? ' on' : '') + '" data-bgmset="' + b.k + '" aria-pressed="' + on + '"><span class="bgm-ic" aria-hidden="true">' + (on ? '▶' : '♪') + '</span><b>' + esc(b.n) + '</b><small>' + esc(on ? '正在播放' : b.d) + '</small></button></li>'; }).join('') + '</ul>' +
+      (lock ? '<p class="hint">还有 ' + lock + ' 首曲目没有解锁。</p>' : '') +
+      '<div class="soc-foot"><button type="button" class="btn primary" data-bgmx="1">关闭</button></div></div>';
+    document.body.appendChild(d);
+    d.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-bgmset]');
+      if (b && bgmOwned(b.dataset.bgmset)) { home().bgm = b.dataset.bgmset; save(); bgmScene(); d.remove(); renderExplore(); toast('茶室音乐换成了「' + bgmName(b.dataset.bgmset) + '」，来拜访的船员也会听到。'); return; }
+      if (e.target === d || e.target.closest('[data-bgmx]')) d.remove();
+    });
+  }
+  document.addEventListener('click', function (e) { if (e.target.closest('[data-bgmopen]')) openBgmPicker(); });
   function homeBgmBar() {
-    var cur = homeBgm();
-    return '<div class="hm-bgm"><b>茶室音乐</b><div class="seg" role="radiogroup" aria-label="茶室音乐">' + HOME_BGM.map(function (b) {
-      var own = bgmOwned(b.k);
-      return '<label class="' + (own ? '' : 'dis') + '" title="' + esc(own ? b.d : '未获得 · ' + b.d) + '"><input type="radio" name="hm-bgm" value="' + b.k + '"' + (b.k === cur ? ' checked' : '') + (own ? '' : ' disabled') + ' data-hbgm="' + b.k + '"><span>' + (own ? '' : '🔒 ') + b.n + '</span></label>';
-    }).join('') + '</div><span class="hint">你和来拜访的船员在茶室里都会听到。' + (bgmOwned('flora') ? '' : '「芙罗拉星」在主线第一章「芙罗拉星」通关后获得。') + '</span></div>';
+    var cur = homeBgm(), n = HOME_BGM.filter(function (b) { return bgmOwned(b.k); }).length;
+    return '<div class="hm-bgm"><b>茶室音乐</b><button type="button" class="btn bgm-btn" data-bgmopen="1"><span aria-hidden="true">♪</span> ' + esc(bgmName(cur)) + ' <small>（已解锁 ' + n + ' 首）</small></button><span class="hint">你和来拜访的船员在茶室里都会听到。</span></div>';
   }
   /* 茶室商店（茶室大厅）
    * auto：7日自律训练装置，装在展示中的精灵身上；每满 1 天自动收回结算经验、再开始下一天，一共 7 天
