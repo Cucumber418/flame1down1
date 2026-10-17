@@ -4658,6 +4658,7 @@
   function sceneNow() {
     var vb = vnBgm(); if (vb) return vb;   // 剧本里逐行指定的曲目（bgm 字段）优先，瘴气化之后重读也按剧本放
     var k = sceneNowRaw();
+    if ((page === 'explore' && ex.view === 'home') || (page === 'social' && window.HSSOCIAL && HSSOCIAL.visitBgm && HSSOCIAL.visitBgm())) return k;   // 茶室音乐按选的曲目原样放，不受瘴气化替换（Flora1 = 草甸、Flora2 = 丛林）
     return FLORA_SCENES[k] && floraFallen() ? 'floraFallen' : k;   // 第八段结尾瘴气化之后，芙罗拉星的界面音乐统一换成 floraFallen（flora3-TheGreatCover）
   }
   // 剧本行可以写 bgm: '曲目键'（见 audio.js 的 TRACKS/SCENES），从这一行起一直生效，直到下一个写了 bgm 的行；'silence' 表示停止音乐
