@@ -1901,7 +1901,11 @@
         }
         if (downs && downs.length) { if (!acc.stats) acc.stats = {}; acc.stats.wildWins = (acc.stats.wildWins || 0) + downs.length; dailyHit('wildWin', downs.length); }
         if ((o.taint || (o.corrupt && purgeActive())) && downs && downs.length) msg = msg.concat(purgeHit());   // 瘴气化之后的腐化精灵也计入「祛除瘴气」
-        if (o.corrupt && pwOpen() && downs && downs.length) { acc.exp = (acc.exp || 0) + PW.exp; save(); renderRes(); msg.push('瘴气驱逐战：击破 +1，经验背包 +' + fmt(PW.exp) + (pwOnline() ? '。' : '（没有联网，全服进度没有计入）。')); pwHit(); }
+        if (o.corrupt && pwOpen() && downs && downs.length) {
+          var pd = pwDay();
+          if (pd.n < PW.cap) { pd.n++; acc.exp = (acc.exp || 0) + PW.exp; save(); renderRes(); msg.push('瘴气驱逐战：击破 +1（今天 ' + pd.n + ' / ' + PW.cap + '），经验背包 +' + fmt(PW.exp) + (pwOnline() ? '。' : '（没有联网，全服进度没有计入）。')); pwHit(); }
+          else msg.push('瘴气驱逐战：今天已经击破 ' + PW.cap + ' 次，达到每日上限，明天再来吧。');
+        }
         if (o.travel && downs && downs.length) {   // 旅行精灵：累积经验 ×3000，50% 掉落叶片
           acc.exp = (acc.exp || 0) + TRAVEL.exp; var lf = Math.random() < TRAVEL.leaf;
           if (lf) giveItems({ m_lcleaf: 1 });
@@ -2297,7 +2301,8 @@
    * 完成目前主线的最后一段（第十段 · 瘴气之源）后开放。服务器见 server/purgewar.js。
    * 在芙罗拉星野外击败腐化精灵：自己经验背包 +1000，全服击破 +1。
    * 全服击破 10 / 50 / 100、之后每 50 只：贡献过（击破 ≥ 1）的船员各收到一封奖励邮件（经验、能量、芙罗拉玉、星砂、星核，数额暂定） */
-  var PW = { exp: 1000, data: null, at: 0, busy: false, err: '' };
+  var PW = { exp: 1000, cap: 50, data: null, at: 0, busy: false, err: '' };   // cap：每人每天最多计入 50 次击破（服务器同样限制）
+  function pwDay() { var d = bjDay(); if (!acc.pwd || acc.pwd.d !== d) acc.pwd = { d: d, n: 0 }; return acc.pwd; }
   function pwOpen() { return floraFallen(); }
   function pwOnline() { return !!(window.CLOUD && CLOUD.user && CLOUD.user()); }
   function pwMilestones(upTo) { var L = [10, 50, 100]; for (var m = 150; m <= upTo; m += 50) L.push(m); return L.filter(function (x) { return x <= upTo; }); }
@@ -2333,7 +2338,7 @@
   }
   function pwInner() {
     var d = PW.data, head = '<span class="tape l"></span><span class="tape r"></span><span class="chip log-tag pw-tag">全服任务</span><h3>瘴气驱逐战</h3>' +
-      '<p>芙罗拉星已经被腐化。所有船员一起，在芙罗拉星的丛林、草甸击败腐化精灵：每击破一只，你的经验背包 +' + fmt(PW.exp) + '，全服进度 +1。</p>';
+      '<p>芙罗拉星已经被腐化。所有船员一起，在芙罗拉星的丛林、草甸击败腐化精灵：每击破一只，你的经验背包 +' + fmt(PW.exp) + '，全服进度 +1。每人每天最多计入 ' + PW.cap + ' 次。</p>';
     if (!pwOnline()) return head + '<p class="hint">瘴气驱逐战是全服任务，需要用服务器网址打开游戏并登录后才能参与。</p>';
     if (!d) return head + '<p class="hint">' + (PW.err ? esc(PW.err) : '正在读取全服进度……') + '</p>';
     var prev = pwPrev(d.total), next = pwNext(d.total), pct = Math.min(100, (d.total - prev) / (next - prev) * 100);
@@ -2344,7 +2349,7 @@
       '<div class="pw-bar"><i style="width:' + pct.toFixed(1) + '%"></i><em>' + d.total + ' / ' + next + ' · 下一个全服奖励</em></div>' +
       '<ol class="pw-ms">' + ms.map(function (m) { var ok = d.total >= m; return '<li class="' + (ok ? 'ok' : '') + '"><b>' + m + ' 只</b><span>' + pwRwText(pwReward(m)) + '</span><em>' + (ok ? (d.me > 0 ? '已发放' : '已达成') : '未达成') + '</em></li>'; }).join('') + '</ol>' +
       '<p class="hint">全服击破 10、50、100 只，之后每 50 只，所有击破过腐化精灵的船员都会收到一封奖励邮件。之后的奖励和 150 只的一样。</p>' +
-      '<div class="pw-me"><span>你的贡献：<b>' + d.me + '</b> 只</span><span>参与船员：<b>' + d.players + '</b> 人</span></div>' +
+      '<div class="pw-me"><span>你的贡献：<b>' + d.me + '</b> 只</span><span>今天：<b>' + Math.max(d.today || 0, pwDay().n) + '</b> / ' + PW.cap + '</span><span>参与船员：<b>' + d.players + '</b> 人</span></div>' +
       (d.top.length ? '<ol class="pw-top">' + d.top.map(function (x, i) { return '<li><span class="pw-rk">' + (i + 1) + '</span><span class="pw-nm">' + esc(x.name) + '</span><b>' + x.n + '</b></li>'; }).join('') + '</ol>' : '<p class="hint">还没有船员击破腐化精灵，来做第一个吧。</p>') +
       '<button type="button" class="btn primary" data-golog="flora-catch" data-fpart="catch">去芙罗拉星的丛林 / 草甸</button>';
   }
