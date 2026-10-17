@@ -133,6 +133,10 @@
   function randIv() { var o = {}; STAT_KEYS.forEach(function (k) { o[k] = Math.floor(Math.random() * 32); }); return o; }
   function ivOk(iv) { return !!iv && typeof iv === 'object' && STAT_KEYS.every(function (k) { return iv[k] >= 0 && iv[k] <= 31 && iv[k] === Math.floor(iv[k]); }); }
   function ivOf(m) { return ivOk(m.iv) ? m.iv : null; }
+  // 天赋评级（2026-10-17）：按六项天赋合计（0~186）分五档，颜色 白 / 绿 / 蓝 / 紫 / 橙
+  var IV_GRADE = [[170, '极品', 'g5'], [150, '稀', 'g4'], [120, '优', 'g3'], [90, '良', 'g2'], [0, '一般', 'g1']];
+  function ivGrade(m) { var iv = ivOf(m); if (!iv) return null; var t = STAT_KEYS.reduce(function (a, k) { return a + iv[k]; }, 0); for (var i = 0; i < IV_GRADE.length; i++) if (t >= IV_GRADE[i][0]) return { n: IV_GRADE[i][1], c: IV_GRADE[i][2], s: t }; return null; }
+  function gradeTag(m) { var g = ivGrade(m); return g ? '<span class="iv-grade ' + g.c + '" title="天赋评级：' + g.n + '（天赋合计 ' + g.s + ' / 186）">' + g.n + '</span>' : ''; }
   function evSum(m) { return STAT_KEYS.reduce(function (a, k) { return a + ((m.ev && m.ev[k]) || 0); }, 0); }
   function natText(nat) { var n = NATURES[nat]; return n ? BASE_NAME[n[0]] + ' +10%，' + BASE_NAME[n[1]] + ' −10%' : '各项能力无修正'; }
   // 胜利后，出战过的精灵各得 1 点可分配学习力（总量不超过 750）
@@ -268,7 +272,8 @@
     { id: 'rare15', n: '必刷题收藏家', d: '拥有 15 类稀有精灵', ok: function () { return rareKinds() >= 15; } },
     { id: 'purifier', n: '芙罗拉净化者', d: '完成芙罗拉星的星球任务「祛除瘴气」', ok: function () { return !!(acc.purge && acc.purge.n >= 30); } },
     { id: 'force', n: '原力掌控者', d: '击败困难难度的首领「泰戈尔」', ok: function () { return bossWon('tiger', 2); } },
-    { id: 'guardian', n: '净土守护', d: '击败困难难度的首领「荒芜」', ok: function () { return bossWon('barren', 2); } }
+    { id: 'guardian', n: '净土守护', d: '击败困难难度的首领「荒芜」', ok: function () { return bossWon('barren', 2); } },
+    { id: 'reaper', n: '死神', d: '击败先驱之塔第 60 层的死神「帕努托尔」', ok: function () { return !!(acc.tower && acc.tower.clears > 0); } }
   ];
   // 等级成就：有 1 只 / 5 只精灵达到 25、50、75、100 级
   TITLES.forEach(function (T) { T.grp = 'story'; });
@@ -497,7 +502,7 @@
   /* ---------- 共用：精灵卡片、资料面板 ---------- */
   function monCard(m, cls, extra) {
     var f = form(m), s = SPMAP[m.sid];
-    return '<span class="cimg"><img src="' + f.img + '" alt="">' + (m.shiny ? '<span class="shiny-tag">异色</span>' : '') + '</span><span class="nm">' + esc(f.name) + '</span><span class="lv">LV' + m.lv + '</span><span class="tc">' + tchips(s.types) + '</span>' + (extra || '');
+    return '<span class="cimg"><img src="' + f.img + '" alt="">' + (m.shiny ? '<span class="shiny-tag">异色</span>' : '') + '</span><span class="nm">' + esc(f.name) + '</span><span class="lv">LV' + m.lv + gradeTag(m) + '</span><span class="tc">' + tchips(s.types) + '</span>' + (extra || '');
   }
   function evoLine(m) {
     var s = SPMAP[m.sid], st = stageOf(s, m.lv);
@@ -521,7 +526,7 @@
     });
     stats = '<div class="nat"><b>性格 · ' + m.nat + '</b><span>' + natText(m.nat) + '</span></div>' +
       '<div class="evhead"><b>学习力</b><span>可分配 <b class="' + (free ? 'red' : '') + '">' + free + '</b> · 已分配 ' + sum + ' / ' + EV_TOTAL + '</span><span class="hint">每 10 点学习力 = 1 点能力值，单项最多 ' + EV_MAX + '。战斗胜利后，出战过的精灵各得 1 点。<b>已经分配的学习力不能退回</b>，想好再加。</span></div>' +
-      (iv ? '<div class="ivhead"><b>天赋</b><span>合计 ' + ivSum + ' / 186</span><span class="hint">每项能力的天赋是 0~31 的随机数，越高越强。用「天赋重组合剂」可以把六项天赋全部重新随机。</span></div>' : '') +
+      (iv ? '<div class="ivhead"><b>天赋</b><span>合计 ' + ivSum + ' / 186 ' + gradeTag(m) + '</span><span class="hint">每项能力的天赋是 0~31 的随机数，越高越强。用「天赋重组合剂」可以把六项天赋全部重新随机。合计 0~89 一般，90~119 良，120~149 优，150~169 稀，170 以上极品。</span></div>' : '') +
       '<div class="stats evstats">' + stats + '<span class="sum">实际能力值 = LV' + m.lv + ' 的数值（受种族值和天赋影响） + 学习力加成，再乘性格修正' + (s.placeholder ? ' · 数值为占位' : s.unsure && s.unsure.length >= 6 ? ' · 种族值暂定' : '') + '</span></div>';
     var row = function (mv) {
       var M_ = M[mv], on = m.moves.indexOf(mv) >= 0, ok = a.indexOf(mv) >= 0, id = 'am-' + m.u + '-' + mv;
@@ -626,9 +631,10 @@
     fruit1: { name: '成长果实', sid: null, kind: 'exp', rate: 100, d: '给一只精灵直接增加经验：等级 × 100 点（LV30 吃一颗得 3,000 点）。等级越高，得到的经验越多。' },
     fruit2: { name: '迅速成长果实', sid: null, kind: 'exp', rate: 250, d: '给一只精灵直接增加经验：等级 × 250 点（LV30 吃一颗得 7,500 点）。比成长果实效果更好。' },
     // 瘴气驱逐战（2026-10-17）：100 个让芙罗拉星三种精灵领悟一个隐藏技能
+    deathTok: { name: '死神代币', sid: null, sids: ['pluto'], kind: 'jade', cost: 1, d: '击败先驱之塔第 60 层的死神获得，一个账号最多 3 颗。1 颗可以让帕努托尔一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；先驱之塔的代币商店里，兑换「帕努托尔的精元」也要用到它。', none: '你还没有帕努托尔。在先驱之塔的代币商店里，用 3000 先驱代币 + 1 颗死神代币可以兑换「帕努托尔的精元」。' },
     floraJade: { name: '芙罗拉玉', sid: null, sids: ['mush', 'wind', 'kaleo'], kind: 'jade', cost: 100, d: '芙罗拉星深处凝成的绿色玉石。100 个可以让玛西露姆、六尾风王、卡莱奥丹一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能，不用再满足战斗里的领悟条件。隐藏技能要到 LV' + HIDDEN_MIN_LV + ' 才能装备。瘴气驱逐战的全服奖励会发放；芙罗拉星的丛林、草甸里，每天也有机会捡到少量。', none: '你还没有玛西露姆、六尾风王或卡莱奥丹（进化前的形态也算）。去芙罗拉星的丛林、草甸捕捉吧。' }
   };
-  var MON_ORDER = ['floraJade', 'ivMoon', 'ivBone', 'ivReroll', 'evAny', 'evTagore', 'natAny', 'natTagore', 'evReset', 'fruit1', 'fruit2'], GEN_ORDER = ['trans', 'helmet', 'auto', 'rename', 'cap1', 'cap2', 'cap3', 'pot1', 'pot2', 'pot200'];
+  var MON_ORDER = ['floraJade', 'deathTok', 'ivMoon', 'ivBone', 'ivReroll', 'evAny', 'evTagore', 'natAny', 'natTagore', 'evReset', 'fruit1', 'fruit2'], GEN_ORDER = ['trans', 'helmet', 'auto', 'rename', 'cap1', 'cap2', 'cap3', 'pot1', 'pot2', 'pot200'];
   // 剧情道具：主线里拿到的，不能使用也不会消耗
   var KEY_ITEMS = {
     trans: { name: '精灵翻译器', d: '汉街总部国际A座的情报显示，这个翻译器能凭一己之力考到雅思 6.5 分。这样一来，翻译精灵的语言也一定能行吧……', img: 'translator' },
@@ -645,7 +651,8 @@
     m_lcleaf: { name: '叶子喵的叶片', d: '旅行精灵叶子喵身上掉下来的叶片，还带着一点光。5 片可以在冶炼坊合成叶子喵的精元。' },
     e_leafcat: { name: '叶子喵的精元', d: '用 5 片叶子喵的叶片凝成的精元。放进神农架 · 精灵保育仓，孵化 8 小时后会诞生一只叶子小小喵。', hatch: { sid: 'leafcat', lv: 1, min: 480 } }
   };
-  var MAT_ORDER = ['m_lcleaf', 'e_leafcat'];
+  MATS.e_pluto = { name: '帕努托尔的精元', d: '在先驱之塔的代币商店兑换的精元。放进神农架 · 精灵保育仓，孵化 12 小时后会诞生一只帕努。', hatch: { sid: 'pluto', lv: 1, min: 720 } };
+  var MAT_ORDER = ['m_lcleaf', 'e_leafcat', 'e_pluto'];
   // 太空种植园只种药草。min 是成熟分钟，yield 是收获数量。收获时退回种子。
   var SEEDS = {
     s_herb: { name: '药草种子', d: '生态舱里种的药草籽。种下去要 8 小时，收获时这颗种子会退回来。', crop: 'c_herb', min: 480, yield: 50 },
@@ -667,7 +674,7 @@
     if (!it || !(acc.items[k] > 0)) return { ok: false, msg: '没有这个道具了。' };
     if (!itemFits(k, m)) return { ok: false, msg: '先选一只' + (it.sids ? it.sids.map(function (x) { return SPMAP[x].name; }).join('、') : it.sid ? SPMAP[it.sid].name : '精灵') + '。' };
     if (it.kind === 'jade') {
-      if (acc.items[k] < it.cost) return { ok: false, msg: '芙罗拉玉不够：需要 ' + it.cost + ' 个，你现在有 ' + acc.items[k] + ' 个。' };
+      if (acc.items[k] < it.cost) return { ok: false, msg: it.name + '不够：需要 ' + it.cost + ' 个，你现在有 ' + acc.items[k] + ' 个。' };
       var left = jadeMoves(m); if (!left.length) return { ok: false, msg: form(m).name + ' 已经领悟了全部隐藏技能。' };
       if (left.indexOf(nat) < 0) nat = left[0];
       if (!Array.isArray(m.hl)) m.hl = []; m.hl.push(nat); acc.items[k] -= it.cost; save();
@@ -1040,6 +1047,7 @@
   var PLANETS = [
     { id: 'earth', name: '地球', d: '我们出发的地方。', sites: ['school', 'river', 'jiuquan'] },
     { id: 'jingchu', name: '荆楚号', d: '环绕地球运行的星际探索舰，轮廓和湖北省一模一样。', sites: ['board', 'xiaogan', 'academy', 'storage'], ship: true, after: 'jiuquan' },
+    { id: 'tower', name: '先驱之塔', d: '停泊在荆楚号后方的一座高塔，共 60 层。每一层都守着一批强大的精灵，塔顶住着死神。', sites: [], tower: true, after: 'flora1' },
     { id: 'flora', name: '芙罗拉星', d: '草系星球。丛林、草甸和盐碱地里栖息着许多野生精灵。', sites: ['flora1', 'flora2', 'flora3', 'flora4', 'flora5', 'flora6', 'travelcat'], wild: true, ptype: '草系星球', color: ['#9fd08a', '#3f7d4a'], get img() { return floraFallen() ? 'images/planets/flora_corrupt.webp?v=2' : 'images/planets/flora.webp?v=2'; }, after: 'board' },
     { id: 'kamble', name: '坎布尔星', d: '水系星球。大半个星球都被温暖的浅海覆盖。', sites: [], wild: true, ptype: '水系星球', color: ['#8cc6ea', '#2a6fb0'], after: 'flora1' },
     { id: 'pompeii', name: '庞贝星', d: '火系星球。火山终年喷发，地面被熔岩烤得发烫。', sites: [], wild: true, ptype: '火系星球', color: ['#f2a46b', '#b3401f'], img: 'images/planets/pompeii.webp', after: 'flora1' },
@@ -1363,8 +1371,8 @@
       }
       html += '<div class="planets">' + PLANETS.filter(planetOpen).map(function (p) {
         var n = p.sites.length, done = p.sites.filter(function (s) { return prog(s).done; }).length, open = planetOpen(p);
-        return '<button type="button" class="planet' + (open ? '' : ' locked') + '" data-planet="' + p.id + '"' + (open ? '' : ' disabled') + '><span class="tape l"></span>' + (p.ship ? '<img class="ship-ic" src="' + CHARS.ship_icon + '" alt="">' : planetSvg(p.id)) +
-          '<span class="pn">' + p.name + (p.wild ? '<span class="chip ptype">' + p.ptype + '</span>' : '') + '</span><span class="hint">' + p.d + '</span><span class="pc">' + (open ? (p.wild ? '野外区域 ' + regionsOf(p.id).length + ' 个 · 可捕捉野生精灵' : '地点 ' + n + ' 个 · 已完成 ' + done) : '读完「' + SITES[p.after].chapter.split(' · ')[1] + '」后解锁') + '</span></button>';
+        return '<button type="button" class="planet' + (open ? '' : ' locked') + '" data-planet="' + p.id + '"' + (open ? '' : ' disabled') + '><span class="tape l"></span>' + (p.ship ? '<img class="ship-ic" src="' + CHARS.ship_icon + '" alt="">' : p.tower ? towerSvg() : planetSvg(p.id)) +
+          '<span class="pn">' + p.name + (p.wild ? '<span class="chip ptype">' + p.ptype + '</span>' : '') + '</span><span class="hint">' + p.d + '</span><span class="pc">' + (open ? (p.tower ? '当前第 ' + twRec().f + ' 层 · 存档点第 ' + twRec().cp + ' 层' : p.wild ? '野外区域 ' + regionsOf(p.id).length + ' 个 · 可捕捉野生精灵' : '地点 ' + n + ' 个 · 已完成 ' + done) : '读完「' + SITES[p.after].chapter.split(' · ')[1] + '」后解锁') + '</span></button>';
       }).join('') +
         '<div class="planet locked" aria-disabled="true"><svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="34" fill="none" stroke="#75737e" stroke-width="3" stroke-dasharray="8 6"/><text x="60" y="72" text-anchor="middle" font-size="34" fill="#75737e" font-family="Long Cang, KaiTi, cursive">?</text></svg>' +
         '<span class="pn">未知星球</span><span class="hint">更多星球敬请期待</span></div></div>';
@@ -1373,6 +1381,7 @@
       html += '<div class="crumb"><button type="button" class="btn ghost" id="ex-back">‹ 返回星球</button><b>' + P.name + '</b></div>';
       if (P.ship) { el.innerHTML = html + shipMap(P); return; }
       if (P.wild) { el.innerHTML = html + (P.id === 'flora' ? floraPage() : wildPage(P)); return; }
+      if (P.tower) { el.innerHTML = html + towerPage(); return; }
       html += '<div class="sites">' + P.sites.map(function (id) {
         var S = SITES[id], pr = prog(id), started = pr.at > 0 && !pr.done, open = unlocked(id);
         var rw = S.reward ? '<p class="hint">首次读完奖励：' + rwList(S.reward).filter(Boolean).join('、') + (UNLOCK[id] ? '，并开放' + UNLOCK[id] : '') + (pr.rewarded ? '（已领取）' : '') + '</p>' : '';
@@ -1531,7 +1540,7 @@
   function invCopy() { var o = {}; ITEM_ORDER.forEach(function (k) { o[k] = acc.items[k] || 0; }); return o; }
   function useInv(k) { acc.items[k] = Math.max(0, (acc.items[k] || 0) - 1); save(); }
   // 每天通过 PVE 战斗直接获得的经验上限（击败精灵的经验，含进经验背包的那部分；首领首通、任务等奖励不算）
-  var PVE_XP_CAP = 120000;
+  var PVE_XP_CAP = 200000;   // 2026-10-17：120000 → 200000
   function pveLeft() { var d = dayStr(); if (!acc.pveXp || acc.pveXp.d !== d) acc.pveXp = { d: d, n: 0 }; return Math.max(0, PVE_XP_CAP - acc.pveXp.n); }
   // 击败一只精灵：经验 = 等级² × 2 + 20；学习力按对方等级 1 / 2 / 3 点
   function foeExp(lv) { return lv * lv * 2 + 20; }
@@ -2222,6 +2231,133 @@
       var gi = +b.dataset.chgo;
       if (gi === 1 && unlocked('fl_chal2') && !prog('fl_chal2').done) { ex.chalHelper = 'mm'; startVN('fl_chal2', 'replay', $('pg-explore'), true); window.scrollTo(0, $('pg-explore').offsetTop - 8); return true; }   // 第二关：先强制播完明明教官的助战教学
       openLineup('flora', gi); return true;
+    }
+    return false;
+  }
+
+  /* ---------- 先驱之塔（2026-10-17） ----------
+   * 星球列表里排在荆楚号后面，读完第五段「降临芙罗拉」后开放。共 60 层，从下往上一层一层打。
+   * 第 1、11、21、31、41、51 层自动存档；挑战失败（或中途退出）回到最近的存档点。
+   * 第 1~59 层：玩家能获得的各种精灵，LV40 → LV80，每层 1~3 只，体力偏高，各带 1~2 个特性（逢 10 的层是 1 只更强的守层者）。
+   * 第 60 层：死神「帕努托尔」LV80、体力 10000，【不朽】【肃穆】【死神】。击败后：称号「死神」、死神代币（一个账号最多 3 颗）、大量经验和代币，回到第 1 层。
+   * 每天从塔里最多拿 150000 经验、1000 先驱代币（正好是通关两次的量）。
+   * 存档：acc.tower = { f 当前层, cp 存档点, best 最高通过层, clears 通关次数, death 已获得的死神代币, tok 先驱代币, day: { d, exp, tok } } */
+  var TOWER = { top: 60, cps: [1, 11, 21, 31, 41, 51], dayExp: 150000, dayTok: 1000, deathMax: 3 };
+  var TW_POOL = ['leaf', 'squid', 'shroom', 'wind', 'mush', 'kaleo', 'faraday', 'firemouse', 'frost', 'gorgon', 'hephaestus', 'leigong', 'pede', 'siren', 'turkey', 'wild', 'tagore', 'leafcat', 'moon', 'bone', 'aegis'];
+  var TW_FX = ['dr', 'regen', 'thorn', 'rage', 'swift', 'guard', 'noStatus', 'feud'];
+  var TW_SHOP = [
+    { k: 'floraJade', cost: 10 }, { k: 'fruit2', cost: 60 }, { k: 'cap3', cost: 80 }, { k: 'evAny', cost: 150 }, { k: 'evReset', cost: 200 },
+    { k: 'ivReroll', cost: 400 }, { k: 'natAny', cost: 2000 }, { k: 'e_pluto', cost: 3000, death: 1 }
+  ];
+  function twRec() {
+    if (!acc.tower) acc.tower = { f: 1, cp: 1, best: 0, clears: 0, death: 0, tok: 0 };
+    var T = acc.tower, d = bjDay(); if (!T.day || T.day.d !== d) T.day = { d: d, exp: 0, tok: 0 };
+    return T;
+  }
+  function twLv(f) { return f >= TOWER.top ? 80 : 40 + Math.round((f - 1) * 40 / 58); }
+  function twExp(f) { return f >= TOWER.top ? 16000 : 400 + 20 * f; }          // 一次通关合计 75000
+  function twTok(f) { return f >= TOWER.top ? 232 : 2 + Math.floor(f / 10); }   // 一次通关合计 500
+  function twFloor(f) {
+    if (f >= TOWER.top) return { boss: true, foes: [{ sid: 'pluto', lv: 80, hp: 10000, fx: { immortal: 1, solemn: 1, reaper: 1 } }] };
+    var g = seeded('pioneer-tower:' + f), gate = f % 10 === 0, n = gate ? 1 : 1 + Math.floor(g() * 3), lv = twLv(f), used = {}, foes = [];
+    for (var i = 0; i < n; i++) {
+      var sid; do { sid = TW_POOL[Math.floor(g() * TW_POOL.length)]; } while (used[sid]); used[sid] = 1;
+      var mult = gate ? 4 : n === 1 ? 3 : n === 2 ? 2 : 1.5, nfx = gate || f >= 30 ? 2 : 1, fx = { pp: 99 }, pick = {};
+      while (Object.keys(pick).length < nfx) pick[TW_FX[Math.floor(g() * TW_FX.length)]] = 1;
+      Object.keys(pick).forEach(function (k) { fx[k] = k === 'dr' ? 0.2 : k === 'regen' ? 0.06 : 1; });
+      foes.push({ sid: sid, lv: lv + (gate ? 2 : 0), hp: Math.round(calcStat(SPMAP[sid].base.hp, 'hp', lv) * mult), fx: fx });
+    }
+    return { gate: gate, foes: foes };
+  }
+  function fxNames(fx) { return BOSS_FX.filter(function (x) { return fx[x.k]; }).map(function (x) { return x; }); }
+  function towerSvg() {
+    return '<svg viewBox="0 0 120 120" aria-hidden="true"><path d="M60 8 L72 30 H48 Z" fill="#c42f3a" stroke="#23222b" stroke-width="3" stroke-linejoin="round"/>' +
+      '<rect x="46" y="30" width="28" height="78" fill="#e6eaf0" stroke="#23222b" stroke-width="3"/>' +
+      [40, 54, 68, 82, 96].map(function (y) { return '<rect x="55" y="' + y + '" width="10" height="7" rx="2" fill="#f2c46b" stroke="#23222b" stroke-width="2"/>'; }).join('') +
+      '<path d="M34 108 H86" stroke="#23222b" stroke-width="4" stroke-linecap="round"/></svg>';
+  }
+  function towerPage() {
+    var T = twRec(), tab = ex.twTab === 'shop' ? 'shop' : 'climb';
+    var head = '<div class="tw-head"><div class="tw-stat"><b>第 ' + T.f + ' 层</b><span>当前</span></div><div class="tw-stat"><b>第 ' + T.cp + ' 层</b><span>存档点</span></div><div class="tw-stat"><b>' + T.clears + '</b><span>通关次数</span></div>' +
+      '<div class="tw-stat"><b>' + fmt(T.tok) + '</b><span>先驱代币</span></div><div class="tw-stat"><b>' + (acc.items.deathTok || 0) + '</b><span>死神代币</span></div></div>' +
+      '<p class="hint tw-day">今天从先驱之塔获得：累积经验 ' + fmt(T.day.exp) + ' / ' + fmt(TOWER.dayExp) + '，先驱代币 ' + T.day.tok + ' / ' + TOWER.dayTok + '（北京时间 0 点重置）</p>' +
+      '<div class="fparts" role="tablist"><button type="button" role="tab" class="tab' + (tab === 'climb' ? ' on' : '') + '" data-twtab="climb">挑战</button><button type="button" role="tab" class="tab' + (tab === 'shop' ? ' on' : '') + '" data-twtab="shop">代币商店</button></div>';
+    return '<div class="tw-wrap">' + head + (tab === 'shop' ? towerShop(T) : towerClimb(T)) + '</div>';
+  }
+  function towerClimb(T) {
+    var ladder = '<ol class="tw-ladder">';
+    for (var f = TOWER.top; f >= 1; f--) {
+      var cls = f < T.f ? 'done' : f === T.f ? 'cur' : 'lock';
+      ladder += '<li class="tw-fl ' + cls + (f === TOWER.top ? ' top' : '') + (f % 10 === 0 && f < TOWER.top ? ' gate' : '') + '" title="第 ' + f + ' 层' + (TOWER.cps.indexOf(f) >= 0 ? '（存档点）' : '') + '">' + (TOWER.cps.indexOf(f) >= 0 ? '<i class="tw-cp" aria-hidden="true">⚑</i>' : '') + (f === TOWER.top ? '☠' : f) + '</li>';
+    }
+    ladder += '</ol>';
+    var F = twFloor(T.f), team = (acc.teams[acc.active] || []).map(mon).filter(Boolean);
+    if (F.boss && (!ex.twPick || !team.some(function (m) { return m.u === ex.twPick; }))) ex.twPick = team.length ? team[0].u : null;
+    var foes = F.foes.map(function (x) {
+      var fm = form({ sid: x.sid, lv: x.lv }), k = wildKnown(x.sid) || F.boss;
+      return '<li class="tw-foe"><img src="' + fm.img + '" alt=""><div><b>' + (F.boss ? '死神 · ' : '') + esc(fm.name) + '</b><small>LV' + x.lv + ' · 体力 ' + fmt(x.hp) + '</small><div class="tw-fx">' +
+        fxNames(x.fx).map(function (z) { return '<span class="chip boss-diff" title="' + esc(z.d({ boss: x.fx, hp: x.hp })) + '">' + z.t + '</span>'; }).join('') + '</div>' +
+        '<ul class="tw-fxd">' + fxNames(x.fx).map(function (z) { return '<li><b>【' + z.t + '】</b>' + esc(z.d({ boss: x.fx, hp: x.hp })) + '</li>'; }).join('') + '</ul></div></li>';
+    }).join('');
+    var ge = Math.min(twExp(T.f), Math.max(0, TOWER.dayExp - T.day.exp)), gt = Math.min(twTok(T.f), Math.max(0, TOWER.dayTok - T.day.tok));
+    var teamHTML = F.boss ? '<h4>出战精灵 <span class="hint">【肃穆】只能派一只精灵单挑，点一下选择</span></h4><div class="ch-mons">' + team.map(function (m) { var f = form(m), on = m.u === ex.twPick; return '<button type="button" class="ch-mon' + (on ? ' on' : '') + '" data-twpick="' + m.u + '" aria-pressed="' + on + '"><img src="' + f.img + '" alt=""><b>' + esc(f.name) + '</b><small>LV' + m.lv + '</small></button>'; }).join('') + '</div>'
+      : '<p class="hint">使用当前的出战配队（' + TEAM_NAME[acc.active] + '，' + team.length + ' 只）。战斗中可以使用补药。</p>';
+    return '<div class="tw-cols">' + ladder + '<article class="tw-detail"><span class="tape r"></span><span class="sc-tag">' + (F.boss ? '塔顶 · 第 60 层' : F.gate ? '第 ' + T.f + ' 层 · 守层者' : '第 ' + T.f + ' 层') + '</span>' +
+      '<h3>' + (F.boss ? '死神「帕努托尔」' : '第 ' + T.f + ' 层') + '</h3><ul class="tw-foes">' + foes + '</ul>' +
+      '<p class="ch-rw"><b>通过奖励</b>　<span class="chip">累积经验 ×' + fmt(twExp(T.f)) + '</span> <span class="chip">先驱代币 ×' + twTok(T.f) + '</span>' + (F.boss ? ' <span class="chip">死神代币 ×1（' + T.death + ' / ' + TOWER.deathMax + '）</span> <span class="chip">称号「死神」</span>' : '') +
+      (ge < twExp(T.f) || gt < twTok(T.f) ? '<span class="hint">（今天的塔内奖励快到上限了：这一层实际只能拿到经验 ×' + fmt(ge) + '、代币 ×' + gt + '）</span>' : '') + '</p>' +
+      teamHTML +
+      '<div class="ch-go"><button type="button" class="btn primary" data-twgo="1"' + (team.length ? '' : ' disabled') + '>挑战第 ' + T.f + ' 层</button><span class="hint">第 1、11、21、31、41、51 层自动存档；挑战失败或中途退出，会回到存档点第 ' + T.cp + ' 层。' + (F.boss ? '击败死神后回到第 1 层。' : '') + '</span></div></article></div>';
+  }
+  function towerShop(T) {
+    return '<p class="hint">用先驱代币兑换道具。性格在这个世界里格外珍稀，所以性格胶囊很贵。</p><div class="tw-shop">' + TW_SHOP.map(function (x, i) {
+      var it = USE_ITEMS[x.k] || MATS[x.k] || ITEMS[x.k], ok = T.tok >= x.cost && (!x.death || (acc.items.deathTok || 0) >= x.death);
+      return '<article class="tw-item"><b>' + itemName(x.k) + '</b><p class="hint">' + esc(it ? it.d : '') + '</p><p class="tw-cost">' + fmt(x.cost) + ' 先驱代币' + (x.death ? ' + ' + x.death + ' 死神代币' : '') + '</p>' +
+        '<button type="button" class="btn' + (ok ? ' primary' : '') + '" data-twbuy="' + i + '"' + (ok ? '' : ' disabled') + '>兑换</button>' + (acc.items[x.k] ? '<span class="hint">已有 ' + acc.items[x.k] + '</span>' : '') + '</article>';
+    }).join('') + '</div>';
+  }
+  function startTower() {
+    var T = twRec(), f = T.f, F = twFloor(f);
+    var team = (acc.teams[acc.active] || []).map(mon).filter(Boolean); if (!team.length) return;
+    team = F.boss ? [mon(ex.twPick) || team[0]] : team.slice(0, TEAM_SIZE);
+    var p = team.map(storyMon);
+    var a = F.foes.map(function (x) { seeMon(x.sid, x.lv); var fm = form({ sid: x.sid, lv: x.lv }); return { id: x.sid, lv: x.lv, moves: defaultMoves(x.sid, x.lv), nick: (F.boss ? '死神 · ' : '') + fm.name, img: fm.img, maxhp: x.hp, boss: JSON.parse(JSON.stringify(x.fx)) }; });
+    stopTimers(); ex.fighting = true; document.body.classList.add('story-fight'); syncBattle();
+    $('pg-explore').hidden = true; $('pg-arena').hidden = false;
+    window.HSBATTLE.start({ p: p, a: a, foe: '先驱之塔', diff: F.boss ? '第 60 层 · 死神' : '第 ' + f + ' 层', bgm: F.boss ? 'boss3' : 'stage', items: invCopy(), onItem: useInv, back: '先驱之塔',
+      onEnd: function (res, seen, downs, quit) {
+        var msg = [];
+        dailyHit('pve');
+        if (res === 'win') {
+          var ge = Math.min(twExp(f), Math.max(0, TOWER.dayExp - T.day.exp)), gt = Math.min(twTok(f), Math.max(0, TOWER.dayTok - T.day.tok));
+          T.day.exp += ge; T.day.tok += gt; acc.exp = (acc.exp || 0) + ge; T.tok += gt; T.best = Math.max(T.best, f);
+          msg.push('先驱之塔第 ' + f + ' 层通过！' + (ge || gt ? '获得累积经验 ×' + fmt(ge) + '、先驱代币 ×' + gt + (ge < twExp(f) || gt < twTok(f) ? '（已到今天的塔内奖励上限）' : '') + '。' : '今天从先驱之塔获得的奖励已经到上限了。'));
+          if (F.boss) {
+            T.clears++;
+            if (T.death < TOWER.deathMax) { T.death++; giveItems({ deathTok: 1 }); msg.push('获得「死神代币」×1（' + T.death + ' / ' + TOWER.deathMax + '）。'); } else msg.push('死神代币已经拿满 ' + TOWER.deathMax + ' 颗了。');
+            T.f = 1; T.cp = 1; msg.push('塔顶的光芒把你送回了第 1 层。');
+          } else { T.f = f + 1; if (TOWER.cps.indexOf(T.f) >= 0) { T.cp = T.f; msg.push('到达第 ' + T.f + ' 层，进度已自动存档。'); } }
+        } else { T.f = T.cp; msg.push((quit ? '退出了挑战' : '挑战失败了') + '……回到存档点第 ' + T.cp + ' 层。'); }
+        msg = msg.concat(battleRewards(team, seen, downs));
+        save();
+        ex.fighting = false; document.body.classList.remove('story-fight');
+        ex.view = 'sites'; ex.planet = 'tower'; ex.twTab = 'climb';
+        $('pg-arena').hidden = page !== 'arena'; $('pg-explore').hidden = page !== 'explore';
+        renderTop(); syncBattle(); window.scrollTo(0, $('pg-explore').offsetTop - 8);
+        if (msg.length) setTimeout(function () { toast(msg.join('')); }, 300);
+      } });
+  }
+  function towerClick(b) {
+    if (b.dataset.twtab) { ex.twTab = b.dataset.twtab; renderExplore(); return true; }
+    if (b.dataset.twpick) { ex.twPick = +b.dataset.twpick; renderExplore(); return true; }
+    if (b.dataset.twgo) { startTower(); return true; }
+    if (b.dataset.twbuy != null && b.dataset.twbuy !== undefined) {
+      var T = twRec(), x = TW_SHOP[+b.dataset.twbuy]; if (!x) return true;
+      if (T.tok < x.cost || (x.death && (acc.items.deathTok || 0) < x.death)) { toast('代币不够。'); return true; }
+      T.tok -= x.cost; if (x.death) acc.items.deathTok -= x.death;
+      var o = {}; o[x.k] = 1; giveItems(o); save(); renderExplore();
+      toast('兑换了「' + itemName(x.k) + '」，已放入储存箱。' + (x.k === 'e_pluto' ? '放进神农架 · 精灵保育仓就能孵化。' : ''));
+      return true;
     }
     return false;
   }
@@ -4048,6 +4184,7 @@
     if (e.target.closest('#bsoc')) { bsocClick(e); return; }
     var b = e.target.closest('button, .dept.open'); if (!b) return;
     if (chalClick(b)) return;
+    if (towerClick(b)) return;
     if (b.dataset.area) { teleport(b.dataset.area); return; }
     if (b.dataset.npctalk) { npcTalk(b.dataset.npctalk); return; }
     if (b.dataset.room) { ex.view = 'room'; ex.room = b.dataset.room; ex.area = '天门'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); mysteryRoll('荆楚号 · 陆羽茶室'); return; }

@@ -376,10 +376,12 @@ function applyDamage(S, evs, j, amount, src, o) {
     amt = t.hp - 1; t.fx.endure = 0; log(S, evs, nm(t) + '的不灭之躯撑住了，残留 1 点体力！', 'fxl'); hqGet(S, evs, t, '寂灭幽映');
   }
   if (t.id === 'dummy' && !t.breakable) { recordDummy(S, amt, src == null ? (S.dotSrc || '持续/附加效果') : null); E(S, evs, 'hit', { side: j, amount: amt, crit: o.crit, eff: o.eff }); return amt; }
+  if (t.boss && t.boss.guard && !t.boss.guardUsed && amt >= t.hp && t.hp > 1) { amt = t.hp - 1; t.boss.guardUsed = 1; log(S, evs, nm(t) + '的「坚壁」发动了，残留 1 点体力！', 'fxl'); }
   if (j === 1 && src === 0 && !S.pvp) { var cs = CS(S); if (o.crit) cs.crit++; if (amount > cs.maxHit) cs.maxHit = Math.floor(amount); if (t.hp >= t.maxhp && amount >= t.maxhp) cs.oneShot++; }
   amt = Math.min(t.hp, amt); t.hp -= amt;
   if (amt > 0 && t.st['睡眠'] > 0 && src != null) { delete t.st['睡眠']; log(S, evs, nm(t) + '被打醒了'); }
   E(S, evs, 'hit', { side: j, amount: amt, crit: o.crit, eff: o.eff });
+  if (t.boss && t.boss.thorn && src != null && src !== j && amt > 0 && !act(S, src).fainted) { var th = Math.max(1, Math.floor(amt * 0.15)); loseHp(S, evs, src, th, nm(t) + '的「荆棘」反弹了 ' + th + ' 点伤害'); }
   if (excess > 0) {
     log(S, evs, nm(t) + '的龙之逆鳞把 ' + excess + ' 点伤害反馈给了对方！', 'fxl');
     loseHp(S, evs, src, excess);
@@ -535,7 +537,9 @@ function calcDamage(me, foe, mv, firstMover, est) {
   if (foe.tm.dr40 > 0) mod *= 0.6;
   if (foe.boss && foe.boss.dr) mod *= 1 - foe.boss.dr;   // 首领「星球聚能」
   if (foe.boss && foe.boss.eternal) mod *= 1.2;   // 复活后的泰戈尔「永续的纷争」：受到的伤害 +20%
-  if (me.boss && me.boss.purify && miaN(foe) > 0) mod *= 2;   // 叶子喵剧情限定特性「净化光芒」：对沾染瘴气的目标伤害 +100%
+  if (me.boss && me.boss.purify && miaN(foe) > 0) mod *= 2;
+  if (me.boss && me.boss.rage && me.hp < me.maxhp / 2) mod *= 1.3;   // 先驱之塔「狂暴」
+  if (me.boss && me.boss.reaper) mod *= 1.25 + 0.02 * Math.max(0, Math.floor((1 - foe.hp / foe.maxhp) * 100));   // 「死神」   // 叶子喵剧情限定特性「净化光芒」：对沾染瘴气的目标伤害 +100%
   return { dmg: Math.max(1, Math.floor(base * mod)), crit: crit, eff: e };
 }
 function hitChance(me, foe, mv) {
@@ -572,7 +576,7 @@ function resolveTurn(S, acts) {
   if (!S.pvp && acts[1].kind === 'move' && puppetRoll(S)) { summonPuppet(S, evs); acts = [acts[0], { kind: 'pass' }]; S.turnActed[1] = true; }
   var info = [0, 1].filter(function (i) { return acts[i].kind === 'move'; }).map(function (i) {
     var m = act(S, i), mv = moveFor(m, acts[i].i);
-    return { i: i, mv: mv, slot: acts[i].i, pri: mv.pri + (m.tm.prio > 0 ? 1 : 0), spe: speedOf(m), r: RNG() };
+    return { i: i, mv: mv, slot: acts[i].i, pri: mv.pri + (m.tm.prio > 0 ? 1 : 0) + (m.boss && (m.boss.swift || m.boss.reaper) ? 1 : 0), spe: speedOf(m), r: RNG() };
   });
   info.sort(function (a, b) { return b.pri - a.pri || b.spe - a.spe || a.r - b.r; });
   S.order = info.map(function (x) { return x.i; });
@@ -689,7 +693,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   if (me.fainted) return;
   if (!extra && cantAct(S, evs, me)) return;
   if (slotIdx >= 0 && moveBlocked(me, me.moves[slotIdx])) { log(S, evs, (me.flags && me.flags.sy && mv.cat === '变化' ? '沈阳大街上不讲究这些花架子，' + nm(me) + '无法使用「' : nm(me) + '处于光影之月，无法使用「') + mv.name + '」'); return; }
-  if (!mv.struggle && slotIdx >= 0) me.moves[slotIdx].pp--;
+  if (!mv.struggle && slotIdx >= 0 && !(me.boss && (me.boss.immortal || me.boss.ppInf))) me.moves[slotIdx].pp--;   // 「不朽」：PP 无限
   if (S.silenced[i] && !extra) { log(S, evs, nm(me) + '的「' + mv.name + '」被黑暗吞没，失效了！', 'bad'); return; }
   var firstMover = !S.turnActed[j];
   var mt = mvType(me, mv);
@@ -1163,7 +1167,15 @@ var BOSS_FX = [
   { k: 'erode', t: '深度侵蚀', h: '深度侵蚀', d: function (m) { return '物攻、特攻永久提升 ' + Math.round((erodeMult(m) - 1) * 100) + '%（直接算进能力值，不会被消除）'; } },
   { k: 'mute', t: '无法交流', h: '无法交流', d: function () { return '完全失去理智，只会使用攻击技能'; } },
   { k: 'purify', t: '净化光芒', h: '净化光芒', d: function () { return '对沾染瘴气的目标造成的伤害提升 100%'; } },
-  { k: 'immortal', t: '不朽', h: '不朽', d: function () { return '免疫任何异常状态，也免疫自身能力等级的下降（提升不受影响）'; } },
+  { k: 'immortal', t: '不朽', h: '不朽', d: function () { return '免疫任何异常状态，也免疫自身能力等级的下降（提升不受影响）；技能 PP 无限'; } },
+  // 先驱之塔（2026-10-17）
+  { k: 'regen', t: '再生', h: '再生', d: function (m) { return '每回合结束时恢复 ' + Math.round((m.boss.regen === true ? 0.06 : m.boss.regen) * 100) + '% 最大体力'; } },
+  { k: 'thorn', t: '荆棘', h: '荆棘', d: function () { return '受到攻击时，把这次伤害的 15% 反弹给攻击者'; } },
+  { k: 'rage', t: '狂暴', h: '狂暴', d: function () { return '体力低于一半时，造成的伤害提升 30%'; } },
+  { k: 'swift', t: '疾行', h: '疾行', d: function () { return '所有技能先制 +1'; } },
+  { k: 'guard', t: '坚壁', h: '坚壁', d: function (m) { return m.boss.guardUsed ? '已经发动过了' : '第一次受到致命伤害时，保留 1 点体力（只发动一次）'; } },
+  { k: 'solemn', t: '肃穆', h: '肃穆', d: function () { return '对手只能派出一只精灵单挑'; } },
+  { k: 'reaper', t: '死神', h: '死神', d: function () { return '所有技能先制 +1，造成的伤害提升 25%；对方每损失 1% 最大体力，伤害再提升 2%'; } },
   { k: 'humus', t: '腐殖质', h: '腐殖质', d: function (m) { return '每回合结束时随机给对手附加 1 项：速度 −1 / 物攻 −1 / 特攻 −1 / 寄生 3 回合 / 瘴气 +4 层（「枯萎中蜕生」发动后变成「腐殖乐园」，同时附加其中 2 项）'; } },
   { k: 'weed', t: '除草机', h: '除草机', d: function (m) { var d0 = (m.boss && m.boss.weedDmg) || 50; return '每回合结束时附带 ' + d0 + ' 点固定伤害，每回合 +2（对草系精灵伤害翻倍）。「枯萎中蜕生」发动后变成「抹除装置」：伤害定格在当时数值的 1.5 倍，不再增长'; } },
   { k: 'rebirth', t: '枯萎中蜕生', h: '枯萎中蜕生', hide: function (m) { return !m.boss.rebirthKnown; }, d: function () { return '体力首次低于 4444 时发动：恢复 1000 体力，并对敌方造成其最大体力 60% 的固定伤害；「腐殖质」「除草机」从此分别变成「腐殖乐园」「抹除装置」'; } }
@@ -1294,6 +1306,7 @@ function endOfTurn(S, evs) {
   miasmaField(S, evs);
   humusField(S, evs);
   weedField(S, evs);
+  [0, 1].forEach(function (i) { var m = act(S, i); if (!m.fainted && m.boss && m.boss.regen && m.hp < m.maxhp) { log(S, evs, nm(m) + '的「再生」发动了', 'fxl'); heal(S, evs, i, m.maxhp * (m.boss.regen === true ? 0.06 : m.boss.regen)); } });   // 先驱之塔「再生」
   [0, 1].forEach(function (i) {
     var m = act(S, i); if (m.fainted) return;
     var o = act(S, 1 - i);

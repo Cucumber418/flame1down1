@@ -2042,3 +2042,37 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .bgm-it.on { background: #fff3d6; box-shadow: 2px 2px 0 var(--red); }
 .bgm-ic { grid-row: span 2; font-size: 18px; text-align: center; }
 .bgm-it small { color: #777; font-size: 12px; }
+/* 天赋评级（2026-10-17） */
+.iv-grade { display: inline-block; margin-left: 4px; padding: 0 5px; border-radius: 4px; font-size: 11px; font-weight: 700; line-height: 16px; vertical-align: middle; border: 1px solid; }
+.iv-grade.g1 { color: #6b6b6b; background: #fff; border-color: #c9c9c9; }
+.iv-grade.g2 { color: #fff; background: #3e9b4f; border-color: #2d7a3c; }
+.iv-grade.g3 { color: #fff; background: #3577c9; border-color: #275ea3; }
+.iv-grade.g4 { color: #fff; background: #8a4fc4; border-color: #6c3a9e; }
+.iv-grade.g5 { color: #fff; background: #ec8a1c; border-color: #c46e0e; box-shadow: 0 0 6px rgba(236,138,28,.6); }
+/* 先驱之塔（2026-10-17） */
+.tw-head { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; margin: 6px 0; }
+.tw-stat { display: grid; justify-items: center; padding: 8px; background: #fff; border: 1.5px solid var(--ink); border-radius: 10px; }
+.tw-stat b { font-size: 18px; }
+.tw-stat span { font-size: 12px; color: #777; }
+.tw-day { margin: 4px 0 8px; }
+.tw-cols { display: grid; grid-template-columns: 150px 1fr; gap: 14px; align-items: start; margin-top: 10px; }
+@media (max-width: 640px) { .tw-cols { grid-template-columns: 1fr; } .tw-ladder { max-height: 180px; } }
+.tw-ladder { list-style: none; margin: 0; padding: 6px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; max-height: 520px; overflow-y: auto; background: #3b3f4a; border: 2px solid var(--ink); border-radius: 10px 10px 4px 4px; }
+.tw-fl { position: relative; text-align: center; font-size: 11.5px; line-height: 22px; border-radius: 4px; background: #5a5f6c; color: #aab; }
+.tw-fl.done { background: #8fbf8a; color: #173; }
+.tw-fl.cur { background: #f2c46b; color: #23222b; font-weight: 700; box-shadow: 0 0 0 2px #fff; }
+.tw-fl.gate { outline: 1px dashed #f2c46b; }
+.tw-fl.top { grid-column: 1 / -1; background: #2a1830; color: #e0b0ff; font-size: 15px; }
+.tw-fl.top.cur { background: #f2c46b; color: #23222b; }
+.tw-cp { position: absolute; top: -3px; left: 1px; font-size: 9px; font-style: normal; color: #c42f3a; }
+.tw-detail { position: relative; padding: 14px 16px; background: #fff; border: 2px solid var(--ink); border-radius: 12px; box-shadow: 4px 4px 0 var(--ink); }
+.tw-foes { list-style: none; margin: 8px 0; padding: 0; display: grid; gap: 8px; }
+.tw-foe { display: grid; grid-template-columns: 72px 1fr; gap: 10px; align-items: start; padding: 8px; border: 1.5px dashed var(--rule); border-radius: 10px; }
+.tw-foe img { width: 72px; height: 72px; object-fit: contain; }
+.tw-foe small { display: block; color: #666; }
+.tw-fx { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0; }
+.tw-fxd { margin: 2px 0 0; padding-left: 16px; font-size: 12px; color: #555; }
+.tw-shop { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 8px; }
+.tw-item { display: grid; gap: 6px; align-content: start; padding: 12px; background: #fff; border: 1.5px solid var(--ink); border-radius: 10px; }
+.tw-item .hint { font-size: 12px; }
+.tw-cost { margin: 0; font-weight: 700; color: #c42f3a; }
