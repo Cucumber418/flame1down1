@@ -539,19 +539,15 @@ sudo bash /opt/flame1down1/server/restore.sh 文件名      # 恢复到指定的
 - **判定**：`game.js` 的 `floraFallen() { return prog('flora4').done; }`。只要读完这一段剧情（VN 脚本播完会自动写 `prog('flora4').done = true`，和别的站点一样，不用额外代码），之后全局即时生效。
 - **芙罗拉星图标**：`PLANETS` 里 flora 条目的 `img` 改成 `get img()` getter，按 `floraFallen()` 在 `images/planets/flora.webp`（常态）/ `flora_corrupt.webp`（瘴气化）之间切换。
 - **野外全部强制瘴气化**（`spawnFieldMon`）：`floraFallen()` 为真时，芙罗拉星三个区域刷出来的全部是强制最终形态、强制 LV40–50、挂 `boss: { erode: 1, mute: 1 }`（深度侵蚀双攻 +100%、无法交流只会攻击）的瘴气精灵，`noCatch: true` 不能捕捉，不吃「假装击败」奖励。立绘按 `SHINY_SPRITES` / `SPRITES` 直接取最终形态图（绕开 `form()` 的阶段门槛，因为战斗数值本来就和「形态」无关，只看等级）。
-- **场景背景**：丛林（`forest`）换成专门画的瘴气化背景 `fl_jungle_corrupt`（`fieldState` 里按 `R.id==='forest'` 直接整体替换 `bgs`）；草甸、盐碱地暂时没有专门的瘴气化图，改用 CSS 滤镜叠一层紫色侵蚀（`.wf-scene.miasma-bg` / `.field.miasma-bg`，`style.css`），场景对象上带 `corrupt` 标记，`renderField()` 据此加 `miasma-bg` 这个 class。
+- **场景背景**（2026-10-17 重做）：每张芙罗拉星背景都有一张画了深紫色瘴气脉络的 `*_mia` 版本（`tools/miasma_veins.py` 生成，盐碱地 `fl_salt_mia` 带发光的地底核心）。瘴气化之后 `fieldState()` 把区域的 `bgs` 换成 `floraBg(k)`（有 `_mia` 图就换），丛林再多一张 `fl_jungle_corrupt`；荒芜首领页和首领战背景也走 `floraBg`。有专门图的场景不再叠 CSS 滤镜（`.miasma-bg` 只给没有 `_mia` 图的场景兜底）。
 - **音乐**：`audio.js` 新增 `floraFallen`（flora3-TheGreatCover，替代瘴气化后 flora / floraGrass / floraForest 三首界面音乐，`SCENES` 里的 `floraFallen: 1`；`game.js` 的 `sceneNow()` 包了一层 `sceneNowRaw()`，命中三首旧 flora 曲且 `floraFallen()` 为真就统一换这首）和 `disCommunication`（瘴气化后的野外遇敌战斗曲，`startWildBattle` 按 `o.corrupt` 传 `bgm: 'disCommunication'`，取代平时的 `normal`）。两首曲子原本存在 `audio/library/`（上个版本留的「有曲子暂未分配用途」），响度本来就在 -16 LUFS 左右，这次直接复制成 `bgm_flora_fallen.mp3` / `bgm_dis_communication.mp3`，没有再重新处理。
 - **新背景图**：`fl_village`（叶子村，剧情专用，不在任何区域的 `bgs` 表里，没有野生精灵）、`fl_horizon`（草甸第三张背景，已加进 `wild.js` 的 `grass` 区域 `bgs`）、`fl_jungle_corrupt`（见上）。`fl_lake` / `fl_path` / `fl_beech` / `fl_meadow` / `fl_salt` 五张原图也一并换成新画的。
 - **BOSS_FX 新增**（`battle.js`，剧情限定，写在 `FIGHTS[key].team[x].boss` 里）：`erode`（深度侵蚀：物攻特攻永久 +100%，直接乘进 `mkFrom()` 的能力值，不会被清除）、`mute`（无法交流：配合 `puppetMoves(sid)` 只给攻击技能达到「只会攻击」的效果，不是独立的 AI 逻辑）、`purify`（净化光芒：剧情限定的叶子喵特性，对瘴气在身的目标伤害 +100%，`calcDamage()` 里判）。
 - **新技能**（`moves.js`）：`瘴毒灭却`（先制 +9、必定命中、直接秒杀，剧情首领灭杀技，`custom: 'annihilateSure'`，`battle.js` 里直接把目标体力打到 0）、`按兵不动`（威力 0 的变化技能，纯粹用来保证训练木桩之类的对象绝对不会用替补技能打人）。
-- **`FIGHTS` 写法通用化**（`game.js`）：为了支持这一段的几场特殊剧情对战（巨大化首领、辰爷的瘴毒炸弹、Threego 独自作战），`FIGHTS[key]` 现在支持：
-  - `pteam`：用一支写死的队伍代替玩家自己的配队出战（Threego 独自对战用的「小胖虎」），不计经验/学习力；
-  - `allyMon`：在玩家配队最后加一只写死的助战精灵（叶子村救援战的旅行叶子喵，带 `purify`），战斗结束同样不计经验；
-  - `team` 除了精灵数组，也可以写成一个函数，在真正开战时才算——巨大化瘴气玛西露姆的等级是「玩家首发精灵等级 + 20」，就是这么实现的；
-  - `team` 的每一项除了 `sid`/`lv`，还能单独给 `moves`（固定技能表，绕开按等级计算的默认技能）、`boss`、`maxhp`（固定体力，瘴毒炸弹用这个把「木桩」体力锁定成一个阶段性的数字）、`nick`、`img`、`miasma`。
-  - 具体实现见 `resolveFoeEntry()` / `fightTeam()` / `startFight()` / `openFight()`。
-- **「瘴毒炸弹」的分段引爆**：剧情里「反复攻击木桩，打到一定血量会有插入对话，再继续打」这种没有现成机制支持，改成三场连续的剧情对战（`cyBomb1`/`cyBomb2`/`cyBomb3`，同一个训练木桩 `sid: 'dummy'`，`maxhp` 分别是 300/400/300，`moves: ['按兵不动']` 保证它绝对不会反击），中间穿插两段插叙对话，效果上就是「打一段、剧情插一句、再打一段」。
-- **CG 过场的简化**：旅行叶子喵最后一刻出手救下主角一行的那段「漫画分镜 + 大立绘」CG，这版引擎没有弹图系统，用换背景 + 对话节奏来还原这个高光时刻，没有专门做新的弹图机制。（2026-10-17 更新：世界任务「旅行猫」里叶子喵第一次露面那一刻，后来单独补上了一版真正的弹图 CG，见下一节；本段落说的「没有弹图系统」特指这一章剩下的部分，没有全部重做。）
+- **`FIGHTS` 写法**（`game.js`）：`pteam`（用固定队伍代替玩家配队，Threego 的小胖虎）、`allyMon` + `allyOpt`（叶子喵助战，开战前在对战卡上勾选，默认带上）、`team` 可以是函数（变异玛西露姆 = 玩家首发等级 + 20）、`bgm`（这一战的专属战斗曲，不先放遇敌曲）、`preStrike`（对方偷袭，第一回合先出一招，界面不提示）、`cuts`（对方体力降到某个数值时暂停对战、弹出对话，`battle-ui.js` 的 `playCut`）。`team` 的每一项可以写 `moves`、`boss`、`maxhp`、`nick`、`img`、`miasma`、`breakable`、`ability`。`boss.erode` 写 1 是双攻 +100%，写 2 是 +200%；`boss.mute` 时没给 `moves` 就自动只带攻击技能。
+- **炸弹**：一场战斗 `cyBomb`，对手是可以被打破的木桩（`sid: 'dummy'` + `breakable: true`，体力 1000，`按兵不动` 不会攻击；`battle.js` 里普通木桩体力无限，`breakable` 的会正常扣血倒下），`cuts` 在 700 和 300 体力时插播玛西联军和辰爷的对话。立绘 `SPRITES.plantbomb`。
+- **剧本新字段**（`story.js` → `game.js` 的 `show()`）：`bgm`（从这一行起切到这首，直到下一个写了 `bgm` 的行；`silence` 是音乐停止；剧情专用曲 `grassTalk`、`memory`、`saver`、`faceEnemyScene`、`disComScene`）、`fx`（`boom` 爆炸白光、`light` 温暖的光芒、`purple` 深紫瘴气涌出、`quake` 震屏）、`cg`（`leafsave` 叶子喵救场、`bombburst` 炸弹爆开，都是用现有立绘和背景拼的分镜版，`images/cg/` 同名替换就能换成正式画）。`mons: 'mia:精灵:等级:标签'` 显示瘴气变异的样子（带紫色光晕，玛西露姆 50 级以上用瘴气立绘）。说话人新增 `ms`（玛西）。
+- **剧情结构**（2026-10-17 按策划大纲重写）：丛林边缘（叫不醒 Vanber，独自进林）→ Threego 视角（追气味迷路，小胖虎迎战瘴气玛西，剧情杀，被抬去献给「治愈主」）→ Vanber 被卡罗泼醒 → 救下小玛西、变异玛西露姆剧情杀、叶子喵登场（Saver + CG）→ 叶之村落沦陷、救出 Threego、戴上头盔 → Vanber 听卡罗讲盐碱地和卡莱一族 → 会合、卡罗离队、点点的话题（Memory）→ 卡莱偷袭、辰爷、Bttp 的炸弹 → 扎营、卡莱讲出真相、两只高形态草系、盐碱地异变（音乐停止 → 全区域特写 + Dis-communication）→ 48 倍、叶子喵安慰 Threego（未完待续）。
 - **辰爷 / 常春藤组织**：`CAST.cy`（立绘 `images/characters/cy.webp`，初版，直接用原照片做了墨线 + 双色滤镜处理，不是和其他角色一样的抠图立绘，等正式立绘再替换）。身份设定（常春藤组织的真实目的等）记在 claude.ai 项目文档「角色与剧情设定」里，不在代码注释里展开。
 
 ## 世界任务「旅行猫」新增弹图 CG（2026-10-17）

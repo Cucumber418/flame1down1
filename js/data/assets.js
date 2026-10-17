@@ -32,7 +32,8 @@ var SPRITES = {
   "shroom": "images/sprites/shroom.svg",
   "firemouse": "images/sprites/firemouse.svg",   // 立绘待补，暂用问号占位
   "turkey": "images/sprites/turkey.webp",
-  "dummy": "images/sprites/dummy.svg"
+  "dummy": "images/sprites/dummy.svg",
+  "plantbomb": "images/sprites/plantbomb.webp"   // 第八段 Bttp 的炸弹（剧情木桩用，不是精灵）
 };
 
 // 手绘原画扫描  →  images/lineart/
@@ -158,6 +159,16 @@ var BG = {
   "fl_village": "images/backgrounds/fl_village.jpg",
   "fl_horizon": "images/backgrounds/fl_horizon.jpg",
   "fl_jungle_corrupt": "images/backgrounds/fl_jungle_corrupt.jpg",
+  // 全星瘴气化之后的版本（tools/miasma_veins.py 画上深紫色瘴气脉络，2026-10-17）
+  "fl_path_mia": "images/backgrounds/fl_path_mia.jpg",
+  "fl_lake_mia": "images/backgrounds/fl_lake_mia.jpg",
+  "fl_beech_mia": "images/backgrounds/fl_beech_mia.jpg",
+  "fl_maple_mia": "images/backgrounds/fl_maple_mia.jpg",
+  "fl_meadow_mia": "images/backgrounds/fl_meadow_mia.jpg",
+  "fl_sun_mia": "images/backgrounds/fl_sun_mia.jpg",
+  "fl_salt_mia": "images/backgrounds/fl_salt_mia.jpg",
+  "fl_village_mia": "images/backgrounds/fl_village_mia.jpg",
+  "fl_horizon_mia": "images/backgrounds/fl_horizon_mia.jpg",
   "tea_p": "images/backgrounds/tea_p.jpg",
   "teahall": "images/backgrounds/teahall.jpg"
 };
@@ -304,12 +315,16 @@ var SHINY_SPRITES = {
 var ITEM_IMG = {
   "translator": "images/items/translator.webp",
   "helmet": "images/items/helmet.webp",
-  "drone": "images/items/drone.webp"
+  "drone": "images/items/drone.webp",
+  "plantbomb": "images/sprites/plantbomb.webp"   // 第八段 Bttp 的炸弹
 };
 
 // 剧情 CG（竖版大图，按主角性别分男 / 女两版；m 男主，f 女主）
 var CG = {
-  "travelcat": { m: "images/cg/travelcat_m.webp", f: "images/cg/travelcat_f.webp" }
+  "travelcat": { m: "images/cg/travelcat_m.webp", f: "images/cg/travelcat_f.webp" },
+  // 第八段（2026-10-17）：先用现有立绘和背景拼的分镜版，之后可以换成画师的正式版（同名替换即可）
+  "leafsave": { m: "images/cg/leafsave.webp", f: "images/cg/leafsave.webp" },     // 叶子喵登场，温暖的光芒净化变异玛西露姆
+  "bombburst": { m: "images/cg/bombburst.webp", f: "images/cg/bombburst.webp" }   // 注入草系能量的炸弹爆开，卡莱们恢复正常
 };
 
 // 表情（从人物立绘的各个差分里截出头像）：聊天私信和联网对战里都能发

@@ -94,10 +94,13 @@ function makeMon(id, moveNames, mult, lv, ev, nat, iv) {
 }
 
 // 剧情对战可以给精灵起显示名（如进化前的形态名）和换图
+function erodeMult(m) { var e = m.boss && m.boss.erode; return typeof e === 'number' && e > 1 ? 1 + e : 2; }
 function mkFrom(t) {
   var m = makeMon(t.id, t.moves, t.mult, t.lv, t.ev, t.nat, t.iv);
   if (t.nick) m.nick = t.nick; if (t.img) m.img = t.img; if (t.miasma) m.perm.miasma = t.miasma;
   if (t.maxhp) m.maxhp = m.hp = t.maxhp;          // 首领：固定体力
+  // breakable：剧情里可以被打破的木桩（如第八段的炸弹），体力不再无限，打到 0 就倒下；ability 可以换成剧情里的说明
+  if (t.id === 'dummy' && t.breakable) { m.breakable = true; m.dummySpec = Object.assign({}, DUMMY, { name: t.nick || DUMMY.name, ability: t.ability || DUMMY.ability }); }
   if (t.onlyHit) m.onlyHit = t.onlyHit;           // 首领：只有这些属性的技能能命中它
   if (t.shiny) m.shiny = t.shiny === 2 ? 2 : true;   // 异色精灵（只是配色不同，能力一样）
   if (t.emblem && EMBLEMS[t.id] && EMBLEMS[t.id].m === t.emblem) m.emblem = t.emblem;
@@ -105,7 +108,7 @@ function mkFrom(t) {
   if (t.boss) { m.boss = JSON.parse(JSON.stringify(t.boss)); if (m.boss.pp) m.moves.forEach(function (x) { if (M[x.n].custom !== 'annihilate') x.pp = x.max = m.boss.pp; }); }   // 灭却除外，仍按原本的 PP
   if (m.boss) m.boss.atk0 = m.stats.atk;
   if (m.boss && m.boss.feud) m.stats.atk = Math.floor(m.stats.atk * 1.3);   // 「东北的纷争」：物攻永久 +30%（直接算进能力值，不是能力等级，不会被消除）
-  if (m.boss && m.boss.erode) { m.stats.atk = Math.floor(m.stats.atk * 2); m.stats.spa = Math.floor(m.stats.spa * 2); }   // 「深度侵蚀」：物攻、特攻永久 +100%
+  if (m.boss && m.boss.erode) { var em = erodeMult(m); m.stats.atk = Math.floor(m.stats.atk * em); m.stats.spa = Math.floor(m.stats.spa * em); }   // 「深度侵蚀」：物攻、特攻永久提升（erode: 1 或 true 为 +100%；写数字 2 表示 +200%）
   if (t.u != null) { m.u = t.u; m.hl = t.hl || []; }   // 账号里的精灵：可以在战斗中领悟隐藏技能
   return m;
 }
@@ -322,7 +325,7 @@ function snap(S) {
     sides: S.sides.map(function (sd) {
       var m = sd.team[sd.active];
       var ab = sp(m).ability || { n: '无', d: '图鉴里还没写特性' };
-      return { id: m.id, name: m.nick || sp(m).name, img: liveImg(m), types: typesOf(m), lv: m.lv || LV, dummy: m.id === 'dummy', ability: { n: ab.n, d: ab.d, extra: ab.extra || '' }, stats: statSheet(m, S.sides[1 - S.sides.indexOf(sd)].team[S.sides[1 - S.sides.indexOf(sd)].active]), hp: m.hp, maxhp: m.maxhp, fainted: m.fainted, chips: chipsOf(m, S.sides[1 - S.sides.indexOf(sd)].team[S.sides[1 - S.sides.indexOf(sd)].active]),
+      return { id: m.id, name: m.nick || sp(m).name, img: liveImg(m), types: typesOf(m), lv: m.lv || LV, dummy: m.id === 'dummy' && !m.breakable, ability: { n: ab.n, d: ab.d, extra: ab.extra || '' }, stats: statSheet(m, S.sides[1 - S.sides.indexOf(sd)].team[S.sides[1 - S.sides.indexOf(sd)].active]), hp: m.hp, maxhp: m.maxhp, fainted: m.fainted, chips: chipsOf(m, S.sides[1 - S.sides.indexOf(sd)].team[S.sides[1 - S.sides.indexOf(sd)].active]),
         team: sd.team.map(function (x, k) { return { id: x.id, nick: x.nick || null, fainted: x.fainted, active: k === sd.active, hp: x.hp, maxhp: x.maxhp, seen: !!x.seen }; }) };
     })
   };
@@ -347,7 +350,7 @@ function faint(S, evs, j) {
 }
 function loseHp(S, evs, j, amt, why) {
   var t = act(S, j); if (t.fainted || amt <= 0) return 0;
-  if (t.id === 'dummy') { amt = Math.floor(amt); recordDummy(S, amt, why ? (S.curMove && why.indexOf('混沌水域') < 0 && why.indexOf('额外吸取') < 0 ? S.curMove : dotLabel(why)) : null); E(S, evs, 'hit', { side: j, amount: amt }); if (why) log(S, evs, why + '（' + amt + '）'); return amt; }
+  if (t.id === 'dummy' && !t.breakable) { amt = Math.floor(amt); recordDummy(S, amt, why ? (S.curMove && why.indexOf('混沌水域') < 0 && why.indexOf('额外吸取') < 0 ? S.curMove : dotLabel(why)) : null); E(S, evs, 'hit', { side: j, amount: amt }); if (why) log(S, evs, why + '（' + amt + '）'); return amt; }
   amt = Math.min(t.hp, Math.floor(amt)); t.hp -= amt;
   E(S, evs, 'hit', { side: j, amount: amt });
   if (why) log(S, evs, why);
@@ -368,7 +371,7 @@ function applyDamage(S, evs, j, amount, src, o) {
   if (t.fx.endure && src != null && amt >= t.hp && t.hp > 1) {
     amt = t.hp - 1; t.fx.endure = 0; log(S, evs, nm(t) + '的不灭之躯撑住了，残留 1 点体力！', 'fxl'); hqGet(S, evs, t, '寂灭幽映');
   }
-  if (t.id === 'dummy') { recordDummy(S, amt, src == null ? (S.dotSrc || '持续/附加效果') : null); E(S, evs, 'hit', { side: j, amount: amt, crit: o.crit, eff: o.eff }); return amt; }
+  if (t.id === 'dummy' && !t.breakable) { recordDummy(S, amt, src == null ? (S.dotSrc || '持续/附加效果') : null); E(S, evs, 'hit', { side: j, amount: amt, crit: o.crit, eff: o.eff }); return amt; }
   amt = Math.min(t.hp, amt); t.hp -= amt;
   if (amt > 0 && t.st['睡眠'] > 0 && src != null) { delete t.st['睡眠']; log(S, evs, nm(t) + '被打醒了'); }
   E(S, evs, 'hit', { side: j, amount: amt, crit: o.crit, eff: o.eff });
@@ -1148,7 +1151,7 @@ var BOSS_FX = [
   { k: 'mia', t: '瘴气领域', h: '瘴气领域', d: function () { return '只要它还没倒下，每回合结束时为对手在场的精灵添加 1 层瘴气'; } },
   { k: 'puppet', t: '瘴毒傀儡', h: '瘴毒傀儡', d: function (m) { var cd = puppetCd(m), left = m.boss.last == null ? 0 : Math.max(0, cd - (m.boss.now - m.boss.last));
     return '每回合有 30% 的几率下场，召唤一只 LV' + (m.boss.puppetLv || 50) + ' 的瘴毒傀儡（芙罗拉星的草系精灵，带 10 层瘴气，只会用攻击技能）。召唤后冷却 15 回合，体力低于 1000 后冷却缩短为 7 回合。' + (left ? '\n当前冷却：还剩 ' + left + ' 回合' : '\n当前：可以召唤'); } },
-  { k: 'erode', t: '深度侵蚀', h: '深度侵蚀', d: function () { return '物攻、特攻永久提升 100%（直接算进能力值，不会被消除）'; } },
+  { k: 'erode', t: '深度侵蚀', h: '深度侵蚀', d: function (m) { return '物攻、特攻永久提升 ' + Math.round((erodeMult(m) - 1) * 100) + '%（直接算进能力值，不会被消除）'; } },
   { k: 'mute', t: '无法交流', h: '无法交流', d: function () { return '完全失去理智，只会使用攻击技能'; } },
   { k: 'purify', t: '净化光芒', h: '净化光芒', d: function () { return '对沾染瘴气的目标造成的伤害提升 100%'; } },
   { k: 'immortal', t: '不朽', h: '不朽', d: function () { return '免疫任何异常状态，也免疫自身能力等级的下降（提升不受影响）'; } },

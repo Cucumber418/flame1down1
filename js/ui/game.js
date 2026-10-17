@@ -942,7 +942,7 @@
   function seeStep(st, mons) {
     if (mons === 'all' || st.pick) STARTERS.forEach(function (sid) { seeMon(sid, START_LV); });
     if ((mons === 'pair' || mons === 'all') && acc.rival) seeMon(acc.rival, START_LV);
-    if (st.battle && FIGHTS[st.battle]) FIGHTS[st.battle].team.forEach(function (x) { seeMon(x.sid, x.lv); });
+    if (st.battle && FIGHTS[st.battle]) fightTeam(FIGHTS[st.battle]).forEach(function (x) { if (SPMAP[x.sid]) seeMon(x.sid, x.lv); });   // 剧情战斗的对手记进图鉴（team 也可以是函数；木桩不算）
     if (mons && mons.indexOf('tw:') === 0) seeMon(mons.slice(3), 3);
     if (mons && mons.indexOf('mon:') === 0) seeMon(mons.split(':')[1], +mons.split(':')[2] || 1);
   }
@@ -1049,7 +1049,7 @@
     flora1: { name: '盐碱地', planet: 'flora', chapter: '第五段 · 降临芙罗拉', bg: 'fl_salt', d: '第一支地面探索小队降落在了芙罗拉星。可着陆舱偏离了坐标，落进了弥漫着瘴气的盐碱地……', after: 'board', reward: { exp: 1000, energy: 500 } },
     flora2: { name: '卡罗聚集地', planet: 'flora', chapter: '第六段 · 卡罗的不安', bg: 'fl_meadow', d: '小队回到草甸上的卡罗聚集地，却听说有不知名的生物在猎杀被瘴气侵染的精灵。', after: 'flora1', reward: { exp: 1500, energy: 600, items: { trans: 1 } } },
     flora3: { name: '丛林边缘', planet: 'flora', chapter: '第七段 · 猎杀者', bg: 'fl_maple', d: '野外的精灵们「败下阵来」的消息传开了。傍晚，丛林边缘的草丛里，三人和卡罗屏住了呼吸……', after: 'flora2', need: function () { return spareN() >= SPARE_N; }, needText: '在芙罗拉星的丛林或草甸「假装击败」' + 5 + ' 只野生精灵，引出猎杀者', reward: { exp: 2000, energy: 800, items: { helmet: 1 } } },
-    flora4: { name: '丛林深处', planet: 'flora', chapter: '第八段 · 深入丛林', bg: 'fl_path', d: 'Threego 循着点点的气味独自闯进了丛林，再也没有回来……', after: 'flora3', need: function () { return prog('travelcat').done; }, needText: '完成世界任务「旅行猫」', reward: { exp: 3000, energy: 1200 } },
+    flora4: { name: '丛林深处', planet: 'flora', chapter: '第八段 · 深入丛林', bg: 'fl_maple', d: 'Threego 循着点点的气味独自闯进了丛林，Vanber 又被头盔砸晕了。天快黑了，只能一个人进去找她……', after: 'flora3', need: function () { return prog('travelcat').done; }, needText: '完成世界任务「旅行猫」', reward: { exp: 3000, energy: 1200 } },
     tea: { name: '陆羽茶室', planet: 'jingchu', dept: '天门', chapter: '支线 · 陆羽茶室', side: true, bg: 'tea_p', d: '从芙罗拉星回来后，舰上要给第一支地面小队分配休息舱。读完后开放你自己的「茶室」（家园）。', after: 'flora1', pos: [50, 84] },
     mingming: { name: '古城防卫部', planet: 'jingchu', dept: '襄阳', chapter: '支线 · 明明教官的礼物', side: true, bg: 'bridge_p', d: '古城防卫部的明明教官听说你在黄冈秘鉴里点亮了十类精灵，想见见你。', after: 'board', pos: [48, 82], need: function () { return litCount() >= 10; }, needText: '在黄冈秘鉴中点亮 10 类精灵后开放', reward: { gift: [{ sid: 'aegis', lv: 10 }] } },
     tiger: { name: '古城防卫部', planet: 'jingchu', dept: '襄阳', chapter: '支线 · 东北来的泰戈尔', side: true, bg: 'bridge_p', d: '古城防卫部来了一只从东北招募的特殊虎系精灵，专门辅助船员训练。读完后开放首领「泰戈尔」的挑战。', after: 'board', pos: [30, 70] },
@@ -1071,6 +1071,9 @@
   var AREA_BG = { 黄冈: 'pod_p', 鄂州: 'hangar_p', 孝感: 'xiaogan', 武汉: 'cockpit_p', 咸宁: 'cabin_p', 仙桃: 'gym_p', 荆门: 'storage_p', 恩施: 'greenhouse_p', 天门: 'teahall', 随州: 'bridge2_p', 襄阳: 'bridge_p' };
   var BG_POS = { qiyi: '50% 42%', desert: '50% 40%', jslc: '50% 38%', street: '50% 55%', bridge: '45% 55%', tower: '50% 55%' };
   var BG_NAME = { gate: '校门', school: '校门', flag: '教学楼', garden: '牌坊花园', qiyi: '起义门', street: '彭刘杨路', bridge: '长江大桥', desert: '鸣沙山 · 月牙泉', jslc: '发射中心', tower: '发射塔', launch: '火箭升空', orbit: '地球轨道', hangar: '鄂州港 · 停泊区', cockpit_p: '武汉 · 指挥中枢', hangar_p: '鄂州港 · 停泊区', cabin_p: '温泉生活区', greenhouse_p: '太空温室', pp_lake: '熔浆大湖', pp_slag: '熔渣矿区', pp_fort: '湖心堡垒', pp_core: '炙热核心', gym_p: '体能馆', storage_p: '物资仓储', pod_p: '学院部 · 资料室', tea_p: '陆羽茶室 · 04 号舱', teahall: '陆羽茶室 · 大厅', bridge2_p: '编钟通讯站', bridge_p: '古城防卫部', xiaogan: '孝感大厅', paifang: '惟楚有材牌坊', hall: '报告厅', field: '操场', aerial: '校园全景' };
+  // 芙罗拉星的场景名；瘴气化后的 *_mia 版本沿用同一个名字
+  Object.assign(BG_NAME, { fl_path: '林间小路', fl_lake: '草甸湖畔', fl_beech: '山毛榉林', fl_maple: '丛林边缘', fl_meadow: '草甸', fl_sun: '丛林深处', fl_salt: '盐碱地', fl_village: '叶之村落', fl_horizon: '草甸尽头', fl_jungle_corrupt: '瘴气丛林' });
+  Object.keys(BG_NAME).forEach(function (k) { if (BG[k + '_mia']) BG_NAME[k + '_mia'] = BG_NAME[k]; });
   // 角色（立绘为占位）
   var CAST = {
     p: { name: function () { return acc.name; }, color: '#c42f3a', tall: 0.92, get img() { return playerArt(); } },   // 主角立绘按性别：pm 男主 / pf 女主（差分见 CHARS 的 pm_xxx）
@@ -1086,7 +1089,8 @@
     kr: { name: function () { return '卡罗'; }, color: '#4f9159', tall: 0.55, spr: 'wind', sprLv: 3 },     // 戴上精灵翻译器之后能听懂的卡罗
     kl: { name: function () { return '卡莱'; }, color: '#3f6d3a', tall: 0.7, spr: 'kaleo', sprLv: 15 },
     lc: { name: function () { return '叶子喵'; }, color: '#5f9a3e', tall: 0.8, spr: 'leafcat', sprLv: 30 },   // 世界任务「旅行猫」里的叶子喵（戴着翻译器能听懂）
-    cy: { name: function () { return '辰爷'; }, color: '#3a4a66', tall: 1.0, img: 'cy' }   // 「常春藤怀克」，常春藤组织的特工（第八段登场）
+    cy: { name: function () { return '辰爷'; }, color: '#3a4a66', tall: 1.0, img: 'cy' },
+    ms: { name: function () { return '玛西'; }, color: '#8a5a9a', tall: 0.55, spr: 'mush', sprLv: 10 }   // 戴着翻译器能听懂的玛西（第八段）   // 「常春藤怀克」，常春藤组织的特工（第八段登场）
   };
   var SCRIPT = STORY_SCRIPT;   // 剧本内容见 js/data/story.js
   function unlocked(id) { var S = SITES[id], a = S.after; return (!a || prog(a).done) && (!S.need || S.need()); }
@@ -1198,40 +1202,62 @@
     karo: { foe: '被瘴气污染的野生精灵', team: [{ sid: 'wind', lv: 3, miasma: 5 }], env: 'miasma', bg: 'fl_salt', desc: '被瘴气污染的卡罗（LV3）' },
     hunter: { foe: '神秘的猎杀者', team: [{ sid: 'kaleo', lv: 15 }], bg: 'fl_maple', desc: '猎杀者卡莱（LV15）' },
     kaleo4: { foe: '瘴气卡莱群', team: [{ sid: 'kaleo', lv: 20, miasma: 5 }, { sid: 'kaleo', lv: 20, miasma: 5 }, { sid: 'kaleo', lv: 20, miasma: 5 }, { sid: 'kaleo', lv: 20, miasma: 5 }], bg: 'fl_beech', desc: '被瘴气侵染的卡莱 ×4（LV20）' },
-    // ↓ 第八段 · 深入丛林（flora4）专用
-    cyThreego: { foe: '瘴气侵蚀的玛西', pteam: [{ sid: 'tagore', lv: 12, nick: '小胖虎' }],
-      team: [{ sid: 'mush', lv: 24, nick: '瘴气侵蚀的玛西', miasma: 8, boss: { erode: 1, mute: 1 } }],
-      env: 'miasma', bg: 'fl_maple', desc: '瘴气侵蚀的玛西（LV24）' },
-    cyRescue: { foe: '瘴气侵蚀的玛西',
-      team: [{ sid: 'mush', lv: 19, nick: '瘴气侵蚀的玛西', miasma: 6, boss: { erode: 1, mute: 1 } }, { sid: 'mush', lv: 19, nick: '瘴气侵蚀的玛西', miasma: 6, boss: { erode: 1, mute: 1 } }],
-      env: 'miasma', bg: 'fl_beech', desc: '瘴气侵蚀的玛西 ×2（LV19）' },
-    cyBoss: { foe: '巨大化的瘴气玛西露姆',
+    // ↓ 第八段 · 深入丛林（flora4）专用。boss 字段见 battle.js 的 BOSS_FX：erode 深度侵蚀（1 = 双攻 +100%，2 = +200%）、mute 无法交流（只用攻击技能）、purify 净化光芒
+    // allyOpt：叶子喵助战可选，开战前在对战卡上勾选；preStrike：对方偷袭先出一招；cuts：对方体力降到某个数值时插播对话
+    cyThreego: { foe: '瘴气玛西', pteam: [{ sid: 'tagore', lv: 12, nick: '小胖虎' }],   // 操控 Threego 的小胖虎迎战（剧情杀）
+      team: [{ sid: 'mush', lv: 24, nick: '瘴气玛西', miasma: 8, boss: { erode: 2, mute: 1 } }],
+      env: 'miasma', bg: 'fl_sun', desc: '瘴气玛西（LV24）' },
+    cyRescue: { foe: '瘴气玛西',
+      team: [{ sid: 'mush', lv: 20, nick: '瘴气玛西', miasma: 6, boss: { mute: 1 } }, { sid: 'mush', lv: 21, nick: '瘴气玛西', miasma: 6, boss: { mute: 1 } }],
+      env: 'miasma', bg: 'fl_path', desc: '瘴气玛西 ×2（LV20 / 21）' },
+    cyBoss: { foe: '瘴气变异玛西露姆', bgm: 'disCommunication',   // 剧情杀：比玩家首发高 20 级，先制 +9 的「瘴毒灭却」一回合秒一只
       team: function () {
         var lead = (acc.teams[acc.active] || []).map(mon).filter(Boolean)[0] || acc.mons[0];
-        var lv = Math.min(60, (lead ? lead.lv : 20) + 20);
-        return [{ sid: 'mush', lv: lv, nick: '巨大化的瘴气玛西露姆', img: SPRITES.mush, miasma: 10, boss: { erode: 1, mute: 1 }, moves: ['瘴毒灭却'] }];
+        var lv = Math.min(100, (lead ? lead.lv : 20) + 20);
+        return [{ sid: 'mush', lv: lv, nick: '瘴气变异玛西露姆', img: FORM_FX_SPRITES.mush.miasma, miasma: 10, boss: { erode: 1, mute: 1 }, moves: ['瘴毒灭却'] }];
       },
-      env: 'miasma', bg: 'fl_path', desc: '巨大化的瘴气玛西露姆' },
-    cyAmbushCat: { foe: '瘴气侵蚀的叶子小小喵',
-      team: [{ sid: 'leafcat', lv: 18, nick: '瘴气侵蚀的叶子小小喵', miasma: 6, boss: { erode: 1, mute: 1 } }],
-      env: 'miasma', bg: 'fl_village', desc: '瘴气侵蚀的叶子小小喵（LV18）' },
-    cyVillage: { foe: '瘴气侵蚀的精灵群',
-      team: [{ sid: 'mush', lv: 20, nick: '瘴气侵蚀的玛西', miasma: 6, boss: { erode: 1, mute: 1 } }, { sid: 'mush', lv: 20, nick: '瘴气侵蚀的玛西', miasma: 6, boss: { erode: 1, mute: 1 } },
-        { sid: 'mush', lv: 20, nick: '瘴气侵蚀的玛西', miasma: 6, boss: { erode: 1, mute: 1 } }, { sid: 'leafcat', lv: 20, nick: '瘴气侵蚀的叶子小小喵', miasma: 6, boss: { erode: 1, mute: 1 } }],
-      allyMon: { sid: 'leafcat', lv: 35, nick: '旅行叶子喵', boss: { purify: 1 } },
-      env: 'miasma', bg: 'fl_village', desc: '瘴气侵蚀的精灵群（LV20）' },
-    cyAmbushKaleo: { foe: '辰爷驯服的卡莱',
-      team: [{ sid: 'kaleo', lv: 22, nick: '被驯服的卡莱', boss: { erode: 1 } }, { sid: 'kaleo', lv: 23, nick: '被驯服的卡莱', boss: { erode: 1 } }, { sid: 'kaleo', lv: 24, nick: '被驯服的卡莱', boss: { erode: 1 } }],
-      bg: 'fl_salt', desc: '辰爷驯服的卡莱 ×3' },
+      env: 'miasma', bg: 'fl_sun', desc: '瘴气变异玛西露姆（比你的首发高 20 级）' },
+    cyCat: { foe: '瘴气叶子小小喵',
+      team: [{ sid: 'leafcat', lv: 18, nick: '瘴气叶子小小喵', miasma: 6, boss: { mute: 1 } }],
+      allyMon: { sid: 'leafcat', lv: 35, nick: '叶子喵', boss: { purify: 1 } }, allyOpt: true,
+      env: 'miasma', bg: 'fl_village', desc: '瘴气叶子小小喵（LV18）' },
+    cyVillage: { foe: '村口的守卫',
+      team: [{ sid: 'mush', lv: 20, nick: '瘴气玛西', miasma: 6, boss: { mute: 1 } }, { sid: 'mush', lv: 20, nick: '瘴气玛西', miasma: 6, boss: { mute: 1 } },
+        { sid: 'mush', lv: 20, nick: '瘴气玛西', miasma: 6, boss: { mute: 1 } }, { sid: 'leafcat', lv: 20, nick: '瘴气叶子小小喵', miasma: 6, boss: { mute: 1 } }],
+      allyMon: { sid: 'leafcat', lv: 35, nick: '叶子喵', boss: { purify: 1 } }, allyOpt: true,
+      env: 'miasma', bg: 'fl_village', desc: '瘴气玛西 ×3、瘴气叶子小小喵（LV20）' },
+    cyKaleo: { foe: '列队的卡莱', preStrike: true,   // 突然冲上来：卡莱第一回合先打出一招
+      team: [{ sid: 'kaleo', lv: 22, nick: '卡莱', miasma: 3 }, { sid: 'kaleo', lv: 23, nick: '卡莱', miasma: 3 }, { sid: 'kaleo', lv: 24, nick: '卡莱', miasma: 3 }],
+      allyMon: { sid: 'leafcat', lv: 30, nick: '叶子喵', boss: { purify: 1 } }, allyOpt: true,
+      bg: 'fl_beech', desc: '卡莱 ×3（LV22 / 23 / 24）' },
     cyChenye: { foe: '辰爷',
-      team: [{ sid: 'kaleo', lv: 35, nick: '卡莱奥', boss: { erode: 1 } }, { sid: 'squid', lv: 40, nick: '邪恶水臂', boss: { erode: 1 } }],
-      bg: 'fl_salt', desc: '辰爷的卡莱奥（LV35）、邪恶水臂（LV40）' },
-    cyBomb1: { foe: '瘴毒炸弹', team: [{ sid: 'dummy', lv: 30, nick: '瘴毒炸弹', img: SPRITES.dummy, maxhp: 300, moves: ['按兵不动'] }], bg: 'fl_salt', desc: '瘴毒炸弹（充能中）' },
-    cyBomb2: { foe: '瘴毒炸弹', team: [{ sid: 'dummy', lv: 30, nick: '瘴毒炸弹', img: SPRITES.dummy, maxhp: 400, moves: ['按兵不动'] }], bg: 'fl_salt', desc: '瘴毒炸弹（充能中）' },
-    cyBomb3: { foe: '瘴毒炸弹', team: [{ sid: 'dummy', lv: 30, nick: '瘴毒炸弹', img: SPRITES.dummy, maxhp: 300, moves: ['按兵不动'] }], bg: 'fl_salt', desc: '瘴毒炸弹（即将引爆）' },
-    cyGuards: { foe: '瘴气守卫',
-      team: [{ sid: 'wind', lv: 36, nick: '瘴气守卫', miasma: 8, boss: { erode: 1, mute: 1 } }, { sid: 'kaleo', lv: 38, nick: '瘴气守卫', miasma: 8, boss: { erode: 1, mute: 1 } }],
-      env: 'miasma', bg: 'fl_salt', desc: '瘴气守卫 ×2（LV36/38）' }
+      team: [{ sid: 'kaleo', lv: 35, nick: '卡莱奥', miasma: 4 }, { sid: 'squid', lv: 40, nick: '邪恶水臂' }],
+      allyMon: { sid: 'leafcat', lv: 30, nick: '叶子喵', boss: { purify: 1 } }, allyOpt: true,
+      bg: 'fl_beech', desc: '辰爷的卡莱奥（LV35）、邪恶水臂（LV40）' },
+    cyBomb: { foe: '炸弹',   // 纯木桩：不会攻击、1000 体力，可以被打破；打到 700、300 时插播对话
+      team: [{ sid: 'dummy', lv: 30, nick: '炸弹', img: SPRITES.plantbomb, maxhp: 1000, breakable: true, moves: ['按兵不动'], ability: { n: '能量炸弹', d: 'Bttp 做的炸弹。不会攻击；不断注入能量（攻击它），外壳被打破时就会爆开' } }],
+      allyMon: { sid: 'leafcat', lv: 30, nick: '叶子喵', boss: { purify: 1 } }, allyOpt: true,
+      bg: 'fl_beech', desc: '往炸弹里注入能量（1000 体力，不会攻击）',
+      cuts: [
+        { hp: 700, lines: [
+          { s: 'cy', t: '……嗯？不好！你们在搞什么鬼？给我上！' },
+          { s: 'n', t: '辰爷一声大喝，林子里埋伏的卡莱潮水一样朝你们冲了过来。' },
+          { s: 'ms', t: '我们来了——！！' },
+          { s: 'n', t: '身后传来一片叫喊。是没被瘴气感染的玛西们！它们从四面八方的树丛里钻出来，组成了一支浩浩荡荡的联军，迎着卡莱冲了上去。' },
+          { s: 'n', t: '两边撞在一起，林子里一下子乱成一团。一时间难分胜负。' },
+          { s: 'n', t: '可是慢慢地，卡莱们靠着天生的战斗本能和瘴气的加持，一点点占了上风。' },
+          { s: 'v', t: '它们撑不了太久！{name}，继续注入能量！' }
+        ] },
+        { hp: 300, lines: [
+          { s: 'cy', t: '哈哈哈哈！偷偷摸摸的，在搞什么小动作呢？' },
+          { s: 'n', t: '玛西联军已经倒下了一大片，大部分被打晕在了地上。剩下的卡莱掉过头，朝你们围了过来。' },
+          { s: 'v', t: '加速注入能量！！快快快！！' }
+        ] }
+      ] },
+    cyGuards: { foe: '失去理智的精灵',
+      team: [{ sid: 'wind', lv: 36, nick: '瘴气六尾风王', img: SPRITES.wind, miasma: 8, boss: { erode: 1, mute: 1 } }, { sid: 'mush', lv: 38, nick: '瘴气玛西露姆', img: FORM_FX_SPRITES.mush.miasma, miasma: 8, boss: { erode: 1, mute: 1 } }],
+      allyMon: { sid: 'leafcat', lv: 30, nick: '叶子喵', boss: { purify: 1 } }, allyOpt: true,
+      env: 'miasma', bg: 'fl_salt', desc: '瘴气六尾风王（LV36）、瘴气玛西露姆（LV38）' }
   };
   function storyMon(m) { var f = form(m), hl = m.u != null ? (m.hl || []) : undefined, mv = m.moves.length ? m.moves.slice() : defaultMoves(m.sid, m.lv, hl); return { id: m.sid, lv: m.lv, moves: mv, nick: f.name, img: f.img, ev: m.ev || null, nat: m.nat || null, iv: ivOf(m), u: m.u, hl: hl, shiny: shinyV(m.shiny), emblem: m.u != null && acc.emblems && acc.emblems[m.sid] && EMBLEMS[m.sid] ? EMBLEMS[m.sid].m : null }; }
   // F.pteam：剧情限定，用一支固定的队伍代替玩家自己的配队出战（如操控 Threego 的精灵），不计入经验/学习力
@@ -1242,7 +1268,8 @@
   function resolveFoeEntry(x) {
     if (x.moves || x.boss || x.maxhp || x.nick || x.img) {
       var defImg = x.sid === 'dummy' ? null : formImg(SPMAP[x.sid], stageOf(SPMAP[x.sid], x.lv));
-      return { id: x.sid, lv: x.lv, moves: x.moves || defaultMoves(x.sid, x.lv), nick: x.nick, img: x.img || defImg, maxhp: x.maxhp, boss: x.boss, miasma: x.miasma };
+      var mv = x.moves || (x.boss && x.boss.mute && x.sid !== 'dummy' ? puppetMoves(x.sid) : defaultMoves(x.sid, x.lv));   // 「无法交流」：只会用攻击技能
+      return { id: x.sid, lv: x.lv, moves: mv, nick: x.nick, img: x.img || defImg, maxhp: x.maxhp, boss: x.boss, miasma: x.miasma, breakable: x.breakable, ability: x.ability };
     }
     var o = storyMon({ sid: x.sid, lv: x.lv, moves: [] }); if (x.miasma) o.miasma = x.miasma; return o;
   }
@@ -1256,14 +1283,16 @@
       if (!team.length) team = acc.mons.slice(0, 1);
       team = team.slice(0, TEAM_SIZE).map(storyMon);
       realN = team.length;
-      if (F.allyMon) { team = team.slice(0, TEAM_SIZE - 1).concat([resolveFoeEntry(F.allyMon)]); realN = team.length - 1; }
+      if (F.allyMon && !(F.allyOpt && ex.allyOff)) { team = team.slice(0, TEAM_SIZE - 1).concat([resolveFoeEntry(F.allyMon)]); realN = team.length - 1; }   // allyOpt：助战可选，开战前在对战卡上勾选（默认带上）
     }
     var a = fightTeam(F).map(resolveFoeEntry);
     stopTimers(); ex.fighting = true; document.body.classList.add('story-fight'); syncBattle();
     var host = ex.host; host.hidden = true;
     if (ex.mode === 'replay') $('pg-explore').hidden = true;
     $('pg-arena').hidden = false;
-    window.HSBATTLE.start({ p: team, a: a, foe: F.foe, items: invCopy(), env: F.env || null, bg: F.bg ? BG[F.bg] : null, corrupt: !!F.corrupt, onItem: useInv, onEnd: function (res, seen, downs) {
+    // F.bgm：这一战的专属战斗曲（不先放遇敌曲）；F.preStrike：对方偷袭，开场先出一招；F.cuts：对方体力降到某个数值以下时插播对话（见 battle-ui.js）
+    var cuts = (F.cuts || []).map(function (c) { return { hp: c.hp, lines: c.lines.map(function (L) { return { n: L.s === 'n' ? '' : CAST[L.s].name(), t: fill(L.t) }; }) }; });
+    window.HSBATTLE.start({ p: team, a: a, foe: F.foe, items: invCopy(), env: F.env || null, bg: F.bg ? fightBg(F.bg) : null, corrupt: !!F.corrupt, bgm: F.bgm || null, bgmDirect: !!F.bgm, preStrike: !!F.preStrike, cuts: cuts, onItem: useInv, onEnd: function (res, seen, downs) {
       if (realN > 0) {
         var got = battleRewards(team.slice(0, realN), (seen || []).slice(0, realN), downs);
         dailyHit('pve');
@@ -1685,6 +1714,7 @@
     if (corrupt) {   // 不论实际等级，一律显示最高阶段的立绘（本作里形态只影响显示，不影响能力值，见 assets.js 的说明）
       var s = SPMAP[hit.w.sid];
       img = shiny === 2 ? (SHINY_SPRITES[hit.w.sid + '_2'] || SHINY_SPRITES[hit.w.sid] || SPRITES[hit.w.sid]) : shiny ? (SHINY_SPRITES[hit.w.sid] || SPRITES[hit.w.sid]) : SPRITES[hit.w.sid];
+      var fxs = FORM_FX_SPRITES[hit.w.sid]; if (fxs) img = (shiny === 2 ? fxs.miasmaShiny2 : shiny ? fxs.miasmaShiny : fxs.miasma) || fxs.miasma || img;   // 有瘴气侵染立绘的（玛西露姆）直接用
       name = '瘴气' + s.name;
     }
     var m = { id: 0, sid: hit.w.sid, lv: hit.lv, rate: hit.w.rate, shiny: shiny, img: img, name: (shiny && !corrupt ? '异色' : '') + name, bait: !!hit.bait, corrupt: corrupt,
@@ -1707,10 +1737,10 @@
     if (!fields[rid]) {
       var bgs = (R.bgs || []).filter(function (k) { return BG[k]; }), n = sceneCount(R), now = Date.now();
       var fallen = R.planet === 'flora' && floraFallen();
-      if (fallen && R.id === 'forest') bgs = ['fl_jungle_corrupt'];   // 丛林有专门的瘴气化场景图；草甸、盐碱地暂时用原图叠加瘴气滤镜（见 .miasma-bg）
+      if (fallen) { bgs = bgs.map(floraBg); if (R.id === 'forest') bgs.push('fl_jungle_corrupt'); }   // 瘴气化之后：每个场景换成画了深紫色脉络的 *_mia 版本，丛林再多一张瘴气丛林
       var F = fields[rid] = { seq: 0, scene: Math.floor(Math.random() * n), scenes: [] };
       for (var i = 0; i < n; i++) {
-        var sc = { bgKey: bgs.length ? bgs[i % bgs.length] : '', bg: bgs.length ? BG[bgs[i % bgs.length]] : '', flip: i >= bgs.length && i % 2 === 1, corrupt: fallen, slots: FIELD_SLOTS.map(function (s) { return { hx: s.hx, hy: s.hy, r: s.r, mon: null, next: 0 }; }) };
+        var sc = { bgKey: bgs.length ? bgs[i % bgs.length] : '', bg: bgs.length ? BG[bgs[i % bgs.length]] : '', flip: i >= bgs.length && i % 2 === 1, corrupt: fallen && !/_mia$|_corrupt$/.test(bgs[i % bgs.length] || ''), slots: FIELD_SLOTS.map(function (s) { return { hx: s.hx, hy: s.hy, r: s.r, mon: null, next: 0 }; }) };
         sc.slots.forEach(function (sl) { sl.si = i; sl.bgKey = sc.bgKey; if (R.pool) fillSlot(R, F, sl, now, true); });
         F.scenes.push(sc);
       }
@@ -1808,6 +1838,10 @@
   function spareActive() { return prog('flora2').done && spareN() < SPARE_N; }
   // 第八段「深入丛林」读完后：芙罗拉星整体瘴气化，野外精灵强制变成瘴气异变的最高阶段（见 spawnFieldMon），bgm 也随之切换
   function floraFallen() { return prog('flora4').done; }
+  // 瘴气化之后，芙罗拉星的背景换成画了瘴气脉络的版本（有 *_mia 图的才换）
+  function floraBg(k) { return k && floraFallen() && BG[k + '_mia'] ? k + '_mia' : k; }
+  // 对战背景：传入背景键。F.bg 可以写成 'fl_salt' 这样的键，统一在这里换成图片地址
+  function fightBg(k) { return BG[k] || null; }
   function regionOpen(R) { return R.planet === 'flora' ? prog('flora1').done : planetOpen(planetOf(R.planet)); }
   function startWildBattle(o) {
     var team = (acc.teams[acc.active] || []).map(mon).filter(Boolean);
@@ -1825,7 +1859,7 @@
     seeMon(o.sid, o.lv);
     stopTimers(); ex.fighting = true; document.body.classList.add('story-fight'); syncBattle();
     $('pg-explore').hidden = true; $('pg-arena').hidden = false;
-    window.HSBATTLE.start({ p: p, a: a, foe: o.foe || '野生精灵', items: invCopy(), bg: o.bg || null, corrupt: !!o.corrupt, bgm: o.corrupt ? 'disCommunication' : null,
+    window.HSBATTLE.start({ p: p, a: a, foe: o.foe || '野生精灵', items: invCopy(), bg: o.bg || null, corrupt: !!o.corrupt && !/_mia\.|_corrupt\./.test(o.bg || ''), bgm: o.corrupt ? 'disCommunication' : null,
       wild: { rate: o.rate, back: o.back, where: o.where, noCatch: !!o.noCatch, spare: !!o.spare },
       onItem: useInv,
       onEnd: function (res, seen, downs) {
@@ -2797,7 +2831,7 @@
     var cards = Object.keys(BOSSES).map(function (k) {
       var B = BOSSES[k], open = bossOpen(k);
       var lv = B.lv.map(function (L, i) { var op = levelOpen(k, i), won = bossWon(k, i); return '<span class="hb-lv' + (won ? ' won' : op ? ' op' : '') + '">' + L.diff + (won ? ' ✓' : op ? '' : ' 🔒') + '</span>'; }).join('');
-      return '<article class="boss-hub-it' + (open ? '' : ' locked') + '"><span class="tape r"></span><div class="hb-art"><img src="' + BG[B.bg] + '" alt="" class="boss-bg"><img src="' + SPRITES[B.sid] + '" alt="" class="boss-mon"></div>' +
+      return '<article class="boss-hub-it' + (open ? '' : ' locked') + '"><span class="tape r"></span><div class="hb-art"><img src="' + BG[floraBg(B.bg)] + '" alt="" class="boss-bg"><img src="' + SPRITES[B.sid] + '" alt="" class="boss-mon"></div>' +
         '<div class="hb-txt"><h3>' + B.name + '</h3><p class="hint">' + esc(bossWhere(B)) + ' · ' + esc(B.d) + '</p><p class="hb-lvs">' + lv + '</p>' +
         (open ? '<button type="button" class="btn primary" data-boss="' + k + '" data-from="hub">挑战</button>' : '<button type="button" class="btn" disabled>' + esc(B.lv[0].lockText) + '</button>') + '</div></article>';
     }).join('');
@@ -2820,7 +2854,7 @@
       : open ? '<button type="button" class="btn primary" data-bossgo="' + k + '" data-d="' + d + '">开始挑战</button>' : '<button type="button" class="btn" disabled>' + esc(L.lockText) + '</button>';
     $('pg-explore').innerHTML = exHead(weekly ? '每周挑战：和困难难度的泰戈尔一模一样，每次挑战消耗 1 枚挑战许可。' : '首领可以反复挑战。难度依次开放，每档难度第一次击败都有奖励。') +
       '<div class="crumb"><button type="button" class="btn ghost" id="boss-back">‹ 返回' + (weekly ? '星际探索' : ex.bossFrom === 'hub' ? 'Boss挑战' : bossWhere(B)) + '</button><b>' + (weekly ? '每周挑战 · ' : '首领 · ') + B.name + '</b></div>' + tabs +
-      '<article class="boss-card"><span class="tape l"></span><div class="boss-art"><img src="' + BG[B.bg] + '" alt="" class="boss-bg"><img src="' + SPRITES[B.sid] + '" alt="' + B.name + '" class="boss-mon"></div>' +
+      '<article class="boss-card"><span class="tape l"></span><div class="boss-art"><img src="' + BG[floraBg(B.bg)] + '" alt="" class="boss-bg"><img src="' + SPRITES[B.sid] + '" alt="' + B.name + '" class="boss-mon"></div>' +
       '<div class="boss-txt"><span class="chip boss-diff d' + d + '">' + (weekly ? '每周挑战 · ' : '') + L.diff + '难度</span><h3>' + B.name + '</h3><p class="hint">' + esc(B.d) + '</p>' +
       '<ul class="boss-rules"><li><b>等级</b>LV' + L.lv + '</li><li><b>体力</b>' + fmt(L.hp) + '</li>' + rules +
       '<li><b>时限</b>' + MAX_TURNS + ' 回合内没有击败首领，算挑战失败</li>' +
@@ -2944,7 +2978,7 @@
     var rec = bossRec(k, weekly ? 'w' : d); rec.tries++; save();
     stopTimers(); ex.fighting = true; document.body.classList.add('story-fight'); syncBattle();
     $('pg-explore').hidden = true; $('pg-arena').hidden = false;
-    window.HSBATTLE.start({ p: p, a: a, foe: '首领', diff: weekly ? '每周挑战' : L.diff + '难度', bgm: L.bgm, items: invCopy(), onItem: useInv, bg: BG[B.bg], back: weekly ? '每周挑战' : bossWhere(B),
+    window.HSBATTLE.start({ p: p, a: a, foe: '首领', diff: weekly ? '每周挑战' : L.diff + '难度', bgm: L.bgm, items: invCopy(), onItem: useInv, bg: BG[floraBg(B.bg)], back: weekly ? '每周挑战' : bossWhere(B),
       onEnd: function (res, seen, downs) {
         var msg = [], first = false, wasWeekly = weeklyOpen();
         dailyHit('boss'); dailyHit('pve');
@@ -3854,6 +3888,7 @@
     renderVN(); bgmScene();
   }
   function renderVN() {
+    ex.curBg = null;   // 整个舞台会重建（例如剧情对战打完回来），背景图要重新设置，不然会是空白
     var S = SITES[ex.site], P = PLANETS.filter(function (p) { return p.id === S.planet; })[0], intro = ex.mode === 'intro';
     ex.host.innerHTML = (intro ? '<div class="vn-intro-head"><span class="sc-tag">' + S.chapter + '</span><span class="hint">点击画面、按空格或回车继续。读完序章后进入游戏。</span></div>' : '') +
       '<div class="vn" id="vn" tabindex="0" aria-label="剧情对话，点击或按空格继续">' +
@@ -3861,6 +3896,7 @@
       '<div class="vn-chars" id="vn-chars"></div>' +
       '<div class="vn-mons" id="vn-mons"></div>' +
       '<div class="vn-cgwrap" id="vn-cg"><div class="vn-cg-pic" id="vn-cg-pic"></div></div>' +
+      '<div class="vn-fx" id="vn-fx" aria-hidden="true"></div>' +
       '<div class="vn-top"><span class="vn-loc">' + P.name + ' · ' + S.name + '<small id="vn-spot"></small></span><span class="vn-ch">' + S.chapter + '</span>' +
       '<span class="vn-btns"><button type="button" data-vn="hide" title="隐藏界面，欣赏背景和立绘（H 键）">隐藏</button><button type="button" data-vn="log">记录</button><button type="button" data-vn="auto" id="vn-auto">自动</button><button type="button" data-vn="skip" id="vn-skip">跳过</button>' + (intro ? '' : '<button type="button" data-vn="exit">退出</button>') + '</span></div>' +
       '<div class="vn-box" id="vn-box"><div class="vn-name" id="vn-name"></div><p class="vn-text" id="vn-text"></p><span class="vn-next" id="vn-next" aria-hidden="true">▼</span></div>' +
@@ -3885,6 +3921,14 @@
     a.style.objectPosition = b.style.objectPosition = BG_POS[k] || '';
     ex.curBg = k; $('vn-spot').textContent = ' · ' + ((ex.site && SITES[ex.site] && SITES[ex.site].spot) || BG_NAME[k] || '');   // spot：画面借用别处背景时，地点名按剧情写
   }
+  // 剧情画面特效（剧本行写 fx）：boom 爆炸白光（炸弹）、light 温暖的光芒爆裂（叶子喵登场）、purple 深紫色瘴气涌出、quake 画面震动
+  function vnFx(k) {
+    var f = $('vn-fx'), v = $('vn'); if (!f || !v) return;
+    if (ex.skip) return;
+    f.className = 'vn-fx'; v.classList.remove('quake'); void f.offsetWidth;
+    if (k === 'quake') { v.classList.add('quake'); return; }
+    f.classList.add(k); if (k === 'boom' || k === 'purple') v.classList.add('quake');
+  }
   // 剧情 CG：整屏竖图，出现时先从上往下「扫」过一遍，接一下screen shake，再定格展示完整画面；按主角性别选图
   function setCG(k) {
     var w = $('vn-cg'); if (!w) return;
@@ -3905,6 +3949,7 @@
     if (mode && mode.indexOf('tw:') === 0) { var tsid = mode.slice(3); return '<figure class="vn-mon tw"><img src="' + form({ sid: tsid, lv: 3 }).img + '" alt=""><figcaption>被污染的' + esc(form({ sid: tsid, lv: 3 }).name) + '</figcaption></figure>'; }
     if (mode && mode.indexOf('item:') === 0) { var ip = mode.split(':'); return ITEM_IMG[ip[1]] ? '<figure class="vn-mon tw plain item"><img src="' + ITEM_IMG[ip[1]] + '" alt=""><figcaption>' + esc(ip[2] || '') + '</figcaption></figure>' : ''; }   // item:道具图:标签（剧情里出现的道具）
     if (mode && mode.indexOf('mon:') === 0) { var mp = mode.split(':'); return '<figure class="vn-mon tw plain"><img src="' + form({ sid: mp[1], lv: +mp[2] || 1 }).img + '" alt=""><figcaption>' + esc(mp[3] || form({ sid: mp[1], lv: +mp[2] || 1 }).name) + '</figcaption></figure>'; }   // mon:精灵:等级:标签
+    if (mode && mode.indexOf('mia:') === 0) { var xp = mode.split(':'), xl = +xp[2] || 1, xf = form({ sid: xp[1], lv: xl }), fx = typeof FORM_FX_SPRITES !== 'undefined' && FORM_FX_SPRITES[xp[1]]; return '<figure class="vn-mon tw plain mia"><img src="' + (fx && fx.miasma && xl >= 50 ? fx.miasma : xf.img) + '" alt=""><figcaption>' + esc(xp[3] || '瘴气' + xf.name) + '</figcaption></figure>'; }   // mia:精灵:等级:标签（瘴气变异的样子，带紫色光晕）
     if (mode === 'mine' && acc.starter) return img(acc.starter, 'me', starterName());
     if (mode === 'pair' && acc.starter) return img(acc.starter, 'me', starterName()) + (acc.rival ? img(acc.rival, 'rv', monName(acc.rival)) : '');
     return '';
@@ -3919,6 +3964,8 @@
     $('vn').classList.toggle('memory', !!carry(ex.i, 'memory', false));
     setBg(carry(ex.i, 'bg', SITES[ex.site].bg));
     setCG(carry(ex.i, 'cg', null));
+    if (st.bgm !== undefined) setTimeout(bgmScene, 0);   // 剧本切歌：立刻换，不等 0.5 秒的轮询
+    if (st.fx) vnFx(st.fx);
     seeStep(st, st.mons !== undefined ? st.mons : mons);
     if (st.give) storyGive(ex.site, st.give);
     var monsH = monsHTML(mons); if ($('vn-mons').dataset.k !== mons + acc.starter) { $('vn-mons').innerHTML = monsH; $('vn-mons').dataset.k = mons + acc.starter; }
@@ -3960,6 +4007,7 @@
     el.hidden = false;
     el.innerHTML = '<div class="vn-fight"><b>剧情对战</b><div class="vf-row"><img src="' + mineImg + '" alt=""><span class="vs">VS</span><img src="' + foeImg + '" alt=""></div>' +
       '<p>' + (F.pteam ? esc(F.pteam[0].nick || SPMAP[F.pteam[0].sid].name) + '（LV' + F.pteam[0].lv + '）' : '你的出战配队（' + TEAM_NAME[acc.active] + '）') + '对阵 ' + (F.desc ? esc(F.desc) : esc(F.foe) + ' 的 ' + esc(foeName) + '（LV' + f0.lv + '）') + '</p>' +
+      (F.allyMon && F.allyOpt ? '<label class="vf-ally"><input type="checkbox" data-vnally="1"' + (ex.allyOff ? '' : ' checked') + '> 带上' + esc(F.allyMon.nick || SPMAP[F.allyMon.sid].name) + '（LV' + F.allyMon.lv + '）助战' + (F.allyMon.boss && F.allyMon.boss.purify ? '　<span class="hint">剧情限定特性「净化光芒」：对瘴气精灵伤害 +100%</span>' : '') + '</label>' : '') +
       '<button type="button" class="btn primary" data-vn="fight" data-fk="' + key + '">开始对战</button></div>';
   }
   function openPick() {
@@ -4009,6 +4057,7 @@
   function setUiOff(on) { var v = $('vn'); if (!v) return; v.classList.toggle('ui-off', on); if (on) { ex.autoWas = ex.auto; ex.auto = false; stopTimers(); if (ex.typing) doneTyping(); syncBtns(); } }
   function vnClick(e) {
     if ($('vn') && $('vn').classList.contains('ui-off') && e.target.closest('#vn')) { setUiOff(false); return; }
+    if (e.target.closest('.vf-ally')) { var cb = $('vn-pick').querySelector('[data-vnally]'); if (cb) setTimeout(function () { ex.allyOff = !cb.checked; }, 0); return; }   // 助战勾选框：不要触发「下一句」
     var b = e.target.closest('button');
     if (b && b.dataset.ch) { prog(ex.site).ch = b.dataset.ch; ex.i++; show(); return; }
     if (b && b.dataset.pk) { ex.pickSel = b.dataset.pk; openPick(); return; }
@@ -4147,8 +4196,14 @@
   /* ---------- 界面音乐：按当前所在的界面选曲（对战中由战斗音乐盖过，见 js/ui/audio.js） ---------- */
   var FLORA_SCENES = { flora: 1, floraGrass: 1, floraForest: 1 };
   function sceneNow() {
+    var vb = vnBgm(); if (vb) return vb;   // 剧本里逐行指定的曲目（bgm 字段）优先，瘴气化之后重读也按剧本放
     var k = sceneNowRaw();
     return FLORA_SCENES[k] && floraFallen() ? 'floraFallen' : k;   // 第八段结尾瘴气化之后，芙罗拉星的界面音乐统一换成 floraFallen（flora3-TheGreatCover）
+  }
+  // 剧本行可以写 bgm: '曲目键'（见 audio.js 的 TRACKS/SCENES），从这一行起一直生效，直到下一个写了 bgm 的行；'silence' 表示停止音乐
+  function vnBgm() {
+    if (!(ex.site && SCRIPT[ex.site] && $('vn') && (page === 'explore' || ex.mode === 'intro') && (ex.mode === 'intro' || (ex.mode === 'replay' && ex.view === 'vn')))) return null;
+    return carry(Math.min(ex.i || 0, SCRIPT[ex.site].length - 1), 'bgm', null);
   }
   function sceneNowRaw() {
     var vnSite = ex.site && SITES[ex.site] && (ex.mode === 'intro' || (ex.mode === 'replay' && ex.view === 'vn')) ? SITES[ex.site].planet : null;

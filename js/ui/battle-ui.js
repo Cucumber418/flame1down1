@@ -549,7 +549,7 @@
   function setFieldBg(src, corrupt) { var f = $('field'); f.classList.toggle('scene', !!src); f.classList.toggle('miasma-bg', !!corrupt); f.style.backgroundImage = src ? 'linear-gradient(rgba(251,250,243,.32), rgba(251,250,243,.18)), url(' + src + ')' : ''; }
   function startStory(opt) {
     setFieldBg(opt.bg || null, opt.corrupt);
-    if (opt.wild || opt.diff) bgm(opt.bgm || 'normal');
+    if (opt.wild || opt.diff || opt.bgmDirect) bgm(opt.bgm || 'normal');   // bgmDirect：剧情指定了这一战的专属战斗曲（如第八段的巨大化玛西露姆用 dis-communication），不先放遇敌曲
     else bgm('faceEnemy', opt.bgm || 'normal');   // 剧情对战（非野外、非首领）：先放一遍遇敌曲，播完自动接回去
     app.S = newBattle(opt.p, opt.a); app.S.story = { foe: opt.foe, back: opt.back || null, diff: opt.diff || null };
     if (opt.items) app.S.items = opt.items;
@@ -567,8 +567,43 @@
     renderSnap(snap(app.S), true);
     showTab('moves'); refreshCmd();
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    storyCuts = (opt.cuts || []).map(function (c) { return { hp: c.hp, lines: c.lines, done: false }; });
+    if (opt.preStrike) preStrike();
   }
-  var storyEnd = null, itemUsed = null;
+  var storyEnd = null, itemUsed = null, storyCuts = [];
+  // 剧情对战：对方偷袭，开场先打出一招（玩家这一回合不行动），然后正常开始。界面上不额外说明
+  async function preStrike() {
+    var S = app.S; if (!S || S.over) return;
+    busy = true; refreshCmd();
+    await new Promise(function (r) { setTimeout(r, 450); });
+    var evs = resolveTurn(S, [{ kind: 'pass' }, aiChoose(S)]);
+    await play(evs);
+    busy = false; afterTurn();
+  }
+  /* 剧情对战中途插播对话：opt.cuts = [{ hp: 700, lines: [{ n: '说话人', t: '台词' }, ...] }]
+   * 对方在场精灵的体力降到 hp 以下（且没倒下）时，暂停对战，弹出对话框逐句播放，点击继续。每段只播一次 */
+  function cutDue() {
+    var S = app.S; if (!S || S.over || !storyCuts.length) return null;
+    var foe = S.sides[1].team[S.sides[1].active];
+    for (var i = 0; i < storyCuts.length; i++) if (!storyCuts[i].done && foe && !foe.fainted && foe.hp <= storyCuts[i].hp) return storyCuts[i];
+    return null;
+  }
+  function playCut(c) {
+    c.done = true;
+    return new Promise(function (resolve) {
+      var k = 0, box = document.createElement('div');
+      box.className = 'bt-cut'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-label', '剧情对话');
+      document.body.appendChild(box);
+      function draw() {
+        var L = c.lines[k];
+        box.innerHTML = '<div class="bt-cut-box">' + (L.n ? '<b class="bt-cut-n">' + esc(L.n) + '</b>' : '') + '<p class="' + (L.n ? '' : 'narr') + '">' + esc(L.t) + '</p><span class="bt-cut-next">' + (k < c.lines.length - 1 ? '点击继续 ▼' : '点击回到对战') + '</span></div>';
+      }
+      function step() { k++; if (k >= c.lines.length) { box.remove(); document.removeEventListener('keydown', key); resolve(); } else draw(); }
+      function key(e) { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); step(); } }
+      box.addEventListener('click', step); document.addEventListener('keydown', key);
+      draw();
+    });
+  }
   /* 联网切磋（由 social.js 调用）
    * opt = { S, side, foe, mode, onAct(act), onRepl(k), onQuit(), onOver(result), onEnd() }
    * 结算都在发起方的浏览器里做，结果通过 pvpApply 播放 */
@@ -809,6 +844,7 @@
     busy = true; refreshCmd();
     var evs = resolveTurn(S, [pAct, S.training ? { kind: 'pass' } : aiChoose(S)]);
     await play(evs);
+    for (var cut = cutDue(); cut; cut = cutDue()) { renderSnap(snap(S)); await playCut(cut); }
     busy = false; afterTurn();
   }
   function afterTurn() {

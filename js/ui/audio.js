@@ -9,6 +9,8 @@
  *   flora       芙罗拉星界面：芙罗拉星主页、剧情、盐碱地、荒芜首领页（FloraBackground）
  *   floraGrass  芙罗拉星 · 草甸：草甸野外场景（Flora1）
  *   floraForest 芙罗拉星 · 丛林：丛林野外场景（Flora2）
+ *   剧情专用（剧本行 bgm 字段，2026-10-17 第八段起）：grassTalk（GrassTalk）、memory（Memory）、saver（Saver）、
+ *               disComScene（剧情里循环放的 dis-communication）、faceEnemyScene（剧情里循环放的 FaceTheEnemy）、silence（音乐停止）
  *   floraFallen 芙罗拉星 · 瘴气化：第八段结尾全星瘴气化之后，替换上面三首 flora/floraGrass/floraForest（flora3-TheGreatCover）
  * 茶室里放主人选的「茶室音乐」（大厅 = ui、地球 = earth、芙罗拉星 = flora），自己和来拜访的船员都听得到（见 game.js 的 HOME_BGM）。
  * 战斗音乐（对战开始时由 battle-ui.js 调用 HSAUDIO.play，对战结束后回到界面音乐）：
@@ -34,9 +36,13 @@
     stage: 'audio/bgm_stage.mp3', pvp: 'audio/bgm_pvp.mp3', faceEnemy: 'audio/bgm_face_enemy.mp3', disCommunication: 'audio/bgm_dis_communication.mp3',
     ui: 'audio/bgm_ui.mp3', arena: 'audio/bgm_arena.mp3', earth: 'audio/bgm_earth.mp3',
     flora: 'audio/bgm_flora.mp3', floraGrass: 'audio/bgm_flora_grass.mp3', floraForest: 'audio/bgm_flora_forest.mp3', floraFallen: 'audio/bgm_flora_fallen.mp3',
-    beforeEnd: 'audio/bgm_before_end.mp3'
+    beforeEnd: 'audio/bgm_before_end.mp3',
+    // 剧情里逐行切换的曲目（剧本行写 bgm: '键名'，见 game.js 的 sceneNowRaw）
+    grassTalk: 'audio/bgm_grass_talk.mp3', memory: 'audio/bgm_memory.mp3', saver: 'audio/bgm_saver.mp3',
+    disComScene: 'audio/bgm_dis_communication.mp3', faceEnemyScene: 'audio/bgm_face_enemy.mp3'
   };
-  var SCENES = { ui: 1, arena: 1, earth: 1, flora: 1, floraGrass: 1, floraForest: 1, floraFallen: 1 };
+  // silence：剧情里「音乐突然停止」，没有曲子
+  var SCENES = { ui: 1, arena: 1, earth: 1, flora: 1, floraGrass: 1, floraForest: 1, floraFallen: 1, grassTalk: 1, memory: 1, saver: 1, disComScene: 1, faceEnemyScene: 1, silence: 1 };
   var ONESHOT = { faceEnemy: 1 };   // 不循环；播完触发 chainNext 指定的下一首
   var KEY = 'hs-sound-v1';
   var cfg = { music: true, ui: true, vol: 60 };
@@ -68,7 +74,7 @@
       if (k >= 1) { clearInterval(fadeT); if (done) done(); }
     }, 40);
   }
-  function want() { var k = battle || scene; return allowed(k) ? k : null; }
+  function want() { var k = battle || scene; return k !== 'silence' && allowed(k) ? k : null; }
   function startTrack(k, fromStart) {
     cur = k;
     el.loop = !ONESHOT[k];
