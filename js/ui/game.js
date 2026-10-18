@@ -156,7 +156,8 @@
   function capLv(m) { return Math.min(MAX_LV, Math.max(m.lvCap || BASE_CAP, m.lv)); }
   function atCap(m) { return m.lv >= capLv(m); }
   var GEM_OF = { 草: 'floraJade', 水: 'kbDrop', 火: 'ppAsh', 电: 'ltOrb', 冰: 'whFrost' };   // 哪种属性用哪种星球特产解锁等级上限
-  function capGem(m) { var t = SPMAP[m.sid] ? SPMAP[m.sid].types : []; for (var i = 0; i < t.length; i++) if (GEM_OF[t[i]]) return GEM_OF[t[i]]; return null; }
+  var CAP_SID = { tagore: 'tgPearl', barren: 'brTwig' };   // 首领精灵用自己的专属道具（优先于属性特产）
+  function capGem(m) { if (CAP_SID[m.sid]) return CAP_SID[m.sid]; var t = SPMAP[m.sid] ? SPMAP[m.sid].types : []; for (var i = 0; i < t.length; i++) if (GEM_OF[t[i]]) return GEM_OF[t[i]]; return null; }
   function capNext(m) { var g = capGem(m); if (!g) return null; var c = capLv(m); for (var i = 0; i < CAP_STEPS.length; i++) if (CAP_STEPS[i].lv > c) return { lv: CAP_STEPS[i].lv, jade: CAP_STEPS[i].jade, k: g }; return null; }
   function expV() { return 3; }
   // lv → lv+1 这一级的系数（相对等级³ 的差）。v2：50 级以上 ×2；v3（2026-10-17，隐藏调整）：50 级以上再 ×4，即 ×8
@@ -634,7 +635,7 @@
     if (m.lv < BASE_CAP) return '';
     var nx = capNext(m), g = capGem(m), have = nx ? acc.items[nx.k] || 0 : 0;
     return '<div class="cap-box"><b>等级上限 LV' + capLv(m) + '</b>' +
-      (nx ? '<span class="hint">' + USE_ITEMS[nx.k].gem + '系精灵可以用「' + itemName(nx.k) + '」解锁更高的等级上限。</span><button type="button" class="btn' + (have >= nx.jade ? ' primary' : '') + '" data-lvcap="1"' + (have >= nx.jade ? '' : ' disabled') + '>用 ' + nx.jade + ' 个' + itemName(nx.k) + '解锁 LV' + nx.lv + ' 上限</button><span class="hint">' + itemName(nx.k) + '：' + fmt(have) + ' 个</span>'
+      (nx ? '<span class="hint">' + (CAP_SID[m.sid] ? form(m).name : USE_ITEMS[nx.k].gem + '系精灵') + '可以用「' + itemName(nx.k) + '」解锁更高的等级上限。</span><button type="button" class="btn' + (have >= nx.jade ? ' primary' : '') + '" data-lvcap="1"' + (have >= nx.jade ? '' : ' disabled') + '>用 ' + nx.jade + ' 个' + itemName(nx.k) + '解锁 LV' + nx.lv + ' 上限</button><span class="hint">' + itemName(nx.k) + '：' + fmt(have) + ' 个</span>'
         : '<span class="hint">' + (g ? '已经解锁到目前的最高上限 LV' + CAP_STEPS[CAP_STEPS.length - 1].lv + '，暂时无法再提高。' : '这只精灵目前最高 LV' + capLv(m) + '。提高等级上限的方法，以后会陆续开放。') + '</span>') + '</div>';
   }
   function flash(t) { var el = document.querySelector('.page:not([hidden]) .flash'); if (el) { el.textContent = t; el.classList.add('red'); } }
@@ -656,6 +657,8 @@
     fruit1: { name: '成长果实', sid: null, kind: 'exp', rate: 100, d: '给一只精灵直接增加经验：等级 × 100 点（LV30 吃一颗得 3,000 点）。等级越高，得到的经验越多。' },
     fruit2: { name: '迅速成长果实', sid: null, kind: 'exp', rate: 250, d: '给一只精灵直接增加经验：等级 × 250 点（LV30 吃一颗得 7,500 点）。比成长果实效果更好。' },
     // 瘴气驱逐战（2026-10-17）：100 个让芙罗拉星三种精灵领悟一个隐藏技能
+    tgPearl: { name: '虎啸凝珠', sid: null, sids: ['tagore'], kind: 'jade', cost: 100, sd: '困难难度泰戈尔的专属道具。可以让泰戈尔领悟隐藏技能，也能提高泰戈尔的等级上限。', d: '泰戈尔一声虎啸凝成的珠子。100 个可以让泰戈尔一系（小胖虎、胖虎也可以）直接领悟一个还没领悟的隐藏技能；泰戈尔达到 LV70 后，也用它解锁 LV75（500 个）、LV80（1000 个）的等级上限。首次击败困难难度的泰戈尔得 80 个，每周挑战每次击败得 50 个。', none: '你还没有泰戈尔（小胖虎、胖虎也算）。击败简单难度的首领「泰戈尔」可以领养一只小胖虎。' },
+    brTwig: { name: '生长枯枝', sid: null, sids: ['barren'], kind: 'jade', cost: 100, sd: '困难难度荒芜的专属道具。可以让荒芜领悟隐藏技能，也能提高荒芜的等级上限。', d: '从荒芜身上折下的枯枝，枝头却冒出了一点新芽。100 个可以让荒芜一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；荒芜达到 LV70 后，也用它解锁 LV75（500 个）、LV80（1000 个）的等级上限。首次击败困难难度的荒芜得 80 个，每周挑战每次击败得 50 个。', none: '你还没有荒芜。击败简单难度的首领「荒芜」可以得到一只。' },
     deathTok: { name: '死神代币', sid: null, sids: ['pluto'], kind: 'jade', cost: 1, d: '击败先驱之塔第 60 层的死神获得，一个账号最多 3 颗。1 颗可以让帕努托尔一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；先驱之塔的代币商店里，兑换「帕努托尔的精元」也要用到它。', none: '你还没有帕努托尔。在先驱之塔的代币商店里，用 3000 先驱代币 + 1 颗死神代币可以兑换「帕努托尔的精元」。' },
     // 各星球特产（2026-10-18）：和芙罗拉玉一样，100 个让该星球的普通野生精灵一系领悟一个隐藏技能；也用来解锁同属性精灵的等级上限
     kbDrop: { name: '不化水滴', sid: null, sids: ['pede', 'gorgon'], kind: 'jade', cost: 100, gem: '水', sd: '坎伯兰星的特产。可以让坎伯兰星的普通野生精灵领悟隐藏技能，也能提高水系精灵的等级上限。', d: '坎伯兰星浅海里凝成的水滴，永远不会蒸发。100 个可以让恩佩德、戈耳贡一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；水系精灵达到 LV70 后，也可以用它解锁更高的等级上限。在坎伯兰星的野外场景里每天有机会捡到。', none: '你还没有恩佩德或戈耳贡（进化前的形态也算）。去坎伯兰星的环礁浅海捕捉吧。' },
@@ -664,7 +667,7 @@
     whFrost: { name: '永久冻土', sid: null, sids: ['frost'], kind: 'jade', cost: 100, gem: '冰', sd: '白之星的特产。可以让白之星的普通野生精灵领悟隐藏技能，也能提高冰系精灵的等级上限。', d: '白之星冰原下挖出的冻土，一万年都不会化开。100 个可以让霜冻之冠一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；冰系精灵达到 LV70 后，也可以用它解锁更高的等级上限。在白之星的野外场景里每天有机会捡到。', none: '你还没有霜冻之冠（进化前的形态也算）。去白之星的永冻冰原捕捉吧。' },
     floraJade: { name: '芙罗拉玉', gem: '草', sd: '芙罗拉星的特产。可以让芙罗拉星的普通野生精灵领悟隐藏技能，也能提高草系精灵的等级上限。', sid: null, sids: ['mush', 'wind', 'kaleo'], kind: 'jade', cost: 100, d: '芙罗拉星深处凝成的绿色玉石。100 个可以让玛西露姆、六尾风王、卡莱奥丹一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能，不用再满足战斗里的领悟条件。隐藏技能要到 LV' + HIDDEN_MIN_LV + ' 才能装备。瘴气驱逐战的全服奖励会发放；芙罗拉星的丛林、草甸里，每天也有机会捡到少量。', none: '你还没有玛西露姆、六尾风王或卡莱奥丹（进化前的形态也算）。去芙罗拉星的丛林、草甸捕捉吧。' }
   };
-  var MON_ORDER = ['floraJade', 'kbDrop', 'ppAsh', 'ltOrb', 'whFrost', 'deathTok', 'ivMoon', 'ivBone', 'ivReroll', 'evAny', 'evTagore', 'natAny', 'natTagore', 'evReset', 'fruit1', 'fruit2'], GEN_ORDER = ['trans', 'helmet', 'auto', 'rename', 'cap1', 'cap2', 'cap3', 'pot1', 'pot2', 'pot200'];
+  var MON_ORDER = ['floraJade', 'kbDrop', 'ppAsh', 'ltOrb', 'whFrost', 'tgPearl', 'brTwig', 'deathTok', 'ivMoon', 'ivBone', 'ivReroll', 'evAny', 'evTagore', 'natAny', 'natTagore', 'evReset', 'fruit1', 'fruit2'], GEN_ORDER = ['trans', 'helmet', 'auto', 'rename', 'cap1', 'cap2', 'cap3', 'pot1', 'pot2', 'pot200'];
   // 剧情道具：主线里拿到的，不能使用也不会消耗
   var KEY_ITEMS = {
     trans: { name: '精灵翻译器', d: '汉街总部国际A座的情报显示，这个翻译器能凭一己之力考到雅思 6.5 分。这样一来，翻译精灵的语言也一定能行吧……', img: 'translator' },
@@ -1380,7 +1383,7 @@
     if (ex.view === 'home') { if (homeOpen()) { renderHome(); return; } ex.view = 'area'; renderArea(); return; }
     if (ex.view === 'boss') { if (bossOpen(ex.boss)) { renderBoss(); return; } ex.view = 'planets'; }
     if (ex.view === 'bosshub') { renderBossHub(); return; }
-    if (ex.view === 'weekly') { if (weeklyOpen()) { ex.boss = WEEKLY.boss; renderBoss(true); return; } ex.view = 'planets'; }
+    if (ex.view === 'weekly') { if (weeklyOpen()) { ex.boss = curWk().boss; renderBoss(true); return; } ex.view = 'planets'; }
     if (ex.view === 'room') { if (homeOpen()) { renderRoom(); return; } ex.view = 'area'; renderArea(); return; }
     if (ex.view === 'teashop') { if (homeOpen()) { renderTeaShop(); return; } ex.view = 'area'; renderArea(); return; }
     if (ex.view === 'shop') { if (shopOpen()) { renderShop(); return; } ex.view = 'area'; renderArea(); return; }
@@ -1396,9 +1399,12 @@
       html += '<button type="button" class="weekly-card hub-card" data-bosshub="1"><span class="tape l"></span><span class="hub-ic">' + Object.keys(BOSSES).map(function (k) { return '<img src="' + SPRITES[BOSSES[k].sid] + '" alt="">'; }).join('') + '</span><span class="wk-txt"><span class="chip boss-diff">Boss挑战</span><b>首领一览</b>' +
         '<small>' + Object.keys(BOSSES).map(function (k) { return BOSSES[k].name; }).join('、') + ' · 已开放 ' + nOpen + ' / ' + Object.keys(BOSSES).length + '</small></span><span class="wk-pm">›</span></button>';
       if (weeklyOpen()) {
-        var WB = BOSSES[WEEKLY.boss], pn = permits();
-        html += '<button type="button" class="weekly-card" data-weekly="1"><span class="tape l"></span><img src="' + SPRITES[WB.sid] + '" alt=""><span class="wk-txt"><span class="chip boss-diff d2">每周挑战</span><b>' + WB.name + ' · ' + WB.lv[WEEKLY.d].diff + '难度</b>' +
-          '<small>每次消耗 1 枚挑战许可 · 击败得累积经验 ×' + fmt(WEEKLY.exp) + ' 和随机掉落</small></span><span class="wk-pm"><b>' + pn + '</b> / ' + PERMIT.max + '<small>挑战许可</small></span></button>';
+        var pn = permits();
+        WEEKLIES.forEach(function (W, wi) {
+          if (!wkOpen(W)) return; var WB = BOSSES[W.boss];
+          html += '<button type="button" class="weekly-card" data-weekly="' + (wi + 1) + '"><span class="tape l"></span><img src="' + SPRITES[WB.sid] + '" alt=""><span class="wk-txt"><span class="chip boss-diff d2">每周挑战</span><b>' + WB.name + ' · ' + WB.lv[W.d].diff + '难度</b>' +
+            '<small>每次消耗 1 枚挑战许可 · 击败得累积经验 ×' + fmt(W.exp) + '、' + rwList({ items: W.item }).join('、') + ' 和随机掉落</small></span><span class="wk-pm"><b>' + pn + '</b> / ' + PERMIT.max + '<small>挑战许可（共用）</small></span></button>';
+        });
       }
       html += '<div class="planets">' + PLANETS.filter(planetOpen).map(function (p) {
         var n = p.sites.length, done = p.sites.filter(function (s) { return prog(s).done; }).length, open = planetOpen(p);
@@ -2756,6 +2762,11 @@
       if (M0.until && today > M0.until) return;
       if (sendMail(M0)) changed = true;
     });
+    // 2026-10-18：困难难度首领新增的首次击败奖励（虎啸凝珠 / 生长枯枝 ×80），之前已经打过的船员通过邮箱补发
+    [['tiger', 'tgPearl', '泰戈尔'], ['barren', 'brTwig', '荒芜']].forEach(function (x) {
+      if (!bossWon(x[0], 2)) return; var it = {}; it[x[1]] = 80;
+      if (sendMail({ id: 'boss-item-' + x[0], title: '困难难度「' + x[2] + '」首次击败奖励补发', body: '{name}，你好！\n困难难度的首领「' + x[2] + '」新增了首次击败奖励「' + itemName(x[1]) + '」×80。你之前已经击败过它了，这份奖励给你补上。\n' + itemName(x[1]) + '可以让' + x[2] + '领悟隐藏技能，也能提高' + x[2] + '的等级上限。另外，' + x[2] + '的每周挑战也已经开放。', att: { items: it } })) changed = true;
+    });
     // 主线章节大奖：章节推出之前就已经读完的船员，通过邮箱补发（每个章节一次）
     CHAPTERS.forEach(function (C) {
       if (!chapterDone(C) || chapterGot(C.id)) return;
@@ -3232,21 +3243,27 @@
       lv: [
         { diff: '简单', lv: 25, hp: 500, only: ONLY3, bgm: 'boss', open: function () { return prog('tiger').done; }, lockText: '读完支线「东北来的泰戈尔」后开放', reward: { mon: { sid: 'tagore', lv: 10 } } },
         { diff: '普通', lv: 40, hp: 1500, only: ONLY3, boss: { feud: 1, ne: 1, pp: 99 }, bgm: 'boss2', open: function () { return prog('tiger2').done; }, lockText: '击败简单难度，再听泰戈尔介绍后开放', reward: { emblem: 'tagore', exp: 20000 } },
-        { diff: '困难', lv: 60, hp: 5000, only: ONLY3, boss: { feud: 1, ne: 1, past: 1, pp: 99 }, bgm: 'boss3', open: function () { return bossWon('tiger', 1); }, lockText: '击败普通难度后开放', reward: { title: 'force', items: { natTagore: 3 }, exp: 50000 } }
+        { diff: '困难', lv: 60, hp: 5000, only: ONLY3, boss: { feud: 1, ne: 1, past: 1, pp: 99 }, bgm: 'boss3', open: function () { return bossWon('tiger', 1); }, lockText: '击败普通难度后开放', reward: { title: 'force', items: { tgPearl: 80, natTagore: 3 }, exp: 50000 } }
       ] },
     barren: { name: '荒芜', sid: 'barren', planet: 'flora', region: 'salt', bg: 'fl_salt',
       d: '潜伏在芙罗拉星盐碱地地底的草系首领。盐碱地里的瘴气，就是从它身上散出来的。',
       lv: [
-        { diff: '简单', lv: 40, hp: 1000, boss: { dr: 0.15, mia: 1, pp: 99 }, bgm: 'boss', open: function () { return prog('flora1').done && (chalStars('fl5') > 0 || bossWon('barren', 0)); }, lockText: '通过芙罗拉星挑战第五关「猎手的领地」后开放', reward: { mon: { sid: 'barren', lv: 10 } } },
-        { diff: '普通', lv: 65, hp: 3000, boss: { dr: 0.15, mia: 1, puppet: 1, pp: 99 }, bgm: 'boss2', open: function () { return bossWon('barren', 0); }, lockText: '击败简单难度后开放', reward: { later: true } },
+        { diff: '简单', lv: 40, hp: 1000, boss: { dr: 0.15, mia: 1, pp: 99 }, bgm: 'floraFallen', open: function () { return prog('flora1').done && (chalStars('fl5') > 0 || bossWon('barren', 0)); }, lockText: '通过芙罗拉星挑战第五关「猎手的领地」后开放', reward: { mon: { sid: 'barren', lv: 10 } } },
+        { diff: '普通', lv: 65, hp: 3000, boss: { dr: 0.15, mia: 1, puppet: 1, pp: 99 }, bgm: 'floraFallen', open: function () { return bossWon('barren', 0); }, lockText: '击败简单难度后开放', reward: { later: true } },
         // 困难：完成主线「第十段 · 瘴气之源」后，2026-10-18 16:00（北京时间）解锁
         { diff: '困难', lv: 70, hp: 10000, boss: { dr: 0.15, mia: 1, immortal: 1, puppet: 1, puppetLv: 70, humus: 1, weed: 1, weedDmg: 50, rebirth: 1, pp: 99 }, bgm: 'floraFallen',
           open: function () { return prog('flora6').done && Date.now() >= Date.UTC(2026, 9, 18, 8, 0, 0); },
-          lockText: '完成主线「第十段 · 瘴气之源」后，2026-10-18 16:00 开放', reward: { title: 'guardian', exp: 50000 } }
+          lockText: '完成主线「第十段 · 瘴气之源」后，2026-10-18 16:00 开放', reward: { title: 'guardian', exp: 50000, items: { brTwig: 80 } } }
       ] }
   };
   // 每周挑战：击败困难难度的泰戈尔后开放，规则和困难难度一样，每次消耗 1 枚挑战许可
-  var WEEKLY = { boss: 'tiger', d: 2, exp: 5000, drops: [{ items: { natTagore: 1 } }, { items: { evTagore: 1 } }, { energy: 2000 }, { exp: 2000 }] };
+  // 2026-10-18：每周挑战改成可以有多个首领（击败对应首领的困难难度后各自开放），挑战许可共用。item 是每次击败必得的首领专属道具
+  var WEEKLIES = [
+    { boss: 'tiger', d: 2, exp: 5000, item: { tgPearl: 50 }, drops: [{ items: { natTagore: 1 } }, { items: { evTagore: 1 } }, { energy: 2000 }, { exp: 2000 }] },
+    { boss: 'barren', d: 2, exp: 5000, item: { brTwig: 50 }, drops: [{ items: { floraJade: 20 } }, { items: { evAny: 1 } }, { energy: 2000 }, { exp: 2000 }] }
+  ];
+  function wkOpen(W) { return !!acc && !!W && bossWon(W.boss, W.d); }
+  function curWk() { var W = WEEKLIES[ex.wk | 0]; return wkOpen(W) ? W : WEEKLIES.filter(wkOpen)[0] || WEEKLIES[0]; }
   var PERMIT = { max: 24, every: 12 * 3600 * 1000 };   // 每 12 小时恢复 1 枚，最多 24 枚
   function recKey(k, d) { return d === 'w' ? k + ':w' : d ? k + ':' + d : k; }
   function bossRec(k, d) { if (!acc.bosses) acc.bosses = {}; var rk = recKey(k, d); if (!acc.bosses[rk]) acc.bosses[rk] = { wins: 0, tries: 0 }; return acc.bosses[rk]; }
@@ -3262,7 +3279,7 @@
     return 0;
   }
   function bossWhere(B) { return B.dept ? DEPTS[B.dept][0] : planetOf(B.planet).name + ' · ' + WILD_REGIONS.filter(function (R) { return R.id === B.region; })[0].name; }
-  function weeklyOpen() { return !!acc && bossWon(WEEKLY.boss, WEEKLY.d); }
+  function weeklyOpen() { return WEEKLIES.some(wkOpen); }
   // 挑战许可：第一次开放每周挑战时送 1 枚，之后每 12 小时恢复 1 枚
   function permits() {
     if (!weeklyOpen()) return 0;
@@ -3321,18 +3338,18 @@
       '<div class="boss-hub">' + cards + '</div>';
   }
   function renderBoss(weekly) {
-    var k = ex.boss, B = BOSSES[k], d = weekly ? WEEKLY.d : bossSel(k), L = B.lv[d], won = bossWon(k, d);
+    var WK = weekly ? curWk() : null, k = ex.boss, B = BOSSES[k], d = weekly ? WK.d : bossSel(k), L = B.lv[d], won = bossWon(k, d);
     var rec = (acc.bosses && acc.bosses[recKey(k, weekly ? 'w' : d)]) || {}, open = weekly ? weeklyOpen() : levelOpen(k, d), pn = weekly ? permits() : 0;
     var tabs = weekly ? '' : '<div class="fparts boss-tabs" role="tablist">' + B.lv.map(function (x, i) {
       var op = levelOpen(k, i);
       return '<button type="button" role="tab" class="tab' + (i === d ? ' on' : '') + (op ? '' : ' lock') + '" aria-selected="' + (i === d) + '"' + (op ? ' data-bossd="' + i + '"' : ' disabled title="' + esc(x.lockText) + '"') + '>' + (op ? '' : '🔒 ') + x.diff + (bossWon(k, i) ? ' ✓' : '') + '</button>';
     }).join('') + '</div>';
     var rules = fxRules(L).map(function (r) { return '<li><b>特殊</b>' + esc(r[0]) + '：' + esc(r[1]) + '</li>'; }).join('');
-    var rw = weekly ? '每次击败获得累积经验 ×' + fmt(WEEKLY.exp) + '，并随机掉落 ' + WEEKLY.drops.map(dropName).join(' / ') + ' 之一'
+    var rw = weekly ? '每次击败获得累积经验 ×' + fmt(WK.exp) + '、' + rwList({ items: WK.item }).join('、') + '，并随机掉落 ' + WK.drops.map(dropName).join(' / ') + ' 之一'
       : (won ? '已领取（首次击败：' + rewardText(L.reward) + '）；再次击败只获得经验和学习力' : '首次击败：' + rewardText(L.reward) + '；另有经验和学习力');
     var btn = weekly ? '<button type="button" class="btn primary" data-weeklygo="1"' + (pn > 0 ? '' : ' disabled') + '>开始挑战（消耗 1 枚挑战许可）</button><p class="hint permit-line">挑战许可 <b>' + pn + '</b> / ' + PERMIT.max + ' · ' + permitNext() + '</p>'
       : open ? '<button type="button" class="btn primary" data-bossgo="' + k + '" data-d="' + d + '">开始挑战</button>' : '<button type="button" class="btn" disabled>' + esc(L.lockText) + '</button>';
-    $('pg-explore').innerHTML = exHead(weekly ? '每周挑战：和困难难度的泰戈尔一模一样，每次挑战消耗 1 枚挑战许可。' : '首领可以反复挑战。难度依次开放，每档难度第一次击败都有奖励。') +
+    $('pg-explore').innerHTML = exHead(weekly ? '每周挑战：和困难难度的' + B.name + '一模一样，每次挑战消耗 1 枚挑战许可。' : '首领可以反复挑战。难度依次开放，每档难度第一次击败都有奖励。') +
       '<div class="crumb"><button type="button" class="btn ghost" id="boss-back">‹ 返回' + (weekly ? '星际探索' : ex.bossFrom === 'hub' ? 'Boss挑战' : bossWhere(B)) + '</button><b>' + (weekly ? '每周挑战 · ' : '首领 · ') + B.name + '</b></div>' + tabs +
       '<article class="boss-card"><span class="tape l"></span><div class="boss-art"><img src="' + BG[floraBg(B.bg)] + '" alt="" class="boss-bg"><img src="' + SPRITES[B.sid] + '" alt="' + B.name + '" class="boss-mon"></div>' +
       '<div class="boss-txt"><span class="chip boss-diff d' + d + '">' + (weekly ? '每周挑战 · ' : '') + L.diff + '难度</span><h3>' + B.name + '</h3><p class="hint">' + esc(B.d) + '</p>' +
@@ -3437,14 +3454,14 @@
     if (R.later) out.push('这一档难度的首次击败奖励将在之后添加，到时会通过邮箱补发给已经击败过的船员。');
     return out;
   }
-  function weeklyReward() {
-    var D = WEEKLY.drops[Math.floor(Math.random() * WEEKLY.drops.length)];
-    acc.exp = (acc.exp || 0) + WEEKLY.exp + (D.exp || 0); acc.energy = (acc.energy || 0) + (D.energy || 0); giveItems(D.items);
-    return ['每周挑战奖励：累积经验 +' + fmt(WEEKLY.exp) + '；掉落了「' + dropName(D) + '」！'];
+  function weeklyReward(W) {
+    var D = W.drops[Math.floor(Math.random() * W.drops.length)];
+    acc.exp = (acc.exp || 0) + W.exp + (D.exp || 0); acc.energy = (acc.energy || 0) + (D.energy || 0); giveItems(D.items); giveItems(W.item);
+    return ['每周挑战奖励：累积经验 +' + fmt(W.exp) + '、' + rwList({ items: W.item }).join('、') + '；掉落了「' + dropName(D) + '」！'];
   }
   function startBoss(k, d, weekly) {
-    var B = BOSSES[k]; if (weekly) d = WEEKLY.d;
-    var L = B.lv[d]; if (!L || !(weekly ? weeklyOpen() : L.open())) return;
+    var B = BOSSES[k], WK = weekly ? WEEKLIES.filter(function (x) { return x.boss === k; })[0] : null; if (weekly) d = WK.d;
+    var L = B.lv[d]; if (!L || !(weekly ? wkOpen(WK) : L.open())) return;
     if (weekly) { if (permits() < 1) { toast('挑战许可用完了。' + permitNext() + '。'); return; } acc.permit.n--; }
     var team = (acc.teams[acc.active] || []).map(mon).filter(Boolean);
     if (!team.length) team = acc.mons.slice(0, 1);
@@ -3465,10 +3482,11 @@
         if (res === 'win') {
           first = !rec.wins; rec.wins++;
           msg.push(weekly ? '每周挑战：击败了首领「' + B.name + '」！' : '击败了' + L.diff + '难度的首领「' + B.name + '」！');
-          if (weekly) msg = msg.concat(weeklyReward());
+          if (weekly) msg = msg.concat(weeklyReward(WK));
           else if (first) {
             msg = msg.concat(firstReward(L));
             if (B.lv[d + 1] && levelOpen(k, d + 1)) msg.push(B.lv[d + 1].diff + '难度已开放。');
+            if (L.diff === '困难' && WEEKLIES.some(function (x) { return x.boss === k && x.d === d; })) msg.push('「' + B.name + '」的每周挑战已开放：在星际探索的星球列表上方进入，每次消耗 1 枚挑战许可。');
             if (!wasWeekly && weeklyOpen()) msg.push('「每周挑战」已开放：在星际探索的星球列表上方进入，每次消耗 1 枚挑战许可（已送你 1 枚）。');
           }
         }
@@ -4318,8 +4336,8 @@
     if (b.dataset.boss) { var BB = BOSSES[b.dataset.boss]; ex.bossFrom = b.dataset.from || null; ex.view = 'boss'; ex.boss = b.dataset.boss; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); mysteryRoll(BB.dept ? '荆楚号 · ' + DEPTS[BB.dept][0] : bossWhere(BB)); return; }
     if (b.dataset.bossd) { ex.bossK = ex.boss; ex.bossD = +b.dataset.bossd; renderBoss(); return; }
     if (b.dataset.bossgo) { startBoss(b.dataset.bossgo, +b.dataset.d || 0); return; }
-    if (b.dataset.weekly) { ex.view = 'weekly'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
-    if (b.dataset.weeklygo) { startBoss(WEEKLY.boss, WEEKLY.d, true); return; }
+    if (b.dataset.weekly) { ex.wk = (+b.dataset.weekly || 1) - 1; ex.view = 'weekly'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
+    if (b.dataset.weeklygo) { startBoss(curWk().boss, curWk().d, true); return; }
     if (b.id === 'boss-back') {
       var BK2 = BOSSES[ex.boss];
       if (ex.view === 'weekly') ex.view = 'planets';
