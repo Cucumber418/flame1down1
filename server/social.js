@@ -85,7 +85,7 @@ function monOut(m, acc) {
   return {
     sid: str(m.sid, 32), lv: int(m.lv, 1, 100), nat: str(m.nat, 8) || null, ev: ev, iv: iv,
     emblem: !!(acc && acc.emblems && acc.emblems[m.sid]),
-    shiny: m.shiny === 2 ? 2 : !!m.shiny,   // 击败普通难度泰戈尔得到的纹章（按精灵种类）
+    shiny: m.shiny === 2 ? 2 : !!m.shiny, fs: m.fs != null && m.fs >= 0 && m.fs <= 2 ? m.fs | 0 : undefined,   // fs：形态切换装置切换的外观；击败普通难度泰戈尔得到的纹章（按精灵种类）
     moves: Array.isArray(m.moves) ? m.moves.filter(function (x) { return typeof x === 'string'; }).slice(0, 4).map(function (x) { return x.slice(0, 32); }) : []
   };
 }
@@ -105,7 +105,7 @@ function ownedSids(name) {
 // 头像：存档里 avatar 是一只精灵的编号；这只精灵不在了就没有头像（显示名字首字）
 function avatarOf(acc) {
   var m = acc && acc.avatar != null ? monByU(acc, acc.avatar) : null;
-  return m ? { sid: str(m.sid, 32), lv: int(m.lv, 1, 100), shiny: m.shiny === 2 ? 2 : !!m.shiny } : null;
+  return m ? { sid: str(m.sid, 32), lv: int(m.lv, 1, 100), shiny: m.shiny === 2 ? 2 : !!m.shiny, fs: m.fs != null && m.fs >= 0 && m.fs <= 2 ? m.fs | 0 : undefined } : null;
 }
 // 助战精灵：名片里设置的一只（acc.card.helper 是精灵编号），星球挑战里好友可以借用
 function helperOf(acc) { var u = acc && acc.card && acc.card.helper; return u != null ? monByU(acc, u) : null; }

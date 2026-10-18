@@ -43,7 +43,7 @@
   }
   function monThumb(m) {
     var s = SPMAP[m.sid]; if (!s) return '';
-    var v = A.view({ sid: m.sid, lv: m.lv, shiny: m.shiny });
+    var v = A.view({ sid: m.sid, lv: m.lv, shiny: m.shiny, fs: m.fs });
     return '<span class="mth" title="' + esc(v.name) + ' LV' + m.lv + '"><img src="' + v.img + '" alt="' + esc(v.name) + '"><small>' + m.lv + '</small></span>';
   }
   function dialog(cls, html, wire) {
@@ -116,7 +116,7 @@
     for (var i = 0; i < SHOW_MAX; i++) {
       var m = c.show[i], s = m && SPMAP[m.sid];
       if (!s) { slots += '<li class="pc-mon empty"><span>空位</span></li>'; continue; }
-      var v = A.view({ sid: m.sid, lv: m.lv, shiny: m.shiny });
+      var v = A.view({ sid: m.sid, lv: m.lv, shiny: m.shiny, fs: m.fs });
       slots += '<li class="pc-mon"><img src="' + v.img + '" alt="' + esc(v.name) + '"><b>' + esc(v.name) + (m.shiny ? '<span class="shiny-tag">异色</span>' : '') + '</b><span class="pc-lv">LV' + m.lv + (m.nat ? ' · ' + esc(m.nat) : '') + '</span>' +
         '<span class="tc">' + tchips(s.types) + '</span>' +
         (m.moves && m.moves.length ? '<span class="pc-mv">' + m.moves.map(function (n) { return esc(n); }).join('、') + '</span>' : '') + '</li>';
@@ -132,7 +132,7 @@
       '<blockquote class="pc-motto' + (c.motto ? '' : ' empty') + '">' + (c.motto ? esc(c.motto) : '这位船员还没有写个人宣言。') + '</blockquote>' +
       progHTML(c.prog) +
       '<h4 class="pc-h">展示精灵</h4><ol class="pc-show">' + slots + '</ol>' +
-      (c.helper && SPMAP[c.helper.sid] ? (function (h) { var v = A.view({ sid: h.sid, lv: h.lv, shiny: h.shiny });
+      (c.helper && SPMAP[c.helper.sid] ? (function (h) { var v = A.view({ sid: h.sid, lv: h.lv, shiny: h.shiny, fs: h.fs });
         return '<h4 class="pc-h">助战精灵 <span class="hint">好友可以在星球挑战里借用</span></h4><div class="pc-helper"><img src="' + v.img + '" alt=""><b>' + esc(v.name) + (h.shiny ? '<span class="shiny-tag">异色</span>' : '') + '</b><span class="pc-lv">LV' + h.lv + (h.nat ? ' · ' + esc(h.nat) : '') + '</span><span class="tc">' + tchips(SPMAP[h.sid].types) + '</span></div>'; })(c.helper) : '') + '</div>';
   }
   function openCard(user) {
@@ -184,7 +184,7 @@
     if (d.noChar) return back + '</div><div class="soc-empty"><p>@' + esc(d.user) + ' 还没有创建游戏角色。</p></div>';
     if (!d.open) return back + '<b class="home-name">' + esc(d.name) + ' 的休息舱</b></div><div class="soc-empty"><p>' + esc(d.name) + ' 还没有读完「陆羽茶室」支线，茶室还没开放。</p></div>';
     var pos = A.homePos, figs = d.mons.map(function (m, i) {
-      var v = A.view({ sid: m.sid, lv: m.lv, shiny: m.shiny }), p = pos[i] || pos[0];
+      var v = A.view({ sid: m.sid, lv: m.lv, shiny: m.shiny, fs: m.fs }), p = pos[i] || pos[0];
       return '<div class="hm-fig' + (d.mons.length > 3 ? ' many' : '') + '" data-csid="' + esc(m.sid) + '" data-cst="' + (v.stage || 0) + '" data-cctx="home" style="left:' + p[0] + '%;top:' + p[1] + '%"><button type="button" class="hm-poke" data-poke="1" data-mon="' + esc(v.name) + '" aria-label="摸摸' + esc(v.name) + '"><img src="' + v.img + '" alt=""></button><span class="hm-tag">' + esc(v.name) + ' · LV' + m.lv + '</span></div>';
     }).join('');
     var left = A.teaLeft(), mine = (A.acc().teams[A.acc().active] || []).map(A.mon).filter(Boolean);
@@ -209,8 +209,8 @@
     var ed = st.edit;
     return { user: st.me || (C.user && C.user()), name: acc.name, avatar: A.avatarSpec(), gender: A.gender ? A.gender() : 'm', title: acc.title && (acc.titles || []).indexOf(acc.title) >= 0 ? acc.title : null, monsN: acc.mons.length, speciesN: Object.keys(species).length,
       created: acc.created, motto: ed.motto, rankInfo: R, prog: progOf(acc), mil: A.milRank ? A.milRank() : acc.milRank | 0,
-      show: ed.show.map(function (u) { var m = A.mon(u); return m && { sid: m.sid, lv: m.lv, nat: m.nat, moves: m.moves, shiny: m.shiny === 2 ? 2 : !!m.shiny }; }).filter(Boolean),
-      helper: ed.helper != null && A.mon(ed.helper) ? (function (m) { return { sid: m.sid, lv: m.lv, nat: m.nat, shiny: m.shiny === 2 ? 2 : !!m.shiny }; })(A.mon(ed.helper)) : null };
+      show: ed.show.map(function (u) { var m = A.mon(u); return m && { sid: m.sid, lv: m.lv, nat: m.nat, moves: m.moves, shiny: m.shiny === 2 ? 2 : !!m.shiny, fs: m.fs }; }).filter(Boolean),
+      helper: ed.helper != null && A.mon(ed.helper) ? (function (m) { return { sid: m.sid, lv: m.lv, nat: m.nat, shiny: m.shiny === 2 ? 2 : !!m.shiny, fs: m.fs }; })(A.mon(ed.helper)) : null };
   }
   function startEdit() {
     var cd = A.acc().card || {};

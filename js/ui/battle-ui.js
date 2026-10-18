@@ -121,6 +121,9 @@
     if (k === 'c_bowl') return '<svg class="it-ic" viewBox="0 0 64 64" aria-hidden="true"><g stroke="#23222b" stroke-width="2.5" stroke-linejoin="round">' +
       '<path d="M12 30c0-9 9-15 20-15s20 6 20 15z" fill="#fffaf0"/><circle cx="24" cy="23" r="1.6" fill="#e9dcc0" stroke-width="1"/><circle cx="35" cy="20" r="1.6" fill="#e9dcc0" stroke-width="1"/><circle cx="41" cy="26" r="1.6" fill="#e9dcc0" stroke-width="1"/>' +
       '<path d="M8 30h48c0 12-10 21-24 21S8 42 8 30z" fill="#c9553a"/><path d="M14 38h36" stroke="#f3d36b" stroke-width="2"/><path d="M24 51h16v5H24z" fill="#a8432c"/></g></svg>';
+    if (k === 'formDev') return '<svg class="it-ic" viewBox="0 0 64 64" aria-hidden="true"><g stroke="#23222b" stroke-width="2.5" stroke-linejoin="round">' +
+      '<rect x="10" y="16" width="44" height="34" rx="8" fill="#e6eaf0"/><circle cx="32" cy="33" r="11" fill="#2b2a33"/><path d="M26 33a6 6 0 0 1 10-4.5M38 33a6 6 0 0 1-10 4.5" stroke="#8fd3ff" stroke-width="2.5" fill="none" stroke-linecap="round"/>' +
+      '<path d="M36 26l1 3-3 0M28 40l-1-3 3 0" stroke="#8fd3ff" stroke-width="2" fill="none"/><rect x="24" y="10" width="16" height="6" rx="2" fill="#c42f3a"/><circle cx="48" cy="22" r="2.5" fill="#f3d36b" stroke-width="1.5"/></g></svg>';
     if (k === 'rename') return '<svg class="it-ic" viewBox="0 0 64 64" aria-hidden="true"><g stroke="#23222b" stroke-width="2.5" stroke-linejoin="round">' +
       '<rect x="8" y="14" width="48" height="36" rx="6" fill="#fbfaf3"/><path d="M8 24h48" /><rect x="14" y="31" width="14" height="13" rx="3" fill="#e8d080"/>' +
       '<path d="M33 34h16M33 41h10" stroke-linecap="round"/><path d="M44 50l12-12 4 4-12 12h-4z" fill="#c42f3a" stroke-width="2"/></g></svg>';

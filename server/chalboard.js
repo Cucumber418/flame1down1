@@ -17,7 +17,7 @@ var cache = {};
 function accOf(u) { try { var a = JSON.parse((u && u.save && u.save.data && u.save.data['hs-account-v1']) || 'null'); return a && typeof a.name === 'string' && Array.isArray(a.mons) ? a : null; } catch (e) { return null; } }
 function avatarOf(acc) {
   var m = acc && acc.avatar != null ? acc.mons.filter(function (x) { return x && x.u === acc.avatar; })[0] : null;
-  return m ? { sid: String(m.sid).slice(0, 32), lv: Math.max(1, Math.min(100, m.lv | 0)), shiny: m.shiny === 2 ? 2 : !!m.shiny } : null;
+  return m ? { sid: String(m.sid).slice(0, 32), lv: Math.max(1, Math.min(100, m.lv | 0)), shiny: m.shiny === 2 ? 2 : !!m.shiny, fs: m.fs != null && m.fs >= 0 && m.fs <= 2 ? m.fs | 0 : undefined } : null;
 }
 function progOf(acc) {
   var stars = 0, max = 0, c = (acc && acc.chal) || {};
