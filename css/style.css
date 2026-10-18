@@ -2172,7 +2172,8 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .spa-float { position: absolute; bottom: 38%; transform: translateX(-50%); display: grid; justify-items: center; animation: spaFloat 7s ease-in-out infinite; z-index: 4; }
 .spa-float img { width: 120px; height: 120px; object-fit: contain; filter: drop-shadow(0 6px 4px rgba(0,0,0,.25)); clip-path: inset(0 0 22% 0); }
 .spa-float span { margin-top: -26px; padding: 1px 8px; font-size: 11.5px; color: #fff; background: rgba(20, 60, 80, .55); border-radius: 99px; }
-@keyframes spaFloat { 0%, 100% { transform: translate(-50%, 0) rotate(-3deg); } 25% { transform: translate(calc(-50% + var(--dx, 16px)), -8px) rotate(2deg); } 50% { transform: translate(-50%, -2px) rotate(3deg); } 75% { transform: translate(calc(-50% - var(--dx, 16px)), -10px) rotate(-2deg); } }
+@keyframes spaFloat { 0%, 100% { transform: translate(-50%, 0) rotate(-3deg); } 25% { transform: translate(-50%, -8px) rotate(2deg); } 50% { transform: translate(-50%, -2px) rotate(3deg); } 75% { transform: translate(-50%, -10px) rotate(-2deg); } }
+.spa-float.flip img { transform: scaleX(-1); }
 .spa-player { position: absolute; left: 50%; bottom: 8%; width: 260px; max-width: 46%; transform: translateX(-50%); z-index: 5; animation: spaBobC 5s ease-in-out infinite; }
 @keyframes spaBobC { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-5px); } }
 .spa-hud { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 6; display: flex; align-items: center; gap: 18px; padding: 8px 18px; background: rgba(255, 252, 240, .92); border: 2px solid var(--ink); border-radius: 14px; box-shadow: 3px 3px 0 var(--ink); }
@@ -2225,3 +2226,13 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .mayar .mp.locked .mp-ic { filter: grayscale(1) brightness(.55); }
 .mayar .mp.locked .mp-lb b { color: #aaa; }
 .mayar .mp.unk { width: 3.6%; min-width: 22px; aspect-ratio: 1; display: grid; place-items: center; border: 2px dashed #7e7d8e; border-radius: 50%; color: #a9a7b8; font-family: var(--f-hand); font-size: clamp(12px, 1.8vw, 20px); background: rgba(13, 14, 22, .85); cursor: default; }
+
+/* 精灵的悄悄话气泡 */
+.chat-bub { position: absolute; left: 50%; bottom: 100%; transform: translate(-50%, -4px); z-index: 30; width: max-content; max-width: 180px; padding: 5px 10px; font-size: 12.5px; line-height: 1.4; color: var(--ink); background: #fffdf6; border: 1.5px solid var(--ink); border-radius: 12px; box-shadow: 2px 2px 0 rgba(35, 34, 43, .35); pointer-events: none; text-align: center; white-space: normal; animation: chatIn .25s ease-out; }
+.chat-bub::after { content: ''; position: absolute; left: calc(50% + var(--tail, 0px)); top: 100%; margin-left: -6px; border: 6px solid transparent; border-top-color: var(--ink); }
+.chat-bub.out { opacity: 0; transition: opacity .4s; }
+.wf-mon .chat-bub { bottom: 92%; }
+.spa-float .chat-bub { bottom: 86%; margin: 0; padding: 5px 10px; font-size: 12.5px; color: var(--ink); background: #fffdf6; border-radius: 12px; }
+
+@keyframes chatIn { from { opacity: 0; transform: translate(-50%, 4px) scale(.85); } to { opacity: 1; transform: translate(-50%, -4px) scale(1); } }
+@media (max-width: 560px) { .chat-bub { max-width: 130px; font-size: 11.5px; } }

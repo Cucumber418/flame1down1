@@ -1932,7 +1932,7 @@
     renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8);
   }
   function fieldMonHTML(m, cls) {
-    return '<button type="button" class="wf-mon' + (m.face < 0 ? ' flip' : '') + (cls ? ' ' + cls : '') + '" data-wfid="' + m.id + '" title="' + esc(m.name) + ' LV' + m.lv + '" aria-label="和' + esc(m.name) + '对战" style="left:' + m.x.toFixed(2) + '%;top:' + m.y.toFixed(2) + '%;z-index:' + Math.round(m.y) + '"><i class="wf-sh" aria-hidden="true"></i><img src="' + m.img + '" alt=""></button>';
+    return '<button type="button" class="wf-mon' + (m.face < 0 ? ' flip' : '') + (cls ? ' ' + cls : '') + '" data-wfid="' + m.id + '" data-csid="' + m.sid + '" data-cst="' + (m.corrupt ? 9 : form({ sid: m.sid, lv: m.lv }).stage || 0) + '" data-cctx="' + (m.corrupt ? 'mia' : 'wild') + '" title="' + esc(m.name) + ' LV' + m.lv + '" aria-label="和' + esc(m.name) + '对战" style="left:' + m.x.toFixed(2) + '%;top:' + m.y.toFixed(2) + '%;z-index:' + Math.round(m.y) + '"><i class="wf-sh" aria-hidden="true"></i><img src="' + m.img + '" alt=""></button>';
   }
   function renderField() {
     var R = regionById(ex.region);
@@ -3793,7 +3793,7 @@
     var floats = S.u.map(function (u, i) {
       var m = mon(u); if (!m) return '';
       var f = form(m), x = 12 + (i * 76 / Math.max(1, S.u.length - 1 || 1)) % 80;
-      return '<div class="spa-float" style="left:' + (S.u.length > 1 ? 8 + i * (78 / (S.u.length - 1)) : 50) + '%;animation-delay:-' + (i * 1.7) + 's;--dx:' + (i % 2 ? -18 : 18) + 'px"><img src="' + f.img + '" alt="' + esc(f.name) + '"><span>' + esc(f.name) + '</span></div>';
+      return '<div class="spa-float" data-csid="' + m.sid + '" data-cst="' + (f.stage || 0) + '" data-cctx="spa" data-hx="' + (S.u.length > 1 ? 8 + i * (78 / (S.u.length - 1)) : 50) + '" style="left:' + (S.u.length > 1 ? 8 + i * (78 / (S.u.length - 1)) : 50) + '%;animation-delay:-' + (i * 1.7) + 's"><img src="' + f.img + '" alt="' + esc(f.name) + '"><span>' + esc(f.name) + '</span></div>';
     }).join('');
     var hud = on ? '<div class="spa-hud"><div><small>已泡时长</small><b id="spa-time">' + hms(Date.now() - SPA.t0) + '</b></div><div class="spa-hud-g"><small>本次获得经验</small><b id="spa-gain">+' + fmt(SPA.total) + '</b></div><em id="spa-juice">' + (juiceOn() ? '经验翻倍中 · 还剩 ' + hms(acc.spa.juice - Date.now()) : '') + '</em></div>' : '';
     var cards = S.u.map(function (u, i) {
@@ -4136,6 +4136,42 @@
       D.px = x;
     });
   }, 50);
+  /* 温泉里的精灵：在水面上左右漂，往左漂时转身（上下起伏和摇晃交给 CSS 的 spaFloat） */
+  setInterval(function () {
+    var fl = document.querySelectorAll('.spa-hall .spa-float'); if (!fl.length) return;
+    var now = performance.now() / 1000;
+    Array.prototype.forEach.call(fl, function (f) {
+      var D = f.dataset;
+      if (!D.ph) { D.ph = Math.random() * 6.283; D.sp = 0.12 + Math.random() * 0.12; D.px = D.hx; }
+      var x = Math.max(6, Math.min(94, +D.hx + Math.sin(now * +D.sp + +D.ph) * 6));
+      f.style.left = x.toFixed(2) + '%';
+      if (x > +D.px + 0.002) f.classList.remove('flip'); else if (x < +D.px - 0.002) f.classList.add('flip');
+      D.px = x;
+    });
+  }, 50);
+  /* 精灵的悄悄话：拿到精灵翻译器后，野外、温泉、茶室里走动的精灵偶尔冒一个气泡（台词见 js/data/chatter.js） */
+  function hasTrans() { return !!(acc && ((acc.items && acc.items.trans > 0) || prog('flora2').done)); }
+  function chatLine(sid, st, ctx) {
+    if (ctx === 'mia') return pickOne(CHATTER_MIA);
+    var C = (typeof CHATTER !== 'undefined' && CHATTER[sid]) || {}, own = (C.all || []).concat(C[ctx] || [], (C.stage && C.stage[st]) || []);
+    var gen = (typeof CHATTER_GEN !== 'undefined' && CHATTER_GEN[ctx]) || [];
+    return own.length && (Math.random() < 0.75 || !gen.length) ? pickOne(own) : gen.length ? pickOne(gen) : '';
+  }
+  setInterval(function () {
+    if (typeof CHATTER === 'undefined' || document.hidden || !ready() || !hasTrans()) return;
+    var els = document.querySelectorAll('[data-cctx]'); if (!els.length) return;
+    var talking = document.querySelectorAll('.chat-bub').length;
+    Array.prototype.forEach.call(els, function (el) {
+      if (talking >= 2 || el.querySelector('.chat-bub') || !el.offsetParent || el.classList.contains('wf-out')) return;
+      if (Math.random() > 0.05) return;
+      var t = chatLine(el.dataset.csid, +el.dataset.cst || 0, el.dataset.cctx); if (!t) return;
+      var b = document.createElement('span'); b.className = 'chat-bub'; b.textContent = t; b.setAttribute('aria-hidden', 'true');
+      el.appendChild(b); talking++;
+      var box = el.closest('.wf-scene, .spa-hall, .home-room'), pr = box && box.getBoundingClientRect(), br = b.getBoundingClientRect();   // 靠边的精灵：气泡往里挪，免得被裁掉
+      if (pr) { var dx = br.left < pr.left + 6 ? pr.left + 6 - br.left : br.right > pr.right - 6 ? pr.right - 6 - br.right : 0; if (dx) { b.style.marginLeft = dx + 'px'; b.style.setProperty('--tail', (-dx) + 'px'); } }
+      setTimeout(function () { b.classList.add('out'); setTimeout(function () { b.remove(); }, 400); }, 3200 + t.length * 90);
+    });
+  }, 1500);
   function renderHome() {
     homeSettle(); var H = home();
     clearInterval(ex.homeTick);
@@ -4145,7 +4181,7 @@
     }, 20000);
     var figs = H.mons.map(function (x, i) {
       var m = mon(x.u), f = form(m), p = HOME_POS[i];
-      return '<div class="hm-fig' + (H.mons.length > 3 ? ' many' : '') + '" style="left:' + p[0] + '%;top:' + p[1] + '%"><button type="button" class="hm-poke" data-hpoke="1" aria-label="摸摸' + esc(f.name) + '"><img src="' + f.img + '" alt=""></button><span class="hm-tag" data-htag="' + i + '">' + homeTag(x) + '</span></div>';
+      return '<div class="hm-fig' + (H.mons.length > 3 ? ' many' : '') + '" data-csid="' + m.sid + '" data-cst="' + (f.stage || 0) + '" data-cctx="home" style="left:' + p[0] + '%;top:' + p[1] + '%"><button type="button" class="hm-poke" data-hpoke="1" aria-label="摸摸' + esc(f.name) + '"><img src="' + f.img + '" alt=""></button><span class="hm-tag" data-htag="' + i + '">' + homeTag(x) + '</span></div>';
     }).join('');
     var nAuto = acc.items.auto || 0;
     var autoBar = '<div class="hm-autobar"><b>7日自律训练装置</b><span class="hint">持有 ' + nAuto + ' 个' + (nAuto ? '，点下面展示中的精灵卡片上的「装上装置」' : '，可以在茶室大厅的茶室商店兑换') + '。装上后每满 1 天自动结算经验并重新开始，一共 7 天；中途收回精灵，剩下的天数作废。</span></div>';
@@ -4313,7 +4349,7 @@
     var R = ROOMS.filter(function (x) { return x.k === ex.room; })[0], list = roomShow(R.k);
     var figs = list.map(function (x, i) {
       var f = form(x), p = HOME_POS[i];
-      return '<div class="hm-fig" style="left:' + p[0] + '%;top:' + p[1] + '%"><button type="button" class="hm-poke" data-hpoke="1" aria-label="摸摸' + esc(f.name) + '"><img src="' + f.img + '" alt=""></button><span class="hm-tag">' + esc(f.name) + ' · LV' + x.lv + '</span></div>';
+      return '<div class="hm-fig" data-csid="' + x.sid + '" data-cst="' + (f.stage || 0) + '" data-cctx="home" style="left:' + p[0] + '%;top:' + p[1] + '%"><button type="button" class="hm-poke" data-hpoke="1" aria-label="摸摸' + esc(f.name) + '"><img src="' + f.img + '" alt=""></button><span class="hm-tag">' + esc(f.name) + ' · LV' + x.lv + '</span></div>';
     }).join('');
     var N = NPC[R.k], inside = N && npcHome(R.k), won = N && npcWon(R.k);
     $('pg-explore').innerHTML = exHead('朋友们的房间暂时都长得一样。他们每天会在某个时间回来待一阵子，在家时可以找他们对战。') +
