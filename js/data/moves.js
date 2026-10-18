@@ -25,7 +25,7 @@ var M = {
   // —— 叶粒之果（草）
   飞叶刀: { type: '草', cat: '物攻', power: 35, d: '威力35' },
   木叶庇护: { type: '草', cat: '变化', selfStage: { def: 1, spd: 1 }, d: '提升1级物防、特防' },
-  寄生之种: { type: '草', cat: '变化', status: { k: '寄生', min: 5, max: 5, chance: 1, refresh: true }, d: '使对方寄生5回合（每回合吸取对方1/10体力）；对方已经寄生时，寄生回合重置为5回合' },
+  寄生之种: { type: '草', cat: '变化', status: { k: '寄生', min: 5, max: 5, chance: 1, refresh: true }, d: '使对方寄生5回合（每回合吸取对方1/10体力）' },
   猛冲击: { type: '普通', cat: '物攻', power: 60, custom: 'halfHpBoost', d: '威力60，对体力低于1/2者伤害提升50%' },
   吸取: { type: '草', cat: '特攻', power: 60, drain: 0.5, d: '威力60，造成伤害的一半转化为体力回复' },
   花粉: { type: '草', cat: '变化', tgtStage: { acc: -1 }, custom: 'pollen', d: '降低对方1级命中，40%概率改为降低2级' },

@@ -446,8 +446,13 @@ function addStatus(S, evs, j, k, turns, src, noReflect, refresh) {
     t.fx.poison = 1;
   }
   // refresh（如寄生之种）：对方已经处于这个状态时，把剩余回合重置
-  if (t.st[k] > 0 && refresh) { t.st[k] = turns; E(S, evs, 'stage', { side: j }); log(S, evs, nm(t) + '的「' + k + '」重置为 ' + turns + ' 回合', 'bad'); return; }
-  if (t.st[k] > 0) { log(S, evs, nm(t) + '已经处于' + k + '状态'); return; }
+  // 2026-10-18：对已经处于这个状态的精灵再施加时，剩余回合刷新为更久的那一个（所有异常状态通用）
+  if (t.st[k] > 0) {
+    var nt = turns + (CONTROL[k] && S.turnActed[j] ? 1 : 0);
+    if (nt > t.st[k]) { t.st[k] = nt; E(S, evs, 'stage', { side: j }); log(S, evs, nm(t) + '的「' + k + '」刷新为 ' + nt + ' 回合', 'bad'); }
+    else log(S, evs, nm(t) + '已经处于' + k + '状态');
+    return;
+  }
   // 控制类状态：如果对方本回合已经行动过，额外+1回合，保证真的能控住
   t.st[k] = turns + (CONTROL[k] && S.turnActed[j] ? 1 : 0);
   if (j === 1 && src === 0) { var cst = CS(S).st; cst[k] = (cst[k] || 0) + 1; }

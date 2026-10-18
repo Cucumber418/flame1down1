@@ -2203,3 +2203,4 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .spa-room .soc-foot .btn { background: #fff; color: var(--ink); }
 @media (max-width: 560px) { .spa-hall { height: 340px; } .spa-float img { width: 84px; height: 84px; } .spa-hud b { font-size: 22px; } .spa-player { width: 180px; } }
 @media (prefers-reduced-motion: reduce) { .spa-float, .spa-wave::before, .spa-wave::after, .spa-hud-g b { animation: none; } }
+.spa-bgms { display: flex; flex-wrap: wrap; gap: 6px; }

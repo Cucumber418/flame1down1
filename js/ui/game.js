@@ -3667,6 +3667,10 @@
    * 存档 acc.spa = { u: [精灵编号或 null…], got: { 编号: 累计 }, extra: 已买的栏位, juice: 橘子汁效果到期时间 } */
   var SPA_BASE = 2, SPA_EXTRA_MAX = 4, SPA_TICK = 2000, SPA_GAP = 30000, SPA_JUICE = { price: 500, min: 30 };
   var SPA = { on: false, t0: 0, last: 0, carry: {}, sess: {}, total: 0 };
+  // 温泉音乐：默认 spa；GrassTalk、Memory 在休息室用能量解锁
+  var SPA_BGM = [{ k: 'spa', n: 'Spa', price: 0 }, { k: 'grassTalk', n: 'GrassTalk', price: 10000 }, { k: 'memory', n: 'Memory', price: 15000 }];
+  function spaBgmOwn(k) { return k === 'spa' || !!(acc && acc.spa && acc.spa.bgmOwn && acc.spa.bgmOwn[k]); }
+  function spaBgm() { var k = acc && acc.spa && acc.spa.bgm; return k && spaBgmOwn(k) ? k : 'spa'; }
   function spaOpen() { return !!(acc && prog('spa').done); }
   function spaN() { return SPA_BASE + Math.min(SPA_EXTRA_MAX, (acc.spa && acc.spa.extra) || 0); }
   function spaSlotPrice() { var e = (acc.spa && acc.spa.extra) || 0; return e >= SPA_EXTRA_MAX ? 0 : 3000 * Math.pow(3, e); }
@@ -3793,9 +3797,17 @@
         '<button type="button" class="btn primary" data-spabuy="juice"' + ((acc.energy || 0) >= SPA_JUICE.price ? '' : ' disabled') + '>' + fmt(SPA_JUICE.price) + ' 能量 · 来一杯</button></article>' +
       '<article class="spa-good"><b>泡温泉精灵栏位 +1</b><p>现在 ' + spaN() + ' 个栏位，最多 ' + (SPA_BASE + SPA_EXTRA_MAX) + ' 个。每次扩建的价格是上一次的 3 倍。</p>' +
         (price ? '<button type="button" class="btn primary" data-spabuy="slot"' + ((acc.energy || 0) >= price ? '' : ' disabled') + '>' + fmt(price) + ' 能量 · 扩建</button>' : '<button type="button" class="btn" disabled>已经扩建到最多了</button>') + '</article>' +
+      '<article class="spa-good"><b>温泉音乐</b><p>选一首在温泉里放的曲子。</p><div class="spa-bgms">' + SPA_BGM.map(function (x) {
+        var own = spaBgmOwn(x.k), cur = spaBgm() === x.k;
+        return own ? '<button type="button" class="btn' + (cur ? ' primary' : '') + '" data-spabgm="' + x.k + '">' + (cur ? '♪ ' : '') + x.n + (cur ? ' · 播放中' : '') + '</button>'
+          : '<button type="button" class="btn" data-spabgmbuy="' + x.k + '"' + ((acc.energy || 0) >= x.price ? '' : ' disabled') + '>🔒 ' + x.n + ' · ' + fmt(x.price) + ' 能量解锁</button>';
+      }).join('') + '</div></article>' +
       '</div><div class="soc-foot"><button type="button" class="btn" data-spax="1">回到温泉</button></div></div>';
     document.body.appendChild(d);
     d.addEventListener('click', function (e) {
+      var bg = e.target.closest('[data-spabgm]'), bb = e.target.closest('[data-spabgmbuy]');
+      if (bg) { acc.spa.bgm = bg.dataset.spabgm; save(); bgmScene(); openSpaRoom(); return; }
+      if (bb) { var X = SPA_BGM.filter(function (x) { return x.k === bb.dataset.spabgmbuy; })[0]; if (!X || (acc.energy || 0) < X.price) return; acc.energy -= X.price; if (!acc.spa.bgmOwn) acc.spa.bgmOwn = {}; acc.spa.bgmOwn[X.k] = 1; acc.spa.bgm = X.k; save(); renderRes(); bgmScene(); toast('解锁了温泉音乐「' + X.n + '」，已经换上。'); openSpaRoom(); return; }
       var b = e.target.closest('[data-spabuy]');
       if (b) {
         var k = b.dataset.spabuy;
@@ -4969,7 +4981,8 @@
     if (vnSite === 'earth') return 'earth';            // 地球上的剧情（含序章）
     if (!ready()) return 'ui';
     if (page === 'arena') return 'arena';              // 竞技大厅
-    if (page === 'explore' && ex.view === 'home') return homeBgm();   // 自己的茶室：放自己选的茶室音乐
+    if (page === 'explore' && ex.view === 'home') return homeBgm();
+    if (page === 'explore' && ex.view === 'spa') return spaBgm();   // 温泉：默认 spa，休息室里可以解锁别的   // 自己的茶室：放自己选的茶室音乐
     if (page === 'social' && window.HSSOCIAL && HSSOCIAL.visitBgm) { var vb = HSSOCIAL.visitBgm(); if (vb) return vb; }   // 拜访别人的茶室：放主人选的
     if (page === 'explore') {
       if (vnSite === 'flora') return 'flora';
