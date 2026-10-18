@@ -355,9 +355,19 @@
   function rwText(r) { return '累积经验 ×' + fmt(r.exp) + '、能量 ×' + fmt(r.energy) + '、功勋点 ×' + fmt(r.merit); }
   function giveMerit(n) { acc.merit = (acc.merit || 0) + n; acc.meritXp = (acc.meritXp || 0) + n; }
   // 军衔：功勋经验攒够当前军衔的晋升所需，就能在授勋馆晋升（消耗功勋经验）。数额暂定
-  var RANKS_MIL = ['列兵', '上等兵', '下士', '中士', '上士', '少尉', '中尉', '上尉', '少校', '中校', '上校', '大校', '将军'];
-  var MIL_COST = [20, 40, 60, 100, 150, 200, 300, 400, 500, 700, 900, 1200];   // 第 i 级晋升到第 i+1 级要的功勋经验
-  function milRank() { return Math.max(0, Math.min(RANKS_MIL.length - 1, acc.milRank | 0)); }
+  // 2026-10-18：每个军衔细分成几个阶级（下等兵 / 二等兵 / 一等兵 / 上等兵，下士1~3 …… 大校1~3，将军），晋升的路更长
+  var MIL_TIERS = [['下等兵', '二等兵', '一等兵', '上等兵'], '下士', '中士', '上士', '少尉', '中尉', '上尉', '少校', '中校', '上校', '大校', ['将军']];
+  var MIL_TIER_COST = [12, 30, 45, 75, 110, 150, 225, 300, 375, 525, 675];   // 每个军衔里每升一阶要的功勋经验（数额暂定）
+  var RANKS_MIL = [], MIL_COST = [], MIL_TIER_OF = [];
+  MIL_TIERS.forEach(function (t, ti) {
+    var subs = Array.isArray(t) ? t : [t + '1', t + '2', t + '3'];
+    subs.forEach(function (n) { RANKS_MIL.push(n); MIL_TIER_OF.push(ti); if (ti < MIL_TIER_COST.length) MIL_COST.push(MIL_TIER_COST[ti]); });
+  });
+  var MIL_OLD = [0, 3, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34];   // 旧军衔（13 级）→ 新阶级
+  function milRank() {
+    if (acc.milV !== 2) { acc.milRank = MIL_OLD[Math.max(0, Math.min(12, acc.milRank | 0))]; acc.milV = 2; }
+    return Math.max(0, Math.min(RANKS_MIL.length - 1, acc.milRank | 0));
+  }
   function milName() { return RANKS_MIL[milRank()]; }
   function promote() {
     var r = milRank(), c = MIL_COST[r];
@@ -3674,7 +3684,7 @@
     return '<section class="mil"><div class="mil-badge"><small>军衔</small><b>' + milName() + '</b></div><div class="mil-tx">' +
       '<p>功勋点 <b>' + fmt(acc.merit || 0) + '</b> · 功勋经验 <b>' + fmt(xp) + '</b>' + (top ? '' : ' / ' + fmt(c)) + '</p>' +
       (top ? '<p class="hint">已经是最高军衔了。</p>' : '<div class="exp-bar"><i style="width:' + Math.min(100, xp / c * 100) + '%"></i></div><p class="hint">下一级：' + RANKS_MIL[r + 1] + '（晋升消耗 ' + fmt(c) + ' 功勋经验）。每获得一个称号都会得到功勋点，同时得到等额的功勋经验。</p>') +
-      '<p class="mil-path">' + RANKS_MIL.map(function (n, i) { return '<span class="' + (i < r ? 'past' : i === r ? 'cur' : '') + '">' + n + '</span>'; }).join('<i>›</i>') + '</p></div>' +
+      '<p class="mil-path">' + MIL_TIERS.map(function (t, ti) { var cur = MIL_TIER_OF[r]; return '<span class="' + (ti < cur ? 'past' : ti === cur ? 'cur' : '') + '">' + (ti === cur ? RANKS_MIL[r] : Array.isArray(t) ? (ti === 0 ? '士兵' : t[0]) : t) + '</span>'; }).join('<i>›</i>') + '</p></div>' +
       (top ? '' : '<button type="button" class="btn primary" data-promote="1"' + (xp >= c ? '' : ' disabled') + '>晋升</button>') + '</section>';
   }
   function renderNursery() {
@@ -4739,7 +4749,7 @@
   /* ---------- 给社交页（social.js）用的接口 ---------- */
   window.HSACC = {
     acc: function () { return acc; }, ready: ready, save: save, toast: toast, go: go, page: function () { return page; }, renderRes: renderRes,
-    titleName: titleName, mon: mon, fmt: fmt, avatarInner: avatarInner, avatarSpec: function () { var m = avatarMon(); return m ? { sid: m.sid, lv: m.lv, shiny: shinyV(m.shiny) } : null; },
+    titleName: titleName, mon: mon, fmt: fmt, milRank: milRank, avatarInner: avatarInner, avatarSpec: function () { var m = avatarMon(); return m ? { sid: m.sid, lv: m.lv, shiny: shinyV(m.shiny) } : null; },
     npcPlan: npcPlan, npcHome: npcHome,
     sendMail: sendMail, openMailbox: openMailbox,
     rankToday: rankToday, RANK_EXP: { exp: RANK_EXP, n: RANK_EXP_N, token: RANK_TOKEN }, tokenBarHTML: tokenBarHTML, openTokenShop: openTokenShop, rankRwHTML: rankRwHTML, openQuests: openQuests, gender: gender,

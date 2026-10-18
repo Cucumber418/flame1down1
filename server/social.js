@@ -143,7 +143,8 @@ function summary(u, me) {
   if (!acc || !acc.introDone) { o.noChar = true; return o; }
   o.name = str(acc.name, 20); o.title = str(acc.title, 20) || null; o.avatar = avatarOf(acc); o.gender = acc.gender === 'f' ? 'f' : 'm';   // 主角形象（名片上显示）
   o.monsN = acc.mons.length; o.teamN = activeTeam(acc).length;
-  o.mil = int(acc.milRank, 0, 12);   // 军衔（名字见 game.js 的 RANKS_MIL）
+  var MIL_OLD = [0, 3, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34];   // 军衔细分前的旧存档（13 级）换算成新阶级
+  o.mil = acc.milV === 2 ? int(acc.milRank, 0, 34) : MIL_OLD[int(acc.milRank, 0, 12)];   // 军衔（名字见 game.js 的 RANKS_MIL）
   o.show = showMons(acc).map(function (m) { return { sid: str(m.sid, 32), lv: int(m.lv, 1, 100) }; });
   var ro = rankOut(p.rank); o.rank = ro.best; o.rankDv = ro.bestDv; if (ro.best === KING_R) o.rankStars = ro.kingBest;
   var hm = homeOf(acc); o.homeOpen = hm.open; o.homeN = hm.mons.length;

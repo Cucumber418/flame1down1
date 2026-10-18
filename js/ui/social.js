@@ -93,7 +93,7 @@
 
   /* ---------- 名片 ---------- */
   // 挑战进度（2026-10-17）：名片里默认收起，点开才显示
-  var MIL_NAMES = ['列兵', '上等兵', '下士', '中士', '上士', '少尉', '中尉', '上尉', '少校', '中校', '上校', '大校', '将军'];   // 和 game.js 的 RANKS_MIL 一致
+  var MIL_NAMES = ['下等兵', '二等兵', '一等兵', '上等兵'].concat(['下士', '中士', '上士', '少尉', '中尉', '上尉', '少校', '中校', '上校', '大校'].reduce(function (o, t) { return o.concat([t + '1', t + '2', t + '3']); }, []), ['将军']);   // 和 game.js 的 RANKS_MIL 一致
   function progOf(acc) {
     var stars = 0, max = 0, c = acc.chal || {};
     for (var i = 1; i <= 50; i++) { var r = c['fl' + i], n = r && r.s ? r.s.filter(Boolean).length : 0; if (n) { stars += n; max = i; } }
@@ -208,7 +208,7 @@
     var R = rk ? { r: rk.r || 0, dv: rk.dv, bestDv: rk.bestDv, best: Math.max(rk.best || 0, rk.r || 0), w: rk.w || 0, l: rk.l || 0, stars: rk.stars || 0, kingBest: Math.max(rk.kingBest || 0, rk.r === RANKS.length - 1 ? rk.stars || 0 : 0) } : { r: 0, best: 0, w: 0, l: 0 };
     var ed = st.edit;
     return { user: st.me || (C.user && C.user()), name: acc.name, avatar: A.avatarSpec(), gender: A.gender ? A.gender() : 'm', title: acc.title && (acc.titles || []).indexOf(acc.title) >= 0 ? acc.title : null, monsN: acc.mons.length, speciesN: Object.keys(species).length,
-      created: acc.created, motto: ed.motto, rankInfo: R, prog: progOf(acc), mil: acc.milRank | 0,
+      created: acc.created, motto: ed.motto, rankInfo: R, prog: progOf(acc), mil: A.milRank ? A.milRank() : acc.milRank | 0,
       show: ed.show.map(function (u) { var m = A.mon(u); return m && { sid: m.sid, lv: m.lv, nat: m.nat, moves: m.moves, shiny: m.shiny === 2 ? 2 : !!m.shiny }; }).filter(Boolean),
       helper: ed.helper != null && A.mon(ed.helper) ? (function (m) { return { sid: m.sid, lv: m.lv, nat: m.nat, shiny: m.shiny === 2 ? 2 : !!m.shiny }; })(A.mon(ed.helper)) : null };
   }
