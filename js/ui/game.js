@@ -1136,14 +1136,16 @@
     { id: 'kamble', name: '坎伯兰星', d: '水系星球。整颗星球都被海洋覆盖，从水面一直往下，是浅水区和深不见底的深海区。', sites: [], wild: true, ptype: '水系星球', color: ['#8cc6ea', '#2a6fb0'], get img() { return 'images/planets/kamble_' + kbStage() + '.webp'; }, after: 'flora1' },
     { id: 'pompeii', name: '庞贝星', d: '火系星球。火山终年喷发，地面被熔岩烤得发烫。', sites: [], wild: true, ptype: '火系星球', color: ['#f2a46b', '#b3401f'], img: 'images/planets/pompeii.webp', after: 'flora1' },
     { id: 'laiting', name: '莱汀陨石带', d: '电系区域。无数陨石在雷暴中漂浮。', sites: [], wild: true, ptype: '电系陨石带', color: ['#f1dd73', '#7a6a1a'], belt: true, after: 'flora1' },
-    { id: 'white', name: '白之星', d: '冰系星球。整颗星球都裹在冰雪里。', sites: [], wild: true, ptype: '冰系星球', color: ['#e4f2fa', '#6aa6c8'], after: 'flora1' }
+    { id: 'white', name: '白之星', d: '冰系星球。离太阳最远，整颗星球都裹在冰雪里。', sites: [], wild: true, ptype: '冰系星球', color: ['#e4f2fa', '#6aa6c8'], after: 'flora1' },
+    { id: 'kongyan', name: '空岩星', d: '地面系和飞行系的星球。', sites: [], wild: true, ptype: '地面 · 飞行星球', color: ['#e2cfa8', '#8a6a45'], soon: true },
+    { id: 'ivy', name: '常春藤前哨站', d: '常春藤在马亚尔星系的据点。', sites: [], ptype: '据点', ivy: true, soon: true }
   ];
   // 坎伯兰星的样子随剧情变化：0 是平常的蓝色，越往后越红（4 最红）。KB_STAGE_SITES 里每读完一段剧情，往后变一档
   var KB_STAGE_SITES = [];
   function kbStage() { return Math.min(4, KB_STAGE_SITES.filter(function (s) { return SITES[s] && prog(s).done; }).length); }
   // 马亚尔星系：星系图上每颗星球的位置（% 坐标）和大小（占图宽的 %）；没有星球的位置显示「？」
-  var MAYAR = { flora: [84.1, 51.4, 12], kamble: [58.3, 63.4, 9], pompeii: [30.4, 42.3, 8.5], laiting: [16.2, 28.2, 11], white: [43.3, 21.1, 8] };
-  var MAYAR_UNK = [[35.9, 28.9], [59.5, 26.8], [71.3, 54.3]];
+  var MAYAR = { flora: [84.1, 51.4, 12], kamble: [58.3, 63.4, 9], pompeii: [30.4, 42.3, 8.5], laiting: [16.2, 28.2, 11], white: [8.5, 58, 7.5], kongyan: [43.3, 21.1, 8.5], ivy: [59.8, 26.6, 8] };   // 白之星离太阳最远
+  var MAYAR_UNK = [[35.9, 28.9], [71.3, 54.3]];
   function regionsOf(pid) { return WILD_REGIONS.filter(function (R) { return R.planet === pid; }); }
   function planetOf(pid) { return PLANETS.filter(function (p) { return p.id === pid; })[0]; }
   // 荆楚号的 17 个部门，对应湖北省的 17 个市州（林区）
@@ -1220,7 +1222,7 @@
   function rareOwned() { var R = rareList(); return acc.mons.filter(function (m) { return R.indexOf(m.sid) >= 0; })[0] || null; }
   // 稀有精灵：野外表里标了 rare 的种类。三主宠也算，但这个账号开局选的那只不算。拥有几类按种类去重
   function rareKinds() { var R = rareList(), o = {}; acc.mons.forEach(function (m) { if (R.indexOf(m.sid) >= 0) o[m.sid] = 1; }); return Object.keys(o).length; }
-  function planetOpen(P) { return !P.after || prog(P.after).done; }
+  function planetOpen(P) { return !P.soon && (!P.after || prog(P.after).done); }   // soon：已经放上星图，内容还没做
   var UNLOCK = { xiaogan: '竞技对战', academy: '黄冈秘鉴', storage: '商城', tea: '茶室', brawl: '精灵大乱斗', tiger2: '泰戈尔 · 普通难度', fl_chal: '芙罗拉星 · 挑战', fl_chal2: '助战精灵', plant: '太空种植园', medal: '授勋馆', spa: '温泉疗养' };
   function brawlOpen() { return !!(acc && acc.story && acc.story.brawl && acc.story.brawl.done); }
   function brawlPlayed() { return !!(acc && acc.stats && acc.stats.brawls > 0); }
@@ -1552,15 +1554,15 @@
   // 马亚尔星系：星系图，点星球进入
   function mayarMap() {
     var pts = Object.keys(MAYAR).map(function (id) {
-      var p = planetOf(id), m = MAYAR[id], open = planetOpen(p), lock = open ? '' : '读完「' + SITES[p.after].chapter.split(' · ')[1] + '」后解锁';
+      var p = planetOf(id), m = MAYAR[id], open = planetOpen(p), lock = open ? '' : p.soon ? '敬请期待' : '读完「' + SITES[p.after].chapter.split(' · ')[1] + '」后解锁';
       return '<button type="button" class="mp' + (open ? '' : ' locked') + '" data-planet="' + id + '"' + (open ? '' : ' disabled') + ' style="left:' + m[0] + '%;top:' + m[1] + '%;width:' + m[2] + '%" title="' + esc(p.name + '：' + (open ? p.d : lock)) + '">' +
-        '<span class="mp-ic">' + planetSvg(id) + '</span><span class="mp-lb"><b>' + p.name + '</b><small>' + (open ? p.ptype : '未解锁') + '</small></span></button>';
+        '<span class="mp-ic">' + planetSvg(id) + '</span><span class="mp-lb"><b>' + p.name + '</b><small>' + (open ? p.ptype : p.soon ? p.ptype + ' · 敬请期待' : '未解锁') + '</small></span></button>';
     }).join('') + MAYAR_UNK.map(function (m) { return '<span class="mp unk" style="left:' + m[0] + '%;top:' + m[1] + '%" title="未知星球：更多星球敬请期待">?</span>'; }).join('');
     return '<section class="mayar"><h3>马亚尔星系 <small>点击星球前往</small></h3><div class="mayar-map"><img class="mayar-bg" src="' + BG.mayar + '" alt="马亚尔星系">' + pts + '</div></section>';
   }
   function teleport(n) { ex.view = 'area'; ex.area = n; ex.tp = true; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); mysteryRoll('荆楚号 · ' + DEPTS[n][0]); }
   function planetSvg(id) {
-    var P = planetOf(id); if (P && P.img) return planetImg(P, 120); if (P && P.color) return planetSvgC(P, 120);
+    var P = planetOf(id); if (P && P.ivy) return ivySvg(); if (P && P.img) return planetImg(P, 120); if (P && P.color) return planetSvgC(P, 120);
     return '<svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="36" fill="#cfe0f2" stroke="#23222b" stroke-width="3"/>' +
       '<path d="M36 44c8-6 16-4 20 2s12 4 14 10-6 12-14 12-6 10-14 10-14-8-12-16 0-14 6-18z M74 30c6 2 10 8 8 12s-8 2-10-2 0-10 2-10z M78 66c8-2 14 4 12 10s-10 8-14 4-4-12 2-14z" fill="#9cc79a" stroke="#23222b" stroke-width="2" stroke-linejoin="round"/>' +
       '<ellipse cx="60" cy="60" rx="54" ry="14" fill="none" stroke="#c42f3a" stroke-width="2.5" stroke-dasharray="6 5" transform="rotate(-16 60 60)"/></svg>';
@@ -1574,11 +1576,20 @@
     var deco = { kamble: '<path d="M20 52c10-6 20 6 30 0s20-6 30 0 20 6 30 0M20 70c10-6 20 6 30 0s20-6 30 0 20 6 30 0" stroke="#fff" stroke-width="3" fill="none" opacity=".7"/>',
       pompeii: '<path d="M30 80l14-26 10 14 12-30 14 30 10-12 10 24z" fill="' + c[1] + '"/><path d="M58 40l4-14 4 14" stroke="#ffd36b" stroke-width="3" fill="none"/>',
       laiting: '<path d="M58 46l-8 18h11l-6 22 18-26H62l6-14z" fill="#fff6b0" stroke="#23222b" stroke-width="2" stroke-linejoin="round"/>',
-      white: '<path d="M60 30v60M34 45l52 30M34 75l52-30" stroke="#fff" stroke-width="4" stroke-linecap="round"/><circle cx="60" cy="60" r="6" fill="#fff"/>' }[P.id] || '';
+      white: '<path d="M60 30v60M34 45l52 30M34 75l52-30" stroke="#fff" stroke-width="4" stroke-linecap="round"/><circle cx="60" cy="60" r="6" fill="#fff"/>',
+      kongyan: '<path d="M18 96V74h14v-8h16v12h12V62h18v14h12v-6h16v26z" fill="' + c[1] + '" stroke="#23222b" stroke-width="2" stroke-linejoin="round"/><path d="M34 44c4-6 12-6 16 0 4-4 12-2 12 4H30c0-2 2-4 4-4zM70 34c3-4 9-4 12 0 3-3 9-1 9 3H67c0-2 1-3 3-3z" fill="#fff" opacity=".9"/><path d="M56 56l8-4 8 4M62 52l2 6" stroke="#23222b" stroke-width="2" fill="none" stroke-linecap="round"/>' }[P.id] || '';
     if (P.belt) return '<svg viewBox="0 0 120 120" width="' + w + '" aria-hidden="true">' + [[30, 46, 13], [66, 36, 9], [86, 62, 15], [48, 80, 11], [20, 74, 7], [96, 30, 6]].map(function (r) { return '<ellipse cx="' + r[0] + '" cy="' + r[1] + '" rx="' + r[2] + '" ry="' + (r[2] * 0.8) + '" fill="#8b8576" stroke="#23222b" stroke-width="2.5"/>'; }).join('') +
       '<path d="M30 46L48 80M66 36L86 62M48 80L86 62" stroke="#d9b92a" stroke-width="2.5" stroke-dasharray="4 3"/>' + deco + '</svg>';
     return '<svg viewBox="0 0 120 120" width="' + w + '" aria-hidden="true"><defs><clipPath id="' + id + '"><circle cx="60" cy="60" r="36"/></clipPath></defs><g clip-path="url(#' + id + ')"><rect width="120" height="120" fill="' + c[0] + '"/>' + deco + '</g>' +
       '<circle cx="60" cy="60" r="36" fill="none" stroke="#23222b" stroke-width="3"/><ellipse cx="60" cy="60" rx="54" ry="13" fill="none" stroke="' + c[1] + '" stroke-width="2.5" stroke-dasharray="6 5" transform="rotate(-12 60 60)"/></svg>';
+  }
+  // 常春藤前哨站：缠着常春藤的六边形据点
+  function ivySvg() {
+    return '<svg viewBox="0 0 120 120" aria-hidden="true"><path d="M60 22l33 19v38l-33 19-33-19V41z" fill="#3a4a3e" stroke="#23222b" stroke-width="3" stroke-linejoin="round"/>' +
+      '<path d="M60 36l21 12v24l-21 12-21-12V48z" fill="#26302a" stroke="#7fb27a" stroke-width="2"/><circle cx="60" cy="60" r="7" fill="#b98cff" stroke="#23222b" stroke-width="2"/>' +
+      '<path d="M27 50c10 2 14 10 22 10s10-10 18-8 12 12 26 10" stroke="#5d9a55" stroke-width="3" fill="none" stroke-linecap="round"/>' +
+      [[34, 52], [50, 60], [66, 52], [84, 60]].map(function (q) { return '<path d="M' + q[0] + ' ' + q[1] + 'c-6-6-2-12 4-10 6-2 8 6 2 10z" fill="#7fb27a" stroke="#23222b" stroke-width="1.5"/>'; }).join('') +
+      '<path d="M60 22v-10M56 12h8" stroke="#23222b" stroke-width="3" stroke-linecap="round"/><path d="M93 41l12-6M27 41l-12-6" stroke="#7d8a80" stroke-width="3"/></svg>';
   }
   function floraSvg(w) {
     return '<svg viewBox="0 0 120 120" width="' + w + '" aria-hidden="true"><defs><clipPath id="fl-c' + w + '"><circle cx="60" cy="60" r="36"/></clipPath></defs>' +
