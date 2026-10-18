@@ -104,6 +104,8 @@ function ownedSids(name) {
 }
 // 头像：存档里 avatar 是一只精灵的编号；这只精灵不在了就没有头像（显示名字首字）
 function avatarOf(acc) {
+  var F = acc && acc.avatarF;   // 新头像：获得过的任意形态 { sid, st, shiny }
+  if (F && typeof F.sid === 'string' && /^[a-z0-9_]{1,32}$/.test(F.sid)) return { sid: F.sid, st: Math.max(0, Math.min(2, F.st | 0)), shiny: F.shiny === 2 ? 2 : !!F.shiny };
   var m = acc && acc.avatar != null ? monByU(acc, acc.avatar) : null;
   return m ? { sid: str(m.sid, 32), lv: int(m.lv, 1, 100), shiny: m.shiny === 2 ? 2 : !!m.shiny, fs: m.fs != null && m.fs >= 0 && m.fs <= 2 ? m.fs | 0 : undefined } : null;
 }

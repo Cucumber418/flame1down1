@@ -16,6 +16,8 @@ var cache = {};
 
 function accOf(u) { try { var a = JSON.parse((u && u.save && u.save.data && u.save.data['hs-account-v1']) || 'null'); return a && typeof a.name === 'string' && Array.isArray(a.mons) ? a : null; } catch (e) { return null; } }
 function avatarOf(acc) {
+  var F = acc && acc.avatarF;   // 新头像：获得过的任意形态 { sid, st, shiny }
+  if (F && typeof F.sid === 'string' && /^[a-z0-9_]{1,32}$/.test(F.sid)) return { sid: F.sid, st: Math.max(0, Math.min(2, F.st | 0)), shiny: F.shiny === 2 ? 2 : !!F.shiny };
   var m = acc && acc.avatar != null ? acc.mons.filter(function (x) { return x && x.u === acc.avatar; })[0] : null;
   return m ? { sid: String(m.sid).slice(0, 32), lv: Math.max(1, Math.min(100, m.lv | 0)), shiny: m.shiny === 2 ? 2 : !!m.shiny, fs: m.fs != null && m.fs >= 0 && m.fs <= 2 ? m.fs | 0 : undefined } : null;
 }

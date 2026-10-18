@@ -2242,3 +2242,6 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .fsw { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
 .fsw > b { font-size: 13px; margin-right: 2px; }
 .fsw .btn { padding: 3px 10px; font-size: 13px; }
+/* 头像：只露出精灵的头部 */
+.av-face { display: block; width: 100%; height: 100%; background-repeat: no-repeat; }
+.pav.img, .who-btn .av.img { padding: 0; }

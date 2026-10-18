@@ -432,34 +432,64 @@
     }).join('') + '<label class="tt-opt"><input type="radio" name="title" value=""' + (cur ? '' : ' checked') + '><span><b>不佩戴</b></span></label></div>' +
       '<p class="tt-season">' + (own.length ? '' : '还没有获得称号。') + '所有称号和获得方式，可以在荆楚号 · 黄冈 · 学院部的「授勋馆」查看' + (medalOpen() ? '' : '（读完支线「授勋馆」后开放）') + '。</p>';
   }
-  /* ---------- 头像：用自己拥有的一只精灵当头像（存档 acc.avatar = 精灵的编号 u；精灵不在了就用名字首字） ----------
+  /* ---------- 头像：获得过的任意一种精灵形态都能当头像（存档 acc.avatarF = { sid, st 形态, shiny }） ----------
+   * 只显示头部（裁切框见 js/data/avfocus.js，由 tools/avatar_focus.py 生成）。
+   * 旧存档的 acc.avatar（一只精灵的编号）仍然认，选了新头像后就不用了。
    * 社交的玩家列表、名片、讨论区都会显示（服务器从存档里读，见 server/social.js 的 avatarOf） */
   function avatarMon() { return acc && acc.avatar != null ? mon(acc.avatar) : null; }
+  function avatarCur() {   // 现在的头像：{ sid, st, shiny } 或 null
+    var F = acc && acc.avatarF; if (F && SPMAP[F.sid] && F.st >= 0 && F.st <= evoLast(SPMAP[F.sid])) return { sid: F.sid, st: F.st | 0, shiny: shinyV(F.shiny) };
+    var m = avatarMon(); return m ? { sid: m.sid, st: shownStage(m), shiny: shinyV(m.shiny) } : null;
+  }
+  function avatarForm(spec) { var s = SPMAP[spec.sid]; return spec.st != null && s.evo[spec.st] ? form({ sid: spec.sid, lv: s.evo[spec.st].lv, shiny: spec.shiny }) : form({ sid: spec.sid, lv: spec.lv, shiny: spec.shiny, fs: spec.fs }); }
+  function faceHTML(img) {   // 只露出头部
+    var f = typeof AV_FOCUS !== 'undefined' && AV_FOCUS[String(img).split('?')[0]];
+    if (!f) return '<img src="' + img + '" alt="">';
+    var l = f[0], t = f[1], sd = f[2], ar = f[3];
+    var px = sd < 1 ? l / (1 - sd) * 100 : 50, py = ar > sd ? t / (ar - sd) * 100 : 50;
+    return '<span class="av-face" style="background-image:url(\'' + img + '\');background-size:' + (100 / sd).toFixed(1) + '% auto;background-position:' + px.toFixed(1) + '% ' + py.toFixed(1) + '%"></span>';
+  }
   function avatarInner(spec, name) {
-    if (spec && SPMAP[spec.sid]) { var f = form({ sid: spec.sid, lv: spec.lv, shiny: spec.shiny, fs: spec.fs }); return '<img src="' + f.img + '" alt="">'; }
+    if (spec && SPMAP[spec.sid]) return faceHTML(avatarForm(spec).img);
     return esc(Array.from(name || '?')[0] || '?');
   }
+  // 获得过的精灵形态：手里每只精灵长到过的形态（含切换装置解锁的），记进 acc.fgot（精灵送走了也还算）
+  function formsGot() {
+    if (!acc) return {};
+    var G = acc.fgot || (acc.fgot = {}), add = false;
+    acc.mons.forEach(function (m) {
+      var s = SPMAP[m.sid]; if (!s) return; var nat = stageOf(s, m.lv), sh = shinyV(m.shiny) === 2 ? 2 : m.shiny ? 1 : 0;
+      for (var i = 0; i <= nat; i++) { var k = m.sid + ':' + i + ':' + sh; if (!G[k]) { G[k] = 1; add = true; } }
+    });
+    if (add) save();
+    return G;
+  }
   function renderAvatar() {
-    var m = avatarMon(), av = $('who-av');
-    av.innerHTML = avatarInner(m, acc.name); av.classList.toggle('img', !!m);
-    $('avatar-box').innerHTML = '<b>头像</b><div class="av-row"><span class="pav' + (m ? ' img' : '') + '">' + avatarInner(m, acc.name) + '</span><span class="hint">' + (m ? esc(form(m).name) + ' · LV' + m.lv : '名字首字（默认）') + '</span><button type="button" class="btn" id="av-pick">更换头像</button></div>';
+    var c = avatarCur(), av = $('who-av');
+    av.innerHTML = avatarInner(c, acc.name); av.classList.toggle('img', !!c);
+    $('avatar-box').innerHTML = '<b>头像</b><div class="av-row"><span class="pav' + (c ? ' img' : '') + '">' + avatarInner(c, acc.name) + '</span><span class="hint">' + (c ? esc(avatarForm(c).name) + (c.shiny ? ' · 异色' : '') : '名字首字（默认）') + '</span><button type="button" class="btn" id="av-pick">更换头像</button></div>';
   }
   function openAvatarPicker() {
     $('who-menu').hidden = true;
     var old = $('av-dlg'); if (old) old.remove();
-    var cur = acc.avatar, list = acc.mons.slice().sort(function (a, b) { return b.lv - a.lv || a.u - b.u; });
+    var c0 = avatarCur(), curK = c0 ? c0.sid + ':' + c0.st + ':' + (c0.shiny === 2 ? 2 : c0.shiny ? 1 : 0) : '';
+    var G = formsGot(), keys = Object.keys(G).filter(function (k) { var p = k.split(':'); return SPMAP[p[0]] && SPMAP[p[0]].evo[+p[1]]; });
+    var ord = function (sid) { var n = parseInt((SPMAP[sid].evo[0] || {}).no, 10); return isNaN(n) ? 999 : n; };   // 按图鉴编号排
+    keys.sort(function (a, b) { var A_ = a.split(':'), B_ = b.split(':'); return ord(A_[0]) - ord(B_[0]) || A_[0].localeCompare(B_[0]) || A_[1] - B_[1] || A_[2] - B_[2]; });
     var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'av-dlg';
     d.innerHTML = '<div class="soc-box av-box" role="dialog" aria-modal="true" aria-label="更换头像"><span class="tape l"></span><span class="tape r"></span><span class="step">头像</span><h2>选一只精灵当头像</h2>' +
-      '<p class="hint">只能选自己拥有的精灵，显示的是它现在的形态。社交、名片和讨论区里，其他船员都会看到。</p>' +
-      '<div class="av-grid"><button type="button" class="av-opt' + (avatarMon() ? '' : ' on') + '" data-av=""><span class="pav">' + esc(Array.from(acc.name)[0] || '?') + '</span><small>名字首字</small></button>' +
-      list.map(function (m) { var f = form(m); return '<button type="button" class="av-opt' + (m.u === cur ? ' on' : '') + '" data-av="' + m.u + '"><span class="pav img"><img src="' + f.img + '" alt=""></span><small>' + esc(f.name) + (m.shiny ? '<span class="shiny-tag">异色</span>' : '') + '<br>LV' + m.lv + '</small></button>'; }).join('') +
+      '<p class="hint">获得过的精灵形态都能选（包括精灵进化前的样子、异色）。社交、名片和讨论区里，其他船员都会看到。</p>' +
+      '<div class="av-grid"><button type="button" class="av-opt' + (c0 ? '' : ' on') + '" data-av=""><span class="pav">' + esc(Array.from(acc.name)[0] || '?') + '</span><small>名字首字</small></button>' +
+      keys.map(function (k) { var p = k.split(':'), sp = { sid: p[0], st: +p[1], shiny: +p[2] === 2 ? 2 : !!+p[2] }, f = avatarForm(sp); return '<button type="button" class="av-opt' + (k === curK ? ' on' : '') + '" data-av="' + k + '"><span class="pav img">' + faceHTML(f.img) + '</span><small>' + esc(f.name) + (sp.shiny ? '<span class="shiny-tag">异色</span>' : '') + '</small></button>'; }).join('') +
       '</div><div class="soc-foot"><button type="button" class="btn ghost" data-avx="1">取消</button></div></div>';
     document.body.appendChild(d);
     d.addEventListener('click', function (e) {
       if (e.target === d || e.target.closest('[data-avx]')) { d.remove(); return; }
       var b = e.target.closest('[data-av]'); if (!b) return;
-      acc.avatar = b.dataset.av === '' ? null : +b.dataset.av; save(); renderAvatar(); d.remove();
-      var m = avatarMon(); toast(m ? '头像换成了「' + form(m).name + '」。同步到服务器后，其他船员就能看到。' : '头像改回了名字首字。');
+      if (b.dataset.av === '') { acc.avatar = null; acc.avatarF = null; }
+      else { var p = b.dataset.av.split(':'); acc.avatarF = { sid: p[0], st: +p[1], shiny: +p[2] === 2 ? 2 : !!+p[2] }; acc.avatar = null; }
+      save(); renderAvatar(); d.remove();
+      var c = avatarCur(); toast(c ? '头像换成了「' + avatarForm(c).name + '」。同步到服务器后，其他船员就能看到。' : '头像改回了名字首字。');
     });
   }
   $('avatar-box').addEventListener('click', function (e) { e.stopPropagation(); if (e.target.id === 'av-pick') openAvatarPicker(); });
@@ -5075,7 +5105,7 @@
   /* ---------- 给社交页（social.js）用的接口 ---------- */
   window.HSACC = {
     acc: function () { return acc; }, ready: ready, save: save, toast: toast, go: go, page: function () { return page; }, renderRes: renderRes,
-    titleName: titleName, mon: mon, fmt: fmt, milRank: milRank, avatarInner: avatarInner, avatarSpec: function () { var m = avatarMon(); return m ? { sid: m.sid, lv: m.lv, shiny: shinyV(m.shiny), fs: m.fs } : null; },
+    titleName: titleName, mon: mon, fmt: fmt, milRank: milRank, avatarInner: avatarInner, avatarSpec: function () { return avatarCur(); },
     npcPlan: npcPlan, npcHome: npcHome,
     sendMail: sendMail, openMailbox: openMailbox,
     rankToday: rankToday, RANK_EXP: { exp: RANK_EXP, n: RANK_EXP_N, token: RANK_TOKEN }, tokenBarHTML: tokenBarHTML, openTokenShop: openTokenShop, rankRwHTML: rankRwHTML, openQuests: openQuests, gender: gender,
