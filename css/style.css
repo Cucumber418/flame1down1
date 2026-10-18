@@ -2164,13 +2164,7 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 /* 温泉大更新（2026-10-18）：大厅 + 水面 + 浮动的精灵 + 醒目的计时 / 经验 + 休息室 */
 .spa-hall { position: relative; height: 420px; border: 2px solid var(--ink); border-radius: 16px; overflow: hidden; background: #2a2a30 center / cover no-repeat; box-shadow: 4px 4px 0 var(--ink); }
 .spa-hall .spa-steam { z-index: 2; }
-.spa-pool { position: absolute; left: 0; right: 0; bottom: 0; height: 34%; z-index: 3;
-  /* 水面以下是池底：手绘瓷砖 + 晃动的水光，挡住背景里的家具 */
-  background-color: #7fc4d2;
-  background-image: radial-gradient(ellipse 60px 18px at 20% 40%, rgba(255,255,255,.35), transparent 70%), radial-gradient(ellipse 80px 20px at 70% 65%, rgba(255,255,255,.3), transparent 70%), radial-gradient(ellipse 50px 14px at 45% 85%, rgba(255,255,255,.28), transparent 70%),
-    linear-gradient(rgba(35, 34, 43, .28) 2px, transparent 2px), linear-gradient(90deg, rgba(35, 34, 43, .28) 2px, transparent 2px), linear-gradient(180deg, #a8dde6, #5fa9bd);
-  background-size: 100% 100%, 100% 100%, 100% 100%, 54px 28px, 54px 28px, 100% 100%; animation: spaCaustic 8s ease-in-out infinite alternate; }
-@keyframes spaCaustic { to { background-position: 40px 6px, -50px -4px, 30px 4px, 0 0, 0 0, 0 0; } }
+.spa-pool { position: absolute; left: 0; right: 0; bottom: 0; height: 34%; z-index: 3; }
 .spa-wave { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(150, 215, 230, .55), rgba(60, 140, 175, .88)); border-top: 3px solid rgba(255, 255, 255, .8); box-shadow: 0 -6px 18px rgba(170, 230, 245, .35); }
 .spa-wave::before, .spa-wave::after { content: ''; position: absolute; left: -50%; width: 200%; height: 14px; top: -8px; background: radial-gradient(ellipse at 50% 100%, rgba(255,255,255,.7) 0 30%, transparent 32%) 0 0 / 60px 14px repeat-x; animation: spaWave 6s linear infinite; }
 .spa-wave::after { top: 30%; opacity: .35; animation-duration: 9s; animation-direction: reverse; }

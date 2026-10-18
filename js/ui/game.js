@@ -3815,7 +3815,7 @@
     }
     $('pg-explore').innerHTML = exHead(on ? '正在泡温泉：留在这个页面，精灵们就会一直涨经验。离开就结束这一次。' : '把精灵放进温泉，点「开始泡温泉」。泡温泉期间要一直留在这个页面。') +
       '<div class="crumb"><button type="button" class="btn ghost" id="spa-back">‹ 返回温泉生活区</button><b>咸宁 · 温泉大厅</b></div>' +
-      '<div class="spa-hall' + (on ? ' soaking' : '') + '" style="background-image:url(images/backgrounds/spa_hall.jpg)">' + hud +
+      '<div class="spa-hall' + (on ? ' soaking' : '') + '" style="background-image:url(images/backgrounds/spa_hall.jpg?v=2)">' + hud +
         '<div class="spa-steam" aria-hidden="true"><i></i><i></i><i></i><i></i></div>' +
         '<div class="spa-pool"><div class="spa-wave" aria-hidden="true"></div>' + floats +
         (on ? '<img class="spa-player" src="images/characters/spa_' + gender() + '.webp" alt="' + esc(acc.name) + '">' : '') + '</div></div>' +
