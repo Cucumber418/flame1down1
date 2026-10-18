@@ -37,7 +37,7 @@
         '<dt>CG</dt><dd>Threego</dd>' +
         '<dt>剧情脚本</dt><dd>Cucumber418</dd>' +
         '<dt>精灵立绘</dt><dd>Cucumber418<small>多取材于二〇一九年的「黄尔号图鉴」，初时径以相机摄入，今正逐一描摹翻新。</small></dd>' +
-        '<dt>配乐</dt><dd>暂多借自「赛尔号」<small>童年旧曲，聊借一用，谨致谢忱。</small></dd>' +
+        '<dt>配乐</dt><dd>BTTP（原创）、暂多借自「赛尔号」<small>童年旧曲，聊借一用，谨致谢忱。</small></dd>' +
       '</dl>' +
       '<h4 class="ab-h">本舰之约</h4>' +
       '<p>本作纯为热爱而生，不图分文之利，永不以之牟利。</p>' +
