@@ -1263,8 +1263,8 @@
     { id: 'jingchu', name: '荆楚号', d: '环绕地球运行的星际探索舰，轮廓和湖北省一模一样。', sites: ['board', 'xiaogan', 'academy', 'storage'], ship: true, after: 'jiuquan' },
     { id: 'station', name: '空间站', d: '停泊在荆楚号后方的空间站，先驱之塔就建在这里。', sites: [], station: true, after: 'flora1' },
     { id: 'tower', name: '先驱之塔', d: '空间站里的一座高塔，共 60 层。每一层都守着一批强大的精灵，塔顶住着死神。', sites: [], tower: true, after: 'flora1', inStation: true },
-    { id: 'flora', name: '芙罗拉星', d: '草系星球。丛林、草甸和盐碱地里栖息着许多野生精灵。', sites: ['flora1', 'flora2', 'flora3', 'flora4', 'flora5', 'flora6', 'travelcat'], wild: true, ptype: '草系星球', color: ['#9fd08a', '#3f7d4a'], get img() { return floraFallen() ? 'images/planets/flora_corrupt.webp?v=2' : 'images/planets/flora.webp?v=2'; }, after: 'board' },
-    { id: 'kamble', name: '坎伯兰星', d: '水系星球。整颗星球都被海洋覆盖，从水面一直往下，是浅水区和深不见底的深海区。', sites: [], wild: true, ptype: '水系星球', color: ['#8cc6ea', '#2a6fb0'], get img() { return 'images/planets/kamble_' + kbStage() + '.webp'; }, after: 'flora1' },
+    { id: 'flora', name: '芙罗拉星', d: '草系星球。丛林、草甸和盐碱地里栖息着许多野生精灵。', sites: ['flora1', 'flora2', 'flora3', 'flora4', 'flora5', 'flora6', 'travelcat'], wild: true, ptype: '草系星球', color: ['#9fd08a', '#3f7d4a'], get img() { return floraFallen() ? 'images/planets/flora_corrupt.webp?v=3' : 'images/planets/flora.webp?v=3'; }, after: 'board' },
+    { id: 'kamble', name: '坎伯兰星', d: '水系星球。整颗星球都被海洋覆盖，从水面一直往下，是浅水区和深不见底的深海区。', sites: [], wild: true, ptype: '水系星球', color: ['#8cc6ea', '#2a6fb0'], get img() { return 'images/planets/kamble_' + kbStage() + '.webp?v=2'; }, after: 'flora1' },
     { id: 'pompeii', name: '庞贝星', d: '火系星球。火山终年喷发，地面被熔岩烤得发烫。', sites: [], wild: true, ptype: '火系星球', color: ['#f2a46b', '#b3401f'], img: 'images/planets/pompeii.webp', after: 'flora1' },
     { id: 'laiting', name: '莱汀陨石带', d: '电系区域。无数陨石在雷暴中漂浮。', sites: [], wild: true, ptype: '电系陨石带', color: ['#f1dd73', '#7a6a1a'], belt: true, after: 'flora1' },
     { id: 'white', name: '白之星', d: '冰系星球。离太阳最远，整颗星球都裹在冰雪里。', sites: [], wild: true, ptype: '冰系星球', color: ['#e4f2fa', '#6aa6c8'], after: 'flora1' },
@@ -5035,7 +5035,7 @@
     if ($('fallen-dlg')) return;
     var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'fallen-dlg';
     d.innerHTML = '<div class="soc-box fallen-box" role="dialog" aria-modal="true" aria-label="芙罗拉星"><span class="step">芙罗拉星</span><h2>腐化</h2>' +
-      '<div class="fallen-planet" aria-hidden="true"><img class="fp-a" src="images/planets/flora.webp?v=2" alt=""><img class="fp-b" src="images/planets/flora_corrupt.webp?v=2" alt=""><i class="fp-fog"></i></div>' +
+      '<div class="fallen-planet" aria-hidden="true"><img class="fp-a" src="images/planets/flora.webp?v=3" alt=""><img class="fp-b" src="images/planets/flora_corrupt.webp?v=3" alt=""><i class="fp-fog"></i></div>' +
       '<p>现在，芙罗拉星和星球上的绝大多数精灵，已经被瘴气腐化了。</p>' +
       '<p>尽力驱散这些诅咒吧……如果有用的话。</p>' +
       '<p class="hint">芙罗拉星的野外遇到的精灵都变成了腐化精灵，无法捕捉。击败它们，同样计入星球任务「祛除瘴气」。</p>' +
