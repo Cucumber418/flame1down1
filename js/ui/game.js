@@ -35,7 +35,7 @@
       if (!m.ev) m.ev = {}; if (!(m.evFree >= 0)) m.evFree = 0;
       if (!ivOk(m.iv)) m.iv = randIv();   // 天赋系统上线前的精灵：补一套随机天赋
       if (acc.expV !== expV() && m.lv >= 1) {   // 经验曲线换版：等级不变，本级进度按比例换算
-        var oe = acc.expV === 3 ? v3ExpAt : acc.expV === 2 ? v2ExpAt : oldExpAt, o0 = oe(m.lv), o1 = oe(Math.min(100, m.lv + 1)), fr = m.lv >= 100 ? 0 : Math.max(0, Math.min(0.999, ((m.exp || 0) - o0) / (o1 - o0)));
+        var oe = acc.expV === 4 ? v4ExpAt : acc.expV === 3 ? v3ExpAt : acc.expV === 2 ? v2ExpAt : oldExpAt, o0 = oe(m.lv), o1 = oe(Math.min(100, m.lv + 1)), fr = m.lv >= 100 ? 0 : Math.max(0, Math.min(0.999, ((m.exp || 0) - o0) / (o1 - o0)));
         m.exp = m.lv >= 100 ? expAt(100) : Math.floor(expAt(m.lv) + fr * (expAt(m.lv + 1) - expAt(m.lv)));
       }
       if (!(m.exp >= expAt(m.lv))) m.exp = expAt(m.lv);
@@ -189,14 +189,17 @@
   var CAP_SID = { tagore: 'tgPearl', barren: 'brTwig', leaf: 'earthShard', squid: 'earthShard', shroom: 'earthShard', moon: 'moonStone', bone: 'boneDust' };   // 首领精灵用自己的专属道具（优先于属性特产）
   function capGem(m) { if (CAP_SID[m.sid]) return CAP_SID[m.sid]; var t = SPMAP[m.sid] ? SPMAP[m.sid].types : []; for (var i = 0; i < t.length; i++) if (GEM_OF[t[i]]) return GEM_OF[t[i]]; return null; }
   function capNext(m) { var g = capGem(m); if (!g) return null; var c = capLv(m); for (var i = 0; i < CAP_STEPS.length; i++) if (CAP_STEPS[i].lv > c) return { lv: CAP_STEPS[i].lv, jade: CAP_STEPS[i].jade, k: g }; return null; }
-  function expV() { return 4; }
+  function expV() { return 5; }
   // lv → lv+1 这一级的系数（相对等级³ 的差）。v2：50 级以上 ×2；v3（2026-10-17，隐藏调整）：50 级以上再 ×4，即 ×8
-  function expK(lv) { return lv < 25 ? 0.6 : lv >= 60 ? 24 : lv >= 50 ? 8 : 1; }   // v4（2026-10-18，隐藏调整）：60 级以上再 ×3，即 ×24
+  function expK(lv) { return lv < 25 ? 0.6 : lv >= 60 ? 16.8 : lv >= 50 ? 8 : 1; }   // v5（2026-10-18 晚）：60 级以上是 v4 的 0.7 倍（v4 是 ×24，太难升了）
+  function expKv4(lv) { return lv < 25 ? 0.6 : lv >= 60 ? 24 : lv >= 50 ? 8 : 1; }
   function expKv3(lv) { return lv < 25 ? 0.6 : lv >= 50 ? 8 : 1; }
   function expKv2(lv) { return lv < 25 ? 0.6 : lv >= 50 ? 2 : 1; }
   function tabOf(k) { var T = [0, 1]; for (var l = 1; l < 100; l++) T[l + 1] = T[l] + Math.round(((l + 1) * (l + 1) * (l + 1) - l * l * l) * k(l)); return T; }
   var _v2Tab = null;
   function v2ExpAt(lv) { if (!_v2Tab) _v2Tab = tabOf(expKv2); return _v2Tab[Math.max(1, Math.min(100, lv))]; }
+  var _v4Tab = null;
+  function v4ExpAt(lv) { if (!_v4Tab) _v4Tab = tabOf(expKv4); return _v4Tab[Math.max(1, Math.min(100, lv))]; }
   var _v3Tab = null;
   function v3ExpAt(lv) { if (!_v3Tab) _v3Tab = tabOf(expKv3); return _v3Tab[Math.max(1, Math.min(100, lv))]; }
   function expTab() {
@@ -2798,7 +2801,8 @@
 
   /* ---------- 星球任务：每颗星球的专属任务 ---------- */
   // 芙罗拉星 · 祛除瘴气：任务完成前，在芙罗拉星作战有 10% 概率遇到瘴气精灵（自带 5 层瘴气，无法捕捉），击败它们累计计数
-  var PURGE = { chance: 0.1, goal: 30, steps: [{ n: 1, exp: 300 }, { n: 5, exp: 1000 }, { n: 10, exp: 2000 }, { n: 20, exp: 4000 }, { n: 30, exp: 12000, title: 'purifier' }] };
+  var PURGE = { chance: 0.1, goal: 30, steps: [{ n: 1, exp: 3000 }, { n: 5, exp: 10000 }, { n: 10, exp: 20000 }, { n: 20, exp: 40000 }, { n: 30, exp: 120000, title: 'purifier' }] };   // 2026-10-18 晚：经验 ×10
+  var PURGE_OLD = { 1: 300, 5: 1000, 10: 2000, 20: 4000, 30: 12000 };   // ×10 之前（补差额用）
   function purgeRec() { if (!acc.purge) acc.purge = { n: 0, got: {} }; return acc.purge; }
   function purgeActive() { return prog('flora1').done && purgeRec().n < PURGE.goal; }
   function purgeHit() {
@@ -3116,6 +3120,19 @@
       DL.list.forEach(function (t) { if (t.x2) return; t.x2 = 1; changed = true; if (t.c && DAILY_OLD[t.id]) { de += DAILY[t.id].rw.exp - DAILY_OLD[t.id][0]; dn += DAILY[t.id].rw.energy - DAILY_OLD[t.id][1]; } });
       if (de || dn) sendMail({ id: 'daily-x2-' + DL.date, title: '每日任务奖励翻倍补发', body: '{name}，你好！\n每日任务的奖励已经翻倍，而且每天变成了 7 个任务。今天你已经按旧标准领过的任务，现在补发差额，请领取附件。', att: { exp: de, energy: dn } });
     }
+    // 每日任务经验 ×10：今天已经按旧标准领过的任务补发差额
+    if (DL) {
+      var de2 = 0;
+      DL.list.forEach(function (t) { if (t.x10) return; t.x10 = 1; changed = true; if (t.c && DAILY_X10_OLD[t.id] != null) de2 += DAILY[t.id].rw.exp - DAILY_X10_OLD[t.id]; });
+      if (de2 > 0) sendMail({ id: 'daily-x10-' + DL.date, title: '每日任务经验提升 · 补发', body: '{name}，你好！\n每日任务的经验奖励提高到了原来的 10 倍。今天你已经领过的任务，现在补发经验差额，请领取附件。', att: { exp: de2 } });
+    }
+    // 星球任务「祛除瘴气」经验 ×10：已经领过的阶段补发差额
+    var PR = acc.purge;
+    if (PR && PR.got && !acc.purgeX10) {
+      acc.purgeX10 = 1; changed = true;
+      var pe = 0; PURGE.steps.forEach(function (st) { if (PR.got[st.n] && PURGE_OLD[st.n]) pe += st.exp - PURGE_OLD[st.n]; });
+      if (pe > 0) sendMail({ id: 'purge-x10', title: '星球任务「祛除瘴气」经验提升 · 补发', body: '{name}，你好！\n芙罗拉星的星球任务「祛除瘴气」各阶段的经验奖励提高到了原来的 10 倍。你已经领过的阶段，现在补发经验差额，请领取附件。', att: { exp: pe } });
+    }
     loginRewards();
     if (changed) save();
     renderMailBadge();
@@ -3179,18 +3196,19 @@
    * 2026-10-12 起奖励翻倍（rw 里已经是翻倍后的数），当天已经领过的按差额补发到邮箱 */
   var DAILY_N = 7, DAILY_BRAWL = 0.7;
   var DAILY = {
-    ar_play3: { t: '完成 3 场竞技对战（沙盒或平衡排位都算）', kind: 'arena', n: 3, rw: { exp: 600, energy: 200 }, arena: 1 },
-    ar_rank2: { t: '完成 2 场平衡排位', kind: 'rankPlay', n: 2, rw: { exp: 800, energy: 240 }, arena: 1 },
-    ar_win1: { t: '在平衡排位中获胜 1 场', kind: 'rankWin', n: 1, rw: { exp: 1000, energy: 300 }, arena: 1 },
-    ar_sand1: { t: '在沙盒模式完成 1 场对战', kind: 'sandbox', n: 1, rw: { exp: 400, energy: 160 }, arena: 1 },
-    bw_1: { t: '完成 1 场精灵大乱斗', kind: 'brawl', n: 1, rw: { exp: 1000, energy: 300 }, brawl: 1 },
-    bw_win1: { t: '在精灵大乱斗中获胜 1 场', kind: 'brawlWin', n: 1, rw: { exp: 1200, energy: 360 }, brawl: 1 },
-    wd_win5: { t: '击败 5 只野生精灵', kind: 'wildWin', n: 5, rw: { exp: 800, energy: 240 }, need: function () { return prog('flora1').done; } },
-    wd_catch1: { t: '捕捉 1 只野生精灵', kind: 'catch', n: 1, rw: { exp: 600, energy: 300 }, need: function () { return prog('flora1').done; } },
-    bs_1: { t: '挑战 1 次首领（胜负都算）', kind: 'boss', n: 1, rw: { exp: 600, energy: 200 }, need: function () { return bossOpen('tiger') || bossOpen('barren'); } },
-    hm_1: { t: '从茶室收回 1 只展示满 1 小时的精灵', kind: 'home', n: 1, rw: { exp: 600, energy: 200 }, need: function () { return homeOpen(); } },
-    pve_2: { t: '完成 2 场剧情、野外或首领对战', kind: 'pve', n: 2, rw: { exp: 600, energy: 200 } }
+    ar_play3: { t: '完成 3 场竞技对战（沙盒或平衡排位都算）', kind: 'arena', n: 3, rw: { exp: 6000, energy: 200 }, arena: 1 },
+    ar_rank2: { t: '完成 2 场平衡排位', kind: 'rankPlay', n: 2, rw: { exp: 8000, energy: 240 }, arena: 1 },
+    ar_win1: { t: '在平衡排位中获胜 1 场', kind: 'rankWin', n: 1, rw: { exp: 10000, energy: 300 }, arena: 1 },
+    ar_sand1: { t: '在沙盒模式完成 1 场对战', kind: 'sandbox', n: 1, rw: { exp: 4000, energy: 160 }, arena: 1 },
+    bw_1: { t: '完成 1 场精灵大乱斗', kind: 'brawl', n: 1, rw: { exp: 10000, energy: 300 }, brawl: 1 },
+    bw_win1: { t: '在精灵大乱斗中获胜 1 场', kind: 'brawlWin', n: 1, rw: { exp: 12000, energy: 360 }, brawl: 1 },
+    wd_win5: { t: '击败 5 只野生精灵', kind: 'wildWin', n: 5, rw: { exp: 8000, energy: 240 }, need: function () { return prog('flora1').done; } },
+    wd_catch1: { t: '捕捉 1 只野生精灵', kind: 'catch', n: 1, rw: { exp: 6000, energy: 300 }, need: function () { return prog('flora1').done; } },
+    bs_1: { t: '挑战 1 次首领（胜负都算）', kind: 'boss', n: 1, rw: { exp: 6000, energy: 200 }, need: function () { return bossOpen('tiger') || bossOpen('barren'); } },
+    hm_1: { t: '从茶室收回 1 只展示满 1 小时的精灵', kind: 'home', n: 1, rw: { exp: 6000, energy: 200 }, need: function () { return homeOpen(); } },
+    pve_2: { t: '完成 2 场剧情、野外或首领对战', kind: 'pve', n: 2, rw: { exp: 6000, energy: 200 } }
   };
+  var DAILY_X10_OLD = { ar_play3: 600, ar_rank2: 800, ar_win1: 1000, ar_sand1: 400, bw_1: 1000, bw_win1: 1200, wd_win5: 800, wd_catch1: 600, bs_1: 600, hm_1: 600, pve_2: 600 };   // 2026-10-18 晚：每日任务经验 ×10 之前的经验（补差额用）
   var DAILY_OLD = { ar_play3: [300, 100], ar_rank2: [400, 120], ar_win1: [500, 150], ar_sand1: [200, 80], wd_win5: [400, 120], wd_catch1: [300, 150], bs_1: [300, 100], hm_1: [300, 100], pve_2: [300, 100] };   // 翻倍前的奖励（补差额用）
   function todayKey() { var d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
   function seededRng(str) { var x = 7; for (var i = 0; i < str.length; i++) x = (x * 31 + str.charCodeAt(i)) % 2147483647; return function () { x = (x * 48271) % 2147483647; return x / 2147483647; }; }
@@ -3199,7 +3217,7 @@
     if (!ready()) return null;
     var k = todayKey();
     if (!acc.daily || acc.daily.date !== k) {
-      acc.daily = { date: k, list: dailyPick(k, []).map(function (id) { return { id: id, p: 0, c: 0, x2: 1 }; }) };
+      acc.daily = { date: k, list: dailyPick(k, []).map(function (id) { return { id: id, p: 0, c: 0, x2: 1, x10: 1 }; }) };
       save();
     }
     // 旧版（5 个任务）的今天：补到 7 个，进度保留
