@@ -1623,7 +1623,7 @@
   function floraPage() {
     var part = ex.fpart || 'catch';
     var head = '<div class="flora-hero"><span class="tape l"></span>' + planetImg(planetOf('flora'), 150) + '<div><h3>芙罗拉星 <span class="chip ptype">草系星球</span></h3><p class="hint">地表分为丛林、草甸、盐碱地三片区域。</p>' +
-      '<div class="fparts" role="tablist"><button type="button" role="tab" class="tab' + (part === 'challenge' ? ' on' : '') + '" data-fpart="challenge" aria-selected="' + (part === 'challenge') + '">挑战</button><button type="button" role="tab" class="tab' + (part === 'catch' ? ' on' : '') + '" data-fpart="catch" aria-selected="' + (part === 'catch') + '">捕捉</button>' + taskTab('flora', part) + '</div></div></div>';
+      '<div class="fparts" role="tablist"><button type="button" role="tab" class="tab' + (part === 'challenge' ? ' on' : '') + '" data-fpart="challenge" aria-selected="' + (part === 'challenge') + '">挑战</button><button type="button" role="tab" class="tab' + (part === 'catch' ? ' on' : '') + '" data-fpart="catch" aria-selected="' + (part === 'catch') + '">探索</button>' + taskTab('flora', part) + '</div></div></div>';
     // 剧情页（2026-10-17）：分「主线」「支线」两栏，从上往下是 新 → 旧
     var flSites = PLANETS.filter(function (p) { return p.id === 'flora'; })[0].sites, stab = ex.flSt === 'side' ? 'side' : ex.flSt === 'cg' ? 'cg' : 'main';
     var stCard = function (id) {
@@ -2636,7 +2636,7 @@
     var regs = regionsOf(P.id);
     var part = ex.fpart === 'task' ? 'task' : 'catch';
     var head = '<div class="flora-hero"><span class="tape l"></span>' + (P.img ? planetImg(P, 150) : planetSvgC(P, 150)) + '<div><h3 style="color:' + P.color[1] + '">' + P.name + ' <span class="chip ptype">' + P.ptype + '</span></h3><p class="hint">' + P.d + (P.img ? '' : '星球立绘还在绘制中，这里先用示意图。') + '</p>' +
-      '<div class="fparts" role="tablist"><button type="button" role="tab" class="tab' + (part === 'catch' ? ' on' : '') + '" data-fpart="catch" aria-selected="' + (part === 'catch') + '">捕捉</button>' + taskTab(P.id, part) + '</div></div></div>';
+      '<div class="fparts" role="tablist"><button type="button" role="tab" class="tab' + (part === 'catch' ? ' on' : '') + '" data-fpart="catch" aria-selected="' + (part === 'catch') + '">探索</button>' + taskTab(P.id, part) + '</div></div></div>';
     if (part === 'task') return head + planetTasks(P.id);
     var cards = regs.map(function (R) {
       var bgs = (R.bgs || []).filter(function (k) { return BG[k]; });
@@ -2699,7 +2699,7 @@
       '<p class="hint">' + (done ? '任务已完成。' : !open ? '读完主线「降临芙罗拉」后开始。' : floraFallen() ? '芙罗拉星上的精灵已经被腐化了。在丛林、草甸击败这些腐化精灵，也能祛除它们身上的瘴气。' : '在芙罗拉星的丛林、草甸作战时，有 10% 的概率遇到瘴气精灵。它们自带 5 层瘴气，无法捕捉，只能击败。') + '</p>' +
       '<div class="pt-bar"><i style="width:' + Math.min(100, P.n / PURGE.goal * 100) + '%"></i><em>已祛除 ' + Math.min(P.n, PURGE.goal) + ' / ' + PURGE.goal + '</em></div>' +
       '<ol class="pt-steps">' + steps + '</ol>' +
-      (open && !done ? '<p class="hint">去「捕捉」页的丛林或草甸作战即可。</p><button type="button" class="btn primary" data-fpart="catch">去丛林 / 草甸</button>' : '') + '</article>' +
+      (open && !done ? '<p class="hint">去「探索」页的丛林或草甸作战即可。</p><button type="button" class="btn primary" data-fpart="catch">去丛林 / 草甸</button>' : '') + '</article>' +
       (pwOpen() ? pwCardHTML('task') : '<article class="pt-card pw-card locked"><span class="tape l"></span><span class="chip log-tag pw-tag">全服任务</span><h3>瘴气驱逐战</h3><p class="hint">完成目前的主线（第十段）后解锁。</p></article>');
   }
 
