@@ -2136,3 +2136,6 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .cgv-box img { max-width: min(96vw, 1100px); max-height: calc(100vh - 110px); object-fit: contain; border-radius: 10px; box-shadow: 0 8px 30px rgba(0,0,0,.5); }
 .cgv-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: center; color: #fff; }
 .cgv-bar b { font-size: 16px; }
+/* 等级上限（2026-10-18） */
+.cap-box { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin-top: 8px; padding: 8px 12px; background: #fff7e3; border: 1.5px dashed #c48a12; border-radius: 10px; }
+.cap-box b { color: #9a6a08; }

@@ -150,6 +150,12 @@
    * 存档 acc.expV 记录经验曲线的版本；曲线改过之后，读档清理坏数据时按「等级不变、本级进度比例不变」换算旧经验
    * （读档清理在文件最上面，比这里先执行，所以表格用到时才生成） */
   var MAX_LV = 100, _expTab = null;
+  /* 等级上限（2026-10-18）：喂经验最高到 LV70。草系精灵可以用芙罗拉玉把上限解锁到 75（500 个）、80（1000 个），暂时不能超过 80；其他属性目前最高 70。
+   * m.lvCap 是解锁后的上限；在这之前就已经超过 70 级的精灵保留现有等级，但不能再往上升。 */
+  var BASE_CAP = 70, CAP_STEPS = [{ lv: 75, jade: 500 }, { lv: 80, jade: 1000 }];
+  function capLv(m) { return Math.min(MAX_LV, Math.max(m.lvCap || BASE_CAP, m.lv)); }
+  function atCap(m) { return m.lv >= capLv(m); }
+  function capNext(m) { if (!SPMAP[m.sid] || SPMAP[m.sid].types.indexOf('草') < 0) return null; var c = capLv(m); for (var i = 0; i < CAP_STEPS.length; i++) if (CAP_STEPS[i].lv > c) return CAP_STEPS[i]; return null; }
   function expV() { return 3; }
   // lv → lv+1 这一级的系数（相对等级³ 的差）。v2：50 级以上 ×2；v3（2026-10-17，隐藏调整）：50 级以上再 ×4，即 ×8
   function expK(lv) { return lv < 25 ? 0.6 : lv >= 50 ? 8 : 1; }
@@ -168,7 +174,7 @@
   function giveExp(m, amt) { return gainExp(m, amt, true); }
   // fromPool：从经验分配器里扣；否则是战斗直接获得
   function gainExp(m, amt, fromPool) {
-    var room = expAt(MAX_LV) - m.exp; amt = Math.max(0, Math.min(amt, room, fromPool ? acc.exp : Infinity)); if (!amt) return null;
+    var room = expAt(capLv(m)) - m.exp; amt = Math.max(0, Math.min(amt, room, fromPool ? acc.exp : Infinity)); if (!amt) return null;
     var before = { lv: m.lv, name: form(m).name, stage: form(m).stage };
     markForm(m.sid, before.stage);
     m.exp += amt; if (fromPool) acc.exp -= amt; m.lv = lvOf(m.exp); markForm(m.sid, form(m).stage);
@@ -584,6 +590,13 @@
       if (d > 0) { m.ev[k] = ev + d; m.evFree = free - d; }
       save(); renderTop(); return;
     }
+    if (b.dataset.lvcap) {
+      var nx = capNext(m);
+      if (!nx || !(m.lv >= BASE_CAP)) return;
+      if ((acc.items.floraJade || 0) < nx.jade) { toast('芙罗拉玉不够：需要 ' + nx.jade + ' 个。'); return; }
+      acc.items.floraJade -= nx.jade; m.lvCap = nx.lv; save(); renderTop();
+      toast(form(m).name + ' 的等级上限提高到了 LV' + nx.lv + '！现在可以继续喂经验了。'); return;
+    }
     if (b.dataset.muse) {
       var ns = b.closest('.md-it') && b.closest('.md-it').querySelector('[data-mnat]'), r = applyMonItem(b.dataset.muse, m, ns && ns.value);
       toast(r.msg); if (r.ok) renderTop(); return;
@@ -592,26 +605,35 @@
     else if (b.dataset.out != null) { var t2 = acc.teams[+b.dataset.out]; t2.splice(t2.indexOf(m.u), 1); }
     else if (b.dataset.lead != null) { var t3 = acc.teams[+b.dataset.lead]; t3.splice(t3.indexOf(m.u), 1); t3.unshift(m.u); }
     else if (b.dataset.give) {
-      var need = expAt(Math.min(MAX_LV, m.lv + 1)) - m.exp, amt;
+      var need = expAt(Math.min(capLv(m), m.lv + 1)) - m.exp, amt;
       if (b.dataset.give === 'lv') amt = need; else if (b.dataset.give === 'all') amt = acc.exp; else if (b.dataset.give === 'in') amt = Math.floor(+$('exp-in').value) || 0; else amt = +b.dataset.give;
       if (!acc.exp) { ui.expMsg = { u: m.u, t: '经验背包里没有经验了。', bad: 1 }; renderTop(); return; }
       if (amt <= 0) { ui.expMsg = { u: m.u, t: '请输入要分配的经验数量。', bad: 1 }; renderTop(); return; }
       if (amt > acc.exp) { ui.expMsg = { u: m.u, t: '经验不足：经验背包里只有 ' + fmt(acc.exp) + ' 点。', bad: 1 }; renderTop(); return; }
-      var r = giveExp(m, amt); ui.expMsg = { u: m.u, t: r || '已经是最高等级了。', bad: !r };
+      var r = giveExp(m, amt); ui.expMsg = { u: m.u, t: r || '已经到等级上限 LV' + capLv(m) + ' 了。', bad: !r };
     } else return;
     save(); renderTop();
   }
   function expBox(m) {
-    var maxed = m.lv >= MAX_LV, cur = m.exp - expAt(m.lv), span = maxed ? 1 : expAt(m.lv + 1) - expAt(m.lv), need = maxed ? 0 : expAt(m.lv + 1) - m.exp;
-    var room = expAt(MAX_LV) - m.exp, msg = ui.expMsg && ui.expMsg.u === m.u ? ui.expMsg : null;
+    var maxed = atCap(m), cur = m.exp - expAt(m.lv), span = maxed ? 1 : expAt(m.lv + 1) - expAt(m.lv), need = maxed ? 0 : expAt(m.lv + 1) - m.exp;
+    var room = expAt(capLv(m)) - m.exp, msg = ui.expMsg && ui.expMsg.u === m.u ? ui.expMsg : null;
     return '<div class="expbox"><div class="exp-head"><h4>经验</h4><span class="hint">经验背包：<b class="blue">' + fmt(acc.exp) + '</b> 点</span></div>' +
       '<div class="exp-bar"><i style="width:' + (maxed ? 100 : Math.min(100, cur / span * 100)) + '%"></i></div>' +
-      '<p class="exp-txt">LV' + m.lv + (maxed ? ' · 已达最高等级' : ' · 本级 ' + fmt(cur) + ' / ' + fmt(span) + ' · 距 LV' + (m.lv + 1) + ' 还需 <b>' + fmt(need) + '</b>') + ' · 累计 ' + fmt(m.exp) + '</p>' +
+      '<p class="exp-txt">LV' + m.lv + (maxed ? ' · 已达等级上限 LV' + capLv(m) : ' · 本级 ' + fmt(cur) + ' / ' + fmt(span) + ' · 距 LV' + (m.lv + 1) + ' 还需 <b>' + fmt(need) + '</b>') + ' · 累计 ' + fmt(m.exp) + '</p>' +
       (maxed ? '' : '<div class="exp-ctl"><button type="button" class="btn" data-give="lv"' + (acc.exp >= need ? '' : ' disabled') + '>升 1 级（' + fmt(need) + '）</button>' +
         '<button type="button" class="btn ghost" data-give="100"' + (acc.exp >= 100 && room >= 100 ? '' : ' disabled') + '>+100</button>' +
         '<button type="button" class="btn ghost" data-give="all"' + (acc.exp ? '' : ' disabled') + '>全部分配</button>' +
         '<span class="exp-in"><input type="number" id="exp-in" min="1" step="1" max="' + Math.min(acc.exp, room) + '" placeholder="数量" inputmode="numeric" aria-label="分配的经验数量"><button type="button" class="btn primary" data-give="in"' + (acc.exp ? '' : ' disabled') + '>分配</button></span></div>') +
+      capBox(m) +
       (msg ? '<p class="exp-msg' + (msg.bad ? ' red' : '') + '">' + esc(msg.t) + '</p>' : '') + '</div>';
+  }
+  // 达到 70 级以后，经验栏里才出现「等级上限」
+  function capBox(m) {
+    if (m.lv < BASE_CAP) return '';
+    var nx = capNext(m), have = acc.items.floraJade || 0, grass = SPMAP[m.sid].types.indexOf('草') >= 0;
+    return '<div class="cap-box"><b>等级上限 LV' + capLv(m) + '</b>' +
+      (nx ? '<span class="hint">草系精灵可以用芙罗拉玉解锁更高的等级上限。</span><button type="button" class="btn' + (have >= nx.jade ? ' primary' : '') + '" data-lvcap="1"' + (have >= nx.jade ? '' : ' disabled') + '>用 ' + nx.jade + ' 个芙罗拉玉解锁 LV' + nx.lv + ' 上限</button><span class="hint">芙罗拉玉：' + fmt(have) + ' 个</span>'
+        : '<span class="hint">' + (grass ? '已经解锁到目前的最高上限 LV' + CAP_STEPS[CAP_STEPS.length - 1].lv + '，暂时无法再提高。' : '这只精灵目前最高 LV' + capLv(m) + '。提高等级上限的方法，以后会陆续开放。') + '</span>') + '</div>';
   }
   function flash(t) { var el = document.querySelector('.page:not([hidden]) .flash'); if (el) { el.textContent = t; el.classList.add('red'); } }
 
@@ -719,7 +741,7 @@
       if (it.kind === 'jade') { var jl = jadeMoves(m), jok = jl.length && acc.items[k] >= it.cost; act = jl.length ? '<select data-mnat="1" aria-label="要领悟的隐藏技能">' + jl.map(function (n) { return '<option value="' + n + '">' + n + '</option>'; }).join('') + '</select><button type="button" class="btn" data-muse="' + k + '"' + (jok ? '' : ' disabled title="需要 ' + it.cost + ' 个"') + '>' + (jok ? '用 ' + it.cost + ' 个领悟' : '需要 ' + it.cost + ' 个') + '</button>' : '<button type="button" class="btn" disabled>隐藏技能已全部领悟</button>'; }
       else if (it.kind === 'nat') act = '<select data-mnat="1" aria-label="新的性格">' + NAT_KEYS.filter(function (n) { return n !== m.nat; }).map(function (n) { return '<option value="' + n + '">' + n + '（' + natText(n) + '）</option>'; }).join('') + '</select><button type="button" class="btn" data-muse="' + k + '">改性格</button>';
       else if (it.kind === 'iv' || it.kind === 'iv2') act = '<button type="button" class="btn" data-muse="' + k + '">使用 · 重组天赋</button>';
-      else if (it.kind === 'exp') act = '<button type="button" class="btn" data-muse="' + k + '"' + (m.lv >= MAX_LV ? ' disabled' : '') + '>' + (m.lv >= MAX_LV ? '已满级' : '使用 · +' + fmt(m.lv * it.rate) + ' 经验') + '</button>';
+      else if (it.kind === 'exp') act = '<button type="button" class="btn" data-muse="' + k + '"' + (atCap(m) ? ' disabled' : '') + '>' + (atCap(m) ? '已到等级上限' : '使用 · +' + fmt(m.lv * it.rate) + ' 经验') + '</button>';
       else if (it.kind === 'evreset') act = '<button type="button" class="btn" data-muse="' + k + '"' + (evSum(m) ? '' : ' disabled') + '>' + (evSum(m) ? '使用 · 退回 ' + evSum(m) + ' 点' : '没有分配过学习力') + '</button>';
       else { var room = evRoom(m); act = '<button type="button" class="btn" data-muse="' + k + '"' + (room ? '' : ' disabled title="学习力已经到上限了"') + '>' + (room ? '使用 · +' + Math.min(100, room) + ' 学习力' : '学习力已满') + '</button>'; }
       return '<div class="md-it"><b>' + it.name + ' <span class="cnt">×' + acc.items[k] + '</span></b><span class="hint">' + esc(it.kind === 'jade' ? '每 ' + it.cost + ' 个领悟一个隐藏技能' : it.kind === 'nat' ? '把性格改成你选的性格' : it.kind === 'iv' ? '六项天赋全部重新随机' : it.kind === 'iv2' ? '六项天赋重新随机，每项掷两次取高' : it.kind === 'exp' ? '直接增加等级 × ' + it.rate + ' 点经验' : it.kind === 'evreset' ? '已分配的学习力全部退回' : '直接增加 100 点可分配学习力') + '</span><span class="md-act">' + act + '</span></div>';
@@ -769,7 +791,7 @@
         if (!mons.some(function (m) { return m.u === ui.itTarget; })) ui.itTarget = mons.length ? mons[0].u : null;
         var tm = mon(ui.itTarget);
         body = '<p>' + esc(it.d) + '</p>' + (mons.length ? '<div class="it-step"><b>1. 选择精灵</b><div class="it-mons">' + mons.map(function (m) {
-          var f = form(m), sub = it.kind === 'jade' ? (jadeMoves(m).length ? '还有 ' + jadeMoves(m).length + ' 个隐藏技能可领悟' : '隐藏技能已全部领悟') : it.kind === 'nat' ? '性格 ' + m.nat : it.kind === 'exp' ? (m.lv >= MAX_LV ? '已满级' : '可得 ' + fmt(m.lv * it.rate) + ' 经验') : it.kind === 'evreset' ? '已分配 ' + evSum(m) + ' 点' : it.kind === 'iv' || it.kind === 'iv2' ? '天赋合计 ' + (ivOf(m) ? STAT_KEYS.reduce(function (a, x) { return a + m.iv[x]; }, 0) : '？') : '可再加 ' + evRoom(m) + ' 点';
+          var f = form(m), sub = it.kind === 'jade' ? (jadeMoves(m).length ? '还有 ' + jadeMoves(m).length + ' 个隐藏技能可领悟' : '隐藏技能已全部领悟') : it.kind === 'nat' ? '性格 ' + m.nat : it.kind === 'exp' ? (atCap(m) ? '已到等级上限' : '可得 ' + fmt(m.lv * it.rate) + ' 经验') : it.kind === 'evreset' ? '已分配 ' + evSum(m) + ' 点' : it.kind === 'iv' || it.kind === 'iv2' ? '天赋合计 ' + (ivOf(m) ? STAT_KEYS.reduce(function (a, x) { return a + m.iv[x]; }, 0) : '？') : '可再加 ' + evRoom(m) + ' 点';
           return '<label class="it-mon' + (m.u === ui.itTarget ? ' on' : '') + '"><input type="radio" name="it-t" value="' + m.u + '"' + (m.u === ui.itTarget ? ' checked' : '') + '><img src="' + f.img + '" alt=""><span><b>' + esc(f.name) + '</b><small>LV' + m.lv + ' · ' + sub + '</small></span></label>';
         }).join('') + '</div></div>' +
           (it.kind === 'jade' ? (tm && jadeMoves(tm).length ? '<div class="it-step"><b>2. 选择隐藏技能</b><select id="it-nat" aria-label="要领悟的隐藏技能">' + jadeMoves(tm).map(function (n) { return '<option value="' + n + '">' + n + '（' + esc(LEARN[n] ? '原本要' + LEARN[n] : '原本 LV50 习得') + '）</option>'; }).join('') + '</select></div>' : '') + '<p class="hint">一次消耗 ' + it.cost + ' 个，你现在有 ' + acc.items[k] + ' 个。</p>'
@@ -777,7 +799,7 @@
             : it.kind === 'iv' || it.kind === 'iv2' ? '<p class="hint">' + (tm && ivOf(tm) ? esc(form(tm).name) + ' 现在的天赋：' + STAT_KEYS.map(function (x) { return BASE_NAME[x] + ' ' + tm.iv[x]; }).join('，') + '。' : '') + '</p>'
             : it.kind === 'exp' ? '<p class="hint">' + (tm ? esc(form(tm).name) + ' 现在 LV' + tm.lv + '，吃一颗得到 ' + fmt(tm.lv * it.rate) + ' 点经验。' : '') + '</p>'
             : '<p class="hint">' + (tm ? esc(form(tm).name) + ' 学习力：已分配 ' + evSum(tm) + '，可分配 ' + (tm.evFree || 0) + '，还能再加 ' + evRoom(tm) + ' 点。' : '') + '</p>') +
-          '<button type="button" class="btn primary" data-ituse="' + k + '"' + ((it.kind === 'jade' && (!tm || !jadeMoves(tm).length || acc.items[k] < it.cost)) || (it.kind === 'ev' && tm && !evRoom(tm)) || (it.kind === 'exp' && tm && tm.lv >= MAX_LV) || (it.kind === 'evreset' && tm && !evSum(tm)) ? ' disabled' : '') + '>使用 ' + (it.cost || 1) + ' 个' + itemName(k) + '</button>'
+          '<button type="button" class="btn primary" data-ituse="' + k + '"' + ((it.kind === 'jade' && (!tm || !jadeMoves(tm).length || acc.items[k] < it.cost)) || (it.kind === 'ev' && tm && !evRoom(tm)) || (it.kind === 'exp' && tm && atCap(tm)) || (it.kind === 'evreset' && tm && !evSum(tm)) ? ' disabled' : '') + '>使用 ' + (it.cost || 1) + ' 个' + itemName(k) + '</button>'
           : '<p class="hint red">' + esc(it.none || '你还没有' + SPMAP[it.sid].name + '（小胖虎、胖虎也算）。击败简单难度的首领「泰戈尔」可以领养一只小胖虎。') + '</p>');
       }
       html += '<div class="ib-detail"><h4>' + (k === 'permit' ? '挑战许可' : itemName(k)) + '</h4>' + body + (ui.itMsg ? '<p class="exp-msg">' + esc(ui.itMsg) + '</p>' : '') + '</div>';
@@ -3527,7 +3549,7 @@
     SPA.last = now;
     if (dt <= 0 || dt > SPA_GAP) return;
     spaMons().forEach(function (m) {
-      if (m.lv >= MAX_LV) return;
+      if (atCap(m)) return;
       var c = (SPA.carry[m.u] || 0) + spaRate(m) * dt / 3600000, n = Math.floor(c); SPA.carry[m.u] = c - n;
       if (n <= 0) return;
       var lv0 = m.lv, r = gainExp(m, n, false); if (!r) return;
@@ -3545,7 +3567,7 @@
     var slot = function (i) {
       var m = mon(S.u[i]);
       if (!m) return '<div class="spa-slot empty"><button type="button" class="spa-add' + (pick === i ? ' on' : '') + '" data-spaslot="' + i + '"><b>＋</b><span>带一只精灵来泡</span></button></div>';
-      var f = form(m), maxed = m.lv >= MAX_LV, need = maxed ? 0 : expAt(m.lv + 1) - m.exp, span = maxed ? 1 : expAt(m.lv + 1) - expAt(m.lv);
+      var f = form(m), maxed = atCap(m), need = maxed ? 0 : expAt(m.lv + 1) - m.exp, span = maxed ? 1 : expAt(m.lv + 1) - expAt(m.lv);
       return '<div class="spa-slot"><div class="spa-mon"><img src="' + f.img + '" alt="' + esc(f.name) + '"><span class="spa-water"></span></div>' +
         '<div class="spa-info"><b>' + esc(f.name) + ' <span class="lvbig">LV' + m.lv + '</span></b>' +
         (maxed ? '<small>已经满级了，泡温泉只是为了放松。</small>' : '<div class="exp-bar"><i style="width:' + Math.min(100, (span - need) / span * 100) + '%"></i></div><small>每小时 +' + fmt(spaRate(m)) + ' 经验 · 距 LV' + (m.lv + 1) + ' 还需 ' + fmt(need) + '</small>') +
