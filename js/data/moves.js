@@ -48,7 +48,7 @@ var M = {
   灭生之潮: { type: '水', cat: '特攻', power: 85, hidden: true, tgtStage: { atk: -1, spa: -1 }, d: '威力85，降低对方1级物攻、特攻' },
   创生之潮: { type: '水', cat: '特攻', power: 70, hidden: true, selfStage: { spa: 1 }, heal: 1 / 4, pp: 10, d: '威力70，提升1级特攻，恢复1/4体力' },
 
-  // —— 乌贼领主（水）
+  // —— 水臂领主（水）
   水枪: { type: '水', cat: '物攻', power: 45, d: '威力45' },
   吸水: { type: '水', cat: '变化', heal: 1 / 2, pp: 10, d: '恢复1/2体力' },
   螺旋水弹: { type: '水', cat: '特攻', power: 25, hits: [2, 5], d: '威力25，连续攻击2-5次' },
