@@ -438,19 +438,24 @@
    * 社交的玩家列表、名片、讨论区都会显示（服务器从存档里读，见 server/social.js 的 avatarOf） */
   function avatarMon() { return acc && acc.avatar != null ? mon(acc.avatar) : null; }
   function avatarCur() {   // 现在的头像：{ sid, st, shiny } 或 null
-    var F = acc && acc.avatarF; if (F && SPMAP[F.sid] && F.st >= 0 && F.st <= evoLast(SPMAP[F.sid])) return { sid: F.sid, st: F.st | 0, shiny: shinyV(F.shiny) };
+    var F = acc && acc.avatarF; if (F && SPMAP[F.sid] && F.st >= 0 && F.st <= evoLast(SPMAP[F.sid])) return { sid: F.sid, st: F.st | 0, shiny: shinyV(F.shiny), c: cropOk(F.c) };
     var m = avatarMon(); return m ? { sid: m.sid, st: shownStage(m), shiny: shinyV(m.shiny) } : null;
   }
   function avatarForm(spec) { var s = SPMAP[spec.sid]; return spec.st != null && s.evo[spec.st] ? form({ sid: spec.sid, lv: s.evo[spec.st].lv, shiny: spec.shiny }) : form({ sid: spec.sid, lv: spec.lv, shiny: spec.shiny, fs: spec.fs }); }
-  function faceHTML(img) {   // 只露出头部
-    var f = typeof AV_FOCUS !== 'undefined' && AV_FOCUS[String(img).split('?')[0]];
+  // 玩家自己裁的头像框 c = [左, 上, 边长]（按立绘宽度的比例）；没裁过的用自动算的头部框
+  function cropOk(c) { return Array.isArray(c) && c.length === 3 && c.every(function (x) { return typeof x === 'number' && isFinite(x) && x > -3 && x < 4; }) && c[2] > 0.05 ? c : null; }
+  function faceHTML(img, crop) {   // 只露出裁剪框里的部分
+    var key = String(img).split('?')[0], f = typeof AV_FOCUS !== 'undefined' && AV_FOCUS[key], ar = f ? f[3] : AV_AR[key];
+    if (crop && ar) f = crop.concat([ar]);
     if (!f) return '<img src="' + img + '" alt="">';
-    var l = f[0], t = f[1], sd = f[2], ar = f[3];
+    var l = f[0], t = f[1], sd = f[2]; ar = f[3];
+    if (Math.abs(1 - sd) < 0.002) sd = 0.998; if (Math.abs(ar - sd) < 0.002) sd -= 0.004;
     var px = sd < 1 ? l / (1 - sd) * 100 : 50, py = ar > sd ? t / (ar - sd) * 100 : 50;
     return '<span class="av-face" style="background-image:url(\'' + img + '\');background-size:' + (100 / sd).toFixed(1) + '% auto;background-position:' + px.toFixed(1) + '% ' + py.toFixed(1) + '%"></span>';
   }
+  var AV_AR = {};   // 没有自动裁切框的立绘：记下高宽比（加载后才知道）
   function avatarInner(spec, name) {
-    if (spec && SPMAP[spec.sid]) return faceHTML(avatarForm(spec).img);
+    if (spec && SPMAP[spec.sid]) return faceHTML(avatarForm(spec).img, cropOk(spec.c));
     return esc(Array.from(name || '?')[0] || '?');
   }
   // 获得过的精灵形态：手里每只精灵长到过的形态（含切换装置解锁的），记进 acc.fgot（精灵送走了也还算）
@@ -467,7 +472,7 @@
   function renderAvatar() {
     var c = avatarCur(), av = $('who-av');
     av.innerHTML = avatarInner(c, acc.name); av.classList.toggle('img', !!c);
-    $('avatar-box').innerHTML = '<b>头像</b><div class="av-row"><span class="pav' + (c ? ' img' : '') + '">' + avatarInner(c, acc.name) + '</span><span class="hint">' + (c ? esc(avatarForm(c).name) + (c.shiny ? ' · 异色' : '') : '名字首字（默认）') + '</span><button type="button" class="btn" id="av-pick">更换头像</button></div>';
+    $('avatar-box').innerHTML = '<b>头像</b><div class="av-row"><span class="pav' + (c ? ' img' : '') + '">' + avatarInner(c, acc.name) + '</span><span class="hint">' + (c ? esc(avatarForm(c).name) + (c.shiny ? ' · 异色' : '') : '名字首字（默认）') + '</span><button type="button" class="btn" id="av-pick">更换头像</button>' + (c && acc.avatarF ? '<button type="button" class="btn ghost" id="av-crop">调整裁剪</button>' : '') + '</div>';
   }
   function openAvatarPicker() {
     $('who-menu').hidden = true;
@@ -486,13 +491,71 @@
     d.addEventListener('click', function (e) {
       if (e.target === d || e.target.closest('[data-avx]')) { d.remove(); return; }
       var b = e.target.closest('[data-av]'); if (!b) return;
-      if (b.dataset.av === '') { acc.avatar = null; acc.avatarF = null; }
-      else { var p = b.dataset.av.split(':'); acc.avatarF = { sid: p[0], st: +p[1], shiny: +p[2] === 2 ? 2 : !!+p[2] }; acc.avatar = null; }
-      save(); renderAvatar(); d.remove();
-      var c = avatarCur(); toast(c ? '头像换成了「' + avatarForm(c).name + '」。同步到服务器后，其他船员就能看到。' : '头像改回了名字首字。');
+      if (b.dataset.av === '') { acc.avatar = null; acc.avatarF = null; save(); renderAvatar(); d.remove(); toast('头像改回了名字首字。'); return; }
+      var p = b.dataset.av.split(':'); d.remove();
+      openAvatarCrop({ sid: p[0], st: +p[1], shiny: +p[2] === 2 ? 2 : !!+p[2] });   // 选好形态后自己裁剪
     });
   }
-  $('avatar-box').addEventListener('click', function (e) { e.stopPropagation(); if (e.target.id === 'av-pick') openAvatarPicker(); });
+  /* 头像裁剪：显示完整立绘，上面一个圆框；拖动圆框选位置，滑块（或滚轮、双指）调大小 */
+  function openAvatarCrop(sp) {
+    $('who-menu').hidden = true;
+    var old = $('avc-dlg'); if (old) old.remove();
+    var img = avatarForm(sp).img, key = String(img).split('?')[0], F0 = typeof AV_FOCUS !== 'undefined' && AV_FOCUS[key];
+    var same = acc.avatarF && acc.avatarF.sid === sp.sid && acc.avatarF.st === sp.st && shinyV(acc.avatarF.shiny) === shinyV(sp.shiny) && cropOk(acc.avatarF.c);
+    var C = same ? acc.avatarF.c.slice() : F0 ? F0.slice(0, 3) : [0, 0, 1], ar = F0 ? F0[3] : AV_AR[key] || 1;
+    var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'avc-dlg';
+    d.innerHTML = '<div class="soc-box av-box avc-box" role="dialog" aria-modal="true" aria-label="裁剪头像"><span class="tape l"></span><span class="tape r"></span><span class="step">头像</span><h2>裁剪头像</h2>' +
+      '<p class="hint">拖动圆框选位置，用滑块（或滚轮、双指）调大小。圆框里的部分就是头像。</p>' +
+      '<div class="avc-main"><div class="avc-stage" id="avc-stage"><div class="avc-img" id="avc-img"></div><div class="avc-ring" id="avc-ring" aria-hidden="true"></div></div>' +
+      '<div class="avc-side"><b>预览</b><div class="avc-prev"><span class="pav img big" id="avc-p1"></span><span class="pav img" id="avc-p2"></span><span class="pav img" id="avc-p3" style="width:28px;height:28px"></span></div>' +
+      '<label class="avc-zoom">缩放<input type="range" id="avc-z" min="0" max="100" step="1"></label><button type="button" class="btn ghost" data-avcreset="1">自动对准头部</button><button type="button" class="btn ghost" data-avcfull="1">显示完整立绘</button></div></div>' +
+      '<div class="soc-foot"><button type="button" class="btn ghost" data-avcback="1">换一个形态</button><button type="button" class="btn ghost" data-avcx="1">取消</button><button type="button" class="btn primary" data-avcok="1">用这个头像</button></div></div>';
+    document.body.appendChild(d);
+    var stage = $('avc-stage'), el = $('avc-img'), z = $('avc-z');
+    var SMIN = 0.12, SMAX = Math.max(1.2, ar * 1.1);
+    var toZ = function (s) { return Math.round(Math.log(SMAX / s) / Math.log(SMAX / SMIN) * 100); }, fromZ = function (v) { return SMAX * Math.pow(SMIN / SMAX, v / 100); };
+    function clamp() { var s = C[2]; C[0] = Math.max(-s / 2, Math.min(1 - s / 2, C[0])); C[1] = Math.max(-s / 2, Math.min(ar - s / 2, C[1])); }
+    var D = 1, ring = $('avc-ring');
+    function draw() {
+      clamp(); var SW = stage.clientWidth || 300, SH = stage.clientHeight || 300;
+      D = Math.min(SW, SH / ar) * 0.9; var ox = (SW - D) / 2, oy = (SH - D * ar) / 2;   // 完整立绘缩放后放在中间
+      el.style.backgroundImage = 'url(\'' + img + '\')'; el.style.backgroundSize = D + 'px auto'; el.style.backgroundPosition = ox + 'px ' + oy + 'px';
+      ring.style.left = (ox + C[0] * D) + 'px'; ring.style.top = (oy + C[1] * D) + 'px'; ring.style.width = ring.style.height = (C[2] * D) + 'px';
+      ['avc-p1', 'avc-p2', 'avc-p3'].forEach(function (id) { $(id).innerHTML = faceHTML(img, C); });
+      z.value = toZ(C[2]);
+    }
+    function zoomTo(s) { var cx = C[0] + C[2] / 2, cy = C[1] + C[2] / 2; C[2] = Math.max(SMIN, Math.min(SMAX, s)); C[0] = cx - C[2] / 2; C[1] = cy - C[2] / 2; draw(); }
+    if (!F0 && !AV_AR[key]) { var im = new Image(); im.onload = function () { ar = AV_AR[key] = im.naturalHeight / im.naturalWidth; SMAX = Math.max(1.2, ar * 1.1); if (!same) C = [0, (ar - 1) / 2, 1]; draw(); }; im.src = img; }
+    draw();
+    var drag = null, pts = {};
+    stage.addEventListener('pointerdown', function (e) { stage.setPointerCapture(e.pointerId); pts[e.pointerId] = { x: e.clientX, y: e.clientY }; drag = { x: e.clientX, y: e.clientY }; e.preventDefault(); });
+    stage.addEventListener('pointermove', function (e) {
+      if (!pts[e.pointerId]) return;
+      var ids = Object.keys(pts);
+      if (ids.length >= 2) {   // 双指缩放
+        var a = pts[ids[0]], b = pts[ids[1]], d0 = Math.hypot(a.x - b.x, a.y - b.y);
+        pts[e.pointerId] = { x: e.clientX, y: e.clientY }; a = pts[ids[0]]; b = pts[ids[1]];
+        var d1 = Math.hypot(a.x - b.x, a.y - b.y); if (d0 > 0 && d1 > 0) zoomTo(C[2] * d0 / d1); return;
+      }
+      pts[e.pointerId] = { x: e.clientX, y: e.clientY };
+      C[0] += (e.clientX - drag.x) / D; C[1] += (e.clientY - drag.y) / D; drag = { x: e.clientX, y: e.clientY }; draw();
+    });
+    var up = function (e) { delete pts[e.pointerId]; var r = Object.keys(pts); drag = r.length ? { x: pts[r[0]].x, y: pts[r[0]].y } : null; };
+    stage.addEventListener('pointerup', up); stage.addEventListener('pointercancel', up);
+    stage.addEventListener('wheel', function (e) { e.preventDefault(); zoomTo(C[2] * (e.deltaY > 0 ? 1.08 : 1 / 1.08)); }, { passive: false });
+    z.addEventListener('input', function () { zoomTo(fromZ(+z.value)); });
+    d.addEventListener('click', function (e) {
+      if (e.target === d || e.target.closest('[data-avcx]')) { d.remove(); return; }
+      if (e.target.closest('[data-avcback]')) { d.remove(); openAvatarPicker(); return; }
+      if (e.target.closest('[data-avcreset]')) { if (F0) { C = F0.slice(0, 3); draw(); } return; }
+      if (e.target.closest('[data-avcfull]')) { var s = Math.max(1, ar); C = [(1 - s) / 2, (ar - s) / 2, s]; draw(); return; }
+      if (e.target.closest('[data-avcok]')) {
+        acc.avatarF = { sid: sp.sid, st: sp.st, shiny: sp.shiny, c: C.map(function (x) { return Math.round(x * 10000) / 10000; }) }; acc.avatar = null;
+        save(); renderAvatar(); d.remove(); toast('头像换成了「' + avatarForm(sp).name + '」。同步到服务器后，其他船员就能看到。');
+      }
+    });
+  }
+  $('avatar-box').addEventListener('click', function (e) { e.stopPropagation(); if (e.target.id === 'av-pick') openAvatarPicker(); if (e.target.id === 'av-crop' && acc.avatarF) openAvatarCrop({ sid: acc.avatarF.sid, st: acc.avatarF.st, shiny: shinyV(acc.avatarF.shiny) }); });
   /* ---------- 改名卡：商城 1000 能量，在名字菜单里使用 ---------- */
   var renaming = false;
   function renderRename() {

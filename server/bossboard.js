@@ -30,7 +30,8 @@ function accOf(u) { try { var a = JSON.parse((u && u.save && u.save.data && u.sa
 function cleared(acc, key) { var r = acc && acc.bosses && acc.bosses[key]; return !!(r && r.wins > 0); }
 function avatarOf(acc) {
   var F = acc && acc.avatarF;   // 新头像：获得过的任意形态 { sid, st, shiny }
-  if (F && typeof F.sid === 'string' && /^[a-z0-9_]{1,32}$/.test(F.sid)) return { sid: F.sid, st: Math.max(0, Math.min(2, F.st | 0)), shiny: F.shiny === 2 ? 2 : !!F.shiny };
+  if (F && typeof F.sid === 'string' && /^[a-z0-9_]{1,32}$/.test(F.sid)) return { sid: F.sid, st: Math.max(0, Math.min(2, F.st | 0)), shiny: F.shiny === 2 ? 2 : !!F.shiny,
+    c: Array.isArray(F.c) && F.c.length === 3 && F.c.every(function (x) { return typeof x === 'number' && isFinite(x) && x > -3 && x < 4; }) ? F.c.map(function (x) { return Math.round(x * 10000) / 10000; }) : undefined };   // c：玩家自己裁的框
   if (!acc || acc.avatar == null || !Array.isArray(acc.mons)) return null;
   var m = acc.mons.filter(function (x) { return x && x.u === acc.avatar; })[0];
   return m ? { sid: String(m.sid).slice(0, 32), lv: Math.max(1, Math.min(100, m.lv | 0)), shiny: m.shiny === 2 ? 2 : !!m.shiny, fs: m.fs != null && m.fs >= 0 && m.fs <= 2 ? m.fs | 0 : undefined } : null;

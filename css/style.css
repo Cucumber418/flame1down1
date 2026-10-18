@@ -2245,3 +2245,16 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 /* 头像：只露出精灵的头部 */
 .av-face { display: block; width: 100%; height: 100%; background-repeat: no-repeat; }
 .pav.img, .who-btn .av.img { padding: 0; }
+/* 头像裁剪 */
+.avc-box { max-width: 560px; }
+.avc-main { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+.avc-stage { position: relative; width: 300px; height: 300px; flex: none; border-radius: 14px; overflow: hidden; cursor: grab; touch-action: none; user-select: none;
+  background: repeating-conic-gradient(#ece8dc 0 25%, #f7f4ea 0 50%) 0 0 / 20px 20px; border: 1.5px solid var(--ink); }
+.avc-stage:active { cursor: grabbing; }
+.avc-img { position: absolute; inset: 0; background-repeat: no-repeat; }
+.avc-ring { position: absolute; border-radius: 50%; box-shadow: 0 0 0 999px rgba(35, 34, 43, .45); outline: 2px dashed #fff; outline-offset: -2px; pointer-events: none; }
+.avc-side { display: grid; gap: 10px; min-width: 180px; flex: 1; }
+.avc-prev { display: flex; align-items: center; gap: 10px; }
+.avc-zoom { display: grid; gap: 4px; font-size: 13px; }
+.avc-zoom input { width: 100%; }
+@media (max-width: 560px) { .avc-stage { width: min(300px, 78vw); height: min(300px, 78vw); } }
