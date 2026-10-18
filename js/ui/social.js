@@ -93,6 +93,7 @@
 
   /* ---------- 名片 ---------- */
   // 挑战进度（2026-10-17）：名片里默认收起，点开才显示
+  var MIL_NAMES = ['列兵', '上等兵', '下士', '中士', '上士', '少尉', '中尉', '上尉', '少校', '中校', '上校', '大校', '将军'];   // 和 game.js 的 RANKS_MIL 一致
   function progOf(acc) {
     var stars = 0, max = 0, c = acc.chal || {};
     for (var i = 1; i <= 50; i++) { var r = c['fl' + i], n = r && r.s ? r.s.filter(Boolean).length : 0; if (n) { stars += n; max = i; } }
@@ -125,7 +126,7 @@
       '<div class="pc-top"><span class="pav big' + (c.avatar ? ' img' : '') + '">' + A.avatarInner(c.avatar, c.name) + '</span><div class="pc-who">' +
       '<span class="pc-title">' + esc(c.title ? A.titleName(c.title) || '做题家' : '做题家') + '</span><h3>' + esc(c.name) + '</h3>' +
       '<span class="pc-user">@' + esc(c.user) + (opt.preview ? '' : ' · ' + statusOf(c)) + '</span></div></div>' +
-      '<p class="pc-stats"><span>精灵 <b>' + (c.monsN || 0) + '</b> 只</span><span>收集 <b>' + (c.speciesN || 0) + '</b> 种</span>' +
+      '<p class="pc-stats"><span>军衔 <b>' + esc(MIL_NAMES[Math.max(0, Math.min(MIL_NAMES.length - 1, c.mil | 0))]) + '</b></span><span>精灵 <b>' + (c.monsN || 0) + '</b> 只</span><span>收集 <b>' + (c.speciesN || 0) + '</b> 种</span>' +
       '<span>最高段位 <b>' + (rankLabel(R.best, R.best === RANKS.length - 1 ? R.kingBest || 0 : null, R.bestDv) || '—') + '</b>' + (R.r === RANKS.length - 1 && (R.stars || 0) !== (R.kingBest || 0) ? '（当前 ' + R.stars + ' 星）' : '') + '</span><span>竞技 <b>' + R.w + '</b> 胜 <b>' + R.l + '</b> 负</span>' +
       (c.created ? '<span>' + new Date(c.created).toLocaleDateString('zh-CN') + ' 登船</span>' : '') + '</p>' +
       '<blockquote class="pc-motto' + (c.motto ? '' : ' empty') + '">' + (c.motto ? esc(c.motto) : '这位船员还没有写个人宣言。') + '</blockquote>' +
@@ -207,7 +208,7 @@
     var R = rk ? { r: rk.r || 0, dv: rk.dv, bestDv: rk.bestDv, best: Math.max(rk.best || 0, rk.r || 0), w: rk.w || 0, l: rk.l || 0, stars: rk.stars || 0, kingBest: Math.max(rk.kingBest || 0, rk.r === RANKS.length - 1 ? rk.stars || 0 : 0) } : { r: 0, best: 0, w: 0, l: 0 };
     var ed = st.edit;
     return { user: st.me || (C.user && C.user()), name: acc.name, avatar: A.avatarSpec(), gender: A.gender ? A.gender() : 'm', title: acc.title && (acc.titles || []).indexOf(acc.title) >= 0 ? acc.title : null, monsN: acc.mons.length, speciesN: Object.keys(species).length,
-      created: acc.created, motto: ed.motto, rankInfo: R, prog: progOf(acc),
+      created: acc.created, motto: ed.motto, rankInfo: R, prog: progOf(acc), mil: acc.milRank | 0,
       show: ed.show.map(function (u) { var m = A.mon(u); return m && { sid: m.sid, lv: m.lv, nat: m.nat, moves: m.moves, shiny: m.shiny === 2 ? 2 : !!m.shiny }; }).filter(Boolean),
       helper: ed.helper != null && A.mon(ed.helper) ? (function (m) { return { sid: m.sid, lv: m.lv, nat: m.nat, shiny: m.shiny === 2 ? 2 : !!m.shiny }; })(A.mon(ed.helper)) : null };
   }
