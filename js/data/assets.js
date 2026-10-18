@@ -353,6 +353,7 @@ function emoteMsg(text) { var m = /^\[\[e:([a-z_]+)\]\]$/.exec(text || ''); retu
 // miasma / miasmaShiny / miasmaShiny2 瘴气侵染（瘴气层数 > 0）期间换成被污染的样子（没有眼白），按异色区分普通/蓝异色/黄异色
 var FORM_FX_SPRITES = {
   "moon": { "dark": "images/sprites/moon_dark.webp", "full": "images/sprites/moon_full.webp" },
+  "wind": { "miasma": "images/sprites/wind_miasma.webp" },   // 瘴气六尾风王（2026-10-18 画师立绘）
   "mush": { "miasma": "images/sprites/mush_miasma.webp", "miasmaShiny": "images/sprites/mush_miasma_shiny.webp", "miasmaShiny2": "images/sprites/mush_miasma_shiny2.webp" }
 };
 var AWAKE_SPRITES = {

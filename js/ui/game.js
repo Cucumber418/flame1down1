@@ -1317,7 +1317,7 @@
         ] }
       ] },
     cyGuards: { foe: '失去理智的精灵', bgm: 'disCommunication',   // 压迫感强的高形态：和战前剧情里的 dis-communication 接着放
-      team: [{ sid: 'wind', lv: 36, nick: '瘴气六尾风王', img: SPRITES.wind, miasma: 8, boss: { erode: 1, mute: 1 } }, { sid: 'mush', lv: 38, nick: '瘴气玛西露姆', img: FORM_FX_SPRITES.mush.miasma, miasma: 8, boss: { erode: 1, mute: 1 } }],
+      team: [{ sid: 'wind', lv: 36, nick: '瘴气六尾风王', img: FORM_FX_SPRITES.wind.miasma, miasma: 8, boss: { erode: 1, mute: 1 } }, { sid: 'mush', lv: 38, nick: '瘴气玛西露姆', img: FORM_FX_SPRITES.mush.miasma, miasma: 8, boss: { erode: 1, mute: 1 } }],
       allyMon: LEAF_ALLY, allyOpt: true,
       env: 'miasma', bg: 'fl_salt', desc: '瘴气六尾风王（LV36）、瘴气玛西露姆（LV38）' }
   };
