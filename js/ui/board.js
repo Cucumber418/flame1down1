@@ -33,7 +33,7 @@
       '<dl class="ab-credits">' +
         '<dt>程序主笔</dt><dd>Claude</dd>' +
         '<dt>程序设计</dt><dd>Vanber、Cucumber418</dd>' +
-        '<dt>人物立绘</dt><dd>Threego</dd>' +
+        '<dt>人物立绘</dt><dd>Threego（主美）</dd>' +
         '<dt>精灵立绘</dt><dd>Cucumber418<small>多取材于二〇一九年的「黄尔号图鉴」，初时径以相机摄入，今正逐一描摹翻新。</small></dd>' +
         '<dt>配乐</dt><dd>暂多借自「赛尔号」<small>童年旧曲，聊借一用，谨致谢忱。</small></dd>' +
       '</dl>' +
