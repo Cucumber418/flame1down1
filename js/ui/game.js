@@ -43,8 +43,11 @@
       if (Array.isArray(m.moves)) m.moves = m.moves.map(moveName).filter(function (n, i, a) { return a.indexOf(n) === i; });   // 改过名字的技能换成新名字（合并后去重）
       if (Array.isArray(m.hl)) m.hl = m.hl.map(moveName);
       if (!Array.isArray(m.hl)) m.hl = (m.moves || []).filter(function (n) { return M[n] && M[n].hidden && LEARN[n]; });
-      if (!(acc.hlV >= 1) && HL_GATED[m.sid] && m.hl.length) { acc.hlReset = (acc.hlReset || 0) + m.hl.length; m.hl = []; }   // 2026-10-18：改成道具解锁，以前领悟的要重新学
-      if (!(acc.hlV >= 2) && (m.sid === 'moon' || m.sid === 'bone') && m.hl.length) { acc.hlReset2 = (acc.hlReset2 || 0) + m.hl.length; m.hl = []; }   // 小月亮、骨刃也改成道具解锁
+      if (!(acc.hlV >= 1) && HL_GATED[m.sid] && m.sid !== 'moon' && m.sid !== 'bone' && m.hl.length) { acc.hlReset = (acc.hlReset || 0) + m.hl.length; m.hl = []; }   // 2026-10-18：改成道具解锁，以前领悟的要重新学
+      if ((m.sid === 'moon' || m.sid === 'bone') && m.hl.length) {   // 小月亮、骨刃也改成道具解锁，但以前领悟过的保留：并进这一族共用的解锁表
+        if (!acc.hlSp) acc.hlSp = {}; if (!acc.hlSp[m.sid]) acc.hlSp[m.sid] = [];
+        m.hl.forEach(function (n) { if (acc.hlSp[m.sid].indexOf(n) < 0) acc.hlSp[m.sid].push(n); });
+      }
       var a = avail(m.sid, m.lv, m.hl); m.moves = (m.moves || []).filter(function (n) { return a.indexOf(n) >= 0; });
       if (!m.moves.length) m.moves = defaultMoves(m.sid, m.lv, m.hl);
     });
@@ -2893,8 +2896,29 @@
   window.addEventListener('pagehide', markOnline);
   function mailTodo() { return ready() ? mails().filter(function (m) { return !m.read || !m.got; }).length : 0; }
   function renderMailBadge() { var b = $('mail-badge'), n = mailTodo(); b.hidden = !n; b.textContent = n > 99 ? '99+' : n; }
+  /* 2026-10-18：17:36 那次更新清掉了小月亮、骨刃以前领悟的隐藏技能，后来决定保留。
+   * 已经被清掉的，从服务器上那次部署前的存档备份里找回来（server/hlrestore.js），合并一次 */
+  var hlFixBusy = false;
+  function hlFix() {
+    if (!ready() || acc.hlFix || hlFixBusy || !(window.CLOUD && CLOUD.user && CLOUD.user() && CLOUD.api)) return;
+    hlFixBusy = true;
+    CLOUD.api('GET', '/api/hlrestore').then(function (r) {
+      hlFixBusy = false;
+      if (!r || r._code !== 200 || !r.ready || !ready() || acc.hlFix) return;
+      var got = [];
+      ['moon', 'bone'].forEach(function (sid) {
+        var L = (r.sp && Array.isArray(r.sp[sid]) ? r.sp[sid] : []).filter(function (n) { return typeof n === 'string' && SPMAP[sid] && (SPMAP[sid].hidden || []).indexOf(moveName(n)) >= 0; }).map(moveName);
+        if (!L.length) return; if (!acc.hlSp) acc.hlSp = {}; if (!acc.hlSp[sid]) acc.hlSp[sid] = [];
+        L.forEach(function (n) { if (acc.hlSp[sid].indexOf(n) < 0) { acc.hlSp[sid].push(n); got.push(SPMAP[sid].name + '「' + n + '」'); } });
+      });
+      acc.hlFix = 1;
+      if (got.length) sendMail({ id: 'hl-fix', title: '小月亮、骨刃的隐藏技能已恢复', body: '{name}，你好！\n小月亮、骨刃之前已经领悟过的隐藏技能，这次全部保留，不需要重新学习。已经帮你恢复：' + got.join('、') + '。\n以后还没领悟的，可以用「新月辉石」「灵骨粉末」解锁（竞技代币商店兑换）。给你添麻烦了！' });
+      save(); renderTop();
+    }, function () { hlFixBusy = false; });
+  }
   function deliverMail() {
     if (!ready()) return;
+    hlFix();
     var me = window.CLOUD && window.CLOUD.user ? window.CLOUD.user() : null, today = dayStr(), changed = false;
     mails();
     (typeof MAILS !== 'undefined' ? MAILS : []).forEach(function (M0) {
@@ -2903,7 +2927,6 @@
       if (M0.until && today > M0.until) return;
       if (sendMail(M0)) changed = true;
     });
-    if (acc.hlReset2 > 0 && sendMail({ id: 'hl-reset2', title: '小月亮、骨刃的隐藏技能调整', body: '{name}，你好！\n小月亮和骨刃的隐藏技能，现在改成用道具解锁：小月亮用「新月辉石」，骨刃用「灵骨粉末」，都可以在竞技代币商店兑换。解锁一次，你持有的同一种族都能使用（LV40 以上才能装备）。\n你之前在战斗中领悟的小月亮、骨刃的隐藏技能需要重新学习。' })) changed = true;
     // 2026-10-18：部分精灵的隐藏技能改成只能用道具解锁，以前在战斗里领悟的需要重新学习，发封邮件说明
     if (acc.hlReset > 0 && sendMail({ id: 'hl-reset', title: '隐藏技能的学习方式调整', body: '{name}，你好！\n部分精灵的隐藏技能，现在改成用道具解锁：芙罗拉星、坎伯兰星、庞贝星、莱汀陨石带、白之星的普通野生精灵用各自星球的特产，泰戈尔、荒芜、帕努托尔用首领专属道具，三只初始精灵用「地球元素」。\n解锁一次，你持有的同一种族的精灵就都能使用（LV40 以上才能装备）。\n你之前在战斗中领悟的这些精灵的隐藏技能需要重新学习。学院部的 Bttp 也有话要跟你说，记得去黄冈 · 学院部看看。' })) changed = true;
     // 2026-10-18：困难难度首领新增的首次击败奖励（虎啸凝珠 / 生长枯枝 ×80），之前已经打过的船员通过邮箱补发
