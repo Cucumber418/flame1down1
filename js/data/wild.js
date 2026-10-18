@@ -15,7 +15,7 @@ var WILD_POOLS = {
     { sid: 'mush', lv: [1, 5], w: 35, rate: 0.65, tag: '较高', shiny: 0.05, shiny2: 0.005 },
     { sid: 'leaf', lv: [5, 5], w: 0.25, rate: 0.45, tag: '中等', rare: true }
   ],
-  // 坎布尔星（水系）
+  // 坎伯兰星（水系）
   kb_sea: [
     { sid: 'pede', lv: [6, 10], w: 59.25, rate: 0.7, tag: '较高' },
     { sid: 'gorgon', lv: [6, 10], w: 40, rate: 0.65, tag: '较高' },

@@ -2139,3 +2139,8 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 /* 等级上限（2026-10-18） */
 .cap-box { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin-top: 8px; padding: 8px 12px; background: #fff7e3; border: 1.5px dashed #c48a12; border-radius: 10px; }
 .cap-box b { color: #9a6a08; }
+/* 各星球特产在野外场景里的样子（2026-10-18） */
+.wf-node.gem-kbDrop .wf-gem { background: radial-gradient(circle at 35% 30%, #e6fbff, #4fb6e8 60%, #1d6aa0); box-shadow: 0 0 8px #8fd8ff; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; }
+.wf-node.gem-ppAsh .wf-gem { background: radial-gradient(circle at 35% 30%, #ffd9b0, #8a4a2a 55%, #3a2018); box-shadow: 0 0 8px #ff9a5a; }
+.wf-node.gem-ltOrb .wf-gem { background: radial-gradient(circle at 35% 30%, #fffbd6, #f2d84a 55%, #b08a10); box-shadow: 0 0 10px #ffe85a; }
+.wf-node.gem-whFrost .wf-gem { background: radial-gradient(circle at 35% 30%, #ffffff, #bfe3f2 55%, #6aa6c8); box-shadow: 0 0 8px #d8f3ff; }
