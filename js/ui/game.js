@@ -1630,7 +1630,7 @@
   function invCopy() { var o = {}; ITEM_ORDER.forEach(function (k) { o[k] = acc.items[k] || 0; }); return o; }
   function useInv(k) { acc.items[k] = Math.max(0, (acc.items[k] || 0) - 1); save(); }
   // 每天通过 PVE 战斗直接获得的经验上限（击败精灵的经验，含进经验背包的那部分；首领首通、任务等奖励不算）
-  var PVE_XP_CAP = 200000;   // 2026-10-17：120000 → 200000
+  var PVE_XP_CAP = 400000;   // 2026-10-17：120000 → 200000；2026-10-18：→ 400000（静默调整）
   function pveLeft() { var d = dayStr(); if (!acc.pveXp || acc.pveXp.d !== d) acc.pveXp = { d: d, n: 0 }; return Math.max(0, PVE_XP_CAP - acc.pveXp.n); }
   // 击败一只精灵：经验 = 等级² × 2 + 20；学习力按对方等级 1 / 2 / 3 点
   function foeExp(lv) { return lv * lv * 2 + 20; }
