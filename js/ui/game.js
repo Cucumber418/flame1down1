@@ -39,6 +39,7 @@
         m.exp = m.lv >= 100 ? expAt(100) : Math.floor(expAt(m.lv) + fr * (expAt(m.lv + 1) - expAt(m.lv)));
       }
       if (!(m.exp >= expAt(m.lv))) m.exp = expAt(m.lv);
+      if (m.fs != null && !Array.isArray(m.fu)) m.fu = [m.fs | 0];   // 形态切换装置改成永久解锁之前切换过的，算作已经解锁
       // 隐藏技能改为战斗中领悟：旧存档里已经装备着的隐藏技能视为已领悟
       if (Array.isArray(m.moves)) m.moves = m.moves.map(moveName).filter(function (n, i, a) { return a.indexOf(n) === i; });   // 改过名字的技能换成新名字（合并后去重）
       if (Array.isArray(m.hl)) m.hl = m.hl.map(moveName);
@@ -116,8 +117,10 @@
   // 异色：true 是第一种异色，2 是第二种（更稀有）
   function shinyV(v) { return v === 2 ? 2 : !!v; }
   function rollShiny(w) { var r = Math.random(); return w.shiny2 && r < w.shiny2 ? 2 : !!(w.shiny && r < (w.shiny2 || 0) + w.shiny); }
-  // 形态切换装置（m.fs）：只改外观，切成已经长到的某个更小的形态；数值、技能都不变
-  function shownStage(m) { var s = SPMAP[m.sid], nat = stageOf(s, m.lv); return m.fs != null && m.fs >= 0 && m.fs < nat ? m.fs | 0 : nat; }
+  // 形态切换装置：每用一个，这只精灵永久解锁一个更小的形态（m.fu 里记着解锁了哪些）；
+  // 解锁过的形态和原本的形态之间随时免费切换（m.fs 是现在显示的形态）。只改外观，数值、技能都不变
+  function shownStage(m) { var s = SPMAP[m.sid], nat = stageOf(s, m.lv); return m.fs != null && m.fs >= 0 && m.fs < nat && (!m.u || (Array.isArray(m.fu) && m.fu.indexOf(m.fs) >= 0) || m.fu === undefined) ? m.fs | 0 : nat; }
+  function formLabel(s, i) { var n = formRawName(s, i); return n ? n.replace('?', '') : s.name + '·' + stageLabel(s, i); }
   function form(m) {
     var s = SPMAP[m.sid], st = shownStage(m), n = formRawName(s, st), unsure = false;
     if (n && n.slice(-1) === '?') { n = n.slice(0, -1); unsure = true; }
@@ -608,7 +611,7 @@
       '<p style="margin:0 0 6px"><span class="lvbig">LV' + m.lv + '</span>' + tchips(s.types) + '</p>' +
       '<p class="hint">' + stageLabel(s, f.stage) + (!isFin(s, f.stage) ? ' · 最终进化为' + (s.placeholder || s.tbdForms ? '？' : s.name) : '') +
       (ts.length ? ' · ' + ts.map(function (x) { return TEAM_NAME[x.t] + (x.lead ? '首发' : ''); }).join('、') : ' · 未加入配队') + '</p>' +
-      (f.d ? '<p class="formdesc">' + esc(f.d) + '</p>' : '') + evoLine(m) + (s.placeholder ? '<p class="placeholder-note" style="margin-top:6px">数值和技能还是占位，二阶和最终形态还没画出来</p>' : s.tbdForms ? '<p class="placeholder-note" style="margin-top:6px">二阶和最终形态还没画出来</p>' : '') + '</div></div>' +
+      (f.d ? '<p class="formdesc">' + esc(f.d) + '</p>' : '') + evoLine(m) + formSwitchHTML(m) + (s.placeholder ? '<p class="placeholder-note" style="margin-top:6px">数值和技能还是占位，二阶和最终形态还没画出来</p>' : s.tbdForms ? '<p class="placeholder-note" style="margin-top:6px">二阶和最终形态还没画出来</p>' : '') + '</div></div>' +
       expBox(m) + stats +
       '<div class="trait"><p><b>特性 · ' + esc(s.ability.n) + '</b>　<span class="blue">' + esc(s.ability.d) + '</span></p>' + (s.ability.extra ? '<p class="blue" style="font-size:13px">' + esc(s.ability.extra) + '</p>' : '') +
       (acc.emblems && acc.emblems[m.sid] && EMBLEMS[m.sid] ? '<p><b>纹章 · ' + EMBLEMS[m.sid].m + '</b>　<span class="blue">' + esc(EMBLEMS[m.sid].d) + '</span></p>' : '') + '</div>' +
@@ -649,6 +652,11 @@
       if ((acc.items[nx.k] || 0) < nx.jade) { toast(itemName(nx.k) + '不够：需要 ' + nx.jade + ' 个。'); return; }
       acc.items[nx.k] -= nx.jade; m.lvCap = nx.lv; save(); renderTop();
       toast(form(m).name + ' 的等级上限提高到了 LV' + nx.lv + '！现在可以继续喂经验了。'); return;
+    }
+    if (b.dataset.fsw != null) {   // 外观形态：免费切换
+      var fi = +b.dataset.fsw, natS = stageOf(SPMAP[m.sid], m.lv);
+      if (fi >= natS) delete m.fs; else if (Array.isArray(m.fu) && m.fu.indexOf(fi) >= 0) m.fs = fi; else return;
+      save(); renderTop(); return;
     }
     if (b.dataset.muse) {
       var ns = b.closest('.md-it') && b.closest('.md-it').querySelector('[data-mnat]'), r = applyMonItem(b.dataset.muse, m, ns && ns.value);
@@ -718,7 +726,7 @@
     ppAsh: { name: '火山灰烬', sid: null, sids: ['hephaestus', 'firemouse'], kind: 'jade', cost: 100, gem: '火', sd: '庞贝星的特产。可以让庞贝星的普通野生精灵领悟隐藏技能，也能提高火系精灵的等级上限。', d: '庞贝星火山喷出的灰烬，摸上去还是温热的。100 个可以让赫菲斯托斯、费尔茅斯一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；火系精灵达到 LV70 后，也可以用它解锁更高的等级上限。在庞贝星的野外场景里每天有机会捡到。', none: '你还没有赫菲斯托斯或费尔茅斯（进化前的形态也算）。去庞贝星捕捉吧。' },
     ltOrb: { name: '闪电球体', sid: null, sids: ['leigong', 'faraday'], kind: 'jade', cost: 100, gem: '电', sd: '莱汀陨石带的特产。可以让陨石带的普通野生精灵领悟隐藏技能，也能提高电系精灵的等级上限。', d: '雷暴里凝成的一团电光，握在手里噼啪作响。100 个可以让雷公、法拉第一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；电系精灵达到 LV70 后，也可以用它解锁更高的等级上限。在莱汀陨石带的野外场景里每天有机会捡到。', none: '你还没有雷公或法拉第（进化前的形态也算）。去莱汀陨石带捕捉吧。' },
     whFrost: { name: '永久冻土', sid: null, sids: ['frost'], kind: 'jade', cost: 100, gem: '冰', sd: '白之星的特产。可以让白之星的普通野生精灵领悟隐藏技能，也能提高冰系精灵的等级上限。', d: '白之星冰原下挖出的冻土，一万年都不会化开。100 个可以让霜冻之冠一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；冰系精灵达到 LV70 后，也可以用它解锁更高的等级上限。在白之星的野外场景里每天有机会捡到。', none: '你还没有霜冻之冠（进化前的形态也算）。去白之星的永冻冰原捕捉吧。' },
-    formDev: { name: '形态切换装置', sid: null, kind: 'form', sd: '把精灵的样子切换成它已经长到的某个形态。', d: '黄石 · 冶炼坊用星核和星砂合成的装置。用在一只精灵身上，可以把它的样子切换成它已经长到过的某个更小的形态（比如让最终形态变回第一形态的样子），也可以再切回来。只改变外观，数值、技能都不变。每切换一次消耗 1 个。' },
+    formDev: { name: '形态切换装置', sid: null, kind: 'form', sd: '给一只精灵永久解锁一个可以切换的外观形态。', d: '黄石 · 冶炼坊用星核和星砂合成的装置。用在一只精灵身上，给这只精灵永久解锁一个它已经长到过的更小形态的样子（比如让最终形态变回第一形态的样子）。解锁之后，在精灵资料的「外观形态」里，原本的形态和解锁过的形态之间随时免费切换。只改变外观，数值、技能都不变；每只精灵分开解锁。' },
     floraJade: { name: '芙罗拉玉', gem: '草', sd: '芙罗拉星的特产。可以让芙罗拉星的普通野生精灵领悟隐藏技能，也能提高草系精灵的等级上限。', sid: null, sids: ['mush', 'wind', 'kaleo'], kind: 'jade', cost: 100, d: '芙罗拉星深处凝成的绿色玉石。100 个可以让玛西露姆、六尾风王、卡莱奥丹一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能，不用再满足战斗里的领悟条件。隐藏技能要到 LV' + HIDDEN_MIN_LV + ' 才能装备。瘴气驱逐战的全服奖励会发放；芙罗拉星的丛林、草甸里，每天也有机会捡到少量。', none: '你还没有玛西露姆、六尾风王或卡莱奥丹（进化前的形态也算）。去芙罗拉星的丛林、草甸捕捉吧。' }
   };
   var MON_ORDER = ['formDev', 'earthShard', 'floraJade', 'kbDrop', 'ppAsh', 'ltOrb', 'whFrost', 'moonStone', 'boneDust', 'tgPearl', 'brTwig', 'deathTok', 'ivMoon', 'ivBone', 'ivReroll', 'evAny', 'evTagore', 'natAny', 'natTagore', 'evReset', 'fruit1', 'fruit2'], GEN_ORDER = ['trans', 'helmet', 'auto', 'rename', 'cap1', 'cap2', 'cap3', 'pot1', 'pot2', 'pot200'];
@@ -753,11 +761,18 @@
   var SEED_ORDER = ['s_herb', 's_rice'];
   var CROP_ORDER = ['c_herb', 'c_rice', 'c_bowl'];
   var BAG_ORDER = MON_ORDER.concat(GEN_ORDER);
-  // 形态切换装置能切换的形态：已经长到的每个形态（不含现在显示的这个）
+  // 形态切换装置还能解锁的形态：已经长到过、比原本形态小、还没解锁过的
   function formOpts(m) {
-    var s = SPMAP[m.sid], nat = stageOf(s, m.lv), cur = shownStage(m), out = [];
-    for (var i = 0; i <= nat; i++) if (i !== cur) { var n = formRawName(s, i); n = n ? n.replace('?', '') : s.name + '·' + stageLabel(s, i); out.push({ i: i, n: n + (i === nat ? '（原本的形态）' : '') }); }
+    var s = SPMAP[m.sid], nat = stageOf(s, m.lv), fu = Array.isArray(m.fu) ? m.fu : [], out = [];
+    for (var i = 0; i < nat; i++) if (fu.indexOf(i) < 0) out.push({ i: i, n: formLabel(s, i) });
     return out;
+  }
+  // 精灵资料里的「形态」：解锁过形态的精灵，在原本形态和解锁的形态之间免费切换
+  function formSwitchHTML(m) {
+    var s = SPMAP[m.sid], nat = stageOf(s, m.lv), cur = shownStage(m), fu = (Array.isArray(m.fu) ? m.fu : []).filter(function (i) { return i < nat; });
+    if (!fu.length) return '';
+    var list = [nat].concat(fu.slice().sort());
+    return '<div class="fsw"><b>外观形态</b>' + list.map(function (i) { return '<button type="button" class="btn' + (i === cur ? ' primary' : '') + '" data-fsw="' + i + '"' + (i === cur ? ' disabled' : '') + '>' + esc(formLabel(s, i)) + (i === nat ? '（原本）' : '') + '</button>'; }).join('') + '<span class="hint">随时免费切换，只改外观</span></div>';
   }
   function itemFits(k, m) { var it = USE_ITEMS[k]; return !!(it && m && (it.sids ? it.sids.indexOf(m.sid) >= 0 : !it.sid || it.sid === m.sid)); }
   function jadeMoves(m) { var have = HL_GATED[m.sid] ? spHL(m.sid) : (m.hl || []); return SPMAP[m.sid].hidden.filter(function (n) { return have.indexOf(n) < 0; }); }
@@ -777,12 +792,11 @@
     }
     if (it.kind === 'form') {
       var fo = formOpts(m), v = parseInt(nat, 10);
-      if (!fo.length) return { ok: false, msg: form(m).name + ' 还没有可以切换的形态（要先进化过才行）。' };
+      if (!fo.length) return { ok: false, msg: form(m).name + ' 没有可以解锁的形态了（要先进化过，已经解锁的不用再解锁）。' };
       if (!fo.some(function (x) { return x.i === v; })) v = fo[0].i;
-      var nat0 = stageOf(SPMAP[m.sid], m.lv), from = form(m).name;
-      if (v >= nat0) delete m.fs; else m.fs = v;
+      if (!Array.isArray(m.fu)) m.fu = []; m.fu.push(v); m.fs = v;
       acc.items[k]--; save();
-      return { ok: true, msg: from + ' 切换成了「' + form(m).name + '」的样子' + (v >= nat0 ? '（恢复原本的形态）' : '') + '。数值和技能都不变。' };
+      return { ok: true, msg: '这只' + SPMAP[m.sid].name + '永久解锁了「' + formLabel(SPMAP[m.sid], v) + '」的样子，已经换上。以后在精灵资料的「外观形态」里随时免费切换。' };
     }
     if (it.kind === 'nat') {
       if (!nat || !(nat in NATURES)) return { ok: false, msg: '先选一个性格。' };
@@ -820,13 +834,13 @@
     return '<div class="md-items"><h4>精灵道具 <span class="hint">直接用在' + esc(form(m).name) + '身上</span></h4>' + ks.map(function (k) {
       var it = USE_ITEMS[k], act;
       if (it.kind === 'jade') { var jl = jadeMoves(m), jok = jl.length && acc.items[k] >= it.cost; act = jl.length ? '<select data-mnat="1" aria-label="要领悟的隐藏技能">' + jl.map(function (n) { return '<option value="' + n + '">' + n + '</option>'; }).join('') + '</select><button type="button" class="btn" data-muse="' + k + '"' + (jok ? '' : ' disabled title="需要 ' + it.cost + ' 个"') + '>' + (jok ? '用 ' + it.cost + ' 个领悟' : '需要 ' + it.cost + ' 个') + '</button>' : '<button type="button" class="btn" disabled>隐藏技能已全部领悟</button>'; }
-      else if (it.kind === 'form') { var fo = formOpts(m); act = fo.length ? '<select data-mnat="1" aria-label="切换成的形态">' + fo.map(function (x) { return '<option value="' + x.i + '">' + esc(x.n) + '</option>'; }).join('') + '</select><button type="button" class="btn" data-muse="' + k + '">切换</button>' : '<button type="button" class="btn" disabled>还没有可以切换的形态</button>'; }
+      else if (it.kind === 'form') { var fo = formOpts(m); act = fo.length ? '<select data-mnat="1" aria-label="要解锁的形态">' + fo.map(function (x) { return '<option value="' + x.i + '">' + esc(x.n) + '</option>'; }).join('') + '</select><button type="button" class="btn" data-muse="' + k + '">解锁</button>' : '<button type="button" class="btn" disabled>没有可以解锁的形态</button>'; }
       else if (it.kind === 'nat') act = '<select data-mnat="1" aria-label="新的性格">' + NAT_KEYS.filter(function (n) { return n !== m.nat; }).map(function (n) { return '<option value="' + n + '">' + n + '（' + natText(n) + '）</option>'; }).join('') + '</select><button type="button" class="btn" data-muse="' + k + '">改性格</button>';
       else if (it.kind === 'iv' || it.kind === 'iv2') act = '<button type="button" class="btn" data-muse="' + k + '">使用 · 重组天赋</button>';
       else if (it.kind === 'exp') act = '<button type="button" class="btn" data-muse="' + k + '"' + (atCap(m) ? ' disabled' : '') + '>' + (atCap(m) ? '已到等级上限' : '使用 · +' + fmt(m.lv * it.rate) + ' 经验') + '</button>';
       else if (it.kind === 'evreset') act = '<button type="button" class="btn" data-muse="' + k + '"' + (evSum(m) ? '' : ' disabled') + '>' + (evSum(m) ? '使用 · 退回 ' + evSum(m) + ' 点' : '没有分配过学习力') + '</button>';
       else { var room = evRoom(m); act = '<button type="button" class="btn" data-muse="' + k + '"' + (room ? '' : ' disabled title="学习力已经到上限了"') + '>' + (room ? '使用 · +' + Math.min(100, room) + ' 学习力' : '学习力已满') + '</button>'; }
-      return '<div class="md-it"><b>' + it.name + ' <span class="cnt">×' + acc.items[k] + '</span></b><span class="hint">' + esc(it.kind === 'jade' ? '每 ' + it.cost + ' 个领悟一个隐藏技能' : it.kind === 'form' ? '只改外观，每次消耗 1 个' : it.kind === 'nat' ? '把性格改成你选的性格' : it.kind === 'iv' ? '六项天赋全部重新随机' : it.kind === 'iv2' ? '六项天赋重新随机，每项掷两次取高' : it.kind === 'exp' ? '直接增加等级 × ' + it.rate + ' 点经验' : it.kind === 'evreset' ? '已分配的学习力全部退回' : '直接增加 100 点可分配学习力') + '</span><span class="md-act">' + act + '</span></div>';
+      return '<div class="md-it"><b>' + it.name + ' <span class="cnt">×' + acc.items[k] + '</span></b><span class="hint">' + esc(it.kind === 'jade' ? '每 ' + it.cost + ' 个领悟一个隐藏技能' : it.kind === 'form' ? '每个给这只精灵永久解锁一个形态' : it.kind === 'nat' ? '把性格改成你选的性格' : it.kind === 'iv' ? '六项天赋全部重新随机' : it.kind === 'iv2' ? '六项天赋重新随机，每项掷两次取高' : it.kind === 'exp' ? '直接增加等级 × ' + it.rate + ' 点经验' : it.kind === 'evreset' ? '已分配的学习力全部退回' : '直接增加 100 点可分配学习力') + '</span><span class="md-act">' + act + '</span></div>';
     }).join('') + '</div>';
   }
   function growText(min) { return min >= 60 && min % 60 === 0 ? (min / 60) + ' 小时' : min + ' 分钟'; }
@@ -873,11 +887,11 @@
         if (!mons.some(function (m) { return m.u === ui.itTarget; })) ui.itTarget = mons.length ? mons[0].u : null;
         var tm = mon(ui.itTarget);
         body = '<p>' + esc(it.d) + '</p>' + (mons.length ? '<div class="it-step"><b>1. 选择精灵</b><div class="it-mons">' + mons.map(function (m) {
-          var f = form(m), sub = it.kind === 'jade' ? (jadeMoves(m).length ? '还有 ' + jadeMoves(m).length + ' 个隐藏技能可领悟' : '隐藏技能已全部领悟') : it.kind === 'form' ? (formOpts(m).length ? '可切换 ' + formOpts(m).length + ' 个形态' : '还没有可切换的形态') : it.kind === 'nat' ? '性格 ' + m.nat : it.kind === 'exp' ? (atCap(m) ? '已到等级上限' : '可得 ' + fmt(m.lv * it.rate) + ' 经验') : it.kind === 'evreset' ? '已分配 ' + evSum(m) + ' 点' : it.kind === 'iv' || it.kind === 'iv2' ? '天赋合计 ' + (ivOf(m) ? STAT_KEYS.reduce(function (a, x) { return a + m.iv[x]; }, 0) : '？') : '可再加 ' + evRoom(m) + ' 点';
+          var f = form(m), sub = it.kind === 'jade' ? (jadeMoves(m).length ? '还有 ' + jadeMoves(m).length + ' 个隐藏技能可领悟' : '隐藏技能已全部领悟') : it.kind === 'form' ? (formOpts(m).length ? '还能解锁 ' + formOpts(m).length + ' 个形态' : '没有可以解锁的形态') : it.kind === 'nat' ? '性格 ' + m.nat : it.kind === 'exp' ? (atCap(m) ? '已到等级上限' : '可得 ' + fmt(m.lv * it.rate) + ' 经验') : it.kind === 'evreset' ? '已分配 ' + evSum(m) + ' 点' : it.kind === 'iv' || it.kind === 'iv2' ? '天赋合计 ' + (ivOf(m) ? STAT_KEYS.reduce(function (a, x) { return a + m.iv[x]; }, 0) : '？') : '可再加 ' + evRoom(m) + ' 点';
           return '<label class="it-mon' + (m.u === ui.itTarget ? ' on' : '') + '"><input type="radio" name="it-t" value="' + m.u + '"' + (m.u === ui.itTarget ? ' checked' : '') + '><img src="' + f.img + '" alt=""><span><b>' + esc(f.name) + '</b><small>LV' + m.lv + ' · ' + sub + '</small></span></label>';
         }).join('') + '</div></div>' +
           (it.kind === 'jade' ? (tm && jadeMoves(tm).length ? '<div class="it-step"><b>2. 选择隐藏技能</b><select id="it-nat" aria-label="要领悟的隐藏技能">' + jadeMoves(tm).map(function (n) { return '<option value="' + n + '">' + n + '（' + esc(LEARN[n] ? '原本要' + LEARN[n] : '原本 LV50 习得') + '）</option>'; }).join('') + '</select></div>' : '') + '<p class="hint">一次消耗 ' + it.cost + ' 个，你现在有 ' + acc.items[k] + ' 个。</p>'
-            : it.kind === 'form' ? (tm && formOpts(tm).length ? '<div class="it-step"><b>2. 选择形态</b><select id="it-nat" aria-label="切换成的形态">' + formOpts(tm).map(function (x) { return '<option value="' + x.i + '">' + esc(x.n) + '</option>'; }).join('') + '</select></div>' : '') + '<p class="hint">只改外观，数值和技能都不变。每次消耗 1 个。</p>'
+            : it.kind === 'form' ? (tm && formOpts(tm).length ? '<div class="it-step"><b>2. 选择要解锁的形态</b><select id="it-nat" aria-label="要解锁的形态">' + formOpts(tm).map(function (x) { return '<option value="' + x.i + '">' + esc(x.n) + '</option>'; }).join('') + '</select></div>' : '') + '<p class="hint">给这只精灵永久解锁一个形态，之后在精灵资料里随时免费切换。只改外观，数值和技能都不变。</p>'
             : it.kind === 'nat' ? '<div class="it-step"><b>2. 选择性格</b><select id="it-nat" aria-label="新的性格">' + NAT_KEYS.map(function (n) { var cur = tm && tm.nat === n, pick = ui.itNat && (!tm || ui.itNat !== tm.nat) ? ui.itNat : NAT_KEYS.filter(function (x) { return !tm || x !== tm.nat; })[0]; return '<option value="' + n + '"' + (pick === n ? ' selected' : '') + (cur ? ' disabled' : '') + '>' + n + '（' + natText(n) + '）' + (cur ? ' · 当前' : '') + '</option>'; }).join('') + '</select></div>'
             : it.kind === 'iv' || it.kind === 'iv2' ? '<p class="hint">' + (tm && ivOf(tm) ? esc(form(tm).name) + ' 现在的天赋：' + STAT_KEYS.map(function (x) { return BASE_NAME[x] + ' ' + tm.iv[x]; }).join('，') + '。' : '') + '</p>'
             : it.kind === 'exp' ? '<p class="hint">' + (tm ? esc(form(tm).name) + ' 现在 LV' + tm.lv + '，吃一颗得到 ' + fmt(tm.lv * it.rate) + ' 点经验。' : '') + '</p>'
