@@ -1979,7 +1979,10 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .vf-ally .hint { font-weight: 400; font-size: 12px; }
 .vn-mon.mia img { filter: drop-shadow(0 0 6px #b48fd6) drop-shadow(0 0 18px rgba(107,63,143,.9)) saturate(.8); }
 /* 横版定格（上下两格改成左右并排）：放在画面上方，不被对话框挡住 */
-.vn-cgwrap.full.land .vn-cg-pic { background-size: contain; background-position: center 14%; transition: none; }
+.vn-cgwrap.full.land .vn-cg-pic { background-size: contain; background-position: center center; transition: none; }
+.vn-cg-bg { position: absolute; inset: -40px; background: center / cover no-repeat; filter: blur(22px) brightness(.55) saturate(1.1); opacity: 0; transition: opacity .4s; }
+.vn-cgwrap.full .vn-cg-bg { opacity: 1; }
+.vn-cgwrap.full.fill .vn-cg-pic { background-size: cover; background-position: center center; }
 
 /* 剧情里的瘴气变异精灵：长得很大，压迫感强（2026-10-17） */
 .vn-mon.mia { height: 175%; }

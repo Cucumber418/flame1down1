@@ -4744,7 +4744,7 @@
       '<img class="vn-bg" id="vn-bg" alt=""><img class="vn-bg vn-bg2" id="vn-bg2" alt="">' +
       '<div class="vn-chars" id="vn-chars"></div>' +
       '<div class="vn-mons" id="vn-mons"></div>' +
-      '<div class="vn-cgwrap" id="vn-cg"><div class="vn-cg-pic" id="vn-cg-pic"></div></div>' +
+      '<div class="vn-cgwrap" id="vn-cg"><div class="vn-cg-bg" id="vn-cg-bg" aria-hidden="true"></div><div class="vn-cg-pic" id="vn-cg-pic"></div></div>' +
       '<div class="vn-fx" id="vn-fx" aria-hidden="true"></div>' +
       '<div class="vn-top"><span class="vn-loc">' + P.name + ' · ' + S.name + '<small id="vn-spot"></small></span><span class="vn-ch">' + S.chapter + '</span>' +
       '<span class="vn-btns"><button type="button" data-vn="hide" title="隐藏界面，欣赏背景和立绘（H 键）">隐藏</button><button type="button" data-vn="log">记录</button><button type="button" data-vn="auto" id="vn-auto">自动</button><button type="button" data-vn="skip" id="vn-skip">跳过</button>' + (intro ? '' : '<button type="button" data-vn="exit">退出</button>') + '</span></div>' +
@@ -4757,7 +4757,7 @@
     var cgPic = $('vn-cg-pic'), cgWrap = $('vn-cg');
     cgPic.addEventListener('animationend', function (e) {
       if (e.animationName === 'vncgScroll') { cgWrap.classList.remove('play'); cgWrap.classList.add('shake'); }
-      else if (e.animationName === 'vncgShake') { cgWrap.classList.remove('shake'); var L = ex.curCg && CG[ex.curCg] && CG[ex.curCg].land; if (L) { cgPic.style.backgroundImage = 'url(' + (L[gender()] || L.m) + ')'; cgWrap.classList.add('land'); } cgWrap.classList.add('full'); }   // 有横版的：定格时换成横版，放在画面上方
+      else if (e.animationName === 'vncgShake') { cgWrap.classList.remove('shake'); cgWrap.classList.add('full'); cgFit(); }   // 定格：按屏幕比例挑竖版 / 横版，铺满或居中
     });
     show();
     try { $('vn').focus({ preventScroll: true }); } catch (er) {}
@@ -4779,15 +4779,30 @@
     f.classList.add(k); if (k === 'boom' || k === 'purple') v.classList.add('quake');
   }
   // 剧情 CG：整屏竖图，出现时先从上往下「扫」过一遍，接一下screen shake，再定格展示完整画面；按主角性别选图
+  /* CG 定格时适配屏幕：竖版（约 0.7）和横版（约 3:1）里挑和画面比例更接近的一张；
+   * 比例差得不多就铺满（裁掉一点边），差得多就完整居中，空出来的地方用同一张图放大、模糊垫底，不留黑边 */
+  var CG_AR = {};
+  function cgFit() {
+    var w = $('vn-cg'), pic = $('vn-cg-pic'), bg = $('vn-cg-bg'), k = ex.curCg; if (!w || !pic || !k || !CG[k] || !w.classList.contains('full')) return;
+    var box = w.getBoundingClientRect(), ar = box.width / Math.max(1, box.height);
+    var cands = [{ src: CG[k][gender()] || CG[k].m, land: false }]; if (CG[k].land) cands.push({ src: CG[k].land[gender()] || CG[k].land.m, land: true });
+    cands.forEach(function (c) { if (!CG_AR[c.src]) { var im = preloadImg(c.src); if (im && im.naturalWidth) CG_AR[c.src] = im.naturalWidth / im.naturalHeight; else if (im) im.addEventListener('load', function () { CG_AR[c.src] = im.naturalWidth / im.naturalHeight; cgFit(); }, { once: true }); } c.ar = CG_AR[c.src] || (c.land ? 3 : 0.7); c.miss = Math.abs(Math.log(ar / c.ar)); });
+    cands.sort(function (a, b) { return a.miss - b.miss; });
+    var c = cands[0], url = 'url(' + c.src + ')';
+    pic.style.backgroundImage = url; if (bg) bg.style.backgroundImage = url;
+    w.classList.toggle('land', c.land);
+    w.classList.toggle('fill', c.miss < Math.log(1.3));   // 比例差不到 1.3 倍：直接铺满
+  }
+  window.addEventListener('resize', function () { cgFit(); });
   function setCG(k) {
     var w = $('vn-cg'); if (!w) return;
-    if (!k) { if (ex.curCg) { w.classList.remove('show', 'play', 'shake', 'full', 'land'); ex.curCg = null; } return; }
+    if (!k) { if (ex.curCg) { w.classList.remove('show', 'play', 'shake', 'full', 'land', 'fill'); ex.curCg = null; } return; }
     if (ex.curCg === k) return;
     ex.curCg = k;
     if (!acc.cgSeen) acc.cgSeen = {}; if (!acc.cgSeen[k]) { acc.cgSeen[k] = Date.now(); save(); }   // CG 画廊：记下看过的
     var src = CG[k] ? (CG[k][gender()] || CG[k].m) : '';
     $('vn-cg-pic').style.backgroundImage = src ? 'url(' + src + ')' : 'none';
-    w.classList.remove('play', 'shake', 'full', 'land');
+    w.classList.remove('play', 'shake', 'full', 'land', 'fill'); if ($('vn-cg-bg')) $('vn-cg-bg').style.backgroundImage = 'none';
     void w.offsetWidth;
     w.classList.add('show');
     var go_ = function () { if (ex.curCg !== k) return; void w.offsetWidth; w.classList.add('play'); };
