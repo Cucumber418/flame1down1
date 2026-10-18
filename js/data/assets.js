@@ -112,7 +112,7 @@ var PRE_SPRITES = {
   "phantom_s2": "images/pre_sprites/phantom_s2.png",
   "shroom_s1": "images/pre_sprites/shroom_s1.webp",
   "firemouse_s1": "images/pre_sprites/firemouse_s1.svg",
-  "shroom_s2": "images/pre_sprites/shroom_s2.svg",
+  "shroom_s2": "images/pre_sprites/shroom_s2.webp",
   "turkey_s1": "images/pre_sprites/turkey_s1_v2.webp",
   "turkey_s2": "images/pre_sprites/turkey_s2_v2.webp"
 };
