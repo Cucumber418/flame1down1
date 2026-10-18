@@ -63,8 +63,8 @@ var WILD_REGIONS = [
   { id: 'salt', planet: 'flora', name: '盐碱地', en: 'Saline-alkali Land', d: '寸草不生的白色荒原，四处飘着灰紫色的瘴气。着陆舱就是在这里迫降的。瘴气的源头——草系首领「荒芜」就潜伏在地底。这里没有野生精灵。', boss: '荒芜', bgs: ['fl_salt'] }
 ,
   { id: 'kb_surf', planet: 'kamble', name: '水面', en: 'Surface', d: '码头的灯照着翻涌的海浪，远处的冥岛不时喷出高高的水柱。这里的精灵最温和。', pool: 'kb_surf', bgs: ['kb_dock', 'kb_isle'] },
-  { id: 'kb_sea', planet: 'kamble', name: '浅水区', en: 'Shallows', d: '阳光还能照进来的一层海水，鱼群成片游过，水底还沉睡着一座古代神殿。偶尔能听见塞壬的歌声。', pool: 'kb_sea', bgs: ['kb_lookup', 'kb_shoal', 'kb_temple'] },
-  { id: 'kb_deep', planet: 'kamble', name: '深海区', en: 'Deep Sea', d: '光几乎照不到的深处，只有海底的沙丘和一条不知道谁留下的发光管道。这里的精灵更强。', pool: 'kb_deep', bgs: ['kb_floor', 'kb_abyss'] },
+  { id: 'kb_sea', planet: 'kamble', name: '浅水区', en: 'Shallows', d: '阳光还能照进来的一层海水，抬头就能看见水面，鱼群成片游过。偶尔能听见塞壬的歌声。', pool: 'kb_sea', bgs: ['kb_lookup', 'kb_shoal'] },
+  { id: 'kb_deep', planet: 'kamble', name: '深海区', en: 'Deep Sea', d: '光几乎照不到的深处，幽深的沙丘间沉睡着一座古代神殿，还有一条不知道谁留下的发光管道。这里的精灵更强。', pool: 'kb_deep', bgs: ['kb_floor', 'kb_temple', 'kb_abyss'] },
   { id: 'pp_lava', planet: 'pompeii', name: '熔岩原', en: 'Lava Field', d: '熔浆汇成的大湖一眼望不到边，湖岸上是堆满熔渣的旧矿区。赫菲斯喜欢在热气里打盹。', pool: 'pp_lava', bgs: ['pp_lake', 'pp_slag'] },
   { id: 'pp_city', planet: 'pompeii', name: '饮火城', en: 'Firedrink City', d: '熔岩湖中央矗立着一座古老的堡垒，再往里走就是星球炙热的核心。赫菲斯在这里长得更壮实。', pool: 'pp_city', bgs: ['pp_fort', 'pp_core'] },
   { id: 'lt_belt', planet: 'laiting', name: '雷暴陨石群', en: 'Storm Belt', d: '大大小小的陨石在电弧里漂浮，到处噼啪作响。锰怪和雷天使在石头之间穿梭。', pool: 'lt_belt' },
