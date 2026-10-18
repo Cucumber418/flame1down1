@@ -3120,11 +3120,11 @@
       DL.list.forEach(function (t) { if (t.x2) return; t.x2 = 1; changed = true; if (t.c && DAILY_OLD[t.id]) { de += DAILY[t.id].rw.exp - DAILY_OLD[t.id][0]; dn += DAILY[t.id].rw.energy - DAILY_OLD[t.id][1]; } });
       if (de || dn) sendMail({ id: 'daily-x2-' + DL.date, title: '每日任务奖励翻倍补发', body: '{name}，你好！\n每日任务的奖励已经翻倍，而且每天变成了 7 个任务。今天你已经按旧标准领过的任务，现在补发差额，请领取附件。', att: { exp: de, energy: dn } });
     }
-    // 每日任务经验 ×10：今天已经按旧标准领过的任务补发差额
+    // 每日任务经验 ×5（一开始是 ×10，后来改成 ×5）：今天已经按旧标准领过的任务补发差额
     if (DL) {
       var de2 = 0;
       DL.list.forEach(function (t) { if (t.x10) return; t.x10 = 1; changed = true; if (t.c && DAILY_X10_OLD[t.id] != null) de2 += DAILY[t.id].rw.exp - DAILY_X10_OLD[t.id]; });
-      if (de2 > 0) sendMail({ id: 'daily-x10-' + DL.date, title: '每日任务经验提升 · 补发', body: '{name}，你好！\n每日任务的经验奖励提高到了原来的 10 倍。今天你已经领过的任务，现在补发经验差额，请领取附件。', att: { exp: de2 } });
+      if (de2 > 0) sendMail({ id: 'daily-x10-' + DL.date, title: '每日任务经验提升 · 补发', body: '{name}，你好！\n每日任务的经验奖励提高到了原来的 5 倍。今天你已经领过的任务，现在补发经验差额，请领取附件。', att: { exp: de2 } });
     }
     // 星球任务「祛除瘴气」经验 ×10：已经领过的阶段补发差额
     var PR = acc.purge;
@@ -3196,19 +3196,19 @@
    * 2026-10-12 起奖励翻倍（rw 里已经是翻倍后的数），当天已经领过的按差额补发到邮箱 */
   var DAILY_N = 7, DAILY_BRAWL = 0.7;
   var DAILY = {
-    ar_play3: { t: '完成 3 场竞技对战（沙盒或平衡排位都算）', kind: 'arena', n: 3, rw: { exp: 6000, energy: 200 }, arena: 1 },
-    ar_rank2: { t: '完成 2 场平衡排位', kind: 'rankPlay', n: 2, rw: { exp: 8000, energy: 240 }, arena: 1 },
-    ar_win1: { t: '在平衡排位中获胜 1 场', kind: 'rankWin', n: 1, rw: { exp: 10000, energy: 300 }, arena: 1 },
-    ar_sand1: { t: '在沙盒模式完成 1 场对战', kind: 'sandbox', n: 1, rw: { exp: 4000, energy: 160 }, arena: 1 },
-    bw_1: { t: '完成 1 场精灵大乱斗', kind: 'brawl', n: 1, rw: { exp: 10000, energy: 300 }, brawl: 1 },
-    bw_win1: { t: '在精灵大乱斗中获胜 1 场', kind: 'brawlWin', n: 1, rw: { exp: 12000, energy: 360 }, brawl: 1 },
-    wd_win5: { t: '击败 5 只野生精灵', kind: 'wildWin', n: 5, rw: { exp: 8000, energy: 240 }, need: function () { return prog('flora1').done; } },
-    wd_catch1: { t: '捕捉 1 只野生精灵', kind: 'catch', n: 1, rw: { exp: 6000, energy: 300 }, need: function () { return prog('flora1').done; } },
-    bs_1: { t: '挑战 1 次首领（胜负都算）', kind: 'boss', n: 1, rw: { exp: 6000, energy: 200 }, need: function () { return bossOpen('tiger') || bossOpen('barren'); } },
-    hm_1: { t: '从茶室收回 1 只展示满 1 小时的精灵', kind: 'home', n: 1, rw: { exp: 6000, energy: 200 }, need: function () { return homeOpen(); } },
-    pve_2: { t: '完成 2 场剧情、野外或首领对战', kind: 'pve', n: 2, rw: { exp: 6000, energy: 200 } }
+    ar_play3: { t: '完成 3 场竞技对战（沙盒或平衡排位都算）', kind: 'arena', n: 3, rw: { exp: 3000, energy: 200 }, arena: 1 },
+    ar_rank2: { t: '完成 2 场平衡排位', kind: 'rankPlay', n: 2, rw: { exp: 4000, energy: 240 }, arena: 1 },
+    ar_win1: { t: '在平衡排位中获胜 1 场', kind: 'rankWin', n: 1, rw: { exp: 5000, energy: 300 }, arena: 1 },
+    ar_sand1: { t: '在沙盒模式完成 1 场对战', kind: 'sandbox', n: 1, rw: { exp: 2000, energy: 160 }, arena: 1 },
+    bw_1: { t: '完成 1 场精灵大乱斗', kind: 'brawl', n: 1, rw: { exp: 5000, energy: 300 }, brawl: 1 },
+    bw_win1: { t: '在精灵大乱斗中获胜 1 场', kind: 'brawlWin', n: 1, rw: { exp: 6000, energy: 360 }, brawl: 1 },
+    wd_win5: { t: '击败 5 只野生精灵', kind: 'wildWin', n: 5, rw: { exp: 4000, energy: 240 }, need: function () { return prog('flora1').done; } },
+    wd_catch1: { t: '捕捉 1 只野生精灵', kind: 'catch', n: 1, rw: { exp: 3000, energy: 300 }, need: function () { return prog('flora1').done; } },
+    bs_1: { t: '挑战 1 次首领（胜负都算）', kind: 'boss', n: 1, rw: { exp: 3000, energy: 200 }, need: function () { return bossOpen('tiger') || bossOpen('barren'); } },
+    hm_1: { t: '从茶室收回 1 只展示满 1 小时的精灵', kind: 'home', n: 1, rw: { exp: 3000, energy: 200 }, need: function () { return homeOpen(); } },
+    pve_2: { t: '完成 2 场剧情、野外或首领对战', kind: 'pve', n: 2, rw: { exp: 3000, energy: 200 } }
   };
-  var DAILY_X10_OLD = { ar_play3: 600, ar_rank2: 800, ar_win1: 1000, ar_sand1: 400, bw_1: 1000, bw_win1: 1200, wd_win5: 800, wd_catch1: 600, bs_1: 600, hm_1: 600, pve_2: 600 };   // 2026-10-18 晚：每日任务经验 ×10 之前的经验（补差额用）
+  var DAILY_X10_OLD = { ar_play3: 600, ar_rank2: 800, ar_win1: 1000, ar_sand1: 400, bw_1: 1000, bw_win1: 1200, wd_win5: 800, wd_catch1: 600, bs_1: 600, hm_1: 600, pve_2: 600 };   // 2026-10-18 晚：每日任务经验提高（×5）之前的经验（补差额用）
   var DAILY_OLD = { ar_play3: [300, 100], ar_rank2: [400, 120], ar_win1: [500, 150], ar_sand1: [200, 80], wd_win5: [400, 120], wd_catch1: [300, 150], bs_1: [300, 100], hm_1: [300, 100], pve_2: [300, 100] };   // 翻倍前的奖励（补差额用）
   function todayKey() { var d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
   function seededRng(str) { var x = 7; for (var i = 0; i < str.length; i++) x = (x * 31 + str.charCodeAt(i)) % 2147483647; return function () { x = (x * 48271) % 2147483647; return x / 2147483647; }; }
