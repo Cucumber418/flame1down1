@@ -2369,7 +2369,7 @@
   var TW_POOL = ['leaf', 'squid', 'shroom', 'wind', 'mush', 'kaleo', 'faraday', 'firemouse', 'frost', 'gorgon', 'hephaestus', 'leigong', 'pede', 'siren', 'turkey', 'wild', 'tagore', 'leafcat', 'moon', 'bone', 'aegis'];
   var TW_FX = ['armor', 'regen', 'thorn', 'rage', 'swift', 'guard', 'noStatus', 'focus'];   // 只用塔里通用的特性，不用首领专属的（星球聚能、东北的纷争等）
   var TW_SHOP = [
-    { k: 'floraJade', cost: 10 }, { k: 'fruit2', cost: 60 }, { k: 'cap3', cost: 80 }, { k: 'evAny', cost: 150 }, { k: 'evReset', cost: 200 },
+    { k: 'floraJade', cost: 10 }, { k: 'kbDrop', cost: 10 }, { k: 'ppAsh', cost: 10 }, { k: 'ltOrb', cost: 10 }, { k: 'whFrost', cost: 10 }, { k: 'fruit2', cost: 60 }, { k: 'cap3', cost: 80 }, { k: 'evAny', cost: 150 }, { k: 'evReset', cost: 200 },
     { k: 'ivReroll', cost: 400 }, { k: 'natAny', cost: 2000 }, { k: 'e_pluto', cost: 3000, death: 1 }
   ];
   function twRec() {
@@ -2435,7 +2435,7 @@
   function towerShop(T) {
     return '<p class="hint">用先驱代币兑换道具。性格在这个世界里格外珍稀，所以性格胶囊很贵。</p><div class="tw-shop">' + TW_SHOP.map(function (x, i) {
       var it = USE_ITEMS[x.k] || MATS[x.k] || ITEMS[x.k], ok = T.tok >= x.cost && (!x.death || (acc.items.deathTok || 0) >= x.death);
-      return '<article class="tw-item"><b>' + itemName(x.k) + '</b><p class="hint">' + esc(it ? it.d : '') + '</p><p class="tw-cost">' + fmt(x.cost) + ' 先驱代币' + (x.death ? ' + ' + x.death + ' 死神代币' : '') + '</p>' +
+      return '<article class="tw-item"><b>' + itemName(x.k) + '</b><p class="hint">' + esc(it ? it.sd || it.d : '') + '</p><p class="tw-cost">' + fmt(x.cost) + ' 先驱代币' + (x.death ? ' + ' + x.death + ' 死神代币' : '') + '</p>' +
         '<button type="button" class="btn' + (ok ? ' primary' : '') + '" data-twbuy="' + i + '"' + (ok ? '' : ' disabled') + '>兑换</button>' + (acc.items[x.k] ? '<span class="hint">已有 ' + acc.items[x.k] + '</span>' : '') + '</article>';
     }).join('') + '</div>';
   }
@@ -2632,13 +2632,13 @@
   function jadeHTML(rid, scene) {
     var J = jadeSpot(rid, scene); if (!J) return '';
     var got = !!jadeRec().got[rid + ':' + scene];
-    return got ? '' : '<button type="button" class="wf-node wf-jade" data-jade="' + scene + '" style="left:' + J.x + '%;top:' + J.y + '%" title="芙罗拉玉 ×' + J.n + '" aria-label="捡起芙罗拉玉 ×' + J.n + '"><i class="wf-gem" aria-hidden="true"></i><span>芙罗拉玉</span></button>';
+    return got ? '' : '<button type="button" class="wf-node wf-jade gem-' + J.k + '" data-jade="' + scene + '" style="left:' + J.x + '%;top:' + J.y + '%" title="' + itemName(J.k) + ' ×' + J.n + '" aria-label="捡起' + itemName(J.k) + ' ×' + J.n + '"><i class="wf-gem" aria-hidden="true"></i><span>' + itemName(J.k) + '</span></button>';
   }
   function jadeAt(scene) {
     var R = regionById(ex.region), J = R && jadeSpot(R.id, scene); if (!J) return;
     var rec = jadeRec(), key = R.id + ':' + scene; if (rec.got[key]) return;
-    rec.got[key] = 1; giveItems({ floraJade: J.n }); save();
-    toast('捡到了「芙罗拉玉」×' + J.n + '，已放入储存箱。100 个芙罗拉玉可以让玛西露姆、六尾风王、卡莱奥丹一系领悟一个隐藏技能。');
+    var o = {}; o[J.k] = J.n; rec.got[key] = 1; giveItems(o); save();
+    toast('捡到了「' + itemName(J.k) + '」×' + J.n + '，已放入储存箱。' + (USE_ITEMS[J.k].sd || ''));
     var el = document.querySelector('#wf-scene [data-jade]'); if (el) el.remove();
   }
 
