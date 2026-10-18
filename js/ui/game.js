@@ -5029,6 +5029,7 @@
         return rid_ === 'grass' ? 'floraGrass' : rid_ === 'forest' ? 'floraForest' : 'flora';
       }
       if (ex.view === 'boss' && BOSSES[ex.boss] && BOSSES[ex.boss].planet === 'flora') return 'flora';
+      if (ex.view === 'field' && fields[ex.region] && fields[ex.region].scenes) { var sc_ = fields[ex.region].scenes[fields[ex.region].scene]; if (sc_ && sc_.bgKey === 'kb_temple') return 'temple'; }   // 坎伯兰星 · 古代神殿
     }
     return 'ui';
   }

@@ -35,13 +35,13 @@
     stage: 'audio/bgm_stage.mp3', pvp: 'audio/bgm_pvp.mp3', faceEnemy: 'audio/bgm_face_enemy.mp3', disCommunication: 'audio/bgm_dis_communication.mp3',
     ui: 'audio/bgm_ui.mp3', arena: 'audio/bgm_arena.mp3', earth: 'audio/bgm_earth.mp3',
     flora: 'audio/bgm_flora.mp3', floraGrass: 'audio/bgm_flora_grass.mp3', floraForest: 'audio/bgm_flora_forest.mp3', floraFallen: 'audio/bgm_flora_fallen.mp3',
-    beforeEnd: 'audio/bgm_before_end.mp3', spa: 'audio/bgm_spa.mp3',   // spa：温泉的默认音乐（2026-10-18）
+    beforeEnd: 'audio/bgm_before_end.mp3', spa: 'audio/bgm_spa.mp3', temple: 'audio/bgm_temple.mp3',   // temple：坎伯兰星 · 古代神殿场景   // spa：温泉的默认音乐（2026-10-18）
     // 剧情里逐行切换的曲目（剧本行写 bgm: '键名'，见 game.js 的 sceneNowRaw）
     grassTalk: 'audio/bgm_grass_talk.mp3', memory: 'audio/bgm_memory.mp3', saver: 'audio/bgm_saver.mp3',
     disComScene: 'audio/bgm_dis_communication.mp3', faceEnemyScene: 'audio/bgm_face_enemy.mp3'
   };
   // silence：剧情里「音乐突然停止」，没有曲子
-  var SCENES = { spa: 1, ui: 1, arena: 1, earth: 1, flora: 1, floraGrass: 1, floraForest: 1, floraFallen: 1, grassTalk: 1, memory: 1, saver: 1, disComScene: 1, faceEnemyScene: 1, silence: 1 };
+  var SCENES = { temple: 1, spa: 1, ui: 1, arena: 1, earth: 1, flora: 1, floraGrass: 1, floraForest: 1, floraFallen: 1, grassTalk: 1, memory: 1, saver: 1, disComScene: 1, faceEnemyScene: 1, silence: 1 };
   var ONESHOT = { faceEnemy: 1 };
   var FRESH = { disComScene: 1 };   // 每次开始放都从头放，不记上次停下的位置（剧情里的 dis-communication）   // 不循环；播完触发 chainNext 指定的下一首
   var KEY = 'hs-sound-v1';

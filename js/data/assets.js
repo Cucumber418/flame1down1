@@ -146,7 +146,7 @@ var BG = {
   "kb_temple": "images/backgrounds/kb_temple.jpg?v=2",
   "kb_floor": "images/backgrounds/kb_floor.jpg",
   "kb_abyss": "images/backgrounds/kb_abyss.jpg",
-  "mayar": "images/backgrounds/mayar.jpg",
+  "mayar": "images/backgrounds/mayar.jpg?v=2",
   "pp_slag": "images/backgrounds/pp_slag.jpg",
   "pp_fort": "images/backgrounds/pp_fort.jpg",
   "pp_core": "images/backgrounds/pp_core.jpg",
