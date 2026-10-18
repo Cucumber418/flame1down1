@@ -127,6 +127,17 @@ function homeOf(acc) {
   return { open: open, name: str(h.name, 10) || '陆羽茶室', mons: open ? mons : [], bgm: bgm };
 }
 var KING_R = 10;   // 王者（段位表见 js/engine/ranked.js 的 RANKS）
+// 军衔：新存档（milV 3）直接读；还没上线换算的旧存档按 game.js 的 milMigrate 同样的规则算出新阶级
+var MIL_COST_V1 = [20, 40, 60, 100, 150, 200, 300, 400, 500, 700, 900, 1200], MIL_V2_IDX = [0, 3, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34];
+function milOf(acc) {
+  if (acc.milV === 3) return int(acc.milRank, 0, 34);
+  var old = acc.milRank | 0;
+  if (acc.milV === 2) { var o2 = 0; MIL_V2_IDX.forEach(function (x, i) { if (x <= old) o2 = i; }); old = o2; }
+  old = Math.max(0, Math.min(12, old));
+  var pool = +acc.meritXp || 0; for (var i = 0; i < old; i++) pool += MIL_COST_V1[i];
+  var r = 0; while (r < 34 && pool >= Math.round(80 * Math.pow(1.1, r))) { pool -= Math.round(80 * Math.pow(1.1, r)); r++; }
+  return r;
+}
 function rankOut(r) {
   if (!r) return { r: 0, best: 0, w: 0, l: 0, stars: 0, kingBest: 0 };
   var cur = int(r.r, 0, 99), stars = int(r.stars, 0, 1e6), best = int(Math.max(r.best || 0, r.r || 0), 0, 99);
@@ -143,8 +154,7 @@ function summary(u, me) {
   if (!acc || !acc.introDone) { o.noChar = true; return o; }
   o.name = str(acc.name, 20); o.title = str(acc.title, 20) || null; o.avatar = avatarOf(acc); o.gender = acc.gender === 'f' ? 'f' : 'm';   // 主角形象（名片上显示）
   o.monsN = acc.mons.length; o.teamN = activeTeam(acc).length;
-  var MIL_OLD = [0, 3, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34];   // 军衔细分前的旧存档（13 级）换算成新阶级
-  o.mil = acc.milV === 2 ? int(acc.milRank, 0, 34) : MIL_OLD[int(acc.milRank, 0, 12)];   // 军衔（名字见 game.js 的 RANKS_MIL）
+  o.mil = milOf(acc);   // 军衔（名字和换算规则见 game.js 的 RANKS_MIL / milMigrate）
   o.show = showMons(acc).map(function (m) { return { sid: str(m.sid, 32), lv: int(m.lv, 1, 100) }; });
   var ro = rankOut(p.rank); o.rank = ro.best; o.rankDv = ro.bestDv; if (ro.best === KING_R) o.rankStars = ro.kingBest;
   var hm = homeOf(acc); o.homeOpen = hm.open; o.homeN = hm.mons.length;

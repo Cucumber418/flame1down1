@@ -357,15 +357,22 @@
   // 军衔：功勋经验攒够当前军衔的晋升所需，就能在授勋馆晋升（消耗功勋经验）。数额暂定
   // 2026-10-18：每个军衔细分成几个阶级（下等兵 / 二等兵 / 一等兵 / 上等兵，下士1~3 …… 大校1~3，将军），晋升的路更长
   var MIL_TIERS = [['下等兵', '二等兵', '一等兵', '上等兵'], '下士', '中士', '上士', '少尉', '中尉', '上尉', '少校', '中校', '上校', '大校', ['将军']];
-  var MIL_TIER_COST = [12, 30, 45, 75, 110, 150, 225, 300, 375, 525, 675];   // 每个军衔里每升一阶要的功勋经验（数额暂定）
   var RANKS_MIL = [], MIL_COST = [], MIL_TIER_OF = [];
-  MIL_TIERS.forEach(function (t, ti) {
-    var subs = Array.isArray(t) ? t : [t + '1', t + '2', t + '3'];
-    subs.forEach(function (n) { RANKS_MIL.push(n); MIL_TIER_OF.push(ti); if (ti < MIL_TIER_COST.length) MIL_COST.push(MIL_TIER_COST[ti]); });
-  });
-  var MIL_OLD = [0, 3, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34];   // 旧军衔（13 级）→ 新阶级
+  MIL_TIERS.forEach(function (t, ti) { (Array.isArray(t) ? t : [t + '1', t + '2', t + '3']).forEach(function (n) { RANKS_MIL.push(n); MIL_TIER_OF.push(ti); }); });
+  // 每一阶晋升要的功勋经验：从 80 起，每阶多 10%（数额暂定）。比旧军衔贵得多：旧的中尉大约只够到新的下士2
+  for (var mi = 0; mi < RANKS_MIL.length - 1; mi++) MIL_COST.push(Math.round(80 * Math.pow(1.1, mi)));
+  var MIL_COST_V1 = [20, 40, 60, 100, 150, 200, 300, 400, 500, 700, 900, 1200], MIL_V2_IDX = [0, 3, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34];
+  // 换算：把旧军衔一路晋升花掉的功勋经验加上手里剩的，按新的阶级重新晋升，剩下的留作功勋经验
+  function milMigrate() {
+    var old = acc.milRank | 0;
+    if (acc.milV === 2) { var o2 = 0; MIL_V2_IDX.forEach(function (x, i) { if (x <= old) o2 = i; }); old = o2; }   // 上一版（只改名、按位置换算）的存档先换回旧军衔
+    old = Math.max(0, Math.min(12, old));
+    var pool = (acc.meritXp || 0); for (var i = 0; i < old; i++) pool += MIL_COST_V1[i];
+    var r = 0; while (r < RANKS_MIL.length - 1 && pool >= MIL_COST[r]) { pool -= MIL_COST[r]; r++; }
+    acc.milRank = r; acc.meritXp = pool; acc.milV = 3;
+  }
   function milRank() {
-    if (acc.milV !== 2) { acc.milRank = MIL_OLD[Math.max(0, Math.min(12, acc.milRank | 0))]; acc.milV = 2; }
+    if (acc.milV !== 3) milMigrate();
     return Math.max(0, Math.min(RANKS_MIL.length - 1, acc.milRank | 0));
   }
   function milName() { return RANKS_MIL[milRank()]; }
