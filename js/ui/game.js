@@ -259,7 +259,8 @@
     if (typeof bgmScene === 'function') bgmScene();
   }
   function renderRes() { $('res').innerHTML = '<span class="res-chip" title="经验背包里的累积经验，可分配给精灵">经验 <b>' + fmt(acc.exp) + '</b></span><span class="res-chip en" title="能量（货币）">能量 <b>' + fmt(acc.energy) + '</b></span>'; setTimeout(renderQBadge, 0); }
-  function go(p) { if (ex.mode === 'replay' && p !== 'explore') { stopTimers(); ex.mode = null; ex.view = 'sites'; } page = p; ui.pick = -1; savePage(); renderTop(); window.scrollTo(0, 0); }
+  function go(p) { if (typeof SPA !== 'undefined' && SPA.on && page === 'explore' && ex.view === 'spa' && p !== 'explore') { spaLeaveAsk(function () { go(p); }); return; }
+    if (ex.mode === 'replay' && p !== 'explore') { stopTimers(); ex.mode = null; ex.view = 'sites'; } page = p; ui.pick = -1; savePage(); renderTop(); window.scrollTo(0, 0); }
   $('mainnav').addEventListener('click', function (e) {
     var b = e.target.closest('[data-page]'); if (!b || b.disabled) return;
     if (b.classList.contains('lockA')) {
@@ -1423,6 +1424,7 @@
 
   function renderExplore() {
     if (ex.mode === 'intro') return;
+    if (typeof SPA !== 'undefined' && SPA.on && ex.view !== 'spa') { var pend = Object.assign({}, ex); ex.view = 'spa'; ex.area = '咸宁'; renderSpa(); spaLeaveAsk(function () { Object.assign(ex, pend); renderExplore(); }); return; }   // 正在泡温泉：离开前先确认
     stopTimers(); setTimeout(bgmScene, 0);
     var el = $('pg-explore');
     if (ex.view === 'vn') { renderVN(); return; }
@@ -3657,68 +3659,152 @@
    * 带 2 只精灵泡温泉：只要游戏开着（在线），它们就一直涨经验，离线不算。
    * 效率：每只每小时 120 + 等级 × 24 点（茶室展示是 30 + 等级 × 6，离线经验是每分钟 6 点进经验背包）。数额暂定
    * 存档 acc.spa = { u: [精灵编号或 null, ...], got: { 编号: 累计获得 } }；SPA.last 只在内存里，所以关掉游戏期间不会算经验 */
-  var SPA_N = 2, SPA_TICK = 20000, SPA_GAP = 3 * 60000;
-  var SPA = { last: 0, carry: {}, sess: {} };
+  /* 2026-10-18 温泉大更新：
+   *   - 温泉大厅（背景 spa_hall）：在水里放精灵（下方有一层水面，精灵在水面上自由浮动），点「开始泡温泉」才开始计时、涨经验。
+   *   - 泡温泉期间必须留在温泉页面：离开时弹窗确认，离开后这次就结束了，下次要重新开始。
+   *   - 经验是以前的 4 倍：每只每小时 (120 + 等级 × 24) × 4；喝了「经验翻倍橘子汁」期间再 ×2。
+   *   - 休息室（背景 spa_lounge）：用能量买东西：经验翻倍橘子汁、泡温泉精灵栏位 +1（价格 3000 起，每次 ×3）。
+   * 存档 acc.spa = { u: [精灵编号或 null…], got: { 编号: 累计 }, extra: 已买的栏位, juice: 橘子汁效果到期时间 } */
+  var SPA_BASE = 2, SPA_EXTRA_MAX = 4, SPA_TICK = 2000, SPA_GAP = 30000, SPA_JUICE = { price: 500, min: 30 };
+  var SPA = { on: false, t0: 0, last: 0, carry: {}, sess: {}, total: 0 };
   function spaOpen() { return !!(acc && prog('spa').done); }
-  function spa() { if (!acc.spa || !Array.isArray(acc.spa.u)) acc.spa = { u: [], got: {} }; while (acc.spa.u.length < SPA_N) acc.spa.u.push(null); acc.spa.u = acc.spa.u.slice(0, SPA_N).map(function (u) { return u != null && mon(u) ? u : null; }); if (!acc.spa.got) acc.spa.got = {}; return acc.spa; }
-  function spaRate(m) { return 120 + m.lv * 24; }
+  function spaN() { return SPA_BASE + Math.min(SPA_EXTRA_MAX, (acc.spa && acc.spa.extra) || 0); }
+  function spaSlotPrice() { var e = (acc.spa && acc.spa.extra) || 0; return e >= SPA_EXTRA_MAX ? 0 : 3000 * Math.pow(3, e); }
+  function spa() { if (!acc.spa || !Array.isArray(acc.spa.u)) acc.spa = { u: [], got: {} }; var n = spaN(); while (acc.spa.u.length < n) acc.spa.u.push(null); acc.spa.u = acc.spa.u.slice(0, n).map(function (u) { return u != null && mon(u) ? u : null; }); if (!acc.spa.got) acc.spa.got = {}; return acc.spa; }
+  function juiceOn() { return !!(acc.spa && acc.spa.juice > Date.now()); }
+  function spaRate(m) { return (120 + m.lv * 24) * 4 * (juiceOn() ? 2 : 1); }
   function spaMons() { return spa().u.map(mon).filter(Boolean); }
   function inTea(u) { return !!(acc.home && Array.isArray(acc.home.mons) && acc.home.mons.some(function (x) { return (typeof x === 'number' ? x : x.u) === u; })); }
-  function spaSummary() { var L = spaMons(); return L.length ? L.map(function (m) { return form(m).name; }).join('、') + ' 正在泡温泉' : '带 2 只精灵一起泡温泉，在线就涨经验'; }
+  function spaSummary() { var L = spaMons(); return L.length ? L.map(function (m) { return form(m).name; }).join('、') + ' 在温泉里' : '带精灵一起泡温泉'; }
   function spaPut(i, u) {
-    var S = spa(); if (!(i >= 0 && i < SPA_N)) return;
+    var S = spa(); if (!(i >= 0 && i < spaN())) return;
     if (u != null) {
       var m = mon(u); if (!m) return;
       if (inTea(u)) { toast('它正在茶室里展示，先从茶室收回来吧。'); return; }
       var j = S.u.indexOf(u); if (j >= 0) S.u[j] = null;
-      S.u[i] = u; toast(form(m).name + ' 泡进了温泉，舒服得眯起了眼睛。');
-    } else if (S.u[i] != null) { var m2 = mon(S.u[i]); S.u[i] = null; if (m2) toast(form(m2).name + ' 从温泉里出来了，浑身冒着热气。'); }
-    ex.spaPick = null; spaTick(true); save(); renderSpa();
+      S.u[i] = u;
+    } else S.u[i] = null;
+    ex.spaPick = null; save(); renderSpa();
   }
-  // 每 20 秒结算一次；两次结算间隔超过 3 分钟（关掉游戏、电脑睡眠）就不算这段时间
-  function spaTick(reset) {
-    if (!ready() || !spaOpen()) { SPA.last = 0; return; }
-    var now = Date.now(), dt = SPA.last && !reset ? now - SPA.last : 0, msgs = [], any = false;
-    SPA.last = now;
+  function spaStart() {
+    if (!spaMons().length) { toast('先放一只精灵进温泉吧。'); return; }
+    SPA.on = true; SPA.t0 = Date.now(); SPA.last = Date.now(); SPA.carry = {}; SPA.sess = {}; SPA.total = 0;
+    renderSpa(); toast('开始泡温泉了！留在这个页面，精灵们就会一直涨经验。');
+  }
+  function spaEnd(quiet) {
+    if (!SPA.on) return;
+    spaTick(); var min = Math.floor((Date.now() - SPA.t0) / 60000), tot = SPA.total;
+    SPA.on = false; save();
+    if (!quiet) toast('这次泡了 ' + durText(min) + '，精灵们一共获得了 ' + fmt(tot) + ' 点经验。');
+  }
+  // 离开温泉的确认弹窗：留下就什么都不变；离开就结束这次泡温泉，再执行原本要做的事
+  function spaLeaveAsk(go_) {
+    var old = $('spa-leave'); if (old) old.remove();
+    var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'spa-leave';
+    d.innerHTML = '<div class="soc-box" role="dialog" aria-modal="true" aria-label="离开温泉"><h2>真的要离开吗？</h2><p>精灵们正泡得舒服呢。离开之后就不能继续获得经验了，下次要重新开始泡温泉。</p>' +
+      '<p class="hint">这次已经泡了 ' + durText(Math.floor((Date.now() - SPA.t0) / 60000)) + '，获得经验 ' + fmt(SPA.total) + '。</p>' +
+      '<div class="soc-foot"><button type="button" class="btn" data-spastay="1">再泡一会儿</button><button type="button" class="btn primary" data-spago="1">离开</button></div></div>';
+    document.body.appendChild(d);
+    d.addEventListener('click', function (e) {
+      if (e.target.closest('[data-spago]')) { d.remove(); spaEnd(); go_(); return; }
+      if (e.target === d || e.target.closest('[data-spastay]')) d.remove();
+    });
+  }
+  window.addEventListener('beforeunload', function (e) { if (SPA.on) { e.preventDefault(); e.returnValue = ''; } });
+  // 每 2 秒结算一次；只有在温泉页面里、并且已经「开始泡温泉」才算。两次结算间隔太久（电脑睡眠）就不算这段
+  function spaTick() {
+    if (!SPA.on || !ready() || !spaOpen()) return;
+    if (!(page === 'explore' && ex.view === 'spa')) return;
+    var now = Date.now(), dt = now - SPA.last; SPA.last = now;
     if (dt <= 0 || dt > SPA_GAP) return;
+    var msgs = [], any = false;
     spaMons().forEach(function (m) {
       if (atCap(m)) return;
       var c = (SPA.carry[m.u] || 0) + spaRate(m) * dt / 3600000, n = Math.floor(c); SPA.carry[m.u] = c - n;
       if (n <= 0) return;
       var lv0 = m.lv, r = gainExp(m, n, false); if (!r) return;
-      any = true; spa().got[m.u] = (spa().got[m.u] || 0) + n; SPA.sess[m.u] = (SPA.sess[m.u] || 0) + n;
-      if (m.lv > lv0) msgs.push(r);
+      any = true; spa().got[m.u] = (spa().got[m.u] || 0) + n; SPA.sess[m.u] = (SPA.sess[m.u] || 0) + n; SPA.total += n;
+      if (m.lv > lv0) msgs.push(form(m).name + ' 升到了 LV' + m.lv + '！');
     });
-    if (!any) return;
-    save();
-    if (msgs.length) toast('温泉疗养：' + msgs.join(' '));
-    if (page === 'explore' && ex.view === 'spa') renderSpa();
+    if (any) { if (!SPA.saveAt || now - SPA.saveAt > 20000) { SPA.saveAt = now; save(); } }
+    if (msgs.length) { save(); toast('温泉疗养：' + msgs.join(' ')); renderSpa(); return; }
+    spaHud();
   }
-  setInterval(function () { spaTick(false); }, SPA_TICK);
+  setInterval(spaTick, SPA_TICK);
+  setInterval(function () { if (SPA.on && page === 'explore' && ex.view === 'spa') spaHud(); }, 1000);
+  function hms(ms) { var t = Math.floor(ms / 1000), h = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60), s2 = t % 60; return (h ? h + ':' : '') + (m < 10 && h ? '0' : '') + m + ':' + (s2 < 10 ? '0' : '') + s2; }
+  // 只刷新计时、经验数字和经验条，不重画整个页面（精灵浮动的动画不会被打断）
+  function spaHud() {
+    var t = $('spa-time'); if (!t) return;
+    t.textContent = hms(Date.now() - SPA.t0);
+    var g = $('spa-gain'); if (g) g.textContent = '+' + fmt(SPA.total);
+    var jt = $('spa-juice'); if (jt) jt.textContent = juiceOn() ? '经验翻倍中 · 还剩 ' + hms(acc.spa.juice - Date.now()) : '';
+    spaMons().forEach(function (m) {
+      var el = document.querySelector('[data-spabar="' + m.u + '"]'); if (!el) return;
+      var maxed = atCap(m), need = maxed ? 0 : expAt(m.lv + 1) - m.exp, span = maxed ? 1 : expAt(m.lv + 1) - expAt(m.lv);
+      el.querySelector('i').style.width = (maxed ? 100 : Math.min(100, (span - need) / span * 100)) + '%';
+      var gl = document.querySelector('[data-spagain="' + m.u + '"]'); if (gl) gl.textContent = '+' + fmt(SPA.sess[m.u] || 0);
+    });
+  }
   function renderSpa() {
-    var S = spa(), pick = ex.spaPick;
-    var slot = function (i) {
-      var m = mon(S.u[i]);
-      if (!m) return '<div class="spa-slot empty"><button type="button" class="spa-add' + (pick === i ? ' on' : '') + '" data-spaslot="' + i + '"><b>＋</b><span>带一只精灵来泡</span></button></div>';
+    var S = spa(), pick = ex.spaPick, L = spaMons(), on = SPA.on;
+    // 水面上浮着的精灵：位置按栏位分开，每只的漂浮节奏不一样
+    var floats = S.u.map(function (u, i) {
+      var m = mon(u); if (!m) return '';
+      var f = form(m), x = 12 + (i * 76 / Math.max(1, S.u.length - 1 || 1)) % 80;
+      return '<div class="spa-float" style="left:' + (S.u.length > 1 ? 8 + i * (78 / (S.u.length - 1)) : 50) + '%;animation-delay:-' + (i * 1.7) + 's;--dx:' + (i % 2 ? -18 : 18) + 'px"><img src="' + f.img + '" alt="' + esc(f.name) + '"><span>' + esc(f.name) + '</span></div>';
+    }).join('');
+    var hud = on ? '<div class="spa-hud"><div><small>已泡时长</small><b id="spa-time">' + hms(Date.now() - SPA.t0) + '</b></div><div class="spa-hud-g"><small>本次获得经验</small><b id="spa-gain">+' + fmt(SPA.total) + '</b></div><em id="spa-juice">' + (juiceOn() ? '经验翻倍中 · 还剩 ' + hms(acc.spa.juice - Date.now()) : '') + '</em></div>' : '';
+    var cards = S.u.map(function (u, i) {
+      var m = mon(u);
+      if (!m) return '<button type="button" class="spa-card empty' + (pick === i ? ' on' : '') + '" data-spaslot="' + i + '"><b>＋</b><span>' + (i + 1) + ' 号位 · 放一只精灵</span></button>';
       var f = form(m), maxed = atCap(m), need = maxed ? 0 : expAt(m.lv + 1) - m.exp, span = maxed ? 1 : expAt(m.lv + 1) - expAt(m.lv);
-      return '<div class="spa-slot"><div class="spa-mon"><img src="' + f.img + '" alt="' + esc(f.name) + '"><span class="spa-water"></span></div>' +
-        '<div class="spa-info"><b>' + esc(f.name) + ' <span class="lvbig">LV' + m.lv + '</span></b>' +
-        (maxed ? '<small>已经满级了，泡温泉只是为了放松。</small>' : '<div class="exp-bar"><i style="width:' + Math.min(100, (span - need) / span * 100) + '%"></i></div><small>每小时 +' + fmt(spaRate(m)) + ' 经验 · 距 LV' + (m.lv + 1) + ' 还需 ' + fmt(need) + '</small>') +
-        '<small>这次在线泡了 +' + fmt(SPA.sess[m.u] || 0) + ' · 累计 +' + fmt(S.got[m.u] || 0) + '</small>' +
+      return '<div class="spa-card"><img src="' + f.img + '" alt=""><div class="spa-ct"><b>' + esc(f.name) + ' <span class="lvbig">LV' + m.lv + '</span></b>' +
+        '<div class="exp-bar" data-spabar="' + m.u + '"><i style="width:' + (maxed ? 100 : Math.min(100, (span - need) / span * 100)) + '%"></i></div>' +
+        '<small>' + (maxed ? '已到等级上限' : '每小时 +' + fmt(spaRate(m))) + (on ? ' · 本次 <b class="spa-g" data-spagain="' + m.u + '">+' + fmt(SPA.sess[m.u] || 0) + '</b>' : '') + '</small>' +
         '<span class="spa-acts"><button type="button" class="btn ghost" data-spaslot="' + i + '">换一只</button><button type="button" class="btn ghost" data-spaout="' + i + '">起身</button></span></div></div>';
-    };
+    }).join('');
     var list = '';
     if (pick != null) {
-      var L = acc.mons.slice().sort(function (a, b) { return b.lv - a.lv; });
-      list = '<div class="spa-pick"><h4>选一只精灵泡进 ' + (pick + 1) + ' 号位 <span class="hint">茶室里展示中的精灵要先收回</span></h4><div class="spa-list">' + L.map(function (m) {
-        var f = form(m), on = S.u.indexOf(m.u) >= 0, tea = inTea(m.u);
-        return '<button type="button" class="spa-it' + (on ? ' on' : '') + '" data-spain="' + m.u + '"' + (tea ? ' disabled' : '') + '><img src="' + f.img + '" alt=""><b>' + esc(f.name) + '</b><small>LV' + m.lv + (tea ? ' · 茶室展示中' : on ? ' · 泡着呢' : ' · 每小时 +' + fmt(spaRate(m))) + '</small></button>';
+      var A = acc.mons.slice().sort(function (a, b) { return b.lv - a.lv; });
+      list = '<div class="spa-pick"><h4>选一只精灵放进 ' + (pick + 1) + ' 号位 <span class="hint">茶室里展示中的精灵要先收回</span></h4><div class="spa-list">' + A.map(function (m) {
+        var f = form(m), inS = S.u.indexOf(m.u) >= 0, tea = inTea(m.u);
+        return '<button type="button" class="spa-it' + (inS ? ' on' : '') + '" data-spain="' + m.u + '"' + (tea ? ' disabled' : '') + '><img src="' + f.img + '" alt=""><b>' + esc(f.name) + '</b><small>LV' + m.lv + (tea ? ' · 茶室展示中' : inS ? ' · 泡着呢' : ' · 每小时 +' + fmt(spaRate(m))) + '</small></button>';
       }).join('') + '</div></div>';
     }
-    $('pg-explore').innerHTML = exHead('带 2 只精灵一起泡温泉。只要游戏开着，它们就会一直涨经验；关掉游戏就不算了。') +
-      '<div class="crumb"><button type="button" class="btn ghost" id="spa-back">‹ 返回温泉生活区</button><b>咸宁 · 温泉疗养</b></div>' +
-      '<div class="spa-scene"><div class="spa-steam" aria-hidden="true"><i></i><i></i><i></i><i></i></div>' + slot(0) + '<div class="spa-me"><img src="' + CHARS[playerArt()] + '" alt="' + esc(acc.name) + '"><span class="spa-water"></span></div>' + slot(1) + '</div>' +
-      '<p class="hint spa-note">温泉经验：每只每小时 <b>120 + 等级 × 24</b> 点，直接加给精灵（不占每日战斗经验上限）。比茶室展示和离线经验都快，但必须保持在线。</p>' + list;
+    $('pg-explore').innerHTML = exHead(on ? '正在泡温泉：留在这个页面，精灵们就会一直涨经验。离开就结束这一次。' : '把精灵放进温泉，点「开始泡温泉」。泡温泉期间要一直留在这个页面。') +
+      '<div class="crumb"><button type="button" class="btn ghost" id="spa-back">‹ 返回温泉生活区</button><b>咸宁 · 温泉大厅</b></div>' +
+      '<div class="spa-hall' + (on ? ' soaking' : '') + '" style="background-image:url(images/backgrounds/spa_hall.webp)">' + hud +
+        '<div class="spa-steam" aria-hidden="true"><i></i><i></i><i></i><i></i></div>' +
+        '<div class="spa-pool"><div class="spa-wave" aria-hidden="true"></div>' + floats +
+        (on ? '<img class="spa-player" src="images/characters/spa_' + gender() + '.webp" alt="' + esc(acc.name) + '">' : '') + '</div></div>' +
+      '<div class="spa-ctl">' + (on ? '<button type="button" class="btn" data-spaend="1">起身离开</button>' : '<button type="button" class="btn primary big" data-spastart="1"' + (L.length ? '' : ' disabled') + '>开始泡温泉</button>') +
+        '<button type="button" class="btn" data-sparoom="1">去休息室</button><span class="hint">每只每小时 <b>(120 + 等级 × 24) × 4</b> 点经验，直接加给精灵，不占每日战斗经验上限。' + (juiceOn() ? '<b class="red">经验翻倍橘子汁生效中！</b>' : '') + '</span></div>' +
+      '<div class="spa-cards">' + cards + '</div>' + list;
+  }
+  // 休息室：在温泉页面里打开的面板（不算离开温泉），用能量买东西
+  function openSpaRoom() {
+    var old = $('spa-room'); if (old) old.remove();
+    var price = spaSlotPrice();
+    var d = document.createElement('div'); d.className = 'soc-dlg spa-room-dlg'; d.id = 'spa-room';
+    d.innerHTML = '<div class="soc-box spa-room" role="dialog" aria-modal="true" aria-label="温泉休息室" style="background-image:linear-gradient(rgba(20,16,10,.35),rgba(20,16,10,.7)),url(images/backgrounds/spa_lounge.webp)">' +
+      '<h2>温泉休息室</h2><p class="spa-rm-sub">能量 <b>' + fmt(acc.energy || 0) + '</b></p><div class="spa-goods">' +
+      '<article class="spa-good"><b>经验翻倍橘子汁</b><p>冰镇的橘子汁。喝下后 ' + SPA_JUICE.min + ' 分钟内，温泉经验翻倍（可以叠加时长）。</p>' + (juiceOn() ? '<p class="hint">生效中，还剩 ' + hms(acc.spa.juice - Date.now()) + '</p>' : '') +
+        '<button type="button" class="btn primary" data-spabuy="juice"' + ((acc.energy || 0) >= SPA_JUICE.price ? '' : ' disabled') + '>' + fmt(SPA_JUICE.price) + ' 能量 · 来一杯</button></article>' +
+      '<article class="spa-good"><b>泡温泉精灵栏位 +1</b><p>现在 ' + spaN() + ' 个栏位，最多 ' + (SPA_BASE + SPA_EXTRA_MAX) + ' 个。每次扩建的价格是上一次的 3 倍。</p>' +
+        (price ? '<button type="button" class="btn primary" data-spabuy="slot"' + ((acc.energy || 0) >= price ? '' : ' disabled') + '>' + fmt(price) + ' 能量 · 扩建</button>' : '<button type="button" class="btn" disabled>已经扩建到最多了</button>') + '</article>' +
+      '</div><div class="soc-foot"><button type="button" class="btn" data-spax="1">回到温泉</button></div></div>';
+    document.body.appendChild(d);
+    d.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-spabuy]');
+      if (b) {
+        var k = b.dataset.spabuy;
+        if (k === 'juice') { if ((acc.energy || 0) < SPA_JUICE.price) return; acc.energy -= SPA_JUICE.price; acc.spa.juice = Math.max(Date.now(), acc.spa.juice || 0) + SPA_JUICE.min * 60000; toast('咕嘟咕嘟……接下来温泉经验翻倍！'); }
+        if (k === 'slot') { var pr = spaSlotPrice(); if (!pr || (acc.energy || 0) < pr) return; acc.energy -= pr; acc.spa.extra = (acc.spa.extra || 0) + 1; spa(); toast('温泉扩建好了，现在可以泡 ' + spaN() + ' 只精灵。'); }
+        save(); renderRes(); renderSpa(); openSpaRoom(); return;
+      }
+      if (e.target === d || e.target.closest('[data-spax]')) d.remove();
+    });
   }
   /* ---------- 授勋馆（荆楚号 · 黄冈 · 学院部）：展示所有称号和获得方式 ---------- */
   function medalOpen() { return !!(acc && prog('medal').done); }
@@ -4471,11 +4557,14 @@
     if (b.dataset.hpoke) { var f = b.closest('.hm-fig'); f.classList.remove('hop'); void f.offsetWidth; f.classList.add('hop'); return; }
     if (b.dataset.shop) { ex.view = 'shop'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
     if (b.dataset.nursery) { ex.view = 'nursery'; ex.area = '神农架'; ex.planet = 'jingchu'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
-    if (b.dataset.spa) { if (!spaOpen()) return; ex.view = 'spa'; ex.area = '咸宁'; ex.planet = 'jingchu'; ex.spaPick = null; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
+    if (b.dataset.spa) { if (!spaOpen()) return; ex.view = 'spa'; ex.area = '咸宁'; ex.planet = 'jingchu'; ex.spaPick = null; spa(); renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
     if (b.id === 'spa-back') { ex.view = 'area'; ex.area = '咸宁'; ex.planet = 'jingchu'; renderExplore(); return; }
     if (b.dataset.spaslot != null && b.dataset.spaslot !== '') { ex.spaPick = ex.spaPick === +b.dataset.spaslot ? null : +b.dataset.spaslot; renderSpa(); return; }
     if (b.dataset.spain) { spaPut(ex.spaPick, +b.dataset.spain); return; }
     if (b.dataset.spaout != null && b.dataset.spaout !== '') { spaPut(+b.dataset.spaout, null); return; }
+    if (b.dataset.spastart) { spaStart(); return; }
+    if (b.dataset.spaend) { spaLeaveAsk(function () { renderSpa(); }); return; }
+    if (b.dataset.sparoom) { openSpaRoom(); return; }
     if (b.dataset.medal) { if (!medalOpen()) return; ex.view = 'medal'; ex.area = '黄冈'; ex.planet = 'jingchu'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
     if (b.id === 'medal-back') { ex.view = 'area'; ex.area = '黄冈'; ex.planet = 'jingchu'; renderExplore(); return; }
     if (b.dataset.promote) { promote(); return; }
