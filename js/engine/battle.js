@@ -1067,6 +1067,7 @@ function bombTick(S, evs) {
 var HIDDEN_MIN_LV = 40;   // 隐藏技能最低 LV40 才能领悟（条件满足但等级不够时不会领悟）
 function hqGet(S, evs, m, name) {
   if (!m || m.u == null || !LEARN[name]) return;
+  if (typeof window !== 'undefined' && window.HL_GATED && window.HL_GATED[m.id]) return;   // 这些种族改成只能用道具解锁（见 game.js 的 HL_GATED）
   if ((m.lv || LV) < HIDDEN_MIN_LV) return;
   var s = SPMAP[m.id]; if (!s || s.hidden.indexOf(name) < 0) return;
   if (m.hl && m.hl.indexOf(name) >= 0) return;
