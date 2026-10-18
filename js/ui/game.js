@@ -51,6 +51,7 @@
       var a = avail(m.sid, m.lv, m.hl); m.moves = (m.moves || []).filter(function (n) { return a.indexOf(n) >= 0; });
       if (!m.moves.length) m.moves = defaultMoves(m.sid, m.lv, m.hl);
     });
+    if (acc.hlSp) Object.keys(acc.hlSp).forEach(function (k) { if (Array.isArray(acc.hlSp[k])) acc.hlSp[k] = acc.hlSp[k].map(moveName).filter(function (n, i, a) { return a.indexOf(n) === i; }); });   // 改过名字的隐藏技能（高温禁锢 → 余烬涅槃）
     acc.hlV = 2;
     acc.expV = expV();
     if (!(acc.exp >= 0)) acc.exp = 0; if (!(acc.energy >= 0)) acc.energy = 0;

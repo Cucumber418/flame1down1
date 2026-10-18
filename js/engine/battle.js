@@ -771,6 +771,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   me.flags.firstAtk = true; me.fx.boostNext = 0; me.fx.moonNext = 0; if (me.fx.x2Next) { me.fx.x2Next = 0; E(S, evs, 'stage', { side: i }); }
   var fxd = addFixed(me, mv);
   if (fxd && !foe.fainted) { log(S, evs, '附加 ' + fxd + ' 点固定伤害', 'fxl'); applyDamage(S, evs, j, fxd, i, {}); }
+  if (mv.foeNoHeal && !foe.fainted && total > 0) { foe.tm.noHeal = Math.max(foe.tm.noHeal || 0, mv.foeNoHeal); E(S, evs, 'stage', { side: j }); log(S, evs, nm(foe) + '被淬命之焰灼伤，' + mv.foeNoHeal + '回合内无法恢复体力', 'bad'); }
   if (mv.custom === 'drown' && !foe.fainted) {   // 溺毙：对方每有一项能力下降，附加 30 点固定伤害
     var dn = STG.filter(function (k) { return foe.stages[k] < 0; }).length;
     if (dn) { log(S, evs, '对方有 ' + dn + ' 项能力下降，溺毙附加 ' + (30 * dn) + ' 点固定伤害', 'fxl'); applyDamage(S, evs, j, 30 * dn, i, {}); }
@@ -905,6 +906,9 @@ function doStatus(S, evs, i, mv) {
     log(S, evs, nm(me) + '想要闪避，却被' + nm(foe) + '的灵耳谛听听穿了！下一次受到的攻击威力翻倍', 'bad');
   }
   if (c === 'burnout' && !(foe.perm && foe.perm.melt > 0)) { log(S, evs, '但是对方没有熔化状态，技能失败了'); return; }
+  if (mv.selfCleanse) {   // 净化之焰：移除自身的异常状态
+    if (hasStatus(me)) { for (var sk in me.st) if (ST_DESC[sk]) delete me.st[sk]; E(S, evs, 'stage', { side: i }); log(S, evs, nm(me) + '的火焰净化了自身的异常状态', 'fxl'); }
+  }
   if (targetsFoe(mv)) {
     if (foe.fainted) { log(S, evs, '但是没有目标'); return; }
     if (hitBlocked(foe, mvType(me, mv))) { log(S, evs, nm(foe) + '毫发无伤！只有' + foe.onlyHit.join('、') + '系技能才能命中它', 'bad'); return; }
@@ -930,6 +934,7 @@ function doStatus(S, evs, i, mv) {
   if (sst) changeStages(S, evs, i, sst);
   if (mv.heal) heal(S, evs, i, me.maxhp * (mv.lowHeal && me.hp < me.maxhp / 4 ? mv.lowHeal : mv.heal));
   if (mv.healLost) heal(S, evs, i, (me.maxhp - me.hp) * mv.healLost);   // 按已损失体力回复（生命遁迹）
+  if (mv.selfTired && !me.fainted) { me.st['疲惫'] = mv.selfTired + 1; E(S, evs, 'stage', { side: i }); log(S, evs, nm(me) + '耗尽了力气，陷入「疲惫」状态（' + mv.selfTired + '回合）', 'bad'); }   // 余烬涅槃：代价是自己疲惫（本回合结束时会先减 1，所以多记 1）
   if (mv.clearSelfDown) {
     var any = false; STG.forEach(function (k) { if (me.stages[k] < 0) { me.stages[k] = 0; any = true; } });
     E(S, evs, 'stage', { side: i });
@@ -1152,7 +1157,7 @@ function hqKO(S, evs, me, foe, mv) {
     万灵封印: fu['生命遁迹'] > 0 && me.stages.spa >= 3 && me.stages.def >= 3 && me.stages.spd >= 3,
     淬命之焰: n === '火焰车' && (me.fx.hqRaw || 0) > foe.maxhp,
     烈焰风暴: n === '烈焰云' && foe.st['烧伤'] > 0,
-    高温禁锢: Math.min(me.fx.fieldT || 0, foe.fx.fieldT || 0) >= 10
+    余烬涅槃: Math.min(me.fx.fieldT || 0, foe.fx.fieldT || 0) >= 10
   };
   for (var k in R) if (R[k]) hqGet(S, evs, me, k);
 }
