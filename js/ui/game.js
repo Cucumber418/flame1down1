@@ -3349,10 +3349,10 @@
     barren: { name: '荒芜', sid: 'barren', planet: 'flora', region: 'salt', bg: 'fl_salt',
       d: '潜伏在芙罗拉星盐碱地地底的草系首领。盐碱地里的瘴气，就是从它身上散出来的。',
       lv: [
-        { diff: '简单', lv: 40, hp: 1000, boss: { dr: 0.15, mia: 1, pp: 99 }, bgm: 'floraFallen', open: function () { return prog('flora1').done && (chalStars('fl5') > 0 || bossWon('barren', 0)); }, lockText: '通过芙罗拉星挑战第五关「猎手的领地」后开放', reward: { mon: { sid: 'barren', lv: 10 } } },
-        { diff: '普通', lv: 65, hp: 3000, boss: { dr: 0.15, mia: 1, puppet: 1, pp: 99 }, bgm: 'floraFallen', open: function () { return bossWon('barren', 0); }, lockText: '击败简单难度后开放', reward: { later: true } },
+        { diff: '简单', lv: 40, hp: 1000, boss: { dr: 0.15, mia: 1, pp: 99 }, bgm: 'boss3', open: function () { return prog('flora1').done && (chalStars('fl5') > 0 || bossWon('barren', 0)); }, lockText: '通过芙罗拉星挑战第五关「猎手的领地」后开放', reward: { mon: { sid: 'barren', lv: 10 } } },
+        { diff: '普通', lv: 65, hp: 3000, boss: { dr: 0.15, mia: 1, puppet: 1, pp: 99 }, bgm: 'boss3', open: function () { return bossWon('barren', 0); }, lockText: '击败简单难度后开放', reward: { later: true } },
         // 困难：完成主线「第十段 · 瘴气之源」后，2026-10-18 16:00（北京时间）解锁
-        { diff: '困难', lv: 70, hp: 10000, boss: { dr: 0.15, mia: 1, immortal: 1, puppet: 1, puppetLv: 70, humus: 1, weed: 1, weedDmg: 50, rebirth: 1, pp: 99 }, bgm: 'floraFallen',
+        { diff: '困难', lv: 70, hp: 10000, boss: { dr: 0.15, mia: 1, immortal: 1, puppet: 1, puppetLv: 70, humus: 1, weed: 1, weedDmg: 50, rebirth: 1, pp: 99 }, bgm: 'boss3',   // 开场和困难泰戈尔第一形态同一首，蜕生后切 before the end（battle-ui 里的钩子）
           open: function () { return prog('flora6').done && Date.now() >= Date.UTC(2026, 9, 18, 8, 0, 0); },
           lockText: '完成主线「第十段 · 瘴气之源」后，2026-10-18 16:00 开放', reward: { title: 'guardian', exp: 50000, items: { brTwig: 80 } } }
       ] }
@@ -3402,7 +3402,7 @@
   // SECRET_FX：第一次发动前只显示「？？？」的隐藏首领特效（触发后 acc.seenFx[键名] 会被 HSEV('bossfx',...) 记下）
   var SECRET_FX = { past: 1, rebirth: 1 };
   function fxRules(L) {
-    var fake = { boss: L.boss || {}, hp: L.hp }, out = [];
+    var fake = { boss: Object.assign({}, L.boss || {}, { rebirthKnown: !!(acc.seenFx && acc.seenFx.rebirth) }), hp: L.hp }, out = [];   // 没打出过第二形态时，和第二形态有关的说明全部隐藏
     if (L.only) out.push(['【元素亲和】', '只有' + L.only.join('、') + '系技能才能命中它']);
     if (L.boss) BOSS_FX.forEach(function (f) {
       if (!L.boss[f.k]) return;
