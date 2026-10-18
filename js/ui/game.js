@@ -1444,7 +1444,7 @@
         WEEKLIES.forEach(function (W, wi) {
           if (!wkOpen(W)) return; var WB = BOSSES[W.boss];
           html += '<button type="button" class="weekly-card" data-weekly="' + (wi + 1) + '"><span class="tape l"></span><img src="' + SPRITES[WB.sid] + '" alt=""><span class="wk-txt"><span class="chip boss-diff d2">每周挑战</span><b>' + WB.name + ' · ' + WB.lv[W.d].diff + '难度</b>' +
-            '<small>每次消耗 1 枚挑战许可 · 击败得累积经验 ×' + fmt(W.exp) + '、' + rwList({ items: W.item }).join('、') + ' 和随机掉落</small></span><span class="wk-pm"><b>' + pn + '</b> / ' + PERMIT.max + '<small>挑战许可（共用）</small></span></button>';
+            '<small>获胜时消耗 1 枚挑战许可 · 击败得累积经验 ×' + fmt(W.exp) + '、' + rwList({ items: W.item }).join('、') + ' 和随机掉落</small></span><span class="wk-pm"><b>' + pn + '</b> / ' + PERMIT.max + '<small>挑战许可（共用）</small></span></button>';
         });
       }
       html += '<div class="planets">' + PLANETS.filter(planetOpen).map(function (p) {
@@ -3390,9 +3390,9 @@
     var rules = fxRules(L).map(function (r) { return '<li><b>特殊</b>' + esc(r[0]) + '：' + esc(r[1]) + '</li>'; }).join('');
     var rw = weekly ? '每次击败获得累积经验 ×' + fmt(WK.exp) + '、' + rwList({ items: WK.item }).join('、') + '，并随机掉落 ' + WK.drops.map(dropName).join(' / ') + ' 之一'
       : (won ? '已领取（首次击败：' + rewardText(L.reward) + '）；再次击败只获得经验和学习力' : '首次击败：' + rewardText(L.reward) + '；另有经验和学习力');
-    var btn = weekly ? '<button type="button" class="btn primary" data-weeklygo="1"' + (pn > 0 ? '' : ' disabled') + '>开始挑战（消耗 1 枚挑战许可）</button><p class="hint permit-line">挑战许可 <b>' + pn + '</b> / ' + PERMIT.max + ' · ' + permitNext() + '</p>'
+    var btn = weekly ? '<button type="button" class="btn primary" data-weeklygo="1"' + (pn > 0 ? '' : ' disabled') + '>开始挑战（获胜时消耗 1 枚挑战许可）</button><p class="hint permit-line">挑战许可 <b>' + pn + '</b> / ' + PERMIT.max + ' · ' + permitNext() + '</p>'
       : open ? '<button type="button" class="btn primary" data-bossgo="' + k + '" data-d="' + d + '">开始挑战</button>' : '<button type="button" class="btn" disabled>' + esc(L.lockText) + '</button>';
-    $('pg-explore').innerHTML = exHead(weekly ? '每周挑战：和困难难度的' + B.name + '一模一样，每次挑战消耗 1 枚挑战许可。' : '首领可以反复挑战。难度依次开放，每档难度第一次击败都有奖励。') +
+    $('pg-explore').innerHTML = exHead(weekly ? '每周挑战：和困难难度的' + B.name + '一模一样，每次获胜消耗 1 枚挑战许可，输了不消耗。' : '首领可以反复挑战。难度依次开放，每档难度第一次击败都有奖励。') +
       '<div class="crumb"><button type="button" class="btn ghost" id="boss-back">‹ 返回' + (weekly ? '星际探索' : ex.bossFrom === 'hub' ? 'Boss挑战' : bossWhere(B)) + '</button><b>' + (weekly ? '每周挑战 · ' : '首领 · ') + B.name + '</b></div>' + tabs +
       '<article class="boss-card"><span class="tape l"></span><div class="boss-art"><img src="' + BG[floraBg(B.bg)] + '" alt="" class="boss-bg"><img src="' + SPRITES[B.sid] + '" alt="' + B.name + '" class="boss-mon"></div>' +
       '<div class="boss-txt"><span class="chip boss-diff d' + d + '">' + (weekly ? '每周挑战 · ' : '') + L.diff + '难度</span><h3>' + B.name + '</h3><p class="hint">' + esc(B.d) + '</p>' +
@@ -3505,7 +3505,7 @@
   function startBoss(k, d, weekly) {
     var B = BOSSES[k], WK = weekly ? WEEKLIES.filter(function (x) { return x.boss === k; })[0] : null; if (weekly) d = WK.d;
     var L = B.lv[d]; if (!L || !(weekly ? wkOpen(WK) : L.open())) return;
-    if (weekly) { if (permits() < 1) { toast('挑战许可用完了。' + permitNext() + '。'); return; } acc.permit.n--; }
+    if (weekly && permits() < 1) { toast('挑战许可用完了。' + permitNext() + '。'); return; }   // 2026-10-18：只有打赢才消耗挑战许可
     var team = (acc.teams[acc.active] || []).map(mon).filter(Boolean);
     if (!team.length) team = acc.mons.slice(0, 1);
     team = team.slice(0, TEAM_SIZE);
@@ -3525,7 +3525,7 @@
         if (res === 'win') {
           first = !rec.wins; rec.wins++;
           msg.push(weekly ? '每周挑战：击败了首领「' + B.name + '」！' : '击败了' + L.diff + '难度的首领「' + B.name + '」！');
-          if (weekly) msg = msg.concat(weeklyReward(WK));
+          if (weekly) { permits(); acc.permit.n = Math.max(0, acc.permit.n - 1); msg = msg.concat(weeklyReward(WK)); msg.push('消耗了 1 枚挑战许可。'); }
           else if (first) {
             msg = msg.concat(firstReward(L));
             if (B.lv[d + 1] && levelOpen(k, d + 1)) msg.push(B.lv[d + 1].diff + '难度已开放。');
