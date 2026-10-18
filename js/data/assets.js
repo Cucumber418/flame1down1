@@ -29,7 +29,7 @@ var SPRITES = {
   "aegis": "images/sprites/aegis.png",
   "leafcat": "images/sprites/leafcat.webp",
   "phantom": "images/sprites/phantom.png",
-  "shroom": "images/sprites/shroom.svg",
+  "shroom": "images/sprites/shroom.webp",
   "firemouse": "images/sprites/firemouse.svg",   // 立绘待补，暂用问号占位
   "turkey": "images/sprites/turkey.webp",
   "dummy": "images/sprites/dummy.svg",
@@ -302,7 +302,8 @@ var SILHOUETTES = {
   "phantom_0": "images/silhouettes/phantom_0.png",
   "phantom_1": "images/silhouettes/phantom_1.png",
   "phantom_2": "images/silhouettes/phantom_2.png",
-  "shroom_0": "images/silhouettes/shroom_0.png"
+  "shroom_0": "images/silhouettes/shroom_0.png",
+  "shroom_2": "images/silhouettes/shroom_2.png"
 };
 
 // 异色精灵的立绘（只有部分形态有）：键名规则和 PRE_SPRITES 一样，最终形态用精灵 id
