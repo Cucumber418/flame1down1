@@ -3810,13 +3810,20 @@
       var gl = document.querySelector('[data-spagain="' + m.u + '"]'); if (gl) gl.textContent = '+' + fmt(SPA.sess[m.u] || 0);
     });
   }
+  // 精灵在水面上的位置：分在左右两边，中间留给泡温泉的主角（单数号在左、双数号在右，各自均匀排开）
+  function spaHx(i, n) {
+    var left = i % 2 === 0, k = Math.floor(i / 2), cnt = left ? Math.ceil(n / 2) : Math.floor(n / 2);
+    var a = left ? 7 : 66, b = left ? 34 : 93;
+    return +(cnt > 1 ? a + k * (b - a) / (cnt - 1) : (a + b) / 2).toFixed(1);
+  }
   function renderSpa() {
     var S = spa(), pick = ex.spaPick, L = spaMons(), on = SPA.on;
     // 水面上浮着的精灵：位置按栏位分开，每只的漂浮节奏不一样
     var floats = S.u.map(function (u, i) {
       var m = mon(u); if (!m) return '';
       var f = form(m), x = 12 + (i * 76 / Math.max(1, S.u.length - 1 || 1)) % 80;
-      return '<div class="spa-float" data-csid="' + m.sid + '" data-cst="' + (f.stage || 0) + '" data-cctx="spa" data-hx="' + (S.u.length > 1 ? 8 + i * (78 / (S.u.length - 1)) : 50) + '" style="left:' + (S.u.length > 1 ? 8 + i * (78 / (S.u.length - 1)) : 50) + '%;animation-delay:-' + (i * 1.7) + 's"><img src="' + f.img + '" alt="' + esc(f.name) + '"><span>' + esc(f.name) + '</span></div>';
+      var hx = spaHx(i, S.u.length);
+      return '<div class="spa-float" data-csid="' + m.sid + '" data-cst="' + (f.stage || 0) + '" data-cctx="spa" data-hx="' + hx + '" style="left:' + hx + '%;animation-delay:-' + (i * 1.7) + 's"><img src="' + f.img + '" alt="' + esc(f.name) + '"><span>' + esc(f.name) + '</span></div>';
     }).join('');
     var hud = on ? '<div class="spa-hud"><div><small>已泡时长</small><b id="spa-time">' + hms(Date.now() - SPA.t0) + '</b></div><div class="spa-hud-g"><small>本次获得经验</small><b id="spa-gain">+' + fmt(SPA.total) + '</b></div><em id="spa-juice">' + (juiceOn() ? '经验翻倍中 · 还剩 ' + hms(acc.spa.juice - Date.now()) : '') + '</em></div>' : '';
     var cards = S.u.map(function (u, i) {
@@ -4166,7 +4173,8 @@
     Array.prototype.forEach.call(fl, function (f) {
       var D = f.dataset;
       if (!D.ph) { D.ph = Math.random() * 6.283; D.sp = 0.12 + Math.random() * 0.12; D.px = D.hx; }
-      var x = Math.max(6, Math.min(94, +D.hx + Math.sin(now * +D.sp + +D.ph) * 6));
+      var x = +D.hx + Math.sin(now * +D.sp + +D.ph) * 5;
+      x = +D.hx < 50 ? Math.max(5, Math.min(37, x)) : Math.max(63, Math.min(95, x));   // 不往中间漂，免得被主角挡住
       f.style.left = x.toFixed(2) + '%';
       if (x > +D.px + 0.002) f.classList.remove('flip'); else if (x < +D.px - 0.002) f.classList.add('flip');
       D.px = x;

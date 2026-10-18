@@ -2169,12 +2169,12 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .spa-wave::before, .spa-wave::after { content: ''; position: absolute; left: -50%; width: 200%; height: 14px; top: -8px; background: radial-gradient(ellipse at 50% 100%, rgba(255,255,255,.7) 0 30%, transparent 32%) 0 0 / 60px 14px repeat-x; animation: spaWave 6s linear infinite; }
 .spa-wave::after { top: 30%; opacity: .35; animation-duration: 9s; animation-direction: reverse; }
 @keyframes spaWave { to { transform: translateX(60px); } }
-.spa-float { position: absolute; bottom: 38%; transform: translateX(-50%); display: grid; justify-items: center; animation: spaFloat 7s ease-in-out infinite; z-index: 4; }
+.spa-float { position: absolute; bottom: 38%; transform: translateX(-50%); display: grid; justify-items: center; animation: spaFloat 7s ease-in-out infinite; z-index: 6; }
 .spa-float img { width: 120px; height: 120px; object-fit: contain; filter: drop-shadow(0 6px 4px rgba(0,0,0,.25)); clip-path: inset(0 0 22% 0); }
 .spa-float span { margin-top: -26px; padding: 1px 8px; font-size: 11.5px; color: #fff; background: rgba(20, 60, 80, .55); border-radius: 99px; }
 @keyframes spaFloat { 0%, 100% { transform: translate(-50%, 0) rotate(-3deg); } 25% { transform: translate(-50%, -8px) rotate(2deg); } 50% { transform: translate(-50%, -2px) rotate(3deg); } 75% { transform: translate(-50%, -10px) rotate(-2deg); } }
 .spa-float.flip img { transform: scaleX(-1); }
-.spa-player { position: absolute; left: 50%; bottom: 8%; width: 260px; max-width: 46%; transform: translateX(-50%); z-index: 5; animation: spaBobC 5s ease-in-out infinite; }
+.spa-player { position: absolute; left: 50%; bottom: 8%; width: 180px; max-width: 30%; transform: translateX(-50%); z-index: 5; animation: spaBobC 5s ease-in-out infinite; }
 @keyframes spaBobC { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-5px); } }
 .spa-hud { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 6; display: flex; align-items: center; gap: 18px; padding: 8px 18px; background: rgba(255, 252, 240, .92); border: 2px solid var(--ink); border-radius: 14px; box-shadow: 3px 3px 0 var(--ink); }
 .spa-hud div { display: grid; justify-items: center; }
@@ -2202,7 +2202,7 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .spa-good p { margin: 0; font-size: 13px; }
 .spa-good .btn { justify-self: start; }
 .spa-room .soc-foot .btn { background: #fff; color: var(--ink); }
-@media (max-width: 560px) { .spa-hall { height: 340px; } .spa-float img { width: 84px; height: 84px; } .spa-hud b { font-size: 22px; } .spa-player { width: 180px; } }
+@media (max-width: 560px) { .spa-hall { height: 340px; } .spa-float img { width: 84px; height: 84px; } .spa-hud b { font-size: 22px; } .spa-player { width: 120px; } }
 @media (prefers-reduced-motion: reduce) { .spa-float, .spa-wave::before, .spa-wave::after, .spa-hud-g b { animation: none; } }
 .spa-bgms { display: flex; flex-wrap: wrap; gap: 6px; }
 /* 星图：荆楚号 / 空间站 · 马亚尔星系 · 地球（2026-10-18） */
