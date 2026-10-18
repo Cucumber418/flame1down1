@@ -935,6 +935,8 @@
     $('btn-again').textContent = rankOn() ? '下一局 · 重新选择阵容' : '同样的背包再来一局';
     $('endcard').hidden = false;
     refreshCmd();
+    // 剧情 / 野外 / 挑战 / 首领这类对战（2026-10-18）：不再停在结束卡片上，直接结算，奖励面板马上弹出
+    if (S.story) { $('endcard').hidden = true; setTimeout(function () { if (app.S === S) $('btn-back').click(); }, 0); return; }
     if (!S.story && !S.evSent) { S.evSent = 1; var em = window.HSEV ? window.HSEV('arena', { rank: rankOn(), result: r, quit: !!S.quit }) : null; if (em) S.evMsg = em; }
     if (S.evMsg) $('end-sub').textContent += ' · ' + S.evMsg;
   }

@@ -403,7 +403,7 @@
       acc.exp = (acc.exp || 0) + sum.exp; acc.energy = (acc.energy || 0) + sum.energy; giveMerit(sum.merit); save(); renderRes();
     }
     // 一次拿到好几个（比如老玩家第一次看到赛季称号）时合成一条提示
-    if (got.length) { save(); var rt = !back && n ? '奖励：' + rwText(sum) + '。' : ''; setTimeout(function () { toast('获得称号「' + got.join('」「') + '」！' + rt + '点右上角的名字即可佩戴。'); }, 400); }
+    if (got.length) { save(); var rt = !back && n ? '奖励：' + rwText(sum) + '。' : ''; var tmsg = '获得称号「' + got.join('」「') + '」！' + rt + '点右上角的名字即可佩戴。'; if (typeof REW !== 'undefined' && REW.capture) toast(tmsg); else setTimeout(function () { toast(tmsg); }, 400); }
     else if (n && !back) setTimeout(function () { toast('称号奖励到账：' + rwText(sum) + '。'); }, 600);
   }
   function titleName(id) { var T = TITLES.filter(function (x) { return x.id === id; })[0]; return T ? T.n : ''; }
@@ -1404,7 +1404,7 @@
       if (realN > 0) {
         var o0 = allyFirst ? 1 : 0, got = battleRewards(team.slice(o0, o0 + realN), (seen || []).slice(o0, o0 + realN), downs);   // 助战精灵不拿经验
         dailyHit('pve');
-        if (got.length) setTimeout(function () { toast(got.join('')); }, 300);
+        if (got.length) toast(got.join(''));
       }
       ex.fighting = false; document.body.classList.remove('story-fight'); prog(ex.site).bt = res; save();
       $('pg-arena').hidden = page !== 'arena' || ex.mode === 'intro' || ex.mode === 'replay';
@@ -2022,7 +2022,7 @@
         ex.fighting = false; document.body.classList.remove('story-fight');
         $('pg-arena').hidden = page !== 'arena'; $('pg-explore').hidden = page !== 'explore';
         renderTop(); syncBattle(); window.scrollTo(0, $('pg-explore').offsetTop - 8);
-        if (msg.length) setTimeout(function () { toast(msg.join('')); }, 300);
+        if (msg.length) toast(msg.join(''));
       } });
   }
   /* ---------- 星球挑战：从左到右一条链，每个节点是一关，按顺序开放；每关三颗星 ----------
@@ -2323,7 +2323,7 @@
         ex.view = 'sites'; ex.planet = P; ex.fpart = 'challenge';
         $('pg-arena').hidden = page !== 'arena'; $('pg-explore').hidden = page !== 'explore';
         renderTop(); syncBattle(); window.scrollTo(0, $('pg-explore').offsetTop - 8);
-        if (msg.length) setTimeout(function () { toast(msg.join('')); }, 300);
+        if (msg.length) toast(msg.join(''));
       } });
   }
   function chalClick(b) {
@@ -2397,9 +2397,9 @@
     HSBATTLE.start = function (opt) {
       var end0 = opt.onEnd;
       opt.onEnd = function () {
-        REW = { collect: true, capture: true, lines: [], gains: [] };
+        REW = { collect: true, capture: true, lines: [], gains: [], res: arguments[0] };
         try { return end0 && end0.apply(this, arguments); }
-        finally { REW.collect = false; setTimeout(rewShow, 480); }
+        finally { REW.collect = false; setTimeout(rewShow, 0); }   // 等同一轮里排队的提示（如新称号）也收进来，马上弹出
       };
       return start0(opt);
     };
@@ -2422,7 +2422,7 @@
         '<small>+' + fmt(x.amt) + ' 经验' + (up ? ' · 升级了！' : '') + (atCap(m) ? ' · 已到等级上限' : '') + '</small></div></li>';
     }).join('');
     var d = document.createElement('div'); d.className = 'soc-dlg rew-dlg'; d.id = 'rew-dlg';
-    d.innerHTML = '<div class="soc-box rew-box" role="dialog" aria-modal="true" aria-label="战斗奖励"><span class="tape l"></span><span class="tape r"></span><h2>战斗结算</h2>' +
+    d.innerHTML = '<div class="soc-box rew-box" role="dialog" aria-modal="true" aria-label="战斗奖励"><span class="tape l"></span><span class="tape r"></span><h2>' + ({ win: '胜利！', lose: '失败了', caught: '捕捉成功！', flee: '顺利逃走了', spared: '手下留情' }[REW.res] || '战斗结算') + '</h2>' +
       (rows.length ? '<ul class="rw-rows">' + rows.map(function (t, i) { return '<li style="animation-delay:' + (i * 70) + 'ms">' + esc(t) + '</li>'; }).join('') + '</ul>' : '') +
       (monsH ? '<h4 class="rw-h">出战精灵</h4><ul class="rw-mons">' + monsH + '</ul>' : '') +
       '<div class="soc-foot"><button type="button" class="btn primary" data-rewok="1">确定</button></div></div>';
@@ -2569,7 +2569,7 @@
         ex.view = 'sites'; ex.planet = 'tower'; ex.twTab = 'climb';
         $('pg-arena').hidden = page !== 'arena'; $('pg-explore').hidden = page !== 'explore';
         renderTop(); syncBattle(); window.scrollTo(0, $('pg-explore').offsetTop - 8);
-        if (msg.length) setTimeout(function () { toast(msg.join('')); }, 300);
+        if (msg.length) toast(msg.join(''));
       } });
   }
   function towerClick(b) {
@@ -3600,7 +3600,7 @@
           msg.push('泰戈尔好像有话要说……');
           startVN('tiger2', 'replay', $('pg-explore'), true);
         }
-        if (msg.length) setTimeout(function () { toast(msg.join('')); }, 300);
+        if (msg.length) toast(msg.join(''));
       } });
   }
 
@@ -4161,7 +4161,7 @@
         ex.view = 'room'; ex.room = k; ex.area = '天门';
         $('pg-arena').hidden = page !== 'arena'; $('pg-explore').hidden = page !== 'explore';
         renderTop(); syncBattle(); window.scrollTo(0, $('pg-explore').offsetTop - 8);
-        if (msg) setTimeout(function () { toast(msg); }, 300);
+        if (msg) toast(msg);
       } });
   }
   // 房间里固定展示的精灵：Threego 是小胖虎和被玩家主宠克制的初始精灵，Dr.黄 是董之马（至高之盾的一阶）
