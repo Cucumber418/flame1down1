@@ -3815,7 +3815,7 @@
     }
     $('pg-explore').innerHTML = exHead(on ? '正在泡温泉：留在这个页面，精灵们就会一直涨经验。离开就结束这一次。' : '把精灵放进温泉，点「开始泡温泉」。泡温泉期间要一直留在这个页面。') +
       '<div class="crumb"><button type="button" class="btn ghost" id="spa-back">‹ 返回温泉生活区</button><b>咸宁 · 温泉大厅</b></div>' +
-      '<div class="spa-hall' + (on ? ' soaking' : '') + '" style="background-image:url(images/backgrounds/spa_hall.webp)">' + hud +
+      '<div class="spa-hall' + (on ? ' soaking' : '') + '" style="background-image:url(images/backgrounds/spa_hall.jpg)">' + hud +
         '<div class="spa-steam" aria-hidden="true"><i></i><i></i><i></i><i></i></div>' +
         '<div class="spa-pool"><div class="spa-wave" aria-hidden="true"></div>' + floats +
         (on ? '<img class="spa-player" src="images/characters/spa_' + gender() + '.webp" alt="' + esc(acc.name) + '">' : '') + '</div></div>' +
@@ -3828,7 +3828,7 @@
     var old = $('spa-room'); if (old) old.remove();
     var price = spaSlotPrice();
     var d = document.createElement('div'); d.className = 'soc-dlg spa-room-dlg'; d.id = 'spa-room';
-    d.innerHTML = '<div class="soc-box spa-room" role="dialog" aria-modal="true" aria-label="温泉休息室" style="background-image:linear-gradient(rgba(20,16,10,.35),rgba(20,16,10,.7)),url(images/backgrounds/spa_lounge.webp)">' +
+    d.innerHTML = '<div class="soc-box spa-room" role="dialog" aria-modal="true" aria-label="温泉休息室" style="background-image:linear-gradient(rgba(20,16,10,.35),rgba(20,16,10,.7)),url(images/backgrounds/spa_lounge.jpg)">' +
       '<h2>温泉休息室</h2><p class="spa-rm-sub">能量 <b>' + fmt(acc.energy || 0) + '</b></p><div class="spa-goods">' +
       '<article class="spa-good"><b>经验翻倍橘子汁</b><p>冰镇的橘子汁。喝下后 ' + SPA_JUICE.min + ' 分钟内，温泉经验翻倍（可以叠加时长）。</p>' + (juiceOn() ? '<p class="hint">生效中，还剩 ' + hms(acc.spa.juice - Date.now()) + '</p>' : '') +
         '<button type="button" class="btn primary" data-spabuy="juice"' + ((acc.energy || 0) >= SPA_JUICE.price ? '' : ' disabled') + '>' + fmt(SPA_JUICE.price) + ' 能量 · 来一杯</button></article>' +

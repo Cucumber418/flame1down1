@@ -143,7 +143,7 @@ var BG = {
   "kb_isle": "images/backgrounds/kb_isle.jpg",
   "kb_lookup": "images/backgrounds/kb_lookup.jpg",
   "kb_shoal": "images/backgrounds/kb_shoal.jpg",
-  "kb_temple": "images/backgrounds/kb_temple.jpg",
+  "kb_temple": "images/backgrounds/kb_temple.jpg?v=2",
   "kb_floor": "images/backgrounds/kb_floor.jpg",
   "kb_abyss": "images/backgrounds/kb_abyss.jpg",
   "mayar": "images/backgrounds/mayar.jpg",
