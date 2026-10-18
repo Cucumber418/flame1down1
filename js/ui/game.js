@@ -4153,7 +4153,7 @@
   function hasTrans() { return !!(acc && ((acc.items && acc.items.trans > 0) || prog('flora2').done)); }
   function chatLine(sid, st, ctx) {
     if (ctx === 'mia') return pickOne(CHATTER_MIA);
-    var C = (typeof CHATTER !== 'undefined' && CHATTER[sid]) || {}, own = (C.all || []).concat(C[ctx] || [], (C.stage && C.stage[st]) || []);
+    var C = (typeof CHATTER !== 'undefined' && CHATTER[sid]) || {}, own = (C.all || []).concat(C[ctx] || [], (C.stage && C.stage[st]) || [], C[ctx + '_' + st] || []);
     var gen = (typeof CHATTER_GEN !== 'undefined' && CHATTER_GEN[ctx]) || [];
     return own.length && (Math.random() < 0.75 || !gen.length) ? pickOne(own) : gen.length ? pickOne(gen) : '';
   }
