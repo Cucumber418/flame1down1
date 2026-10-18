@@ -3529,8 +3529,8 @@
           else if (first) {
             msg = msg.concat(firstReward(L));
             if (B.lv[d + 1] && levelOpen(k, d + 1)) msg.push(B.lv[d + 1].diff + '难度已开放。');
-            if (L.diff === '困难' && WEEKLIES.some(function (x) { return x.boss === k && x.d === d; })) msg.push('「' + B.name + '」的每周挑战已开放：在星际探索的星球列表上方进入，每次消耗 1 枚挑战许可。');
-            if (!wasWeekly && weeklyOpen()) msg.push('「每周挑战」已开放：在星际探索的星球列表上方进入，每次消耗 1 枚挑战许可（已送你 1 枚）。');
+            if (L.diff === '困难' && WEEKLIES.some(function (x) { return x.boss === k && x.d === d; })) msg.push('「' + B.name + '」的每周挑战已开放：在星际探索的星球列表上方进入，每次获胜消耗 1 枚挑战许可。');
+            if (!wasWeekly && weeklyOpen()) msg.push('「每周挑战」已开放：在星际探索的星球列表上方进入，每次获胜消耗 1 枚挑战许可（已送你 1 枚）。');
           }
         }
         msg = msg.concat(battleRewards(team, seen, downs));
