@@ -199,6 +199,7 @@
   function gainExp(m, amt, fromPool) {
     var room = expAt(capLv(m)) - m.exp; amt = Math.max(0, Math.min(amt, room, fromPool ? acc.exp : Infinity)); if (!amt) return null;
     var before = { lv: m.lv, name: form(m).name, stage: form(m).stage };
+    if (typeof REW !== 'undefined' && REW.collect) REW.gains.push({ u: m.u, lv0: m.lv, exp0: m.exp, amt: amt });
     markForm(m.sid, before.stage);
     m.exp += amt; if (fromPool) acc.exp -= amt; m.lv = lvOf(m.exp); markForm(m.sid, form(m).stage);
     var after = form(m), msg = form(m).name + ' 获得了 ' + fmt(amt) + ' 点经验';
@@ -265,6 +266,7 @@
     go(b.dataset.page);
   });
   function toast(msg, act, area) {
+    if (typeof REW !== 'undefined' && REW.capture && !act) { REW.lines.push(String(msg)); return; }   // 对战刚结束：消息收进奖励面板，不弹提示条
     var t = $('toast'); if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; t.setAttribute('role', 'status'); document.body.appendChild(t);
       t.addEventListener('click', function (e) { var g = e.target.closest('[data-tgo]'); if (g) { t.hidden = true; ex.planet = 'jingchu'; go('explore'); teleport(g.dataset.tgo); } }); }
     t.innerHTML = '<span>' + esc(msg) + '</span>' + (act ? '<button type="button" class="btn" data-tgo="' + (area || '孝感') + '">' + act + '</button>' : '');
@@ -2384,6 +2386,59 @@
     });
   }
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && $('cgv-dlg')) $('cgv-dlg').remove(); });
+
+  /* ---------- 对战结束后的奖励面板（2026-10-18） ----------
+   * 所有用 HSBATTLE.start 开始的对战（野外、剧情、挑战、首领、先驱之塔……），结束时的提示都收进一个面板：
+   *   上面一行一种奖励，下面是出战精灵的经验条特写（从原来的位置涨到现在的位置，升级的会先涨满）。点「确定」关闭。 */
+  var REW = { collect: false, capture: false, lines: [], gains: [] };
+  function rewWrap() {
+    if (!window.HSBATTLE || HSBATTLE._rew) return;
+    var start0 = HSBATTLE.start;
+    HSBATTLE.start = function (opt) {
+      var end0 = opt.onEnd;
+      opt.onEnd = function () {
+        REW = { collect: true, capture: true, lines: [], gains: [] };
+        try { return end0 && end0.apply(this, arguments); }
+        finally { REW.collect = false; setTimeout(rewShow, 480); }
+      };
+      return start0(opt);
+    };
+    HSBATTLE._rew = true;
+  }
+  function rewShow() {
+    REW.capture = false;
+    var rows = [];
+    REW.lines.forEach(function (t) { String(t).split(/(?<=[。！：])/).forEach(function (x) { x = x.trim().replace(/：$/, '。'); if (x && !/^[^，。]*获得了 [\d,]+ 点经验/.test(x)) rows.push(x); }); });   // 每只精灵各自的经验在下面的经验条里显示
+    var g = {}, order = [];
+    REW.gains.forEach(function (x) { if (!g[x.u]) { g[x.u] = { u: x.u, lv0: x.lv0, exp0: x.exp0, amt: 0 }; order.push(x.u); } g[x.u].amt += x.amt; });
+    if (!rows.length && !order.length) return;
+    var old = $('rew-dlg'); if (old) old.remove();
+    var frac = function (lv, exp) { if (lv >= MAX_LV) return 1; var a = expAt(lv), b = expAt(lv + 1); return Math.max(0, Math.min(1, (exp - a) / (b - a))); };
+    var monsH = order.map(function (u) {
+      var x = g[u], m = mon(u); if (!m) return '';
+      var f = form(m), up = m.lv > x.lv0, f0 = frac(x.lv0, x.exp0), f1 = atCap(m) ? 1 : frac(m.lv, m.exp);
+      return '<li class="rw-mon"><img src="' + f.img + '" alt=""><div class="rw-mt"><b>' + esc(f.name) + '</b><span class="rw-lv">LV' + x.lv0 + (up ? ' → <em>LV' + m.lv + '</em>' : '') + '</span>' +
+        '<div class="rw-bar" data-f0="' + f0 + '" data-f1="' + f1 + '" data-up="' + (m.lv - x.lv0) + '"><i style="width:' + (f0 * 100) + '%"></i></div>' +
+        '<small>+' + fmt(x.amt) + ' 经验' + (up ? ' · 升级了！' : '') + (atCap(m) ? ' · 已到等级上限' : '') + '</small></div></li>';
+    }).join('');
+    var d = document.createElement('div'); d.className = 'soc-dlg rew-dlg'; d.id = 'rew-dlg';
+    d.innerHTML = '<div class="soc-box rew-box" role="dialog" aria-modal="true" aria-label="战斗奖励"><span class="tape l"></span><span class="tape r"></span><h2>战斗结算</h2>' +
+      (rows.length ? '<ul class="rw-rows">' + rows.map(function (t, i) { return '<li style="animation-delay:' + (i * 70) + 'ms">' + esc(t) + '</li>'; }).join('') + '</ul>' : '') +
+      (monsH ? '<h4 class="rw-h">出战精灵</h4><ul class="rw-mons">' + monsH + '</ul>' : '') +
+      '<div class="soc-foot"><button type="button" class="btn primary" data-rewok="1">确定</button></div></div>';
+    document.body.appendChild(d);
+    // 经验条动画：升级的先涨满（每升一级涨满一次），再涨到现在的位置
+    Array.prototype.forEach.call(d.querySelectorAll('.rw-bar'), function (bar) {
+      var i = bar.querySelector('i'), f1 = +bar.dataset.f1, up = +bar.dataset.up, step = 0;
+      var next = function () {
+        if (step < up) { step++; i.style.transition = 'width .45s ease-in'; i.style.width = '100%'; setTimeout(function () { i.style.transition = 'none'; i.style.width = '0%'; void i.offsetWidth; next(); }, 480); }
+        else { i.style.transition = 'width .7s ease-out'; i.style.width = (f1 * 100) + '%'; }
+      };
+      setTimeout(next, 350);
+    });
+    d.addEventListener('click', function (e) { if (e.target.closest('[data-rewok]')) d.remove(); });
+  }
+  rewWrap();
   /* ---------- 全服挑战进度（2026-10-17）：星球挑战页、先驱之塔页下方，服务器见 server/chalboard.js ---------- */
   var CB = {};
   function cbFetch(k) {

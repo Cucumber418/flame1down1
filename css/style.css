@@ -2144,3 +2144,20 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .wf-node.gem-ppAsh .wf-gem { background: radial-gradient(circle at 35% 30%, #ffd9b0, #8a4a2a 55%, #3a2018); box-shadow: 0 0 8px #ff9a5a; }
 .wf-node.gem-ltOrb .wf-gem { background: radial-gradient(circle at 35% 30%, #fffbd6, #f2d84a 55%, #b08a10); box-shadow: 0 0 10px #ffe85a; }
 .wf-node.gem-whFrost .wf-gem { background: radial-gradient(circle at 35% 30%, #ffffff, #bfe3f2 55%, #6aa6c8); box-shadow: 0 0 8px #d8f3ff; }
+/* 对战结算面板（2026-10-18） */
+.rew-box { max-width: 460px; width: calc(100% - 24px); }
+.rew-box h2 { margin-bottom: 8px; }
+.rw-rows { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 6px; max-height: 40vh; overflow-y: auto; }
+.rw-rows li { padding: 7px 10px; background: #fff; border: 1.5px solid var(--rule); border-left: 4px solid #f2c46b; border-radius: 8px; font-size: 13.5px; line-height: 1.5; animation: rwIn .3s ease-out both; }
+@keyframes rwIn { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: none; } }
+.rw-h { margin: 6px 0 6px; }
+.rw-mons { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.rw-mon { display: grid; grid-template-columns: 56px 1fr; gap: 10px; align-items: center; padding: 6px 8px; background: #fff; border: 1.5px solid var(--ink); border-radius: 10px; }
+.rw-mon img { width: 56px; height: 56px; object-fit: contain; }
+.rw-mt { display: grid; gap: 3px; }
+.rw-lv { font-size: 12.5px; color: #555; }
+.rw-lv em { font-style: normal; color: #c42f3a; font-weight: 700; }
+.rw-bar { height: 10px; border-radius: 99px; background: var(--paper-2); border: 1px solid var(--ink); overflow: hidden; }
+.rw-bar i { display: block; height: 100%; background: linear-gradient(90deg, #6fc3e8, #3577c9); }
+.rw-mt small { color: #3577c9; font-weight: 700; font-size: 12px; }
+@media (prefers-reduced-motion: reduce) { .rw-rows li { animation: none; } }
