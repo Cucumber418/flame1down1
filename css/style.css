@@ -2204,3 +2204,24 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 @media (max-width: 560px) { .spa-hall { height: 340px; } .spa-float img { width: 84px; height: 84px; } .spa-hud b { font-size: 22px; } .spa-player { width: 180px; } }
 @media (prefers-reduced-motion: reduce) { .spa-float, .spa-wave::before, .spa-wave::after, .spa-hud-g b { animation: none; } }
 .spa-bgms { display: flex; flex-wrap: wrap; gap: 6px; }
+/* 星图：荆楚号 / 空间站 · 马亚尔星系 · 地球（2026-10-18） */
+.gx-rows { display: grid; gap: 14px; }
+.gx-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.gx-row.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 560px) { .gx-row.two { grid-template-columns: minmax(0, 1fr); } }
+.mayar { border: 1.5px solid var(--ink); border-radius: 16px; background: #0d0e16; box-shadow: 3px 3px 0 var(--ink); overflow: hidden; }
+.mayar h3 { margin: 0; padding: 10px 14px 8px; font-family: var(--f-hand); font-weight: 400; font-size: 30px; color: #f3efe2; background: #15161f; border-bottom: 1px solid #2c2d3a; }
+.mayar h3 small { font-family: var(--f-body, inherit); font-size: 12px; color: #a9a7b8; margin-left: 8px; }
+.mayar-map { position: relative; aspect-ratio: 780 / 440; }
+.mayar-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.mayar .mp { position: absolute; transform: translate(-50%, -50%); padding: 0; margin: 0; border: 0; background: none; cursor: pointer; min-width: 40px; }
+.mayar .mp-ic { display: block; transition: transform .18s, filter .18s; filter: drop-shadow(0 0 8px rgba(160, 200, 255, .35)); }
+.mayar .mp-ic svg, .mayar .mp-ic img { display: block; width: 100%; height: auto; aspect-ratio: 1; filter: none; }
+.mayar .mp:hover:not(.locked) .mp-ic, .mayar .mp:focus-visible .mp-ic { transform: scale(1.1); filter: drop-shadow(0 0 14px rgba(190, 220, 255, .8)); }
+.mayar .mp-lb { position: absolute; left: 50%; top: 100%; transform: translateX(-50%); display: grid; justify-items: center; white-space: nowrap; margin-top: 2px; pointer-events: none; }
+.mayar .mp-lb b { font-family: var(--f-hand); font-weight: 400; font-size: clamp(14px, 2.2vw, 22px); line-height: 1; color: #fff; text-shadow: 0 1px 3px #000, 0 0 6px #000; }
+.mayar .mp-lb small { font-size: clamp(9px, 1.2vw, 11px); color: #cfd7ff; text-shadow: 0 1px 2px #000; }
+.mayar .mp.locked { cursor: not-allowed; }
+.mayar .mp.locked .mp-ic { filter: grayscale(1) brightness(.55); }
+.mayar .mp.locked .mp-lb b { color: #aaa; }
+.mayar .mp.unk { width: 3.6%; min-width: 22px; aspect-ratio: 1; display: grid; place-items: center; border: 2px dashed #7e7d8e; border-radius: 50%; color: #a9a7b8; font-family: var(--f-hand); font-size: clamp(12px, 1.8vw, 20px); background: rgba(13, 14, 22, .85); cursor: default; }

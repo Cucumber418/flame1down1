@@ -708,7 +708,7 @@
     brTwig: { name: '生长枯枝', sid: null, sids: ['barren'], kind: 'jade', cost: 100, sd: '困难难度荒芜的专属道具。可以让荒芜领悟隐藏技能，也能提高荒芜的等级上限。', d: '从荒芜身上折下的枯枝，枝头却冒出了一点新芽。100 个可以让荒芜一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；荒芜达到 LV70 后，也用它解锁 LV75（500 个）、LV80（1000 个）的等级上限。首次击败困难难度的荒芜得 80 个，每周挑战每次击败得 50 个。', none: '你还没有荒芜。击败简单难度的首领「荒芜」可以得到一只。' },
     deathTok: { name: '死神代币', sid: null, sids: ['pluto'], kind: 'jade', cost: 1, d: '击败先驱之塔第 60 层的死神获得，一个账号最多 3 颗。1 颗可以让帕努托尔一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；先驱之塔的代币商店里，兑换「帕努托尔的精元」也要用到它。', none: '你还没有帕努托尔。在先驱之塔的代币商店里，用 3000 先驱代币 + 1 颗死神代币可以兑换「帕努托尔的精元」。' },
     // 各星球特产（2026-10-18）：和芙罗拉玉一样，100 个让该星球的普通野生精灵一系领悟一个隐藏技能；也用来解锁同属性精灵的等级上限
-    kbDrop: { name: '不化水滴', sid: null, sids: ['pede', 'gorgon'], kind: 'jade', cost: 100, gem: '水', sd: '坎伯兰星的特产。可以让坎伯兰星的普通野生精灵领悟隐藏技能，也能提高水系精灵的等级上限。', d: '坎伯兰星浅海里凝成的水滴，永远不会蒸发。100 个可以让恩佩德、戈耳贡一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；水系精灵达到 LV70 后，也可以用它解锁更高的等级上限。在坎伯兰星的野外场景里每天有机会捡到。', none: '你还没有恩佩德或戈耳贡（进化前的形态也算）。去坎伯兰星的环礁浅海捕捉吧。' },
+    kbDrop: { name: '不化水滴', sid: null, sids: ['pede', 'gorgon'], kind: 'jade', cost: 100, gem: '水', sd: '坎伯兰星的特产。可以让坎伯兰星的普通野生精灵领悟隐藏技能，也能提高水系精灵的等级上限。', d: '坎伯兰星浅海里凝成的水滴，永远不会蒸发。100 个可以让恩佩德、戈耳贡一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；水系精灵达到 LV70 后，也可以用它解锁更高的等级上限。在坎伯兰星的野外场景里每天有机会捡到。', none: '你还没有恩佩德或戈耳贡（进化前的形态也算）。去坎伯兰星的水面、浅水区或深海区捕捉吧。' },
     ppAsh: { name: '火山灰烬', sid: null, sids: ['hephaestus', 'firemouse'], kind: 'jade', cost: 100, gem: '火', sd: '庞贝星的特产。可以让庞贝星的普通野生精灵领悟隐藏技能，也能提高火系精灵的等级上限。', d: '庞贝星火山喷出的灰烬，摸上去还是温热的。100 个可以让赫菲斯托斯、费尔茅斯一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；火系精灵达到 LV70 后，也可以用它解锁更高的等级上限。在庞贝星的野外场景里每天有机会捡到。', none: '你还没有赫菲斯托斯或费尔茅斯（进化前的形态也算）。去庞贝星捕捉吧。' },
     ltOrb: { name: '闪电球体', sid: null, sids: ['leigong', 'faraday'], kind: 'jade', cost: 100, gem: '电', sd: '莱汀陨石带的特产。可以让陨石带的普通野生精灵领悟隐藏技能，也能提高电系精灵的等级上限。', d: '雷暴里凝成的一团电光，握在手里噼啪作响。100 个可以让雷公、法拉第一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；电系精灵达到 LV70 后，也可以用它解锁更高的等级上限。在莱汀陨石带的野外场景里每天有机会捡到。', none: '你还没有雷公或法拉第（进化前的形态也算）。去莱汀陨石带捕捉吧。' },
     whFrost: { name: '永久冻土', sid: null, sids: ['frost'], kind: 'jade', cost: 100, gem: '冰', sd: '白之星的特产。可以让白之星的普通野生精灵领悟隐藏技能，也能提高冰系精灵的等级上限。', d: '白之星冰原下挖出的冻土，一万年都不会化开。100 个可以让霜冻之冠一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；冰系精灵达到 LV70 后，也可以用它解锁更高的等级上限。在白之星的野外场景里每天有机会捡到。', none: '你还没有霜冻之冠（进化前的形态也算）。去白之星的永冻冰原捕捉吧。' },
@@ -722,7 +722,7 @@
   };
   // 野外采集物：每个区域 2 个采集点，每个点每天 1 次。星砂做加强装置，星核做华为装置。
   var GATHER_ITEMS = {
-    g_sand: { name: '星砂', d: '从星球表面收来的矿砂，冶炼坊用来装配加强捕捉装置。', from: '芙罗拉星的丛林和草甸、坎伯兰星的环礁浅海、庞贝星的熔岩原', n: 12 },
+    g_sand: { name: '星砂', d: '从星球表面收来的矿砂，冶炼坊用来装配加强捕捉装置。', from: '芙罗拉星的丛林和草甸、坎伯兰星的水面、浅水区和深海区、庞贝星的熔岩原', n: 12 },
     g_core: { name: '星核', d: '雷暴和永冻里凝出来的核，四颗可以合成一个华为捕捉装置。', from: '莱汀陨石带的雷暴陨石群、白之星的永冻冰原', n: 1 }
   };
   var GATHER_ORDER = ['g_sand', 'g_core'];
@@ -1130,13 +1130,20 @@
   var PLANETS = [
     { id: 'earth', name: '地球', d: '我们出发的地方。', sites: ['school', 'river', 'jiuquan'] },
     { id: 'jingchu', name: '荆楚号', d: '环绕地球运行的星际探索舰，轮廓和湖北省一模一样。', sites: ['board', 'xiaogan', 'academy', 'storage'], ship: true, after: 'jiuquan' },
-    { id: 'tower', name: '先驱之塔', d: '停泊在荆楚号后方的一座高塔，共 60 层。每一层都守着一批强大的精灵，塔顶住着死神。', sites: [], tower: true, after: 'flora1' },
+    { id: 'station', name: '空间站', d: '停泊在荆楚号后方的空间站，先驱之塔就建在这里。', sites: [], station: true, after: 'flora1' },
+    { id: 'tower', name: '先驱之塔', d: '空间站里的一座高塔，共 60 层。每一层都守着一批强大的精灵，塔顶住着死神。', sites: [], tower: true, after: 'flora1', inStation: true },
     { id: 'flora', name: '芙罗拉星', d: '草系星球。丛林、草甸和盐碱地里栖息着许多野生精灵。', sites: ['flora1', 'flora2', 'flora3', 'flora4', 'flora5', 'flora6', 'travelcat'], wild: true, ptype: '草系星球', color: ['#9fd08a', '#3f7d4a'], get img() { return floraFallen() ? 'images/planets/flora_corrupt.webp?v=2' : 'images/planets/flora.webp?v=2'; }, after: 'board' },
-    { id: 'kamble', name: '坎伯兰星', d: '水系星球。大半个星球都被温暖的浅海覆盖。', sites: [], wild: true, ptype: '水系星球', color: ['#8cc6ea', '#2a6fb0'], after: 'flora1' },
+    { id: 'kamble', name: '坎伯兰星', d: '水系星球。整颗星球都被海洋覆盖，从水面一直往下，是浅水区和深不见底的深海区。', sites: [], wild: true, ptype: '水系星球', color: ['#8cc6ea', '#2a6fb0'], get img() { return 'images/planets/kamble_' + kbStage() + '.webp'; }, after: 'flora1' },
     { id: 'pompeii', name: '庞贝星', d: '火系星球。火山终年喷发，地面被熔岩烤得发烫。', sites: [], wild: true, ptype: '火系星球', color: ['#f2a46b', '#b3401f'], img: 'images/planets/pompeii.webp', after: 'flora1' },
     { id: 'laiting', name: '莱汀陨石带', d: '电系区域。无数陨石在雷暴中漂浮。', sites: [], wild: true, ptype: '电系陨石带', color: ['#f1dd73', '#7a6a1a'], belt: true, after: 'flora1' },
     { id: 'white', name: '白之星', d: '冰系星球。整颗星球都裹在冰雪里。', sites: [], wild: true, ptype: '冰系星球', color: ['#e4f2fa', '#6aa6c8'], after: 'flora1' }
   ];
+  // 坎伯兰星的样子随剧情变化：0 是平常的蓝色，越往后越红（4 最红）。KB_STAGE_SITES 里每读完一段剧情，往后变一档
+  var KB_STAGE_SITES = [];
+  function kbStage() { return Math.min(4, KB_STAGE_SITES.filter(function (s) { return SITES[s] && prog(s).done; }).length); }
+  // 马亚尔星系：星系图上每颗星球的位置（% 坐标）和大小（占图宽的 %）；没有星球的位置显示「？」
+  var MAYAR = { flora: [84.1, 51.4, 12], kamble: [58.3, 63.4, 9], pompeii: [30.4, 42.3, 8.5], laiting: [16.2, 28.2, 11], white: [43.3, 21.1, 8] };
+  var MAYAR_UNK = [[35.9, 28.9], [59.5, 26.8], [71.3, 54.3]];
   function regionsOf(pid) { return WILD_REGIONS.filter(function (R) { return R.planet === pid; }); }
   function planetOf(pid) { return PLANETS.filter(function (p) { return p.id === pid; })[0]; }
   // 荆楚号的 17 个部门，对应湖北省的 17 个市州（林区）
@@ -1183,6 +1190,7 @@
   var BG_POS = { qiyi: '50% 42%', desert: '50% 40%', jslc: '50% 38%', street: '50% 55%', bridge: '45% 55%', tower: '50% 55%' };
   var BG_NAME = { gate: '校门', school: '校门', flag: '教学楼', garden: '牌坊花园', qiyi: '起义门', street: '彭刘杨路', bridge: '长江大桥', desert: '鸣沙山 · 月牙泉', jslc: '发射中心', tower: '发射塔', launch: '火箭升空', orbit: '地球轨道', hangar: '鄂州港 · 停泊区', cockpit_p: '武汉 · 指挥中枢', hangar_p: '鄂州港 · 停泊区', cabin_p: '温泉生活区', greenhouse_p: '太空温室', pp_lake: '熔浆大湖', pp_slag: '熔渣矿区', pp_fort: '湖心堡垒', pp_core: '炙热核心', gym_p: '体能馆', storage_p: '物资仓储', pod_p: '学院部 · 资料室', tea_p: '陆羽茶室 · 04 号舱', teahall: '陆羽茶室 · 大厅', bridge2_p: '编钟通讯站', bridge_p: '古城防卫部', xiaogan: '孝感大厅', paifang: '惟楚有材牌坊', hall: '报告厅', field: '操场', aerial: '校园全景' };
   // 芙罗拉星的场景名；瘴气化后的 *_mia 版本沿用同一个名字
+  Object.assign(BG_NAME, { kb_dock: '水星码头', kb_isle: '冥岛', kb_lookup: '仰望水面', kb_shoal: '群灵深海', kb_temple: '古代神殿', kb_floor: '海底', kb_abyss: '深渊潜底' });
   Object.assign(BG_NAME, { fl_path: '林间小路', fl_lake: '草甸湖畔', fl_beech: '山毛榉林', fl_maple: '丛林边缘', fl_meadow: '草甸', fl_sun: '丛林深处', fl_salt: '盐碱地', fl_village: '叶之村落', fl_horizon: '草甸尽头', fl_jungle_corrupt: '瘴气丛林' });
   Object.keys(BG_NAME).forEach(function (k) { if (BG[k + '_mia']) BG_NAME[k + '_mia'] = BG_NAME[k]; });
   // 角色（立绘为占位）
@@ -1457,19 +1465,16 @@
             '<small>获胜时消耗 1 枚挑战许可 · 击败得累积经验 ×' + fmt(W.exp) + '、' + rwList({ items: W.item }).join('、') + ' 和随机掉落</small></span><span class="wk-pm"><b>' + pn + '</b> / ' + PERMIT.max + '<small>挑战许可（共用）</small></span></button>';
         });
       }
-      html += '<div class="planets">' + PLANETS.filter(planetOpen).map(function (p) {
-        var n = p.sites.length, done = p.sites.filter(function (s) { return prog(s).done; }).length, open = planetOpen(p);
-        return '<button type="button" class="planet' + (open ? '' : ' locked') + '" data-planet="' + p.id + '"' + (open ? '' : ' disabled') + '><span class="tape l"></span>' + (p.ship ? '<img class="ship-ic" src="' + CHARS.ship_icon + '" alt="">' : p.tower ? towerSvg() : planetSvg(p.id)) +
-          '<span class="pn">' + p.name + (p.wild ? '<span class="chip ptype">' + p.ptype + '</span>' : '') + '</span><span class="hint">' + p.d + '</span><span class="pc">' + (open ? (p.tower ? '当前第 ' + twRec().f + ' 层 · 存档点第 ' + twRec().cp + ' 层' : p.wild ? '野外区域 ' + regionsOf(p.id).length + ' 个 · 可捕捉野生精灵' : '地点 ' + n + ' 个 · 已完成 ' + done) : '读完「' + SITES[p.after].chapter.split(' · ')[1] + '」后解锁') + '</span></button>';
-      }).join('') +
-        '<div class="planet locked" aria-disabled="true"><svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="34" fill="none" stroke="#75737e" stroke-width="3" stroke-dasharray="8 6"/><text x="60" y="72" text-anchor="middle" font-size="34" fill="#75737e" font-family="Long Cang, KaiTi, cursive">?</text></svg>' +
-        '<span class="pn">未知星球</span><span class="hint">更多星球敬请期待</span></div></div>';
+      // 第一排：荆楚号、空间站；第二排：马亚尔星系（星系图上点星球进入）；第三排：地球
+      html += '<div class="gx-rows"><div class="gx-row two">' + planetCard(planetOf('jingchu')) + planetCard(planetOf('station')) + '</div>' + mayarMap() +
+        '<div class="gx-row">' + planetCard(planetOf('earth')) + '</div></div>';
     } else {
       var P = PLANETS.filter(function (p) { return p.id === ex.planet; })[0];
-      html += '<div class="crumb"><button type="button" class="btn ghost" id="ex-back">‹ 返回星球</button><b>' + P.name + '</b></div>';
+      html += '<div class="crumb"><button type="button" class="btn ghost" id="ex-back">‹ ' + (P.inStation ? '返回空间站' : '返回星图') + '</button><b>' + (P.inStation ? '空间站 · ' : MAYAR[P.id] ? '马亚尔星系 · ' : '') + P.name + '</b></div>';
       if (P.ship) { el.innerHTML = html + shipMap(P); return; }
       if (P.wild) { el.innerHTML = html + (P.id === 'flora' ? floraPage() : wildPage(P)); return; }
       if (P.tower) { el.innerHTML = html + towerPage(); return; }
+      if (P.station) { el.innerHTML = html + '<div class="planets">' + planetCard(planetOf('tower')) + '</div>'; return; }
       html += '<div class="sites">' + P.sites.map(function (id) {
         var S = SITES[id], pr = prog(id), started = pr.at > 0 && !pr.done, open = unlocked(id);
         var rw = S.reward ? '<p class="hint">首次读完奖励：' + rwList(S.reward).filter(Boolean).join('、') + (UNLOCK[id] ? '，并开放' + UNLOCK[id] : '') + (pr.rewarded ? '（已领取）' : '') + '</p>' : '';
@@ -1531,6 +1536,27 @@
       '<div class="tp-fx" aria-hidden="true"><span>传送至 ' + d[0] + '……</span></div></div>' +
       (ids.length ? '<ul class="area-list">' + rw + '</ul>' : '') + '</div>';
     ex.tp = false;
+  }
+  // 星图上的一张星球卡（荆楚号、空间站、地球、先驱之塔）
+  function planetCard(p) {
+    var n = p.sites.length, done = p.sites.filter(function (s) { return prog(s).done; }).length, open = planetOpen(p);
+    return '<button type="button" class="planet' + (open ? '' : ' locked') + '" data-planet="' + p.id + '"' + (open ? '' : ' disabled') + '><span class="tape l"></span>' + (p.ship ? '<img class="ship-ic" src="' + CHARS.ship_icon + '" alt="">' : p.tower ? towerSvg() : p.station ? stationSvg() : planetSvg(p.id)) +
+      '<span class="pn">' + p.name + (p.wild ? '<span class="chip ptype">' + p.ptype + '</span>' : '') + '</span><span class="hint">' + p.d + '</span><span class="pc">' + (open ? (p.tower ? '当前第 ' + twRec().f + ' 层 · 存档点第 ' + twRec().cp + ' 层' : p.station ? '先驱之塔 · 当前第 ' + twRec().f + ' 层' : '地点 ' + n + ' 个 · 已完成 ' + done) : '读完「' + SITES[p.after].chapter.split(' · ')[1] + '」后解锁') + '</span></button>';
+  }
+  function stationSvg() {
+    return '<svg viewBox="0 0 120 120" aria-hidden="true"><ellipse cx="60" cy="62" rx="50" ry="17" fill="none" stroke="#23222b" stroke-width="7"/><ellipse cx="60" cy="62" rx="50" ry="17" fill="none" stroke="#e6eaf0" stroke-width="4"/>' +
+      '<rect x="12" y="55" width="22" height="14" fill="#5b8fd0" stroke="#23222b" stroke-width="2.5"/><rect x="86" y="55" width="22" height="14" fill="#5b8fd0" stroke="#23222b" stroke-width="2.5"/>' +
+      '<rect x="49" y="40" width="22" height="44" rx="6" fill="#e6eaf0" stroke="#23222b" stroke-width="3"/><path d="M60 18 L66 40 H54 Z" fill="#c42f3a" stroke="#23222b" stroke-width="2.5" stroke-linejoin="round"/>' +
+      '<circle cx="60" cy="54" r="4" fill="#f2c46b" stroke="#23222b" stroke-width="2"/><circle cx="60" cy="68" r="4" fill="#f2c46b" stroke="#23222b" stroke-width="2"/></svg>';
+  }
+  // 马亚尔星系：星系图，点星球进入
+  function mayarMap() {
+    var pts = Object.keys(MAYAR).map(function (id) {
+      var p = planetOf(id), m = MAYAR[id], open = planetOpen(p), lock = open ? '' : '读完「' + SITES[p.after].chapter.split(' · ')[1] + '」后解锁';
+      return '<button type="button" class="mp' + (open ? '' : ' locked') + '" data-planet="' + id + '"' + (open ? '' : ' disabled') + ' style="left:' + m[0] + '%;top:' + m[1] + '%;width:' + m[2] + '%" title="' + esc(p.name + '：' + (open ? p.d : lock)) + '">' +
+        '<span class="mp-ic">' + planetSvg(id) + '</span><span class="mp-lb"><b>' + p.name + '</b><small>' + (open ? p.ptype : '未解锁') + '</small></span></button>';
+    }).join('') + MAYAR_UNK.map(function (m) { return '<span class="mp unk" style="left:' + m[0] + '%;top:' + m[1] + '%" title="未知星球：更多星球敬请期待">?</span>'; }).join('');
+    return '<section class="mayar"><h3>马亚尔星系 <small>点击星球前往</small></h3><div class="mayar-map"><img class="mayar-bg" src="' + BG.mayar + '" alt="马亚尔星系">' + pts + '</div></section>';
   }
   function teleport(n) { ex.view = 'area'; ex.area = n; ex.tp = true; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); mysteryRoll('荆楚号 · ' + DEPTS[n][0]); }
   function planetSvg(id) {
@@ -1677,7 +1703,7 @@
   ];
   var GATHER = {
     forest: { item: 'g_sand', n: 12 }, grass: { item: 'g_sand', n: 12 },
-    kb_sea: { item: 'g_sand', n: 12 }, pp_lava: { item: 'g_sand', n: 12 }, pp_city: { item: 'g_sand', n: 12 },
+    kb_surf: { item: 'g_sand', n: 12 }, kb_sea: { item: 'g_sand', n: 12 }, kb_deep: { item: 'g_sand', n: 12 }, pp_lava: { item: 'g_sand', n: 12 }, pp_city: { item: 'g_sand', n: 12 },
     lt_belt: { item: 'g_core', n: 1 }, wh_snow: { item: 'g_core', n: 1 }
   };
   function gatherRec() {
@@ -1744,7 +1770,7 @@
    * 全服共享的时间表（按北京时间每个整点算，所有人算出来都一样，不需要服务器）：每小时在某个区域的某个场景停留连续 20 分钟。
    * 每次出现（按小时编号 h 区分）每人只能挑战 1 次（开战就算，acc.travel = { h }），LV30，不能捕捉。
    * 击败：累积经验 ×3000，50% 掉落叶子喵的叶片（5 片在冶炼坊合成精元，精元在神农架 · 精灵保育仓孵化）。 */
-  var TRAVEL = { sid: 'leafcat', lv: 30, exp: 3000, leaf: 0.5, dur: 20, regions: ['forest', 'grass', 'kb_sea', 'pp_lava', 'pp_city', 'lt_belt', 'wh_snow'],
+  var TRAVEL = { sid: 'leafcat', lv: 30, exp: 3000, leaf: 0.5, dur: 20, regions: ['forest', 'grass', 'kb_surf', 'kb_sea', 'kb_deep', 'pp_lava', 'pp_city', 'lt_belt', 'wh_snow'],
     spots: [{ x: 50, y: 64 }, { x: 32, y: 62 }, { x: 70, y: 66 }] };
   function thash(h) { var x = (h * 2654435761) >>> 0; x ^= x >>> 13; x = Math.imul(x, 0x5bd1e995) >>> 0; x ^= x >>> 15; return x >>> 0; }
   function sceneCount(R) { return Math.max(R.pool ? 2 : 1, (R.bgs || []).filter(function (k) { return BG[k]; }).length); }
@@ -2732,7 +2758,7 @@
 
   /* 芙罗拉玉：瘴气驱逐战开放后，芙罗拉星丛林、草甸的场景里每天有一定概率冒出来（每个场景每天最多一块，捡到 1~3 个） */
   // 每个星球的野外场景里每天刷新的特产（芙罗拉玉要等瘴气驱逐战开放）
-  var GEM_SPOT = { forest: 'floraJade', grass: 'floraJade', kb_sea: 'kbDrop', pp_lava: 'ppAsh', pp_city: 'ppAsh', lt_belt: 'ltOrb', wh_snow: 'whFrost' };
+  var GEM_SPOT = { forest: 'floraJade', grass: 'floraJade', kb_surf: 'kbDrop', kb_sea: 'kbDrop', kb_deep: 'kbDrop', pp_lava: 'ppAsh', pp_city: 'ppAsh', lt_belt: 'ltOrb', wh_snow: 'whFrost' };
   function jadeSpot(rid, scene) {
     var k = GEM_SPOT[rid]; if (!k || (k === 'floraJade' && !pwOpen())) return null;
     var g = seeded(bjDay() + ':jade:' + rid + ':' + scene + ':' + (acc.created || 0));
@@ -4607,7 +4633,7 @@
     if (b.id === 'ex-area') { ex.view = 'area'; renderExplore(); return; }
     if (b.id === 'ex-ship') { ex.view = 'sites'; ex.planet = 'jingchu'; renderExplore(); return; }
     if (b.dataset.planet && !b.disabled) { ex.planet = b.dataset.planet; ex.view = 'sites'; renderExplore(); mysteryRoll(planetOf(b.dataset.planet).name); return; }
-    if (b.id === 'ex-back') { ex.view = 'planets'; renderExplore(); return; }
+    if (b.id === 'ex-back') { var P_ = ex.view === 'sites' && planetOf(ex.planet); if (P_ && P_.inStation) { ex.planet = 'station'; renderExplore(); return; } ex.view = 'planets'; renderExplore(); return; }
     if (b.dataset.go && unlocked(b.dataset.go)) { startVN(b.dataset.go, 'replay', $('pg-explore'), b.dataset.from === '0'); window.scrollTo(0, $('pg-explore').offsetTop - 8); }
   });
 
