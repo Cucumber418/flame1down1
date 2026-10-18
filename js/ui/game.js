@@ -125,6 +125,14 @@
   function moveLv(sid, mv) { var s = SPMAP[sid], i = s.moves.indexOf(mv); return i >= 0 ? learnLv(i) : 50; }
   // hl：这只精灵已领悟的隐藏技能。有领悟条件的隐藏技能只能在战斗中领悟；没写条件的仍然 LV50 习得。
   // 不传 hl（剧情里的对手）时沿用旧规则：LV50 起隐藏技能全部可用。
+  // 技能栏里没法装备的技能，旁边写清楚原因（2026-10-18：隐藏技能不再一律写「LV50 习得」）
+  function hlItemOf(sid) { for (var k in USE_ITEMS) if (USE_ITEMS[k].kind === 'jade' && USE_ITEMS[k].sids && USE_ITEMS[k].sids.indexOf(sid) >= 0) return k; return null; }
+  function lockText(m, mv) {
+    if (!M[mv] || !M[mv].hidden) return 'LV' + moveLv(m.sid, mv) + ' 习得';
+    if (HL_GATED[m.sid]) { var it = hlItemOf(m.sid); return spHL(m.sid).indexOf(mv) >= 0 ? '已解锁 · LV' + HIDDEN_MIN_LV + ' 才能装备' : '未解锁 · 用 100 个「' + (it ? itemName(it) : '道具') + '」解锁'; }
+    if (LEARN[mv]) return (m.hl || []).indexOf(mv) >= 0 ? '已领悟 · LV' + HIDDEN_MIN_LV + ' 才能装备' : '未领悟 · 在战斗中' + LEARN[mv];
+    return 'LV50 习得';
+  }
   function hidOk(lv, hl, n) { return hl && LEARN[n] ? hl.indexOf(n) >= 0 && lv >= HIDDEN_MIN_LV : lv >= 50; }   // 战斗中领悟的隐藏技能也要 LV40 以上才能用（HIDDEN_MIN_LV 在 battle.js）
   /* 2026-10-18：这些精灵的隐藏技能改成只能用道具解锁（星球特产、首领专属道具、死神代币、三主宠的地球碎屑），不再在战斗中领悟。
    * 解锁是按种族记的（acc.hlSp[种族] = [技能]）：解锁一次，自己持有的这一种族全部都能用（LV40 以上才能装备）。 */
@@ -557,7 +565,7 @@
         '<input type="checkbox" id="' + id + '" data-amove="' + mv + '"' + (on ? ' checked' : '') + (ok ? '' : ' disabled') + '>' +
         '<span class="l1"><span class="mn">' + M_.name + '</span>' + atkTip(M_.type) + '<span class="mm">' + meta + '</span>' +
         (M_.hidden ? '<span class="tag sc hidtag" tabindex="0">隐藏<span class="tip" role="tooltip"><b>隐藏技能</b>' + (HL_GATED[m.sid] ? '用道具解锁的特殊技能（解锁一次，同一种族的精灵都能用），精灵要到 LV' + HIDDEN_MIN_LV + ' 以上才能装备' : LEARN[mv] ? '在战斗中领悟的特殊技能，精灵要到 LV' + HIDDEN_MIN_LV + ' 以上才能领悟' : '达到 LV50 时习得') + '</span></span>' : '') +
-        (ok ? '' : '<span class="lock">LV' + moveLv(m.sid, mv) + ' 习得</span>') + '</span><span class="md">' + esc(M_.d) + '</span></label>';
+        (ok ? '' : '<span class="lock">' + lockText(m, mv) + '</span>') + '</span><span class="md">' + esc(M_.d) + '</span></label>';
     };
     var acts = acc.teams.map(function (t, i) {
       var k = t.indexOf(m.u);
