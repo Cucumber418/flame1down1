@@ -35,7 +35,7 @@
       if (!m.ev) m.ev = {}; if (!(m.evFree >= 0)) m.evFree = 0;
       if (!ivOk(m.iv)) m.iv = randIv();   // 天赋系统上线前的精灵：补一套随机天赋
       if (acc.expV !== expV() && m.lv >= 1) {   // 经验曲线换版：等级不变，本级进度按比例换算
-        var oe = acc.expV === 2 ? v2ExpAt : oldExpAt, o0 = oe(m.lv), o1 = oe(Math.min(100, m.lv + 1)), fr = m.lv >= 100 ? 0 : Math.max(0, Math.min(0.999, ((m.exp || 0) - o0) / (o1 - o0)));
+        var oe = acc.expV === 3 ? v3ExpAt : acc.expV === 2 ? v2ExpAt : oldExpAt, o0 = oe(m.lv), o1 = oe(Math.min(100, m.lv + 1)), fr = m.lv >= 100 ? 0 : Math.max(0, Math.min(0.999, ((m.exp || 0) - o0) / (o1 - o0)));
         m.exp = m.lv >= 100 ? expAt(100) : Math.floor(expAt(m.lv) + fr * (expAt(m.lv + 1) - expAt(m.lv)));
       }
       if (!(m.exp >= expAt(m.lv))) m.exp = expAt(m.lv);
@@ -179,13 +179,16 @@
   var CAP_SID = { tagore: 'tgPearl', barren: 'brTwig', leaf: 'earthShard', squid: 'earthShard', shroom: 'earthShard' };   // 首领精灵用自己的专属道具（优先于属性特产）
   function capGem(m) { if (CAP_SID[m.sid]) return CAP_SID[m.sid]; var t = SPMAP[m.sid] ? SPMAP[m.sid].types : []; for (var i = 0; i < t.length; i++) if (GEM_OF[t[i]]) return GEM_OF[t[i]]; return null; }
   function capNext(m) { var g = capGem(m); if (!g) return null; var c = capLv(m); for (var i = 0; i < CAP_STEPS.length; i++) if (CAP_STEPS[i].lv > c) return { lv: CAP_STEPS[i].lv, jade: CAP_STEPS[i].jade, k: g }; return null; }
-  function expV() { return 3; }
+  function expV() { return 4; }
   // lv → lv+1 这一级的系数（相对等级³ 的差）。v2：50 级以上 ×2；v3（2026-10-17，隐藏调整）：50 级以上再 ×4，即 ×8
-  function expK(lv) { return lv < 25 ? 0.6 : lv >= 50 ? 8 : 1; }
+  function expK(lv) { return lv < 25 ? 0.6 : lv >= 60 ? 24 : lv >= 50 ? 8 : 1; }   // v4（2026-10-18，隐藏调整）：60 级以上再 ×3，即 ×24
+  function expKv3(lv) { return lv < 25 ? 0.6 : lv >= 50 ? 8 : 1; }
   function expKv2(lv) { return lv < 25 ? 0.6 : lv >= 50 ? 2 : 1; }
   function tabOf(k) { var T = [0, 1]; for (var l = 1; l < 100; l++) T[l + 1] = T[l] + Math.round(((l + 1) * (l + 1) * (l + 1) - l * l * l) * k(l)); return T; }
   var _v2Tab = null;
   function v2ExpAt(lv) { if (!_v2Tab) _v2Tab = tabOf(expKv2); return _v2Tab[Math.max(1, Math.min(100, lv))]; }
+  var _v3Tab = null;
+  function v3ExpAt(lv) { if (!_v3Tab) _v3Tab = tabOf(expKv3); return _v3Tab[Math.max(1, Math.min(100, lv))]; }
   function expTab() {
     if (!_expTab) { _expTab = [0, 1]; for (var l = 1; l < 100; l++) _expTab[l + 1] = _expTab[l] + Math.round(((l + 1) * (l + 1) * (l + 1) - l * l * l) * expK(l)); }
     return _expTab;
