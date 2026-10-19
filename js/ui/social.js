@@ -373,6 +373,10 @@
       case 'match': startMatch(m); break;
       case 'prep': onPrep(m); break;
       case 'prep-err': A.toast(m.msg || '选择不符合要求'); break;
+      case 'ct-series': ctSeries(m); break;
+      case 'ct-notice': if (window.HSCT) window.HSCT.notice(m.notice); break;
+      case 'ct-draw': if (window.HSCT) window.HSCT.draw(); break;
+      case 'ct-ready': if (window.HSCT) window.HSCT.ready(m); break;
       case 'mm': mmMsg(m.data || {}); break;
       case 'mm-end':
         if (st.prep && st.prep.id === m.id) { var pn = st.prep.v.peerName || '对方'; closePrep(); A.toast(m.reason === 'quit' ? pn + ' 退出了选人，这场切磋取消了。' : pn + ' 离开了，这场切磋取消了。'); load(); break; }
@@ -463,6 +467,7 @@
   /* ---------- 被宣战：直接弹窗 ---------- */
   function challenged(m) {
     if (!A.ready() || A.inBattle() || st.match || st.pend || st.inc || st.bw.wait) { send({ type: 'ch-reply', id: m.id, ok: false, reason: 'busy' }); return; }
+    if (m.rule === 'contest') { ctChallenged(m); return; }
     var acc = A.acc(), mine = (acc.teams[acc.active] || []).map(A.mon).filter(Boolean).slice(0, m.mode), bal = m.rule === 'balance';
     var deadline = Date.now() + m.seconds * 1000, iv;
     var d = dialog('incoming', '<span class="step">⚔ 宣战</span><h2>' + esc(m.fromName) + ' 向你发起切磋！</h2>' +
@@ -494,7 +499,8 @@
     st.bw.wait = null; closeBwInvite();
     [].forEach.call(document.querySelectorAll('.soc-dlg'), function (d) { d.remove(); });
     closePrep();
-    st.match = { id: m.id, side: m.side, mode: m.mode, foe: m.peerName, names: m.names, brawl: !!m.brawl, bal: !!m.bal, pick: m.pick || null, label: m.brawl ? null : fightLabel(m.mode, m.rule, m.pick) };
+    st.match = { id: m.id, side: m.side, mode: m.mode, foe: m.peerName, names: m.names, brawl: !!m.brawl, bal: !!m.bal, pick: m.pick || null, label: m.brawl ? null : m.ct ? m.ct.label : fightLabel(m.mode, m.rule, m.pick), ct: m.ct || null };
+    if (m.ct) st.match.notes = ctNotes(m);
     if (m.brawl) { st.match.notes = brawlNotes(m); brawlShow(m); }
     if (m.bal) st.match.notes = balNotes(m);
     if (m.side === 0) {
@@ -518,7 +524,9 @@
       onQuit: function () { if (M0.side === 0) hostQuit(0); else send({ type: 'mm', id: M0.id, data: { k: 'quit' } }); },
       onEmote: function (e) { send({ type: 'mm', id: M0.id, data: { k: 'emote', e: String(e).slice(0, 32) } }); },
       onOver: function (mine) {
-        stopHost(); send({ type: 'mm-over', id: M0.id });
+        stopHost();
+        if (M0.ct) send({ type: 'ct-res', id: M0.id, r: mine });   // 争霸赛：报这一局的结果
+        send({ type: 'mm-over', id: M0.id });
         if (M0.pick === 'draft') A.noteDraft();   // 支线任务「竞技征召」：打完一场就算（胜负都算）
         if (M0.brawl) {
           var none = M0.quitSide === M0.side || M0.aborted === 'self';
@@ -611,6 +619,47 @@
     HB.pvpApply(evs, S, TURN_SEC);
   }
 
+  /* ---------- 做题大王争霸赛（服务器见 server/contest.js、social.js 的 rule = 'contest'） ---------- */
+  function ctNotes(m) {
+    var c = m.ct, sn = function (a) { return (a || []).map(function (sid) { return SPMAP[sid] ? SPMAP[sid].name : sid; }).join('、') || '无'; };
+    var out = [c.label + ' · 当前比分 ' + m.names[0] + ' ' + c.wins[0] + ' : ' + c.wins[1] + ' ' + m.names[1] + '（先赢 2 局获胜）'];
+    if (c.bans) out.push('你禁用了对方的 ' + sn(c.bans[m.side]) + '；对方禁用了你的 ' + sn(c.bans[1 - m.side]) + '。');
+    return out;
+  }
+  function ctSeries(m) {
+    if (m.cancel) { A.toast('对手退出了选人，这次对局不算，之后可以再约。'); load(); return; }
+    var me = C.user && C.user();
+    if (m.done) { setTimeout(function () { A.toast(m.how === 'forfeit' ? (m.win === me ? '对手中途离开，你赢下了这个系列！' : '你中途离开，这个系列判负。') : (m.win === me ? '恭喜，你以 ' + Math.max(m.wins[0], m.wins[1]) + ':' + Math.min(m.wins[0], m.wins[1]) + ' 赢下了这个系列！' : '很遗憾，这个系列输掉了。')); if (window.HSCT) window.HSCT.refresh(); }, 1500); return; }
+    setTimeout(function () { A.toast('比分 ' + m.wins[0] + ' : ' + m.wins[1] + '，第 ' + m.next + ' 局 ' + m.seconds + ' 秒后开始……'); }, 1200);
+  }
+  function ctAsk(user, name, label) {
+    if (!st.wsOk) { A.toast('还没连上服务器，请稍后再试'); return; }
+    if (st.pend) { A.toast('你已经在等待别人回应了'); return; }
+    if (A.inBattle()) { A.toast('你正在对战中'); return; }
+    C.flush().then(function () {
+      st.pend = { to: user, toName: name || user, mode: 5, label: label || '做题大王争霸赛', id: null, deadline: Date.now() + 30000 };
+      if (!send({ type: 'challenge', to: user, mode: 5, rule: 'contest' })) { st.pend = null; A.toast('连接断开了，请稍后再试'); return; }
+      drawPend();
+    });
+  }
+  function ctChallenged(m) {
+    var deadline = Date.now() + m.seconds * 1000, iv;
+    var d = dialog('incoming', '<span class="step">🏆 ' + esc(m.label || '做题大王争霸赛') + '</span><h2>' + esc(m.fromName) + ' 邀请你进行争霸赛对战！</h2>' +
+      '<p class="hint">bo3，先赢 2 局获胜。双方各从自己的精灵里带 6 只、禁用对方 1 只，剩下的取前 5 只打 5v5，按背包里的练度对战。</p><p class="hint" id="in-left"></p>' +
+      '<div class="soc-foot"><button type="button" class="btn" id="in-no">稍后再打</button><button type="button" class="btn primary" id="in-yes">开始对战</button></div>',
+      function (el, close) {
+        el.dataset.sticky = '1';
+        el.addEventListener('click', function (e) {
+          if (e.target.id === 'in-no') { send({ type: 'ch-reply', id: m.id, ok: false }); st.inc = null; close(); return; }
+          if (e.target.id === 'in-yes') { e.target.disabled = true; e.target.textContent = '正在同步存档……'; C.flush().then(function () { send({ type: 'ch-reply', id: m.id, ok: true }); }); }
+        });
+      });
+    var close0 = d.close;
+    st.inc = { id: m.id, fromName: m.fromName, dlg: d, close: function () { clearInterval(iv); close0(); } };
+    iv = setInterval(function () { var l = d.el.querySelector('#in-left'); if (l) l.textContent = Math.max(0, Math.ceil((deadline - Date.now()) / 1000)) + ' 秒内有效'; }, 250);
+    try { if (navigator.vibrate) navigator.vibrate([60, 40, 60]); } catch (e) {}
+  }
+
   /* ---------- 平衡模式的选人阶段（盲选 / 竞技征召） ---------- */
   function balNotes(m) {
     var out = ['平衡模式：双方精灵统一 LV' + A.BAL_LV + '，性格无修正，没有学习力和纹章，技能由双方自选。'];
@@ -622,7 +671,7 @@
     if (m.auto && m.auto[1 - m.side]) out.push('对方选人超时，由系统代选。');
     return out;
   }
-  var PHASE_T = { pool: '带精灵', ban: '禁用对方精灵', pick: '选出战精灵、配技能' };
+  var PHASE_T = { pool: '带精灵', ban: '禁用对方精灵', pick: '选出战精灵、配技能', ct6: '带 6 只精灵', ctban: '禁用对方 1 只' };
   function spName(sid) { return SPMAP[sid] ? SPMAP[sid].name : sid; }
   function spImg(sid) { return A.view({ sid: sid, lv: A.BAL_LV }).img; }
   function onPrep(v) {
@@ -668,7 +717,36 @@
           '<b>' + esc(m.name) + (m.hidden ? '<i>隐藏</i>' : '') + '</b><small>' + m.type + ' · ' + m.cat + (m.power ? ' · ' + m.power : '') + '</small></button>';
       }).join('') + '</div></div>';
   }
+  function ctGrid(cards, opt) {
+    var P = st.prep;
+    return '<div class="me-pick pp-grid">' + cards.map(function (c) {
+      var k = P.sel.indexOf(c.u), full = k < 0 && P.sel.length >= P.v.need[1], vw = A.view({ sid: c.sid, lv: c.lv, shiny: c.shiny, fs: c.fs }), s = SPMAP[c.sid] || { types: [] };
+      var mark = opt.mark && opt.mark.indexOf(c.u) >= 0, ro = opt.ro;
+      return '<button type="button" class="me-mon' + (k >= 0 && !ro ? ' on' : '') + (opt.ban && k >= 0 ? ' ban' : '') + (mark ? ' banned' : '') + '"' + (ro ? ' disabled' : ' data-pp="' + esc(c.u) + '"') + (!ro && (full || P.sent) ? ' disabled' : '') + '>' +
+        (k >= 0 && !ro ? '<span class="me-no">' + (opt.ban ? '禁' : k + 1) + '</span>' : '') + '<img src="' + vw.img + '" alt=""><b>' + esc(c.nick || vw.name) + '</b><small>LV' + c.lv + ' · ' + s.types.join(' / ') + '</small></button>';
+    }).join('') + '</div>';
+  }
+  function renderCtPrep() {
+    var P = st.prep, v = P.v, body = P.dlg.el.querySelector('.pp-body'), need = v.need, n = P.sel.length, okN = n >= need[0] && n <= need[1];
+    var steps = '<ol class="pp-steps">' + ['ct6', 'ctban'].map(function (k, i) { var at = ['ct6', 'ctban'].indexOf(v.phase); return '<li class="' + (i < at ? 'done' : i === at ? 'cur' : '') + '">' + (i + 1) + '. ' + PHASE_T[k] + '</li>'; }).join('') + '<li>3. bo3 开打</li></ol>';
+    var head = '<span class="step">' + esc(v.ct.label) + ' · 对手 ' + esc(v.peerName || '') + '</span><h2>' + PHASE_T[v.phase] + '</h2>' + steps +
+      '<p class="pp-st"><span>剩余 <b id="pp-left"></b></span><span>' + (v.done[1] ? '<b class="blue">对方已选好</b>' : '对方还在选……') + '</span></p>';
+    var main;
+    if (v.phase === 'ct6') main = '<p>从你的精灵里带 <b>' + need[1] + '</b> 只（已选 ' + n + '），按背包里的等级、性格、学习力和技能对战。对方会禁掉其中 1 只，剩下的按你选的顺序取前 5 只出场（第 1 只首发）。</p>' + ctGrid(v.ct.cards, {});
+    else {
+      var mine = v.ct.cards.filter(function (c) { return (v.pools[0] || []).indexOf(c.u) >= 0; });
+      main = '<p>对方带来了这 ' + (v.ct.foe || []).length + ' 只，选 <b>' + need[1] + '</b> 只禁用（已选 ' + n + '），它这三局都不能上场。</p>' + ctGrid(v.ct.foe || [], { ban: true }) +
+        '<h4 class="pp-h">你带的 ' + mine.length + ' 只（对方正在从里面禁 1 只）</h4>' + ctGrid(mine, { ro: true });
+    }
+    var foot = '<div class="soc-foot"><button type="button" class="btn ghost" id="pp-quit">退出</button>' +
+      (P.sent ? '<button type="button" class="btn" disabled>已提交，等待对方……</button>' : '<button type="button" class="btn primary" id="pp-go"' + (okN ? '' : ' disabled') + '>' + (v.phase === 'ctban' ? '确认禁用' : '确认携带') + '</button>') + '</div>';
+    var y = body.parentNode ? body.parentNode.scrollTop : 0;
+    body.innerHTML = head + main + foot;
+    if (body.parentNode) body.parentNode.scrollTop = y;
+    prepTick();
+  }
   function renderPrep() {
+    if (st.prep.v.kind === 'ct') return renderCtPrep();
     var P = st.prep, v = P.v, draft = v.kind === 'draft', body = P.dlg.el.querySelector('.pp-body');
     var steps = draft ? '<ol class="pp-steps">' + ['pool', 'ban', 'pick'].map(function (k, i) { var at = ['pool', 'ban', 'pick'].indexOf(v.phase); return '<li class="' + (i < at ? 'done' : i === at ? 'cur' : '') + '">' + (i + 1) + '. ' + PHASE_T[k] + '</li>'; }).join('') + '</ol>' : '';
     var need = v.need, n = P.sel.length, okN = n >= need[0] && n <= need[1];
@@ -705,7 +783,7 @@
     var b = e.target.closest('button'); if (!b || b.disabled) return;
     if (b.id === 'pp-quit') {
       if (!P.quitArmed || Date.now() - P.quitArmed > 3000) { P.quitArmed = Date.now(); b.textContent = '再点一次确认退出'; return; }
-      send({ type: 'prep-quit', id: P.id }); closePrep(); A.toast('你退出了这场切磋。'); load(); return;
+      send({ type: 'prep-quit', id: P.id }); closePrep(); A.toast(P.v.kind === 'ct' ? '你退出了选人，这次对局不算，之后可以再约对手。' : '你退出了这场切磋。'); load(); return;
     }
     if (P.sent) return;
     if (b.dataset.pp) {
@@ -892,26 +970,80 @@
     watchClose(true);
     var p = (st.players || []).filter(function (x) { return x.user === user; })[0];
     st.watch = { user: user, name: p && p.name || user, head: null, ready: false, shown: [null, null] };
-    var d = dialog('watch', '<div class="wt-head"><div><span class="step" id="wt-label">观战</span><h2 id="wt-title">' + esc(st.watch.name) + ' 的对战</h2></div><span class="cast-wrap wt-wrap"><button type="button" class="cast-n" id="wt-n" title="点击查看谁在观战"></button><span class="cast-pop" id="wt-pop" hidden></span></span><button type="button" class="btn ghost" data-wx="1">退出观战</button></div>' +
+    wtOpen(false);
+    send({ type: 'watch-start', user: user });
+  }
+  // 弹幕：观众发的文字 / 表情从右往左飘过战场（只有观众看得到，回放里也有）
+  function bulletShow(name, text, e) {
+    var f = document.querySelector('.wt-field'); if (!f) return;
+    var lay = f.querySelector('.bl-layer'); if (!lay) { lay = document.createElement('div'); lay.className = 'bl-layer'; f.appendChild(lay); }
+    var E0 = e && typeof emoteOf === 'function' ? emoteOf(e) : null;
+    var el = document.createElement('div'); el.className = 'bl-item';
+    el.style.top = (6 + Math.floor(Math.random() * 7) * 11) + '%';
+    el.innerHTML = '<b>' + esc(name) + '：</b>' + (text ? esc(text) : '') + (E0 ? '<img src="' + E0.img + '" alt="' + esc(E0.n) + '">' : '');
+    lay.appendChild(el); setTimeout(function () { el.remove(); }, 8200);
+  }
+  function wtOpen(replay) {
+    var d = dialog('watch', '<div class="wt-head"><div><span class="step" id="wt-label">' + (replay ? '回放' : '观战') + '</span><h2 id="wt-title">' + esc(st.watch.name) + ' 的对战</h2></div>' + (replay ? '<button type="button" class="btn ghost" id="wt-speed">2 倍速</button>' : '<span class="cast-wrap wt-wrap"><button type="button" class="cast-n" id="wt-n" title="点击查看谁在观战"></button><span class="cast-pop" id="wt-pop" hidden></span></span>') + '<button type="button" class="btn ghost" data-wx="1">' + (replay ? '关闭回放' : '退出观战') + '</button></div>' +
       '<div class="wt-stage"><div class="plates"><div class="plate" id="wt-p0"></div><div class="vs">第<b id="wt-turn">1</b>回合</div><div class="plate r" id="wt-p1"></div></div>' +
       '<div class="field wt-field"><div class="mon p0" id="wt-m0"><div class="ground"></div><div class="face"><img alt=""></div></div><div class="mon p1" id="wt-m1"><div class="ground"></div><div class="face"><img alt=""></div></div>' +
       '<div class="banner" id="wt-banner"></div><div class="wt-wait" id="wt-wait">正在连接对战画面……</div><div class="endcard" id="wt-end" hidden><div class="box"><h3 id="wt-end-t"></h3><p class="hint" id="wt-end-s"></p><div class="row"><button type="button" class="btn" data-wx="1">关闭</button></div></div></div></div>' +
+      '<div class="bl-bar">' + (replay ? '<span class="hint">回放里的弹幕会按当时的时间出现</span>' : '<input type="text" id="bl-in" maxlength="30" placeholder="发条弹幕（只有观众看得到）"><button type="button" class="btn" id="bl-go">发送</button><span class="bl-emo">' + (typeof EMOTES !== 'undefined' ? EMOTES.slice(0, 8).map(function (x) { return '<button type="button" data-ble="' + x.id + '" title="' + esc(x.n) + '"><img src="' + x.img + '" alt="' + esc(x.n) + '"></button>'; }).join('') : '') + '</span>') + '</div>' +
       '<div class="logbox"><h4>战斗记录</h4><div class="log" id="wt-log"></div></div></div>', function (el) {
         el.dataset.sticky = '1';
+        el.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.id === 'bl-in') { e.preventDefault(); bulletSend(); } });
         el.addEventListener('click', function (e) {
           if (e.target.closest('[data-wx]')) { watchClose(); return; }
+          if (e.target.id === 'bl-go') { bulletSend(); return; }
+          var de = e.target.closest('[data-ble]'); if (de) { bulletSend(de.dataset.ble); return; }
+          if (e.target.id === 'wt-speed' && st.watch) { st.watch.speed = st.watch.speed === 2 ? 1 : 2; e.target.textContent = st.watch.speed === 2 ? '1 倍速' : '2 倍速'; return; }
           var pop = el.querySelector('#wt-pop');
           if (e.target.closest('#wt-n')) { pop.hidden = !pop.hidden; wtViewers(); return; }
           if (!e.target.closest('#wt-pop')) pop.hidden = true;
         });
       });
     st.watch.dlg = d;
-    send({ type: 'watch-start', user: user });
+  }
+  function bulletSend(e) {
+    var W = st.watch; if (!W || W.replay) return;
+    var inp = $('bl-in'), t = e ? '' : (inp ? inp.value.trim() : '');
+    if (!t && !e) return;
+    if (W.dmAt && Date.now() - W.dmAt < 1500) { A.toast('发得太快了，歇一下'); return; }
+    W.dmAt = Date.now();
+    send({ type: 'danmaku', user: W.user, text: t, e: e || '' });
+    if (inp && !e) inp.value = '';
   }
   function watchClose(silent) {
     var W = st.watch; if (!W) return;
     st.watch = null; if (W.dlg) W.dlg.close();
+    if (W.replay) { clearTimeout(W.rt); return; }
     if (!W.over) send({ type: 'watch-stop' });
+  }
+  /* 争霸赛回放：按录下来的时间顺序重放画面、战斗记录、动画和弹幕 */
+  function replayStart(id) {
+    if (A.inBattle()) { A.toast('你正在对战中，打完再来看回放吧'); return; }
+    C.api('GET', '/api/contest/replay?id=' + encodeURIComponent(id)).then(function (r) {
+      if (r._code !== 200 || !Array.isArray(r.frames)) { A.toast(r.error || '回放加载失败'); return; }
+      watchClose(true);
+      var W = st.watch = { user: '', name: (r.names && r.names[0]) || (r.head && r.head.name) || '选手', head: r.head || {}, ready: true, shown: [null, null], replay: true, speed: 1, i: 0 };
+      wtOpen(true);
+      $('wt-label').textContent = '回放 · ' + (r.label || (r.head && r.head.label) || '对战');
+      $('wt-title').textContent = W.name + ' vs ' + ((r.names && r.names[1]) || (r.head && r.head.foe) || '对手');
+      var F = r.frames, t0 = Date.now(), base = 0;
+      (function step() {
+        if (st.watch !== W) return;
+        while (W.i < F.length) {
+          var f = F[W.i];
+          if (W.i > 0 && f[0] - base > 0) { var wait = (f[0] - base) / W.speed; base = f[0]; W.rt = setTimeout(step, Math.min(wait, 4000)); return; }
+          base = f[0];
+          if (f[1]) wtSnap(f[1]); if (f[2]) wtLog(f[2]); if (f[3]) wtFx(f[3]); if (f[4]) bulletShow(f[4][0], f[4][1], f[4][2]);
+          W.i++;
+        }
+        $('wt-end-t').textContent = '回放结束';
+        $('wt-end-s').textContent = r.end ? W.name + '：' + (r.end.title || '') + (r.end.sub ? ' · ' + you(r.end.sub) : '') : '';
+        $('wt-end').hidden = false;
+      })();
+    }).catch(function () { A.toast('回放加载失败'); });
   }
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && st.watch) watchClose(); });
   // 观众名单：小眼睛上显示人数，点开看是谁（自己标「你」）
@@ -978,6 +1110,7 @@
     }
     if (m.op === 'f') { if (m.log && m.log.length) wtLog(m.log); if (m.snap) wtSnap(m.snap); wtFx(m.fx); return; }
     if (m.op === 'viewers') { W.viewers = m.names || []; wtViewers(); return; }
+    if (m.op === 'dm') { bulletShow(m.name, m.text, m.e); return; }
     if (m.op === 'end') {
       W.over = true;
       $('wt-end-t').textContent = '对战结束';
@@ -1247,7 +1380,9 @@
     // 正在拜访的茶室的主人选的茶室音乐（game.js 选界面音乐时用）
     visitBgm: function () { var d = st.view && st.view.data; return d && d.open && !d.noChar ? d.bgm || 'ui' : null; },
     // 茶室信息栏与留言板（game.js 的「我的茶室」页面调用，不传参数就是自己的茶室）
-    homeBoard: function (owner) { return hbSlot(owner || meUser()); } };
+    homeBoard: function (owner) { return hbSlot(owner || meUser()); },
+    // 做题大王争霸赛：约对手对战、观看直播、看回放
+    ctAsk: ctAsk, watch: function (user) { watchStart(user); }, replay: replayStart, wsOk: function () { return !!st.wsOk; } };
   if (A.homeRefresh) A.homeRefresh();   // 如果已经停在自己的茶室页面，补上信息栏
   connect();
   if (A.page() === 'social') window.HSSOCIAL.render();

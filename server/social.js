@@ -64,7 +64,7 @@ var BRAWL_SECONDS = 60;       // 大乱斗等待别人接受的时间
 var BRAWL_LV = 60;
 var MODES = [1, 3, 5];
 var BAL_LV = 60;
-var PREP_SEC = { pool: 90, ban: 60, pick: 150 };   // 平衡模式各选人阶段的时间
+var PREP_SEC = { pool: 90, ban: 60, pick: 150, ct6: 120, ctban: 60 };   // 平衡模式各选人阶段的时间
 var DRAFT_MIN = 8, DRAFT_MAX = 10, DRAFT_BAN = 3;
 
 /* ---------- 从存档里读出名片 ---------- */
@@ -243,6 +243,7 @@ function endMatch(id, leaver, reason) {
   var m = matches[id]; if (!m) return;
   delete matches[id];
   if (m.prep) clearTimeout(m.prep.timer);
+  if (m.ct) setTimeout(function () { ctAfter(m, leaver, reason); }, 0);
   m.socks.forEach(function (w) {
     if (w.match === id) w.match = null;
     if (w !== leaver && reason) out(w, { type: 'mm-end', id: id, reason: reason });
@@ -263,6 +264,8 @@ function prepPhase(m, ph) {
 }
 // 这个阶段 side 可以选的种类
 function prepAllowed(P, side) {
+  if (P.phase === 'ct6') return P.owned[side];
+  if (P.phase === 'ctban') return P.pools[1 - side];
   if (P.phase === 'pool') return P.owned[side];
   if (P.phase === 'ban') return P.pools[1 - side];
   if (P.kind === 'draft') return P.pools[side].filter(function (s) { return P.bans[1 - side].indexOf(s) < 0; });
@@ -271,6 +274,8 @@ function prepAllowed(P, side) {
 // 要选几只：[最少, 最多]
 function prepNeed(P, side) {
   var n = prepAllowed(P, side).length;
+  if (P.phase === 'ct6') return [Math.min(CT_PICK, n), Math.min(CT_PICK, n)];
+  if (P.phase === 'ctban') return [Math.min(CT_BAN, Math.max(0, n - 1)), Math.min(CT_BAN, Math.max(0, n - 1))];
   if (P.phase === 'pool') return [Math.min(DRAFT_MIN, n), Math.min(DRAFT_MAX, n)];
   if (P.phase === 'ban') return [Math.min(DRAFT_BAN, n), Math.min(DRAFT_BAN, n)];
   var k = Math.min(P.mode, n); return [k, k];
@@ -283,6 +288,10 @@ function prepSend(m) {
       mine: P.sub[side] ? P.sub[side].picks : null };
     if (P.pools) v.pools = [P.pools[side], P.pools[1 - side]];           // [我带的, 对方带的]
     if (P.bans) v.bans = [P.bans[side], P.bans[1 - side]];               // [我禁的（对方的）, 对方禁的（我的）]
+    if (P.kind === 'ct') {
+      v.ct = { label: ctLabel(Object.assign({ game: 1 }, m.ct)), cards: P.cm[side].list.map(ctCard) };
+      if (P.pools) v.ct.foe = P.pools[1 - side].map(function (u) { var x = P.cm[1 - side].list.filter(function (y) { return String(y.u) === u; })[0]; return x ? ctCard(x) : null; }).filter(Boolean);
+    }
     out(m.socks[side], v);
   });
 }
@@ -316,6 +325,18 @@ function prepAuto(m) {
 }
 function prepNext(m) {
   var P = m.prep;
+  if (P.phase === 'ct6') { P.pools = [P.sub[0].picks, P.sub[1].picks]; prepPhase(m, 'ctban'); return; }
+  if (P.phase === 'ctban') {
+    clearTimeout(P.timer);
+    P.bans = [P.sub[0].picks, P.sub[1].picks];
+    var nameOf = function (side, u) { var x = P.cm[side].list.filter(function (y) { return String(y.u) === u; })[0]; return x ? str(x.sid, 32) : ''; };
+    m.ct.teams = ctTeams(m);
+    m.ct.banInfo = [P.bans[0].map(function (u) { return nameOf(1, u); }), P.bans[1].map(function (u) { return nameOf(0, u); })];   // [发起方禁掉的（应战方的）种类, 应战方禁掉的（发起方的）种类]
+    m.ct.auto = [!!P.sub[0].auto, !!P.sub[1].auto];
+    delete m.prep;
+    ctSendMatch(m);
+    return;
+  }
   if (P.phase === 'pool') { P.pools = [P.sub[0].picks, P.sub[1].picks]; prepPhase(m, 'ban'); return; }
   if (P.phase === 'ban') { P.bans = [P.sub[0].picks, P.sub[1].picks]; prepPhase(m, 'pick'); return; }
   clearTimeout(P.timer);
@@ -325,6 +346,81 @@ function prepNext(m) {
   var base = { type: 'match', id: m.id, mode: mode, bal: true, rule: 'balance', pick: kind, names: m.names, auto: auto, draft: kind === 'draft' ? reveal : null };
   out(m.socks[0], Object.assign({}, base, { side: 0, peer: m.users[1], peerName: m.names[1], teams: teams }));
   out(m.socks[1], Object.assign({}, base, { side: 1, peer: m.users[0], peerName: m.names[0] }));
+}
+
+/* ---------- 做题大王争霸赛（rule = 'contest'，见 contest.js） ----------
+ * 选人：各从自己的精灵里带 6 只（ct6）→ 各禁对方 1 只（ctban）→ 剩下的按带的顺序取前 5 只，按背包里的练度打 5v5。
+ * 一个系列 bo3：每局打完双方各报一次结果（ct-res），先赢 2 局的胜；中途有人离开或在选人时退出，对方直接赢下整个系列。
+ * 每局都向全服开放观战（决赛还会给全服在线玩家发观战邀请），发起方的转播画面会存成回放。 */
+var CT_PICK = 6, CT_BAN = 1, CT_GAP = 6000;
+function contest() { return require('./contest'); }
+function ctMons(name) {
+  var u = A.loadUser(name), acc = u && parseSave(u).acc;
+  if (!acc) return { acc: null, list: [] };
+  return { acc: acc, list: acc.mons.filter(function (m) { return m && m.u != null && m.sid; }) };
+}
+function ctCard(m) { return { u: String(m.u), sid: str(m.sid, 32), lv: int(m.lv, 1, 100), shiny: m.shiny === 2 ? 2 : !!m.shiny, fs: m.fs != null && m.fs >= 0 && m.fs <= 2 ? m.fs | 0 : undefined, nick: str(m.nick, 20) || undefined }; }
+function ctLabel(ct) { return contest().NAME + ' · ' + (ct.final ? '决赛' : '第 ' + ct.round + ' 轮') + ' · 第 ' + ct.game + ' 局（bo3）'; }
+function ctPrepStart(m) {
+  var A0 = ctMons(m.users[0]), B0 = ctMons(m.users[1]);
+  m.prep = { kind: 'ct', mode: 5, cm: [A0, B0], owned: [A0.list.map(function (x) { return String(x.u); }), B0.list.map(function (x) { return String(x.u); })], pools: null, bans: null, sub: [null, null] };
+  prepPhase(m, 'ct6');
+}
+function ctTeams(m) {
+  var P = m.prep;
+  return [0, 1].map(function (side) {
+    var C0 = P.cm[side], ban = P.bans[1 - side] || [];
+    return P.pools[side].filter(function (u) { return ban.indexOf(u) < 0; }).slice(0, 5).map(function (u) {
+      var mm = C0.list.filter(function (x) { return String(x.u) === u; })[0]; return mm ? monOut(mm, C0.acc) : null;
+    }).filter(Boolean);
+  });
+}
+function ctSendMatch(m) {
+  var ct = m.ct, names = m.names;
+  var base = { type: 'match', id: m.id, mode: 5, rule: 'contest', names: names, ct: { round: ct.round, final: ct.final, game: ct.game, wins: ct.wins.slice(), label: ctLabel(ct), bans: ct.banInfo } };
+  out(m.socks[0], Object.assign({}, base, { side: 0, peer: m.users[1], peerName: names[1], teams: ct.teams }));
+  out(m.socks[1], Object.assign({}, base, { side: 1, peer: m.users[0], peerName: names[0] }));
+  m.open = true;
+  m.users.forEach(presence);
+  if (ct.final) setTimeout(function () {   // 决赛：给全服在线玩家发观战邀请
+    if (!matches[m.id]) return;
+    Object.keys(online).forEach(function (u) { if (m.users.indexOf(u) < 0) toUser(u, { type: 'watch-invite', user: m.users[0], name: names[0], peer: m.users[1], peerName: names[1], label: ctLabel(ct) }); });
+  }, 5000);
+}
+function ctAfter(m, leaver, reason) {
+  var ct = m.ct, C = contest();
+  if (ct.done) return;
+  if (m.prep) { m.socks.forEach(function (w) { if (w !== leaver) out(w, { type: 'ct-series', cancel: true }); }); return; }   // 还在选人就退出 / 掉线：这次不算，之后可以再约
+  var finish = function (wSide, how) {
+    ct.done = true;
+    var sc = {}; sc[m.users[0]] = ct.wins[0]; sc[m.users[1]] = ct.wins[1];
+    if (how === 'forfeit') { sc[m.users[wSide]] = 2; }
+    C.report(ct.key, m.users[wSide], sc, how);
+    m.socks.forEach(function (w) { out(w, { type: 'ct-series', done: true, win: m.users[wSide], wins: ct.wins, how: how }); });
+  };
+  if (reason === 'left' || reason === 'quit') {   // 有人中途离开 / 选人时退出：对方赢下整个系列
+    var ls = leaver === m.socks[0] ? 0 : leaver === m.socks[1] ? 1 : -1;
+    if (ls >= 0) finish(1 - ls, 'forfeit');
+    return;
+  }
+  if (reason !== 'over') return;
+  if (ct.res != null) ct.wins[ct.res]++;
+  ct.res = null;
+  if (ct.wins[0] >= 2 || ct.wins[1] >= 2) { finish(ct.wins[0] >= 2 ? 0 : 1, 'play'); return; }
+  m.socks.forEach(function (w) { out(w, { type: 'ct-series', done: false, wins: ct.wins, next: ct.game + 1, seconds: CT_GAP / 1000 }); });
+  setTimeout(function () {
+    var ok = m.socks.every(function (w) { return w.readyState === 1 && !w.match; });
+    if (!ok) {   // 下一局开始时有一方不在了
+      var gone = m.socks.map(function (w) { return w.readyState !== 1; });
+      if (gone[0] !== gone[1]) finish(gone[0] ? 1 : 0, 'forfeit');
+      return;
+    }
+    var nid = newId();
+    ct.game++;
+    var nm2 = { id: nid, socks: m.socks, users: m.users, names: m.names, ct: ct, open: true };
+    matches[nid] = nm2; m.socks.forEach(function (w) { w.match = nid; });
+    ctSendMatch(nm2);
+  }, CT_GAP);
 }
 
 /* ---------- 观战 ---------- */
@@ -347,6 +443,10 @@ function unwatch(v) {
 function castEnd(w, title, sub) {
   var C = w.cast; if (!C) return;
   w.cast = null;
+  if (w.rec) {   // 争霸赛：存回放
+    var R0 = w.rec; w.rec = null;
+    if (R0.frames.length) { R0.end = { title: str(title, 40), sub: str(sub, 200) }; delete R0.last; try { contest().saveReplay(R0.key, R0.game, R0); } catch (e) {} }
+  }
   C.viewers.forEach(function (v) { if (v.watching === w) v.watching = null; out(v, { type: 'watch', op: 'end', user: w.user, title: str(title, 40), sub: str(sub, 200) }); });
   if (w.user) presence(w.user);
 }
@@ -359,6 +459,8 @@ function onCast(ws, msg) {
     if (ws.match && matches[ws.match]) ws.cast.open = ws.cast.open || !!matches[ws.match].open;
     if (h.resume && Array.isArray(msg.log)) ws.cast.log = cleanLog(msg.log).slice(-CAST_LOG);
     if (msg.snap && typeof msg.snap === 'object') ws.cast.snap = msg.snap;
+    var cm = ws.match && matches[ws.match];
+    if (cm && cm.ct && cm.socks[0] === ws && !h.resume) { ws.rec = { key: cm.ct.key, game: cm.ct.game, head: ws.cast.head, names: cm.names, label: ctLabel(cm.ct), t0: Date.now(), frames: [], last: '' }; if (ws.cast.snap) { ws.rec.frames.push([0, ws.cast.snap, null, null]); ws.rec.last = JSON.stringify(ws.cast.snap); } }
     ws.cast.viewers.forEach(function (v) { sendFull(v, ws); });
     presence(ws.user);
     return;
@@ -369,6 +471,11 @@ function onCast(ws, msg) {
     if (msg.snap && typeof msg.snap === 'object') C.snap = msg.snap;
     if (lg.length) { C.log = C.log.concat(lg); if (C.log.length > CAST_LOG) C.log = C.log.slice(-CAST_LOG); }
     if (C.viewers.length) { var f = { type: 'watch', op: 'f', user: ws.user, snap: msg.snap || null, log: lg, fx: fx }; C.viewers.forEach(function (v) { out(v, f); }); }
+    if (ws.rec && ws.rec.frames.length < 20000) {   // 争霸赛回放：画面没变化又没有记录、动画的帧不存
+      var sj = msg.snap ? JSON.stringify(msg.snap) : '';
+      var snapChanged = sj && sj !== ws.rec.last;
+      if (snapChanged || lg.length || fx.length) { ws.rec.frames.push([Date.now() - ws.rec.t0, snapChanged ? msg.snap : null, lg.length ? lg : null, fx.length ? fx : null]); if (snapChanged) ws.rec.last = sj; }
+    }
     return;
   }
   if (msg.op === 'end') castEnd(ws, msg.title, msg.sub);
@@ -401,6 +508,19 @@ function onMessage(ws, msg) {
     case 'challenge': {
       if (!ws.user) return true;
       var to = String(msg.to || ''), mode = MODES.indexOf(+msg.mode) >= 0 ? +msg.mode : 1;
+      if (msg.rule === 'contest') {
+        var cp = contest().pairOf(ws.user, String(msg.to || ''));
+        var cto = String(msg.to || ''), cerr = !cp ? '你们不是这一轮还没打完的对手' : !isOnline(cto) ? '对方不在线' : ws.match ? '你正在对战中' : isBusy(cto) ? '对方正在对战中' : '';
+        Object.keys(challenges).forEach(function (k) { if (challenges[k].from === ws) cerr = cerr || '你已经在等待另一个人回应了'; });
+        if (cerr) { out(ws, { type: 'ch-end', id: null, reason: 'error', msg: cerr, side: 'from' }); return true; }
+        var cc = { id: newId(), from: ws, fromUser: ws.user, to: cto, mode: 5, rule: 'contest', pick: null, ct: cp };
+        challenges[cc.id] = cc;
+        cc.timer = setTimeout(function () { endChallenge(cc, 'timeout'); }, CH_SECONDS * 1000);
+        var clab = contest().NAME + ' · ' + (cp.final ? '决赛' : '第 ' + cp.round + ' 轮') + '（bo3）';
+        out(ws, { type: 'ch-sent', id: cc.id, to: cto, toName: gameName(cto), mode: 5, rule: 'contest', label: clab, seconds: CH_SECONDS });
+        toUser(cto, { type: 'challenged', id: cc.id, from: ws.user, fromName: gameName(ws.user), mode: 5, rule: 'contest', label: clab, final: cp.final, seconds: CH_SECONDS });
+        return true;
+      }
       var rule = msg.rule === 'balance' ? 'balance' : 'normal', pick = rule === 'balance' && mode === 5 && msg.pick === 'draft' ? 'draft' : rule === 'balance' ? 'blind' : null;
       var err = to === ws.user ? '不能向自己宣战' : !A.loadUser(to) ? '没有这个玩家' : !isOnline(to) ? '对方不在线' :
         ws.match ? '你正在对战中' : isBusy(to) ? '对方正在对战中' : !teamSpec(ws.user, 1).length ? '你还没有精灵' : !teamSpec(to, 1).length ? '对方还没有精灵' : '';
@@ -427,6 +547,16 @@ function onMessage(ws, msg) {
       delete challenges[c2.id]; clearTimeout(c2.timer);
       (online[c2.to] || []).forEach(function (w) { if (w !== ws) out(w, { type: 'ch-end', id: c2.id, reason: 'taken', side: 'to' }); });
       var id = c2.id, host = c2.from;
+      if (c2.rule === 'contest') {
+        var cp2 = contest().pairOf(c2.fromUser, c2.to);
+        if (!cp2) { out(host, { type: 'ch-end', id: id, reason: 'error', msg: '这场对局已经结束了', side: 'from' }); out(ws, { type: 'ch-end', id: id, reason: 'error', msg: '这场对局已经结束了', side: 'to' }); return true; }
+        matches[id] = { id: id, socks: [host, ws], users: [c2.fromUser, c2.to], names: [gameName(c2.fromUser), gameName(c2.to)], open: true,
+          ct: { key: cp2.key, round: cp2.round, final: cp2.final, game: 1, wins: [0, 0], res: null } };
+        host.match = id; ws.match = id;
+        ctPrepStart(matches[id]);
+        presence(c2.fromUser); presence(c2.to);
+        return true;
+      }
       if (c2.rule === 'balance') {   // 平衡模式：先进入选人阶段
         if (c2.pick === 'draft' && (ownedSids(c2.fromUser).length < DRAFT_MIN || ownedSids(c2.to).length < DRAFT_MIN)) { out(host, { type: 'ch-end', id: id, reason: 'error', msg: '有一方的精灵不到 ' + DRAFT_MIN + ' 种', side: 'from' }); out(ws, { type: 'ch-end', id: id, reason: 'error', msg: '有一方的精灵不到 ' + DRAFT_MIN + ' 种', side: 'to' }); return true; }
         matches[id] = { id: id, socks: [host, ws], users: [c2.fromUser, c2.to], names: [gameName(c2.fromUser), gameName(c2.to)] };
@@ -499,6 +629,25 @@ function onMessage(ws, msg) {
       return true;
     }
     case 'cast': onCast(ws, msg); return true;
+    case 'ct-res': {   // 争霸赛：一局打完，双方各报一次结果（以先收到的为准）
+      var mr = matches[msg.id];
+      if (!mr || !mr.ct || ws.match !== msg.id || mr.ct.res != null) return true;
+      var sd = mr.socks[0] === ws ? 0 : 1, r = msg.r;
+      if (r === 'win') mr.ct.res = sd; else if (r === 'lose') mr.ct.res = 1 - sd;   // 平局不计，重打这一局
+      return true;
+    }
+    case 'danmaku': {   // 观众发弹幕 / 表情：只有观众能看到，争霸赛的回放里也会保留
+      var dw = castOf(String(msg.user || ''));
+      if (!dw || ws.watching !== dw || !ws.user) return true;
+      if (ws.dmAt && Date.now() - ws.dmAt < 1500) return true;
+      ws.dmAt = Date.now();
+      var dtx = str(msg.text, 30).replace(/[\u0000-\u001f]/g, '').trim(), de = str(msg.e, 32);
+      if (!dtx && !de) return true;
+      var dmo = { type: 'watch', op: 'dm', user: dw.user, name: gameName(ws.user), text: dtx, e: de || undefined };
+      dw.cast.viewers.forEach(function (v) { out(v, dmo); });
+      if (dw.rec) dw.rec.frames.push([Date.now() - dw.rec.t0, null, null, null, [dmo.name, dtx, de || '']]);
+      return true;
+    }
     case 'cast-invite': {
       var mi = ws.match && matches[ws.match];
       if (!ws.cast || !mi || mi.prep) { out(ws, { type: 'cast-invited', ok: false, msg: '只有和其他玩家对战时才能邀请全服观战' }); return true; }
@@ -611,4 +760,4 @@ A.use(function (req, res, url) {
   return true;
 });
 
-module.exports = { toUser: toUser, gameName: gameName, isOnline: isOnline, avatarOf: function (name) { var u = A.loadUser(name), acc = u && parseSave(u).acc; return acc ? avatarOf(acc) : null; }, onMessage: onMessage, onOpen: onOpen, onClose: onClose, onlineCount: function () { return Object.keys(online).length; } };
+module.exports = { toAll: function (obj) { allSockets.forEach(function (w) { if (w.user) out(w, obj); }); }, castLabel: function (name) { var c = castOf(name); return c ? c.cast.head.label : null; }, isBusy: isBusy, toUser: toUser, gameName: gameName, isOnline: isOnline, avatarOf: function (name) { var u = A.loadUser(name), acc = u && parseSave(u).acc; return acc ? avatarOf(acc) : null; }, onMessage: onMessage, onOpen: onOpen, onClose: onClose, onlineCount: function () { return Object.keys(online).length; } };

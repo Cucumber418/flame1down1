@@ -1697,31 +1697,36 @@
   function planetCard(p) {
     var n = p.sites.length, done = p.sites.filter(function (s) { return prog(s).done; }).length, open = planetOpen(p);
     return '<button type="button" class="planet' + (open ? '' : ' locked') + '" data-planet="' + p.id + '"' + (open ? '' : ' disabled') + '><span class="tape l"></span>' + (p.ship ? '<img class="ship-ic" src="' + CHARS.ship_icon + '" alt="">' : p.tower ? towerSvg() : p.sarena ? sarenaSvg() : p.station ? stationSvg() : planetSvg(p.id)) +
-      '<span class="pn">' + p.name + (p.wild ? '<span class="chip ptype">' + p.ptype + '</span>' : '') + '</span><span class="hint">' + p.d + '</span><span class="pc">' + (open ? (p.sarena ? CONTEST.name + ' · ' + (contestMe() ? '已报名，等待抽签' : '报名中') : p.tower ? '当前第 ' + twRec().f + ' 层 · 存档点第 ' + twRec().cp + ' 层' : p.station ? '先驱之塔 · 当前第 ' + twRec().f + ' 层' : '地点 ' + n + ' 个 · 已完成 ' + done) : '读完「' + SITES[p.after].chapter.split(' · ')[1] + '」后解锁') + '</span></button>';
+      '<span class="pn">' + p.name + (p.wild ? '<span class="chip ptype">' + p.ptype + '</span>' : '') + '</span><span class="hint">' + p.d + '</span><span class="pc">' + (open ? (p.sarena ? CONTEST.name + ' · ' + ({ signup: contestMe() ? '已报名' : '报名中', swiss: '瑞士轮进行中', final: '决赛进行中', done: '已结束' }[CT.data ? CT.data.status : 'signup'] || '报名中') : p.tower ? '当前第 ' + twRec().f + ' 层 · 存档点第 ' + twRec().cp + ' 层' : p.station ? '先驱之塔 · 当前第 ' + twRec().f + ' 层' : '地点 ' + n + ' 个 · 已完成 ' + done) : '读完「' + SITES[p.after].chapter.split(' · ')[1] + '」后解锁') + '</span></button>';
   }
   function sarenaSvg() {
     return '<svg viewBox="0 0 120 120" aria-hidden="true"><ellipse cx="60" cy="78" rx="48" ry="18" fill="#5b8fd0" stroke="#23222b" stroke-width="3"/><path d="M12 78V58c0-10 22-18 48-18s48 8 48 18v20" fill="#e6eaf0" stroke="#23222b" stroke-width="3"/>' +
       '<ellipse cx="60" cy="58" rx="48" ry="18" fill="#f6e6b4" stroke="#23222b" stroke-width="3"/><ellipse cx="60" cy="58" rx="28" ry="9" fill="#c42f3a" stroke="#23222b" stroke-width="2.5"/>' +
       '<path d="M60 40V14" stroke="#23222b" stroke-width="3"/><path d="M60 14l18 6-18 6z" fill="#f2c46b" stroke="#23222b" stroke-width="2.5" stroke-linejoin="round"/></svg>';
   }
-  /* ---------- 太空竞技场（2026-10-19）：比赛活动。第一届做题大王争霸赛目前只开放报名，报名名单存在服务器（server/contest.js），之后抽签 ---------- */
-  var CONTEST = { id: 'quiz1', name: '第一届做题大王争霸赛' }, CT = { data: null, busy: false, err: '' };
+  /* ---------- 太空竞技场 · 做题大王争霸赛（2026-10-19，服务器见 server/contest.js；对战走 social.js 的 rule = 'contest'） ----------
+   * 报名 → 满 5 人定抽签时间（全服公告）→ 抽签（全服动画，可回放）→ 瑞士轮（每轮 2~3 天，22:00 截止）→ 前两名决赛 → 发奖
+   * 太空竞技场页面：报名名单、抽签时间、我的对局（对手在线时「对战」按钮亮起）、赛程和每局回放、积分榜、直播入口 */
+  var CONTEST = { id: 'quiz1', name: '第一届做题大王争霸赛' }, CT = { data: null, busy: false, err: '', at: 0 };
+  var CT_RW = [{ exp: 300000, t: 3 }, { exp: 200000, t: 2 }, { exp: 150000, t: 1 }, { exp: 120000, t: 1 }];   // 第 1~4 名；之后都按 CT_RW0
+  var CT_RW0 = { exp: 80000, t: 1 };
+  MATS.ctTicket = { name: '神秘精灵兑换券', d: '做题大王争霸赛的参赛奖励。能兑换什么精灵？之后揭晓。' };
   function contestMe() { return !!(acc && acc.contest && acc.contest[CONTEST.id]) || !!(CT.data && CT.data.mine); }
-  function contestLoad() {
+  function ctName(u) { return (CT.data && CT.data.names && CT.data.names[u]) || u; }
+  function bjText(t) { var d = new Date(t + 8 * 3600 * 1000); return (d.getUTCMonth() + 1) + ' 月 ' + d.getUTCDate() + ' 日 ' + ('0' + d.getUTCHours()).slice(-2) + ':' + ('0' + d.getUTCMinutes()).slice(-2); }
+  function leftText(ms) { if (ms <= 0) return '马上'; var h = Math.floor(ms / 3600000), m = Math.ceil(ms % 3600000 / 60000); return h >= 24 ? Math.floor(h / 24) + ' 天 ' + (h % 24) + ' 小时' : h ? h + ' 小时 ' + m + ' 分' : m + ' 分钟'; }
+  function contestLoad(cb) {
+    if (cb) (CT.cbs = CT.cbs || []).push(cb);
     if (CT.busy || typeof CLOUD === 'undefined' || !CLOUD.api) return; CT.busy = true;
-    CLOUD.api('GET', '/api/contest').then(function (r) { CT.busy = false; if (r._code === 200) { CT.data = r; CT.err = ''; if (r.mine) { if (!acc.contest) acc.contest = {}; acc.contest[CONTEST.id] = acc.contest[CONTEST.id] || Date.now(); } } else CT.err = r.error || '暂时连不上服务器'; var el = $('ct-box'); if (el) el.innerHTML = contestInner(); })
-      .catch(function () { CT.busy = false; CT.err = '暂时连不上服务器'; var el = $('ct-box'); if (el) el.innerHTML = contestInner(); });
+    var done = function () { var L = CT.cbs || []; CT.cbs = []; L.forEach(function (f) { try { f(); } catch (e) {} }); };
+    CLOUD.api('GET', '/api/contest').then(function (r) {
+      CT.busy = false; CT.at = Date.now();
+      if (r._code === 200) { CT.data = r; CT.err = ''; if (r.mine && acc) { if (!acc.contest) acc.contest = {}; if (!acc.contest[CONTEST.id]) { acc.contest[CONTEST.id] = Date.now(); save(); } } ctReward(); }
+      else CT.err = r.error || '暂时连不上服务器';
+      ctRedraw(); done();
+    }).catch(function () { CT.busy = false; CT.err = '暂时连不上服务器'; ctRedraw(); CT.cbs = []; });
   }
-  function contestInner() {
-    var me = contestMe(), n = CT.data ? CT.data.count : null;
-    return '<p>做题家们，比一比谁才是真正的做题大王！</p>' +
-      '<p class="hint">' + (n != null ? '已报名 <b>' + n + '</b> 人 · ' : '') + (me ? '你已经报名了，请等待抽签。抽签时间另行通知。' : '报名后等待抽签，抽签时间另行通知。') + (CT.err ? '（' + esc(CT.err) + '）' : '') + '</p>' +
-      '<div class="soc-foot">' + (me ? '<button type="button" class="btn" disabled>已报名 · 等待抽签</button>' : '<button type="button" class="btn primary" data-ctsign="1">报名参赛</button>') + '</div>';
-  }
-  function sarenaPage() {
-    if (!CT.data && !CT.busy) contestLoad();
-    return '<article class="log-card ct-card"><span class="tape l"></span><span class="chip log-tag">报名中</span><h3>' + CONTEST.name + '</h3><div id="ct-box">' + contestInner() + '</div></article>';
-  }
+  function ctRedraw() { var el = $('ct-box'); if (el) el.innerHTML = contestInner(); }
   function contestSign() {
     if (contestMe() || CT.busy) return;
     if (typeof CLOUD === 'undefined' || !CLOUD.api) { toast('需要登录账号才能报名。'); return; }
@@ -1730,15 +1735,135 @@
       CT.busy = false;
       if (r._code === 200) { CT.data = r; if (!acc.contest) acc.contest = {}; acc.contest[CONTEST.id] = Date.now(); save(); toast('报名成功！请等待抽签。'); }
       else toast(r.error || '报名失败，请稍后再试。');
-      var el = $('ct-box'); if (el) el.innerHTML = contestInner();
+      ctRedraw();
     }).catch(function () { CT.busy = false; toast('暂时连不上服务器，请稍后再试。'); });
   }
+  // 冠军打完：按名次发奖（每个账号一次，邮箱里领）
+  function ctReward() {
+    var D = CT.data; if (!D || D.status !== 'done' || !D.ranks || !acc) return;
+    var k = D.ranks.indexOf(D.me); if (k < 0) return;
+    var R = CT_RW[k] || CT_RW0, place = k === 0 ? '冠军' : k === 1 ? '亚军' : '第 ' + (k + 1) + ' 名';
+    if (sendMail({ id: 'contest-' + CONTEST.id + '-rw', title: CONTEST.name + ' · ' + place + '奖励', body: '{name}，你好！\n' + CONTEST.name + '圆满结束，你获得了' + place + '！感谢参赛，请领取附件里的奖励。\n神秘精灵兑换券能兑换什么，之后揭晓。', att: { exp: R.exp, items: { ctTicket: R.t } } })) save();
+  }
+  function ctStatusText(D) {
+    if (!D) return CT.err ? '（' + CT.err + '）' : '正在读取……';
+    if (D.status === 'signup') return D.drawAt ? '报名中 · 抽签 ' + bjText(D.drawAt) + ' 开始（还有 ' + leftText(D.drawAt - Date.now()) + '），开始即截止' : '报名中 · 满 ' + D.min + ' 人后确定抽签时间（现在 ' + D.count + ' 人）';
+    if (D.status === 'swiss') { var R = D.rounds[D.rounds.length - 1]; return '瑞士轮第 ' + (R ? R.n : 1) + ' / ' + D.swissN + ' 轮进行中' + (R ? ' · ' + bjText(R.deadline) + ' 截止' : ''); }
+    if (D.status === 'final') { var F = D.rounds[D.rounds.length - 1]; return '决赛进行中' + (F ? ' · ' + bjText(F.deadline) + ' 截止' : ''); }
+    if (D.status === 'done') return '已结束 · 冠军 ' + ctName(D.ranks[0]);
+    return '';
+  }
+  function ctPairRow(p) {
+    var res = !p.w ? '<span class="hint">未完成</span>' : '<b class="blue">' + esc(ctName(p.w)) + ' 胜</b> <small>' + (p.how === 'play' ? (p.score ? p.score[0] + ' : ' + p.score[1] : '') : p.how === 'online' ? '对手未上线' : p.how === 'forfeit' ? '对手离开' : '随机判定') + '</small>';
+    var reps = (p.replays || []).map(function (x) { return '<button type="button" class="btn ghost ct-rep" data-ctrep="' + esc(x.id) + '">▶ 第 ' + x.game + ' 局</button>'; }).join('');
+    return '<li class="ct-pair' + (p.a === CT.data.me || p.b === CT.data.me ? ' me' : '') + '"><span class="ct-vs"><b' + (p.w === p.a ? ' class="win"' : '') + '>' + esc(ctName(p.a)) + '</b> vs <b' + (p.w === p.b ? ' class="win"' : '') + '>' + esc(ctName(p.b)) + '</b></span><span class="ct-res">' + res + '</span>' + (reps ? '<span class="ct-reps">' + reps + '</span>' : '') + '</li>';
+  }
+  function contestInner() {
+    var D = CT.data, me = contestMe();
+    var h = '<p class="ct-st">' + esc(ctStatusText(D)) + '</p>';
+    if (!D) return h + '<div class="soc-foot">' + (me ? '<button type="button" class="btn" disabled>已报名</button>' : '<button type="button" class="btn primary" data-ctsign="1">报名参赛</button>') + '</div>';
+    if (D.status === 'signup') {
+      h += '<p class="hint">做题家们，比一比谁才是真正的做题大王！瑞士轮决出前两名，再打决赛。所有参赛者都能得到神秘精灵兑换券和大量经验，名次越高奖励越丰富。</p>' +
+        '<div class="ct-names"><b>已报名 ' + D.count + ' 人</b>' + (D.players.length ? D.players.map(function (p) { return '<span class="chip' + (p.user === D.me ? ' me' : '') + '">' + esc(p.name) + '</span>'; }).join('') : '<span class="hint">还没有人报名</span>') + '</div>' +
+        '<div class="soc-foot">' + (me ? '<button type="button" class="btn" disabled>已报名 · 等待抽签</button>' : '<button type="button" class="btn primary" data-ctsign="1">报名参赛</button>') + '</div>';
+      return h;
+    }
+    h += '<div class="soc-foot ct-tools"><button type="button" class="btn ghost" data-ctdraw="1">▶ 回放抽签</button></div>';
+    // 我的对局
+    var M0 = D.myMatch;
+    if (M0 && !M0.done) {
+      var wsOk = window.HSSOCIAL && window.HSSOCIAL.wsOk && window.HSSOCIAL.wsOk(), can = M0.oppOnline && wsOk;
+      h += '<div class="ct-my"><span class="tape l"></span><b>你的' + (M0.final ? '决赛' : '第 ' + M0.round + ' 轮') + '对手：' + esc(M0.oppName) + '</b> <span class="dot' + (M0.oppOnline ? ' on' : '') + '"></span><small>' + (M0.oppOnline ? '在线' : '不在线') + '</small>' +
+        '<p class="hint">bo3，各带 6 只、禁对方 1 只，5v5。请在 ' + bjText(M0.deadline) + ' 之前和对手同时上线完成对战；到时还没打，在线时间更长的一方获胜。</p>' +
+        '<div class="soc-foot"><button type="button" class="btn primary" data-ctfight="' + esc(M0.opp) + '"' + (can ? '' : ' disabled') + '>' + (can ? '⚔ 对战' : M0.oppOnline ? '正在连接服务器……' : '对手上线后才能对战') + '</button></div></div>';
+    } else if (M0 && M0.done) h += '<p class="ct-my done">你这一轮的对局已经结束（' + (M0.w === D.me ? '胜' : '负') + '），等待其他对局。</p>';
+    // 直播
+    if (D.live && D.live.length) h += '<div class="ct-live"><b>🔴 正在直播</b>' + D.live.map(function (L) { return '<button type="button" class="btn ghost" data-ctwatch="' + esc(L.host) + '">' + esc(ctName(L.a)) + ' vs ' + esc(ctName(L.b)) + ' · 观看</button>'; }).join('') + '</div>';
+    // 冠军
+    if (D.status === 'done' && D.ranks) h += '<div class="ct-podium">' + D.ranks.slice(0, 3).map(function (u, i) { return '<div class="ct-pl p' + (i + 1) + '"><span>' + ['🏆 冠军', '🥈 亚军', '🥉 第 3 名'][i] + '</span><b>' + esc(ctName(u)) + '</b></div>'; }).join('') + '</div>';
+    // 赛程
+    h += '<h4 class="ct-h">赛程</h4>' + D.rounds.slice().reverse().map(function (R) {
+      return '<div class="ct-round"><p><b>' + (R.final ? '决赛' : '第 ' + R.n + ' 轮') + '</b> <small>' + (R.closed ? '已结束' : '截止 ' + bjText(R.deadline)) + '</small></p><ul>' + R.pairs.map(ctPairRow).join('') + (R.bye ? '<li class="ct-pair"><span class="ct-vs"><b>' + esc(ctName(R.bye)) + '</b> 轮空</span><span class="ct-res"><small>直接算胜</small></span></li>' : '') + '</ul></div>';
+    }).join('');
+    // 积分榜
+    if (D.standings && D.standings.length) h += '<h4 class="ct-h">瑞士轮积分</h4><table class="ct-tb"><thead><tr><th>#</th><th>选手</th><th>胜</th><th>负</th><th>对手分</th><th>小分</th></tr></thead><tbody>' +
+      D.standings.map(function (x, i) { return '<tr' + (x.user === D.me ? ' class="me"' : '') + '><td>' + (i + 1) + '</td><td>' + esc(ctName(x.user)) + '</td><td>' + x.w + '</td><td>' + x.l + '</td><td>' + x.buch + '</td><td>' + (x.gd > 0 ? '+' : '') + x.gd + '</td></tr>'; }).join('') + '</tbody></table><p class="hint">胜场相同时依次比对手分（遇到过的对手的胜场之和）、小分（赢的局数 − 输的局数）。</p>';
+    return h;
+  }
+  function sarenaPage() {
+    if (!CT.busy && (!CT.data || Date.now() - CT.at > 15000)) contestLoad();
+    clearInterval(ex.ctTick);
+    ex.ctTick = setInterval(function () { if (!document.getElementById('ct-box')) { clearInterval(ex.ctTick); return; } contestLoad(); }, 20000);
+    return '<article class="log-card ct-card"><span class="tape l"></span><span class="chip log-tag">精灵王争霸赛</span><h3>' + CONTEST.name + '</h3><div id="ct-box">' + contestInner() + '</div></article>';
+  }
   function contestLogHTML() {
-    return '<article class="log-card ct-card"><span class="tape l"></span><span class="chip log-tag">新活动</span><h3>精灵王争霸赛</h3>' +
-      '<p>空间站旁边的<b>太空竞技场</b>落成了！首场比赛「' + CONTEST.name + '」开放报名，报名后等待抽签。</p>' +
-      '<p class="hint">' + (contestMe() ? '你已经报名了，请等待抽签。' : '在星际探索的星图上，空间站右边就是太空竞技场。') + '</p>' +
+    var D = CT.data, ns = D && D.notices ? D.notices.slice(-3).reverse() : [];
+    return '<article class="log-card ct-card"><span class="tape l"></span><span class="chip log-tag">精灵王争霸赛</span><h3>' + CONTEST.name + '</h3>' +
+      '<p>' + esc(ctStatusText(D)) + '</p>' + (ns.length ? '<ul class="ct-news">' + ns.map(function (n) { return '<li><b>' + esc(n.title.replace(CONTEST.name + ' · ', '')) + '</b><small>' + bjText(n.t) + '</small><span>' + esc(n.text) + '</span></li>'; }).join('') + '</ul>' : '<p class="hint">空间站旁边的太空竞技场落成了！' + (contestMe() ? '你已经报名了。' : '快去报名吧。') + '</p>') +
       '<div class="soc-foot"><button type="button" class="btn primary" data-gosarena="1">去太空竞技场</button></div></article>';
   }
+  // 抽签动画：报名的船员先按报名顺序摆开 → 翻面洗牌 → 按抽签结果排好 → 两两亮出第一轮对阵
+  function ctDrawShow() {
+    var D = CT.data; if (!D || !D.order || !D.order.length) { contestLoad(function () { if (CT.data && CT.data.order && CT.data.order.length) ctDrawShow(); }); return; }
+    var old = document.querySelector('.ctd'); if (old) old.remove();
+    var names = D.players.map(function (p) { return p.user; }).filter(function (u) { return D.order.indexOf(u) >= 0; }), R1 = D.rounds[0] || { pairs: [] };
+    if (names.length !== D.order.length) names = D.order.slice().sort();
+    var el = document.createElement('div'); el.className = 'ctd';
+    el.innerHTML = '<div class="ctd-box"><h2>' + CONTEST.name + ' · 抽签</h2><p class="ctd-msg" id="ctd-msg">共 ' + names.length + ' 名选手</p><div class="ctd-stage" id="ctd-stage">' +
+      names.map(function (u, i) { return '<div class="ctd-card" data-u="' + esc(u) + '"><span class="ctd-f">' + esc(ctName(u)) + '</span><span class="ctd-b">?</span></div>'; }).join('') +
+      '</div><ul class="ctd-pairs" id="ctd-pairs"></ul><div class="soc-foot"><button type="button" class="btn primary" id="ctd-x">跳过</button></div></div>';
+    document.body.appendChild(el);
+    var cards = [].slice.call(el.querySelectorAll('.ctd-card')), N = cards.length, cols = Math.min(4, N), timers = [];
+    function at(ms, fn) { timers.push(setTimeout(fn, ms)); }
+    var rows = Math.ceil(N / cols); el.querySelector('#ctd-stage').style.height = Math.max(120, rows * 58 + 20) + 'px';
+    function place(c, k) { c.style.left = (4 + (k % cols) * (92 / cols)) + '%'; c.style.top = (10 + Math.floor(k / cols) * 58) + 'px'; c.style.transform = 'none'; }
+    function close() { timers.forEach(clearTimeout); if (el.parentNode) el.remove(); }
+    cards.forEach(function (c, i) { place(c, i); });
+    at(1200, function () { el.querySelector('#ctd-msg').textContent = '翻面、洗牌……'; cards.forEach(function (c, i) { c.classList.add('flip'); c.style.left = (40 + (i % 3) * 2) + '%'; c.style.top = (10 + (i % 2) * 6) + 'px'; c.style.transform = 'rotate(' + (i * 9 - 20) + 'deg)'; }); });
+    for (var r = 0; r < 7; r++) at(1900 + r * 230, function () { cards.forEach(function (c) { c.style.left = (40 + (Math.random() - 0.5) * 50) + '%'; c.style.top = Math.round(10 + Math.random() * Math.max(0, rows * 58 - 50)) + 'px'; c.style.transform = 'rotate(' + Math.round((Math.random() - 0.5) * 50) + 'deg)'; c.style.zIndex = Math.floor(Math.random() * 20); }); });
+    at(3700, function () { el.querySelector('#ctd-msg').textContent = '抽签结果！'; });
+    D.order.forEach(function (u, k) { at(3800 + k * 180, function () { var c = cards.filter(function (x) { return x.dataset.u === u; })[0]; if (c) { place(c, k); c.style.zIndex = 30 + k; c.classList.remove('flip'); } }); });
+    var t1 = 3900 + N * 180;
+    R1.pairs.forEach(function (p, k) { at(t1 + 400 + k * 700, function () { var li = document.createElement('li'); li.innerHTML = '<b>' + esc(ctName(p.a)) + '</b> vs <b>' + esc(ctName(p.b)) + '</b>'; el.querySelector('#ctd-pairs').appendChild(li); }); });
+    at(t1 + 400 + R1.pairs.length * 700, function () {
+      if (R1.bye) { var li = document.createElement('li'); li.innerHTML = '<b>' + esc(ctName(R1.bye)) + '</b> 第一轮轮空'; el.querySelector('#ctd-pairs').appendChild(li); }
+      el.querySelector('#ctd-msg').textContent = '第一轮对阵已经确定，去太空竞技场看看吧！'; el.querySelector('#ctd-x').textContent = '关闭';
+    });
+    el.addEventListener('click', function (e) { if (e.target.id === 'ctd-x') close(); });
+  }
+  // 全服公告弹窗（争霸赛的满员、抽签、每轮结果、冠军）
+  var ctNoticeQ = [];
+  function ctNoticePop(n) {
+    if (!n || !acc) return;
+    if (!acc.ctSeen) acc.ctSeen = {};
+    if (acc.ctSeen[n.id]) return;
+    if (!ready() || ex.fighting || ex.view === 'vn' || document.querySelector('.soc-dlg') || document.querySelector('.ctd') || ($('battle') && !$('battle').hidden)) { if (ctNoticeQ.indexOf(n) < 0) ctNoticeQ.push(n); return; }
+    acc.ctSeen[n.id] = 1; save();
+    var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'ct-dlg';
+    d.innerHTML = '<div class="soc-box" role="dialog" aria-modal="true"><span class="tape l"></span><span class="tape r"></span><span class="step">全服公告 · 精灵王争霸赛</span><h2>' + esc(n.title) + '</h2><p>' + esc(n.text) + '</p>' +
+      '<div class="soc-foot"><button type="button" class="btn ghost" data-ctx="1">知道了</button><button type="button" class="btn primary" data-ctgo2="1">去太空竞技场</button></div></div>';
+    document.body.appendChild(d);
+    d.addEventListener('click', function (e) {
+      if (e.target === d || e.target.closest('[data-ctx]')) { d.remove(); return; }
+      if (e.target.closest('[data-ctgo2]')) { d.remove(); ex.planet = 'sarena'; ex.view = 'sites'; go('explore'); }
+    });
+  }
+  window.HSCT = {
+    notice: function (n) { if (CT.data) { CT.data.notices = (CT.data.notices || []).concat([n]); } contestLoad(); ctNoticePop(n); },
+    draw: function () { contestLoad(function () { if (!ex.fighting && !($('battle') && !$('battle').hidden)) ctDrawShow(); }); },
+    ready: function (m) {
+      if (ex.fighting || ($('battle') && !$('battle').hidden) || document.querySelector('.soc-dlg')) return;
+      var d = document.createElement('div'); d.className = 'soc-dlg';
+      d.innerHTML = '<div class="soc-box" role="dialog" aria-modal="true"><span class="tape l"></span><span class="tape r"></span><span class="step">' + CONTEST.name + ' · ' + (m.final ? '决赛' : '第 ' + m.round + ' 轮') + '</span><h2>你的对手 ' + esc(m.oppName) + ' 在线！</h2><p class="hint">现在就可以开打：bo3，各带 6 只、禁对方 1 只。</p>' +
+        '<div class="soc-foot"><button type="button" class="btn ghost" data-ctx="1">稍后</button><button type="button" class="btn primary" data-ctfight2="1">⚔ 发起对战</button></div></div>';
+      document.body.appendChild(d);
+      d.addEventListener('click', function (e) {
+        if (e.target === d || e.target.closest('[data-ctx]')) { d.remove(); return; }
+        if (e.target.closest('[data-ctfight2]')) { d.remove(); if (window.HSSOCIAL && window.HSSOCIAL.ctAsk) window.HSSOCIAL.ctAsk(m.opp, m.oppName, CONTEST.name + ' · ' + (m.final ? '决赛' : '第 ' + m.round + ' 轮')); }
+      });
+    },
+    refresh: function () { contestLoad(); }
+  };
   function stationSvg() {
     return '<svg viewBox="0 0 120 120" aria-hidden="true"><ellipse cx="60" cy="62" rx="50" ry="17" fill="none" stroke="#23222b" stroke-width="7"/><ellipse cx="60" cy="62" rx="50" ry="17" fill="none" stroke="#e6eaf0" stroke-width="4"/>' +
       '<rect x="12" y="55" width="22" height="14" fill="#5b8fd0" stroke="#23222b" stroke-width="2.5"/><rect x="86" y="55" width="22" height="14" fill="#5b8fd0" stroke="#23222b" stroke-width="2.5"/>' +
@@ -2053,17 +2178,23 @@
     });
   }
   setInterval(sideCheck, 3000);
-  /* 做题大王争霸赛报名弹窗（2026-10-19）：每次登录（打开游戏）弹一次，已报名的不弹；等服务器返回报名状态后再弹 */
+  /* 做题大王争霸赛（2026-10-19）：进游戏后先读一次赛事状态。报名期间还没报名的弹报名窗（每次打开游戏一次）；没看过的全服公告补弹最新一条 */
   var ctPopped = false;
   function ctPopCheck() {
-    if (ctPopped || !ready() || !acc.introDone || ex.fighting || ex.view === 'vn' || ($('battle') && !$('battle').hidden)) return;
-    if (contestMe()) { ctPopped = true; return; }
+    if (!ready() || !acc.introDone || ex.fighting || ex.view === 'vn' || ($('battle') && !$('battle').hidden)) return;
     if (!CT.data) { if (!CT.busy && !CT.err) contestLoad(); return; }
-    if (document.querySelector('.soc-dlg')) return;
-    ctPopped = true; if (contestMe()) return;
+    if (document.querySelector('.soc-dlg') || document.querySelector('.ctd')) return;
+    if (ctNoticeQ.length) { ctNoticePop(ctNoticeQ.shift()); return; }
+    if (ctPopped) return;
+    ctPopped = true;
+    var D = CT.data;
+    if (!acc.ctSeen) acc.ctSeen = {};
+    var unseen = (D.notices || []).filter(function (n) { return !acc.ctSeen[n.id]; });
+    if (unseen.length) { unseen.slice(0, -1).forEach(function (n) { acc.ctSeen[n.id] = 1; }); ctNoticePop(unseen[unseen.length - 1]); return; }
+    if (D.status !== 'signup' || contestMe()) return;
     var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'ct-dlg';
     d.innerHTML = '<div class="soc-box" role="dialog" aria-modal="true" aria-label="' + CONTEST.name + '"><span class="tape l"></span><span class="tape r"></span><span class="step">太空竞技场 · 精灵王争霸赛</span><h2>' + CONTEST.name + ' 报名中！</h2>' +
-      '<p>做题家们，比一比谁才是真正的做题大王！报名后等待抽签，抽签时间另行通知。</p><p class="hint">已报名 <b>' + (CT.data.count || 0) + '</b> 人。也可以之后在星图上空间站右边的「太空竞技场」报名。</p>' +
+      '<p>做题家们，比一比谁才是真正的做题大王！' + (D.drawAt ? '抽签将在 ' + bjText(D.drawAt) + ' 开始，开始即截止报名。' : '报名满 ' + D.min + ' 人后确定抽签时间。') + '</p><p class="hint">已报名 <b>' + (D.count || 0) + '</b> 人。所有参赛者都有神秘精灵兑换券和大量经验奖励。也可以之后在星图上空间站右边的「太空竞技场」报名。</p>' +
       '<div class="soc-foot"><button type="button" class="btn ghost" data-ctx="1">稍后再说</button><button type="button" class="btn primary" data-ctgo="1">立即报名</button></div></div>';
     document.body.appendChild(d);
     d.addEventListener('click', function (e) {
@@ -5197,6 +5328,10 @@
     if (b.id === 'ex-area') { ex.view = 'area'; renderExplore(); return; }
     if (b.id === 'ex-ship') { ex.view = 'sites'; ex.planet = 'jingchu'; renderExplore(); return; }
     if (b.dataset.ctsign) { contestSign(); return; }
+    if (b.dataset.ctdraw) { ctDrawShow(); return; }
+    if (b.dataset.ctfight) { if (window.HSSOCIAL && window.HSSOCIAL.ctAsk) { var M1 = CT.data && CT.data.myMatch; window.HSSOCIAL.ctAsk(b.dataset.ctfight, M1 ? M1.oppName : '', CONTEST.name + (M1 ? ' · ' + (M1.final ? '决赛' : '第 ' + M1.round + ' 轮') : '')); } return; }
+    if (b.dataset.ctwatch) { if (window.HSSOCIAL && window.HSSOCIAL.watch) window.HSSOCIAL.watch(b.dataset.ctwatch); return; }
+    if (b.dataset.ctrep) { if (window.HSSOCIAL && window.HSSOCIAL.replay) window.HSSOCIAL.replay(b.dataset.ctrep); return; }
     if (b.dataset.planet && !b.disabled) { ex.planet = b.dataset.planet; ex.view = 'sites'; renderExplore(); mysteryRoll(planetOf(b.dataset.planet).name); return; }
     if (b.id === 'ex-back') { var P_ = ex.view === 'sites' && planetOf(ex.planet); if (P_ && P_.inStation) { ex.planet = 'station'; renderExplore(); return; } ex.view = 'planets'; renderExplore(); return; }
     if (b.dataset.go && unlocked(b.dataset.go)) { startVN(b.dataset.go, 'replay', $('pg-explore'), b.dataset.from === '0'); window.scrollTo(0, $('pg-explore').offsetTop - 8); }
