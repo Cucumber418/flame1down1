@@ -2290,3 +2290,11 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .quiz-opt:hover { border-color: var(--ink); background: #fffbef; }
 .quiz-opt b { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--ink); color: #fff; font-size: 13px; }
 .quiz-score { font-size: 18px; } .quiz-score b { font-size: 30px; color: var(--red); }
+.cu .ore-ic, .fe .ore-ic { border: 0; border-radius: 0; box-shadow: none; background: center / contain no-repeat; image-rendering: pixelated; filter: drop-shadow(0 2px 3px rgba(0,0,0,.5)); }
+.cu .ore-ic { background-image: url(../images/items/ore_coal.png); }
+.fe .ore-ic { background-image: url(../images/items/ore_iron.png); }
+.it-ic.it-px { image-rendering: pixelated; object-fit: contain; }
+.lz-face { object-fit: cover; object-position: 50% 10%; background: #f7f3e8; }
+.npc-box .soc-foot { grid-column: 1 / -1; }
+.cu .ore-ic, .fe .ore-ic { width: 52px; height: 52px; }
+.wf-ore { z-index: 120; }
