@@ -2038,8 +2038,8 @@
       var fb = !done ? '' : '<div class="quiz-fb ' + (good ? 'ok' : 'bad') + '"><b>' + (good ? '✓ 回答正确！' : '✗ 回答错误，正确答案是 ' + 'ABCD'[q.a]) + '</b>' +
         (!good && q.e ? (showE ? '<p class="quiz-exp">' + esc(q.e) + '</p>' : '<button type="button" class="btn ghost" data-qexp="1">查看解析</button>') : '') + '</div>';
       d.innerHTML = '<div class="soc-box quiz-box" role="dialog" aria-modal="true" aria-label="' + title + '"><span class="tape l"></span><span class="tape r"></span><span class="step">' + title + ' · 第 ' + (i + 1) + ' / ' + Qs.length + ' 题 · 已错 ' + wrong + ' / ' + WRONG_MAX + '</span>' +
-        '<div class="quiz-bar"><i style="width:' + ((i + (done ? 1 : 0)) / Qs.length * 100) + '%"></i></div><p class="quiz-q">' + esc(q.q) + '</p>' +
-        '<div class="quiz-opts">' + q.o.map(function (o, k) { var c = !done ? '' : k === q.a ? ' right' : k === ans ? ' wrong' : ' dim'; return '<button type="button" class="quiz-opt' + c + '" data-qo="' + k + '"' + (done ? ' disabled' : '') + '><b>' + 'ABCD'[k] + '</b><span>' + esc(o) + '</span></button>'; }).join('') + '</div>' + fb +
+        '<div class="quiz-bar"><i style="width:' + ((i + (done ? 1 : 0)) / Qs.length * 100) + '%"></i></div><p class="quiz-q">' + (q.s ? '<em class="quiz-tag">' + esc(q.s) + '</em>' : '') + esc(q.q) + '</p>' + (q.img ? '<img class="quiz-img" src="images/quiz/' + q.img + '" alt="题目图">' : '') +
+        '<div class="quiz-opts' + (q.o.join('') ? '' : ' fig') + '">' + q.o.map(function (o, k) { var c = !done ? '' : k === q.a ? ' right' : k === ans ? ' wrong' : ' dim'; return '<button type="button" class="quiz-opt' + c + '" data-qo="' + k + '"' + (done ? ' disabled' : '') + '><b>' + 'ABCD'[k] + '</b><span>' + esc(o) + '</span></button>'; }).join('') + '</div>' + fb +
         '<div class="soc-foot"><button type="button" class="btn ghost" data-qx="1">放弃</button>' + (done ? '<button type="button" class="btn primary" data-qnext="1">' + (i + 1 >= Qs.length || wrong >= WRONG_MAX ? '查看结果' : '下一题') + '</button>' : '') + '</div></div>';
     }
     draw();

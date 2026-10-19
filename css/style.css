@@ -2312,3 +2312,7 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .quiz-fb.ok { background: #e8f6e9; color: #2f6a3a; } .quiz-fb.bad { background: #fbe9e8; color: #9a2a24; }
 .quiz-exp { margin: 0; color: var(--ink); font-size: 13.5px; line-height: 1.7; max-height: 30vh; overflow-y: auto; }
 .quiz-score small { display: block; font-size: 13px; color: #888; }
+.quiz-tag { display: inline-block; font-style: normal; font-size: 12px; padding: 1px 8px; margin-right: 6px; border-radius: 10px; background: var(--ink); color: #fff; vertical-align: 1px; }
+.quiz-img { display: block; max-width: 100%; max-height: 38vh; margin: 0 auto 10px; border-radius: 6px; background: #fff; object-fit: contain; }
+.quiz-box { max-height: 92vh; overflow-y: auto; }
+.quiz-opts.fig { grid-template-columns: repeat(4, 1fr); } .quiz-opts.fig .quiz-opt { grid-template-columns: 1fr; justify-items: center; }
