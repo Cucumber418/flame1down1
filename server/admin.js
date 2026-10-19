@@ -5,8 +5,8 @@
  *   sudo node /opt/flame1down1/server/admin.js reset 账号名 新密码     帮忘记密码的人重设密码
  *   sudo node /opt/flame1down1/server/admin.js board                 看讨论区最近 30 条留言（带编号）
  *   sudo node /opt/flame1down1/server/admin.js board-del 编号          删掉讨论区里的一条留言
- *   sudo node /opt/flame1down1/server/admin.js boss                  看首领攻略板上的所有攻略（带编号）
- *   sudo node /opt/flame1down1/server/admin.js boss-del 编号           删掉一条首领攻略
+ *   sudo node /opt/flame1down1/server/admin.js boss                  看BOSS攻略板上的所有攻略（带编号）
+ *   sudo node /opt/flame1down1/server/admin.js boss-del 编号           删掉一条BOSS攻略
  *
  * 重设密码后会自动重启游戏服务，让旧的登录失效。
  */

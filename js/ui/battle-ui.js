@@ -123,6 +123,7 @@
       '<path d="M8 30h48c0 12-10 21-24 21S8 42 8 30z" fill="#c9553a"/><path d="M14 38h36" stroke="#f3d36b" stroke-width="2"/><path d="M24 51h16v5H24z" fill="#a8432c"/></g></svg>';
     if (k === 'm_cu' || k === 'm_fe') return '<img class="it-ic it-px" src="images/items/' + (k === 'm_cu' ? 'ore_coal' : 'ore_iron') + '.png" alt="">';   // 煤炭 / 铁矿（像素小图标）
     if (k === 'm_horn') return '<svg class="it-ic" viewBox="0 0 64 64" aria-hidden="true"><g stroke="#23222b" stroke-width="2.5" stroke-linejoin="round"><path d="M10 40c10-2 24-10 34-24l8 6c-6 14-18 26-36 30z" fill="#e6b45a"/><path d="M44 16l8 6 6-10-8-4z" fill="#c9553a"/><path d="M14 46l-4 8 8-2" fill="#f3d36b"/><path d="M22 40c6-3 12-8 18-15" stroke="#fff3d0" stroke-width="2" fill="none"/></g></svg>';
+    if (k === 'm_mcry') return '<svg class="it-ic" viewBox="0 0 64 64" aria-hidden="true"><g stroke="#23222b" stroke-width="2.5" stroke-linejoin="round"><path d="M32 6 46 22 40 56H24L18 22z" fill="#7d6ad8"/><path d="M32 6 38 22 32 56 26 22z" fill="#a99af0"/><path d="M18 22h28" fill="none"/></g><path d="M27 14l3-4" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></svg>';   // 马亚尔晶体
     if (k === 'm_hfhorn') return '<svg class="it-ic" viewBox="0 0 64 64" aria-hidden="true"><g stroke="#23222b" stroke-width="2.5" stroke-linejoin="round"><path d="M18 52c2-16 10-30 26-40-4 14-6 28-14 40z" fill="#d9773a"/><path d="M28 44c2-8 6-16 12-22" stroke="#ffd36b" stroke-width="2" fill="none"/></g></svg>';
     if (k === 'formDev') return '<svg class="it-ic" viewBox="0 0 64 64" aria-hidden="true"><g stroke="#23222b" stroke-width="2.5" stroke-linejoin="round">' +
       '<rect x="10" y="16" width="44" height="34" rx="8" fill="#e6eaf0"/><circle cx="32" cy="33" r="11" fill="#2b2a33"/><path d="M26 33a6 6 0 0 1 10-4.5M38 33a6 6 0 0 1-10 4.5" stroke="#8fd3ff" stroke-width="2.5" fill="none" stroke-linecap="round"/>' +
@@ -455,7 +456,7 @@
     if (pvp) return pvp.brawl ? '精灵大乱斗' : '切磋 · ' + (pvp.label || pvp.mode + 'v' + pvp.mode);
     if (S.training) return '竞技对战 · 训练';
     if (S.wild) return '野外 · ' + (S.wild.where || '');
-    if (S.story) { var a0 = S.sides[1].team[0]; return S.story.foe === '首领' ? '首领战 · ' + (a0.nick || SPMAP[a0.id].name) + (S.story.diff ? '（' + S.story.diff + '）' : '') : '对战 · ' + S.story.foe; }
+    if (S.story) { var a0 = S.sides[1].team[0]; return S.story.foe === 'BOSS' ? 'BOSS战 · ' + (a0.nick || SPMAP[a0.id].name) + (S.story.diff ? '（' + S.story.diff + '）' : '') : '对战 · ' + S.story.foe; }
     return S.mode === 'rank' ? '竞技对战 · 平衡排位 · ' + rankFull(S.rankAt, S.rankDv) : '竞技对战 · 沙盒';
   }
   function castFoe() { var S = app.S; return pvp ? pvp.foe : S.training ? '训练木桩' : S.wild ? '野生精灵' : S.story ? S.story.foe : '电脑'; }
@@ -569,7 +570,7 @@
     shownIds = [null, null]; castBegin();
     var nn = function (x) { return x.nick || SPMAP[x.id].name; };
     if (opt.wild) { addLog('野生的【' + nn(opt.a[0]) + '】（LV' + opt.a[0].lv + '）出现了！你派出了【' + nn(opt.p[0]) + '】！', ''); addLog(opt.wild.where + ' · 野外对战', 'turn'); }
-    else { addLog(opt.foe + '派出了【' + nn(opt.a[0]) + '】，你派出了【' + nn(opt.p[0]) + '】！', ''); addLog(opt.diff ? '首领战 · ' + opt.diff : '剧情对战 · ' + opt.foe, 'turn'); }
+    else { addLog(opt.foe + '派出了【' + nn(opt.a[0]) + '】，你派出了【' + nn(opt.p[0]) + '】！', ''); addLog(opt.diff ? 'BOSS战 · ' + opt.diff : '剧情对战 · ' + opt.foe, 'turn'); }
     if (opt.env === 'miasma') addLog('这里弥漫着瘴气：每回合结束时，场上的精灵各获得 1 层瘴气（每层物攻、特攻 +5%，物防、特防 −5%）', 'bad');
     renderSnap(snap(app.S), true);
     showTab('moves'); refreshCmd();
@@ -722,7 +723,7 @@
         if (lv && nlv) { var open = lv.matches(':hover') || lv === document.activeElement; lv.querySelector('.tip').innerHTML = nlv.querySelector('.tip').innerHTML; if (open) fitTip({ target: lv }); }
       }
       var mon = $('mon' + i), img = mon.querySelector('img');
-      if (shownIds[i] !== sd.id + '|' + (sd.img || '')) {   // 换了图（比如首领中途换形态）也要重画
+      if (shownIds[i] !== sd.id + '|' + (sd.img || '')) {   // 换了图（比如BOSS中途换形态）也要重画
         shownIds[i] = sd.id + '|' + (sd.img || ''); img.src = sd.img || SPRITES[sd.id]; img.alt = sd.name;
         mon.classList.remove('fainted'); if (!instant) restartAnim(mon, 'enter');
       }
@@ -941,7 +942,7 @@
     $('btn-again').textContent = rankOn() ? '下一局 · 重新选择阵容' : '同样的背包再来一局';
     $('endcard').hidden = false;
     refreshCmd();
-    // 剧情 / 野外 / 挑战 / 首领这类对战（2026-10-18）：不再停在结束卡片上，直接结算，奖励面板马上弹出
+    // 剧情 / 野外 / 挑战 / BOSS这类对战（2026-10-18）：不再停在结束卡片上，直接结算，奖励面板马上弹出
     if (S.story) { $('endcard').hidden = true; setTimeout(function () { if (app.S === S) $('btn-back').click(); }, 0); return; }
     if (!S.story && !S.evSent) { S.evSent = 1; var em = window.HSEV ? window.HSEV('arena', { rank: rankOn(), result: r, quit: !!S.quit }) : null; if (em) S.evMsg = em; }
     if (S.evMsg) $('end-sub').textContent += ' · ' + S.evMsg;

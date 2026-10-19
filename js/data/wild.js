@@ -59,7 +59,7 @@ var WILD_SCENE = {
 var WILD_REGIONS = [
   { id: 'forest', planet: 'flora', name: '丛林', en: 'Forest', d: '高大的树木遮住了天空，林下潮湿又安静。玛西很常见，偶尔能撞见稀有的卡莱。', pool: 'forest', bgs: ['fl_path', 'fl_beech', 'fl_sun', 'fl_maple'] },
   { id: 'grass', planet: 'flora', name: '草甸', en: 'Grassland', d: '一望无际的草甸，风吹过时像绿色的海浪。卡罗成群地在这里奔跑。', pool: 'grass', bgs: ['fl_meadow', 'fl_lake', 'fl_horizon'] },
-  { id: 'salt', planet: 'flora', name: '盐碱地', en: 'Saline-alkali Land', d: '寸草不生的白色荒原，四处飘着灰紫色的瘴气。着陆舱就是在这里迫降的。瘴气的源头——草系首领「荒芜」就潜伏在地底。这里没有野生精灵。', boss: '荒芜', bgs: ['fl_salt'] }
+  { id: 'salt', planet: 'flora', name: '盐碱地', en: 'Saline-alkali Land', d: '寸草不生的白色荒原，四处飘着灰紫色的瘴气。着陆舱就是在这里迫降的。瘴气的源头——草系BOSS「荒芜」就潜伏在地底。这里没有野生精灵。', boss: '荒芜', bgs: ['fl_salt'] }
 ,
   { id: 'kb_surf', planet: 'kamble', name: '水面', en: 'Surface', d: '码头的灯照着翻涌的海浪，远处的冥岛不时喷出高高的水柱。这里的精灵最温和。传说在冥岛吹响号角，会引来唱歌的小精灵。', pool: 'kb_surf', bgs: ['kb_dock', 'kb_isle'] },
   { id: 'kb_sea', planet: 'kamble', name: '浅水区', en: 'Shallows', d: '阳光还能照进来的一层海水，抬头就能看见水面，鱼群成片游过。', pool: 'kb_sea', bgs: ['kb_lookup', 'kb_shoal'] },

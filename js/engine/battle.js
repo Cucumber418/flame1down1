@@ -56,7 +56,7 @@ var ACC_DOWN = [1, 0.8, 0.66, 0.54, 0.43, 0.33, 0.25];
 function accMult(n) { n = Math.max(-6, Math.min(6, Math.round(n) || 0)); return n >= 0 ? (3 + n) / 3 : ACC_DOWN[-n]; }
 var STAB = 1.2;      // 本系加成：技能属性与精灵属性相同时伤害 ×1.2
 var HP_MULT = 1.75;   // 体力在原公式基础上 ×1.75
-// iv：天赋（0~31），不传时按满天赋 31 计算（野怪、剧情对手、首领、平衡排位）
+// iv：天赋（0~31），不传时按满天赋 31 计算（野怪、剧情对手、BOSS、平衡排位）
 function calcStat(b, k, lv, iv) { lv = lv || LV; var v = Math.floor((2 * b + (iv == null ? 31 : iv)) * lv / 100); return k === 'hp' ? Math.floor((v + lv + 10) * HP_MULT) : v + 5; }
 function blankStages() { var o = {}; STG.forEach(function (k) { o[k] = 0; }); return o; }
 function sp(m) { return m.id === 'dummy' ? (m.dummySpec || DUMMY) : SPMAP[m.id]; }
@@ -98,14 +98,14 @@ function erodeMult(m) { var e = m.boss && m.boss.erode; return typeof e === 'num
 function mkFrom(t) {
   var m = makeMon(t.id, t.moves, t.mult, t.lv, t.ev, t.nat, t.iv);
   if (t.nick) m.nick = t.nick; if (t.img) m.img = t.img; if (t.miasma) m.perm.miasma = t.miasma;
-  if (t.maxhp) m.maxhp = m.hp = t.maxhp;          // 首领：固定体力
+  if (t.maxhp) m.maxhp = m.hp = t.maxhp;          // BOSS：固定体力
   // breakable：剧情里可以被打破的木桩（如第八段的炸弹），体力不再无限，打到 0 就倒下；ability 可以换成剧情里的说明
   if (t.id === 'dummy' && t.breakable) { m.breakable = true; m.dummySpec = Object.assign({}, DUMMY, { name: t.nick || DUMMY.name, ability: t.ability || DUMMY.ability }); }
   if (t.lvq) m.lvq = 1;                         // 星球挑战：等级显示为「LV.??」
-  if (t.onlyHit) m.onlyHit = t.onlyHit;           // 首领：只有这些属性的技能能命中它
+  if (t.onlyHit) m.onlyHit = t.onlyHit;           // BOSS：只有这些属性的技能能命中它
   if (t.shiny) m.shiny = t.shiny === 2 ? 2 : true;   // 异色精灵（只是配色不同，能力一样）
   if (t.emblem && EMBLEMS[t.id] && EMBLEMS[t.id].m === t.emblem) m.emblem = t.emblem;
-  // 首领的特殊能力（见 BOSS_FX）；pp：首领技能的 PP（长时间战斗不会用光）
+  // BOSS的特殊能力（见 BOSS_FX）；pp：BOSS技能的 PP（长时间战斗不会用光）
   if (t.boss) { m.boss = JSON.parse(JSON.stringify(t.boss)); if (m.boss.pp) m.moves.forEach(function (x) { if (M[x.n].custom !== 'annihilate') x.pp = x.max = m.boss.pp; }); }   // 灭却除外，仍按原本的 PP
   if (m.boss) m.boss.atk0 = m.stats.atk;
   if (m.boss && m.boss.feud) m.stats.atk = Math.floor(m.stats.atk * 1.3);   // 「东北的纷争」：物攻永久 +30%（直接算进能力值，不是能力等级，不会被消除）
@@ -248,7 +248,7 @@ function chipsOf(m, foe) {
   if (m.fx.leiyin) c.push({ t: '引雷', k: 'st', h: '引雷', d: '下一次受到的伤害提升20%' });
   if (m.fx.sureHit && !m.fx.sureCrit) c.push({ t: '下次必中', k: 'fx', h: '下次必中', d: '下一次攻击必定命中' });
   if (m.perm && m.perm.melt) c.push({ t: '熔化 ×' + m.perm.melt, k: 'st', h: '熔化 · ' + m.perm.melt + ' 层', d: '受到的伤害提升 ' + m.perm.melt * 20 + '%（每层20%，最多5层），持续到战斗结束，换下场也不会消失' });
-  if (m.onlyHit) c.push({ t: '元素亲和', k: 'fx', h: '首领 · 元素亲和', d: '只有' + m.onlyHit.join('、') + '系技能才能命中它，其他属性的技能都会被挡下' });
+  if (m.onlyHit) c.push({ t: '元素亲和', k: 'fx', h: 'BOSS · 元素亲和', d: '只有' + m.onlyHit.join('、') + '系技能才能命中它，其他属性的技能都会被挡下' });
   if (m.boss) BOSS_FX.forEach(function (f) {
     if (!m.boss[f.k]) return;
     if (f.hide && f.hide(m)) { c.push({ t: '？？？', k: 'fx', h: '？？？ · 尚未揭晓', d: '它好像还藏着什么本事……' }); return; }   // 隐藏特效：第一次发动前只显示问号
@@ -544,7 +544,7 @@ function calcDamage(me, foe, mv, firstMover, est) {
   if (foe.fx.leiyin) { mod *= 1.2; if (!est) foe.fx.leiyin = 0; }
   if (phys && foe.tm.halfPhys > 0) mod *= 0.5;
   if (foe.tm.dr40 > 0) mod *= 0.6;
-  if (foe.boss && foe.boss.dr) mod *= 1 - foe.boss.dr;   // 首领「星球聚能」
+  if (foe.boss && foe.boss.dr) mod *= 1 - foe.boss.dr;   // BOSS「星球聚能」
   if (foe.boss && foe.boss.eternal) mod *= 1.2;   // 复活后的泰戈尔「永续的纷争」：受到的伤害 +20%
   if (me.boss && me.boss.purify && miaN(foe) > 0) mod *= 2;
   if (me.boss && me.boss.rage && me.hp < me.maxhp / 2) mod *= 1.3;
@@ -583,7 +583,7 @@ function resolveTurn(S, acts) {
   log(S, evs, '第 ' + S.turn + ' 回合', 'turn');
   if (acts[0].kind === 'item') { useItem(S, evs, 0, acts[0].key); S.turnActed[0] = true; if (S.over) { S.turn++; return evs; } }
   [0, 1].forEach(function (i) { if (acts[i].kind === 'switch') doSwitch(S, evs, i, acts[i].to, true); });
-  // 首领「瘴毒傀儡」：占用首领这一回合，下场并召唤傀儡
+  // BOSS「瘴毒傀儡」：占用BOSS这一回合，下场并召唤傀儡
   if (!S.pvp && acts[1].kind === 'move' && puppetRoll(S)) { summonPuppet(S, evs); acts = [acts[0], { kind: 'pass' }]; S.turnActed[1] = true; }
   var info = [0, 1].filter(function (i) { return acts[i].kind === 'move'; }).map(function (i) {
     var m = act(S, i), mv = moveFor(m, acts[i].i);
@@ -650,8 +650,8 @@ function useItem(S, evs, i, key) {
 var MAX_TURNS = 60;   // 每场最多 60 回合
 function timeUp(S, evs) {
   var p = aliveIdx(S, 0).length, a = aliveIdx(S, 1).length;
-  if (bossOf(S)) {   // 首领战：60 回合内没有击败首领，算失败
-    log(S, evs, '已达到 ' + MAX_TURNS + ' 回合上限，没能在时限内击败首领，挑战失败', 'turn');
+  if (bossOf(S)) {   // BOSS战：60 回合内没有击败BOSS，算失败
+    log(S, evs, '已达到 ' + MAX_TURNS + ' 回合上限，没能在时限内击败BOSS，挑战失败', 'turn');
     S.over = 'lose'; S.timeUp = true; E(S, evs, 'over', { result: 'lose' }); return;
   }
   log(S, evs, '已达到 ' + MAX_TURNS + ' 回合上限，对战强制结束：' + (S.pvp ? S.sides[0].name + '剩 ' + p + ' 只，' + S.sides[1].name : '你剩 ' + p + ' 只，对手') + '剩 ' + a + ' 只', 'turn');
@@ -1049,7 +1049,7 @@ function doStatus(S, evs, i, mv) {
 }
 
 /* ---------- 隐藏技能的领悟 ----------
- * 只有账号里的精灵（带 u）能在剧情 / 野外 / 首领战中领悟；条件不在界面上公开，
+ * 只有账号里的精灵（带 u）能在剧情 / 野外 / BOSS战中领悟；条件不在界面上公开，
  * 达成时战斗记录里只会出现「似乎领悟了什么……」，结算时才写出领悟了哪个技能。
  * 没有写领悟条件的隐藏技能（叶子喵）仍然是 LV50 自动习得，不走这里。 */
 function hqR(m) { if (!m.hq) m.hq = { u: {}, n: {}, h: {} }; return m.hq; }
@@ -1167,8 +1167,8 @@ function hqKO(S, evs, me, foe, mv) {
   for (var k in R) if (R[k]) hqGet(S, evs, me, k);
 }
 
-/* ---------- 首领的特殊能力 ----------
- * 首领精灵带 boss：{ noStatus 免疫异常状态, ne 来东北试试, dr 星球聚能减伤比例, mia 瘴气领域, puppet 瘴毒傀儡, pp 技能 PP }
+/* ---------- BOSS的特殊能力 ----------
+ * BOSS精灵带 boss：{ noStatus 免疫异常状态, ne 来东北试试, dr 星球聚能减伤比例, mia 瘴气领域, puppet 瘴毒傀儡, pp 技能 PP }
  * 写在 js/ui/game.js 的 BOSSES 里，开战时随精灵传进来 */
 var BOSS_FX = [
   { k: 'noStatus', t: '免疫异常', h: '免疫异常状态', d: function () { return '不会陷入任何异常状态（睡眠、麻痹、中毒、寄生等）'; } },
@@ -1266,7 +1266,7 @@ function rebirthBarren(S, evs, j, t) {
   b.weedFrozen = 1;
   log(S, evs, '「腐殖质」化为了「腐殖乐园」：此后每回合会同时附加 2 项负面效果', 'fxl');
   log(S, evs, '「除草机」化为了「抹除装置」：固定伤害定格在 ' + b.weedDmg + '，不会再增长', 'fxl');
-  E(S, evs, 'scene', { side: j, lines: [], fx: 'rebirth' });   // 给界面一个钩子：第一次发动时记进 acc.seenFx.rebirth（之后图鉴/首领页不再显示「？？？」），以及将来接《before the end》BGM 用
+  E(S, evs, 'scene', { side: j, lines: [], fx: 'rebirth' });   // 给界面一个钩子：第一次发动时记进 acc.seenFx.rebirth（之后图鉴/BOSS页不再显示「？？？」），以及将来接《before the end》BGM 用
 }
 // 腐殖质 / 腐殖乐园：每回合结束时随机给对手附加 1 项（蜕生后 2 项）：速度-1 / 物攻-1 / 特攻-1 / 寄生3回合 / 瘴气+4层
 var HUMUS_OPTS = ['spe', 'atk', 'spa', 'parasite', 'miasma'];

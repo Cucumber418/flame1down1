@@ -6,7 +6,7 @@
  *   ui          一般界面：精灵背包、仓库、航行日志、社交、荆楚号等
  *   arena       竞技大厅：竞技对战页面（选精灵、匹配）
  *   earth       地球：地球上的剧情（含序章）
- *   flora       芙罗拉星界面：芙罗拉星主页、剧情、盐碱地、荒芜首领页（FloraBackground）
+ *   flora       芙罗拉星界面：芙罗拉星主页、剧情、盐碱地、荒芜BOSS页（FloraBackground）
  *   floraGrass  芙罗拉星 · 草甸：草甸野外场景（Flora1）
  *   floraForest 芙罗拉星 · 丛林：丛林野外场景（Flora2）
  *   剧情专用（剧本行 bgm 字段，2026-10-17 第八段起）：grassTalk（GrassTalk）、memory（Memory）、saver（Saver）、
@@ -15,9 +15,9 @@
  * 茶室里放主人选的「茶室音乐」（大厅 = ui、地球 = earth、芙罗拉星 = flora），自己和来拜访的船员都听得到（见 game.js 的 HOME_BGM）。
  * 战斗音乐（对战开始时由 battle-ui.js 调用 HSAUDIO.play，对战结束后回到界面音乐）：
  *   normal      寻常：野外对战、剧情对战、茶室和朋友家的对战
- *   boss        首领战（简单难度）
- *   boss2       首领战（普通难度）
- *   boss3       首领战（困难难度和每周挑战）
+ *   boss        BOSS战（简单难度）
+ *   boss2       BOSS战（普通难度）
+ *   boss3       BOSS战（困难难度和每周挑战）
  *   tigerFinal  泰戈尔困难最终形态：困难泰戈尔复活（东北的往事）之后切换成这首
  *   stage       关卡战斗：星球挑战的所有关卡
  *   pvp         竞技对战、切磋、精灵大乱斗
@@ -154,7 +154,7 @@
       '<label class="snd-row"><input type="checkbox" id="snd-music"' + (cfg.music ? ' checked' : '') + '> 战斗音乐</label>' +
       '<label class="snd-row"><input type="checkbox" id="snd-ui"' + (cfg.ui ? ' checked' : '') + '> 界面音乐</label>' +
       '<label class="snd-row snd-vol' + (any ? '' : ' off') + '">音量 <input type="range" id="snd-vol" min="0" max="100" step="5" value="' + cfg.vol + '"' + (any ? '' : ' disabled') + '><output id="snd-out">' + cfg.vol + '</output></label>' +
-      '<p>界面：一般界面、竞技大厅、地球剧情、芙罗拉星各有一首。战斗：野外和剧情对战放「寻常」，首领战放「Boss / Boss2」，竞技对战、切磋和大乱斗放「PVP」。设置只保存在这台设备上。</p>';
+      '<p>界面：一般界面、竞技大厅、地球剧情、芙罗拉星各有一首。战斗：野外和剧情对战放「寻常」，BOSS战放「Boss / Boss2」，竞技对战、切磋和大乱斗放「PVP」。设置只保存在这台设备上。</p>';
   }
   if (btn && menu) {
     drawBtn();

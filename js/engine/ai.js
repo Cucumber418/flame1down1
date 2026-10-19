@@ -100,7 +100,7 @@ function aiChoose(S) {
   var me = act(S, 1), foe = act(S, 0), P = S.ai || AI_DEFAULT;
   var usable = []; me.moves.forEach(function (slot, idx) { if (slot.pp > 0 && !moveBlocked(me, slot)) usable.push(idx); });
   if (usable.length && RNG() < P.randomP) return { kind: 'move', i: usable[Math.floor(RNG() * usable.length)] };
-  if (!me.tm.noSwitch && !bossOf(S) && RNG() < P.switchP) {   // 首领战里电脑不主动换人（傀儡要打倒才会换回首领）
+  if (!me.tm.noSwitch && !bossOf(S) && RNG() < P.switchP) {   // BOSS战里电脑不主动换人（傀儡要打倒才会换回BOSS）
     var threat = bestEst(foe, me) / Math.max(1, me.hp), mine = bestEst(me, foe) / Math.max(1, foe.hp);
     if (threat >= (P.threat || 1) && mine < 1) {
       var bestK = -1, bestV = -1e9;

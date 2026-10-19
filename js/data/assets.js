@@ -361,7 +361,7 @@ function emoteOf(id) { for (var i = 0; i < EMOTES.length; i++) if (EMOTES[i].id 
 // 私信里的表情写成「[[e:表情id]]」这样一条消息
 function emoteMsg(text) { var m = /^\[\[e:([a-z_]+)\]\]$/.exec(text || ''); return m ? emoteOf(m[1]) : null; }
 
-// 首领在战斗中途换的形态（只在对应的战斗里出现，不进图鉴）
+// BOSS在战斗中途换的形态（只在对应的战斗里出现，不进图鉴）
 // 战斗中按状态换图的形态（键是 SPRITES / PRE_SPRITES 里的形态名）：dark 月之暗面（暗影系）期间，full 特性触发「光影之月」之后，
 // miasma / miasmaShiny / miasmaShiny2 瘴气侵染（瘴气层数 > 0）期间换成被污染的样子（没有眼白），按异色区分普通/蓝异色/黄异色
 var FORM_FX_SPRITES = {

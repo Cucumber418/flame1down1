@@ -1037,7 +1037,7 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .hm-card:disabled { opacity: .45; cursor: not-allowed; }
 @media (max-width: 640px) { .hm-fig { width: 26%; } .hm-tag { font-size: 10.5px; } .crumb { flex-wrap: wrap; gap: 8px; } .home-name { font-size: 24px; } .hm-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; } .hm-card .nm { font-size: 18px; } }
 
-/* ---- 首领 ---- */
+/* ---- BOSS ---- */
 .mk.boss .mk-dot { background: #8a2c2c; font-size: 20px; animation: none; box-shadow: 0 0 0 3px var(--ink), 0 0 16px 5px rgba(220, 80, 60, .55); }
 .boss-card { position: relative; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 16px; background: var(--paper-2); border: 1.5px solid var(--ink); border-radius: 16px; padding: 14px; box-shadow: 3px 3px 0 var(--ink); }
 .boss-art { position: relative; border-radius: 12px; overflow: hidden; border: 1px solid var(--rule); aspect-ratio: 4 / 3; }
@@ -1353,7 +1353,7 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
   .snd-menu { right: auto; left: 50%; transform: translateX(-50%); }
 }
 
-/* ============ 首领难度、每周挑战 ============ */
+/* ============ BOSS难度、每周挑战 ============ */
 .boss-tabs { margin: 0 0 12px; }
 .boss-tabs .tab.lock { opacity: .55; cursor: not-allowed; }
 .chip.boss-diff.d1 { color: #8a5a10; border-color: #c9932f; background: #fbf0d9; }
@@ -1463,7 +1463,7 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .ts-ic { display: grid; place-items: center; border: 1.5px solid var(--ink); border-radius: 12px; background: var(--paper); font-size: 30px; color: var(--blue); }
 .tt-season { margin: 2px 0; font-size: 12px; color: var(--pencil); }
 
-/* ============ 星际探索 · Boss挑战 ============ */
+/* ============ 星际探索 · BOSS挑战 ============ */
 .hub-card { background: linear-gradient(100deg, #eaf5e4, var(--paper-2) 60%); }
 .hub-ic { display: flex; align-items: flex-end; }
 .hub-ic img { width: 44px !important; height: 60px !important; object-fit: contain; }
@@ -1609,7 +1609,7 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .av-opt small { font-size: 12px; line-height: 1.35; text-align: center; }
 .rk-rules { margin: 10px 0 6px; } .rk-prog { margin-bottom: 10px; } .rk-prog .pbar i { background: var(--blue); }
 
-/* ============ 首领攻略板 ============ */
+/* ============ BOSS攻略板 ============ */
 .bsoc { position: relative; margin-top: 14px; padding: 16px; background: var(--paper-2); border: 1.5px solid var(--ink); border-radius: 16px; box-shadow: 3px 3px 0 var(--ink); display: grid; gap: 8px; }
 .bsoc h4 { margin: 6px 0 0; font-size: 14px; } .bsoc h4 small { font-weight: 400; color: var(--pencil); margin-left: 4px; }
 .bs-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
@@ -2321,3 +2321,5 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .gx-row > span { font-size: 13px; color: var(--ink); min-width: 2.5em; }
 .gx-chip { padding: 4px 10px; font-size: 13px; }
 .gx-chip small { opacity: .7; margin-left: 2px; }
+.boss-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; margin-bottom: 16px; }
+.boss-row .weekly-card { margin: 0; height: 100%; }
