@@ -30,7 +30,7 @@ var SPRITES = {
   "leafcat": "images/sprites/leafcat.webp",
   "phantom": "images/sprites/phantom.png",
   "shroom": "images/sprites/shroom.webp",
-  "firemouse": "images/sprites/firemouse.svg",   // 立绘待补，暂用问号占位
+  "firemouse": "images/sprites/firemouse.webp",
   "turkey": "images/sprites/turkey.webp",
   "dummy": "images/sprites/dummy.svg",
   "plantbomb": "images/sprites/plantbomb.webp"   // 第八段 Bttp 的炸弹（剧情木桩用，不是精灵）
@@ -306,7 +306,8 @@ var SILHOUETTES = {
   "phantom_2": "images/silhouettes/phantom_2.png",
   "shroom_0": "images/silhouettes/shroom_0.png",
   "shroom_2": "images/silhouettes/shroom_2.png",
-  "firemouse_0": "images/silhouettes/firemouse_0.png"
+  "firemouse_0": "images/silhouettes/firemouse_0.png",
+  "firemouse_1": "images/silhouettes/firemouse_1.png"
 };
 
 // 异色精灵的立绘（只有部分形态有）：键名规则和 PRE_SPRITES 一样，最终形态用精灵 id

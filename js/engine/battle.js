@@ -227,6 +227,7 @@ function abilityLive(m, foe) {
     case '盾甲': return '持续生效：受到伤害 -10%';
     case '熔岩': if (!f) return '对手不在场，暂不生效';
       on = f.st['烧伤'] > 0; return on ? '生效中：对手处于烧伤，造成伤害 +25%' : '未生效：对手烧伤时，造成伤害 +25%';
+    case '爆燃': return m.fx.charge ? '生效中：已蓄力 ' + m.fx.charge + ' / 3 层，下一次攻击伤害 +' + m.fx.charge * 10 + '%' : '未生效：不进行主动攻击的回合结束时蓄力 1 层（每层下一次攻击伤害 +10%，最多 3 层）';
     case '幻叶': return lowSelf ? '生效中：体力已低于1/3，受到伤害 -15%' : '未生效：体力降到 ' + Math.floor(m.maxhp / 3) + ' 以下时，受到伤害 -15%';
   }
   return sp(m).ability ? sp(m).ability.d : '';
@@ -263,6 +264,7 @@ function chipsOf(m, foe) {
   if (m.fx.earMark) c.push({ t: '被听穿', k: 'st', h: '灵耳谛听', d: '试图闪避被识破：下一次受到的攻击威力翻倍' });
   if (miaN(m)) c.push({ t: '瘴气 ×' + miaN(m), k: 'st', h: '瘴气 · ' + miaN(m) + ' 层', d: '物攻、特攻 +' + (miaN(m) * 5) + '%，物防、特防 −' + Math.min(90, miaN(m) * 5) + '%（每层 ±5%，防御最低降到 10%）。持续到战斗结束，换下场也不会消失；在瘴气环境中每回合结束时再获得 1 层。' });
   if (m.perm && m.perm.wither) c.push({ t: '凋零之蚀' + (witherN(m) > 1 ? ' ×' + witherN(m) : ''), k: 'st', h: '凋零之蚀 · ' + witherN(m) + ' 层', d: '每回合结束损失 ' + witherN(m) + '/' + WITHER_DIV + ' 最大体力（每层 1/' + WITHER_DIV + '，最多 ' + WITHER_MAX + ' 层），持续到战斗结束。当前每回合损失 ' + witherDot(m) + ' 点' });
+  if (m.fx.charge) c.push({ t: '爆燃蓄力 ×' + m.fx.charge, k: 'fx', h: '爆燃蓄力 · ' + m.fx.charge + ' / 3', d: '下一次攻击伤害提升 ' + m.fx.charge * 10 + '%，攻击时全部消耗。下场时清空。' });
   if (m.fx.boostNext) c.push({ t: '潜水蓄力', k: 'fx', h: '潜水蓄力', d: '下一次攻击伤害提升50%' });
   if (m.fx.moon) c.push({ t: '月升 ×' + m.fx.moon, k: 'fx', h: '月升 · ' + m.fx.moon + ' / 5', d: '达到5层时转化为光影之月。下场时清空。' });
   if (m.fx.moonNext) c.push({ t: '月蚀 · 下次攻击+15%', k: 'fx', h: '月蚀', d: '刚转换过属性，下一次攻击伤害提升15%，命中后恢复 1/6 最大体力' });
@@ -298,6 +300,7 @@ function statSheet(m, foe) {
   if (ab === '熔炼') dmgOut *= 1 + 0.06 * Math.min(5, t + 1);
   if (ab === '追猎' && f && f.hp <= f.maxhp / 3) dmgOut *= 1.25;
   if (ab === '熔岩' && f && f.st['烧伤'] > 0) dmgOut *= 1.25;
+  if (ab === '爆燃' && m.fx.charge) dmgOut *= 1 + 0.1 * m.fx.charge;
   if (m.fx.moonNext) dmgOut *= 1.15;
   if (m.perm && m.perm.moonFull) dmgOut *= 1.15;
   if (m.tm.weak > 0) dmgOut *= 0.7;
@@ -517,6 +520,7 @@ function calcDamage(me, foe, mv, firstMover, est) {
   if (ab === '熔炼') mod *= 1 + 0.06 * Math.min(5, (me.fx.fieldT || 0) + 1);
   if (ab === '追猎' && foe.hp <= foe.maxhp / 3) mod *= 1.25;
   if (ab === '熔岩' && foe.st['烧伤'] > 0) mod *= 1.25;
+  if (ab === '爆燃') mod *= 1 + 0.1 * (est ? (me.fx.charge || 0) : (me.fx.chargeNow || 0));
   if (me.fx.moonNext) mod *= 1.15;
   if (me.perm.moonFull) mod *= 1.15;
   if (fab === '枯萎') mod *= Math.max(0.7, 1 - 0.05 * (foe.fx.fieldT || 0));
@@ -717,6 +721,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   me.fx.starNow = 0; me.fx.canyueNow = 0;
   if (mv.custom === 'starMagic') { me.perm.star = (me.perm.star || 0) + 1; me.fx.starNow = 1; }
   if (mv.custom === 'canyue') { me.flags.canyue = (me.flags.canyue || 0) + 1; me.fx.canyueNow = 1; E(S, evs, 'stage', { side: i }); }   // 和星星魔法一样：使用就计数（打空也算）
+  if (mv.cat !== '变化') { if (extra) me.fx.chargeNow = 0; else { me.fx.chargeNow = me.fx.charge || 0; me.fx.charge = 0; me.fx.atkT = S.turn; } }   // 特性「爆燃」：主动攻击时把蓄力全部用掉
   if (mv.cat === '变化') { doStatus(S, evs, i, mv); return; }
 
   if (foe.fainted) { log(S, evs, '但是没有目标'); return; }
@@ -1347,6 +1352,7 @@ function endOfTurn(S, evs) {
       else log(S, evs, '海妖之歌唱完了，但听歌的对手已经不在场上');
     }
     if (!m.fainted && ability(m) === '饭香' && !S.over && RNG() < 0.2) eatRice(S, evs, i, nm(m) + '的「饭香」发动了，吃了一口米饭');
+    if (!m.fainted && ability(m) === '爆燃' && m.fx.atkT !== S.turn && (m.fx.charge || 0) < 3 && !S.over) { m.fx.charge = (m.fx.charge || 0) + 1; E(S, evs, 'stage', { side: i }); log(S, evs, nm(m) + '的「爆燃」蓄力了（' + m.fx.charge + ' / 3），下一次攻击伤害 +' + m.fx.charge * 10 + '%', 'fxl'); }
     if (!m.fainted) m.fx.fieldT = (m.fx.fieldT || 0) + 1;
   });
   [0, 1].forEach(function (i) {
