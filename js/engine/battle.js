@@ -381,9 +381,10 @@ function applyDamage(S, evs, j, amount, src, o) {
   if (t.id === 'dummy' && !t.breakable) { recordDummy(S, amt, src == null ? (S.dotSrc || '持续/附加效果') : null); E(S, evs, 'hit', { side: j, amount: amt, crit: o.crit, eff: o.eff }); return amt; }
   if (t.boss && t.boss.guard && !t.boss.guardUsed && amt >= t.hp && t.hp > 1) { amt = t.hp - 1; t.boss.guardUsed = 1; log(S, evs, nm(t) + '的「坚壁」发动了，残留 1 点体力！', 'fxl'); }
   if (j === 1 && src === 0 && !S.pvp) { var cs = CS(S); if (o.crit) cs.crit++; if (amount > cs.maxHit) cs.maxHit = Math.floor(amount); if (t.hp >= t.maxhp && amount >= t.maxhp) cs.oneShot++; }
-  amt = Math.min(t.hp, amt); t.hp -= amt;
+  var shown = amt;   // 2026-10-19：伤害溢出时界面和日志仍显示完整伤害（实际扣血不超过剩余体力）
+  amt = Math.min(t.hp, amt); t.hp -= amt; S.lastShown = shown;
   if (amt > 0 && t.st['睡眠'] > 0 && src != null) { delete t.st['睡眠']; log(S, evs, nm(t) + '被打醒了'); }
-  E(S, evs, 'hit', { side: j, amount: amt, crit: o.crit, eff: o.eff });
+  E(S, evs, 'hit', { side: j, amount: shown, crit: o.crit, eff: o.eff });
   if (t.boss && t.boss.thorn && src != null && src !== j && amt > 0 && !act(S, src).fainted) { var th = Math.max(1, Math.floor(amt * 0.15)); loseHp(S, evs, src, th, nm(t) + '的「荆棘」反弹了 ' + th + ' 点伤害'); }
   if (excess > 0) {
     log(S, evs, nm(t) + '的龙之逆鳞把 ' + excess + ' 点伤害反馈给了对方！', 'fxl');
@@ -742,11 +743,12 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
     log(S, evs, nm(me) + '在' + nm(foe) + '脚下埋了一颗炸弹！下回合结束时会爆炸', 'fxl');
     me.flags.firstAtk = true; me.fx.boostNext = 0; return;
   }
-  var total = 0, lastEff = 1, n = 0, hits = 1, raw = 0, burnX = 0;
+  var total = 0, shownT = 0, lastEff = 1, n = 0, hits = 1, raw = 0, burnX = 0;
+  function dmgAdd(v) { total += v; shownT += S.lastShown != null ? S.lastShown : v; S.lastShown = null; }
   if (mv.fixedOnly) {
     var fa = fixedAmount(me, foe, mv);
     log(S, evs, '造成 ' + fa + ' 点固定伤害', 'fxl');
-    total = applyDamage(S, evs, j, fa, i, { noFaint: true });
+    S.lastShown = null; dmgAdd(applyDamage(S, evs, j, fa, i, { noFaint: true }));
   } else {
     if (mv.hits) {
       if (mv.custom === 'fireHits' && foe.st['烧伤'] > 0) hits = 9;
@@ -759,15 +761,15 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
       lastEff = res.eff; n++; raw += res.dmg;
       if (mv.custom === 'burnExtend' && foe.st['烧伤'] > 0 && foe.hp > res.dmg) { foe.st['烧伤']++; burnX = (burnX || 0) + 1; }   // 烈焰风暴：每次命中延长 1 回合烧伤
       if (res.crit) log(S, evs, '致命一击！', 'crit');
-      total += applyDamage(S, evs, j, res.dmg, i, { crit: res.crit, eff: res.eff, noFaint: true });
+      S.lastShown = null; dmgAdd(applyDamage(S, evs, j, res.dmg, i, { crit: res.crit, eff: res.eff, noFaint: true }));
       if (me.fainted) break;
     }
-    if (mv.mercy && foe.hp <= 0 && !foe.fainted) { foe.hp = 1; total = Math.max(0, total - 1); log(S, evs, nm(me) + '手下留情，' + nm(foe) + '还剩 1 点体力', 'fxl'); E(S, evs, 'stage', { side: j }); }   // 慈悲气波：不会把对方打倒
+    if (mv.mercy && foe.hp <= 0 && !foe.fainted) { foe.hp = 1; total = Math.max(0, total - 1); shownT = total; log(S, evs, nm(me) + '手下留情，' + nm(foe) + '还剩 1 点体力', 'fxl'); E(S, evs, 'stage', { side: j }); }   // 慈悲气波：不会把对方打倒
     if (lastEff > 1) { log(S, evs, '效果拔群！', 'good'); if (!S.se) S.se = [0, 0]; S.se[i]++; } else if (lastEff < 1) log(S, evs, '效果不太好……');   // S.se：双方打出效果拔群的次数（星球挑战的星级用）
     // 每次攻击附带的固定伤害（飞空连击、非凡连击）：按命中次数合起来结算一次，免得十几次连击动画太长
-    if (mv.fixedHit && n && foe.hp > 0 && !me.fainted) { log(S, evs, '每次攻击附带 ' + mv.fixedHit + ' 点固定伤害，共 ' + (mv.fixedHit * n) + ' 点', 'fxl'); total += applyDamage(S, evs, j, mv.fixedHit * n, i, { noFaint: true }); }
+    if (mv.fixedHit && n && foe.hp > 0 && !me.fainted) { log(S, evs, '每次攻击附带 ' + mv.fixedHit + ' 点固定伤害，共 ' + (mv.fixedHit * n) + ' 点', 'fxl'); S.lastShown = null; dmgAdd(applyDamage(S, evs, j, mv.fixedHit * n, i, { noFaint: true })); }
   }
-  log(S, evs, '对' + nm(foe) + '造成 ' + total + ' 点伤害', 'dmg');
+  log(S, evs, '对' + nm(foe) + '造成 ' + shownT + ' 点伤害', 'dmg');
   if (foe.hp <= 0 && !foe.fainted) faint(S, evs, j);
   if (hits > 1) log(S, evs, '连续命中 ' + n + ' 次！');
   if (burnX && !foe.fainted) { E(S, evs, 'stage', { side: j }); log(S, evs, nm(foe) + '的烧伤延长了 ' + burnX + ' 回合（剩 ' + foe.st['烧伤'] + ' 回合）', 'fxl'); }
@@ -1065,8 +1067,8 @@ function bombTick(S, evs) {
     if (hitBlocked(t, b.mv.type)) { log(S, evs, nm(t) + '毫发无伤！', 'bad'); return; }
     var res = calcDamage(b.mon, t, b.mv, false, false);
     if (res.crit) log(S, evs, '致命一击！', 'crit');
-    var dmg = applyDamage(S, evs, j, res.dmg, b.from, { crit: res.crit, eff: res.eff, noFaint: true });
-    log(S, evs, '对' + nm(t) + '造成 ' + dmg + ' 点伤害', 'dmg');
+    S.lastShown = null; var dmg = applyDamage(S, evs, j, res.dmg, b.from, { crit: res.crit, eff: res.eff, noFaint: true });
+    log(S, evs, '对' + nm(t) + '造成 ' + (S.lastShown != null ? S.lastShown : dmg) + ' 点伤害', 'dmg'); S.lastShown = null;
     if (b.mv.bombClear && t.hp > 0) {
       var lv = 0; STG.forEach(function (k) { if (t.stages[k] > 0) lv += t.stages[k]; });
       if (lv) { clearUps(S, evs, j); log(S, evs, '火灵炸弹清除了 ' + lv + ' 级能力提升，附加 ' + (lv * b.mv.bombClear) + ' 点固定伤害', 'fxl'); applyDamage(S, evs, j, lv * b.mv.bombClear, b.from, { noFaint: true }); }
