@@ -3650,7 +3650,7 @@
       (!timeOk ? '困难难度将在 10 月 18 日 16:00（北京时间）开放挑战。' : '困难难度已经到了开放时间。') + (storyOk ? '' : '需要先完成主线「第十段 · 瘴气之源」。');
     return '<article class="log-card next wide barren-log"><span class="tape r"></span><span class="chip log-tag">BOSS挑战</span><h3>草系BOSS「荒芜」· 困难难度</h3>' +
       '<div class="next-art"><img src="' + SPRITES.barren + '" alt=""></div>' +
-      '<p>盐碱地深处的荒芜，即将展现出前所未有的力量。LV70、体力 10,000，首次击败获得称号<b>「净土守护」</b>。</p>' +
+      '<p>盐碱地深处的荒芜，即将展现出前所未有的力量。LV70、体力 6,000，首次击败获得称号<b>「净土守护」</b>。</p>' +
       '<p class="log-st' + (hard ? ' on' : '') + '">' + st + '</p>' +
       (bossOpen('barren') ? '<button type="button" class="btn" data-golog="boss-barren">去看看</button>' : '') + '</article>';
   }
@@ -3783,7 +3783,7 @@
         { diff: '简单', lv: 40, hp: 1000, boss: { dr: 0.15, mia: 1, pp: 99 }, bgm: 'boss3', open: function () { return prog('flora1').done && (chalStars('fl5') > 0 || bossWon('barren', 0)); }, lockText: '通过芙罗拉星挑战第五关「猎手的领地」后开放', reward: { mon: { sid: 'barren', lv: 10 } } },
         { diff: '普通', lv: 65, hp: 3000, boss: { dr: 0.15, mia: 1, puppet: 1, pp: 99 }, bgm: 'boss3', open: function () { return bossWon('barren', 0); }, lockText: '击败简单难度后开放', reward: { later: true } },
         // 困难：完成主线「第十段 · 瘴气之源」后，2026-10-18 16:00（北京时间）解锁
-        { diff: '困难', lv: 70, hp: 10000, boss: { dr: 0.15, mia: 1, immortal: 1, puppet: 1, puppetLv: 70, humus: 1, weed: 1, weedDmg: 50, rebirth: 1, pp: 99 }, bgm: 'boss3',   // 开场和困难泰戈尔第一形态同一首，蜕生后切 before the end（battle-ui 里的钩子）
+        { diff: '困难', lv: 70, hp: 6000, boss: { dr: 0.15, mia: 1, immortal: 1, puppet: 1, puppetLv: 70, humus: 1, weed: 1, weedDmg: 50, rebirth: 1, pp: 99 }, bgm: 'boss3',   // 开场和困难泰戈尔第一形态同一首，蜕生后切 before the end（battle-ui 里的钩子）
           open: function () { return prog('flora6').done && Date.now() >= Date.UTC(2026, 9, 18, 8, 0, 0); },
           lockText: '完成主线「第十段 · 瘴气之源」后，2026-10-18 16:00 开放', reward: { title: 'guardian', exp: 50000, items: { brTwig: 80 } } }
       ] }

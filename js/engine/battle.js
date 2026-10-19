@@ -360,7 +360,7 @@ function loseHp(S, evs, j, amt, why) {
   amt = Math.min(t.hp, Math.floor(amt)); t.hp -= amt;
   E(S, evs, 'hit', { side: j, amount: amt });
   if (why) log(S, evs, why);
-  if (t.boss && t.boss.rebirth && !t.boss.reborn && t.hp < 4444) { rebirthBarren(S, evs, j, t); return amt; }
+  if (t.boss && t.boss.rebirth && !t.boss.reborn && t.hp < 2500) { rebirthBarren(S, evs, j, t); return amt; }
   if (t.hp <= 0 && why) hqDot(S, evs, t, why);
   if (t.hp <= 0 && j === 1 && !S.pvp) CS(S).dotKO++;
   if (t.hp <= 0) faint(S, evs, j);
@@ -389,7 +389,7 @@ function applyDamage(S, evs, j, amount, src, o) {
     log(S, evs, nm(t) + '的龙之逆鳞把 ' + excess + ' 点伤害反馈给了对方！', 'fxl');
     loseHp(S, evs, src, excess);
   }
-  if (t.boss && t.boss.rebirth && !t.boss.reborn && t.hp < 4444) { rebirthBarren(S, evs, j, t); return amt; }
+  if (t.boss && t.boss.rebirth && !t.boss.reborn && t.hp < 2500) { rebirthBarren(S, evs, j, t); return amt; }
   if (t.hp <= 0 && !o.noFaint) faint(S, evs, j);
   return amt;
 }
@@ -1198,7 +1198,7 @@ var BOSS_FX = [
   { k: 'reaper', t: '死神', h: '死神', d: function () { return '所有技能先制 +1，造成的伤害提升 25%；对方每损失 1% 最大体力，伤害再提升 2%'; } },
   { k: 'humus', t: '腐殖质', h: '腐殖质', d: function (m) { return '每回合结束时随机给对手附加 1 项：速度 −1 / 物攻 −1 / 特攻 −1 / 寄生 3 回合 / 瘴气 +4 层' + (m.boss && m.boss.rebirthKnown ? '（「枯萎中蜕生」发动后变成「腐殖乐园」，同时附加其中 2 项）' : ''); } },
   { k: 'weed', t: '除草机', h: '除草机', d: function (m) { var d0 = (m.boss && m.boss.weedDmg) || 50; return '每回合结束时附带 ' + d0 + ' 点固定伤害，每回合 +2（对草系精灵伤害翻倍）' + (m.boss && m.boss.rebirthKnown ? '。「枯萎中蜕生」发动后变成「抹除装置」：伤害定格在当时数值的 1.5 倍，不再增长' : ''); } },
-  { k: 'rebirth', t: '枯萎中蜕生', h: '枯萎中蜕生', hide: function (m) { return !m.boss.rebirthKnown; }, d: function () { return '体力首次低于 4444 时发动：恢复 1000 体力，并对敌方造成其最大体力 60% 的固定伤害；「腐殖质」「除草机」从此分别变成「腐殖乐园」「抹除装置」'; } }
+  { k: 'rebirth', t: '枯萎中蜕生', h: '枯萎中蜕生', hide: function (m) { return !m.boss.rebirthKnown; }, d: function () { return '体力首次低于 2500 时发动：恢复 1000 体力，并对敌方造成其最大体力 30% 的固定伤害；「腐殖质」「除草机」从此分别变成「腐殖乐园」「抹除装置」'; } }
 ];
 /* 困难泰戈尔「东北的往事」：第一次被击败时不屈复活（只复活一次）
  * 复活：LV60、体力 3000（回满），清掉能力等级和异常状态；东北的纷争 → 永续的纷争（物攻 +60%、受伤 +20%），新增往日重现，场地变成沈阳大街（双方都不能用变化技能）
@@ -1251,15 +1251,15 @@ function summonPuppet(S, evs) {
   log(S, evs, nm(b) + '沉入地底，召唤出了瘴毒傀儡！', 'crit');
   doSwitch(S, evs, 1, side.team.length - 1, true);
 }
-/* 困难荒芜「枯萎中蜕生」：体力首次低于 4444 时触发（只触发一次）。
- * 恢复 1000 体力，对敌方造成其最大体力 60% 的固定伤害；「腐殖质」变成「腐殖乐园」（humusN 1→2，每回合同时附加 2 项负面效果）；
+/* 困难荒芜「枯萎中蜕生」：体力首次低于 2500 时触发（只触发一次）。
+ * 恢复 1000 体力，对敌方造成其最大体力 30% 的固定伤害；「腐殖质」变成「腐殖乐园」（humusN 1→2，每回合同时附加 2 项负面效果）；
  * 「除草机」变成「抹除装置」：把触发那一刻的伤害数值 ×1.5 后冻结，不再逐回合增长（weedFrozen） */
 function rebirthBarren(S, evs, j, t) {
   var b = t.boss; b.reborn = 1; b.rebirthKnown = 1;
   var i = 1 - j, foe = act(S, i);
   log(S, evs, nm(t) + '的身躯剧烈地颤动起来，枯萎的组织重新编织了一遍……「枯萎中蜕生」发动了！', 'crit');
   heal(S, evs, j, 1000);
-  var dmg = Math.floor(foe.maxhp * 0.6);
+  var dmg = Math.floor(foe.maxhp * 0.3);
   loseHp(S, evs, i, dmg, nm(t) + '释放出毁灭性的力量，对' + nm(foe) + '造成了 ' + dmg + ' 点固定伤害');
   b.humusN = 2;
   b.weedDmg = Math.round((b.weedDmg || 50) * 1.5);
