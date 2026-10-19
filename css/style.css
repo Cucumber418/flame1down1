@@ -2381,3 +2381,4 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .bl-emo button { border: 0; background: none; padding: 2px; cursor: pointer; }
 .bl-emo img { width: 26px; height: 26px; object-fit: contain; }
 @media (max-width: 560px) { .ctd-card { width: 30%; } .ct-podium { grid-template-columns: minmax(0, 1fr); } }
+.twc-team { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; } .twc-mon { position: relative; width: 96px; text-align: center; border: 1.5px solid var(--rule); border-radius: 12px; padding: 6px; background: #fff; } .twc-mon img { width: 72px; height: 72px; object-fit: contain; } .twc-mon b { display: block; font-size: 13px; } .twc-mon small { color: #888; } .twc-mon .me-no { position: absolute; left: 4px; top: 4px; }

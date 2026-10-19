@@ -335,6 +335,10 @@
   ];
   // 等级成就：有 1 只 / 5 只精灵达到 25、50、75、100 级
   TITLES.forEach(function (T) { T.grp = 'story'; });
+  // 做题大王争霸赛（2026-10-19）：比赛结束时按名次发（acc.ctPlace[赛事] = 名次，0 是冠军）
+  [['s1king', 'S1做题大王', '获得第一届做题大王争霸赛冠军', function (k) { return k === 0; }], ['s1prince', 'S1做题小王', '获得第一届做题大王争霸赛亚军', function (k) { return k === 1; }], ['s1zone', 'S1做题区', '参加第一届做题大王争霸赛', function (k) { return k >= 0; }]].forEach(function (x) {
+    TITLES.push({ id: x[0], grp: 'season', n: x[1], d: x[2], ok: function () { var k = acc.ctPlace && acc.ctPlace.quiz1; return k != null && x[3](k); } });
+  });
   function lvCount(lv) { return acc.mons.filter(function (m) { return m.lv >= lv; }).length; }
   [[25, '达人'], [50, '高手'], [75, '狂人'], [100, '神人']].forEach(function (L) {
     TITLES.push({ id: 'one' + L[0], grp: 'lv', n: '单科' + L[1], d: '有 1 只精灵达到 ' + L[0] + ' 级', ok: function () { return lvCount(L[0]) >= 1; } });
@@ -1708,7 +1712,7 @@
    * 报名 → 满 5 人定抽签时间（全服公告）→ 抽签（全服动画，可回放）→ 瑞士轮（每轮 2~3 天，22:00 截止）→ 前两名决赛 → 发奖
    * 太空竞技场页面：报名名单、抽签时间、我的对局（对手在线时「对战」按钮亮起）、赛程和每局回放、积分榜、直播入口 */
   var CONTEST = { id: 'quiz1', name: '第一届做题大王争霸赛' }, CT = { data: null, busy: false, err: '', at: 0 };
-  var CT_RW = [{ exp: 300000, t: 3 }, { exp: 200000, t: 2 }, { exp: 150000, t: 1 }, { exp: 120000, t: 1 }];   // 第 1~4 名；之后都按 CT_RW0
+  var CT_RW = [{ exp: 300000, t: 1 }, { exp: 200000, t: 1 }, { exp: 150000, t: 1 }, { exp: 120000, t: 1 }];   // 第 1~4 名；之后都按 CT_RW0（兑换券每人 1 张）
   var CT_RW0 = { exp: 80000, t: 1 };
   MATS.ctTicket = { name: '神秘精灵兑换券', d: '做题大王争霸赛的参赛奖励。能兑换什么精灵？之后揭晓。' };
   function contestMe() { return !!(acc && acc.contest && acc.contest[CONTEST.id]) || !!(CT.data && CT.data.mine); }
@@ -1743,7 +1747,10 @@
     var D = CT.data; if (!D || D.status !== 'done' || !D.ranks || !acc) return;
     var k = D.ranks.indexOf(D.me); if (k < 0) return;
     var R = CT_RW[k] || CT_RW0, place = k === 0 ? '冠军' : k === 1 ? '亚军' : '第 ' + (k + 1) + ' 名';
-    if (sendMail({ id: 'contest-' + CONTEST.id + '-rw', title: CONTEST.name + ' · ' + place + '奖励', body: '{name}，你好！\n' + CONTEST.name + '圆满结束，你获得了' + place + '！感谢参赛，请领取附件里的奖励。\n神秘精灵兑换券能兑换什么，之后揭晓。', att: { exp: R.exp, items: { ctTicket: R.t } } })) save();
+    if (!acc.ctPlace) acc.ctPlace = {};
+    if (acc.ctPlace[CONTEST.id] == null) { acc.ctPlace[CONTEST.id] = k; save(); if (typeof checkTitles === 'function') checkTitles(); }
+    var ttl = k === 0 ? 'S1做题大王' : k === 1 ? 'S1做题小王' : 'S1做题区';
+    if (sendMail({ id: 'contest-' + CONTEST.id + '-rw', title: CONTEST.name + ' · ' + place + '奖励', body: '{name}，你好！\n' + CONTEST.name + '圆满结束，你获得了' + place + '，并获得称号「' + ttl + '」（点右上角的名字即可佩戴）！感谢参赛，请领取附件里的奖励。\n神秘精灵兑换券能兑换什么，之后揭晓。', att: { exp: R.exp, items: { ctTicket: R.t } } })) save();
   }
   function ctStatusText(D) {
     if (!D) return CT.err ? '（' + CT.err + '）' : '正在读取……';
@@ -2627,7 +2634,8 @@
       { id: 'fl19', n: '藤蔓深处', bg: 'fl_maple', foes: [{ sid: 'kaleo', lv: 51 }, { sid: 'leafcat', lv: 52 }], s2: 'noitem', s3: 'st:流血', reward: { exp: 29000, energy: 2620 } },
       { id: 'fl20', n: '雨后菌林', bg: 'fl_lake', foes: [{ sid: 'phantom', lv: 52 }, { sid: 'firemouse', lv: 53 }, { sid: 'kaleo', lv: 54 }], s2: 'nofaint', s3: 'oneshot', reward: { exp: 30500, energy: 2700 } },
       { id: 'fl21', n: '光斑林地', bg: 'fl_beech', foes: [{ sid: 'turkey', lv: 55 }, { sid: 'mush', lv: 56 }, { sid: 'phantom', lv: 57 }], s2: 'nosw', s3: 'crit', reward: { exp: 32000, energy: 2780 } },
-      { id: 'fl22', n: '风王的试炼', bg: 'fl_meadow', foes: [{ sid: 'wind', lv: 58 }, { sid: 'leaf', lv: 59 }], s2: 'nofaint', s3: 'st:寄生', reward: { exp: 33500, energy: 2860 } },
+      // fl22：三星条件 2026-10-19 从「让敌人陷入寄生」改成 10 回合内获胜（两只敌人都是草系，免疫寄生）
+      { id: 'fl22', n: '风王的试炼', bg: 'fl_meadow', foes: [{ sid: 'wind', lv: 58 }, { sid: 'leaf', lv: 59 }], s2: 'nofaint', s3: 'turns:10', reward: { exp: 33500, energy: 2860 } },
       { id: 'fl23', n: '猎手再临', bg: 'fl_path', foes: [{ sid: 'kaleo', lv: 59 }, { sid: 'leafcat', lv: 60 }, { sid: 'wind', lv: 61 }], s2: 'half', s3: 'turns:12', reward: { exp: 35000, energy: 2940 } },
       { id: 'fl24', n: '古树根系', bg: 'fl_horizon', foes: [{ sid: 'phantom', lv: 61 }, { sid: 'firemouse', lv: 62 }, { sid: 'kaleo', lv: 63 }], s2: 'noitem', s3: 'up6', reward: { exp: 36500, energy: 3020 } },
       { id: 'fl25', n: '绿荫长阶', bg: 'fl_meadow', foes: [{ sid: 'turkey', lv: 65 }, { sid: 'mush', lv: 66 }], s2: 'nofaint', s3: 'dotko', reward: { exp: 38000, energy: 3100 } },
@@ -3137,6 +3145,24 @@
         '<button type="button" class="btn' + (ok ? ' primary' : '') + '" data-twbuy="' + i + '"' + (ok ? '' : ' disabled') + '>兑换</button>' + (acc.items[x.k] ? '<span class="hint">已有 ' + acc.items[x.k] + '</span>' : '') + '</article>';
     }).join('') + '</div>';
   }
+  // 先驱之塔（2026-10-19）：开战前先确认阵容
+  function twConfirm() {
+    var T = twRec(), F = twFloor(T.f), team = (acc.teams[acc.active] || []).map(mon).filter(Boolean); if (!team.length) return;
+    team = F.boss ? [mon(ex.twPick) || team[0]] : team.slice(0, TEAM_SIZE);
+    var d = document.createElement('div'); d.className = 'soc-dlg';
+    d.innerHTML = '<div class="soc-box tw-confirm" role="dialog" aria-modal="true"><span class="tape l"></span><span class="tape r"></span><span class="step">先驱之塔 · ' + (F.boss ? '第 60 层 · 死神' : '第 ' + T.f + ' 层') + '</span><h2>确认出战阵容</h2>' +
+      '<p class="hint">' + (F.boss ? '塔顶只能派 1 只精灵。' : '当前出战配队（' + TEAM_NAME[acc.active] + '），按顺序出场，第 1 只首发。') + '失败或中途退出会回到最近的存档点。</p>' +
+      '<div class="twc-team">' + team.map(function (m, i) { var f = form(m); return '<div class="twc-mon"><span class="me-no">' + (i + 1) + '</span><img src="' + f.img + '" alt=""><b>' + esc(f.name) + '</b><small>LV' + m.lv + '</small></div>'; }).join('') + '</div>' +
+      '<div class="soc-foot"><button type="button" class="btn ghost" data-twc="team">调整配队</button><button type="button" class="btn ghost" data-twc="x">取消</button><button type="button" class="btn primary" data-twc="go">开战</button></div></div>';
+    document.body.appendChild(d);
+    d.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-twc]');
+      if (e.target === d || (b && b.dataset.twc === 'x')) { d.remove(); return; }
+      if (!b) return;
+      d.remove();
+      if (b.dataset.twc === 'go') startTower(); else go('bag');
+    });
+  }
   function startTower() {
     var T = twRec(), f = T.f, F = twFloor(f);
     var team = (acc.teams[acc.active] || []).map(mon).filter(Boolean); if (!team.length) return;
@@ -3171,7 +3197,7 @@
   function towerClick(b) {
     if (b.dataset.twtab) { ex.twTab = b.dataset.twtab; renderExplore(); return true; }
     if (b.dataset.twpick) { ex.twPick = +b.dataset.twpick; renderExplore(); return true; }
-    if (b.dataset.twgo) { startTower(); return true; }
+    if (b.dataset.twgo) { twConfirm(); return true; }
     if (b.dataset.twbuy != null && b.dataset.twbuy !== undefined) {
       var T = twRec(), x = TW_SHOP[+b.dataset.twbuy]; if (!x) return true;
       if (T.tok < x.cost || (x.death && (acc.items.deathTok || 0) < x.death)) { toast('代币不够。'); return true; }
