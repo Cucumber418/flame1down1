@@ -157,6 +157,13 @@
     a.forEach(function (n) { if (out.length < 4 && out.indexOf(n) < 0) out.push(n); });
     return out;
   }
+  // 电脑精灵的技能表（2026-10-19）：以默认配招为底，60% 换掉 1 个、其中又有 40% 再换 1 个，换成它会的其他技能（不总是最优组合）
+  function foeMoves(sid, lv, hl) {
+    var out = defaultMoves(sid, lv, hl), pool = avail(sid, lv, hl).filter(function (n) { return out.indexOf(n) < 0; });
+    var n = Math.random() < 0.6 ? (Math.random() < 0.4 ? 2 : 1) : 0;
+    for (var k = 0; k < n && pool.length && out.length; k++) { var pi = Math.floor(Math.random() * pool.length); out[Math.floor(Math.random() * out.length)] = pool[pi]; pool.splice(pi, 1); }
+    return out;
+  }
   function randNat() { return NAT_KEYS[Math.floor(Math.random() * NAT_KEYS.length)]; }
   function newMon(sid, lv) { var m = { u: acc.next++, sid: sid, lv: lv, exp: expAt(lv), moves: defaultMoves(sid, lv, []), got: Date.now(), nat: randNat(), iv: randIv(), ev: {}, evFree: 0, hl: [] }; acc.mons.push(m); markForm(sid, stageOf(SPMAP[sid], lv)); return m; }
   // 天赋：六项能力各一个 0~31 的随机数，越高越强（满 31 和天赋系统上线前一样）
@@ -1537,7 +1544,7 @@
       var mv = x.moves || (x.boss && x.boss.mute && x.sid !== 'dummy' ? puppetMoves(x.sid) : defaultMoves(x.sid, x.lv));   // 「无法交流」：只会用攻击技能
       return { id: x.sid, lv: x.lv, moves: mv, nick: x.nick, img: x.img || defImg, maxhp: x.maxhp, boss: x.boss, miasma: x.miasma, breakable: x.breakable, ability: x.ability };
     }
-    var o = storyMon({ sid: x.sid, lv: x.lv, moves: [] }); if (x.miasma) o.miasma = x.miasma; return o;
+    var o = storyMon({ sid: x.sid, lv: x.lv, moves: foeMoves(x.sid, x.lv) }); if (x.miasma) o.miasma = x.miasma; return o;
   }
   function startFight(key) {
     var F = FIGHTS[key], team, realN, allyFirst = false;
@@ -2344,7 +2351,7 @@
       var s = SPMAP[o.sid];
       a = [{ id: o.sid, lv: o.lv, moves: puppetMoves(o.sid), nick: '瘴气' + s.name, img: o.shiny === 2 ? (SHINY_SPRITES[o.sid + '_2'] || SHINY_SPRITES[o.sid] || SPRITES[o.sid]) : o.shiny ? (SHINY_SPRITES[o.sid] || SPRITES[o.sid]) : SPRITES[o.sid], shiny: shinyV(o.shiny), miasma: o.miasma, boss: { erode: 1, mute: 1 } }];
     } else {
-      a = [storyMon({ sid: o.sid, lv: o.lv, moves: [], shiny: shinyV(o.shiny) })];
+      a = [storyMon({ sid: o.sid, lv: o.lv, moves: foeMoves(o.sid, o.lv), shiny: shinyV(o.shiny) })];
       if (o.shiny) a[0].nick = '异色' + a[0].nick;
       if (o.taint) { a[0].miasma = o.miasma; a[0].nick = '被污染的' + a[0].nick; }
     }
@@ -2941,7 +2948,7 @@
     var team = (acc.teams[acc.active] || []).map(mon).filter(Boolean); if (!team.length) return;
     team = F.boss ? [mon(ex.twPick) || team[0]] : team.slice(0, TEAM_SIZE);
     var p = team.map(storyMon);
-    var a = F.foes.map(function (x) { seeMon(x.sid, x.lv); var fm = form({ sid: x.sid, lv: x.lv }); return { id: x.sid, lv: x.lv, moves: defaultMoves(x.sid, x.lv), nick: (F.boss ? '死神 · ' : '') + fm.name, img: fm.img, maxhp: x.hp, boss: JSON.parse(JSON.stringify(x.fx)) }; });
+    var a = F.foes.map(function (x) { seeMon(x.sid, x.lv); var fm = form({ sid: x.sid, lv: x.lv }); return { id: x.sid, lv: x.lv, moves: F.boss ? defaultMoves(x.sid, x.lv) : foeMoves(x.sid, x.lv), nick: (F.boss ? '死神 · ' : '') + fm.name, img: fm.img, maxhp: x.hp, boss: JSON.parse(JSON.stringify(x.fx)) }; });
     stopTimers(); ex.fighting = true; document.body.classList.add('story-fight'); syncBattle();
     $('pg-explore').hidden = true; $('pg-arena').hidden = false;
     window.HSBATTLE.start({ p: p, a: a, foe: '先驱之塔', diff: F.boss ? '第 60 层 · 死神' : '第 ' + f + ' 层', bgm: F.boss ? 'boss3' : 'stage', items: invCopy(), onItem: useInv, back: '先驱之塔',

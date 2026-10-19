@@ -95,9 +95,13 @@ function scoreMove(S, me, foe, mv) {
   return s;
 }
 // 电脑难度参数：randomP 乱出招概率；noise 估分噪声；switchP 考虑换人的概率；dumbRepl 倒下后随便换
-var AI_DEFAULT = { randomP: 0, noise: 0.15, switchP: 0.3, dumbRepl: false };
+var AI_DEFAULT = { randomP: 0.12, noise: 0.3, switchP: 0.3, dumbRepl: false };
+// 2026-10-19：所有电脑都笨一点——至少 12% 的回合随便放招，估分噪声至少 ±30%（不会每回合都选最优技能）
+var AI_DUMB = { randomP: 0.12, noise: 0.3 };
 function aiChoose(S) {
-  var me = act(S, 1), foe = act(S, 0), P = S.ai || AI_DEFAULT;
+  var me = act(S, 1), foe = act(S, 0), P0 = S.ai || AI_DEFAULT, P = {};
+  for (var pk in P0) P[pk] = P0[pk];
+  P.randomP = Math.max(P.randomP || 0, AI_DUMB.randomP); P.noise = Math.max(P.noise || 0, AI_DUMB.noise);
   var usable = []; me.moves.forEach(function (slot, idx) { if (slot.pp > 0 && !moveBlocked(me, slot)) usable.push(idx); });
   if (usable.length && RNG() < P.randomP) return { kind: 'move', i: usable[Math.floor(RNG() * usable.length)] };
   if (!me.tm.noSwitch && !bossOf(S) && RNG() < P.switchP) {   // BOSS战里电脑不主动换人（傀儡要打倒才会换回BOSS）

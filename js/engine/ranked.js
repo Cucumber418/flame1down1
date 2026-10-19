@@ -105,9 +105,11 @@ function loadoutScore(id, mv, mates) {
   return sc * (0.85 + RNG() * 0.3);
 }
 function smartLoadout(id, tries, mates) {
-  var best = null, bv = -1;
-  for (var i = 0; i < tries; i++) { var mv = randomLoadout(id), v = loadoutScore(id, mv, mates); if (v > bv) { bv = v; best = mv; } }
-  return best;
+  // 2026-10-19：不总取最优的一套，而是在得分前一半的方案里随机挑一套
+  var c = [];
+  for (var i = 0; i < tries; i++) { var mv = randomLoadout(id); c.push({ mv: mv, v: loadoutScore(id, mv, mates) }); }
+  c.sort(function (a, b) { return b.v - a.v; });
+  return c[Math.floor(Math.random() * Math.max(1, Math.ceil(c.length / 2)))].mv;
 }
 // 隐藏强度值：由 5v5 模拟对战拟合得到（双方每局都随机配招），界面上不显示
 // 隐藏强度值（对胜负的贡献，logit 尺度）：由 12000 场 5v5 模拟对战拟合（2026-10-13，S1 第二期名单：叶子喵移出、方头蘑菇加入），界面上不显示
