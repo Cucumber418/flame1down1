@@ -2022,29 +2022,34 @@
     var C = rp ? REPAIR : { n: MINE.quiz, pass: MINE.pass, hard: MINE.hard };
     var B = xcqBank(); if (B.length < C.n) { toast('题库加载失败，刷新一下再试试。'); return; }
     var hard = shuffle(B.filter(function (q) { return q.h; })).slice(0, C.hard), easy = shuffle(B.filter(function (q) { return !q.h; })).slice(0, C.n - hard.length);
-    var Qs = shuffle(hard.concat(easy)), i = 0, right = 0, picks = [];
+    var Qs = shuffle(hard.concat(easy)), i = 0, right = 0, wrong = 0, ans = null, showE = false, WRONG_MAX = 3;
     var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'quiz-dlg'; document.body.appendChild(d);
+    var title = rp ? '钻头修复' : '钻头考核';
     function draw() {
-      if (i >= Qs.length) {
-        var ok = right >= C.pass;
+      if (i >= Qs.length || (wrong >= WRONG_MAX && ans === null)) {   // 答完，或者错满 3 道直接结束（先让玩家看完第 3 道错题的答案）
+        var ok = wrong < WRONG_MAX && right >= C.pass;
         if (ok) { acc.drill = { dur: DRILL_MAX }; save(); }
         d.innerHTML = '<div class="soc-box quiz-box" role="dialog" aria-modal="true" aria-label="考核结果"><span class="tape l"></span><span class="tape r"></span><h2>' + (ok ? (rp ? '修好了！' : '考核通过！') : '没有通过') + '</h2>' +
-          '<p class="quiz-score">答对 <b>' + right + '</b> / ' + Qs.length + '</p><p>' + (ok ? (rp ? '日透骨消：「交给我吧……好了，耐久度修满了。」' : '日透骨消：「不错嘛。这把挖矿钻头以后就归你了，拿好。」') + '<br>去芙罗拉星、坎伯兰星的野外找矿点吧，每处矿点每天能挖一次。' : '日透骨消：「差一点。要答对 ' + C.pass + ' 道才行，再来一次？」') + '</p>' +
-          '<div class="soc-foot">' + (ok ? '' : '<button type="button" class="btn ghost" data-qx="1">下次再来</button><button type="button" class="btn primary" data-qagain="1">重新答题</button>') + (ok ? '<button type="button" class="btn primary" data-qx="1">好的</button>' : '') + '</div></div>';
+          '<p class="quiz-score">答对 <b>' + right + '</b> / ' + Qs.length + (wrong >= WRONG_MAX ? '<small>（错满 ' + WRONG_MAX + ' 道，提前结束）</small>' : '') + '</p><p>' + (ok ? (rp ? '日透骨消：「交给我吧……好了，耐久度修满了。」' : '日透骨消：「不错嘛。这把挖矿钻头以后就归你了，拿好。」') + '<br>去芙罗拉星、坎伯兰星的野外找矿点吧，每处矿点每天能挖一次。' : '日透骨消：「' + (wrong >= WRONG_MAX ? '错了 ' + WRONG_MAX + ' 道，这次就到这儿吧。' : '差一点。') + '要答对 ' + C.pass + ' 道、错不超过 ' + (WRONG_MAX - 1) + ' 道才行，再来一次？」') + '</p>' +
+          '<div class="soc-foot">' + (ok ? '<button type="button" class="btn primary" data-qx="1">好的</button>' : '<button type="button" class="btn ghost" data-qx="1">下次再来</button><button type="button" class="btn primary" data-qagain="1">重新答题</button>') + '</div></div>';
         return;
       }
-      var q = Qs[i];
-      d.innerHTML = '<div class="soc-box quiz-box" role="dialog" aria-modal="true" aria-label="钻头考核"><span class="tape l"></span><span class="tape r"></span><span class="step">钻头考核 · 第 ' + (i + 1) + ' / ' + Qs.length + ' 题</span>' +
-        '<div class="quiz-bar"><i style="width:' + (i / Qs.length * 100) + '%"></i></div><p class="quiz-q">' + esc(q.q) + '</p>' +
-        '<div class="quiz-opts">' + q.o.map(function (o, k) { return '<button type="button" class="quiz-opt" data-qo="' + k + '"><b>' + 'ABCD'[k] + '</b><span>' + esc(o) + '</span></button>'; }).join('') + '</div>' +
-        '<div class="soc-foot"><button type="button" class="btn ghost" data-qx="1">放弃考核</button></div></div>';
+      var q = Qs[i], done = ans !== null, good = done && ans === q.a;
+      var fb = !done ? '' : '<div class="quiz-fb ' + (good ? 'ok' : 'bad') + '"><b>' + (good ? '✓ 回答正确！' : '✗ 回答错误，正确答案是 ' + 'ABCD'[q.a]) + '</b>' +
+        (!good && q.e ? (showE ? '<p class="quiz-exp">' + esc(q.e) + '</p>' : '<button type="button" class="btn ghost" data-qexp="1">查看解析</button>') : '') + '</div>';
+      d.innerHTML = '<div class="soc-box quiz-box" role="dialog" aria-modal="true" aria-label="' + title + '"><span class="tape l"></span><span class="tape r"></span><span class="step">' + title + ' · 第 ' + (i + 1) + ' / ' + Qs.length + ' 题 · 已错 ' + wrong + ' / ' + WRONG_MAX + '</span>' +
+        '<div class="quiz-bar"><i style="width:' + ((i + (done ? 1 : 0)) / Qs.length * 100) + '%"></i></div><p class="quiz-q">' + esc(q.q) + '</p>' +
+        '<div class="quiz-opts">' + q.o.map(function (o, k) { var c = !done ? '' : k === q.a ? ' right' : k === ans ? ' wrong' : ' dim'; return '<button type="button" class="quiz-opt' + c + '" data-qo="' + k + '"' + (done ? ' disabled' : '') + '><b>' + 'ABCD'[k] + '</b><span>' + esc(o) + '</span></button>'; }).join('') + '</div>' + fb +
+        '<div class="soc-foot"><button type="button" class="btn ghost" data-qx="1">放弃</button>' + (done ? '<button type="button" class="btn primary" data-qnext="1">' + (i + 1 >= Qs.length || wrong >= WRONG_MAX ? '查看结果' : '下一题') + '</button>' : '') + '</div></div>';
     }
     draw();
     d.addEventListener('click', function (e) {
       if (e.target.closest('[data-qx]')) { d.remove(); return; }
       if (e.target.closest('[data-qagain]')) { d.remove(); startQuiz(rp); return; }
-      var o = e.target.closest('[data-qo]'); if (!o || i >= Qs.length) return;
-      if (+o.dataset.qo === Qs[i].a) right++; i++; draw();
+      if (e.target.closest('[data-qexp]')) { showE = true; draw(); return; }
+      if (e.target.closest('[data-qnext]')) { i++; ans = null; showE = false; draw(); return; }
+      var o = e.target.closest('[data-qo]'); if (!o || ans !== null || i >= Qs.length) return;
+      ans = +o.dataset.qo; if (ans === Qs[i].a) right++; else wrong++; draw();   // 每答一题立刻显示对错
     });
   }
   function coreLogHTML() {
@@ -2052,7 +2057,7 @@
     return '<article class="log-card rice"><span class="tape l"></span><span class="chip log-tag">新活动</span><h3>三峡能源核心 · 星球采矿</h3>' +
       '<p>荆楚号 · 宜昌的能源核心主人<b>日透骨消</b>需要矿石！</p><ol class="rice-steps"><li>到荆楚号 · <b>宜昌</b>的「三峡能源核心」找日透骨消，通过<b>钻头考核</b>（' + MINE.quiz + ' 题答对 ' + MINE.pass + ' 题），领取<b>挖矿钻头</b>（一直有效）。钻头每挖一次掉 1 点耐久，满耐久能挖 ' + DRILL_MAX + ' 次，用旧了回来答 ' + REPAIR.n + ' 题、对 ' + REPAIR.pass + ' 题就能修满。</li>' +
       '<li>在<b>芙罗拉星</b>、<b>坎伯兰星</b>的野外场景里找到<b>马亚尔煤炭</b>、<b>马亚尔铁矿</b>，点一下等 ' + MINE.sec + ' 秒就能挖到。每处矿点每天挖一次。</li>' +
-      '<li>把矿石交给 日透骨消 换能量：煤炭 ' + MINE.price.m_cu + '、铁矿 ' + MINE.price.m_fe + ' 一块，每天最多换 ' + fmt(MINE.cap) + ' 能量。</li></ol>' +
+      '<li>把矿石交给日透骨消换能量：煤炭 ' + MINE.price.m_cu + '、铁矿 ' + MINE.price.m_fe + ' 一块，每天最多换 ' + fmt(MINE.cap) + ' 能量。</li></ol>' +
       '<p class="hint">' + (drill() ? '钻头耐久度 ' + drill().dur + ' / ' + DRILL_MAX : '还没领钻头') + ' · 今天已换能量 ' + fmt(M0.ex) + ' / ' + fmt(MINE.cap) + '</p>' +
       (prog('board').done ? '<button type="button" class="btn primary" data-gocore="1">去三峡能源核心</button>' : '') + '</article>';
   }
