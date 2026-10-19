@@ -2654,6 +2654,29 @@
     d.addEventListener('click', function (e) { if (e.target.closest('[data-rewok]')) d.remove(); });
   }
   rewWrap();
+  /* ---------- 获得物品弹窗（2026-10-19）：战斗以外拿到道具（采集、领取、合成、邮件、兑换……）也弹一个和战斗结算一样的面板 ----------
+   * 做法：每次点击之后对比道具数量，有增加的就弹出来（同时列出这次一起得到的能量、经验背包）。战斗中 / 战斗结算面板开着时不弹（战斗面板已经会列出来） */
+  var IG = { snap: null, acc: null };
+  function igSnap() { return { it: Object.assign({}, acc.items || {}), en: acc.energy || 0, ex: acc.exp || 0 }; }
+  function igBusy() { return ex.fighting || ($('battle') && !$('battle').hidden) || !!$('rew-dlg') || !!$('ig-dlg') || document.body.classList.contains('story-fight'); }
+  function igCheck() {
+    if (!ready()) { IG.snap = null; return; }
+    if (!IG.snap || IG.acc !== acc) { IG.snap = igSnap(); IG.acc = acc; return; }
+    var cur = igSnap(), old = IG.snap, gain = [];
+    Object.keys(cur.it).forEach(function (k) { var d = (cur.it[k] || 0) - (old.it[k] || 0); if (d > 0) gain.push([k, d]); });
+    if (igBusy() || !gain.length) { IG.snap = cur; return; }   // 战斗里得到的东西由战斗结算面板列出
+    IG.snap = cur;
+    var rows = gain.map(function (g) { return '<li class="ig-row"><span class="ig-ic">' + H.itemIcon(g[0]) + '</span><b>' + esc(itemName(g[0])) + '</b><em>×' + fmt(g[1]) + '</em><small>持有 ' + fmt(cur.it[g[0]]) + '</small></li>'; });
+    if (cur.en > old.en) rows.push('<li class="ig-row"><span class="ig-ic ig-t">能</span><b>能量</b><em>×' + fmt(cur.en - old.en) + '</em></li>');
+    if (cur.ex > old.ex) rows.push('<li class="ig-row"><span class="ig-ic ig-t">经</span><b>经验背包</b><em>×' + fmt(cur.ex - old.ex) + '</em></li>');
+    var d = document.createElement('div'); d.className = 'soc-dlg rew-dlg ig-dlg'; d.id = 'ig-dlg';
+    d.innerHTML = '<div class="soc-box rew-box" role="dialog" aria-modal="true" aria-label="获得物品"><span class="tape l"></span><span class="tape r"></span><h2>获得物品</h2>' +
+      '<ul class="rw-rows ig-rows">' + rows.map(function (r, i) { return r.replace('<li class="ig-row">', '<li class="ig-row" style="animation-delay:' + (i * 70) + 'ms">'); }).join('') + '</ul>' +
+      '<p class="hint">已放入储存箱。</p><div class="soc-foot"><button type="button" class="btn primary" data-igok="1">确定</button></div></div>';
+    document.body.appendChild(d);
+    d.addEventListener('click', function (e) { if (e.target === d || e.target.closest('[data-igok]')) { d.remove(); IG.snap = igSnap(); } });
+  }
+  document.addEventListener('click', function () { setTimeout(igCheck, 80); setTimeout(igCheck, 1200); }, true);   // 点完之后看一眼（有的奖励要等服务器回来，再看一次）
   /* ---------- 全服挑战进度（2026-10-17）：星球挑战页、先驱之塔页下方，服务器见 server/chalboard.js ---------- */
   var CB = {};
   function cbFetch(k) {

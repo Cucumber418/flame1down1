@@ -2258,3 +2258,11 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .avc-zoom { display: grid; gap: 4px; font-size: 13px; }
 .avc-zoom input { width: 100%; }
 @media (max-width: 560px) { .avc-stage { width: min(300px, 78vw); height: min(300px, 78vw); } }
+/* 获得物品弹窗 */
+.ig-rows li.ig-row { display: grid; grid-template-columns: 40px 1fr auto; grid-template-rows: auto auto; align-items: center; column-gap: 10px; border-left-color: #7fb27a; }
+.ig-row .ig-ic { grid-row: 1 / span 2; width: 40px; height: 40px; display: grid; place-items: center; }
+.ig-row .ig-ic svg, .ig-row .ig-ic img { width: 36px; height: 36px; }
+.ig-row .ig-t { border-radius: 50%; background: var(--ink); color: #fff; font-family: var(--f-hand); font-size: 20px; width: 34px; height: 34px; }
+.ig-row b { font-size: 14.5px; }
+.ig-row em { grid-row: 1 / span 2; grid-column: 3; font-style: normal; font-weight: 700; color: var(--red); font-size: 16px; }
+.ig-row small { color: #888; font-size: 12px; }
