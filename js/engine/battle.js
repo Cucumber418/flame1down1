@@ -777,9 +777,9 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   var fxd = addFixed(me, mv);
   if (fxd && !foe.fainted) { log(S, evs, '附加 ' + fxd + ' 点固定伤害', 'fxl'); applyDamage(S, evs, j, fxd, i, {}); }
   if (mv.foeNoHeal && !foe.fainted && total > 0) { foe.tm.noHeal = Math.max(foe.tm.noHeal || 0, mv.foeNoHeal); E(S, evs, 'stage', { side: j }); log(S, evs, nm(foe) + '被淬命之焰灼伤，' + mv.foeNoHeal + '回合内无法恢复体力', 'bad'); }
-  if (mv.custom === 'drown' && !foe.fainted) {   // 溺毙：对方每有一项能力下降，附加 30 点固定伤害
-    var dn = STG.filter(function (k) { return foe.stages[k] < 0; }).length;
-    if (dn) { log(S, evs, '对方有 ' + dn + ' 项能力下降，溺毙附加 ' + (30 * dn) + ' 点固定伤害', 'fxl'); applyDamage(S, evs, j, 30 * dn, i, {}); }
+  if (mv.custom === 'drown' && !foe.fainted) {   // 溺毙：对方每下降 1 级能力，附加 30 点固定伤害（2026-10-19：按等级算，不再按项数）
+    var dn = STG.reduce(function (n, k) { return n + Math.max(0, -foe.stages[k]); }, 0);
+    if (dn) { log(S, evs, '对方共下降了 ' + dn + ' 级能力，溺毙附加 ' + (30 * dn) + ' 点固定伤害', 'fxl'); applyDamage(S, evs, j, 30 * dn, i, {}); }
   }
   if (mv.custom === 'zeroBreak' && !foe.fainted && foe.st['冰冻'] > 0) { var zb = Math.floor(foe.maxhp / 8); log(S, evs, '冰破附带 ' + zb + ' 点固定伤害', 'fxl'); applyDamage(S, evs, j, zb, i, {}); }
   if (mv.custom === 'annihilate' && !foe.fainted) {

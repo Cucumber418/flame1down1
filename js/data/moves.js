@@ -58,7 +58,7 @@ var M = {
   光滑皮肤: { type: '普通', cat: '变化', custom: 'dodge', pp: 10, d: '3回合内每回合有40%概率闪避攻击' },
   贯穿水枪: { type: '水', cat: '物攻', power: 90, d: '威力90' },
   绝对防御: { type: '普通', cat: '变化', custom: 'absDef', pp: 5, d: '免疫下1次受到的攻击' },
-  溺毙: { type: '水', cat: '特攻', power: 140, hidden: true, acc: 40, custom: 'drown', pp: 5, d: '威力140，命中率只有40%，敌人溺水时命中率达到90%；命中后，对方每有一项能力下降，附加30点固定伤害' },
+  溺毙: { type: '水', cat: '特攻', power: 140, hidden: true, acc: 40, custom: 'drown', pp: 5, d: '威力140，命中率只有40%，敌人溺水时命中率达到90%；命中后，对方每下降1级能力，附加30点固定伤害' },
   混沌海流: { type: '水', cat: '变化', hidden: true, tgtStage: { spe: -1, acc: -1, def: -1, eva: -1 }, pp: 10, d: '降低对方1级速度、命中、物防、闪避' },
 
   // —— 六尾风王（草）
