@@ -2323,3 +2323,4 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .gx-chip small { opacity: .7; margin-left: 2px; }
 .boss-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; margin-bottom: 16px; }
 .boss-row .weekly-card { margin: 0; height: 100%; }
+.snd-row select { margin-left: 6px; font: inherit; padding: 2px 6px; border: 1.5px solid var(--ink); border-radius: 8px; background: #fff; }

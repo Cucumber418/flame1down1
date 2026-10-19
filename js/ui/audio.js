@@ -33,7 +33,7 @@
   var TRACKS = {
     normal: 'audio/bgm_normal.mp3', boss: 'audio/bgm_boss.mp3', boss2: 'audio/bgm_boss2.mp3', boss3: 'audio/bgm_boss3.mp3', tigerFinal: 'audio/bgm_tiger_final.mp3',
     stage: 'audio/bgm_stage.mp3', pvp: 'audio/bgm_pvp.mp3', faceEnemy: 'audio/bgm_face_enemy.mp3', disCommunication: 'audio/bgm_dis_communication.mp3',
-    ui: 'audio/bgm_ui.mp3', arena: 'audio/bgm_arena.mp3', earth: 'audio/bgm_earth.mp3',
+    ui: 'audio/bgm_ui_hms.mp3', arena: 'audio/bgm_arena.mp3', earth: 'audio/bgm_earth.mp3',
     flora: 'audio/bgm_flora.mp3', floraGrass: 'audio/bgm_flora_grass.mp3', floraForest: 'audio/bgm_flora_forest.mp3', floraFallen: 'audio/bgm_flora_fallen.mp3',
     beforeEnd: 'audio/bgm_before_end.mp3', spa: 'audio/bgm_spa.mp3', temple: 'audio/bgm_temple.mp3', kb: 'audio/bgm_kb.mp3', kbShallow: 'audio/bgm_kb_shallow.mp3', kbSurface: 'audio/bgm_kb_surface.mp3',   // kb：坎伯兰星界面；kbShallow：坎伯兰星浅水区   // temple：坎伯兰星 · 古代神殿场景   // spa：温泉的默认音乐（2026-10-18）
     // 剧情里逐行切换的曲目（剧本行写 bgm: '键名'，见 game.js 的 sceneNowRaw）
@@ -45,11 +45,13 @@
   var ONESHOT = { faceEnemy: 1 };
   var FRESH = { disComScene: 1 };   // 每次开始放都从头放，不记上次停下的位置（剧情里的 dis-communication）   // 不循环；播完触发 chainNext 指定的下一首
   var KEY = 'hs-sound-v1';
-  var cfg = { music: true, ui: true, vol: 60 };
+  var cfg = { music: true, ui: true, vol: 60, uiOld: false };   // uiOld：主界面换回旧版音乐（2026-10-19 主界面默认换成 HMS_JC）
+  var UI_NEW = 'audio/bgm_ui_hms.mp3', UI_OLD = 'audio/bgm_ui.mp3';
   try {
     var sv = JSON.parse(localStorage.getItem(KEY) || 'null');
-    if (sv) { cfg.music = sv.music !== false; cfg.ui = sv.ui !== false; if (sv.vol >= 0 && sv.vol <= 100) cfg.vol = sv.vol; }
+    if (sv) { cfg.music = sv.music !== false; cfg.ui = sv.ui !== false; if (sv.vol >= 0 && sv.vol <= 100) cfg.vol = sv.vol; cfg.uiOld = !!sv.uiOld; }
   } catch (e) {}
+  TRACKS.ui = cfg.uiOld ? UI_OLD : UI_NEW;
   function saveCfg() { try { localStorage.setItem(KEY, JSON.stringify(cfg)); } catch (e) {} }
 
   var el = new Audio(); el.loop = true; el.preload = 'none';
@@ -154,7 +156,7 @@
       '<label class="snd-row"><input type="checkbox" id="snd-music"' + (cfg.music ? ' checked' : '') + '> 战斗音乐</label>' +
       '<label class="snd-row"><input type="checkbox" id="snd-ui"' + (cfg.ui ? ' checked' : '') + '> 界面音乐</label>' +
       '<label class="snd-row snd-vol' + (any ? '' : ' off') + '">音量 <input type="range" id="snd-vol" min="0" max="100" step="5" value="' + cfg.vol + '"' + (any ? '' : ' disabled') + '><output id="snd-out">' + cfg.vol + '</output></label>' +
-      '<p>界面：一般界面、竞技大厅、地球剧情、芙罗拉星各有一首。战斗：野外和剧情对战放「寻常」，BOSS战放「Boss / Boss2」，竞技对战、切磋和大乱斗放「PVP」。设置只保存在这台设备上。</p>';
+      '<label class="snd-row">主界面 <select id="snd-uitrack"><option value="new"' + (cfg.uiOld ? '' : ' selected') + '>HMS_JC</option><option value="old"' + (cfg.uiOld ? ' selected' : '') + '>旧版</option></select></label>';
   }
   if (btn && menu) {
     drawBtn();
@@ -164,6 +166,11 @@
       if (e.target.id === 'snd-vol') { cfg.vol = +e.target.value; document.getElementById('snd-out').textContent = cfg.vol; saveCfg(); drawBtn(); if (cur) fadeTo(target(), 150); }
     });
     menu.addEventListener('change', function (e) {
+      if (e.target.id === 'snd-uitrack') {
+        cfg.uiOld = e.target.value === 'old'; saveCfg(); TRACKS.ui = cfg.uiOld ? UI_OLD : UI_NEW; delete pos.ui;
+        if (el.dataset.k === 'ui') { el.dataset.k = ''; if (cur === 'ui') sync(true, 300); }
+        return;
+      }
       if (e.target.id !== 'snd-music' && e.target.id !== 'snd-ui') return;
       cfg[e.target.id === 'snd-music' ? 'music' : 'ui'] = e.target.checked; saveCfg(); drawBtn(); drawMenu();
       sync(false, 300);
