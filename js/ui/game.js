@@ -1279,6 +1279,7 @@
     { id: 'earth', name: '地球', d: '我们出发的地方。', sites: ['school', 'river', 'jiuquan'] },
     { id: 'jingchu', name: '荆楚号', d: '环绕地球运行的星际探索舰，轮廓和湖北省一模一样。', sites: ['board', 'xiaogan', 'academy', 'storage'], ship: true, after: 'jiuquan' },
     { id: 'station', name: '空间站', d: '停泊在荆楚号后方的空间站，先驱之塔就建在这里。', sites: [], station: true, after: 'flora1' },
+    { id: 'sarena', name: '太空竞技场', d: '空间站旁边新建的竞技场，各种比赛都在这里举办。', sites: [], sarena: true, after: 'flora1' },   // 2026-10-19
     { id: 'tower', name: '先驱之塔', d: '空间站里的一座高塔，共 60 层。每一层都守着一批强大的精灵，塔顶住着死神。', sites: [], tower: true, after: 'flora1', inStation: true },
     { id: 'flora', name: '芙罗拉星', d: '草系星球。丛林、草甸和盐碱地里栖息着许多野生精灵。', sites: ['flora1', 'flora2', 'flora3', 'flora4', 'flora5', 'flora6', 'travelcat'], wild: true, ptype: '草系星球', color: ['#9fd08a', '#3f7d4a'], get img() { return floraFallen() ? 'images/planets/flora_corrupt.webp?v=3' : 'images/planets/flora.webp?v=3'; }, after: 'board' },
     { id: 'kamble', name: '坎伯兰星', d: '水系星球。整颗星球都被海洋覆盖，从水面一直往下，是浅水区和深不见底的深海区。', sites: [], wild: true, ptype: '水系星球', color: ['#8cc6ea', '#2a6fb0'], get img() { return 'images/planets/kamble_' + kbStage() + '.webp?v=2'; }, after: 'flora1' },
@@ -1619,7 +1620,7 @@
       }
       html += '</div>';
       // 第一排：荆楚号、空间站；第二排：马亚尔星系（星系图上点星球进入）；第三排：地球
-      html += '<div class="gx-rows"><div class="gx-row two">' + planetCard(planetOf('jingchu')) + planetCard(planetOf('station')) + '</div>' + mayarMap() +
+      html += '<div class="gx-rows"><div class="gx-row three">' + planetCard(planetOf('jingchu')) + planetCard(planetOf('station')) + planetCard(planetOf('sarena')) + '</div>' + mayarMap() +
         '<div class="gx-row">' + planetCard(planetOf('earth')) + '</div></div>';
     } else {
       var P = PLANETS.filter(function (p) { return p.id === ex.planet; })[0];
@@ -1628,6 +1629,7 @@
       if (P.wild) { el.innerHTML = html + (P.id === 'flora' ? floraPage() : wildPage(P)); return; }
       if (P.tower) { el.innerHTML = html + towerPage(); return; }
       if (P.station) { el.innerHTML = html + '<div class="planets">' + planetCard(planetOf('tower')) + '</div>'; return; }
+      if (P.sarena) { el.innerHTML = html + sarenaPage(); return; }
       html += '<div class="sites">' + P.sites.map(function (id) {
         var S = SITES[id], pr = prog(id), started = pr.at > 0 && !pr.done, open = unlocked(id);
         var rw = S.reward ? '<p class="hint">首次读完奖励：' + rwList(S.reward).filter(Boolean).join('、') + (UNLOCK[id] ? '，并开放' + UNLOCK[id] : '') + (pr.rewarded ? '（已领取）' : '') + '</p>' : '';
@@ -1694,8 +1696,48 @@
   // 星图上的一张星球卡（荆楚号、空间站、地球、先驱之塔）
   function planetCard(p) {
     var n = p.sites.length, done = p.sites.filter(function (s) { return prog(s).done; }).length, open = planetOpen(p);
-    return '<button type="button" class="planet' + (open ? '' : ' locked') + '" data-planet="' + p.id + '"' + (open ? '' : ' disabled') + '><span class="tape l"></span>' + (p.ship ? '<img class="ship-ic" src="' + CHARS.ship_icon + '" alt="">' : p.tower ? towerSvg() : p.station ? stationSvg() : planetSvg(p.id)) +
-      '<span class="pn">' + p.name + (p.wild ? '<span class="chip ptype">' + p.ptype + '</span>' : '') + '</span><span class="hint">' + p.d + '</span><span class="pc">' + (open ? (p.tower ? '当前第 ' + twRec().f + ' 层 · 存档点第 ' + twRec().cp + ' 层' : p.station ? '先驱之塔 · 当前第 ' + twRec().f + ' 层' : '地点 ' + n + ' 个 · 已完成 ' + done) : '读完「' + SITES[p.after].chapter.split(' · ')[1] + '」后解锁') + '</span></button>';
+    return '<button type="button" class="planet' + (open ? '' : ' locked') + '" data-planet="' + p.id + '"' + (open ? '' : ' disabled') + '><span class="tape l"></span>' + (p.ship ? '<img class="ship-ic" src="' + CHARS.ship_icon + '" alt="">' : p.tower ? towerSvg() : p.sarena ? sarenaSvg() : p.station ? stationSvg() : planetSvg(p.id)) +
+      '<span class="pn">' + p.name + (p.wild ? '<span class="chip ptype">' + p.ptype + '</span>' : '') + '</span><span class="hint">' + p.d + '</span><span class="pc">' + (open ? (p.sarena ? CONTEST.name + ' · ' + (contestMe() ? '已报名，等待抽签' : '报名中') : p.tower ? '当前第 ' + twRec().f + ' 层 · 存档点第 ' + twRec().cp + ' 层' : p.station ? '先驱之塔 · 当前第 ' + twRec().f + ' 层' : '地点 ' + n + ' 个 · 已完成 ' + done) : '读完「' + SITES[p.after].chapter.split(' · ')[1] + '」后解锁') + '</span></button>';
+  }
+  function sarenaSvg() {
+    return '<svg viewBox="0 0 120 120" aria-hidden="true"><ellipse cx="60" cy="78" rx="48" ry="18" fill="#5b8fd0" stroke="#23222b" stroke-width="3"/><path d="M12 78V58c0-10 22-18 48-18s48 8 48 18v20" fill="#e6eaf0" stroke="#23222b" stroke-width="3"/>' +
+      '<ellipse cx="60" cy="58" rx="48" ry="18" fill="#f6e6b4" stroke="#23222b" stroke-width="3"/><ellipse cx="60" cy="58" rx="28" ry="9" fill="#c42f3a" stroke="#23222b" stroke-width="2.5"/>' +
+      '<path d="M60 40V14" stroke="#23222b" stroke-width="3"/><path d="M60 14l18 6-18 6z" fill="#f2c46b" stroke="#23222b" stroke-width="2.5" stroke-linejoin="round"/></svg>';
+  }
+  /* ---------- 太空竞技场（2026-10-19）：比赛活动。第一届做题大王争霸赛目前只开放报名，报名名单存在服务器（server/contest.js），之后抽签 ---------- */
+  var CONTEST = { id: 'quiz1', name: '第一届做题大王争霸赛' }, CT = { data: null, busy: false, err: '' };
+  function contestMe() { return !!(acc && acc.contest && acc.contest[CONTEST.id]) || !!(CT.data && CT.data.mine); }
+  function contestLoad() {
+    if (CT.busy || typeof CLOUD === 'undefined' || !CLOUD.api) return; CT.busy = true;
+    CLOUD.api('GET', '/api/contest').then(function (r) { CT.busy = false; if (r._code === 200) { CT.data = r; CT.err = ''; if (r.mine) { if (!acc.contest) acc.contest = {}; acc.contest[CONTEST.id] = acc.contest[CONTEST.id] || Date.now(); } } else CT.err = r.error || '暂时连不上服务器'; var el = $('ct-box'); if (el) el.innerHTML = contestInner(); })
+      .catch(function () { CT.busy = false; CT.err = '暂时连不上服务器'; var el = $('ct-box'); if (el) el.innerHTML = contestInner(); });
+  }
+  function contestInner() {
+    var me = contestMe(), n = CT.data ? CT.data.count : null;
+    return '<p>做题家们，比一比谁才是真正的做题大王！</p>' +
+      '<p class="hint">' + (n != null ? '已报名 <b>' + n + '</b> 人 · ' : '') + (me ? '你已经报名了，请等待抽签。抽签时间另行通知。' : '报名后等待抽签，抽签时间另行通知。') + (CT.err ? '（' + esc(CT.err) + '）' : '') + '</p>' +
+      '<div class="soc-foot">' + (me ? '<button type="button" class="btn" disabled>已报名 · 等待抽签</button>' : '<button type="button" class="btn primary" data-ctsign="1">报名参赛</button>') + '</div>';
+  }
+  function sarenaPage() {
+    if (!CT.data && !CT.busy) contestLoad();
+    return '<article class="log-card ct-card"><span class="tape l"></span><span class="chip log-tag">报名中</span><h3>' + CONTEST.name + '</h3><div id="ct-box">' + contestInner() + '</div></article>';
+  }
+  function contestSign() {
+    if (contestMe() || CT.busy) return;
+    if (typeof CLOUD === 'undefined' || !CLOUD.api) { toast('需要登录账号才能报名。'); return; }
+    CT.busy = true;
+    CLOUD.api('POST', '/api/contest', {}).then(function (r) {
+      CT.busy = false;
+      if (r._code === 200) { CT.data = r; if (!acc.contest) acc.contest = {}; acc.contest[CONTEST.id] = Date.now(); save(); toast('报名成功！请等待抽签。'); }
+      else toast(r.error || '报名失败，请稍后再试。');
+      var el = $('ct-box'); if (el) el.innerHTML = contestInner();
+    }).catch(function () { CT.busy = false; toast('暂时连不上服务器，请稍后再试。'); });
+  }
+  function contestLogHTML() {
+    return '<article class="log-card ct-card"><span class="tape l"></span><span class="chip log-tag">新活动</span><h3>精灵王争霸赛</h3>' +
+      '<p>空间站旁边的<b>太空竞技场</b>落成了！首场比赛「' + CONTEST.name + '」开放报名，报名后等待抽签。</p>' +
+      '<p class="hint">' + (contestMe() ? '你已经报名了，请等待抽签。' : '在星际探索的星图上，空间站右边就是太空竞技场。') + '</p>' +
+      '<div class="soc-foot"><button type="button" class="btn primary" data-gosarena="1">去太空竞技场</button></div></article>';
   }
   function stationSvg() {
     return '<svg viewBox="0 0 120 120" aria-hidden="true"><ellipse cx="60" cy="62" rx="50" ry="17" fill="none" stroke="#23222b" stroke-width="7"/><ellipse cx="60" cy="62" rx="50" ry="17" fill="none" stroke="#e6eaf0" stroke-width="4"/>' +
@@ -3675,7 +3717,7 @@
     var wait = on ? '' : (function () { var t = new Date(now); t.setHours(MYSTERY.from, 0, 0, 0); var m = Math.max(0, Math.round((t - now) / 60000)); return '距离今天的活动开始还有 ' + Math.floor(m / 60) + ' 小时 ' + (m % 60) + ' 分钟'; })();
     $('pg-log').innerHTML = '<div class="page-head"><h2 class="sec">航行日志</h2><p class="hint">荆楚号的公告板：更新公告、限时活动、每日任务和新BOSS。</p></div>' +
       '<div class="log-grid">' + '<article class="log-card wide qq-card"><span class="tape l"></span><span class="tape r"></span><div class="qq-txt"><span class="chip log-tag">船员交流</span><h3>QQ 群：<b class="qq-no">' + QQ_GROUP + '</b></h3><p class="hint">攻略、组队切磋、bug 反馈、新精灵立绘抢先看，都在群里。</p></div><button type="button" class="btn primary" data-copyqq="1">复制群号</button></article>' + changelogHTML() +
-      pwCardHTML('log') + barrenLogHTML() + travelLogHTML() + pickHTML() + coreLogHTML() + hornLogHTML() + riceLogHTML() +   // 立绘更新投票已结束移除（2026-10-17）；荒芜放在更新公告正下方
+      pwCardHTML('log') + contestLogHTML() + barrenLogHTML() + travelLogHTML() + pickHTML() + coreLogHTML() + hornLogHTML() + riceLogHTML() +   // 立绘更新投票已结束移除（2026-10-17）；荒芜放在更新公告正下方
       '<article class="log-card ev"><span class="tape l"></span><span class="chip log-tag">限时活动</span><h3>神秘精灵出没</h3>' +
         '<p>每天 <b>16:00–24:00</b>，在星际探索的任何场景，都有 <b>3%</b> 的概率刷出一只神秘精灵！</p><p class="hint">它是什么？只有遇到过的人才知道。</p>' +
         '<p class="log-st ' + (on ? 'on' : '') + '">' + (on ? '活动进行中，今天 24:00 结束' : wait) + '</p></article>' +
@@ -3758,6 +3800,7 @@
   $('pg-log').addEventListener('click', function (e) {
     var c = e.target.closest('[data-dclaim]'); if (c) { claimDaily(+c.dataset.dclaim); renderLog(); return; }
     if (e.target.closest('[data-gocore]')) { ex.planet = 'jingchu'; go('explore'); teleport('宜昌'); return; }
+    if (e.target.closest('[data-gosarena]')) { ex.planet = 'sarena'; ex.view = 'sites'; go('explore'); return; }
     var hd = e.target.closest('[data-hornday]'); if (hd && !hd.disabled && ready() && !hornDayGot()) { var hk = HORN.day[0] + Math.floor(Math.random() * (HORN.day[1] - HORN.day[0] + 1)); acc.hornDay = dayNum(Date.now()); giveItems({ m_hfhorn: hk }); save(); toast('领取了赫菲角片 ×' + hk + '，已放入储存箱。'); renderLog(); return; }
     var ap = e.target.closest('[data-avpick]');
     if (ap && !ap.disabled && AV.data) {
@@ -4370,7 +4413,7 @@
     var g = gxState(), have = acc.items[g.from] || 0, ok = g.max >= g.q;
     function chips(sel, attr, skip, list) { return (list || GX_KEYS).map(function (k) { return '<button type="button" class="btn ' + (k === sel ? 'primary' : 'ghost') + ' gx-chip" data-' + attr + '="' + k + '"' + (k === skip ? ' disabled' : '') + '>' + itemName(k) + ' <small>' + (acc.items[k] || 0) + '</small></button>'; }).join(''); }
     return '<article class="shop-it gx-card"><span class="tape r"></span>' + H.itemIcon(g.to) + '<div class="si-txt"><b>特产互换</b><p class="hint">各星球特产之间可以互相转换：每 ' + GX_IN + ' 个换成 ' + GX_OUT + ' 个；马亚尔晶体每 10 个换成 10 个任意特产。</p>' +
-      '<p class="gx-row"><span>拿出</span>' + chips(g.from, 'gxfrom', null, GX_SRC) + '</p><p class="gx-row"><span>换成</span>' + chips(g.to, 'gxto', g.from) + '</p>' +
+      '<p class="gxc-row"><span>拿出</span>' + chips(g.from, 'gxfrom', null, GX_SRC) + '</p><p class="gxc-row"><span>换成</span>' + chips(g.to, 'gxto', g.from) + '</p>' +
       '<p class="forge-need">消耗 ' + itemName(g.from) + ' <b class="' + (have >= GX_IN * g.q ? 'ok' : 'short') + '">' + have + '</b>/' + GX_IN * g.q + ' → 得到 ' + itemName(g.to) + ' ×' + gxOut(g.from) * g.q + '</p></div>' +
       '<div class="si-buy"><span class="si-price">转换</span><div class="qty"><button type="button" class="btn ghost" data-gxq="-1" aria-label="减少"' + (g.q <= 1 ? ' disabled' : '') + '>−</button><span aria-live="polite">' + g.q + '</span><button type="button" class="btn ghost" data-gxq="1" aria-label="增加"' + (g.q >= Math.min(FORGE_Q, Math.max(1, g.max)) ? ' disabled' : '') + '>+</button></div>' +
       '<button type="button" class="btn primary" data-gxgo="1"' + (ok ? '' : ' disabled') + '>' + (ok ? '转换' : '数量不足') + '</button></div></article>';
@@ -5134,6 +5177,7 @@
     if (b.dataset.goshop) { ex.planet = 'jingchu'; ex.area = '荆门'; ex.view = 'shop'; ex.tp = true; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
     if (b.id === 'ex-area') { ex.view = 'area'; renderExplore(); return; }
     if (b.id === 'ex-ship') { ex.view = 'sites'; ex.planet = 'jingchu'; renderExplore(); return; }
+    if (b.dataset.ctsign) { contestSign(); return; }
     if (b.dataset.planet && !b.disabled) { ex.planet = b.dataset.planet; ex.view = 'sites'; renderExplore(); mysteryRoll(planetOf(b.dataset.planet).name); return; }
     if (b.id === 'ex-back') { var P_ = ex.view === 'sites' && planetOf(ex.planet); if (P_ && P_.inStation) { ex.planet = 'station'; renderExplore(); return; } ex.view = 'planets'; renderExplore(); return; }
     if (b.dataset.go && unlocked(b.dataset.go)) { startVN(b.dataset.go, 'replay', $('pg-explore'), b.dataset.from === '0'); window.scrollTo(0, $('pg-explore').offsetTop - 8); }

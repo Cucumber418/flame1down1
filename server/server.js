@@ -21,6 +21,7 @@ var accounts = require('./accounts');
 var social = require('./social');
 require('./board');   // 讨论区（公开留言板）
 require('./bossboard');
+require('./contest');   // 太空竞技场 · 比赛报名
 require('./artvote');   // 航行日志 · 立绘更新投票
 require('./homelog');   // 茶室动态与留言板
 require('./purgewar');

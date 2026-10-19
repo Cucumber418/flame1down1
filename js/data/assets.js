@@ -324,7 +324,9 @@ var SHINY_SPRITES = {
   "mush_s2": "images/shiny/mush_s2.webp",
   "mush_s2_2": "images/shiny/mush_s2_2.webp",
   "mush": "images/shiny/mush.webp",
-  "mush_2": "images/shiny/mush_2.webp"
+  "mush_2": "images/shiny/mush_2.webp",
+  "firemouse_s1": "images/shiny/firemouse_s1.webp",
+  "firemouse": "images/shiny/firemouse.webp"
 };
 
 // 剧情里出现的道具图（储存箱里的剧情道具也用这些图）

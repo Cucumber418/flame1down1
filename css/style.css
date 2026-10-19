@@ -2317,10 +2317,13 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .quiz-box { max-height: 92vh; overflow-y: auto; }
 .quiz-opts.fig { grid-template-columns: repeat(4, 1fr); } .quiz-opts.fig .quiz-opt { grid-template-columns: 1fr; justify-items: center; }
 .gx-card { grid-column: 1 / -1; }
-.gx-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0; }
-.gx-row > span { font-size: 13px; color: var(--ink); min-width: 2.5em; }
+.gxc-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0; }
+.gxc-row > span { font-size: 13px; color: var(--ink); min-width: 2.5em; }
 .gx-chip { padding: 4px 10px; font-size: 13px; }
 .gx-chip small { opacity: .7; margin-left: 2px; }
 .boss-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; margin-bottom: 16px; }
 .boss-row .weekly-card { margin: 0; height: 100%; }
 .snd-row select { margin-left: 6px; font: inherit; padding: 2px 6px; border: 1.5px solid var(--ink); border-radius: 8px; background: #fff; }
+.gx-row.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 760px) { .gx-row.three { grid-template-columns: minmax(0, 1fr); } }
+.ct-card .soc-foot { display: flex; justify-content: flex-end; margin-top: 8px; }

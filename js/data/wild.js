@@ -54,7 +54,7 @@ var WILD_POOLS = {
 };
 // 只在某个场景出现的精灵（按背景键）：和所在区域的野外表合在一起抽。w 按区域表总权重 100 来算，11.1 ≈ 这个场景里 10%
 var WILD_SCENE = {
-  pp_core: [{ sid: 'firemouse', lv: [14, 18], w: 11.1, rate: 0.5, tag: '中等' }]   // 火月鼠：只在饮火城 · 炙热核心
+  pp_core: [{ sid: 'firemouse', lv: [14, 18], w: 11.1, rate: 0.5, tag: '中等', shiny: 0.03 }]   // 火月鼠：只在饮火城 · 炙热核心
 };
 var WILD_REGIONS = [
   { id: 'forest', planet: 'flora', name: '丛林', en: 'Forest', d: '高大的树木遮住了天空，林下潮湿又安静。玛西很常见，偶尔能撞见稀有的卡莱。', pool: 'forest', bgs: ['fl_path', 'fl_beech', 'fl_sun', 'fl_maple'] },
