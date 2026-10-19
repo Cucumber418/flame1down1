@@ -164,6 +164,8 @@
     for (var k = 0; k < n && pool.length && out.length; k++) { var pi = Math.floor(Math.random() * pool.length); out[Math.floor(Math.random() * out.length)] = pool[pi]; pool.splice(pi, 1); }
     return out;
   }
+  // 商城、兑换、冶炼等列表里的简短介绍（2026-10-19）：有 sd 用 sd，否则只取介绍的第一句
+  function shortD(it) { if (!it) return ''; if (it.sd) return it.sd; var d = String(it.d || ''), m = d.match(/^[^。！？]*[。！？]/); return m ? m[0] : d; }
   function randNat() { return NAT_KEYS[Math.floor(Math.random() * NAT_KEYS.length)]; }
   function newMon(sid, lv) { var m = { u: acc.next++, sid: sid, lv: lv, exp: expAt(lv), moves: defaultMoves(sid, lv, []), got: Date.now(), nat: randNat(), iv: randIv(), ev: {}, evFree: 0, hl: [] }; acc.mons.push(m); markForm(sid, stageOf(SPMAP[sid], lv)); return m; }
   // 天赋：六项能力各一个 0~31 的随机数，越高越强（满 31 和天赋系统上线前一样）
@@ -3703,7 +3705,7 @@
       '<div class="shop-bal tk-bal">持有竞技代币 <b>' + fmt(bal) + '</b><span class="hint">兑换的道具放进储存箱，在储存箱或精灵资料里使用</span></div>' +
       '<div class="tk-list">' + TOKEN_SHOP.map(function (T) {
         var it = USE_ITEMS[T.k], q = tkQty[T.k] || 1, cost = T.price * q, ok = bal >= cost;
-        return '<article class="tk-it"><div class="si-txt"><b>' + esc(it.name) + '</b><p class="hint">' + esc(it.d) + '</p><p class="si-own">持有 <b>' + (acc.items[T.k] || 0) + '</b></p></div>' +
+        return '<article class="tk-it"><div class="si-txt"><b>' + esc(it.name) + '</b><p class="hint">' + esc(shortD(it)) + '</p><p class="si-own">持有 <b>' + (acc.items[T.k] || 0) + '</b></p></div>' +
           '<div class="si-buy"><span class="si-price">' + T.price + ' <small>代币</small></span>' +
           '<div class="qty"><button type="button" class="btn ghost" data-tkq="' + T.k + '" data-d="-1" aria-label="减少"' + (q <= 1 ? ' disabled' : '') + '>−</button><span aria-live="polite">' + q + '</span><button type="button" class="btn ghost" data-tkq="' + T.k + '" data-d="1" aria-label="增加"' + (q >= 20 ? ' disabled' : '') + '>+</button></div>' +
           '<button type="button" class="btn primary" data-tkbuy="' + T.k + '"' + (ok ? '' : ' disabled') + '>' + (ok ? '兑换 · ' + cost : '代币不足') + '</button></div></article>';
@@ -4061,7 +4063,7 @@
       grp.map(function (g) {
         return '<h3 class="shop-h">' + g[0] + '</h3><div class="shop-grid">' + g[1].map(function (k) {
           var it = goods(k), q = shopQty[k] || 1, cost = it.price * q, ok = acc.energy >= cost;
-          return '<article class="shop-it"><span class="tape r"></span>' + H.itemIcon(k) + '<div class="si-txt"><b>' + it.name + '</b><p class="hint">' + esc(it.d) + '</p>' +
+          return '<article class="shop-it"><span class="tape r"></span>' + H.itemIcon(k) + '<div class="si-txt"><b>' + it.name + '</b><p class="hint">' + esc(shortD(it)) + '</p>' +
             '<p class="si-own">持有 <b>' + (acc.items[k] || 0) + '</b></p></div>' +
             '<div class="si-buy"><span class="si-price">' + fmt(it.price) + ' <small>能量</small></span>' +
             '<div class="qty"><button type="button" class="btn ghost" data-q="' + k + '|-1" aria-label="减少"' + (q <= 1 ? ' disabled' : '') + '>−</button><span aria-live="polite">' + q + '</span><button type="button" class="btn ghost" data-q="' + k + '|1" aria-label="增加"' + (q >= 99 ? ' disabled' : '') + '>+</button></div>' +
@@ -4398,7 +4400,7 @@
         var have = acc.items[k] || 0, ask = r.need[k] * q;
         return itemName(k) + ' <b class="' + (have >= ask ? 'ok' : 'short') + '">' + have + '</b>/' + ask;
       }).join(' · ');
-      return '<article class="shop-it"><span class="tape r"></span>' + H.itemIcon(outK) + '<div class="si-txt"><b>' + forgeOutText(r, 1) + '</b><p class="hint">' + esc((ITEMS[outK] || USE_ITEMS[outK] || CROPS[outK] || MATS[outK] || {}).d || '') + '</p>' +
+      return '<article class="shop-it"><span class="tape r"></span>' + H.itemIcon(outK) + '<div class="si-txt"><b>' + forgeOutText(r, 1) + '</b><p class="hint">' + esc(shortD(ITEMS[outK] || USE_ITEMS[outK] || CROPS[outK] || MATS[outK])) + '</p>' +
         '<p class="forge-need">消耗 ' + needs + '</p><p class="si-own">持有 <b>' + (acc.items[outK] || 0) + '</b></p></div>' +
         '<div class="si-buy"><span class="si-price">合成</span>' +
         '<div class="qty"><button type="button" class="btn ghost" data-fq="' + r.id + '|-1" aria-label="减少"' + (q <= 1 ? ' disabled' : '') + '>−</button><span aria-live="polite">' + q + '</span><button type="button" class="btn ghost" data-fq="' + r.id + '|1" aria-label="增加"' + (q >= Math.min(FORGE_Q, Math.max(1, max)) ? ' disabled' : '') + '>+</button></div>' +
