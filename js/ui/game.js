@@ -861,7 +861,7 @@
   MATS.m_mcry = { name: '马亚尔晶体', d: '泰戈尔每周挑战必掉的晶体，凝着马亚尔星系各处的能量。在黄石 · 冶炼坊每 10 个可以换成 10 个任意一种星球特产（芙罗拉玉、不化水滴、火山灰烬、闪电球体、永久冻土）。' };
   MATS.m_cu = { name: '马亚尔煤炭', d: '在芙罗拉星、坎伯兰星的野外挖到的煤炭。可以在荆楚号 · 宜昌的三峡能源核心换成能量。' };
   MATS.m_fe = { name: '马亚尔铁矿', d: '在芙罗拉星、坎伯兰星的野外挖到的铁矿石，比煤炭更值钱。可以在荆楚号 · 宜昌的三峡能源核心换成能量。' };
-  var MAT_ORDER = ['m_lcleaf', 'e_leafcat', 'e_pluto', 'm_hfhorn', 'm_horn', 'm_mcry', 'm_cu', 'm_fe'];
+  var MAT_ORDER = ['m_lcleaf', 'e_leafcat', 'e_pluto', 'm_hfhorn', 'm_horn', 'm_mcry', 'm_cu', 'm_fe', 'ctTicket'];
   // 太空种植园只种药草。min 是成熟分钟，yield 是收获数量。收获时退回种子。
   var SEEDS = {
     s_herb: { name: '药草种子', d: '生态舱里种的药草籽。种下去要 8 小时，收获时这颗种子会退回来。', crop: 'c_herb', min: 480, yield: 50 },
@@ -960,29 +960,44 @@
   function growText(min) { return min >= 60 && min % 60 === 0 ? (min / 60) + ' 小时' : min + ' 分钟'; }
   function itemName(k) { var it = ITEMS[k] || USE_ITEMS[k] || SHOP_X[k] || TEA_SHOP[k] || KEY_ITEMS[k] || GATHER_ITEMS[k] || SEEDS[k] || CROPS[k] || MATS[k]; return it ? it.name : k; }
   function evRoom(m) { return Math.max(0, EV_TOTAL - evSum(m) - (m.evFree || 0)); }
+  /* 储存箱分类（2026-10-19 整理）：精灵培养 / 战斗道具 / 材料 / 其他，每类下面再分小组；每个道具都带图标 */
+  function ibGroups(wk) {
+    var byKind = function (kinds) { return MON_ORDER.filter(function (k) { return USE_ITEMS[k] && kinds.indexOf(USE_ITEMS[k].kind) >= 0; }); };
+    var listed = ['m_lcleaf', 'e_leafcat', 'e_pluto'];
+    var evt = MAT_ORDER.filter(function (k) { return listed.indexOf(k) < 0; });
+    return [
+      { id: 'mon', n: '精灵培养', hint: '直接用在精灵身上。也可以在精灵背包、仓库里点开精灵，在资料里使用。', subs: [['特产 · 隐藏技能与等级上限', byKind(['jade'])], ['性格 · 天赋 · 学习力', byKind(['nat', 'iv', 'iv2', 'ev', 'evreset'])], ['经验', byKind(['exp'])], ['形态', byKind(['form'])]] },
+      { id: 'battle', n: '战斗道具', hint: '在剧情、野外、BOSS对战的「道具」页使用。', subs: [['捕捉装置', ['cap1', 'cap2', 'cap3']], ['补药', ['pot1', 'pot2', 'pot200']]] },
+      { id: 'mat', n: '材料', hint: '拿到黄石 · 冶炼坊合成，或者用在种植园、保育仓。', subs: [['采集物', GATHER_ORDER], ['种子', SEED_ORDER], ['作物', CROP_ORDER], ['精灵素材与精元', listed], ['活动道具', evt]] },
+      { id: 'other', n: '其他', hint: '功能道具点开后使用；剧情道具不会消耗。', subs: [['功能道具', ['rename', 'auto'].concat(wk ? ['permit'] : [])], ['剧情道具', Object.keys(KEY_ITEMS)]] }
+    ];
+  }
   function itemsHTML() {
-    var have = BAG_ORDER.filter(function (k) { return acc.items[k] > 0; }), gHave = GATHER_ORDER.filter(function (k) { return acc.items[k] > 0; }), sHave = SEED_ORDER.filter(function (k) { return acc.items[k] > 0; }), cHave = CROP_ORDER.filter(function (k) { return acc.items[k] > 0; }), mHave = MAT_ORDER.filter(function (k) { return acc.items[k] > 0; }), wk = weeklyOpen(), pn = wk ? permits() : 0;
-    if (ui.itSel && ui.itSel !== 'permit' && have.indexOf(ui.itSel) < 0 && gHave.indexOf(ui.itSel) < 0 && sHave.indexOf(ui.itSel) < 0 && cHave.indexOf(ui.itSel) < 0 && mHave.indexOf(ui.itSel) < 0) ui.itSel = null;
-    if (ui.itSel === 'permit' && !wk) ui.itSel = null;
+    var wk = weeklyOpen(), pn = wk ? permits() : 0, G = ibGroups(wk);
+    var owned = function (k) { return k === 'permit' ? wk : acc.items[k] > 0; };
+    var allKeys = []; G.forEach(function (g) { g.subs.forEach(function (sb) { sb[1].forEach(function (k) { if (owned(k)) allKeys.push(k); }); }); });
+    if (ui.itSel && allKeys.indexOf(ui.itSel) < 0) ui.itSel = null;
+    var tab = ui.itTab || 'all';
+    var cnt = function (g) { var n = 0; g.subs.forEach(function (sb) { sb[1].forEach(function (k) { if (owned(k)) n++; }); }); return n; };
     var cell = function (k) {
-      var use = !!USE_ITEMS[k] || k === 'rename' || k === 'auto';
       var kimg = KEY_ITEMS[k] && KEY_ITEMS[k].img && ITEM_IMG[KEY_ITEMS[k].img];
-      return '<button type="button" class="ib-it' + (ui.itSel === k ? ' sel' : '') + (use ? ' use' : '') + (kimg ? ' key' : '') + '" data-itsel="' + k + '">' + (kimg ? '<img class="ib-img" src="' + kimg + '" alt="">' : '') + '<b>' + itemName(k) + '</b><span class="cnt">×' + acc.items[k] + '</span>' + (USE_ITEMS[k] ? '<small>精灵道具 · 可使用</small>' : KEY_ITEMS[k] ? '<small>剧情道具</small>' : GATHER_ITEMS[k] ? '<small>采集物</small>' : SEEDS[k] ? '<small>种子</small>' : CROPS[k] ? '<small>作物</small>' : use ? '<small>可使用</small>' : '<small>对战中使用</small>') + '</button>';
+      var ic = kimg ? '<img class="it-ic" src="' + kimg + '" alt="">' : H.itemIcon(k);
+      var n = k === 'permit' ? pn + '/' + PERMIT.max : KEY_ITEMS[k] ? '' : '×' + fmt(acc.items[k]);
+      return '<button type="button" class="ib-it' + (ui.itSel === k ? ' sel' : '') + '" data-itsel="' + k + '"><span class="ib-ic">' + ic + '</span><b>' + (k === 'permit' ? '挑战许可' : itemName(k)) + '</b>' + (n ? '<span class="cnt">' + n + '</span>' : '') + '</button>';
     };
-    var monCells = have.filter(function (k) { return USE_ITEMS[k]; }).map(cell), genCells = have.filter(function (k) { return !USE_ITEMS[k]; }).map(cell);
-    if (wk) genCells.unshift('<button type="button" class="ib-it permit' + (ui.itSel === 'permit' ? ' sel' : '') + '" data-itsel="permit"><b>挑战许可</b><span class="cnt">' + pn + ' / ' + PERMIT.max + '</span><small>每周挑战用</small></button>');
-    var html = '<section class="itembox"><span class="tape r"></span><div class="ib-head"><h3>精灵道具</h3><span class="hint">直接用在精灵身上的道具。也可以在精灵背包、精灵仓库里点开一只精灵，在它的资料里直接使用。</span></div>' +
-      (monCells.length ? '<div class="ib-grid">' + monCells.join('') + '</div>' : '<p class="empty-note">还没有精灵道具。排位段位奖励、BOSS挑战会获得学习力合剂、性格药剂；竞技代币商店也能兑换。</p>') +
-      '<div class="ib-head"><h3>一般道具</h3><span class="hint">捕捉装置和补药在剧情、野外、BOSS对战的「道具」页使用；改名卡、自律训练装置点开后使用。</span></div>' +
-      (genCells.length ? '<div class="ib-grid">' + genCells.join('') + '</div>' : '<p class="empty-note">还没有一般道具。在荆楚号 · 荆门 · 物资仓储的商城可以兑换。</p>') +
-      '<div class="ib-head"><h3>采集物</h3><span class="hint">野外采集点每天可以采集 1 次。芙罗拉、坎伯兰、庞贝每个点得到星砂 ×12；莱汀、白之星每个点得到星核 ×1。拿到黄石 · 冶炼坊合成捕捉装置。</span></div>' +
-      (gHave.length ? '<div class="ib-grid">' + gHave.map(cell).join('') + '</div>' : '<p class="empty-note">还没有采集物。进入丛林、草甸等区域，点场景里固定的采集点。</p>') +
-      '<div class="ib-head"><h3>种子</h3><span class="hint">第一次在芙罗拉星的丛林或草甸采集时得到 4 颗药草种子；在芙罗拉星击败野生精灵，每只有 10% 的概率掉落水稻种子。种在恩施 · 太空种植园（读完支线「伟大的种植园」后开放），收获时种子会退回。</span></div>' +
-      (sHave.length ? '<div class="ib-grid">' + sHave.map(cell).join('') + '</div>' : '<p class="empty-note">还没有种子。去芙罗拉星的丛林或草甸采集一次。</p>') +
-      '<div class="ib-head"><h3>作物</h3><span class="hint">太空种植园收获的作物。在黄石 · 冶炼坊，两份药草合成一瓶 200血药，500 粒米饭盛成一碗饭。</span></div>' +
-      (cHave.length ? '<div class="ib-grid">' + cHave.map(cell).join('') + '</div>' : '<p class="empty-note">还没有作物。种子成熟后，在太空种植园收获。</p>') +
-      '<div class="ib-head"><h3>精灵素材</h3><span class="hint">击败旅行精灵掉落的叶片，5 片在黄石 · 冶炼坊合成精元；精元放进神农架 · 精灵保育仓孵化。</span></div>' +
-      (mHave.length ? '<div class="ib-grid">' + mHave.map(cell).join('') + '</div>' : '<p class="empty-note">还没有精灵素材。留意航行日志里的「旅行精灵」。</p>');
+    var html = '<section class="itembox"><span class="tape r"></span><div class="ib-tabs" role="tablist">' +
+      [{ id: 'all', n: '全部', c: allKeys.length }].concat(G.map(function (g) { return { id: g.id, n: g.n, c: cnt(g) }; })).map(function (t) {
+        return '<button type="button" role="tab" class="ib-tab' + (tab === t.id ? ' on' : '') + '" data-ittab="' + t.id + '" aria-selected="' + (tab === t.id) + '">' + t.n + ' <small>' + t.c + '</small></button>';
+      }).join('') + '</div><div class="ib-wrap"><div class="ib-main">';
+    var shown = 0;
+    G.forEach(function (g) {
+      if (tab !== 'all' && tab !== g.id) return;
+      var body = g.subs.map(function (sb) { var ks = sb[1].filter(owned); if (!ks.length) return ''; shown += ks.length; return '<h4 class="ib-sub">' + sb[0] + '</h4><div class="ib-grid">' + ks.map(cell).join('') + '</div>'; }).join('');
+      if (!body && tab === 'all') return;
+      html += '<div class="ib-cat"><div class="ib-head"><h3>' + g.n + '</h3><span class="hint">' + g.hint + '</span></div>' + (body || '<p class="empty-note">这一类还没有道具。</p>') + '</div>';
+    });
+    if (!shown && tab === 'all') html += '<p class="empty-note">储存箱是空的。</p>';
+    html += '</div>';
     var k = ui.itSel;
     if (k) {
       var it = USE_ITEMS[k], body = '';
@@ -1013,10 +1028,11 @@
           '<button type="button" class="btn primary" data-ituse="' + k + '"' + ((it.kind === 'jade' && (!tm || !jadeMoves(tm).length || acc.items[k] < it.cost)) || (it.kind === 'form' && (!tm || !formOpts(tm).length)) || (it.kind === 'ev' && tm && !evRoom(tm)) || (it.kind === 'exp' && tm && atCap(tm)) || (it.kind === 'evreset' && tm && !evSum(tm)) ? ' disabled' : '') + '>使用 ' + (it.cost || 1) + ' 个' + itemName(k) + '</button>'
           : '<p class="hint red">' + esc(it.none || '你还没有' + SPMAP[it.sid].name + '（小胖虎、胖虎也算）。击败简单难度的BOSS「泰戈尔」可以领养一只小胖虎。') + '</p>');
       }
-      html += '<div class="ib-detail"><h4>' + (k === 'permit' ? '挑战许可' : itemName(k)) + '</h4>' + body + (ui.itMsg ? '<p class="exp-msg">' + esc(ui.itMsg) + '</p>' : '') + '</div>';
+      html += '<div class="ib-detail"><h4><span class="ib-ic">' + (KEY_ITEMS[k] && KEY_ITEMS[k].img && ITEM_IMG[KEY_ITEMS[k].img] ? '' : H.itemIcon(k)) + '</span>' + (k === 'permit' ? '挑战许可' : itemName(k)) + (k !== 'permit' ? ' <small class="cnt">×' + fmt(acc.items[k] || 0) + '</small>' : '') + '</h4>' + body + (ui.itMsg ? '<p class="exp-msg">' + esc(ui.itMsg) + '</p>' : '') + '</div>';
     }
     else if (ui.itMsg) html += '<div class="ib-detail"><p class="exp-msg">' + esc(ui.itMsg) + '</p></div>';   // 道具刚好用完：提示留着
-    return html + '</section>';
+    else html += '<div class="ib-detail ib-empty"><p class="hint">点左边的道具，查看说明和使用方法。</p></div>';
+    return html + '</div></section>';
   }
   function renderItems() {
     $('pg-items').innerHTML = '<div class="page-head"><h2 class="sec">储存箱</h2><p class="hint">你拥有的所有道具。点道具查看说明和使用方法。</p></div>' + itemsHTML();
@@ -1078,7 +1094,8 @@
   $('pg-bag').addEventListener('change', function (e) { if (e.target.closest('#bag-detail')) onDetailChange(e); });
   $('pg-items').addEventListener('click', function (e) {
     var b = e.target.closest('button'); if (!b || b.disabled) return;
-    if (b.dataset.itsel) { ui.itSel = ui.itSel === b.dataset.itsel ? null : b.dataset.itsel; ui.itMsg = ''; renderItems(); return; }
+    if (b.dataset.ittab) { ui.itTab = b.dataset.ittab; renderItems(); return; }
+    if (b.dataset.itsel) { ui.itSel = ui.itSel === b.dataset.itsel ? null : b.dataset.itsel; ui.itMsg = ''; renderItems(); if (ui.itSel && window.innerWidth < 860) { var dd = document.querySelector('#pg-items .ib-detail'); if (dd) dd.scrollIntoView({ behavior: 'smooth', block: 'start' }); } return; }
     if (b.dataset.ituse) { useBagItem(b.dataset.ituse); return; }
     if (b.dataset.itgo === 'weekly') { ex.view = 'weekly'; go('explore'); return; }
     if (b.dataset.itgo === 'home') { HSACC.goHome(); return; }

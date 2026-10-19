@@ -117,6 +117,26 @@
   function tchip(t) { return '<span class="chip tchip" style="background:' + (TYPE_COLOR[t] || '#9a958a') + '">' + t + '</span>'; }
   function tchips(ts) { return ts.map(tchip).join(''); }
   // 道具图标（占位，之后换成正式立绘）
+  function genIcon(shape, c, g) {
+    var o = '<svg class="it-ic" viewBox="0 0 64 64" aria-hidden="true"><g stroke="#23222b" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round">', t = '';
+    var txt = function (y, sz, col) { return g && g.length === 1 && !/[✦⚡]/.test(g) ? '<text x="32" y="' + y + '" text-anchor="middle" font-size="' + (sz || 15) + '" font-weight="700" fill="' + (col || '#23222b') + '" stroke="none">' + g + '</text>' : g ? '<text x="32" y="' + y + '" text-anchor="middle" font-size="' + (sz || 15) + '" stroke="none" fill="#fff">' + g + '</text>' : ''; };
+    if (shape === 'gem') t = '<path d="M20 12h24l12 14-24 28L8 26z" fill="' + c + '"/><path d="M8 26h48M20 12l6 14 6 28 6-28 6-14" fill="none" stroke-width="2"/><path d="M24 18l-4 6" stroke="#fff" stroke-width="2.5"/>';
+    else if (shape === 'drop') t = '<path d="M32 6C24 20 14 30 14 40a18 18 0 0 0 36 0C50 30 40 20 32 6z" fill="' + c + '"/><path d="M24 38a8 8 0 0 0 6 10" stroke="#fff" fill="none"/>';
+    else if (shape === 'pile') t = '<path d="M8 52c4-14 12-22 24-26 12 4 20 12 24 26z" fill="' + c + '"/><circle cx="26" cy="40" r="2.5" fill="' + (g || '#fff') + '" stroke-width="1"/><circle cx="38" cy="44" r="2" fill="' + (g || '#fff') + '" stroke-width="1"/><circle cx="32" cy="34" r="2" fill="' + (g || '#fff') + '" stroke-width="1"/>';
+    else if (shape === 'orb') t = '<circle cx="32" cy="32" r="22" fill="' + c + '"/><path d="M20 24a14 14 0 0 1 10-8" stroke="#fff" fill="none" stroke-width="3"/>' + txt(39, 16);
+    else if (shape === 'moon') t = '<path d="M40 8a24 24 0 1 0 14 40A20 20 0 0 1 40 8z" fill="' + c + '"/><circle cx="24" cy="30" r="2.5" fill="#fff" stroke="none"/>';
+    else if (shape === 'twig') t = '<path d="M14 54L44 14M30 34l14-4M24 42l-10-6" fill="none" stroke="' + c + '" stroke-width="7"/><path d="M14 54L44 14M30 34l14-4M24 42l-10-6" fill="none" stroke-width="1.5"/><path d="M44 14c6-2 10 2 8 8-6 0-9-3-8-8z" fill="#6fbf4a" stroke-width="2"/>';
+    else if (shape === 'coin') t = '<circle cx="32" cy="32" r="22" fill="' + c + '"/><circle cx="32" cy="32" r="16" fill="none" stroke="#c9b26a" stroke-width="2"/>' + txt(38, 16, '#e9d27a');
+    else if (shape === 'flask') t = '<path d="M26 6h12v12l12 22c3 7-2 16-10 16H24c-8 0-13-9-10-16l12-22z" fill="#fff"/><path d="M16 40h32c2 8-2 14-8 14H24c-6 0-10-6-8-14z" fill="' + c + '" stroke-width="0"/><path d="M26 6h12v12l12 22c3 7-2 16-10 16H24c-8 0-13-9-10-16l12-22z" fill="none"/>' + txt(32, 13);
+    else if (shape === 'pill') t = '<g transform="rotate(-35 32 32)"><rect x="10" y="22" width="44" height="20" rx="10" fill="#fff"/><path d="M32 22h12a10 10 0 0 1 0 20H32z" fill="' + c + '"/><rect x="10" y="22" width="44" height="20" rx="10" fill="none"/></g>' + txt(54, 12);
+    else if (shape === 'fruit') t = '<path d="M32 18c-14-6-24 4-22 18 2 12 12 20 22 18 10 2 20-6 22-18 2-14-8-24-22-18z" fill="' + c + '"/><path d="M32 18c0-6 2-10 6-12" fill="none"/><path d="M34 12c6-4 12-2 14 2-6 4-11 3-14-2z" fill="#6fbf4a" stroke-width="2"/><path d="M20 28a8 8 0 0 1 6-6" stroke="#fff" fill="none"/>' + (g ? '<text x="46" y="52" font-size="14" stroke="none" fill="#fff4b0">' + g + '</text>' : '');
+    else if (shape === 'seed') t = '<ellipse cx="32" cy="34" rx="13" ry="18" fill="' + c + '" transform="rotate(20 32 34)"/><path d="M28 22c2 8 2 16 0 24" fill="none" stroke-width="1.5"/>';
+    else if (shape === 'leaf') t = '<path d="M10 54C10 26 28 10 54 10c0 26-16 44-44 44z" fill="' + c + '"/><path d="M12 52L44 20" fill="none" stroke-width="2"/>';
+    else if (shape === 'grain') t = '<ellipse cx="22" cy="36" rx="7" ry="11" fill="' + c + '"/><ellipse cx="36" cy="30" rx="7" ry="11" fill="' + c + '"/><ellipse cx="44" cy="42" rx="7" ry="11" fill="' + c + '"/>';
+    else if (shape === 'ticket') t = '<path d="M8 18h48v8a6 6 0 0 0 0 12v8H8v-8a6 6 0 0 0 0-12z" fill="' + c + '"/><path d="M22 18v28" stroke-dasharray="3 3" stroke-width="2"/>' + txt(38, 15);
+    else if (shape === 'box') t = '<rect x="10" y="14" width="44" height="38" rx="6" fill="' + c + '"/><rect x="18" y="22" width="28" height="14" rx="3" fill="#e6f1ff"/>' + txt(48, 11, '#fff');
+    return o + t + '</g></svg>';
+  }
   function itemIcon(k) {
     if (k === 'c_bowl') return '<svg class="it-ic" viewBox="0 0 64 64" aria-hidden="true"><g stroke="#23222b" stroke-width="2.5" stroke-linejoin="round">' +
       '<path d="M12 30c0-9 9-15 20-15s20 6 20 15z" fill="#fffaf0"/><circle cx="24" cy="23" r="1.6" fill="#e9dcc0" stroke-width="1"/><circle cx="35" cy="20" r="1.6" fill="#e9dcc0" stroke-width="1"/><circle cx="41" cy="26" r="1.6" fill="#e9dcc0" stroke-width="1"/>' +
@@ -132,6 +152,16 @@
     if (k === 'rename') return '<svg class="it-ic" viewBox="0 0 64 64" aria-hidden="true"><g stroke="#23222b" stroke-width="2.5" stroke-linejoin="round">' +
       '<rect x="8" y="14" width="48" height="36" rx="6" fill="#fbfaf3"/><path d="M8 24h48" /><rect x="14" y="31" width="14" height="13" rx="3" fill="#e8d080"/>' +
       '<path d="M33 34h16M33 41h10" stroke-linecap="round"/><path d="M44 50l12-12 4 4-12 12h-4z" fill="#c42f3a" stroke-width="2"/></g></svg>';
+    // 2026-10-19：储存箱整理，各类道具补上图标（同一类用同一种形状，按颜色区分）
+    var G = {
+      floraJade: ['gem', '#4caf50'], kbDrop: ['drop', '#3b8fd9'], ppAsh: ['pile', '#7a5d4a', '#ff8a3d'], ltOrb: ['orb', '#f2c94c', '⚡'], whFrost: ['gem', '#9fe3f5'], earthShard: ['orb', '#3aa7a0', '🌏'],
+      moonStone: ['moon', '#9b87e6'], boneDust: ['pile', '#d9d4c7', '#fff'], tgPearl: ['orb', '#f0a43a'], brTwig: ['twig', '#8b6b3f'], deathTok: ['coin', '#2b2a33', '死'],
+      ivMoon: ['flask', '#e86fb2', '天'], ivBone: ['flask', '#b07ad9', '天'], ivReroll: ['flask', '#e86fb2', '重'], evAny: ['flask', '#d9534f', '学'], evTagore: ['flask', '#e08a2e', '学'],
+      natAny: ['pill', '#8e6fd6', '性'], natTagore: ['flask', '#8e6fd6', '性'], evReset: ['pill', '#9aa0a6', '退'], fruit1: ['fruit', '#e74c3c'], fruit2: ['fruit', '#f39c12', '✦'],
+      g_sand: ['pile', '#f2d58a', '#fff6c8'], g_core: ['orb', '#ff8a3d', '✦'], s_herb: ['seed', '#8bc34a'], s_rice: ['seed', '#e8d9a8'], c_herb: ['leaf', '#4caf50'], c_rice: ['grain', '#f5f0dc'],
+      e_pluto: ['orb', '#5b4a8a', '精'], ctTicket: ['ticket', '#f2c94c', '券'], permit: ['ticket', '#c42f3a', '许'], auto: ['box', '#5b8fd0', '自']
+    }[k];
+    if (G) return genIcon(G[0], G[1], G[2]);
     var C = { cap1: ['#7c97b8', '#e8eef6'], cap2: ['#c42f3a', '#f6e4e2'], cap3: ['#2b2a33', '#f3d36b'], pot1: ['#5aa469', '#e4f2e2'], pot2: ['#e08a2e', '#fbead4'], pot200: ['#2f8f86', '#d7f3ef'] }[k] || ['#999', '#eee'];
     if (k.indexOf('cap') === 0) return '<svg class="it-ic" viewBox="0 0 64 64" aria-hidden="true"><g stroke="#23222b" stroke-width="2.5" stroke-linejoin="round">' +
       '<rect x="18" y="6" width="28" height="52" rx="12" fill="' + C[1] + '"/><path d="M18 26h28v12H18z" fill="' + C[0] + '"/>' +

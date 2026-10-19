@@ -2399,3 +2399,25 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .mc-down { border-color: #2e9e57 !important; } .mc-down .mc-tag, .mc-key.down { color: #2e9e57; }
 .mc-adj .mc-tag, .mc-key.adj { color: #7a7f8a; }
 .mc-key { font-weight: 700; margin-right: 10px; }
+/* ============ 储存箱（2026-10-19 整理） ============ */
+.ib-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.ib-tab { cursor: pointer; font: inherit; font-weight: 600; padding: 6px 14px; border: 1.5px solid var(--ink); border-radius: 999px; background: #fff; color: var(--ink); }
+.ib-tab small { opacity: .6; font-weight: 400; }
+.ib-tab.on { background: var(--ink); color: #fff; }
+.ib-wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 340px); gap: 16px; align-items: start; }
+.ib-main { display: grid; gap: 14px; min-width: 0; }
+.ib-cat { display: grid; gap: 6px; }
+.ib-sub { margin: 4px 0 0; font-size: 13px; color: #6a6a72; font-weight: 600; }
+.ib-grid { grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)) !important; }
+.ib-it { display: grid !important; grid-template-columns: 1fr !important; justify-items: center; text-align: center !important; gap: 2px !important; padding: 8px 6px 6px !important; position: relative; }
+.ib-it .ib-ic { width: 48px; height: 48px; display: grid; place-items: center; }
+.ib-it .ib-ic .it-ic { width: 46px; height: 46px; object-fit: contain; }
+.ib-it b { font-size: 13px; line-height: 1.3; }
+.ib-it .cnt { position: absolute; top: 4px; right: 6px; font-size: 12px; font-weight: 700; color: var(--ink); background: #fff3c4; border-radius: 8px; padding: 0 5px; }
+.ib-it.sel { border-color: var(--red) !important; box-shadow: 0 0 0 2px var(--red) inset; }
+.ib-wrap > .ib-detail { position: sticky; top: 12px; border: 1.5px solid var(--ink) !important; border-radius: 12px; padding: 12px 14px !important; background: #fff; max-height: calc(100vh - 24px); overflow: auto; }
+.ib-detail h4 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 18px; }
+.ib-detail h4 .ib-ic .it-ic { width: 40px; height: 40px; }
+.ib-detail h4 small { font-size: 13px; color: #888; }
+.ib-empty { color: #888; }
+@media (max-width: 860px) { .ib-wrap { grid-template-columns: minmax(0, 1fr); } .ib-wrap > .ib-detail { position: static; max-height: none; } }
