@@ -4330,6 +4330,33 @@
     { id: 'horn', out: { m_horn: 1 }, need: { m_hfhorn: 60 } }
   ];
   var FORGE_Q = 120;
+  /* 特产互换（2026-10-19）：芙罗拉玉、不化水滴、火山灰烬、闪电球体、永久冻土之间互换，每 GX_IN 个换 GX_OUT 个
+   * （换出比换入少，避免来回换刷数量） */
+  var GX_KEYS = ['floraJade', 'kbDrop', 'ppAsh', 'ltOrb', 'whFrost'], GX_IN = 10, GX_OUT = 8;
+  function gxState() {
+    if (GX_KEYS.indexOf(ex.gxFrom) < 0) ex.gxFrom = GX_KEYS.filter(function (k) { return (acc.items[k] || 0) >= GX_IN; })[0] || GX_KEYS[0];
+    if (GX_KEYS.indexOf(ex.gxTo) < 0 || ex.gxTo === ex.gxFrom) ex.gxTo = GX_KEYS.filter(function (k) { return k !== ex.gxFrom; })[0];
+    var max = Math.min(FORGE_Q, Math.floor((acc.items[ex.gxFrom] || 0) / GX_IN)), q = Math.max(1, Math.min(FORGE_Q, shopQty.gx || 1));
+    if (q > max && max > 0) q = max;
+    return { from: ex.gxFrom, to: ex.gxTo, max: max, q: q };
+  }
+  function gxHTML() {
+    var g = gxState(), have = acc.items[g.from] || 0, ok = g.max >= g.q;
+    function chips(sel, attr, skip) { return GX_KEYS.map(function (k) { return '<button type="button" class="btn ' + (k === sel ? 'primary' : 'ghost') + ' gx-chip" data-' + attr + '="' + k + '"' + (k === skip ? ' disabled' : '') + '>' + itemName(k) + ' <small>' + (acc.items[k] || 0) + '</small></button>'; }).join(''); }
+    return '<article class="shop-it gx-card"><span class="tape r"></span>' + H.itemIcon(g.to) + '<div class="si-txt"><b>特产互换</b><p class="hint">各星球特产之间可以互相转换：每 ' + GX_IN + ' 个换成 ' + GX_OUT + ' 个。</p>' +
+      '<p class="gx-row"><span>拿出</span>' + chips(g.from, 'gxfrom', null) + '</p><p class="gx-row"><span>换成</span>' + chips(g.to, 'gxto', g.from) + '</p>' +
+      '<p class="forge-need">消耗 ' + itemName(g.from) + ' <b class="' + (have >= GX_IN * g.q ? 'ok' : 'short') + '">' + have + '</b>/' + GX_IN * g.q + ' → 得到 ' + itemName(g.to) + ' ×' + GX_OUT * g.q + '</p></div>' +
+      '<div class="si-buy"><span class="si-price">转换</span><div class="qty"><button type="button" class="btn ghost" data-gxq="-1" aria-label="减少"' + (g.q <= 1 ? ' disabled' : '') + '>−</button><span aria-live="polite">' + g.q + '</span><button type="button" class="btn ghost" data-gxq="1" aria-label="增加"' + (g.q >= Math.min(FORGE_Q, Math.max(1, g.max)) ? ' disabled' : '') + '>+</button></div>' +
+      '<button type="button" class="btn primary" data-gxgo="1"' + (ok ? '' : ' disabled') + '>' + (ok ? '转换' : '数量不足') + '</button></div></article>';
+  }
+  function gxGo() {
+    var g = gxState(); if (g.max < 1 || g.from === g.to) return;
+    var n = Math.min(g.q, g.max);
+    acc.items[g.from] = (acc.items[g.from] || 0) - GX_IN * n;
+    var gain = {}; gain[g.to] = GX_OUT * n; giveItems(gain); shopQty.gx = 1; save();
+    toast('转换成功：' + itemName(g.from) + ' ×' + GX_IN * n + ' → ' + itemName(g.to) + ' ×' + GX_OUT * n + '，已放入储存箱。');
+    renderForge();
+  }
   function forgeOf(id) { for (var i = 0; i < FORGE.length; i++) if (FORGE[i].id === id) return FORGE[i]; return null; }
   function forgeMax(r) {
     var n = FORGE_Q;
@@ -4362,8 +4389,8 @@
         '<div class="si-buy"><span class="si-price">合成</span>' +
         '<div class="qty"><button type="button" class="btn ghost" data-fq="' + r.id + '|-1" aria-label="减少"' + (q <= 1 ? ' disabled' : '') + '>−</button><span aria-live="polite">' + q + '</span><button type="button" class="btn ghost" data-fq="' + r.id + '|1" aria-label="增加"' + (q >= Math.min(FORGE_Q, Math.max(1, max)) ? ' disabled' : '') + '>+</button></div>' +
         '<button type="button" class="btn primary" data-smelt="' + r.id + '"' + (ok ? '' : ' disabled') + '>' + (ok ? '合成' : '材料不足') + '</button></div></article>';
-    }).join('');
-    $('pg-explore').innerHTML = exHead('星砂合成加强捕捉装置，星核合成华为捕捉装置，药草合成 200血药，米饭盛成一碗饭，叶子喵的叶片凝成精元，星核和星砂还能做形态切换装置，赫菲角片做奇声号角。这些都不在商城出售。') +
+    }).join('') + gxHTML();
+    $('pg-explore').innerHTML = exHead('星砂合成加强捕捉装置，星核合成华为捕捉装置，药草合成 200血药，米饭盛成一碗饭，叶子喵的叶片凝成精元，星核和星砂还能做形态切换装置，赫菲角片做奇声号角；各星球特产也能在这里互相转换。这些都不在商城出售。') +
       '<div class="crumb"><button type="button" class="btn ghost" id="forge-back">‹ 返回冶炼工坊</button><b>黄石 · 冶炼坊</b></div>' +
       stock + '<div class="shop-grid">' + cards + '</div>';
   }
@@ -5056,6 +5083,10 @@
     if (b.dataset.forge) { ex.view = 'forge'; ex.area = '黄石'; ex.planet = 'jingchu'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
     if (b.dataset.fq) { var fq = b.dataset.fq.split('|'), fr = forgeOf(fq[0]); if (fr && !b.disabled) { shopQty['fg-' + fq[0]] = Math.max(1, Math.min(FORGE_Q, (shopQty['fg-' + fq[0]] || 1) + +fq[1])); renderForge(); } return; }
     if (b.dataset.smelt) { forgeCraft(b.dataset.smelt); return; }
+    if (b.dataset.gxfrom) { ex.gxFrom = b.dataset.gxfrom; if (ex.gxTo === ex.gxFrom) ex.gxTo = null; shopQty.gx = 1; renderForge(); return; }
+    if (b.dataset.gxto) { ex.gxTo = b.dataset.gxto; renderForge(); return; }
+    if (b.dataset.gxq) { if (!b.disabled) { shopQty.gx = Math.max(1, Math.min(FORGE_Q, (shopQty.gx || 1) + +b.dataset.gxq)); renderForge(); } return; }
+    if (b.dataset.gxgo) { gxGo(); return; }
     if (b.id === 'forge-back') { ex.view = 'area'; ex.area = '黄石'; ex.planet = 'jingchu'; renderExplore(); return; }
     if (b.dataset.farm) { if (!farmOpen()) return; ex.view = 'farm'; ex.area = '恩施'; ex.planet = 'jingchu'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
     if (b.dataset.sow) { var sw = b.dataset.sow.split('|'); farmPlant(+sw[0], sw[1]); return; }
