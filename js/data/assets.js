@@ -156,6 +156,7 @@ var BG = {
   "storage_p": "images/backgrounds/storage_p.jpg",
   "bridge2_p": "images/backgrounds/bridge2_p.jpg",
   "cockpit_p": "images/backgrounds/cockpit_p.jpg",
+  "energy_core": "images/backgrounds/energy_core.jpg",
   "pod_p": "images/backgrounds/pod_p.jpg",
   "fl_path": "images/backgrounds/fl_path.jpg",
   "fl_lake": "images/backgrounds/fl_lake.jpg",
