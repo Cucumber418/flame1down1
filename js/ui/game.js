@@ -3291,6 +3291,13 @@
       if (!bossWon(x[0], 2)) return; var it = {}; it[x[1]] = 80;
       if (sendMail({ id: 'boss-item-' + x[0], title: '困难难度「' + x[2] + '」首次击败奖励补发', body: '{name}，你好！\n困难难度的BOSS「' + x[2] + '」新增了首次击败奖励「' + itemName(x[1]) + '」×80。你之前已经击败过它了，这份奖励给你补上。\n' + itemName(x[1]) + '可以让' + x[2] + '领悟隐藏技能，也能提高' + x[2] + '的等级上限。另外，' + x[2] + '的每周挑战也已经开放。', att: { items: it } })) changed = true;
     });
+    // 2026-10-19：BOSS 各难度首次击败新增马亚尔晶体，之前已经击败过的通过邮箱补发（每个BOSS一封，合计已击败的各档）
+    Object.keys(BOSSES).forEach(function (k) {
+      var B = BOSSES[k], n = 0, got = [];
+      B.lv.forEach(function (L, i) { if (bossWon(k, i)) { n += BOSS_CRY[i] || BOSS_CRY[BOSS_CRY.length - 1]; got.push(L.diff); } });
+      if (!n) return;
+      if (sendMail({ id: 'boss-cry-' + k, title: 'BOSS「' + B.name + '」首次击败奖励补发', body: '{name}，你好！\n每个BOSS每档难度的首次击败，现在都会额外奖励马亚尔晶体（简单 100、普通 200、困难 400）。你之前已经击败过' + B.name + '的' + got.join('、') + '难度，这份奖励给你补上。\n马亚尔晶体可以在黄石 · 冶炼坊的「特产互换」里，每 10 个换成 10 个任意一种星球特产。', att: { items: { m_mcry: n } } })) changed = true;
+    });
     // 主线章节大奖：章节推出之前就已经读完的船员，通过邮箱补发（每个章节一次）
     CHAPTERS.forEach(function (C) {
       if (!chapterDone(C) || chapterGot(C.id)) return;
@@ -3797,6 +3804,9 @@
           lockText: '完成主线「第十段 · 瘴气之源」后，2026-10-18 16:00 开放', reward: { title: 'guardian', exp: 50000, items: { brTwig: 80 } } }
       ] }
   };
+  // 2026-10-19：每个BOSS每档难度首次击败都送马亚尔晶体，难度越高越多（简单 100 / 普通 200 / 困难 400）
+  var BOSS_CRY = [100, 200, 400];
+  Object.keys(BOSSES).forEach(function (k) { BOSSES[k].lv.forEach(function (L, i) { if (!L.reward) L.reward = {}; if (!L.reward.items) L.reward.items = {}; L.reward.items.m_mcry = BOSS_CRY[i] || BOSS_CRY[BOSS_CRY.length - 1]; }); });
   // 每周挑战：击败困难难度的泰戈尔后开放，规则和困难难度一样，每次消耗 1 枚挑战许可
   // 2026-10-18：每周挑战改成可以有多个BOSS（击败对应BOSS的困难难度后各自开放），挑战许可共用。item 是每次击败必得的BOSS专属道具
   var WEEKLIES = [
