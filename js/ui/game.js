@@ -1671,7 +1671,7 @@
       (n === '咸宁' ? '<button type="button" class="mk shop' + (spaOpen() ? '' : ' locked') + '"' + (spaOpen() ? ' data-spa="1"' : ' disabled') + ' style="left:66%;top:52%"><span class="mk-dot">' + (spaOpen() ? '泉' : '锁') + '</span><span class="mk-lab"><b>温泉疗养</b><small>' + (spaOpen() ? spaSummary() : '读完支线「温泉疗养」后开放') + '</small></span></button>' : '') +
       (n === '恩施' ? '<button type="button" class="mk shop' + (farmOpen() ? '' : ' locked') + '"' + (farmOpen() ? ' data-farm="1"' : ' disabled') + ' style="left:62%;top:58%"><span class="mk-dot">' + (farmOpen() ? '种' : '锁') + '</span><span class="mk-lab"><b>太空种植园</b><small>' + (farmOpen() ? '种药草，用来做 200血药' : '读完支线「伟大的种植园」后开放') + '</small></span></button>' : '') +
       (n === '黄冈' ? '<button type="button" class="mk shop' + (medalOpen() ? '' : ' locked') + '"' + (medalOpen() ? ' data-medal="1"' : ' disabled') + ' style="left:50%;top:18%"><span class="mk-dot">' + (medalOpen() ? '勋' : '锁') + '</span><span class="mk-lab"><b>授勋馆</b><small>' + (medalOpen() ? '所有称号和获得方式' : '读完支线「授勋馆」后开放') + '</small></span></button>' : '') +
-      (n === '宜昌' ? '<button type="button" class="mk shop" data-core="1" style="left:50%;top:55%"><span class="mk-dot">电</span><span class="mk-lab"><b>三峡能源核心</b><small>找 日透骨消 领钻头、换能量</small></span></button>' : '') +
+      (n === '宜昌' ? '<button type="button" class="mk shop" data-core="1" style="left:50%;top:55%"><span class="mk-dot">电</span><span class="mk-lab"><b>三峡能源核心</b><small>找日透骨消 领钻头、换能量</small></span></button>' : '') +
       (n === '神农架' ? '<button type="button" class="mk shop" data-nursery="1" style="left:50%;top:58%"><span class="mk-dot">育</span><span class="mk-lab"><b>精灵保育仓</b><small>孵化精灵的精元</small></span></button>' : '') +
       (ids.length || n === '黄石' || n === '恩施' || n === '神农架' || n === '咸宁' || n === '宜昌' ? '' : '<p class="area-empty">这里暂时没有剧情。</p>') +
       '<div class="tp-fx" aria-hidden="true"><span>传送至 ' + d[0] + '……</span></div></div>' +
@@ -1910,11 +1910,18 @@
     return '<button type="button" class="wf-bowl put" data-bowl="1"><span class="wf-bowl-ic" aria-hidden="true">' + H.itemIcon('c_bowl') + '</span><span>放下一碗饭</span></button>';
   }
   /* ---------- 三峡能源核心 · 采矿（2026-10-19） ----------
-   * 荆楚号 · 宜昌的能源核心主人 日透骨消：答对考核题（10 题对 7 题）领今天的挖矿钻头。
+   * 荆楚号 · 宜昌的能源核心主人日透骨消：答对考核题（10 题对 7 题）领挖矿钻头（永久，耐久 80 次，5 题对 3 题修满）。
    * 芙罗拉星、坎伯兰星的每个野外场景里各有一处矿点（马亚尔煤炭 / 铁矿交替），每处每天挖 1 次，挖一次要等 10 秒。
    * 矿石在能源核心换能量，每天最多换 MINE.cap 能量。题库在 js/data/xcq.js（编码过） */
+  var DRILL_MAX = 80, DRILL_LOW = 0.2;   // 钻头耐久：挖一次 −1，满 80；低于 20% 挖完会提醒；在能源核心答 5 题对 3 题修满
   var MINE = { regions: ['forest', 'grass', 'kb_surf', 'kb_sea', 'kb_deep'], spot: { x: 10, y: 92 }, sec: 10, n: [2, 3], price: { m_cu: 150, m_fe: 250 }, cap: 3000, quiz: 10, pass: 7, hard: 2 };
-  function mineRec() { var day = dayNum(Date.now()); if (!acc.mine || acc.mine.day !== day) acc.mine = { day: day, drill: false, got: {}, ex: 0 }; return acc.mine; }
+  function mineRec() {
+    var day = dayNum(Date.now());
+    if (acc.mine && acc.mine.drill && !acc.drill) acc.drill = { dur: DRILL_MAX };   // 钻头改成永久之前领过的（当天有效那版）：直接给一个满耐久的
+    if (!acc.mine || acc.mine.day !== day) acc.mine = { day: day, got: {}, ex: 0 };
+    return acc.mine;
+  }
+  function drill() { return acc.drill || null; }   // { dur }：领过钻头就一直有，耐久用完要修
   function oreKind(si) { return si % 2 ? 'm_fe' : 'm_cu'; }
   function oreHTML(R, F, si) {
     if (MINE.regions.indexOf(R.id) < 0) return '';
@@ -1925,12 +1932,13 @@
     si = +si; var R = regionById(ex.region), F = R && fields[R.id]; if (!F || ex.fighting || MINE.regions.indexOf(R.id) < 0) return;
     var M0 = mineRec(), key = R.id + ':' + si;
     if (M0.got[key]) { toast('这处矿点今天已经挖过了，明天再来吧。'); return; }
-    if (!M0.drill) { toast('需要挖矿钻头才能采矿。去荆楚号 · 宜昌的「三峡能源核心」找 日透骨消 领一个吧。'); return; }
+    if (!drill()) { toast('需要挖矿钻头才能采矿。去荆楚号 · 宜昌的「三峡能源核心」找日透骨消领一个吧。'); return; }
+    if (drill().dur <= 0) { toast('挖矿钻头的耐久度用完了，去荆楚号 · 宜昌的「三峡能源核心」找日透骨消修一下吧。'); return; }
     if ($('mine-dlg')) return;
     var k = oreKind(si), d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'mine-dlg';
     d.innerHTML = '<div class="soc-box mine-box" role="dialog" aria-modal="true" aria-label="采矿"><span class="tape l"></span><span class="tape r"></span><h2>正在采集' + MATS[k].name + '</h2>' +
       '<div class="mine-drill ' + (k === 'm_fe' ? 'fe' : 'cu') + '" aria-hidden="true"><span class="ore-ic"></span><i class="drill-bit"></i></div>' +
-      '<div class="mine-bar"><i id="mine-fill"></i></div><p class="hint" id="mine-left">钻头转起来了……还要 ' + MINE.sec + ' 秒</p>' +
+      '<div class="mine-bar"><i id="mine-fill"></i></div><p class="hint" id="mine-left">钻头转起来了……还要 ' + MINE.sec + ' 秒</p>' + '<p class="hint drill-dur">钻头耐久度 ' + drill().dur + ' / ' + DRILL_MAX + '</p>' +
       '<div class="soc-foot"><button type="button" class="btn ghost" data-minex="1">先不挖了</button></div></div>';
     document.body.appendChild(d);
     var t0 = Date.now(), tm = setInterval(function () {
@@ -1938,11 +1946,19 @@
       el.style.width = (f * 100) + '%'; $('mine-left').textContent = f < 1 ? '钻头转起来了……还要 ' + Math.ceil(MINE.sec * (1 - f)) + ' 秒' : '挖到了！';
       if (f >= 1) {
         clearInterval(tm); var n = MINE.n[0] + Math.floor(Math.random() * (MINE.n[1] - MINE.n[0] + 1));
-        mineRec().got[key] = 1; giveItems((function () { var o = {}; o[k] = n; return o; })()); save();
-        setTimeout(function () { d.remove(); renderField(); igCheck(); }, 500);
+        mineRec().got[key] = 1; giveItems((function () { var o = {}; o[k] = n; return o; })()); acc.drill.dur = Math.max(0, acc.drill.dur - 1); save();
+        var du = acc.drill.dur;
+        var dd = d.querySelector('.drill-dur'); if (dd) dd.textContent = '钻头耐久度 ' + du + ' / ' + DRILL_MAX;
+        if (du < DRILL_MAX * DRILL_LOW) {   // 耐久不足：在采矿弹窗里提醒，点了才关
+          $('mine-left').innerHTML = '挖到了！<br><b class="red">' + (du <= 0 ? '钻头的耐久度用完了！' : '钻头耐久度即将不足（' + du + ' / ' + DRILL_MAX + '）') + '</b>去荆楚号 · 宜昌的三峡能源核心找日透骨消修复吧。';
+          var ft = d.querySelector('.soc-foot'); ft.innerHTML = '<button type="button" class="btn primary" data-mineok="1">知道了</button>';
+        } else setTimeout(function () { d.remove(); renderField(); igCheck(); }, 500);
       }
     }, 100);
-    d.addEventListener('click', function (e) { if (e.target.closest('[data-minex]')) { clearInterval(tm); d.remove(); } });
+    d.addEventListener('click', function (e) {
+      if (e.target.closest('[data-minex]')) { clearInterval(tm); d.remove(); }
+      if (e.target.closest('[data-mineok]')) { d.remove(); renderField(); igCheck(); }
+    });
   }
   // 题库：解码 js/data/xcq.js
   var XQ = null;
@@ -1964,9 +1980,9 @@
     var M0 = mineRec(), left = MINE.cap - M0.ex, cu = acc.items.m_cu || 0, fe = acc.items.m_fe || 0;
     lzDlg(['欢迎来到三峡能源核心，我是这里的主人日透骨消。荆楚号上的每一度电，都要从这里过。',
       '最近能源有点紧张：芙罗拉星、坎伯兰星的野外藏着「马亚尔煤炭」和「马亚尔铁矿」，挖回来交给我，我按煤炭 ' + MINE.price.m_cu + '、铁矿 ' + MINE.price.m_fe + ' 能量一块跟你换（每天最多换 ' + fmt(MINE.cap) + ' 能量，今天还能换 ' + fmt(Math.max(0, left)) + '）。',
-      M0.drill ? '你今天已经领到挖矿钻头了，去星球上找矿点吧。' : '不过钻头可不能随便给人。先过我这一关：' + MINE.quiz + ' 道题，答对 ' + MINE.pass + ' 道就算通过。',
+      !drill() ? '不过钻头可不能随便给人。先过我这一关：' + MINE.quiz + ' 道题，答对 ' + MINE.pass + ' 道就算通过，钻头就一直归你。' : drill().dur >= DRILL_MAX ? '你的钻头状态很好（耐久度 ' + DRILL_MAX + ' / ' + DRILL_MAX + '），去星球上找矿点吧。' : '你的钻头耐久度还剩 ' + drill().dur + ' / ' + DRILL_MAX + '。要修的话，答我 ' + REPAIR.n + ' 道题，对 ' + REPAIR.pass + ' 道就给你修满。',
       '你现在有煤炭 ' + cu + ' 块、铁矿 ' + fe + ' 块。'],
-      [['离开', null], ['兑换能量', exchangeOre, !(cu || fe) || left <= 0], [M0.drill ? '钻头已领取' : '参加钻头考核', startQuiz, M0.drill]]);
+      [['离开', null], ['兑换能量', exchangeOre, !(cu || fe) || left <= 0], !drill() ? ['参加钻头考核', function () { startQuiz(false); }] : ['修复钻头', function () { startQuiz(true); }, drill().dur >= DRILL_MAX]]);
   }
   function exchangeOre() {
     var M0 = mineRec(), left = MINE.cap - M0.ex, got = 0, used = {};
@@ -1975,17 +1991,19 @@
     M0.ex += got; acc.energy += got; save(); renderRes();
     toast('交出了' + Object.keys(used).map(function (k) { return MATS[k].name + ' ×' + used[k]; }).join('、') + '，换到能量 ×' + fmt(got) + '。今天还能换 ' + fmt(MINE.cap - M0.ex) + '。');
   }
-  function startQuiz() {
-    var B = xcqBank(); if (B.length < MINE.quiz) { toast('题库加载失败，刷新一下再试试。'); return; }
-    var hard = shuffle(B.filter(function (q) { return q.h; })).slice(0, MINE.hard), easy = shuffle(B.filter(function (q) { return !q.h; })).slice(0, MINE.quiz - hard.length);
+  var REPAIR = { n: 5, pass: 3, hard: 1 };
+  function startQuiz(rp) {   // rp：修复钻头（5 题对 3 题）；否则是领钻头的考核（10 题对 7 题）
+    var C = rp ? REPAIR : { n: MINE.quiz, pass: MINE.pass, hard: MINE.hard };
+    var B = xcqBank(); if (B.length < C.n) { toast('题库加载失败，刷新一下再试试。'); return; }
+    var hard = shuffle(B.filter(function (q) { return q.h; })).slice(0, C.hard), easy = shuffle(B.filter(function (q) { return !q.h; })).slice(0, C.n - hard.length);
     var Qs = shuffle(hard.concat(easy)), i = 0, right = 0, picks = [];
     var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'quiz-dlg'; document.body.appendChild(d);
     function draw() {
       if (i >= Qs.length) {
-        var ok = right >= MINE.pass;
-        if (ok) { mineRec().drill = true; save(); }
-        d.innerHTML = '<div class="soc-box quiz-box" role="dialog" aria-modal="true" aria-label="考核结果"><span class="tape l"></span><span class="tape r"></span><h2>' + (ok ? '考核通过！' : '没有通过') + '</h2>' +
-          '<p class="quiz-score">答对 <b>' + right + '</b> / ' + Qs.length + '</p><p>' + (ok ? '日透骨消：「不错嘛。这是今天的挖矿钻头，拿好。」<br>去芙罗拉星、坎伯兰星的野外找矿点吧，每处矿点每天能挖一次。' : '日透骨消：「差一点。要答对 ' + MINE.pass + ' 道才行，再来一次？」') + '</p>' +
+        var ok = right >= C.pass;
+        if (ok) { acc.drill = { dur: DRILL_MAX }; save(); }
+        d.innerHTML = '<div class="soc-box quiz-box" role="dialog" aria-modal="true" aria-label="考核结果"><span class="tape l"></span><span class="tape r"></span><h2>' + (ok ? (rp ? '修好了！' : '考核通过！') : '没有通过') + '</h2>' +
+          '<p class="quiz-score">答对 <b>' + right + '</b> / ' + Qs.length + '</p><p>' + (ok ? (rp ? '日透骨消：「交给我吧……好了，耐久度修满了。」' : '日透骨消：「不错嘛。这把挖矿钻头以后就归你了，拿好。」') + '<br>去芙罗拉星、坎伯兰星的野外找矿点吧，每处矿点每天能挖一次。' : '日透骨消：「差一点。要答对 ' + C.pass + ' 道才行，再来一次？」') + '</p>' +
           '<div class="soc-foot">' + (ok ? '' : '<button type="button" class="btn ghost" data-qx="1">下次再来</button><button type="button" class="btn primary" data-qagain="1">重新答题</button>') + (ok ? '<button type="button" class="btn primary" data-qx="1">好的</button>' : '') + '</div></div>';
         return;
       }
@@ -1998,7 +2016,7 @@
     draw();
     d.addEventListener('click', function (e) {
       if (e.target.closest('[data-qx]')) { d.remove(); return; }
-      if (e.target.closest('[data-qagain]')) { d.remove(); startQuiz(); return; }
+      if (e.target.closest('[data-qagain]')) { d.remove(); startQuiz(rp); return; }
       var o = e.target.closest('[data-qo]'); if (!o || i >= Qs.length) return;
       if (+o.dataset.qo === Qs[i].a) right++; i++; draw();
     });
@@ -2006,10 +2024,10 @@
   function coreLogHTML() {
     var M0 = mineRec();
     return '<article class="log-card rice"><span class="tape l"></span><span class="chip log-tag">新活动</span><h3>三峡能源核心 · 星球采矿</h3>' +
-      '<p>荆楚号 · 宜昌的能源核心主人 <b>日透骨消</b> 需要矿石！</p><ol class="rice-steps"><li>到荆楚号 · <b>宜昌</b>的「三峡能源核心」找 日透骨消，通过<b>钻头考核</b>（' + MINE.quiz + ' 题答对 ' + MINE.pass + ' 题），领取今天的<b>挖矿钻头</b>。</li>' +
+      '<p>荆楚号 · 宜昌的能源核心主人<b>日透骨消</b>需要矿石！</p><ol class="rice-steps"><li>到荆楚号 · <b>宜昌</b>的「三峡能源核心」找日透骨消，通过<b>钻头考核</b>（' + MINE.quiz + ' 题答对 ' + MINE.pass + ' 题），领取<b>挖矿钻头</b>（一直有效）。钻头每挖一次掉 1 点耐久，满耐久能挖 ' + DRILL_MAX + ' 次，用旧了回来答 ' + REPAIR.n + ' 题、对 ' + REPAIR.pass + ' 题就能修满。</li>' +
       '<li>在<b>芙罗拉星</b>、<b>坎伯兰星</b>的野外场景里找到<b>马亚尔煤炭</b>、<b>马亚尔铁矿</b>，点一下等 ' + MINE.sec + ' 秒就能挖到。每处矿点每天挖一次。</li>' +
       '<li>把矿石交给 日透骨消 换能量：煤炭 ' + MINE.price.m_cu + '、铁矿 ' + MINE.price.m_fe + ' 一块，每天最多换 ' + fmt(MINE.cap) + ' 能量。</li></ol>' +
-      '<p class="hint">今天：' + (M0.drill ? '钻头已领取' : '还没领钻头') + ' · 已换能量 ' + fmt(M0.ex) + ' / ' + fmt(MINE.cap) + '</p>' +
+      '<p class="hint">' + (drill() ? '钻头耐久度 ' + drill().dur + ' / ' + DRILL_MAX : '还没领钻头') + ' · 今天已换能量 ' + fmt(M0.ex) + ' / ' + fmt(MINE.cap) + '</p>' +
       (prog('board').done ? '<button type="button" class="btn primary" data-gocore="1">去三峡能源核心</button>' : '') + '</article>';
   }
   /* ---------- 奇声号角 → 塞米 ----------
