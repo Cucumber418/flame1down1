@@ -3746,6 +3746,19 @@
       '<p class="hint">技能、数值和玩法的改动都会公布在这里，最新的在最上面。</p>' + L.slice(0, 1).map(one).join('') +
       (L.length > 1 ? '<details class="cl-more"><summary>更早的改动（' + (L.length - 1) + ' 条）</summary>' + L.slice(1).map(one).join('') + '</details>' : '') + '</article>';
   }
+  // 「精灵改动」专栏（2026-10-19）：内容写在 js/data/monchanges.js。加强红色 ▲、削弱绿色 ▼、调整灰色 ◆
+  function monChangesHTML() {
+    var L = typeof MON_CHANGES !== 'undefined' ? MON_CHANGES : [];
+    var mark = { up: ['▲', '加强'], down: ['▼', '削弱'], adj: ['◆', '调整'] };
+    var one = function (c) {
+      var s = SPMAP[c.sid], img = s ? (SPRITES[c.sid] || '') : '';
+      return '<div class="mc-entry"><div class="mc-head">' + (img ? '<img src="' + img + '" alt="">' : '') + '<b>' + esc(c.boss || (s ? s.name : c.sid)) + '</b>' + (c.boss ? '<span class="chip mc-boss">BOSS</span>' : '') + '<span class="mc-date">' + esc(c.date) + '</span></div><ul>' +
+        c.items.map(function (x) { var m = mark[x[0]] || mark.adj; return '<li class="mc-' + (mark[x[0]] ? x[0] : 'adj') + '"><span class="mc-tag">' + m[0] + ' ' + m[1] + '</span>' + esc(x[1]) + '</li>'; }).join('') + '</ul></div>';
+    };
+    return '<article class="log-card mon-changes"><span class="tape r"></span><span class="chip log-tag">平衡调整</span><h3>精灵改动</h3>' +
+      '<p class="hint"><span class="mc-key up">▲ 加强</span><span class="mc-key down">▼ 削弱</span><span class="mc-key adj">◆ 调整</span>　最新的在最上面。</p>' +
+      (L.length ? L.slice(0, 4).map(one).join('') + (L.length > 4 ? '<details class="cl-more"><summary>更早的改动（' + (L.length - 4) + ' 条）</summary>' + L.slice(4).map(one).join('') + '</details>' : '') : '<p class="hint">暂时没有精灵改动。</p>') + '</article>';
+  }
   /* 每天第一次打开游戏：弹出半屏的「更新公告」，列出上次看过之后新增的改动（没有新的就显示最新一条）。
    * 看过哪些记在存档里（newsSeen），所以换设备也不会重复算「新」；当天弹过就不再弹（newsDay）。
    * 正在对战或看剧情时先不弹，等结束后再弹。 */
@@ -3892,7 +3905,7 @@
     var now = new Date(), h = now.getHours(), on = mysteryTime();
     var wait = on ? '' : (function () { var t = new Date(now); t.setHours(MYSTERY.from, 0, 0, 0); var m = Math.max(0, Math.round((t - now) / 60000)); return '距离今天的活动开始还有 ' + Math.floor(m / 60) + ' 小时 ' + (m % 60) + ' 分钟'; })();
     $('pg-log').innerHTML = '<div class="page-head"><h2 class="sec">航行日志</h2><p class="hint">荆楚号的公告板：更新公告、限时活动、每日任务和新BOSS。</p></div>' +
-      '<div class="log-grid">' + '<article class="log-card wide qq-card"><span class="tape l"></span><span class="tape r"></span><div class="qq-txt"><span class="chip log-tag">船员交流</span><h3>QQ 群：<b class="qq-no">' + QQ_GROUP + '</b></h3><p class="hint">攻略、组队切磋、bug 反馈、新精灵立绘抢先看，都在群里。</p></div><button type="button" class="btn primary" data-copyqq="1">复制群号</button></article>' + changelogHTML() +
+      '<div class="log-grid">' + '<article class="log-card wide qq-card"><span class="tape l"></span><span class="tape r"></span><div class="qq-txt"><span class="chip log-tag">船员交流</span><h3>QQ 群：<b class="qq-no">' + QQ_GROUP + '</b></h3><p class="hint">攻略、组队切磋、bug 反馈、新精灵立绘抢先看，都在群里。</p></div><button type="button" class="btn primary" data-copyqq="1">复制群号</button></article>' + '<div class="log-pair">' + changelogHTML() + monChangesHTML() + '</div>' +
       pwCardHTML('log') + contestLogHTML() + barrenLogHTML() + travelLogHTML() + pickHTML() + coreLogHTML() + hornLogHTML() + riceLogHTML() +   // 立绘更新投票已结束移除（2026-10-17）；荒芜放在更新公告正下方
       '<article class="log-card ev"><span class="tape l"></span><span class="chip log-tag">限时活动</span><h3>神秘精灵出没</h3>' +
         '<p>每天 <b>16:00–24:00</b>，在星际探索的任何场景，都有 <b>3%</b> 的概率刷出一只神秘精灵！</p><p class="hint">它是什么？只有遇到过的人才知道。</p>' +
