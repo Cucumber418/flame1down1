@@ -5537,7 +5537,7 @@
       if (ex.view === 'boss' && BOSSES[ex.boss] && BOSSES[ex.boss].planet === 'flora') return 'flora';
       if (ex.view === 'field' && fields[ex.region] && fields[ex.region].scenes) { var sc_ = fields[ex.region].scenes[fields[ex.region].scene]; if (sc_ && sc_.bgKey === 'kb_temple') return 'temple'; }   // 坎伯兰星 · 古代神殿
       if (ex.view === 'sites' && ex.planet === 'kamble') return 'kb';   // 坎伯兰星界面
-      if (ex.view === 'field' && regionById(ex.region) && regionById(ex.region).planet === 'kamble') return ex.region === 'kb_sea' ? 'kbShallow' : 'kb';
+      if (ex.view === 'field' && regionById(ex.region) && regionById(ex.region).planet === 'kamble') return ex.region === 'kb_sea' ? 'kbShallow' : ex.region === 'kb_surf' ? 'kbSurface' : 'kb';   // 2026-10-19：水面换成 Cumberland1Surface
     }
     return 'ui';
   }
