@@ -2266,3 +2266,27 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .ig-row b { font-size: 14.5px; }
 .ig-row em { grid-row: 1 / span 2; grid-column: 3; font-style: normal; font-weight: 700; color: var(--red); font-size: 16px; }
 .ig-row small { color: #888; font-size: 12px; }
+/* 三峡能源核心 · 采矿 */
+.wf-ore { position: absolute; z-index: 98; transform: translate(-50%, -100%); display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 0; border: 0; background: transparent; color: #fff; font-size: 12px; font-weight: 700; text-shadow: 0 1px 2px #000; cursor: pointer; }
+.ore-ic { display: block; width: 42px; height: 34px; border: 2px solid #23222b; border-radius: 40% 55% 35% 50%; box-shadow: 2px 2px 0 rgba(0,0,0,.35); }
+.cu .ore-ic { background: radial-gradient(circle at 30% 35%, #f6c08a 0 18%, transparent 20%), radial-gradient(circle at 65% 60%, #e08a4e 0 16%, transparent 18%), #8a5a3c; }
+.fe .ore-ic { background: radial-gradient(circle at 35% 40%, #d8dde6 0 18%, transparent 20%), radial-gradient(circle at 68% 62%, #aab3c0 0 16%, transparent 18%), #4e5562; }
+.wf-ore:hover:not(.done) .ore-ic { transform: translateY(-3px); }
+.wf-ore.done { opacity: .55; cursor: default; }
+.mine-box { max-width: 380px; text-align: center; }
+.mine-drill { position: relative; width: 120px; height: 90px; margin: 6px auto 10px; }
+.mine-drill .ore-ic { position: absolute; left: 20px; bottom: 0; width: 80px; height: 56px; }
+.drill-bit { position: absolute; left: 52px; top: 0; width: 16px; height: 40px; background: repeating-linear-gradient(45deg, #c9cdd4 0 4px, #8a8f98 4px 8px); border: 2px solid #23222b; border-radius: 3px 3px 8px 8px; animation: drillShake .12s linear infinite; }
+@keyframes drillShake { 50% { transform: translateX(2px) translateY(2px); } }
+.mine-bar { height: 12px; border: 1.5px solid var(--ink); border-radius: 99px; overflow: hidden; background: #fff; }
+.mine-bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #f2c46b, #c9553a); }
+.lz-face { display: grid; place-items: center; width: 84px; height: 84px; border-radius: 50%; background: #2b2a33; color: #f3d36b; font-size: 44px; border: 2px solid var(--ink); flex: none; }
+.quiz-box { max-width: 620px; }
+.quiz-bar { height: 6px; border-radius: 99px; background: #eee; overflow: hidden; margin: 6px 0 10px; }
+.quiz-bar i { display: block; height: 100%; background: var(--red); }
+.quiz-q { font-size: 15px; line-height: 1.75; max-height: 42vh; overflow-y: auto; margin: 0 0 10px; }
+.quiz-opts { display: grid; gap: 8px; }
+.quiz-opt { display: grid; grid-template-columns: 28px 1fr; gap: 8px; align-items: start; text-align: left; padding: 8px 10px; border: 1.5px solid var(--rule); border-radius: 10px; background: #fff; font: inherit; color: var(--ink); cursor: pointer; line-height: 1.6; }
+.quiz-opt:hover { border-color: var(--ink); background: #fffbef; }
+.quiz-opt b { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--ink); color: #fff; font-size: 13px; }
+.quiz-score { font-size: 18px; } .quiz-score b { font-size: 30px; color: var(--red); }
