@@ -2053,6 +2053,25 @@
     });
   }
   setInterval(sideCheck, 3000);
+  /* 做题大王争霸赛报名弹窗（2026-10-19）：每次登录（打开游戏）弹一次，已报名的不弹；等服务器返回报名状态后再弹 */
+  var ctPopped = false;
+  function ctPopCheck() {
+    if (ctPopped || !ready() || !acc.introDone || ex.fighting || ex.view === 'vn' || ($('battle') && !$('battle').hidden)) return;
+    if (contestMe()) { ctPopped = true; return; }
+    if (!CT.data) { if (!CT.busy && !CT.err) contestLoad(); return; }
+    if (document.querySelector('.soc-dlg')) return;
+    ctPopped = true; if (contestMe()) return;
+    var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'ct-dlg';
+    d.innerHTML = '<div class="soc-box" role="dialog" aria-modal="true" aria-label="' + CONTEST.name + '"><span class="tape l"></span><span class="tape r"></span><span class="step">太空竞技场 · 精灵王争霸赛</span><h2>' + CONTEST.name + ' 报名中！</h2>' +
+      '<p>做题家们，比一比谁才是真正的做题大王！报名后等待抽签，抽签时间另行通知。</p><p class="hint">已报名 <b>' + (CT.data.count || 0) + '</b> 人。也可以之后在星图上空间站右边的「太空竞技场」报名。</p>' +
+      '<div class="soc-foot"><button type="button" class="btn ghost" data-ctx="1">稍后再说</button><button type="button" class="btn primary" data-ctgo="1">立即报名</button></div></div>';
+    document.body.appendChild(d);
+    d.addEventListener('click', function (e) {
+      if (e.target === d || e.target.closest('[data-ctx]')) { d.remove(); return; }
+      if (e.target.closest('[data-ctgo]')) { d.remove(); contestSign(); }
+    });
+  }
+  setInterval(ctPopCheck, 3000);
   function coreOpen() { return prog('core').done; }
   function openCore() {
     if (!coreOpen()) { toast('先读完宜昌的支线「三峡能源核心」吧。'); return; }
