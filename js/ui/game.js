@@ -1320,6 +1320,7 @@
     storage: { name: '物资仓储', planet: 'jingchu', dept: '荆门', chapter: '支线 · 物资仓储', side: true, bg: 'storage_p', d: '荆楚号即将抵达芙罗拉星，新船员要去物资仓储领取探索物资。读完后，物资仓储里的「商城」开放。', after: 'board', pos: [50, 62], reward: { exp: 0, energy: 300, items: { cap1: 10 } } },
     brawl: { name: '孝感大厅', planet: 'jingchu', dept: '孝感', chapter: '支线 · 精灵大乱斗', side: true, bg: 'xiaogan', d: 'Dr.黄 在孝感大厅里鼓捣着一台新搬来的机器，听说你身边已经有 3 只精灵了，想让你试试。读完后开放「精灵大乱斗」。', after: 'xiaogan', pos: [76, 56], need: function () { return acc.mons.length >= 3; }, needText: '持有 3 只精灵后开放' },
     draft: { name: '孝感大厅', planet: 'jingchu', dept: '孝感', chapter: '支线 · 竞技征召', side: true, bg: 'xiaogan', d: 'Dr.黄 听说你已经收集了 10 种精灵，神神秘秘地说要教你一种「真正的切磋」。', after: 'xiaogan', pos: [24, 50], need: function () { return speciesN() >= 10; }, needText: '收集 10 种精灵后开放' },
+    core: { name: '三峡能源核心', planet: 'jingchu', dept: '宜昌', chapter: '支线 · 三峡能源核心', side: true, bg: 'cockpit_p', spot: '三峡能源核心', d: '宜昌的能源核心主人日透骨消，好像有事要拜托新船员。读完后开放「星球采矿」：领挖矿钻头、挖矿、换能量。', after: 'board', pos: [32, 62], reward: { energy: 300 } },
     spa: { name: '温泉生活区', planet: 'jingchu', dept: '咸宁', chapter: '支线 · 温泉疗养', side: true, bg: 'cabin_p', d: 'Vanber 发现荆楚号的咸宁居然藏着一片温泉疗养区，非要拉你去泡一泡。读完后开放「温泉疗养」。', after: 'flora1', pos: [30, 62] },
     plant: { name: '生态舱', planet: 'jingchu', dept: '恩施', chapter: '支线 · 伟大的种植园', side: true, bg: 'greenhouse_p', d: 'Threego 在地球上最爱种菜，被大家叫作「叶伯伯」。她把荆楚号生态舱的种植业研究了个遍，迫不及待地想带你参观。读完后开放「太空种植园」。', after: 'flora1', pos: [26, 62], reward: { energy: 200, items: { s_herb: 2 } } },
     travelcat: { name: '山毛榉林', planet: 'flora', chapter: '世界任务 · 旅行猫', side: true, bg: 'fl_beech', spot: '林子深处', d: '独自在芙罗拉星做调研的你，听见山毛榉林深处传来一阵打斗声……读完后，旅行精灵叶子喵会开始在各个星球出现。', after: 'flora2' },
@@ -1349,6 +1350,7 @@
     kl: { name: function () { return '卡莱'; }, color: '#3f6d3a', tall: 0.7, spr: 'kaleo', sprLv: 15 },
     lc: { name: function () { return '叶子喵'; }, color: '#5f9a3e', tall: 0.8, spr: 'leafcat', sprLv: 30 },   // 世界任务「旅行猫」里的叶子喵（戴着翻译器能听懂）
     cy: { name: function () { return '辰爷'; }, color: '#3a4a66', tall: 1.0, img: 'cy' },
+    r: { name: function () { return '日透骨消'; }, color: '#5a6a8a', tall: 1.0, img: 'rtg' },   // 三峡能源核心主人
     ms: { name: function () { return '玛西'; }, color: '#8a5a9a', tall: 0.55, spr: 'mush', sprLv: 10 }   // 戴着翻译器能听懂的玛西（第八段）   // 「常春藤怀克」，常春藤组织的特工（第八段登场）
   };
   var SCRIPT = STORY_SCRIPT;   // 剧本内容见 js/data/story.js
@@ -1361,7 +1363,7 @@
   // 稀有精灵：野外表里标了 rare 的种类。三主宠也算，但这个账号开局选的那只不算。拥有几类按种类去重
   function rareKinds() { var R = rareList(), o = {}; acc.mons.forEach(function (m) { if (R.indexOf(m.sid) >= 0) o[m.sid] = 1; }); return Object.keys(o).length; }
   function planetOpen(P) { return !P.soon && (!P.after || prog(P.after).done); }   // soon：已经放上星图，内容还没做
-  var UNLOCK = { xiaogan: '竞技对战', academy: '黄冈秘鉴', storage: '商城', tea: '茶室', brawl: '精灵大乱斗', tiger2: '泰戈尔 · 普通难度', fl_chal: '芙罗拉星 · 挑战', fl_chal2: '助战精灵', plant: '太空种植园', medal: '授勋馆', spa: '温泉疗养' };
+  var UNLOCK = { core: '星球采矿', xiaogan: '竞技对战', academy: '黄冈秘鉴', storage: '商城', tea: '茶室', brawl: '精灵大乱斗', tiger2: '泰戈尔 · 普通难度', fl_chal: '芙罗拉星 · 挑战', fl_chal2: '助战精灵', plant: '太空种植园', medal: '授勋馆', spa: '温泉疗养' };
   function brawlOpen() { return !!(acc && acc.story && acc.story.brawl && acc.story.brawl.done); }
   function brawlPlayed() { return !!(acc && acc.stats && acc.stats.brawls > 0); }
   // 平衡模式切磋统一的等级；拥有的精灵种类数（「收集」）；是否参加过竞技征召
@@ -1671,7 +1673,7 @@
       (n === '咸宁' ? '<button type="button" class="mk shop' + (spaOpen() ? '' : ' locked') + '"' + (spaOpen() ? ' data-spa="1"' : ' disabled') + ' style="left:66%;top:52%"><span class="mk-dot">' + (spaOpen() ? '泉' : '锁') + '</span><span class="mk-lab"><b>温泉疗养</b><small>' + (spaOpen() ? spaSummary() : '读完支线「温泉疗养」后开放') + '</small></span></button>' : '') +
       (n === '恩施' ? '<button type="button" class="mk shop' + (farmOpen() ? '' : ' locked') + '"' + (farmOpen() ? ' data-farm="1"' : ' disabled') + ' style="left:62%;top:58%"><span class="mk-dot">' + (farmOpen() ? '种' : '锁') + '</span><span class="mk-lab"><b>太空种植园</b><small>' + (farmOpen() ? '种药草，用来做 200血药' : '读完支线「伟大的种植园」后开放') + '</small></span></button>' : '') +
       (n === '黄冈' ? '<button type="button" class="mk shop' + (medalOpen() ? '' : ' locked') + '"' + (medalOpen() ? ' data-medal="1"' : ' disabled') + ' style="left:50%;top:18%"><span class="mk-dot">' + (medalOpen() ? '勋' : '锁') + '</span><span class="mk-lab"><b>授勋馆</b><small>' + (medalOpen() ? '所有称号和获得方式' : '读完支线「授勋馆」后开放') + '</small></span></button>' : '') +
-      (n === '宜昌' ? '<button type="button" class="mk shop" data-core="1" style="left:50%;top:55%"><span class="mk-dot">电</span><span class="mk-lab"><b>三峡能源核心</b><small>找日透骨消 领钻头、换能量</small></span></button>' : '') +
+      (n === '宜昌' ? '<button type="button" class="mk shop' + (coreOpen() ? '' : ' locked') + '"' + (coreOpen() ? ' data-core="1"' : ' disabled') + ' style="left:66%;top:50%"><span class="mk-dot">' + (coreOpen() ? '电' : '锁') + '</span><span class="mk-lab"><b>星球采矿 · 日透骨消</b><small>' + (coreOpen() ? '领钻头、修钻头、换能量' : '读完支线「三峡能源核心」后开放') + '</small></span></button>' : '') +
       (n === '神农架' ? '<button type="button" class="mk shop" data-nursery="1" style="left:50%;top:58%"><span class="mk-dot">育</span><span class="mk-lab"><b>精灵保育仓</b><small>孵化精灵的精元</small></span></button>' : '') +
       (ids.length || n === '黄石' || n === '恩施' || n === '神农架' || n === '咸宁' || n === '宜昌' ? '' : '<p class="area-empty">这里暂时没有剧情。</p>') +
       '<div class="tp-fx" aria-hidden="true"><span>传送至 ' + d[0] + '……</span></div></div>' +
@@ -1932,7 +1934,7 @@
     si = +si; var R = regionById(ex.region), F = R && fields[R.id]; if (!F || ex.fighting || MINE.regions.indexOf(R.id) < 0) return;
     var M0 = mineRec(), key = R.id + ':' + si;
     if (M0.got[key]) { toast('这处矿点今天已经挖过了，明天再来吧。'); return; }
-    if (!drill()) { toast('需要挖矿钻头才能采矿。去荆楚号 · 宜昌的「三峡能源核心」找日透骨消领一个吧。'); return; }
+    if (!drill()) { toast(!coreOpen() ? '这是一处矿点。读完荆楚号 · 宜昌的支线「三峡能源核心」，就能领钻头来挖了。' : '需要挖矿钻头才能采矿。去荆楚号 · 宜昌的「三峡能源核心」找日透骨消领一个吧。'); return; }
     if (drill().dur <= 0) { toast('挖矿钻头的耐久度用完了，去荆楚号 · 宜昌的「三峡能源核心」找日透骨消修一下吧。'); return; }
     if ($('mine-dlg')) return;
     var k = oreKind(si), d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'mine-dlg';
@@ -1971,12 +1973,36 @@
   function lzDlg(lines, btns) {
     var d = document.createElement('div'); d.className = 'soc-dlg npc-dlg';
     d.innerHTML = '<div class="soc-box npc-box" role="dialog" aria-modal="true" aria-label="日透骨消"><span class="tape l"></span><span class="tape r"></span>' +
-      '<img class="npc-face lz-face" src="images/characters/rtg.webp" alt="日透骨消"><div class="npc-say"><span class="step">日透骨消 · 三峡能源核心主人</span>' + lines.map(function (x, i) { return '<p class="' + (i ? 'hint' : 'npc-line') + '">' + x + '</p>'; }).join('') + '</div>' +
+      '<img class="npc-face lz-face" src="' + CHARS.rtg + '" alt="日透骨消"><div class="npc-say"><span class="step">日透骨消 · 三峡能源核心主人</span>' + lines.map(function (x, i) { return '<p class="' + (i ? 'hint' : 'npc-line') + '">' + x + '</p>'; }).join('') + '</div>' +
       '<div class="soc-foot">' + btns.map(function (b, i) { return '<button type="button" class="btn' + (i === btns.length - 1 ? ' primary' : ' ghost') + '" data-lzb="' + i + '"' + (b[2] ? ' disabled' : '') + '>' + esc(b[0]) + '</button>'; }).join('') + '</div></div>';
     document.body.appendChild(d);
     d.addEventListener('click', function (e) { var b = e.target.closest('[data-lzb]'); if (e.target === d || b) { d.remove(); var fn = b && btns[+b.dataset.lzb][1]; if (fn) fn(); } });
   }
+  /* ---------- 新支线提醒（2026-10-19）：有新开放的支线时，进游戏弹一次窗告诉玩家 ----------
+   * acc.sideSeen 记着已经提醒过的支线；第一次运行时把现有的支线都记为看过（这次新加的 SIDE_NEW 除外） */
+  var SIDE_NEW = ['core'];
+  function sideCheck() {
+    if (!ready() || !acc.introDone || ex.fighting || ex.view === 'vn' || document.querySelector('.soc-dlg') || ($('battle') && !$('battle').hidden)) return;
+    if (!acc.sideSeen) { acc.sideSeen = {}; Object.keys(SITES).forEach(function (id) { if (SITES[id].side && SIDE_NEW.indexOf(id) < 0) acc.sideSeen[id] = 1; }); save(); }
+    var nw = Object.keys(SITES).filter(function (id) { var S = SITES[id]; return S.side && !acc.sideSeen[id] && !prog(id).done && unlocked(id) && (!S.dept || deptOpen(S.dept)); });
+    if (!nw.length) return;
+    nw.forEach(function (id) { acc.sideSeen[id] = 1; }); save();
+    var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'side-dlg';
+    d.innerHTML = '<div class="soc-box side-new" role="dialog" aria-modal="true" aria-label="新的支线任务"><span class="tape l"></span><span class="tape r"></span><span class="step">新的支线任务</span><h2>有新的支线任务开放了！</h2><ul>' +
+      nw.map(function (id) { var S = SITES[id], P = planetOf(S.planet); return '<li><b>' + esc(S.chapter) + '</b><small>' + esc(P ? P.name : '') + (S.dept ? ' · ' + S.dept + ' · ' + (DEPTS[S.dept] ? DEPTS[S.dept][0] : '') : ' · ' + S.name) + '</small><p class="hint">' + esc(S.d) + '</p></li>'; }).join('') +
+      '</ul><div class="soc-foot"><button type="button" class="btn ghost" data-sidex="1">知道了</button><button type="button" class="btn primary" data-sidego="' + nw[0] + '">去看看</button></div></div>';
+    document.body.appendChild(d);
+    d.addEventListener('click', function (e) {
+      if (e.target === d || e.target.closest('[data-sidex]')) { d.remove(); return; }
+      var g = e.target.closest('[data-sidego]'); if (!g) return; d.remove();
+      var S = SITES[g.dataset.sidego]; ex.planet = S.planet;
+      if (S.dept) { go('explore'); teleport(S.dept); } else { ex.view = 'sites'; go('explore'); renderExplore(); }
+    });
+  }
+  setInterval(sideCheck, 3000);
+  function coreOpen() { return prog('core').done; }
   function openCore() {
+    if (!coreOpen()) { toast('先读完宜昌的支线「三峡能源核心」吧。'); return; }
     var M0 = mineRec(), left = MINE.cap - M0.ex, cu = acc.items.m_cu || 0, fe = acc.items.m_fe || 0;
     lzDlg(['欢迎来到三峡能源核心，我是这里的主人日透骨消。荆楚号上的每一度电，都要从这里过。',
       '最近能源有点紧张：芙罗拉星、坎伯兰星的野外藏着「马亚尔煤炭」和「马亚尔铁矿」，挖回来交给我，我按煤炭 ' + MINE.price.m_cu + '、铁矿 ' + MINE.price.m_fe + ' 能量一块跟你换（每天最多换 ' + fmt(MINE.cap) + ' 能量，今天还能换 ' + fmt(Math.max(0, left)) + '）。',

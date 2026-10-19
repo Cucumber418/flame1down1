@@ -221,6 +221,7 @@ var CHARS = {
   "pf_shy": "images/characters/pf_shy.webp",
   // 辰爷（代号「常春藤怀克」，常春藤组织特工）：2026-10-18 用原型照片直接转成本作画风（和张卫国同一路子，tools/stylize_char.py）；差分是加了漫画符号的版本：大笑、恼火、慌张
   "cy": "images/characters/cy.webp?v=3",
+  "rtg": "images/characters/rtg.webp",
   "cy_laugh": "images/characters/cy_laugh.webp?v=3",
   "cy_angry": "images/characters/cy_angry.webp?v=3",
   "cy_shock": "images/characters/cy_shock.webp?v=3"

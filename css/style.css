@@ -2298,3 +2298,10 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .npc-box .soc-foot { grid-column: 1 / -1; }
 .cu .ore-ic, .fe .ore-ic { width: 52px; height: 52px; }
 .wf-ore { z-index: 120; }
+/* 日透骨消：完整立绘，不再是圆形头像 */
+.npc-box img.lz-face { width: 150px; height: auto; max-height: 280px; border-radius: 0; border: 0; background: none; object-fit: contain; object-position: bottom; align-self: end; display: block; }
+@media (max-width: 560px) { .npc-box img.lz-face { width: 90px; } }
+/* 新支线提醒 */
+.side-new li { list-style: none; padding: 8px 10px; margin: 0 0 8px; background: #fff; border: 1.5px solid var(--rule); border-left: 4px solid var(--red); border-radius: 8px; }
+.side-new li b { display: block; } .side-new li small { color: #777; }
+.side-new ul { padding: 0; margin: 0 0 10px; max-height: 50vh; overflow-y: auto; }
