@@ -1197,7 +1197,7 @@ var BOSS_FX = [
   { k: 'solemn', t: '肃穆', h: '肃穆', d: function () { return '对手只能派出一只精灵单挑'; } },
   { k: 'reaper', t: '死神', h: '死神', d: function () { return '所有技能先制 +1，造成的伤害提升 25%；对方每损失 1% 最大体力，伤害再提升 2%'; } },
   { k: 'humus', t: '腐殖质', h: '腐殖质', d: function (m) { return '每回合结束时随机给对手附加 1 项：速度 −1 / 物攻 −1 / 特攻 −1 / 寄生 3 回合 / 瘴气 +4 层' + (m.boss && m.boss.rebirthKnown ? '（「枯萎中蜕生」发动后变成「腐殖乐园」，同时附加其中 2 项）' : ''); } },
-  { k: 'weed', t: '除草机', h: '除草机', d: function (m) { var d0 = (m.boss && m.boss.weedDmg) || 50; return '每回合结束时附带 ' + d0 + ' 点固定伤害，每回合 +2（对草系精灵伤害翻倍）' + (m.boss && m.boss.rebirthKnown ? '。「枯萎中蜕生」发动后变成「抹除装置」：伤害定格在当时数值的 1.5 倍，不再增长' : ''); } },
+  { k: 'weed', t: '除草机', h: '除草机', d: function (m) { var d0 = (m.boss && m.boss.weedDmg) || 30; return '每回合结束时附带 ' + d0 + ' 点固定伤害，每回合 +2（对草系精灵伤害翻倍）' + (m.boss && m.boss.rebirthKnown ? '。「枯萎中蜕生」发动后变成「抹除装置」：伤害定格在当时数值的 1.5 倍，不再增长' : ''); } },
   { k: 'rebirth', t: '枯萎中蜕生', h: '枯萎中蜕生', hide: function (m) { return !m.boss.rebirthKnown; }, d: function () { return '体力首次低于 2500 时发动：恢复 1000 体力，并对敌方造成其最大体力 30% 的固定伤害；「腐殖质」「除草机」从此分别变成「腐殖乐园」「抹除装置」'; } }
 ];
 /* 困难泰戈尔「东北的往事」：第一次被击败时不屈复活（只复活一次）
@@ -1262,7 +1262,7 @@ function rebirthBarren(S, evs, j, t) {
   var dmg = Math.floor(foe.maxhp * 0.3);
   loseHp(S, evs, i, dmg, nm(t) + '释放出毁灭性的力量，对' + nm(foe) + '造成了 ' + dmg + ' 点固定伤害');
   b.humusN = 2;
-  b.weedDmg = Math.round((b.weedDmg || 50) * 1.5);
+  b.weedDmg = Math.round((b.weedDmg || 30) * 1.5);
   b.weedFrozen = 1;
   log(S, evs, '「腐殖质」化为了「腐殖乐园」：此后每回合会同时附加 2 项负面效果', 'fxl');
   log(S, evs, '「除草机」化为了「抹除装置」：固定伤害定格在 ' + b.weedDmg + '，不会再增长', 'fxl');
@@ -1288,10 +1288,10 @@ function humusField(S, evs) {
 function weedField(S, evs) {
   var b = bossOf(S); if (!b || !b.boss || !b.boss.weed || b.fainted) return;
   var m = act(S, 0); if (m.fainted) return;
-  var label = b.boss.weedFrozen ? '抹除装置' : '除草机', dmg = b.boss.weedDmg || 50;
+  var label = b.boss.weedFrozen ? '抹除装置' : '除草机', dmg = b.boss.weedDmg || 30;
   if (typesOf(m).indexOf('草') >= 0) dmg *= 2;
   loseHp(S, evs, 0, dmg, nm(b) + '的「' + label + '」对' + nm(m) + '造成了 ' + dmg + ' 点固定伤害');
-  if (!b.boss.weedFrozen) b.boss.weedDmg = (b.boss.weedDmg || 50) + 2;
+  if (!b.boss.weedFrozen) b.boss.weedDmg = (b.boss.weedDmg || 30) + 2;
 }
 function miasmaField(S, evs) {
   var b = bossOf(S); if (!b || !b.boss.mia || b.fainted) return;
