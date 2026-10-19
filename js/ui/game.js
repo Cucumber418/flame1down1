@@ -19,7 +19,7 @@
   /* ---------- 存档 ---------- */
   function valid(a) { return a && typeof a.name === 'string' && Array.isArray(a.mons) && Array.isArray(a.teams); }
   // 隐藏技能只能用道具解锁的种族（2026-10-18，说明见 avail 上方）；读存档时就要用到，所以放在最前面
-  var HL_GATED = { mush: 1, wind: 1, kaleo: 1, pede: 1, gorgon: 1, hephaestus: 1, firemouse: 1, leigong: 1, faraday: 1, frost: 1, tagore: 1, barren: 1, pluto: 1, leaf: 1, squid: 1, shroom: 1, moon: 1, bone: 1 };
+  var HL_GATED = { mush: 1, wind: 1, kaleo: 1, pede: 1, gorgon: 1, hephaestus: 1, firemouse: 1, leigong: 1, faraday: 1, frost: 1, tagore: 1, barren: 1, pluto: 1, leaf: 1, squid: 1, shroom: 1, moon: 1, bone: 1, siren: 1 };
   window.HL_GATED = HL_GATED;   // battle.js 里用来跳过战斗中领悟
   try { var raw = JSON.parse(localStorage.getItem(KEY) || 'null'); if (valid(raw)) acc = raw; } catch (e) {}
   try { var pg = localStorage.getItem(PKEY); if (pg) page = pg; } catch (e) {}
@@ -44,8 +44,8 @@
       if (Array.isArray(m.moves)) m.moves = m.moves.map(moveName).filter(function (n, i, a) { return a.indexOf(n) === i; });   // 改过名字的技能换成新名字（合并后去重）
       if (Array.isArray(m.hl)) m.hl = m.hl.map(moveName);
       if (!Array.isArray(m.hl)) m.hl = (m.moves || []).filter(function (n) { return M[n] && M[n].hidden && LEARN[n]; });
-      if (!(acc.hlV >= 1) && HL_GATED[m.sid] && m.sid !== 'moon' && m.sid !== 'bone' && m.hl.length) { acc.hlReset = (acc.hlReset || 0) + m.hl.length; m.hl = []; }   // 2026-10-18：改成道具解锁，以前领悟的要重新学
-      if ((m.sid === 'moon' || m.sid === 'bone') && m.hl.length) {   // 小月亮、骨刃也改成道具解锁，但以前领悟过的保留：并进这一族共用的解锁表
+      if (!(acc.hlV >= 1) && HL_GATED[m.sid] && m.sid !== 'moon' && m.sid !== 'bone' && m.sid !== 'siren' && m.hl.length) { acc.hlReset = (acc.hlReset || 0) + m.hl.length; m.hl = []; }   // 2026-10-18：改成道具解锁，以前领悟的要重新学
+      if ((m.sid === 'moon' || m.sid === 'bone' || m.sid === 'siren') && m.hl.length) {   // 小月亮、骨刃、塞壬也改成道具解锁，但以前领悟过的保留：并进这一族共用的解锁表
         if (!acc.hlSp) acc.hlSp = {}; if (!acc.hlSp[m.sid]) acc.hlSp[m.sid] = [];
         m.hl.forEach(function (n) { if (acc.hlSp[m.sid].indexOf(n) < 0) acc.hlSp[m.sid].push(n); });
       }
@@ -818,7 +818,7 @@
     brTwig: { name: '生长枯枝', sid: null, sids: ['barren'], kind: 'jade', cost: 100, sd: '困难难度荒芜的专属道具。可以让荒芜领悟隐藏技能，也能提高荒芜的等级上限。', d: '从荒芜身上折下的枯枝，枝头却冒出了一点新芽。100 个可以让荒芜一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；荒芜达到 LV70 后，也用它解锁 LV75（500 个）、LV80（1000 个）的等级上限。首次击败困难难度的荒芜得 80 个，每周挑战每次击败得 50 个。', none: '你还没有荒芜。击败简单难度的首领「荒芜」可以得到一只。' },
     deathTok: { name: '死神代币', sid: null, sids: ['pluto'], kind: 'jade', cost: 1, d: '击败先驱之塔第 60 层的死神获得，一个账号最多 3 颗。1 颗可以让帕努托尔一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；先驱之塔的代币商店里，兑换「帕努托尔的精元」也要用到它。', none: '你还没有帕努托尔。在先驱之塔的代币商店里，用 3000 先驱代币 + 1 颗死神代币可以兑换「帕努托尔的精元」。' },
     // 各星球特产（2026-10-18）：和芙罗拉玉一样，100 个让该星球的普通野生精灵一系领悟一个隐藏技能；也用来解锁同属性精灵的等级上限
-    kbDrop: { name: '不化水滴', sid: null, sids: ['pede', 'gorgon'], kind: 'jade', cost: 100, gem: '水', sd: '坎伯兰星的特产。可以让坎伯兰星的普通野生精灵领悟隐藏技能，也能提高水系精灵的等级上限。', d: '坎伯兰星浅海里凝成的水滴，永远不会蒸发。100 个可以让恩佩德、戈耳贡一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；水系精灵达到 LV70 后，也可以用它解锁更高的等级上限。在坎伯兰星的野外场景里每天有机会捡到。', none: '你还没有恩佩德或戈耳贡（进化前的形态也算）。去坎伯兰星的水面、浅水区或深海区捕捉吧。' },
+    kbDrop: { name: '不化水滴', sid: null, sids: ['pede', 'gorgon', 'siren'], kind: 'jade', cost: 100, gem: '水', sd: '坎伯兰星的特产。可以让坎伯兰星的普通野生精灵领悟隐藏技能，也能提高水系精灵的等级上限。', d: '坎伯兰星浅海里凝成的水滴，永远不会蒸发。100 个可以让恩佩德、戈耳贡、塞壬一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；水系精灵达到 LV70 后，也可以用它解锁更高的等级上限。在坎伯兰星的野外场景里每天有机会捡到。', none: '你还没有恩佩德、戈耳贡或塞壬（进化前的形态也算）。去坎伯兰星捕捉吧。' },
     ppAsh: { name: '火山灰烬', sid: null, sids: ['hephaestus', 'firemouse'], kind: 'jade', cost: 100, gem: '火', sd: '庞贝星的特产。可以让庞贝星的普通野生精灵领悟隐藏技能，也能提高火系精灵的等级上限。', d: '庞贝星火山喷出的灰烬，摸上去还是温热的。100 个可以让赫菲斯托斯、费尔茅斯一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；火系精灵达到 LV70 后，也可以用它解锁更高的等级上限。在庞贝星的野外场景里每天有机会捡到。', none: '你还没有赫菲斯托斯或费尔茅斯（进化前的形态也算）。去庞贝星捕捉吧。' },
     ltOrb: { name: '闪电球体', sid: null, sids: ['leigong', 'faraday'], kind: 'jade', cost: 100, gem: '电', sd: '莱汀陨石带的特产。可以让陨石带的普通野生精灵领悟隐藏技能，也能提高电系精灵的等级上限。', d: '雷暴里凝成的一团电光，握在手里噼啪作响。100 个可以让雷公、法拉第一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；电系精灵达到 LV70 后，也可以用它解锁更高的等级上限。在莱汀陨石带的野外场景里每天有机会捡到。', none: '你还没有雷公或法拉第（进化前的形态也算）。去莱汀陨石带捕捉吧。' },
     whFrost: { name: '永久冻土', sid: null, sids: ['frost'], kind: 'jade', cost: 100, gem: '冰', sd: '白之星的特产。可以让白之星的普通野生精灵领悟隐藏技能，也能提高冰系精灵的等级上限。', d: '白之星冰原下挖出的冻土，一万年都不会化开。100 个可以让霜冻之冠一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；冰系精灵达到 LV70 后，也可以用它解锁更高的等级上限。在白之星的野外场景里每天有机会捡到。', none: '你还没有霜冻之冠（进化前的形态也算）。去白之星的永冻冰原捕捉吧。' },
@@ -843,7 +843,9 @@
     e_leafcat: { name: '叶子喵的精元', d: '用 5 片叶子喵的叶片凝成的精元。放进神农架 · 精灵保育仓，孵化 8 小时后会诞生一只叶子小小喵。', hatch: { sid: 'leafcat', lv: 1, min: 480 } }
   };
   MATS.e_pluto = { name: '帕努托尔的精元', d: '在先驱之塔的代币商店兑换的精元。放进神农架 · 精灵保育仓，孵化 12 小时后会诞生一只帕努。', hatch: { sid: 'pluto', lv: 1, min: 720 } };
-  var MAT_ORDER = ['m_lcleaf', 'e_leafcat', 'e_pluto'];
+  MATS.m_hfhorn = { name: '赫菲角片', d: '赫菲斯一系身上掉下来的角片，还带着一点余温。60 片可以在黄石 · 冶炼坊合成「奇声号角」。' };
+  MATS.m_horn = { name: '奇声号角', d: '用 60 片赫菲角片做成的号角，吹起来声音很奇怪。在坎伯兰星 · 水面的「冥岛」吹响，会引来一只可以捕捉的塞米；和它进入战斗时，号角就会用掉。' };
+  var MAT_ORDER = ['m_lcleaf', 'e_leafcat', 'e_pluto', 'm_hfhorn', 'm_horn'];
   // 太空种植园只种药草。min 是成熟分钟，yield 是收获数量。收获时退回种子。
   var SEEDS = {
     s_herb: { name: '药草种子', d: '生态舱里种的药草籽。种下去要 8 小时，收获时这颗种子会退回来。', crop: 'c_herb', min: 480, yield: 50 },
@@ -1904,6 +1906,38 @@
     if (acc.riceBowl || !(acc.items.c_bowl > 0)) return '';
     return '<button type="button" class="wf-bowl put" data-bowl="1"><span class="wf-bowl-ic" aria-hidden="true">' + H.itemIcon('c_bowl') + '</span><span>放下一碗饭</span></button>';
   }
+  /* ---------- 奇声号角 → 塞米 ----------
+   * 塞壬一系不会自然出现。击败赫菲斯一系掉 3–6 片「赫菲角片」（航行日志每天还能领 12–15 片），60 片在冶炼坊合成「奇声号角」。
+   * 在坎伯兰星 · 水面的「冥岛」场景吹响号角，场景里会来一只可以捕捉的塞米；和它进入战斗时号角用掉（没打就离开，号角还在）。 */
+  var HORN = { sid: 'siren', lv: 12, rate: 0.4, bg: 'kb_isle', drop: [3, 6], day: [12, 15], need: 60 };
+  function hornMonIn(F, si) { return F.scenes[si] && F.scenes[si].slots.some(function (sl) { return sl.mon && sl.mon.horn && !sl.mon.out; }); }
+  function hornHTML(R, F, si) {
+    var sc = F.scenes[si]; if (!sc || sc.bgKey !== HORN.bg || !(acc.items.m_horn > 0) || hornMonIn(F, si)) return '';
+    return '<button type="button" class="wf-bowl put" data-horn="1"><span class="wf-bowl-ic" aria-hidden="true">📯</span><span>吹响奇声号角（' + acc.items.m_horn + '）</span></button>';
+  }
+  function blowHorn() {
+    var R = regionById(ex.region), F = R && fields[R.id]; if (!F) return;
+    var sc = F.scenes[F.scene]; if (!sc || sc.bgKey !== HORN.bg || !(acc.items.m_horn > 0) || hornMonIn(F, F.scene)) return;
+    var sl = sc.slots.filter(function (x) { return !x.mon; })[0] || sc.slots[0];
+    var w = { sid: HORN.sid, lv: [HORN.lv, HORN.lv], rate: HORN.rate, tag: '中等', rare: true, w: 0 };
+    var m = spawnFieldMon(R, sl, { w: w, lv: HORN.lv }); m.id = ++F.seq; m.horn = true; m.die = Date.now() + 10 * 60000;   // 来了就待 10 分钟
+    sl.mon = m; sl.next = 0;
+    toast('呜——奇怪的号角声在冥岛上空回荡……水面下传来细细的歌声，一只塞米游了过来！');
+    renderField();
+  }
+  function hornDrop() { return HORN.drop[0] + Math.floor(Math.random() * (HORN.drop[1] - HORN.drop[0] + 1)); }
+  function hornDayGot() { return acc.hornDay === dayNum(Date.now()); }
+  function hornLogHTML() {
+    var f = form({ sid: HORN.sid, lv: HORN.lv }), got = hornDayGot(), have = acc.items.m_hfhorn || 0;
+    return '<article class="log-card rice"><span class="tape l"></span><span class="chip log-tag">新活动</span><h3>冥岛的歌声</h3>' +
+      '<div class="pick-row"><div class="pick-art rice-art"><img src="' + f.img + '" alt="' + esc(f.name) + '"></div><div class="pick-txt">' +
+      '<p>塞米小得像一颗米粒，平时不会出现在野外。不过听到奇怪的号角声，它就会好奇地游过来……</p>' +
+      '<ol class="rice-steps"><li>在<b>庞贝星</b>击败野生的<b>赫菲斯</b>一系，每只掉落 <b>3–6 片赫菲角片</b>；这里每天还能领 <b>12–15 片</b>。</li>' +
+      '<li>到黄石 · <b>冶炼坊</b>，用 <b>60 片赫菲角片</b>合成<b>奇声号角</b>。</li>' +
+      '<li>在<b>坎伯兰星 · 水面</b>的「<b>冥岛</b>」吹响号角，会来一只可以捕捉的<b>塞米</b>。和它进入战斗时，号角就会用掉。</li></ol>' +
+      '</div></div><p class="hint">你现在有赫菲角片 ' + have + ' 片' + (acc.items.m_horn ? '、奇声号角 ' + acc.items.m_horn + ' 个' : '') + '。塞壬一系的隐藏技能用「不化水滴」解锁。</p>' +
+      '<button type="button" class="btn' + (got ? '' : ' primary') + '" data-hornday="1"' + (got ? ' disabled' : '') + '>' + (got ? '今天的赫菲角片已经领过了' : '领取今天的赫菲角片') + '</button></article>';
+  }
   function putBowl() {
     var R = regionById(ex.region), F = R && fields[R.id];
     if (!F || RICE.regions.indexOf(R.id) < 0 || acc.riceBowl || !(acc.items.c_bowl > 0)) return;
@@ -2005,8 +2039,8 @@
     m.y = Math.max(48, Math.min(88, m.hy + Math.sin(m.t * 0.85) * m.r * 0.5));
     if (m.x > prev + 0.02) m.face = 1; else if (m.x < prev - 0.02) m.face = -1;
   }
-  function spawnFieldMon(R, slot) {
-    var hit = riceSpawn(R, slot) || rollWild(R.pool, (typeof WILD_SCENE !== 'undefined' && WILD_SCENE[slot.bgKey]) || null), shiny = rollShiny(hit.w);
+  function spawnFieldMon(R, slot, force) {
+    var hit = force || riceSpawn(R, slot) || rollWild(R.pool, (typeof WILD_SCENE !== 'undefined' && WILD_SCENE[slot.bgKey]) || null), shiny = rollShiny(hit.w);
     var corrupt = R.planet === 'flora' && floraFallen();
     if (corrupt) hit = { w: hit.w, lv: 40 + Math.floor(Math.random() * 11) };   // 瘴气化后：强制 LV40–50
     var f = form({ sid: hit.w.sid, lv: hit.lv, shiny: shiny });
@@ -2080,7 +2114,7 @@
     var spareTip = R.pool && R.planet === 'flora' && spareActive() ? '<div class="spare-note"><span class="tape l"></span><b>主线任务 · 引出猎杀者</b>　手下留情：这些精灵不会倒下，体力剩 1 点时就会逃走，算作「假装击败」。已完成 <b>' + spareN() + ' / ' + SPARE_N + '</b>。</div>' : '';
     $('pg-explore').innerHTML = exHead(R.pool ? '点击场景里走动的精灵，就会和它开战。' : '这里没有野生精灵。点击场景里的首领就能挑战它。') +
       '<div class="crumb"><button type="button" class="btn ghost" id="field-back">‹ 返回' + esc(P.name) + '</button><b>' + esc(P.name) + ' · ' + esc(R.name) + '</b>' + (n > 1 ? '<span class="hint">场景 ' + (F.scene + 1) + ' / ' + n + (BG_NAME[sc.bgKey] ? ' · ' + BG_NAME[sc.bgKey] : '') + '</span>' : '') + '</div>' +
-      invLine() + spareTip + '<div class="wf-scene' + (sc.corrupt ? ' miasma-bg' : '') + '" id="wf-scene">' + bg + mons + gatherNodesHTML(R.id, F.scene, n) + jadeHTML(R.id, F.scene) + riceBowlHTML(R, F.scene) + travelHTML(R, F.scene) + fieldBossHTML(R) + nav + '</div>' +
+      invLine() + spareTip + '<div class="wf-scene' + (sc.corrupt ? ' miasma-bg' : '') + '" id="wf-scene">' + bg + mons + gatherNodesHTML(R.id, F.scene, n) + jadeHTML(R.id, F.scene) + riceBowlHTML(R, F.scene) + hornHTML(R, F, F.scene) + travelHTML(R, F.scene) + fieldBossHTML(R) + nav + '</div>' +
       (R.pool ? '<p class="hint">点左右两边的箭头可以切换场景。每只精灵在自己的一小片范围里走动，待一会儿就会离开，过一阵又会有新的精灵出现，各走各的。点中哪只，就和哪只对战；打完、抓到或逃走之后，这只离开，过一会儿会有新的一只补上。采集点固定在场景里，每个每天可以采集 1 次：芙罗拉、坎伯兰、庞贝采到星砂 ×12，莱汀和白之星采到星核 ×1。' + (RICE.regions.indexOf(R.id) >= 0 ? '带着「一碗饭」来的话，可以在任意一个场景里放下它。' : '') + '</p>' : '');
     startFieldMove();
   }
@@ -2121,6 +2155,7 @@
     var sc = F.scenes[F.scene], m = null; sc.slots.forEach(function (sl) { if (sl.mon && sl.mon.id === id) m = sl.mon; }); if (!m || m.out) return;
     var P = planetOf(R.planet);
     var o = { sid: m.sid, lv: m.lv, rate: m.rate, shiny: shinyV(m.shiny), bg: sc.bg || null, back: R.name, where: P.name + ' · ' + R.name, fieldId: m.id, fieldRid: R.id, bait: !!m.bait, flora: R.planet === 'flora' };
+    if (m.horn && acc.items.m_horn > 0) { acc.items.m_horn--; save(); o.where += ' · 号角引来的塞米'; }   // 进入战斗：号角用掉
     if (m.corrupt) { o.corrupt = true; o.miasma = 10; o.noCatch = true; o.foe = '瘴气侵蚀的狂暴精灵'; o.where += ' · 瘴气异变'; }
     else if (R.planet === 'flora' && purgeActive() && Math.random() < PURGE.chance) { o.taint = true; o.miasma = 5; o.noCatch = true; o.foe = '被瘴气污染的野生精灵'; o.where += ' · 瘴气精灵'; }
     if (R.planet === 'flora' && spareActive() && !m.corrupt) { o.spare = true; o.where += ' · 手下留情'; }
@@ -2190,6 +2225,7 @@
           msg.push('击败了旅行精灵叶子喵！获得累积经验 ×' + fmt(TRAVEL.exp) + (lf ? '，她留下了一片「叶子喵的叶片」' : '') + '。');
         }
         if (o.travel) setTimeout(function () { travelDlg(pickOne(downs && downs.length ? TRAVEL_TALK.win : res === 'lose' ? TRAVEL_TALK.lose : TRAVEL_TALK.quit), [['知道了', null]]); }, 700);   // 打完夸一句；她会留在原地，满 20 分钟才走
+        if (o.sid === 'hephaestus' && downs && downs.length) { var hn = 0; downs.forEach(function () { hn += hornDrop(); }); giveItems({ m_hfhorn: hn }); msg.push('它掉下了赫菲角片 ×' + hn + '，已放入储存箱（60 片可以合成奇声号角）。'); }
         if (o.bait && (res === 'caught' || (downs && downs.length))) { acc.riceBowl = null; msg.push('放在熔岩原的那碗米饭被吃得一粒不剩。'); }
         if (o.flora && downs && downs.length) {   // 芙罗拉星野外：每击败一只，10% 掉落水稻种子
           var seeds = 0; downs.forEach(function () { if (Math.random() < RICE.seedDrop) seeds++; });
@@ -3443,7 +3479,7 @@
     var wait = on ? '' : (function () { var t = new Date(now); t.setHours(MYSTERY.from, 0, 0, 0); var m = Math.max(0, Math.round((t - now) / 60000)); return '距离今天的活动开始还有 ' + Math.floor(m / 60) + ' 小时 ' + (m % 60) + ' 分钟'; })();
     $('pg-log').innerHTML = '<div class="page-head"><h2 class="sec">航行日志</h2><p class="hint">荆楚号的公告板：更新公告、限时活动、每日任务和新首领。</p></div>' +
       '<div class="log-grid">' + '<article class="log-card wide qq-card"><span class="tape l"></span><span class="tape r"></span><div class="qq-txt"><span class="chip log-tag">船员交流</span><h3>QQ 群：<b class="qq-no">' + QQ_GROUP + '</b></h3><p class="hint">攻略、组队切磋、bug 反馈、新精灵立绘抢先看，都在群里。</p></div><button type="button" class="btn primary" data-copyqq="1">复制群号</button></article>' + changelogHTML() +
-      pwCardHTML('log') + barrenLogHTML() + travelLogHTML() + pickHTML() + riceLogHTML() +   // 立绘更新投票已结束移除（2026-10-17）；荒芜放在更新公告正下方
+      pwCardHTML('log') + barrenLogHTML() + travelLogHTML() + pickHTML() + hornLogHTML() + riceLogHTML() +   // 立绘更新投票已结束移除（2026-10-17）；荒芜放在更新公告正下方
       '<article class="log-card ev"><span class="tape l"></span><span class="chip log-tag">限时活动</span><h3>神秘精灵出没</h3>' +
         '<p>每天 <b>16:00–24:00</b>，在星际探索的任何场景，都有 <b>3%</b> 的概率刷出一只神秘精灵！</p><p class="hint">它是什么？只有遇到过的人才知道。</p>' +
         '<p class="log-st ' + (on ? 'on' : '') + '">' + (on ? '活动进行中，今天 24:00 结束' : wait) + '</p></article>' +
@@ -3525,6 +3561,7 @@
   }
   $('pg-log').addEventListener('click', function (e) {
     var c = e.target.closest('[data-dclaim]'); if (c) { claimDaily(+c.dataset.dclaim); renderLog(); return; }
+    var hd = e.target.closest('[data-hornday]'); if (hd && !hd.disabled && ready() && !hornDayGot()) { var hk = HORN.day[0] + Math.floor(Math.random() * (HORN.day[1] - HORN.day[0] + 1)); acc.hornDay = dayNum(Date.now()); giveItems({ m_hfhorn: hk }); save(); toast('领取了赫菲角片 ×' + hk + '，已放入储存箱。'); renderLog(); return; }
     var ap = e.target.closest('[data-avpick]');
     if (ap && !ap.disabled && AV.data) {
       var k = ap.dataset.avpick, P = AV.picks || (AV.picks = []), i = P.indexOf(k);
@@ -4110,7 +4147,8 @@
     { id: 'pot200', out: { pot200: 1 }, need: { c_herb: 2 } },
     { id: 'bowl', out: { c_bowl: 1 }, need: { c_rice: 500 } },
     { id: 'lcEssence', out: { e_leafcat: 1 }, need: { m_lcleaf: 5 } },
-    { id: 'formDev', out: { formDev: 1 }, need: { g_core: 6, g_sand: 300 } }
+    { id: 'formDev', out: { formDev: 1 }, need: { g_core: 6, g_sand: 300 } },
+    { id: 'horn', out: { m_horn: 1 }, need: { m_hfhorn: 60 } }
   ];
   var FORGE_Q = 120;
   function forgeOf(id) { for (var i = 0; i < FORGE.length; i++) if (FORGE[i].id === id) return FORGE[i]; return null; }
@@ -4146,7 +4184,7 @@
         '<div class="qty"><button type="button" class="btn ghost" data-fq="' + r.id + '|-1" aria-label="减少"' + (q <= 1 ? ' disabled' : '') + '>−</button><span aria-live="polite">' + q + '</span><button type="button" class="btn ghost" data-fq="' + r.id + '|1" aria-label="增加"' + (q >= Math.min(FORGE_Q, Math.max(1, max)) ? ' disabled' : '') + '>+</button></div>' +
         '<button type="button" class="btn primary" data-smelt="' + r.id + '"' + (ok ? '' : ' disabled') + '>' + (ok ? '合成' : '材料不足') + '</button></div></article>';
     }).join('');
-    $('pg-explore').innerHTML = exHead('星砂合成加强捕捉装置，星核合成华为捕捉装置，药草合成 200血药，米饭盛成一碗饭，叶子喵的叶片凝成精元，星核和星砂还能做形态切换装置。这些都不在商城出售。') +
+    $('pg-explore').innerHTML = exHead('星砂合成加强捕捉装置，星核合成华为捕捉装置，药草合成 200血药，米饭盛成一碗饭，叶子喵的叶片凝成精元，星核和星砂还能做形态切换装置，赫菲角片做奇声号角。这些都不在商城出售。') +
       '<div class="crumb"><button type="button" class="btn ghost" id="forge-back">‹ 返回冶炼工坊</button><b>黄石 · 冶炼坊</b></div>' +
       stock + '<div class="shop-grid">' + cards + '</div>';
   }
@@ -4850,6 +4888,7 @@
     if (b.dataset.gather != null && b.dataset.gather !== '') { gatherAt(+b.dataset.gather); return; }
     if (b.dataset.jade != null) { jadeAt(+b.dataset.jade); return; }
     if (b.dataset.bowl) { putBowl(); return; }
+    if (b.dataset.horn) { blowHorn(); return; }
     if (b.dataset.travel) { engageTravel(+b.dataset.travel); return; }
     if (b.dataset.wfid) { engageField(+b.dataset.wfid); return; }
     if (b.dataset.wfnav) { fieldNav(+b.dataset.wfnav); return; }
@@ -5259,6 +5298,8 @@
       }
       if (ex.view === 'boss' && BOSSES[ex.boss] && BOSSES[ex.boss].planet === 'flora') return 'flora';
       if (ex.view === 'field' && fields[ex.region] && fields[ex.region].scenes) { var sc_ = fields[ex.region].scenes[fields[ex.region].scene]; if (sc_ && sc_.bgKey === 'kb_temple') return 'temple'; }   // 坎伯兰星 · 古代神殿
+      if (ex.view === 'sites' && ex.planet === 'kamble') return 'kb';   // 坎伯兰星界面
+      if (ex.view === 'field' && regionById(ex.region) && regionById(ex.region).planet === 'kamble') return ex.region === 'kb_sea' ? 'kbShallow' : 'kb';
     }
     return 'ui';
   }
