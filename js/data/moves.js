@@ -124,7 +124,7 @@ var M = {
   顿悟星盘: { type: '超能', cat: '变化', hidden: true, selfStage: { spa: 1, spe: 1 }, custom: 'nextCrit', pp: 10, d: '提升1级特攻、速度，下回合必定致命一击' },
   刹那灭杀: { type: '超能', cat: '特攻', power: 105, crit: 'high', hidden: true, d: '威力105，更容易致命一击' },
 
-  // —— 法拉第（电）
+  // —— 炽雷天使（电，原法拉第）
   电球: { type: '电', cat: '特攻', power: 50, d: '威力50' },
   电磁波: { type: '电', cat: '变化', status: { k: '麻痹', min: 2, max: 3, chance: 0.5 }, d: '50%概率使对方麻痹2-3回合' },
   屏障: { type: '普通', cat: '变化', selfStage: { spd: 1 }, d: '提升1级特防' },
