@@ -767,6 +767,9 @@
     var f = document.createElement('div'); f.className = 'float ' + (cls || ''); f.textContent = text;
     $('mon' + i).appendChild(f); setTimeout(function () { f.remove(); }, 950);
   }
+  // 伤害数字前缀（2026-10-20）：克制 / 抵抗 / 暴击、暴击且克制、暴击但抵抗
+  function hitLabel(e) { var s = e.eff > 1 ? '克制' : e.eff > 0 && e.eff < 1 ? '抵抗' : ''; return e.crit ? '暴击' + (s === '克制' ? '且克制' : s === '抵抗' ? '但抵抗' : '') : s; }
+  function shakeField() { var f = $('field'); if (f) restartAnim(f, 'bshake'); }
   function banner(text, type) {
     var b = $('banner'); b.textContent = text; b.style.color = TYPE_COLOR[type] || 'var(--ink)';
     restartAnim(b, 'show');
@@ -807,7 +810,8 @@
       switch (e.t) {
         case 'text': addLog(e.text, e.cls); renderSnap(e.snap); flashAbility(e.text, flipSnap(e.snap)); await wait(e.cls === 'turn' ? 120 : 300); break;
         case 'use': renderSnap(e.snap); castFx({ a: 'use', i: V(e.side), m: e.move, ty: e.type }); restartAnim($('mon' + V(e.side)), 'lunge' + V(e.side)); banner(e.move, e.type); await wait(450); break;
-        case 'hit': renderSnap(e.snap); if (e.amount > 0) castFx({ a: 'hit', i: V(e.side), n: e.amount, c: !!e.crit }); if (app.S && app.S.training && e.side === 1) renderStats(); if (e.amount > 0) { restartAnim($('mon' + V(e.side)), 'hit'); floatNum(V(e.side), '-' + e.amount + (e.crit ? '!' : ''), e.crit ? 'crit' : ''); } await wait(480); break;
+        case 'hit': renderSnap(e.snap); if (e.amount > 0) castFx({ a: 'hit', i: V(e.side), n: e.amount, c: !!e.crit, lb: hitLabel(e) }); if (app.S && app.S.training && e.side === 1) renderStats(); if (e.amount > 0) { restartAnim($('mon' + V(e.side)), 'hit'); floatNum(V(e.side), hitLabel(e) + '-' + e.amount, e.crit ? 'crit' : e.eff > 1 ? 'super' : e.eff > 0 && e.eff < 1 ? 'resist' : ''); if (e.crit) shakeField(); } await wait(480); break;
+        case 'miss': renderSnap(e.snap); castFx({ a: 'miss', i: V(e.side) }); floatNum(V(e.side), '未命中', 'miss'); await wait(380); break;
         case 'heal': renderSnap(e.snap); castFx({ a: 'heal', i: V(e.side), n: e.amount }); restartAnim($('mon' + V(e.side)), 'heal'); floatNum(V(e.side), '+' + e.amount, 'heal'); await wait(380); break;
         case 'switch': renderSnap(e.snap); await wait(520); break;
         case 'throw': renderSnap(e.snap); castFx({ a: 'throw', i: 1 }); restartAnim($('mon1'), 'throw'); await wait(900); break;

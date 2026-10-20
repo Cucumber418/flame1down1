@@ -727,11 +727,11 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
 
   if (foe.fainted) { log(S, evs, '但是没有目标'); return; }
   if (hitBlocked(foe, mt)) { log(S, evs, nm(foe) + '毫发无伤！只有' + foe.onlyHit.join('、') + '系技能才能命中它', 'bad'); me.fx.boostNext = 0; return; }
-  if (mv.custom === 'poisonHeart' && !(foe.st['中毒'] > 0)) { log(S, evs, '但是没有命中！（渗透孢子只能命中中毒的敌人）'); me.fx.boostNext = 0; return; }
+  if (mv.custom === 'poisonHeart' && !(foe.st['中毒'] > 0)) { E(S, evs, 'miss', { side: j }); log(S, evs, '但是没有命中！（渗透孢子只能命中中毒的敌人）'); me.fx.boostNext = 0; return; }
   var sure = me.fx.sureHit; if (sure) me.fx.sureHit = 0;
   if (me.tm.sure3 > 0 || me.tm.ear > 0) sure = 1;
-  if (!sure && me.st['失明'] > 0 && RNG() < 0.5) { log(S, evs, nm(me) + '看不清目标，攻击落空了！'); me.fx.boostNext = 0; return; }
-  if (!sure && RNG() >= hitChance(me, foe, mv)) { log(S, evs, '但是没有命中！'); me.fx.boostNext = 0; return; }
+  if (!sure && me.st['失明'] > 0 && RNG() < 0.5) { E(S, evs, 'miss', { side: j }); log(S, evs, nm(me) + '看不清目标，攻击落空了！'); me.fx.boostNext = 0; return; }
+  if (!sure && RNG() >= hitChance(me, foe, mv)) { E(S, evs, 'miss', { side: j }); log(S, evs, '但是没有命中！'); me.fx.boostNext = 0; return; }
   if (foe.fx.cave === S.turn) { foe.fx.x2Next = 1; E(S, evs, 'stage', { side: j }); log(S, evs, nm(foe) + '躲进岩洞，规避了这次攻击！下一次直接攻击伤害翻倍', 'fxl'); me.fx.boostNext = 0; return; }   // 岩洞藏匿：只管这一回合
   if (foe.fx.absDef) { foe.fx.absDef = 0; log(S, evs, nm(foe) + '闪开了这次攻击！', 'fxl'); me.fx.boostNext = 0; return; }
   if (foe.tm.dodge > 0 && RNG() < 0.4) { log(S, evs, nm(foe) + '用光滑皮肤闪开了攻击！', 'fxl'); me.fx.boostNext = 0; return; }
@@ -762,6 +762,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
       if (mv.custom === 'burnExtend' && foe.st['烧伤'] > 0 && foe.hp > res.dmg) { foe.st['烧伤']++; burnX = (burnX || 0) + 1; }   // 烈焰风暴：每次命中延长 1 回合烧伤
       if (res.crit) log(S, evs, '致命一击！', 'crit');
       S.lastShown = null; dmgAdd(applyDamage(S, evs, j, res.dmg, i, { crit: res.crit, eff: res.eff, noFaint: true }));
+      if (res.crit && foe.hp > 0 && !foe.fainted) changeStages(S, evs, j, mv.cat === '物攻' ? { def: -1 } : { spd: -1 }, i);   // 2026-10-20：暴击降低对应防御 1 级
       if (me.fainted) break;
     }
     if (mv.mercy && foe.hp <= 0 && !foe.fainted) { foe.hp = 1; total = Math.max(0, total - 1); shownT = total; log(S, evs, nm(me) + '手下留情，' + nm(foe) + '还剩 1 点体力', 'fxl'); E(S, evs, 'stage', { side: j }); }   // 慈悲气波：不会把对方打倒
@@ -919,7 +920,7 @@ function doStatus(S, evs, i, mv) {
   if (targetsFoe(mv)) {
     if (foe.fainted) { log(S, evs, '但是没有目标'); return; }
     if (hitBlocked(foe, mvType(me, mv))) { log(S, evs, nm(foe) + '毫发无伤！只有' + foe.onlyHit.join('、') + '系技能才能命中它', 'bad'); return; }
-    if (RNG() >= hitChance(me, foe, mv)) { log(S, evs, '但是没有命中！'); return; }
+    if (RNG() >= hitChance(me, foe, mv)) { E(S, evs, 'miss', { side: j }); log(S, evs, '但是没有命中！'); return; }
     hqLand(me, foe, mv.name, i);
     if (mv.tgtStage) {
       var ts = mv.tgtStage;
@@ -1068,6 +1069,7 @@ function bombTick(S, evs) {
     var res = calcDamage(b.mon, t, b.mv, false, false);
     if (res.crit) log(S, evs, '致命一击！', 'crit');
     S.lastShown = null; var dmg = applyDamage(S, evs, j, res.dmg, b.from, { crit: res.crit, eff: res.eff, noFaint: true });
+    if (res.crit && t.hp > 0 && !t.fainted) changeStages(S, evs, j, b.mv.cat === '物攻' ? { def: -1 } : { spd: -1 }, b.from);
     log(S, evs, '对' + nm(t) + '造成 ' + (S.lastShown != null ? S.lastShown : dmg) + ' 点伤害', 'dmg'); S.lastShown = null;
     if (b.mv.bombClear && t.hp > 0) {
       var lv = 0; STG.forEach(function (k) { if (t.stages[k] > 0) lv += t.stages[k]; });

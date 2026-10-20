@@ -2422,3 +2422,11 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .ib-empty { color: #888; }
 @media (max-width: 860px) { .ib-wrap { grid-template-columns: minmax(0, 1fr); } .ib-wrap > .ib-detail { position: static; max-height: none; } }
 .fm-face { background: linear-gradient(160deg, #ffe3c4, #f2a46b); }
+/* 伤害数字前缀 + 暴击震屏（2026-10-20） */
+.float.crit { font-size: 46px; color: #e0262f; }
+.float.super { color: #e8561f; }
+.float.resist { font-size: 36px; color: #6f7d8c; }
+.float.miss { font-size: 34px; color: #8a8f98; }
+@media (max-width: 560px) { .float { font-size: 30px; } .float.crit { font-size: 34px; } .float.resist, .float.miss { font-size: 26px; } }
+.field.bshake, .bshake { animation: bshake .42s ease-in-out; }
+@keyframes bshake { 0%, 100% { transform: translate(0, 0); } 15% { transform: translate(-8px, 4px); } 30% { transform: translate(7px, -5px); } 45% { transform: translate(-6px, -3px); } 60% { transform: translate(5px, 4px); } 75% { transform: translate(-3px, 2px); } }

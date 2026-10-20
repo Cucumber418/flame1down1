@@ -1088,9 +1088,11 @@
         if (f.a === 'use') { wtAnim(mon, 'lunge' + (f.i ? 1 : 0)); var b = $('wt-banner'); b.textContent = f.m || ''; b.style.color = (typeof TYPE_COLOR !== 'undefined' && TYPE_COLOR[f.ty]) || 'var(--ink)'; wtAnim(b, 'show'); }
         else if (f.a === 'hit' || f.a === 'heal') {
           wtAnim(mon, f.a === 'hit' ? 'hit' : 'heal');
-          var n = document.createElement('div'); n.className = 'float ' + (f.a === 'heal' ? 'heal' : f.c ? 'crit' : ''); n.textContent = (f.a === 'heal' ? '+' : '-') + f.n + (f.c ? '!' : '');
+          var n = document.createElement('div'); n.className = 'float ' + (f.a === 'heal' ? 'heal' : f.c ? 'crit' : ''); n.textContent = f.a === 'heal' ? '+' + f.n : f.lb != null ? f.lb + '-' + f.n : '-' + f.n + (f.c ? '!' : '');
+          if (f.a === 'hit' && f.c) { var wf = mon.parentNode; if (wf) wtAnim(wf, 'bshake'); }
           mon.appendChild(n); setTimeout(function () { n.remove(); }, 950);
-        } else if (f.a === 'throw') wtAnim(mon, 'throw');
+        } else if (f.a === 'miss') { var mn = document.createElement('div'); mn.className = 'float miss'; mn.textContent = '未命中'; mon.appendChild(mn); setTimeout(function () { mn.remove(); }, 950); }
+        else if (f.a === 'throw') wtAnim(mon, 'throw');
         else if (f.a === 'emote' && typeof emoteOf === 'function' && emoteOf(f.e)) { var ob = mon.querySelector('.emote-bub'); if (ob) ob.remove(); var eb = document.createElement('div'); eb.className = 'emote-bub' + (f.i ? '' : ' flip'); eb.innerHTML = '<img src="' + emoteOf(f.e).img + '" alt="">'; mon.appendChild(eb); setTimeout(function () { eb.remove(); }, 3200); }
       }, k * 120);
     });
