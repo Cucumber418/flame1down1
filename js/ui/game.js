@@ -2227,6 +2227,26 @@
     });
   }
   setInterval(ctPopCheck, 3000);
+  /* ---------- 助战回报（2026-10-20）：上线时领取离线期间好友借用自己助战的记录，每次 1000 能量 + 1000 经验 ---------- */
+  var HELP_RW = { energy: 1000, exp: 1000 }, helpClaimed = false, helpBusy = false;
+  function helpClaimCheck() {
+    if (helpClaimed || helpBusy || !ready() || !bsOnline() || ex.fighting || ex.view === 'vn' || ($('battle') && !$('battle').hidden) || document.querySelector('.soc-dlg')) return;
+    helpBusy = true;
+    CLOUD.api('POST', '/api/helper-claim', {}).then(function (r) {
+      helpBusy = false; if (r._code !== 200) return; helpClaimed = true;
+      var U = (r.uses || []).filter(function (x) { return x.n > 0; }); if (!U.length) return;
+      var n = U.reduce(function (t, x) { return t + x.n; }, 0);
+      acc.energy = (acc.energy || 0) + HELP_RW.energy * n; acc.exp = (acc.exp || 0) + HELP_RW.exp * n; save(); renderRes();
+      var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'help-dlg';
+      d.innerHTML = '<div class="soc-box side-new" role="dialog" aria-modal="true" aria-label="助战回报"><span class="tape l"></span><span class="tape r"></span><span class="step">助战回报</span><h2>你不在的时候，有好友借用了你的助战精灵！</h2><ul>' +
+        U.map(function (x) { return '<li><b>' + esc(x.name || x.user) + '</b><small>借用了 ' + x.n + ' 次</small></li>'; }).join('') +
+        '</ul><p class="hint">每次奖励 ' + fmt(HELP_RW.energy) + ' 能量 + ' + fmt(HELP_RW.exp) + ' 累积经验，共获得 <b>能量 ×' + fmt(HELP_RW.energy * n) + '</b>、<b>累积经验 ×' + fmt(HELP_RW.exp * n) + '</b>。</p>' +
+        '<div class="soc-foot"><button type="button" class="btn primary" data-helpx="1">收下</button></div></div>';
+      document.body.appendChild(d);
+      d.addEventListener('click', function (e) { if (e.target === d || e.target.closest('[data-helpx]')) d.remove(); });
+    }).catch(function () { helpBusy = false; });
+  }
+  setInterval(helpClaimCheck, 3000);
   function coreOpen() { return prog('core').done; }
   function openCore() {
     if (!coreOpen()) { toast('先读完宜昌的支线「三峡能源核心」吧。'); return; }
@@ -2959,6 +2979,7 @@
     ex.chalOrder = ord || ex.chalOrder;
     var L = chalLineup(), own = L.filter(function (e) { return e.m; }).map(function (e) { return e.m; });
     var p = L.map(function (e) { return e.m ? storyMon(e.m) : helperSpec(e.h); });
+    if (bsOnline()) L.forEach(function (e) { if (e.h && /^u:/.test(e.h.key || '')) CLOUD.api('POST', '/api/helper-use', { owner: e.h.key.slice(2) }).catch(function () {}); });   // 借了好友的助战：给主人记一次
     var a = x.foes.map(function (f) { seeMon(f.sid, Math.min(f.lv, MAX_LV)); var o = storyMon({ sid: f.sid, lv: f.lv, moves: [] }); if (f.q) o.lvq = 1; return o; });
     stopTimers(); ex.fighting = true; document.body.classList.add('story-fight'); syncBattle();
     $('pg-explore').hidden = true; $('pg-arena').hidden = false;
