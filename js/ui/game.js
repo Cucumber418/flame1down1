@@ -331,8 +331,13 @@
     { id: 'purifier', n: '芙罗拉净化者', d: '完成芙罗拉星的星球任务「祛除瘴气」', ok: function () { return !!(acc.purge && acc.purge.n >= 30); } },
     { id: 'force', n: '原力掌控者', d: '击败困难难度的BOSS「泰戈尔」', ok: function () { return bossWon('tiger', 2); } },
     { id: 'guardian', n: '净土守护', d: '击败困难难度的BOSS「荒芜」', ok: function () { return bossWon('barren', 2); } },
-    { id: 'reaper', n: '死神', d: '击败先驱之塔第 60 层的死神「帕努托尔」', ok: function () { return !!(acc.tower && acc.tower.clears > 0); } }
+    { id: 'reaper', n: '死神', d: '击败先驱之塔第 60 层的死神「帕努托尔」', ok: function () { return !!(acc.tower && acc.tower.clears > 0); } },
+    { id: 'xcking', n: '行测之王', d: '通过日透骨消的考核，领取挖矿钻头', ok: function () { return !!acc.drill; } },
+    { id: 'spa120', n: '温泉爱好者', d: '泡温泉累计 120 分钟', ok: function () { return spaMinTotal() >= 120; } },
+    { id: 'spa600', n: '温泉达人', d: '泡温泉累计 600 分钟', ok: function () { return spaMinTotal() >= 600; } },
+    { id: 'spa3000', n: '温泉鉴赏家', d: '泡温泉累计 3000 分钟', ok: function () { return spaMinTotal() >= 3000; } }
   ];
+  function spaMinTotal() { return Math.floor(((acc.spa && acc.spa.ms) || 0) / 60000); }   // 泡温泉累计时长（2026-10-20 起记录）
   // 等级成就：有 1 只 / 5 只精灵达到 25、50、75、100 级
   TITLES.forEach(function (T) { T.grp = 'story'; });
   // 做题大王争霸赛（2026-10-19）：比赛结束时按名次发（acc.ctPlace[赛事] = 名次，0 是冠军）
@@ -2275,7 +2280,7 @@
     function draw() {
       if (i >= Qs.length || (wrong >= WRONG_MAX && ans === null)) {   // 答完，或者错满 3 道直接结束（先让玩家看完第 3 道错题的答案）
         var ok = wrong < WRONG_MAX && right >= C.pass;
-        if (ok) { acc.drill = { dur: DRILL_MAX }; save(); }
+        if (ok) { acc.drill = { dur: DRILL_MAX }; save(); checkTitles(); }
         d.innerHTML = '<div class="soc-box quiz-box" role="dialog" aria-modal="true" aria-label="考核结果"><span class="tape l"></span><span class="tape r"></span><h2>' + (ok ? (rp ? '修好了！' : '考核通过！') : '没有通过') + '</h2>' +
           '<p class="quiz-score">答对 <b>' + right + '</b> / ' + Qs.length + (wrong >= WRONG_MAX ? '<small>（错满 ' + WRONG_MAX + ' 道，提前结束）</small>' : '') + '</p><p>' + (ok ? (rp ? '日透骨消：「交给我吧……好了，耐久度修满了。」' : '日透骨消：「不错嘛。这把挖矿钻头以后就归你了，拿好。」') + '<br>去芙罗拉星、坎伯兰星的野外找矿点吧，每处矿点每天能挖一次。' : '日透骨消：「' + (wrong >= WRONG_MAX ? '错了 ' + WRONG_MAX + ' 道，这次就到这儿吧。' : '差一点。') + '要答对 ' + C.pass + ' 道、错不超过 ' + (WRONG_MAX - 1) + ' 道才行，再来一次？」') + '</p>' +
           '<div class="soc-foot">' + (ok ? '<button type="button" class="btn primary" data-qx="1">好的</button>' : '<button type="button" class="btn ghost" data-qx="1">下次再来</button><button type="button" class="btn primary" data-qagain="1">重新答题</button>') + '</div></div>';
@@ -4505,6 +4510,8 @@
     if (!(page === 'explore' && ex.view === 'spa')) return;
     var now = Date.now(), dt = now - SPA.last; SPA.last = now;
     if (dt <= 0 || dt > SPA_GAP) return;
+    var m0 = spaMinTotal(); spa().ms = (spa().ms || 0) + dt;   // 累计泡温泉时长（成就用）
+    if (spaMinTotal() !== m0 && [120, 600, 3000].indexOf(spaMinTotal()) >= 0) { save(); checkTitles(); }
     var msgs = [], any = false;
     spaMons().forEach(function (m) {
       if (atCap(m)) return;
