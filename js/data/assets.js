@@ -204,6 +204,11 @@ var CHARS = {
   "drh": "images/characters/drh.webp",
   "drh_cry": "images/characters/drh_cry.webp",
   "drh_oh": "images/characters/drh_oh.webp",
+  "cumber": "images/characters/cumber.webp",
+  "cumber_oh": "images/characters/cumber_oh.webp",
+  "cumber_smile": "images/characters/cumber_smile.webp",
+  "cumber_close": "images/characters/cumber_close.webp",
+  "cumber_angry": "images/characters/cumber_angry.webp",
   "drh_grin": "images/characters/drh_grin.webp",
   // 主角（pm 男主、pf 女主）：默认、大笑、惊讶、疑惑、生气、慌张、害羞
   "pm": "images/characters/pm.webp",

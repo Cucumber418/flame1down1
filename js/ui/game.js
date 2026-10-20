@@ -2409,6 +2409,72 @@
       if (e.target === d || b) { d.remove(); var fn = b && btns[+b.dataset.tbtn][1]; if (fn) fn(); }
     });
   }
+  /* ---------- 通用 NPC 对话框：o = { name, sub, img, face: 'lz'(全身立绘) | 'mon'(精灵), lines, btns: [[文字, 回调]] } ---------- */
+  function npcDlg(o) {
+    var d = document.createElement('div'); d.className = 'soc-dlg npc-dlg';
+    d.innerHTML = '<div class="soc-box npc-box" role="dialog" aria-modal="true" aria-label="' + esc(o.name) + '"><span class="tape l"></span><span class="tape r"></span>' +
+      '<img class="npc-face ' + (o.face === 'mon' ? 'travel-face fm-face' : 'lz-face') + '" src="' + o.img + '" alt="' + esc(o.name) + '"><div class="npc-say"><span class="step">' + esc(o.name) + (o.sub ? ' · ' + esc(o.sub) : '') + '</span>' + o.lines.map(function (x, i) { return '<p class="' + (i ? 'hint' : 'npc-line') + '">' + x + '</p>'; }).join('') + '</div>' +
+      '<div class="soc-foot">' + o.btns.map(function (b, i) { return '<button type="button" class="btn' + (i === o.btns.length - 1 ? ' primary' : ' ghost') + '" data-npb="' + i + '">' + esc(b[0]) + '</button>'; }).join('') + '</div></div>';
+    document.body.appendChild(d);
+    d.addEventListener('click', function (e) { var b = e.target.closest('[data-npb]'); if ((e.target === d && o.close !== false) || b) { d.remove(); var fn = b && o.btns[+b.dataset.npb][1]; if (fn) fn(); } });
+  }
+  /* ---------- 深渊实验室的？？？（静默）：到达坎伯兰星 · 深海的「深渊潜底」时 5% 概率遇到，每天最多一次 ---------- */
+  var CUMBER = { bg: 'kb_abyss', chance: 0.05, cry: 100, team: [{ sid: 'gorgon', lv: 100 }, { sid: 'siren', lv: 100 }] };
+  function cumberSay(face, line, btns) { npcDlg({ name: '？？？', img: CHARS[face] || CHARS.cumber, face: 'lz', lines: [line], btns: btns, close: false }); }
+  function cumberCheck() {
+    if (!ready() || ex.fighting || ex.view !== 'field' || document.querySelector('.soc-dlg')) return;
+    var F = fields[ex.region], sc = F && F.scenes[F.scene]; if (!sc || sc.bgKey !== CUMBER.bg) return;
+    var day = dayNum(Date.now()); if (acc.cumberDay === day || Math.random() >= CUMBER.chance) return;
+    acc.cumberDay = day; save();
+    cumberSay('cumber', '……你怎么在这里？', [['……', function () { cumberFight(sc.bg); }]]);
+  }
+  function cumberFight(bg) {
+    var team = (acc.teams[acc.active] || []).map(mon).filter(Boolean); if (!team.length) team = acc.mons.slice(0, 1);
+    team = team.slice(0, TEAM_SIZE);
+    var a = CUMBER.team.map(function (x) { return storyMon({ sid: x.sid, lv: x.lv, moves: foeMoves(x.sid, x.lv) }); });
+    stopField(); stopTimers(); ex.fighting = true; document.body.classList.add('story-fight'); syncBattle();
+    $('pg-explore').hidden = true; $('pg-arena').hidden = false;
+    window.HSBATTLE.start({ p: team.map(storyMon), a: a, foe: '？？？', bg: bg || null, bgm: 'boss3', items: invCopy(), onItem: useInv, back: '深渊潜底',
+      onEnd: function (res, seen, downs) {
+        var msg = battleRewards(team, seen, downs); dailyHit('pve'); save();
+        ex.fighting = false; document.body.classList.remove('story-fight');
+        $('pg-arena').hidden = page !== 'arena'; $('pg-explore').hidden = page !== 'explore';
+        renderTop(); syncBattle(); if (page === 'explore' && ex.view === 'field') renderField();
+        if (msg.length) toast(msg.join(''));
+        setTimeout(function () {
+          if (res === 'win') cumberSay('cumber_smile', '我们会再见面的。', [['收下', function () { giveItems({ m_mcry: CUMBER.cry }); save(); toast('获得' + itemName('m_mcry') + ' ×' + CUMBER.cry + '，已放入储存箱。'); }]]);
+          else cumberSay('cumber_close', '这不是你该来的地方。', [['……', null]]);
+        }, 600);
+      } });
+  }
+  /* ---------- 炙热核心的火月鼠（一次性）：说自己太冷，配队里带 3 只火系精灵来温暖它，它就跟你走（LV18） ---------- */
+  var FMNPC = { bg: 'pp_core', need: 3, lv: 18, x: 30, y: 80 };
+  function fmFireN() { return (acc.teams[acc.active] || []).map(mon).filter(function (m) { return m && SPMAP[m.sid] && SPMAP[m.sid].types.indexOf('火') >= 0; }).length; }
+  function fmNpcHTML(F, si) {
+    var sc = F.scenes[si]; if (!sc || sc.bgKey !== FMNPC.bg || acc.fmNpc) return '';
+    var f = form({ sid: 'firemouse', lv: FMNPC.lv });
+    return '<button type="button" class="wf-mon wf-travel fm-npc" data-fmnpc="1" title="瑟瑟发抖的火月鼠" style="left:' + FMNPC.x + '%;top:' + FMNPC.y + '%;z-index:' + FMNPC.y + '"><i class="wf-sh" aria-hidden="true"></i><img src="' + f.img + '" alt=""><span class="wf-tag">💬 瑟瑟发抖的火月鼠</span></button>';
+  }
+  function fmSay(lines, btns) { npcDlg({ name: '火月鼠', sub: '炙热核心', img: form({ sid: 'firemouse', lv: FMNPC.lv }).img, face: 'mon', lines: lines, btns: btns }); }
+  function fmNpcTalk() {
+    if (acc.fmNpc || ex.fighting) return;
+    var n = fmFireN();
+    if (acc.fmAsk && n >= FMNPC.need) {
+      fmSay(['哇……好暖和！' + FMNPC.need + ' 团火围着我，尾巴都不抖了！', '火月鼠在你脚边转了好几圈，把一块亮晶晶的金属碎片塞到你手里。'], [['要不要跟我走？', function () {
+        fmSay(['嗯！跟着你，就再也不会冷了吧？我要跟你走！'], [['欢迎加入！', function () {
+          var m = newMon('firemouse', FMNPC.lv), T = acc.teams[acc.active], added = T.length < TEAM_SIZE;
+          if (added) T.push(m.u);
+          seeMon('firemouse', FMNPC.lv); acc.fmNpc = 1; save(); renderField();
+          toast('火月鼠（LV' + FMNPC.lv + '，' + m.nat + '）加入了你！' + (added ? '已加入' + TEAM_NAME[acc.active] + '。' : '已收入精灵仓库。'));
+        }]]);
+      }]]);
+      return;
+    }
+    if (acc.fmAsk) { fmSay(['呜……还是好冷……', '<b>提示：</b>配队里带上 ' + FMNPC.need + ' 只火系精灵再来找它，就能让它暖和起来（现在 ' + n + ' / ' + FMNPC.need + '）。'], [['我再去准备一下', null]]); return; }
+    fmSay(['好……好冷……这里明明是炙热核心，可我怎么也暖和不起来……'], [
+      ['多喝热水', function () { fmSay(['……谢谢，更冷了。'], [['咳，我还是认真想想办法吧', function () { acc.fmAsk = 1; save(); fmNpcTalk(); }]]); }],
+      ['我来想办法', function () { acc.fmAsk = 1; save(); fmNpcTalk(); }]]);
+  }
   function regionById(rid) { for (var i = 0; i < WILD_REGIONS.length; i++) if (WILD_REGIONS[i].id === rid) return WILD_REGIONS[i]; return null; }
   function stopField() {
     if (fieldTick) { clearInterval(fieldTick); fieldTick = null; }
@@ -2480,6 +2546,7 @@
     loadField(rid);
     ex.view = 'field'; ex.region = rid; ex.planet = R.planet;
     renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8);
+    setTimeout(cumberCheck, 400);
   }
   function fieldMonHTML(m, cls) {
     return '<button type="button" class="wf-mon' + (m.face < 0 ? ' flip' : '') + (cls ? ' ' + cls : '') + '" data-wfid="' + m.id + '" data-csid="' + m.sid + '" data-cst="' + (m.corrupt ? 9 : form({ sid: m.sid, lv: m.lv }).stage || 0) + '" data-cctx="' + (m.corrupt ? 'mia' : 'wild') + '" title="' + esc(m.name) + ' LV' + m.lv + '" aria-label="和' + esc(m.name) + '对战" style="left:' + m.x.toFixed(2) + '%;top:' + m.y.toFixed(2) + '%;z-index:' + Math.round(m.y) + '"><i class="wf-sh" aria-hidden="true"></i><img src="' + m.img + '" alt=""></button>';
@@ -2496,7 +2563,7 @@
     var spareTip = R.pool && R.planet === 'flora' && spareActive() ? '<div class="spare-note"><span class="tape l"></span><b>主线任务 · 引出猎杀者</b>　手下留情：这些精灵不会倒下，体力剩 1 点时就会逃走，算作「假装击败」。已完成 <b>' + spareN() + ' / ' + SPARE_N + '</b>。</div>' : '';
     $('pg-explore').innerHTML = exHead(R.pool ? '点击场景里走动的精灵，就会和它开战。' : '这里没有野生精灵。点击场景里的BOSS就能挑战它。') +
       '<div class="crumb"><button type="button" class="btn ghost" id="field-back">‹ 返回' + esc(P.name) + '</button><b>' + esc(P.name) + ' · ' + esc(R.name) + '</b>' + (n > 1 ? '<span class="hint">场景 ' + (F.scene + 1) + ' / ' + n + (BG_NAME[sc.bgKey] ? ' · ' + BG_NAME[sc.bgKey] : '') + '</span>' : '') + '</div>' +
-      invLine() + spareTip + '<div class="wf-scene' + (sc.corrupt ? ' miasma-bg' : '') + '" id="wf-scene">' + bg + mons + gatherNodesHTML(R.id, F.scene, n) + jadeHTML(R.id, F.scene) + riceBowlHTML(R, F.scene) + oreHTML(R, F, F.scene) + hornHTML(R, F, F.scene) + travelHTML(R, F.scene) + fieldBossHTML(R) + nav + '</div>' +
+      invLine() + spareTip + '<div class="wf-scene' + (sc.corrupt ? ' miasma-bg' : '') + '" id="wf-scene">' + bg + mons + gatherNodesHTML(R.id, F.scene, n) + jadeHTML(R.id, F.scene) + riceBowlHTML(R, F.scene) + oreHTML(R, F, F.scene) + hornHTML(R, F, F.scene) + travelHTML(R, F.scene) + fmNpcHTML(F, F.scene) + fieldBossHTML(R) + nav + '</div>' +
       (R.pool ? '<p class="hint">点左右两边的箭头可以切换场景。每只精灵在自己的一小片范围里走动，待一会儿就会离开，过一阵又会有新的精灵出现，各走各的。点中哪只，就和哪只对战；打完、抓到或逃走之后，这只离开，过一会儿会有新的一只补上。采集点固定在场景里，每个每天可以采集 1 次：芙罗拉、坎伯兰、庞贝采到星砂 ×12，莱汀和白之星采到星核 ×1。' + (RICE.regions.indexOf(R.id) >= 0 ? '带着「一碗饭」来的话，可以在任意一个场景里放下它。' : '') + '</p>' : '');
     startFieldMove();
   }
@@ -2530,6 +2597,7 @@
     var F = fields[ex.region]; if (!F) return;
     var n = F.scenes.length; F.scene = (F.scene + d + n) % n;
     renderField();
+    setTimeout(cumberCheck, 400);
   }
   function engageField(id) {
     if (ex.fighting) return;
@@ -5377,6 +5445,7 @@
     if (b.dataset.horn) { blowHorn(); return; }
     if (b.dataset.ore) { mineOre(b.dataset.ore); return; }
     if (b.dataset.travel) { engageTravel(+b.dataset.travel); return; }
+    if (b.dataset.fmnpc) { fmNpcTalk(); return; }
     if (b.dataset.wfid) { engageField(+b.dataset.wfid); return; }
     if (b.dataset.wfnav) { fieldNav(+b.dataset.wfnav); return; }
     if (b.id === 'field-back') { var FR = regionById(ex.region); ex.view = 'sites'; if (FR) ex.planet = FR.planet; ex.fpart = 'catch'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }

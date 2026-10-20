@@ -2421,3 +2421,4 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .ib-detail h4 small { font-size: 13px; color: #888; }
 .ib-empty { color: #888; }
 @media (max-width: 860px) { .ib-wrap { grid-template-columns: minmax(0, 1fr); } .ib-wrap > .ib-detail { position: static; max-height: none; } }
+.fm-face { background: linear-gradient(160deg, #ffe3c4, #f2a46b); }
