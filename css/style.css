@@ -2437,3 +2437,9 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .float.resist { font-size: 30px; }
 .float.miss { font-size: 28px; }
 @media (max-width: 560px) { .float { font-size: 24px; } .float.crit { font-size: 28px; } .float.resist, .float.miss { font-size: 21px; } }
+/* 伤害数字再放大、加间距（2026-10-20） */
+.float { font-size: 46px; letter-spacing: 2px; -webkit-text-stroke: 1.6px #fff; }
+.float.crit { font-size: 56px; }
+.float.resist { font-size: 40px; }
+.float.miss { font-size: 38px; }
+@media (max-width: 560px) { .float { font-size: 32px; letter-spacing: 1.5px; } .float.crit { font-size: 38px; } .float.resist, .float.miss { font-size: 28px; } }
