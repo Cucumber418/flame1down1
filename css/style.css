@@ -2430,3 +2430,10 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 @media (max-width: 560px) { .float { font-size: 30px; } .float.crit { font-size: 34px; } .float.resist, .float.miss { font-size: 26px; } }
 .field.bshake, .bshake { animation: bshake .42s ease-in-out; }
 @keyframes bshake { 0%, 100% { transform: translate(0, 0); } 15% { transform: translate(-8px, 4px); } 30% { transform: translate(7px, -5px); } 45% { transform: translate(-6px, -3px); } 60% { transform: translate(5px, 4px); } 75% { transform: translate(-3px, 2px); } }
+/* 伤害数字：工整醒目的粗体无衬线 + 描边（2026-10-20） */
+.float { font-family: "Arial Black", "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; font-weight: 900; font-size: 34px; letter-spacing: .5px; font-variant-numeric: tabular-nums;
+  -webkit-text-stroke: 1.2px #fff; paint-order: stroke fill; text-shadow: 0 2px 0 rgba(0, 0, 0, .35), 0 0 6px rgba(255, 255, 255, .9); }
+.float.crit { font-size: 40px; }
+.float.resist { font-size: 30px; }
+.float.miss { font-size: 28px; }
+@media (max-width: 560px) { .float { font-size: 24px; } .float.crit { font-size: 28px; } .float.resist, .float.miss { font-size: 21px; } }
