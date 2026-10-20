@@ -17,7 +17,7 @@
   if (!A || !HB || !H) return;
   var $ = function (id) { return document.getElementById(id); };
   var esc = H.esc, tchips = H.tchips;
-  var SHOW_MAX = 5, MOTTO_MAX = 200, TURN_SEC = 90;
+  var SHOW_MAX = 5, HELP_MAX = 3, MOTTO_MAX = 200, TURN_SEC = 90;
   var online = !!(C && C.user && C.user());   // 用服务器打开并登录了才有社交功能
   var hb = { owner: null, data: null, err: '', at: 0, draft: '', newN: 0, peeked: false }, pokeAt = {};   // 茶室信息栏与留言板（见下面「茶室信息栏」一节）
   var st = { prep: null, bw: { picks: null, wait: null, inv: null }, view: null, tab: 'players', players: null, me: null, err: '', ws: null, wsOk: false, retry: 0, pend: null, inc: null, match: null, edit: null };
@@ -132,8 +132,8 @@
       '<blockquote class="pc-motto' + (c.motto ? '' : ' empty') + '">' + (c.motto ? esc(c.motto) : '这位船员还没有写个人宣言。') + '</blockquote>' +
       progHTML(c.prog) +
       '<h4 class="pc-h">展示精灵</h4><ol class="pc-show">' + slots + '</ol>' +
-      (c.helper && SPMAP[c.helper.sid] ? (function (h) { var v = A.view({ sid: h.sid, lv: h.lv, shiny: h.shiny, fs: h.fs });
-        return '<h4 class="pc-h">助战精灵 <span class="hint">好友可以在星球挑战里借用</span></h4><div class="pc-helper"><img src="' + v.img + '" alt=""><b>' + esc(v.name) + (h.shiny ? '<span class="shiny-tag">异色</span>' : '') + '</b><span class="pc-lv">LV' + h.lv + (h.nat ? ' · ' + esc(h.nat) : '') + '</span><span class="tc">' + tchips(SPMAP[h.sid].types) + '</span></div>'; })(c.helper) : '') + '</div>';
+      (function (hs) { hs = hs.filter(function (h) { return h && SPMAP[h.sid]; }); return hs.length ? '<h4 class="pc-h">助战精灵 <span class="hint">好友可以在星球挑战里借用</span></h4>' + hs.map(function (h) { var v = A.view({ sid: h.sid, lv: h.lv, shiny: h.shiny, fs: h.fs });
+        return '<div class="pc-helper"><img src="' + v.img + '" alt=""><b>' + esc(v.name) + (h.shiny ? '<span class="shiny-tag">异色</span>' : '') + '</b><span class="pc-lv">LV' + h.lv + (h.nat ? ' · ' + esc(h.nat) : '') + '</span><span class="tc">' + tchips(SPMAP[h.sid].types) + '</span></div>'; }).join('') : ''; })(c.helpers || (c.helper ? [c.helper] : [])) + '</div>';
   }
   function openCard(user) {
     var d = dialog('card', '<div class="pc-body"><p class="hint">读取名片中……</p></div>', function (el, close) {
@@ -210,11 +210,11 @@
     return { user: st.me || (C.user && C.user()), name: acc.name, avatar: A.avatarSpec(), gender: A.gender ? A.gender() : 'm', title: acc.title && (acc.titles || []).indexOf(acc.title) >= 0 ? acc.title : null, monsN: acc.mons.length, speciesN: Object.keys(species).length,
       created: acc.created, motto: ed.motto, rankInfo: R, prog: progOf(acc), mil: A.milRank ? A.milRank() : acc.milRank | 0,
       show: ed.show.map(function (u) { var m = A.mon(u); return m && { sid: m.sid, lv: m.lv, nat: m.nat, moves: m.moves, shiny: m.shiny === 2 ? 2 : !!m.shiny, fs: m.fs }; }).filter(Boolean),
-      helper: ed.helper != null && A.mon(ed.helper) ? (function (m) { return { sid: m.sid, lv: m.lv, nat: m.nat, shiny: m.shiny === 2 ? 2 : !!m.shiny, fs: m.fs }; })(A.mon(ed.helper)) : null };
+      helpers: ed.helpers.map(function (u) { var m = A.mon(u); return m && { sid: m.sid, lv: m.lv, nat: m.nat, shiny: m.shiny === 2 ? 2 : !!m.shiny, fs: m.fs }; }).filter(Boolean) };
   }
   function startEdit() {
     var cd = A.acc().card || {};
-    st.edit = { show: (cd.show || []).filter(function (u) { return A.mon(u); }).slice(0, SHOW_MAX), motto: typeof cd.motto === 'string' ? cd.motto.slice(0, MOTTO_MAX) : '', helper: cd.helper != null && A.mon(cd.helper) ? cd.helper : null, dirty: false };
+    st.edit = { show: (cd.show || []).filter(function (u) { return A.mon(u); }).slice(0, SHOW_MAX), motto: typeof cd.motto === 'string' ? cd.motto.slice(0, MOTTO_MAX) : '', helpers: (Array.isArray(cd.helpers) ? cd.helpers : cd.helper != null ? [cd.helper] : []).filter(function (u) { return A.mon(u); }).slice(0, HELP_MAX), dirty: false };
   }
   function mineHTML() {
     if (!st.edit) startEdit();
@@ -230,17 +230,17 @@
         return '<button type="button" class="me-mon' + (k >= 0 ? ' on' : '') + '" data-pick="' + m.u + '"' + (full ? ' disabled' : '') + ' aria-pressed="' + (k >= 0) + '">' +
           (k >= 0 ? '<span class="me-no">' + (k + 1) + '</span>' : '') + '<img src="' + v.img + '" alt=""><b>' + esc(v.name) + '</b><small>LV' + m.lv + '</small></button>';
       }).join('') + '</div>' +
-      '<p class="me-lab">助战精灵 <span class="hint">选 1 只，好友在星球挑战里可以借用它（借出去不影响你自己使用）；再点一下取消</span></p>' +
+      '<p class="me-lab">助战精灵 <span class="hint">最多选 ' + HELP_MAX + ' 只（已选 ' + ed.helpers.length + ' / ' + HELP_MAX + '），好友在星球挑战里可以借用（借出去不影响你自己使用）；再点一下取消</span></p>' +
       '<div class="me-pick">' + mons.map(function (m) {
-        var on = ed.helper === m.u, v = A.view(m);
-        return '<button type="button" class="me-mon' + (on ? ' on' : '') + '" data-helper="' + m.u + '" aria-pressed="' + on + '">' + (on ? '<span class="me-no">助</span>' : '') + '<img src="' + v.img + '" alt=""><b>' + esc(v.name) + '</b><small>LV' + m.lv + '</small></button>';
+        var on = ed.helpers.indexOf(m.u) >= 0, v = A.view(m), full = !on && ed.helpers.length >= HELP_MAX;
+        return '<button type="button" class="me-mon' + (on ? ' on' : '') + '" data-helper="' + m.u + '"' + (full ? ' disabled' : '') + ' aria-pressed="' + on + '">' + (on ? '<span class="me-no">助</span>' : '') + '<img src="' + v.img + '" alt=""><b>' + esc(v.name) + '</b><small>LV' + m.lv + '</small></button>';
       }).join('') + '</div>' +
       '<div class="soc-foot"><span class="hint" id="me-msg">' + (ed.dirty ? '有修改还没保存' : '') + '</span><button type="button" class="btn ghost" id="me-reset"' + (ed.dirty ? '' : ' disabled') + '>撤销修改</button><button type="button" class="btn primary" id="me-save"' + (ed.dirty ? '' : ' disabled') + '>保存名片</button></div>' +
       '</section></div>';
   }
   function saveCard() {
     var acc = A.acc();
-    acc.card = { show: st.edit.show.slice(0, SHOW_MAX), motto: Array.from(st.edit.motto).slice(0, MOTTO_MAX).join(''), helper: st.edit.helper != null ? st.edit.helper : null };
+    acc.card = { show: st.edit.show.slice(0, SHOW_MAX), motto: Array.from(st.edit.motto).slice(0, MOTTO_MAX).join(''), helper: st.edit.helpers.length ? st.edit.helpers[0] : null, helpers: st.edit.helpers.slice(0, HELP_MAX) };
     st.edit.dirty = false; A.save(); render();
     A.toast('名片已保存。同步到服务器后，其他船员就能看到。');
   }
@@ -305,7 +305,7 @@
         if (k >= 0) ed.show.splice(k, 1); else if (ed.show.length < SHOW_MAX) ed.show.push(u);
         ed.dirty = true; render(); return;
       }
-      if ((t = e.target.closest('[data-helper]'))) { var hu = +t.dataset.helper; st.edit.helper = st.edit.helper === hu ? null : hu; st.edit.dirty = true; render(); return; }
+      if ((t = e.target.closest('[data-helper]'))) { var hu = +t.dataset.helper, hk = st.edit.helpers.indexOf(hu); if (hk >= 0) st.edit.helpers.splice(hk, 1); else if (st.edit.helpers.length < HELP_MAX) st.edit.helpers.push(hu); st.edit.dirty = true; render(); return; }
       if (e.target.id === 'me-save') { saveCard(); return; }
       if (e.target.id === 'me-reset') { startEdit(); render(); return; }
     });

@@ -112,6 +112,8 @@ function avatarOf(acc) {
 }
 // 助战精灵：名片里设置的一只（acc.card.helper 是精灵编号），星球挑战里好友可以借用
 function helperOf(acc) { var u = acc && acc.card && acc.card.helper; return u != null ? monByU(acc, u) : null; }
+// 2026-10-20：名片最多放 3 只助战（acc.card.helpers）；老存档只有 acc.card.helper
+function helpersOf(acc) { var c = acc && acc.card; if (!c) return []; var L = Array.isArray(c.helpers) ? c.helpers.slice(0, 3) : c.helper != null ? [c.helper] : []; return L.map(function (u) { return monByU(acc, u); }).filter(Boolean); }
 function showMons(acc) {
   var c = acc.card && Array.isArray(acc.card.show) ? acc.card.show : [];
   return c.slice(0, 5).map(function (u) { return monByU(acc, u); }).filter(Boolean);
@@ -172,7 +174,7 @@ function card(u, me) {
   o.created = acc.created || u.created; o.speciesN = Object.keys(species).length;
   o.motto = acc.card ? str(acc.card.motto, 200) : '';
   o.show = showMons(acc).map(function (m) { return monOut(m, acc); });
-  var hp = helperOf(acc); o.helper = hp ? monOut(hp, acc) : null;
+  o.helpers = helpersOf(acc).map(function (m) { return monOut(m, acc); }); o.helper = o.helpers[0] || null;
   o.rankInfo = rankOut(parseSave(u).rank);
   try { o.prog = require('./chalboard').progOf(acc); } catch (e) {}   // 挑战进度（名片里二级点开）
   o.titles = Array.isArray(acc.titles) ? acc.titles.filter(function (x) { return typeof x === 'string'; }).slice(0, 300) : [];
@@ -718,8 +720,8 @@ A.use(function (req, res, url) {
   if (url === '/api/helpers' && req.method === 'GET') {
     var hl = [];
     (Array.isArray(me.friends) ? me.friends : []).forEach(function (n) {
-      var fu = A.loadUser(n), fa = fu && parseSave(fu).acc, hm = fa && fa.introDone && helperOf(fa);
-      if (hm) hl.push({ user: fu.name, name: str(fa.name, 20), mon: monOut(hm, fa) });
+      var fu = A.loadUser(n), fa = fu && parseSave(fu).acc;
+      if (fa && fa.introDone) helpersOf(fa).forEach(function (hm) { hl.push({ user: fu.name, name: str(fa.name, 20), u: hm.u, mon: monOut(hm, fa) }); });
     });
     A.reply(res, 200, { helpers: hl });
     return true;

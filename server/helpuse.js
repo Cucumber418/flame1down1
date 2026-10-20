@@ -17,7 +17,7 @@ var fs = require('fs');
 var A = require('./accounts');
 
 var FILE = path.join(A.DATA_DIR, 'helpuse.json');
-var DAY_CAP = 10, BJ = 8 * 3600 * 1000;
+var DAY_CAP = 20, BJ = 8 * 3600 * 1000;
 
 function load() { try { var d = JSON.parse(fs.readFileSync(FILE, 'utf8')); if (d && typeof d === 'object') { d.pend = d.pend || {}; d.day = d.day || {}; return d; } } catch (e) {} return { pend: {}, day: {} }; }
 function store(d) { var tmp = FILE + '.tmp'; fs.writeFileSync(tmp, JSON.stringify(d)); fs.renameSync(tmp, FILE); }

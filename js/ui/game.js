@@ -2857,7 +2857,7 @@
   function chalStars(id) { var r = acc && acc.chal && acc.chal[id]; return r ? r.s.filter(Boolean).length : 0; }
   function chalOpen() { return !!(acc && prog('fl_chal').done); }
   function chalLevelOpen(P, i) { return chalOpen() && (i === 0 || chalStars(CHAL[P][i - 1].id) > 0); }
-  function helperSet() { return !!(acc && acc.card && acc.card.helper != null && mon(acc.card.helper)); }
+  function helperSet() { var c = acc && acc.card; return !!(c && ((Array.isArray(c.helpers) && c.helpers.some(function (u) { return mon(u); })) || (c.helper != null && mon(c.helper)))); }
   function helperOk() { return prog('fl_chal2').done; }
   function starRow(n, got) { var h = ''; for (var i = 0; i < 3; i++) h += '<i class="' + (got ? (got[i] ? 'on' : '') : i < n ? 'on' : '') + '">★</i>'; return '<span class="ch-stars">' + h + '</span>'; }
   // 好友的助战精灵（联网时从服务器读，几分钟内用缓存）
@@ -2872,7 +2872,7 @@
   }
   function helperList() {
     var L = [MM_HELPER];
-    (ex.helpers || []).forEach(function (h) { if (h && h.mon && SPMAP[h.mon.sid]) L.push({ key: 'u:' + h.user, owner: h.name || h.user, mon: h.mon }); });
+    (ex.helpers || []).forEach(function (h) { if (h && h.mon && SPMAP[h.mon.sid]) L.push({ key: 'u:' + h.user + ':' + (h.u != null ? h.u : 0), user: h.user, owner: h.name || h.user, mon: h.mon }); });
     return L;
   }
   function chalTeam() {   // 这一关的出战精灵：自己的（按配队顺序）+ 助战
@@ -2979,7 +2979,7 @@
     ex.chalOrder = ord || ex.chalOrder;
     var L = chalLineup(), own = L.filter(function (e) { return e.m; }).map(function (e) { return e.m; });
     var p = L.map(function (e) { return e.m ? storyMon(e.m) : helperSpec(e.h); });
-    if (bsOnline()) L.forEach(function (e) { if (e.h && /^u:/.test(e.h.key || '')) CLOUD.api('POST', '/api/helper-use', { owner: e.h.key.slice(2) }).catch(function () {}); });   // 借了好友的助战：给主人记一次
+    if (bsOnline()) L.forEach(function (e) { if (e.h && e.h.user) CLOUD.api('POST', '/api/helper-use', { owner: e.h.user }).catch(function () {}); });   // 借了好友的助战：给主人记一次
     var a = x.foes.map(function (f) { seeMon(f.sid, Math.min(f.lv, MAX_LV)); var o = storyMon({ sid: f.sid, lv: f.lv, moves: [] }); if (f.q) o.lvq = 1; return o; });
     stopTimers(); ex.fighting = true; document.body.classList.add('story-fight'); syncBattle();
     $('pg-explore').hidden = true; $('pg-arena').hidden = false;
