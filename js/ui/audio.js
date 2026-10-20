@@ -65,7 +65,9 @@
   // 有 Web Audio 时音量只由增益控制，播放器自身的音量固定为 1（否则页面刚打开时设的 0 会一直留着，导致完全没声音）
   function setLevel(v) { level = v; if (gain) { gain.gain.value = v; if (el.volume !== 1) el.volume = 1; } else el.volume = Math.max(0, Math.min(1, v)); }
   function allowed(k) { return !!k && (SCENES[k] ? cfg.ui : cfg.music); }
-  function target() { return allowed(cur) ? cfg.vol / 100 : 0; }
+  var held = false;   // 音乐鉴赏试听时暂停背景音乐
+  function target() { return !held && allowed(cur) ? cfg.vol / 100 : 0; }
+  function hold(on) { on = !!on; if (held === on) return; held = on; if (on) fadeTo(0, 300, function () { if (held) el.pause(); }); else if (cur && unlocked && document.visibilityState !== 'hidden') { var p = el.play(); if (p) p.catch(function () {}); fadeTo(target(), 600); } }
   function fadeTo(to, ms, done) {
     clearInterval(fadeT);
     var from = level, t0 = Date.now();
@@ -79,6 +81,7 @@
   function want() { var k = battle || scene; return k !== 'silence' && allowed(k) ? k : null; }
   function startTrack(k, fromStart) {
     cur = k;
+    try { if (window.HSHEARD) window.HSHEARD(k === 'ui' && cfg.uiOld ? 'uiOld' : k); } catch (e) {}   // 剧情回顾 · 音乐鉴赏：记下听过的曲子
     el.loop = !ONESHOT[k];
     if (el.dataset.k !== k) { el.src = TRACKS[k] + V; el.dataset.k = k; }
     try { el.currentTime = fromStart ? 0 : (pos[k] || 0); } catch (e) {}
@@ -178,5 +181,5 @@
     document.addEventListener('click', function () { if (!menu.hidden) { menu.hidden = true; btn.setAttribute('aria-expanded', 'false'); } });
   }
 
-  window.HSAUDIO = { play: play, stop: stop, scene: setScene, now: function () { return { battle: battle, scene: scene, cur: cur, playing: !el.paused }; } };
+  window.HSAUDIO = { play: play, stop: stop, scene: setScene, hold: hold, tracks: TRACKS, src: function (k) { return k === 'uiOld' ? UI_OLD + V : k === 'uiNew' ? UI_NEW + V : TRACKS[k] ? TRACKS[k] + V : null; }, vol: function () { return cfg.vol / 100; }, now: function () { return { battle: battle, scene: scene, cur: cur, playing: !el.paused }; } };
 })();

@@ -1622,6 +1622,9 @@
     if (ex.view === 'boss') { if (bossOpen(ex.boss)) { renderBoss(); return; } ex.view = 'planets'; }
     if (ex.view === 'bosshub') { renderBossHub(); return; }
     if (ex.view === 'weekly') { if (weeklyOpen()) { ex.boss = curWk().boss; renderBoss(true); return; } ex.view = 'planets'; }
+    if (ex.view !== 'archive' && ex.arcPlay) arcStop();
+    if (ex.view === 'archive') { renderArchive(); return; }
+    if (ex.view === 'ewk') { if (weeklyOpen() && ewkType(ex.ewkT)) { renderEwk(); return; } ex.view = 'planets'; }
     if (ex.view === 'room') { if (homeOpen()) { renderRoom(); return; } ex.view = 'area'; renderArea(); return; }
     if (ex.view === 'teashop') { if (homeOpen()) { renderTeaShop(); return; } ex.view = 'area'; renderArea(); return; }
     if (ex.view === 'shop') { if (shopOpen()) { renderShop(); return; } ex.view = 'area'; renderArea(); return; }
@@ -1634,6 +1637,7 @@
     var html = exHead(ex.view === 'planets' ? '选择要前往的星球。' : Pp && Pp.ship ? '点击舰上的区域，即可传送过去。' : '选择要前往的地点。');
     if (ex.view === 'planets') {
       var nOpen = Object.keys(BOSSES).filter(bossOpen).length;
+      html += arcBarHTML();
       html += '<div class="boss-row"><button type="button" class="weekly-card hub-card" data-bosshub="1"><span class="tape l"></span><span class="hub-ic">' + Object.keys(BOSSES).map(function (k) { return '<img src="' + SPRITES[BOSSES[k].sid] + '" alt="">'; }).join('') + '</span><span class="wk-txt"><span class="chip boss-diff">BOSS挑战</span><b>BOSS一览</b>' +
         '<small>' + Object.keys(BOSSES).map(function (k) { return BOSSES[k].name; }).join('、') + ' · 已开放 ' + nOpen + ' / ' + Object.keys(BOSSES).length + '</small></span><span class="wk-pm">›</span></button>';
       if (weeklyOpen()) {
@@ -1643,6 +1647,7 @@
           html += '<button type="button" class="weekly-card" data-weekly="' + (wi + 1) + '"><span class="tape l"></span><img src="' + SPRITES[WB.sid] + '" alt=""><span class="wk-txt"><span class="chip boss-diff d2">每周挑战</span><b>' + WB.name + ' · ' + WB.lv[W.d].diff + '难度</b>' +
             '<small>获胜时消耗 1 枚挑战许可 · 击败得累积经验 ×' + fmt(W.exp) + '、' + rwList({ items: W.item }).join('、') + (W.cry ? '、' + itemName('m_mcry') + ' ×' + W.cry[0] + '–' + W.cry[1] : '') + ' 和随机掉落</small></span><span class="wk-pm"><b>' + pn + '</b> / ' + PERMIT.max + '<small>挑战许可（共用）</small></span></button>';
         });
+        html += ewkCardHTML(pn);
       }
       html += '</div>';
       // 第一排：荆楚号、空间站；第二排：马亚尔星系（星系图上点星球进入）；第三排：地球
@@ -4159,6 +4164,33 @@
   ];
   function wkOpen(W) { return !!acc && !!W && bossWon(W.boss, W.d); }
   function curWk() { var W = WEEKLIES[ex.wk | 0]; return wkOpen(W) ? W : WEEKLIES.filter(wkOpen)[0] || WEEKLIES[0]; }
+  /* ---------- 属性每周挑战（2026-10-20）：草、水、火、冰、电各一个BOSS，和泰戈尔、荒芜的每周挑战并列 ----------
+   * BOSS 每周（北京时间周一 0 点）从该属性的野生精灵里随机抽一种（最终形态），分简单 / 普通 / 困难三档，都能直接挑战；
+   * 获胜消耗 1 枚挑战许可（和其他每周挑战共用），掉落对应属性的特产。战绩存在 acc.bosses['ewk_属性:难度'] */
+  var EWK = {
+    types: [{ t: '草', item: 'floraJade' }, { t: '水', item: 'kbDrop' }, { t: '火', item: 'ppAsh' }, { t: '冰', item: 'whFrost' }, { t: '电', item: 'ltOrb' }],
+    lv: [
+      { diff: '简单', lv: 40, hp: 2000, boss: { pp: 99 }, bgm: 'boss', drop: [8, 12], exp: 3000 },
+      { diff: '普通', lv: 60, hp: 5000, boss: { dr: 0.15, pp: 99 }, bgm: 'boss2', drop: [16, 24], exp: 6000 },
+      { diff: '困难', lv: 80, hp: 10000, boss: { dr: 0.2, noStatus: 1, pp: 99 }, bgm: 'boss3', drop: [30, 45], exp: 12000 }
+    ]
+  };
+  function wkNum(t) { return Math.floor((dayNum(t) + 3) / 7); }   // 按北京时间的周一分周
+  function ewkPool(t) {
+    var o = []; for (var k in WILD) (WILD[k] || []).forEach(function (w) { var S = SPMAP[w.sid]; if (S && S.types.indexOf(t) >= 0 && o.indexOf(w.sid) < 0) o.push(w.sid); });
+    return o.sort();
+  }
+  function ewkType(t) { return EWK.types.filter(function (x) { return x.t === t; })[0]; }
+  function ewkSid(t) { var P = ewkPool(t), i = EWK.types.indexOf(ewkType(t)); return P.length ? P[thash(wkNum(Date.now()) * 7 + i * 131 + 17) % P.length] : null; }
+  function ewkBg(sid) { for (var i = 0; i < WILD_REGIONS.length; i++) { var R = WILD_REGIONS[i]; if ((WILD[R.pool] || []).some(function (w) { return w.sid === sid; }) && R.bgs && BG[R.bgs[0]]) return BG[floraBg(R.bgs[0])]; } return null; }
+  function ewkLeft() { var end = (wkNum(Date.now()) + 1) * 7 - 3, ms = end * 86400000 - 8 * 3600e3 - Date.now(), h = Math.max(0, Math.floor(ms / 3600000)); return h >= 24 ? Math.floor(h / 24) + ' 天 ' + (h % 24) + ' 小时' : h + ' 小时'; }
+  function ewkCardHTML(pn) {
+    return EWK.types.map(function (T) {
+      var sid = ewkSid(T.t); if (!sid) return '';
+      return '<button type="button" class="weekly-card ewk-card" data-ewk="' + T.t + '"><span class="tape l"></span><img src="' + SPRITES[sid] + '" alt=""><span class="wk-txt"><span class="chip boss-diff d1">' + T.t + '系 · 每周挑战</span><b>' + esc(SPMAP[sid].name) + '</b>' +
+        '<small>简单 / 普通 / 困难 · 获胜消耗 1 枚挑战许可 · 掉落' + itemName(T.item) + ' · 本周还剩 ' + ewkLeft() + '</small></span><span class="wk-pm"><b>' + pn + '</b> / ' + PERMIT.max + '<small>挑战许可（共用）</small></span></button>';
+    }).join('');
+  }
   var PERMIT = { max: 24, every: 12 * 3600 * 1000 };   // 每 12 小时恢复 1 枚，最多 24 枚
   function recKey(k, d) { return d === 'w' ? k + ':w' : d ? k + ':' + d : k; }
   function bossRec(k, d) { if (!acc.bosses) acc.bosses = {}; var rk = recKey(k, d); if (!acc.bosses[rk]) acc.bosses[rk] = { wins: 0, tries: 0 }; return acc.bosses[rk]; }
@@ -4403,6 +4435,180 @@
       } });
   }
 
+  function renderEwk() {
+    var T = ewkType(ex.ewkT), sid = ewkSid(T.t), S = SPMAP[sid], d = ex.ewkD | 0, L = EWK.lv[d], pn = permits();
+    var rec = (acc.bosses && acc.bosses[recKey('ewk_' + T.t, d)]) || {};
+    var tabs = '<div class="fparts boss-tabs" role="tablist">' + EWK.lv.map(function (x, i) { return '<button type="button" role="tab" class="tab' + (i === d ? ' on' : '') + '" aria-selected="' + (i === d) + '" data-ewkd="' + i + '">' + x.diff + (bossWon('ewk_' + T.t, i) ? ' ✓' : '') + '</button>'; }).join('') + '</div>';
+    var rules = fxRules(L).map(function (r) { return '<li><b>特殊</b>' + esc(r[0]) + '：' + esc(r[1]) + '</li>'; }).join('');
+    var bg = ewkBg(sid);
+    $('pg-explore').innerHTML = exHead(T.t + '系每周挑战：BOSS 每周一 0 点从' + T.t + '系野生精灵里随机换一只。三档难度都能直接挑战，获胜消耗 1 枚挑战许可，输了不消耗。') +
+      '<div class="crumb"><button type="button" class="btn ghost" id="ewk-back">‹ 返回星际探索</button><b>每周挑战 · ' + T.t + '系 · ' + esc(S.name) + '</b></div>' + tabs +
+      '<article class="boss-card"><span class="tape l"></span><div class="boss-art">' + (bg ? '<img src="' + bg + '" alt="" class="boss-bg">' : '') + '<img src="' + SPRITES[sid] + '" alt="' + esc(S.name) + '" class="boss-mon"></div>' +
+      '<div class="boss-txt"><span class="chip boss-diff d' + d + '">' + T.t + '系每周挑战 · ' + L.diff + '难度</span><h3>' + esc(S.name) + '</h3><p class="hint">本周的' + T.t + '系BOSS，还剩 ' + ewkLeft() + ' 换下一只。</p>' +
+      '<ul class="boss-rules"><li><b>等级</b>LV' + L.lv + '</li><li><b>体力</b>' + fmt(L.hp) + '</li>' + rules +
+      '<li><b>时限</b>' + MAX_TURNS + ' 回合内没有击败BOSS，算挑战失败</li>' +
+      '<li><b>奖励</b>每次击败获得' + itemName(T.item) + ' ×' + L.drop[0] + '–' + L.drop[1] + '、累积经验 ×' + fmt(L.exp) + '，另有经验和学习力</li><li><b>战绩</b>' + (rec.wins || 0) + ' 胜 / ' + (rec.tries || 0) + ' 次挑战</li></ul>' +
+      '<p class="hint">会使用你当前的出战配队（' + TEAM_NAME[acc.active] + '）。对战中可以使用补药。</p>' +
+      '<button type="button" class="btn primary" data-ewkgo="1"' + (pn > 0 ? '' : ' disabled') + '>开始挑战（获胜时消耗 1 枚挑战许可）</button><p class="hint permit-line">挑战许可 <b>' + pn + '</b> / ' + PERMIT.max + ' · ' + permitNext() + '</p></div></article>';
+  }
+  function startEwk(t, d) {
+    var T = ewkType(t), sid = T && ewkSid(t), L = EWK.lv[d]; if (!sid || !L || !weeklyOpen()) return;
+    if (permits() < 1) { toast('挑战许可用完了。' + permitNext() + '。'); return; }
+    var team = (acc.teams[acc.active] || []).map(mon).filter(Boolean); if (!team.length) team = acc.mons.slice(0, 1);
+    team = team.slice(0, TEAM_SIZE);
+    var S = SPMAP[sid], a = [{ id: sid, lv: L.lv, moves: defaultMoves(sid, L.lv), nick: S.name, img: SPRITES[sid], maxhp: L.hp, boss: JSON.parse(JSON.stringify(L.boss)) }];
+    seeMon(sid, L.lv);
+    var rec = bossRec('ewk_' + t, d); rec.tries++; save();
+    stopTimers(); ex.fighting = true; document.body.classList.add('story-fight'); syncBattle();
+    $('pg-explore').hidden = true; $('pg-arena').hidden = false;
+    window.HSBATTLE.start({ p: team.map(storyMon), a: a, foe: 'BOSS', diff: t + '系每周挑战 · ' + L.diff, bgm: L.bgm, items: invCopy(), onItem: useInv, bg: ewkBg(sid), back: '每周挑战',
+      onEnd: function (res, seen, downs) {
+        var msg = [];
+        dailyHit('boss'); dailyHit('pve');
+        if (res === 'win') {
+          rec.wins++; permits(); acc.permit.n = Math.max(0, acc.permit.n - 1);
+          var n = L.drop[0] + Math.floor(Math.random() * (L.drop[1] - L.drop[0] + 1)), it = {}; it[T.item] = n;
+          giveItems(it); acc.exp = (acc.exp || 0) + L.exp;
+          msg.push(t + '系每周挑战：击败了' + L.diff + '难度的「' + S.name + '」！获得' + itemName(T.item) + ' ×' + n + '、累积经验 +' + fmt(L.exp) + '。消耗了 1 枚挑战许可。');
+        }
+        msg = msg.concat(battleRewards(team, seen, downs));
+        save();
+        ex.fighting = false; document.body.classList.remove('story-fight');
+        ex.view = 'ewk'; ex.ewkT = t; ex.ewkD = d;
+        $('pg-arena').hidden = page !== 'arena'; $('pg-explore').hidden = page !== 'explore';
+        renderTop(); syncBattle(); window.scrollTo(0, $('pg-explore').offsetTop - 8);
+        if (msg.length) toast(msg.join(''));
+      } });
+  }
+  /* ---------- 剧情回顾（2026-10-20）：星际探索第一排的入口，集中重温剧情 ----------
+   * 主线（按章节，可以一口气连播）、支线（含世界任务）、画廊（所有 CG）、音乐鉴赏（只列出听过的曲子）、角色立绘（只显示见过的角色，资料按剧情进度揭示） */
+  var ARC_TABS = [['main', '主线'], ['side', '支线'], ['cg', '画廊'], ['music', '音乐鉴赏'], ['chars', '角色立绘']];
+  var MUSIC = [
+    ['ui', '大厅 · HMS_JC', '主界面'], ['uiOld', '大厅（旧版）', '主界面（旧版）'], ['arena', '竞技大厅', '竞技对战'], ['earth', '地球', '地球的剧情'],
+    ['faceEnemy', '遇敌', '剧情对战开场'], ['normal', '寻常', '野外与剧情对战'], ['stage', '关卡', '星球挑战'], ['pvp', 'PVP', '竞技对战与切磋'],
+    ['boss', 'Boss', '简单难度BOSS战'], ['boss2', 'Boss2', '普通难度BOSS战'], ['boss3', 'Boss3', '困难难度BOSS战与每周挑战'], ['tigerFinal', '东北的往事', '？'],
+    ['flora', 'FloraBackground', '芙罗拉星'], ['floraGrass', 'Flora1', '芙罗拉星 · 草甸'], ['floraForest', 'Flora2', '芙罗拉星 · 丛林'], ['floraFallen', 'Flora3 · The Great Cover', '瘴气化之后的芙罗拉星'],
+    ['grassTalk', 'Grass Talk', '剧情'], ['memory', 'Memory', '剧情'], ['saver', 'Saver', '剧情'], ['disCommunication', 'Dis-communication', '瘴气化之后的野外对战'], ['beforeEnd', 'before the end', '？'],
+    ['spa', '温泉', '温泉疗养'], ['kb', '坎伯兰星', '坎伯兰星'], ['kbSurface', '坎伯兰星 · 水面', '坎伯兰星水面'], ['kbShallow', '坎伯兰星 · 浅海', '坎伯兰星浅海'], ['temple', '古代神殿', '坎伯兰星深海']
+  ];
+  var MUSIC_ALIAS = { disComScene: 'disCommunication', faceEnemyScene: 'faceEnemy' };
+  window.HSHEARD = function (k) {
+    if (!acc || !k || k === 'silence') return; k = MUSIC_ALIAS[k] || k;
+    if (!acc.heard) acc.heard = {}; if (acc.heard[k]) return; acc.heard[k] = Date.now(); save();
+  };
+  function heard(k) {
+    if (k === 'ui' || (acc.heard && acc.heard[k])) return true;
+    // 这个功能上线之前就听过的：剧本里写了这首曲子、而且已经读完的剧情也算
+    for (var id in SCRIPT) if (prog(id).done && SCRIPT[id].some(function (st) { return st.bgm && (MUSIC_ALIAS[st.bgm] || st.bgm) === k; })) return true;
+    return false;
+  }
+  // 角色：k 是剧本里的说话人；facts = [[读完哪段剧情后揭示, 文字]]
+  var ARC_CHARS = [
+    { k: 'p', facts: [['', '省实验中学的学生，月考全年级第一，被选入了星际探索计划。']] },
+    { k: 'v', facts: [['school', '你的朋友，月考全年级第二，和你一起被选入星际探索计划。挑选伙伴精灵时，她选了克制你的那一只。'], ['flora2', '随身带着 Dr.黄 交给小队的精灵翻译器。'], ['flora3', '为了接住空投下来的烟雾保护头盔，用头去接，被砸晕了（头盔完好无损）。'], ['spa', '发现荆楚号的咸宁居然藏着一片温泉疗养区。']] },
+    { k: 'z', facts: [['school', '班主任兼物理老师，带你们参加星际探索计划。口头禅是「李比鱼」（你比如）和「摸擦力」（摩擦力），叮嘱里总要讲两句物理。'], ['board', '一路把你们送到酒泉，在发射塔前道别，留在了地球。']] },
+    { k: 't', facts: [['jiuquan', '为了寻找点点，独自从格拉斯哥偷渡到了酒泉卫星发射中心。给了你 1000 能量当封口费。'], ['board', '藏在物资箱里混上了火箭，入轨后才钻出来。'], ['plant', '在地球上最爱种菜，阳台和楼顶都种满了，小区里的叔叔阿姨叫她「叶伯伯」。'], ['flora4', '追着点点的气味独自闯进丛林，被瘴气玛西抓走，关在叶之村落，后来被救了出来。'], ['flora6', '一时冲动踏上了盐碱地。']] },
+    { k: 'y', facts: [['jiuquan', 'Threego 一直在找的人，会叫她「姐姐」。半年前登上飞船之后，就和大家失去了联系。'], ['flora5', '说过自己「不会死，会活着等姐姐找到他」。']] },
+    { k: 'b', facts: [['board', '省实验的学生，比你们早一批登上荆楚号，在鄂州港迎接新船员。自称「神」，说到得意处眼镜会发光。'], ['academy', '在学院部管着记录所有精灵的「黄冈秘鉴」。'], ['flora3', '派无人机给地面小队空投了烟雾保护头盔。'], ['flora5', '交给 Vanber 一颗炸弹，结果「困了睡觉就忘了」说。']] },
+    { k: 'h', facts: [['xiaogan', '省实验的学生，常驻孝感大厅，介绍模拟对战系统。'], ['flora2', '把精灵翻译器交给了地面小队，只说「以前在别的地方用过差不多的」。'], ['brawl', '说自己以前在很远很远的地方玩过差不多的东西，打了很久很久……被追问时慌忙岔开了话题。']] },
+    { k: 'ai', facts: [['board', '荆楚号的舰内系统语音。']] },
+    { k: 'mm', facts: [['mingming', '古城防卫部的教官，给队员们配备机械精灵董之盾。'], ['fl_chal2', '按防卫部「出任务可以向队友借精灵」的老规矩，把自己的 LV30 赫菲托斯借给你助战。']] },
+    { k: 'tg', facts: [['tiger', '从东北招募的特殊虎系精灵，常驻古城防卫部，辅助船员们训练。'], ['tiger2', '在东北受过语言训练，一开口就是东北话。']] },
+    { k: 'kr', facts: [['flora2', '芙罗拉星草甸上的原住民。被瘴气污染时袭击过小队，瘴气散去后带你们逃到了草甸。戴上翻译器就能听懂它说话。'], ['flora5', '说盐碱地几千年来一直静静地在那里，一次小地震之后才开始冒瘴气。']] },
+    { k: 'kl', facts: [['flora3', '在丛林里专门猎杀瘴气精灵的「猎杀者」，不回应翻译器。'], ['flora5', '原本是住在林子最深处的森林守护者。'], ['flora6', '猎杀瘴气精灵的卡莱，是被辰爷用瘴气驯化的。']] },
+    { k: 'ms', facts: [['flora4', '丛林里被瘴气玛西围攻的小玛西，戴着翻译器能听懂它说话。']] },
+    { k: 'lc', facts: [['travelcat', '芙罗拉星上很少见的叶子喵一族。族里要求隐居，她却向往远方，在星球之间旅行。'], ['flora4', '每回来一次，就发现家里的瘴气浓了一点。一族的村子叫「叶之村落」。'], ['flora6', '叶子喵一族生来带着一点净化的光；她在外面走了很远、打了很多场，光已经强到能把瘴气挡在外面。']] },
+    { k: 'cy', facts: [['flora5', '代号「常春藤怀克」，常春藤组织的特工。戴眼镜，高雅而高傲，自称「一鸟大人派我来驱赶这颗星球上的一切生灵」。'], ['flora6', '用瘴气驯化了一大批卡莱。']] },
+    { k: 'r', facts: [['core', '荆楚号 · 宜昌三峡能源核心的主人。']] }
+  ];
+  function arcSeen(k) {
+    if (k === 'p') return true;
+    for (var id in SCRIPT) if (prog(id).done && SCRIPT[id].some(function (st) { return st.s === k; })) return true;
+    return false;
+  }
+  function arcFirst(k) { for (var id in SITES) if (SCRIPT[id] && SCRIPT[id].some(function (st) { return st.s === k; })) return id; return null; }
+  function arcImgs(k) {   // [默认, 差分...]；精灵角色用精灵立绘
+    var C = CAST[k]; if (!C) return [];
+    var base = k === 'p' ? playerArt() : C.img;
+    if (base) return [CHARS[base]].concat(Object.keys(CHARS).filter(function (x) { return x.indexOf(base + '_') === 0; }).map(function (x) { return CHARS[x]; })).filter(Boolean);
+    if (C.spr) return [form({ sid: C.spr, lv: C.sprLv || 1 }).img];
+    return [];
+  }
+  function arcRow(id, kind) {
+    var S = SITES[id], pr = prog(id), done = pr.done, open = unlocked(id);
+    if (!done && !open) return '<li class="arc-it locked"><span class="arc-no">？</span><div><b>？？？</b><small>' + (kind === 'side' ? '尚未开放' : '继续推进剧情后解锁') + '</small></div></li>';
+    var P = planetOf(S.planet);
+    return '<li class="arc-it' + (done ? '' : ' unread') + '"><img src="' + BG[S.bg] + '" alt="" class="arc-th"><div><span class="sc-tag">' + esc(S.chapter) + '</span><b>' + esc(S.name) + '</b><small>' + esc(P ? P.name : '') + (done ? '' : ' · 还没读') + '</small>' + (done ? '<p class="hint">' + esc(S.d) + '</p>' : '') + '</div>' +
+      (done ? '<button type="button" class="btn" data-arcplay="' + id + '">重温</button>' : '<button type="button" class="btn ghost" data-arcgo="' + id + '">去阅读</button>') + '</li>';
+  }
+  function arcMain() {
+    var used = {}, h = '';
+    var doneAll = Object.keys(SITES).filter(function (id) { return !SITES[id].side && prog(id).done; });
+    h += '<div class="arc-bar2"><p class="hint">已读完主线 ' + doneAll.length + ' 段。重温不会再发奖励。</p>' + (doneAll.length ? '<button type="button" class="btn primary" data-arcall="1">▶ 从头连播主线</button>' : '') + '</div>';
+    CHAPTERS.forEach(function (C) {
+      C.sites.forEach(function (id) { used[id] = 1; });
+      var rows = C.sites.filter(function (id) { return SITES[id]; }).map(function (id) { return arcRow(id, 'main'); });
+      var shown = [], hid = false; rows.forEach(function (r) { if (r.indexOf('arc-it locked') >= 0) { if (!hid) shown.push(r); hid = true; } else shown.push(r); });
+      if (!C.sites.some(function (id) { return prog(id).done || unlocked(id); })) return;
+      h += '<section class="arc-sec"><h3>' + esc(C.n) + (C.wip ? ' <small>（未完待续）</small>' : '') + '</h3><p class="hint">' + esc(C.d) + '</p><ol class="arc-list">' + shown.join('') + '</ol></section>';
+    });
+    var rest = Object.keys(SITES).filter(function (id) { return !SITES[id].side && !used[id] && (prog(id).done || unlocked(id)); });
+    if (rest.length) h += '<section class="arc-sec"><h3>其他</h3><ol class="arc-list">' + rest.map(function (id) { return arcRow(id, 'main'); }).join('') + '</ol></section>';
+    return h;
+  }
+  function arcSide() {
+    var ids = Object.keys(SITES).filter(function (id) { return SITES[id].side; });
+    var world = ids.filter(function (id) { return SITES[id].chapter.indexOf('世界任务') === 0; }), side = ids.filter(function (id) { return world.indexOf(id) < 0; });
+    var vis = function (L) { return L.filter(function (id) { return prog(id).done || unlocked(id); }); };
+    var n = ids.filter(function (id) { return prog(id).done; }).length;
+    return '<p class="hint">已读完 ' + n + ' / ' + ids.length + ' 段支线和世界任务。还没开放的不会显示。</p>' +
+      '<section class="arc-sec"><h3>支线</h3><ol class="arc-list">' + (vis(side).map(function (id) { return arcRow(id, 'side'); }).join('') || '<li class="hint">还没有开放的支线。</li>') + '</ol></section>' +
+      (vis(world).length ? '<section class="arc-sec"><h3>世界任务</h3><ol class="arc-list">' + vis(world).map(function (id) { return arcRow(id, 'side'); }).join('') + '</ol></section>' : '');
+  }
+  function arcMusic() {
+    var n = MUSIC.filter(function (m) { return heard(m[0]); }).length;
+    return '<p class="hint">听过的曲子会出现在这里（' + n + ' / ' + MUSIC.length + '）。试听时背景音乐会暂停。</p><ol class="arc-music">' + MUSIC.map(function (m, i) {
+      var ok = heard(m[0]), on = ex.arcPlay === m[0];
+      return ok ? '<li class="' + (on ? 'on' : '') + '"><span class="arc-no">' + (i + 1) + '</span><div><b>' + esc(m[1]) + '</b><small>' + esc(m[2]) + '</small></div><button type="button" class="btn' + (on ? ' primary' : '') + '" data-arcmus="' + m[0] + '">' + (on ? '■ 停止' : '▶ 试听') + '</button></li>'
+        : '<li class="locked"><span class="arc-no">' + (i + 1) + '</span><div><b>？？？</b><small>还没听过</small></div></li>';
+    }).join('') + '</ol>';
+  }
+  function arcChars() {
+    var L = ARC_CHARS.filter(function (c) { return CAST[c.k] && arcSeen(c.k); });
+    var met = acc.cumberDay != null;
+    var cards = L.map(function (c) {
+      var C = CAST[c.k], imgs = arcImgs(c.k), f1 = (c.facts[0] && c.facts[0][0]) || arcFirst(c.k), known = c.facts.filter(function (f) { return !f[0] || prog(f[0]).done; }), more = known.length < c.facts.length;
+      var sel = (ex.arcFace && ex.arcFace[c.k]) | 0; if (sel >= imgs.length) sel = 0;
+      return '<article class="arc-ch"><span class="tape r"></span><div class="arc-face' + (C.img || c.k === 'p' ? '' : ' arc-mon') + '">' + (imgs.length ? '<img src="' + imgs[sel] + '" alt="' + esc(C.name()) + '">' : '<span class="arc-ini" style="background:' + C.color + '">' + esc(C.name().slice(0, 1)) + '</span>') + '</div>' +
+        '<div class="arc-cht"><h3 style="color:' + C.color + '">' + esc(C.name()) + '</h3>' + (f1 && c.k !== 'p' ? '<small class="hint">首次登场：' + esc(SITES[f1].chapter) + '</small>' : '') +
+        '<ul>' + known.map(function (f) { return '<li>' + esc(fill(f[1])) + '</li>'; }).join('') + (more ? '<li class="hint">？？？（继续推进剧情，会知道更多）</li>' : '') + '</ul>' +
+        (imgs.length > 1 ? '<div class="arc-vars">' + imgs.map(function (u, i) { return '<button type="button" class="' + (i === sel ? 'on' : '') + '" data-arcface="' + c.k + '|' + i + '" aria-label="差分 ' + (i + 1) + '"><img src="' + u + '" alt=""></button>'; }).join('') + '</div>' : '') + '</div></article>';
+    });
+    if (met) cards.push('<article class="arc-ch"><span class="tape r"></span><div class="arc-face"><img src="' + CHARS.cumber + '" alt="？？？"></div><div class="arc-cht"><h3>？？？</h3><small class="hint">在坎伯兰星 · 深渊潜底遇到</small><ul><li>在深海里遇到的神秘女子，问你：「……你怎么在这里？」</li><li class="hint">？？？</li></ul></div></article>');
+    return '<p class="hint">已经遇见 ' + cards.length + ' 位角色。资料会随着剧情推进逐渐揭示。</p><div class="arc-chars">' + cards.join('') + '</div>';
+  }
+  var arcAudio = null;
+  function arcStop() { if (arcAudio) { arcAudio.pause(); arcAudio = null; } if (ex.arcPlay) { ex.arcPlay = null; if (window.HSAUDIO && HSAUDIO.hold) HSAUDIO.hold(false); } }
+  function arcMus(k) {
+    if (ex.arcPlay === k) { arcStop(); renderArchive(); return; }
+    arcStop(); var src = window.HSAUDIO && HSAUDIO.src && HSAUDIO.src(k === 'ui' ? 'uiNew' : k); if (!src) return;
+    if (HSAUDIO.hold) HSAUDIO.hold(true);
+    arcAudio = new Audio(src); arcAudio.loop = true; arcAudio.volume = Math.max(0.05, HSAUDIO.vol ? HSAUDIO.vol() : 0.6); var pp = arcAudio.play(); if (pp) pp.catch(function () {});
+    ex.arcPlay = k; renderArchive();
+  }
+  function renderArchive() {
+    var tab = ex.arcTab || 'main';
+    var body = tab === 'side' ? arcSide() : tab === 'cg' ? cgGallery(Object.keys(SITES)) : tab === 'music' ? arcMusic() : tab === 'chars' ? arcChars() : arcMain();
+    $('pg-explore').innerHTML = exHead('在这里重温读过的剧情、看过的 CG、听过的音乐和遇见过的角色。') +
+      '<div class="crumb"><button type="button" class="btn ghost" id="arc-back">‹ 返回星际探索</button><b>剧情回顾</b></div>' +
+      '<div class="fparts arc-tabs" role="tablist">' + ARC_TABS.map(function (t) { return '<button type="button" role="tab" class="tab' + (t[0] === tab ? ' on' : '') + '" aria-selected="' + (t[0] === tab) + '" data-arctab="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>' +
+      '<div class="arc-body">' + body + '</div>';
+  }
+  function arcBarHTML() {
+    var main = Object.keys(SITES).filter(function (id) { return !SITES[id].side; }), side = Object.keys(SITES).filter(function (id) { return SITES[id].side; });
+    var nm = main.filter(function (id) { return prog(id).done; }).length, ns = side.filter(function (id) { return prog(id).done; }).length;
+    return '<button type="button" class="arc-entry" data-archive="1"><span class="tape l"></span><span class="arc-e-ic" aria-hidden="true">📖</span><span class="arc-e-txt"><b>剧情回顾</b><small>主线 ' + nm + ' 段 · 支线 ' + ns + ' 段 · 画廊 · 音乐鉴赏 · 角色立绘</small></span><span class="wk-pm">›</span></button>';
+  }
   /* ---------- 商城：荆门 · 物资仓储 ---------- */
   var shopQty = {};
   // 不在战斗里用的商品
@@ -5408,6 +5614,18 @@
     if (b.dataset.bossgo) { startBoss(b.dataset.bossgo, +b.dataset.d || 0); return; }
     if (b.dataset.weekly) { ex.wk = (+b.dataset.weekly || 1) - 1; ex.view = 'weekly'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
     if (b.dataset.weeklygo) { startBoss(curWk().boss, curWk().d, true); return; }
+    if (b.dataset.archive) { ex.view = 'archive'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
+    if (b.dataset.arctab) { ex.arcTab = b.dataset.arctab; renderArchive(); return; }
+    if (b.id === 'arc-back') { arcStop(); ex.view = 'planets'; renderExplore(); return; }
+    if (b.dataset.arcmus) { arcMus(b.dataset.arcmus); return; }
+    if (b.dataset.arcface) { var af = b.dataset.arcface.split('|'); if (!ex.arcFace) ex.arcFace = {}; ex.arcFace[af[0]] = +af[1]; renderArchive(); return; }
+    if (b.dataset.arcplay) { arcStop(); ex.arcQ = []; ex.arc = true; startVN(b.dataset.arcplay, 'replay', $('pg-explore'), true); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
+    if (b.dataset.arcall) { arcStop(); var aq = Object.keys(SITES).filter(function (id) { return !SITES[id].side && prog(id).done; }); ex.arc = true; ex.arcQ = aq.slice(1); startVN(aq[0], 'replay', $('pg-explore'), true); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
+    if (b.dataset.arcgo) { var AS = SITES[b.dataset.arcgo]; ex.arc = false; ex.planet = AS.planet; if (AS.dept) { ex.view = 'area'; ex.area = AS.dept; } else { ex.view = 'sites'; if (AS.planet === 'flora') { ex.fpart = 'story'; ex.flSt = AS.side ? 'side' : 'main'; } } renderExplore(); return; }
+    if (b.dataset.ewk) { ex.ewkT = b.dataset.ewk; ex.view = 'ewk'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
+    if (b.dataset.ewkd) { ex.ewkD = +b.dataset.ewkd; renderEwk(); return; }
+    if (b.dataset.ewkgo) { startEwk(ex.ewkT, ex.ewkD | 0); return; }
+    if (b.id === 'ewk-back') { ex.view = 'planets'; renderExplore(); return; }
     if (b.id === 'boss-back') {
       var BK2 = BOSSES[ex.boss];
       if (ex.view === 'weekly') ex.view = 'planets';
@@ -5487,7 +5705,7 @@
     if (b.dataset.ctrep) { if (window.HSSOCIAL && window.HSSOCIAL.replay) window.HSSOCIAL.replay(b.dataset.ctrep); return; }
     if (b.dataset.planet && !b.disabled) { ex.planet = b.dataset.planet; ex.view = 'sites'; renderExplore(); mysteryRoll(planetOf(b.dataset.planet).name); return; }
     if (b.id === 'ex-back') { var P_ = ex.view === 'sites' && planetOf(ex.planet); if (P_ && P_.inStation) { ex.planet = 'station'; renderExplore(); return; } ex.view = 'planets'; renderExplore(); return; }
-    if (b.dataset.go && unlocked(b.dataset.go)) { startVN(b.dataset.go, 'replay', $('pg-explore'), b.dataset.from === '0'); window.scrollTo(0, $('pg-explore').offsetTop - 8); }
+    if (b.dataset.go && unlocked(b.dataset.go)) { ex.arc = false; startVN(b.dataset.go, 'replay', $('pg-explore'), b.dataset.from === '0'); window.scrollTo(0, $('pg-explore').offsetTop - 8); }
   });
 
   $('pg-explore').addEventListener('keydown', function (e) { var g = e.target.closest && e.target.closest('.dept.open'); if (g && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); g.dispatchEvent(new MouseEvent('click', { bubbles: true })); } });
@@ -5714,6 +5932,7 @@
       (UNLOCK[ex.site] && !SITES[ex.site].endText ? '<p><b class="red">「' + UNLOCK[ex.site] + '」已开放！</b>' + (ex.site === 'storage' ? '<br><span class="hint">在荆楚号 · 荆门 · 物资仓储里进入</span>' : ex.site === 'medal' ? '<br><span class="hint">在荆楚号 · 黄冈 · 学院部里进入</span>' : '') + '</p>' : '') +
       '<p>' + (SITES[ex.site].endText ? SITES[ex.site].endText : nxt && !unlocked(nxt) ? '完成任务后，下一段「' + SITES[nxt].chapter.split(' · ')[1] + '」就会开放。' : nxt ? (SITES[nxt].side ? '支线「' : '下一段「') + SITES[nxt].chapter.split(' · ')[1] + '」已解锁，可在星际探索 · ' + nxtP.name + (SITES[nxt].dept ? ' · ' + DEPTS[SITES[nxt].dept][0] : '') + '中继续。' : '后续剧情正在制作中。') + '</p>' +
       '<div class="row">' + (intro ? '<button type="button" class="btn primary" data-vn="enter">进入游戏</button>'
+        : ex.arc ? '<button type="button" class="btn" data-vn="replay">重温一遍</button>' + (ex.arcQ && ex.arcQ.length ? '<button type="button" class="btn" data-vn="next" data-nx="' + ex.arcQ[0] + '">连播下一段：' + esc(SITES[ex.arcQ[0]].chapter) + '</button>' : '') + '<button type="button" class="btn primary" data-vn="exit">返回剧情回顾</button>'
         : '<button type="button" class="btn" data-vn="replay">重温一遍</button>' + (nxt && unlocked(nxt) ? '<button type="button" class="btn" data-vn="next" data-nx="' + nxt + '">继续下一段</button>' : '') + '<button type="button" class="btn primary" data-vn="exit">' + (SITES[ex.site].dept ? '返回区域' : '返回地点') + '</button>') + '</div></div>';
     syncBtns();
   }
@@ -5729,8 +5948,10 @@
       var a = b.dataset.vn;
       if (a === 'fight') { startFight(b.dataset.fk); return; }
       if (a === 'pickok' && ex.pickSel) { pickStarter(ex.pickSel); ex.i++; show(); return; }
+      if (a === 'exit' && ex.arc) { stopTimers(); ex.mode = null; ex.arc = false; ex.arcQ = []; ex.view = 'archive'; renderExplore(); return; }
       if (a === 'exit') { stopTimers(); ex.mode = null; ex.planet = SITES[ex.site].planet; if (SITES[ex.site].fpart) ex.fpart = SITES[ex.site].fpart; if (SITES[ex.site].dept) { ex.view = 'area'; ex.area = SITES[ex.site].dept; } else ex.view = 'sites'; renderExplore(); return; }
       if (a === 'replay') { startVN(ex.site, 'replay', ex.host, true); return; }
+      if (a === 'next' && ex.arc && ex.arcQ && ex.arcQ[0] === b.dataset.nx) ex.arcQ.shift();
       if (a === 'next') { startVN(b.dataset.nx, 'replay', ex.host, prog(b.dataset.nx).done || !prog(b.dataset.nx).at); return; }
       if (a === 'enter') { finishIntro(); return; }
       if (a === 'auto') { ex.auto = !ex.auto; ex.skip = false; syncBtns(); if (ex.auto && !ex.typing && !ex.tick) ex.timer = setTimeout(next, 600); return; }

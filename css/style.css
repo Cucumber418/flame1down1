@@ -2443,3 +2443,43 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .float.resist { font-size: 40px; }
 .float.miss { font-size: 38px; }
 @media (max-width: 560px) { .float { font-size: 32px; letter-spacing: 1.5px; } .float.crit { font-size: 38px; } .float.resist, .float.miss { font-size: 28px; } }
+/* ---------- 属性每周挑战 + 剧情回顾（2026-10-20） ---------- */
+.ewk-card { background: linear-gradient(100deg, #e6eefb, var(--paper-2) 60%); }
+.arc-entry { position: relative; cursor: pointer; width: 100%; display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; gap: 14px; align-items: center; text-align: left; margin: 0 0 16px; padding: 14px 18px; border: 1.5px solid var(--ink); border-radius: 16px; background: linear-gradient(100deg, #f6ecd2, var(--paper-2) 70%); box-shadow: 3px 3px 0 var(--ink); color: var(--ink); font: inherit; }
+.arc-entry:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--ink); }
+.arc-e-ic { font-size: 38px; text-align: center; }
+.arc-e-txt b { display: block; font-size: 20px; }
+.arc-e-txt small { color: var(--ink-2, #666); }
+.arc-tabs { margin: 6px 0 14px; flex-wrap: wrap; }
+.arc-bar2 { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.arc-sec { margin: 0 0 18px; }
+.arc-sec h3 { margin: 0 0 4px; font-size: 18px; }
+.arc-sec h3 small { font-weight: 400; color: #888; font-size: 13px; }
+.arc-list { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; }
+.arc-it { display: grid; grid-template-columns: 96px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 8px 12px 8px 8px; border: 1.5px solid var(--ink); border-radius: 12px; background: var(--paper-2); }
+.arc-it .arc-th { width: 96px; height: 60px; object-fit: cover; border-radius: 8px; border: 1px solid rgba(0, 0, 0, .2); }
+.arc-it b { display: block; }
+.arc-it small { color: #888; }
+.arc-it p.hint { margin: 2px 0 0; font-size: 12px; }
+.arc-it.unread { opacity: .8; border-style: dashed; }
+.arc-it.locked { grid-template-columns: 36px minmax(0, 1fr); opacity: .55; border-style: dashed; }
+.arc-no { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--ink); font-weight: 700; background: var(--paper); }
+.arc-music { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; }
+.arc-music li { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 6px 10px; border: 1.5px solid var(--ink); border-radius: 10px; background: var(--paper-2); }
+.arc-music li b { display: block; }
+.arc-music li small { color: #888; }
+.arc-music li.on { background: #fde9c8; }
+.arc-music li.locked { opacity: .5; border-style: dashed; }
+.arc-chars { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+.arc-ch { position: relative; display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 12px; padding: 12px; border: 1.5px solid var(--ink); border-radius: 14px; background: var(--paper-2); box-shadow: 3px 3px 0 var(--ink); }
+.arc-face { display: flex; align-items: flex-end; justify-content: center; height: 200px; overflow: hidden; }
+.arc-face img { max-width: 100%; max-height: 200px; object-fit: contain; object-position: bottom; }
+.arc-face.arc-mon img { max-height: 150px; align-self: center; }
+.arc-ini { display: grid; place-items: center; width: 96px; height: 96px; border-radius: 50%; color: #fff; font-size: 42px; font-weight: 700; align-self: center; }
+.arc-cht h3 { margin: 0; font-size: 20px; }
+.arc-cht ul { margin: 6px 0 0; padding-left: 18px; font-size: 13px; line-height: 1.55; }
+.arc-vars { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+.arc-vars button { width: 40px; height: 40px; padding: 0; border: 1.5px solid #bbb; border-radius: 8px; background: var(--paper); overflow: hidden; cursor: pointer; }
+.arc-vars button.on { border-color: var(--red, #c42f3a); }
+.arc-vars img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 8%; }
+@media (max-width: 560px) { .arc-it { grid-template-columns: 64px minmax(0, 1fr); } .arc-it .arc-th { width: 64px; height: 44px; } .arc-it .btn { grid-column: 1 / -1; } .arc-chars { grid-template-columns: 1fr; } .arc-ch { grid-template-columns: 96px minmax(0, 1fr); } .arc-face { height: 150px; } .arc-face img { max-height: 150px; } }
