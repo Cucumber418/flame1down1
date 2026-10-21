@@ -314,7 +314,6 @@
   // 账号菜单
   $('who-btn').addEventListener('click', function (e) {
     e.stopPropagation(); var m = $('who-menu'); m.hidden = !m.hidden; $('who-btn').setAttribute('aria-expanded', !m.hidden);
-    ui.resetArmed = 0; $('btn-reset').classList.remove('armed'); $('btn-reset').textContent = '重置存档';
   });
   document.addEventListener('click', function (e) { if (!e.target.closest('#who')) { $('who-menu').hidden = true; $('who-btn').setAttribute('aria-expanded', false); } });
   /* ---------- 称号 ---------- */
@@ -624,13 +623,7 @@
   });
   $('title-box').addEventListener('change', function (e) { if (e.target.name === 'title') { acc.title = e.target.value || null; save(); renderTitle(); } });
   $('title-box').addEventListener('click', function (e) { e.stopPropagation(); });
-  $('btn-reset').addEventListener('click', function () {
-    if (!ui.resetArmed) { ui.resetArmed = 1; this.classList.add('armed'); this.textContent = '确定重置？再点一次'; return; }
-    acc = null; try { localStorage.removeItem(KEY); } catch (e) {}
-    ui = { sel: null, pick: -1, ob: { step: 1, name: '', starter: null }, f: { type: '', min: 1, max: 100, sort: 'lvd' }, resetArmed: 0, welcome: false };
-    stopTimers(); fields = {}; ex.view = 'planets'; ex.mode = null;
-    $('who-menu').hidden = true; page = 'arena'; savePage(); renderTop();
-  });
+  // 2026-10-21：名字菜单里的「重置存档」按钮已删除（有玩家误点把存档清空了）
 
   /* ---------- 创建账号：输入名字 → 直接进入省实验中学序章，在张老师指引下挑选精灵 ---------- */
   function clip(v) { return Array.from(v).slice(0, NAME_MAX).join(''); }
