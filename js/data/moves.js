@@ -86,7 +86,7 @@ var M = {
   饮血刀光: { type: '暗影', cat: '物攻', power: 80, hidden: true, drain: 1 / 3, selfStage: { atk: 1 }, d: '威力80，造成伤害的1/3转化为体力恢复，提升1级物攻' },
   黑暗收割: { type: '暗影', cat: '物攻', power: 80, hidden: true, koHeal: 1 / 2, d: '威力80，使用此技能击败一名敌人则恢复1/2体力' },
 
-  // —— 恩佩德（水）
+  // —— 坎克托斯（水，原恩佩德）
   水箭: { type: '水', cat: '物攻', power: 50, d: '威力50' },
   祈雨: { type: '水', cat: '变化', custom: 'rain', pp: 10, d: '5回合内每回合对对方附加30点固定伤害' },
   泡沫: { type: '水', cat: '特攻', power: 20, tgtStage: { acc: -1 }, d: '威力20，降低对方1级命中' },
