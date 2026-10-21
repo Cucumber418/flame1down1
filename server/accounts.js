@@ -174,6 +174,7 @@ function handle(req, res) {
     if (url === '/api/save' && req.method === 'PUT') {
       if (!validData(body.data)) return reply(res, 400, { error: '存档格式不对' });
       var cur = me.save ? me.save.rev : 0;
+      if (body.force && me.save && me.save.lock && Date.now() < (me.save.lockUntil || 0) && (body.rev | 0) < me.save.lock) return reply(res, 409, { error: '存档刚由管理员恢复过，请使用服务器上的进度', save: saveOut(me) });   // 恢复存档后不让旧设备强行覆盖
       if (!body.force && (body.rev | 0) !== cur) return reply(res, 409, { error: '存档在别的设备上更新过', save: saveOut(me) });
       me.save = { data: body.data, rev: cur + 1, savedAt: Date.now() };
       saveUser(me);
