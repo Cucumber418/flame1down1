@@ -166,10 +166,13 @@ function tick(now) {
     if (c.drawAt && now >= c.drawAt && n >= 2) { doDraw(c, now); changed = true; }
   } else if (c.status === 'swiss' || c.status === 'final') {
     var R = c.rounds[c.rounds.length - 1];
-    // 2026-10-21：玩家 Bttp 补报名参赛，作为当前这一轮轮空选手的对手（之后人数是偶数，不再轮空）
+    // 2026-10-21：玩家 BTTP（吴迪）补报名参赛，作为当前这一轮轮空选手的对手（之后人数是偶数，不再轮空）
+    // 之前一版把轮空改成了电脑对手「@bttp」：那一局换成真正的玩家 BTTP（吴迪）
+    var npcP = R && !R.closed ? R.pairs.filter(function (p) { return p.b === '@bttp' && !p.w; })[0] : null;
+    if (npcP && !c.bttpIn) { R.bye = npcP.a; R.pairs.splice(R.pairs.indexOf(npcP), 1); }
     if (R && R.bye && !R.final && !R.closed && !c.bttpIn) {
-      var bu = A.loadUser('bttp');
-      if (!bu) { try { bu = A.allUsers().filter(function (u) { return String(gname(u.name)).toLowerCase() === 'bttp'; })[0] || null; } catch (e) {} }
+      var bu = A.loadUser('BTTP');   // 账号 @BTTP，游戏名「吴迪」（账号名不分大小写）
+      if (!bu) { try { bu = A.allUsers().filter(function (u) { return String(u.name).toLowerCase() === 'bttp' || gname(u.name) === '吴迪'; })[0] || null; } catch (e) {} }
       if (bu && c.order.indexOf(bu.name) < 0 && bu.name !== R.bye) {
         c.signups[bu.name] = c.signups[bu.name] || now; c.order.push(bu.name); c.bttpIn = now;
         R.pairs.push({ a: R.bye, b: bu.name, w: null, score: null, how: null, replays: [] });
