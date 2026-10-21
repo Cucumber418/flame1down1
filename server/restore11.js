@@ -14,7 +14,7 @@ var A = require('./accounts');
 
 var NAME = '11';
 var BACKUP_DIR = process.env.BACKUP_DIR || '/opt/flame1down-backups';
-var OUT = path.join(A.DATA_DIR, 'restore11.json');
+var OUT = path.join(A.DATA_DIR, 'restore11b.json');   // 2026-10-21 第二次：第一次恢复后又被旧设备上的重置存档覆盖了，重新恢复并加上保护
 var HEX = Buffer.from(NAME.toLowerCase(), 'utf8').toString('hex') + '.json';
 var BJ = 8 * 3600 * 1000;
 
@@ -63,9 +63,10 @@ function run() {
   var good = snaps[k - 1], bad = snaps[k];
   rep.reset = { between: [good.src, bad.src], after: bj(good.s.savedAt), before: bj(bad.s.savedAt || bad.t), newCreated: bj(bad.s.created) };
   var cur = A.loadUser(NAME);
-  fs.writeFileSync(path.join(A.DATA_DIR, 'restore11-before.json'), JSON.stringify(cur));
+  fs.writeFileSync(path.join(A.DATA_DIR, 'restore11b-before.json'), JSON.stringify(cur));
   var rev = (cur.save ? cur.save.rev : 0) + 1;
-  cur.save = { data: good.u.save.data, rev: rev, savedAt: Date.now(), lock: rev, lockUntil: Date.now() + 3 * 86400000 };
+  var sc = A.progScore(good.u.save.data);
+  cur.save = { data: good.u.save.data, rev: rev, savedAt: Date.now(), guard: { min: Math.floor(sc * 0.6), until: Date.now() + 14 * 86400000 } };
   A.saveUser(cur);
   rep.restored = { from: good.src, savedAt: bj(good.s.savedAt), mons: good.s.mons, lvSum: good.s.lv, story: good.s.story, newRev: rev };
   fs.writeFileSync(OUT, JSON.stringify(rep, null, 1));
@@ -76,7 +77,9 @@ setTimeout(function () { try { run(); } catch (e) { console.log('[restore11] 出
 
 A.use(function (req, res, url) {
   if (url !== '/api/restore11') return false;
-  var r = null; try { r = JSON.parse(fs.readFileSync(OUT, 'utf8')); } catch (e) {}
-  A.reply(res, 200, r || { done: false });
+  var r = null, r1 = null; try { r = JSON.parse(fs.readFileSync(OUT, 'utf8')); } catch (e) {}
+  try { r1 = JSON.parse(fs.readFileSync(path.join(A.DATA_DIR, 'restore11.json'), 'utf8')); } catch (e) {}
+  var L = A.loadUser(NAME), now = L && sum(L);
+  A.reply(res, 200, { second: r || { done: false }, first: r1, now: now && { savedAt: bj(now.savedAt), mons: now.mons, lvSum: now.lv, story: now.story, rev: now.rev, created: bj(now.created) } });
   return true;
 });

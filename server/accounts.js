@@ -40,6 +40,14 @@ function writeJSON(file, obj) {
   fs.renameSync(tmp, file);
 }
 function userFile(name) { return path.join(USER_DIR, Buffer.from(name.toLowerCase(), 'utf8').toString('hex') + '.json'); }
+// 存档进度粗略打分：精灵等级总和 + 读完的剧情数 × 20（用来识别「被重置」的存档）
+function progScore(data) {
+  var acc = null; try { acc = JSON.parse((data || {})['hs-account-v1'] || 'null'); } catch (e) {}
+  if (!acc || !Array.isArray(acc.mons)) return 0;
+  var lv = 0; acc.mons.forEach(function (m) { lv += (m && m.lv) | 0; });
+  var st = 0; if (acc.story) for (var k in acc.story) if (acc.story[k] && acc.story[k].done) st++;
+  return lv + st * 20;
+}
 function loadUser(name) { return readJSON(userFile(name), null); }
 function saveUser(u) {
   var f = userFile(u.name);
@@ -174,9 +182,11 @@ function handle(req, res) {
     if (url === '/api/save' && req.method === 'PUT') {
       if (!validData(body.data)) return reply(res, 400, { error: '存档格式不对' });
       var cur = me.save ? me.save.rev : 0;
-      if (body.force && me.save && me.save.lock && Date.now() < (me.save.lockUntil || 0) && (body.rev | 0) < me.save.lock) return reply(res, 409, { error: '存档刚由管理员恢复过，请使用服务器上的进度', save: saveOut(me) });   // 恢复存档后不让旧设备强行覆盖
+      // 管理员恢复过的存档（save.guard）：保护期内拒绝进度明显倒退的上传（不管是不是强行覆盖）
+      var G = me.save && me.save.guard;
+      if (G && Date.now() < G.until && progScore(body.data) < G.min) return reply(res, 409, { error: '存档刚由管理员恢复过，请使用服务器上的进度', save: saveOut(me) });
       if (!body.force && (body.rev | 0) !== cur) return reply(res, 409, { error: '存档在别的设备上更新过', save: saveOut(me) });
-      me.save = { data: body.data, rev: cur + 1, savedAt: Date.now() };
+      me.save = { data: body.data, rev: cur + 1, savedAt: Date.now(), guard: G && Date.now() < G.until ? G : undefined };
       saveUser(me);
       return reply(res, 200, { rev: me.save.rev, savedAt: me.save.savedAt });
     }
@@ -237,4 +247,4 @@ function allUsers() {
 }
 
 module.exports = { handle: handle, use: function (fn) { extra.push(fn); }, whoIs: whoIs, whoToken: whoToken, loadUser: loadUser, saveUser: saveUser, allUsers: allUsers,
-  reply: reply, readBody: readBody, userCount: userCount, resetPassword: resetPassword, listUsers: listUsers, DATA_DIR: DATA_DIR };
+  reply: reply, readBody: readBody, userCount: userCount, resetPassword: resetPassword, listUsers: listUsers, DATA_DIR: DATA_DIR, progScore: progScore };
