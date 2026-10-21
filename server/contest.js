@@ -59,10 +59,8 @@ function cur(all) {
   if (!c.status) c.status = 'signup';
   return c;
 }
-// 2026-10-21：人数是奇数时不再轮空，轮空的人改为和电脑对手 Bttp 打（Bttp 不进积分榜）
-var BT = '@bttp';
-function gname(u) { if (u === BT) return 'Bttp'; try { return S().gameName(u); } catch (e) { return u; } }
-function online(u) { if (u === BT) return true; try { return S().isOnline(u); } catch (e) { return false; } }
+function gname(u) { try { return S().gameName(u); } catch (e) { return u; } }
+function online(u) { try { return S().isOnline(u); } catch (e) { return false; } }
 function notice(c, title, text, extra) {
   var n = Object.assign({ id: crypto.randomBytes(5).toString('hex'), t: Date.now(), title: title, text: text }, extra || {});
   c.notices.push(n); if (c.notices.length > 40) c.notices = c.notices.slice(-40);
@@ -79,11 +77,6 @@ function standings(c) {
     if (R.final) return;   // 决赛不计入瑞士轮积分
     if (R.bye && P[R.bye]) { P[R.bye].w++; P[R.bye].bye++; }
     R.pairs.forEach(function (p) {
-      if (p.b === BT && P[p.a]) {   // 和 Bttp 的对局：只算选手自己的胜负
-        if (!p.w) return; var me0 = P[p.a], sc0 = p.score || [2, 0];
-        if (p.w === p.a) me0.w++; else me0.l++;
-        me0.gd += (sc0[0] || 0) - (sc0[1] || 0); return;
-      }
       if (!P[p.a] || !P[p.b]) return;
       P[p.a].opp.push(p.b); P[p.b].opp.push(p.a);
       if (!p.w) return;
@@ -113,8 +106,7 @@ function pairRound(c) {
     var b = left.splice(k, 1)[0];
     pairs.push({ a: a, b: b, w: null, score: null, how: null, replays: [] });
   }
-  if (bye) pairs.push({ a: bye, b: BT, w: null, score: null, how: null, replays: [], npc: 1 });
-  return { pairs: pairs, bye: null };
+  return { pairs: pairs, bye: bye };
 }
 
 /* ---------- 状态推进（每 TICK_MS 检查一次） ---------- */
@@ -134,7 +126,6 @@ function openRound(c, now, final) {
 function resolveLeft(R) {
   R.pairs.forEach(function (p) {
     if (p.w) return;
-    if (p.b === BT) { p.w = BT; p.score = [0, 2]; p.how = 'noshow'; return; }   // 到截止时间还没挑战 Bttp：判负
     var A0 = (R._seen && R._seen[p.a]) || 0, B0 = (R._seen && R._seen[p.b]) || 0;
     p.w = A0 > B0 ? p.a : B0 > A0 ? p.b : (crypto.randomInt(2) ? p.a : p.b);
     p.score = [p.w === p.a ? 2 : 0, p.w === p.b ? 2 : 0];
@@ -144,7 +135,7 @@ function resolveLeft(R) {
 function closeRound(c, now) {
   var R = c.rounds[c.rounds.length - 1];
   R._seen = c.seen; resolveLeft(R); delete R._seen; R.closed = now;
-  var lines = R.pairs.map(function (p) { var l = p.w === p.a ? p.b : p.a; return gname(p.w) + ' 胜 ' + gname(l) + (p.how === 'play' ? '（' + Math.max(p.score[0], p.score[1]) + ':' + Math.min(p.score[0], p.score[1]) + '）' : p.how === 'online' ? '（对手未上线，判胜）' : p.how === 'forfeit' ? '（对手中途离开，判胜）' : p.how === 'noshow' ? '（没有挑战 Bttp，判负）' : '（双方都没上线，随机判定）'); });
+  var lines = R.pairs.map(function (p) { var l = p.w === p.a ? p.b : p.a; return gname(p.w) + ' 胜 ' + gname(l) + (p.how === 'play' ? '（' + Math.max(p.score[0], p.score[1]) + ':' + Math.min(p.score[0], p.score[1]) + '）' : p.how === 'online' ? '（对手未上线，判胜）' : p.how === 'forfeit' ? '（对手中途离开，判胜）' : '（双方都没上线，随机判定）'); });
   if (R.final) {
     var champ = R.pairs[0].w, st = standings(c), runner = R.pairs[0].w === R.pairs[0].a ? R.pairs[0].b : R.pairs[0].a;
     c.ranks = [champ, runner].concat(st.map(function (x) { return x.user; }).filter(function (u) { return u !== champ && u !== runner; }));
@@ -175,16 +166,21 @@ function tick(now) {
     if (c.drawAt && now >= c.drawAt && n >= 2) { doDraw(c, now); changed = true; }
   } else if (c.status === 'swiss' || c.status === 'final') {
     var R = c.rounds[c.rounds.length - 1];
-    if (R && R.bye && !R.final && !R.closed) {   // 2026-10-21 上线时正在进行的这一轮：轮空改成挑战 Bttp
-      R.pairs.push({ a: R.bye, b: BT, w: null, score: null, how: null, replays: [], npc: 1 });
-      notice(c, NAME + ' · Bttp 加入', '第 ' + R.n + ' 轮 ' + gname(R.bye) + ' 不再轮空，改为和 Bttp 进行 bo3，截止时间不变。', { round: R.n });
-      R.bye = null; changed = true;
+    // 2026-10-21：玩家 Bttp 补报名参赛，作为当前这一轮轮空选手的对手（之后人数是偶数，不再轮空）
+    if (R && R.bye && !R.final && !R.closed && !c.bttpIn) {
+      var bu = A.loadUser('bttp');
+      if (!bu) { try { bu = A.allUsers().filter(function (u) { return String(gname(u.name)).toLowerCase() === 'bttp'; })[0] || null; } catch (e) {} }
+      if (bu && c.order.indexOf(bu.name) < 0 && bu.name !== R.bye) {
+        c.signups[bu.name] = c.signups[bu.name] || now; c.order.push(bu.name); c.bttpIn = now;
+        R.pairs.push({ a: R.bye, b: bu.name, w: null, score: null, how: null, replays: [] });
+        notice(c, NAME + ' · 新选手加入', gname(bu.name) + ' 加入了比赛！第 ' + R.n + ' 轮 ' + gname(R.bye) + ' 不再轮空，改为和 ' + gname(bu.name) + ' 进行 bo3，截止时间不变。', { round: R.n });
+        R.bye = null; changed = true;
+      }
     }
     if (R) {
       // 记在线时间：这一轮还没打完的选手，每次检查时在线就加一次
       R.pairs.forEach(function (p) {
         if (p.w) return;
-        if (p.b === BT) return;
         [p.a, p.b].forEach(function (u) { if (online(u)) { c.seen[u] = (c.seen[u] || 0) + Math.round(TICK_MS / 1000); changed = true; } });
         // 双方都在线：提醒一下（每 READY_GAP 最多一次）
         if (online(p.a) && online(p.b) && (!p.pingAt || now - p.pingAt > READY_GAP)) {
@@ -243,13 +239,13 @@ function view(c, me) {
   // 我这一轮的对局
   var R = c.rounds[c.rounds.length - 1];
   if (R && (c.status === 'swiss' || c.status === 'final')) R.pairs.forEach(function (p) {
-    if (p.a === me || p.b === me) { var opp = p.a === me ? p.b : p.a; o.myMatch = { round: R.n, final: !!R.final, opp: opp, oppName: nm(opp), oppOnline: online(opp), done: !!p.w, w: p.w, deadline: R.deadline, npc: opp === BT }; }
+    if (p.a === me || p.b === me) { var opp = p.a === me ? p.b : p.a; o.myMatch = { round: R.n, final: !!R.final, opp: opp, oppName: nm(opp), oppOnline: online(opp), done: !!p.w, w: p.w, deadline: R.deadline }; }
   });
   o.live = []; try { var soc = S(); (R ? R.pairs : []).forEach(function (p) { if (!p.w && soc.castLabel && (soc.castLabel(p.a) || soc.castLabel(p.b))) o.live.push({ a: p.a, b: p.b, host: soc.castLabel(p.a) ? p.a : p.b }); }); } catch (e) {}
   return o;
 }
 A.use(function (req, res, url) {
-  if (url !== '/api/contest' && url !== '/api/contest/replay' && url !== '/api/contest/npc') return false;
+  if (url !== '/api/contest' && url !== '/api/contest/replay') return false;
   var who = A.whoIs(req), me = who && A.loadUser(who.user);
   if (!me) { A.reply(res, 401, { error: '登录已失效，请重新登录' }); return true; }
   if (url === '/api/contest/replay') {
@@ -259,22 +255,6 @@ A.use(function (req, res, url) {
     return true;
   }
   if (req.method === 'GET') { A.reply(res, 200, view(cur(loadAll()), me.name)); return true; }
-  if (url === '/api/contest/npc' && req.method === 'POST') {   // 和 Bttp 的 bo3 打完：{ win, score: [我赢的局数, Bttp 赢的局数] }
-    A.readBody(req, function (err, body) {
-      if (err) return A.reply(res, 400, { error: '请求格式不对' });
-      var c0 = cur(loadAll()), R0 = c0.rounds[c0.rounds.length - 1], idx = -1;
-      if (R0 && (c0.status === 'swiss' || c0.status === 'final')) R0.pairs.forEach(function (p, i) { if (p.a === me.name && p.b === BT && !p.w) idx = i; });
-      if (idx < 0 || Date.now() >= R0.deadline) return A.reply(res, 403, { error: '这一轮没有要和 Bttp 打的对局' });
-      var sc = Array.isArray(body.score) ? body.score.map(function (x) { return Math.max(0, Math.min(2, x | 0)); }) : [body.win ? 2 : 0, body.win ? 0 : 2];
-      var win = !!body.win, scObj = {}; scObj[me.name] = sc[0]; scObj[BT] = sc[1];
-      report(R0.n + ':' + idx, win ? me.name : BT, scObj, 'play');
-      var all2 = loadAll(), c2 = cur(all2);
-      notice(c2, NAME + ' · 第 ' + R0.n + ' 轮', gname(me.name) + (win ? ' 战胜了 Bttp' : ' 输给了 Bttp') + '（' + Math.max(sc[0], sc[1]) + ':' + Math.min(sc[0], sc[1]) + '）。', { round: R0.n });
-      storeAll(all2);
-      A.reply(res, 200, view(cur(loadAll()), me.name));
-    });
-    return true;
-  }
   if (req.method !== 'POST') { A.reply(res, 405, { error: '不支持' }); return true; }
   A.readBody(req, function (err) {
     if (err) return A.reply(res, 400, { error: '请求格式不对' });

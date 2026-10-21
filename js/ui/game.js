@@ -1735,41 +1735,6 @@
   function ctName(u) { return (CT.data && CT.data.names && CT.data.names[u]) || u; }
   function bjText(t) { var d = new Date(t + 8 * 3600 * 1000); return (d.getUTCMonth() + 1) + ' 月 ' + d.getUTCDate() + ' 日 ' + ('0' + d.getUTCHours()).slice(-2) + ':' + ('0' + d.getUTCMinutes()).slice(-2); }
   function leftText(ms) { if (ms <= 0) return '马上'; var h = Math.floor(ms / 3600000), m = Math.ceil(ms % 3600000 / 60000); return h >= 24 ? Math.floor(h / 24) + ' 天 ' + (h % 24) + ' 小时' : h ? h + ' 小时 ' + m + ' 分' : m + ' 分钟'; }
-  // 和 Bttp 的 bo3：本地对战，打完把结果交给服务器
-  function bttpTeam(n) {
-    var my = (acc.teams[acc.active] || []).map(mon).filter(Boolean).slice(0, n), avg = my.length ? Math.round(my.reduce(function (t, m) { return t + m.lv; }, 0) / my.length) : 50;
-    var r = seeded('ct-bttp|' + CONTEST.id + '|' + (CT.data && CT.data.myMatch ? CT.data.myMatch.round : 0)), pool = NPC_POOL.filter(function (id) { return id !== 'bone'; }), pick = [];
-    while (pick.length < n - 1) { var id = pool[Math.floor(r() * pool.length)]; if (pick.indexOf(id) < 0) pick.push(id); }
-    pick.splice(2, 0, 'bone');   // Bttp 的第三只固定是骨刃
-    return pick.slice(0, n).map(function (sid) { var o = storyMon({ sid: sid, lv: Math.max(1, Math.min(100, avg)), moves: [] }); delete o.u; delete o.hl; return o; });
-  }
-  function ctNpcFight() {
-    var M0 = CT.data && CT.data.myMatch; if (!M0 || !M0.npc || M0.done) return;
-    if (!CT.npc || CT.npc.round !== M0.round) CT.npc = { round: M0.round, w: 0, l: 0 };
-    if (CT.npc.w >= 2 || CT.npc.l >= 2) { ctNpcSubmit(); return; }
-    var team = (acc.teams[acc.active] || []).map(mon).filter(Boolean).slice(0, 5); if (!team.length) { toast('出战配队里还没有精灵。'); return; }
-    var g = CT.npc.w + CT.npc.l + 1;
-    stopTimers(); ex.fighting = true; document.body.classList.add('story-fight'); syncBattle();
-    $('pg-explore').hidden = true; $('pg-arena').hidden = false;
-    window.HSBATTLE.start({ p: team.map(storyMon), a: bttpTeam(5), foe: 'Bttp', diff: CONTEST.name + ' · 第 ' + M0.round + ' 轮 · 第 ' + g + ' 局', bgm: 'pvp', back: '太空竞技场', ai: rankAI(5),
-      onEnd: function (res) {
-        if (res === 'win') CT.npc.w++; else CT.npc.l++;
-        ex.fighting = false; document.body.classList.remove('story-fight');
-        $('pg-arena').hidden = page !== 'arena'; $('pg-explore').hidden = page !== 'explore';
-        renderTop(); syncBattle();
-        var N = CT.npc;
-        if (N.w >= 2 || N.l >= 2) ctNpcSubmit();
-        else { toast('第 ' + g + ' 局' + (res === 'win' ? '你赢了' : '你输了') + '，比分 ' + N.w + ' : ' + N.l + '。准备好了就继续下一局。'); renderExplore(); }
-      } });
-  }
-  function ctNpcSubmit() {
-          var N = CT.npc, win = N.w >= 2;
-          CLOUD.api('POST', '/api/contest/npc', { win: win, score: [N.w, N.l] }).then(function (r) {
-            if (r._code === 200) { CT.data = r; CT.npc = null; toast((win ? '你以 ' : '你以 ') + N.w + ' : ' + N.l + (win ? ' 战胜了 Bttp！这一轮算你获胜。' : ' 输给了 Bttp。Bttp：神早就算到了。')); }
-            else toast(r.error || '结果没有交上去，请稍后重试');
-            renderExplore();
-          }).catch(function () { toast('连不上服务器，结果没有交上去。稍后再点一次「挑战 Bttp」就会重新提交。'); renderExplore(); });
-  }
   function contestLoad(cb) {
     if (cb) (CT.cbs = CT.cbs || []).push(cb);
     if (CT.busy || typeof CLOUD === 'undefined' || !CLOUD.api) return; CT.busy = true;
@@ -1829,11 +1794,7 @@
     h += '<div class="soc-foot ct-tools"><button type="button" class="btn ghost" data-ctdraw="1">▶ 回放抽签</button></div>';
     // 我的对局
     var M0 = D.myMatch;
-    if (M0 && !M0.done && M0.npc) {   // 2026-10-21：奇数人的那一轮，和电脑对手 Bttp 打
-      h += '<div class="ct-my"><span class="tape l"></span><b>你的第 ' + M0.round + ' 轮对手：Bttp</b> <span class="dot on"></span><small>随时可以挑战</small>' +
-        '<p class="hint">这一轮人数是奇数，你的对手是电脑操控的 Bttp。bo3，用你出战配队的前 5 只，先赢 2 局获胜（中途退出算这一局输）。请在 ' + bjText(M0.deadline) + ' 之前打完，到时还没打完算输。' + (CT.npc ? '当前比分 ' + CT.npc.w + ' : ' + CT.npc.l + '。' : '') + '</p>' +
-        '<div class="soc-foot"><button type="button" class="btn primary" data-ctnpc="1">⚔ ' + (CT.npc ? '继续第 ' + (CT.npc.w + CT.npc.l + 1) + ' 局' : '挑战 Bttp') + '</button></div></div>';
-    } else if (M0 && !M0.done) {
+    if (M0 && !M0.done) {
       var wsOk = window.HSSOCIAL && window.HSSOCIAL.wsOk && window.HSSOCIAL.wsOk(), can = M0.oppOnline && wsOk;
       h += '<div class="ct-my"><span class="tape l"></span><b>你的' + (M0.final ? '决赛' : '第 ' + M0.round + ' 轮') + '对手：' + esc(M0.oppName) + '</b> <span class="dot' + (M0.oppOnline ? ' on' : '') + '"></span><small>' + (M0.oppOnline ? '在线' : '不在线') + '</small>' +
         '<p class="hint">bo3，各带 6 只、禁对方 1 只，5v5。请在 ' + bjText(M0.deadline) + ' 之前和对手同时上线完成对战；到时还没打，在线时间更长的一方获胜。</p>' +
@@ -5755,7 +5716,6 @@
     if (b.id === 'ex-ship') { ex.view = 'sites'; ex.planet = 'jingchu'; renderExplore(); return; }
     if (b.dataset.ctsign) { contestSign(); return; }
     if (b.dataset.ctdraw) { ctDrawShow(); return; }
-    if (b.dataset.ctnpc) { ctNpcFight(); return; }
     if (b.dataset.ctfight) { if (window.HSSOCIAL && window.HSSOCIAL.ctAsk) { var M1 = CT.data && CT.data.myMatch; window.HSSOCIAL.ctAsk(b.dataset.ctfight, M1 ? M1.oppName : '', CONTEST.name + (M1 ? ' · ' + (M1.final ? '决赛' : '第 ' + M1.round + ' 轮') : '')); } return; }
     if (b.dataset.ctwatch) { if (window.HSSOCIAL && window.HSSOCIAL.watch) window.HSSOCIAL.watch(b.dataset.ctwatch); return; }
     if (b.dataset.ctrep) { if (window.HSSOCIAL && window.HSSOCIAL.replay) window.HSSOCIAL.replay(b.dataset.ctrep); return; }
