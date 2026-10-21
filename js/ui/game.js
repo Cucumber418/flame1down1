@@ -1617,6 +1617,7 @@
     if (ex.view === 'weekly') { if (weeklyOpen()) { ex.boss = curWk().boss; renderBoss(true); return; } ex.view = 'planets'; }
     if (ex.view !== 'archive' && ex.arcPlay) arcStop();
     if (ex.view === 'archive') { renderArchive(); return; }
+    if (ex.view === 'wkhub') { if (weeklyOpen()) { renderWkHub(); return; } ex.view = 'planets'; }
     if (ex.view === 'ewk') { if (weeklyOpen() && ewkType(ex.ewkT)) { renderEwk(); return; } ex.view = 'planets'; }
     if (ex.view === 'room') { if (homeOpen()) { renderRoom(); return; } ex.view = 'area'; renderArea(); return; }
     if (ex.view === 'teashop') { if (homeOpen()) { renderTeaShop(); return; } ex.view = 'area'; renderArea(); return; }
@@ -1633,15 +1634,10 @@
       html += arcBarHTML();
       html += '<div class="boss-row"><button type="button" class="weekly-card hub-card" data-bosshub="1"><span class="tape l"></span><span class="hub-ic">' + Object.keys(BOSSES).map(function (k) { return '<img src="' + SPRITES[BOSSES[k].sid] + '" alt="">'; }).join('') + '</span><span class="wk-txt"><span class="chip boss-diff">BOSS挑战</span><b>BOSS一览</b>' +
         '<small>' + Object.keys(BOSSES).map(function (k) { return BOSSES[k].name; }).join('、') + ' · 已开放 ' + nOpen + ' / ' + Object.keys(BOSSES).length + '</small></span><span class="wk-pm">›</span></button>';
-      if (weeklyOpen()) {
-        var pn = permits();
-        WEEKLIES.forEach(function (W, wi) {
-          if (!wkOpen(W)) return; var WB = BOSSES[W.boss];
-          html += '<button type="button" class="weekly-card" data-weekly="' + (wi + 1) + '"><span class="tape l"></span><img src="' + SPRITES[WB.sid] + '" alt=""><span class="wk-txt"><span class="chip boss-diff d2">每周挑战</span><b>' + WB.name + ' · ' + WB.lv[W.d].diff + '难度</b>' +
-            '<small>获胜时消耗 1 枚挑战许可 · 击败得累积经验 ×' + fmt(W.exp) + '、' + rwList({ items: W.item }).join('、') + (W.cry ? '、' + itemName('m_mcry') + ' ×' + W.cry[0] + '–' + W.cry[1] : '') + ' 和随机掉落</small></span><span class="wk-pm"><b>' + pn + '</b> / ' + PERMIT.max + '<small>挑战许可（共用）</small></span></button>';
-        });
-        html += ewkCardHTML(pn);
-      }
+      var wkIcons = WEEKLIES.filter(wkOpen).map(function (W) { return BOSSES[W.boss].sid; }).concat(EWK.types.map(function (T) { return ewkSid(T.t); }).filter(Boolean));
+      html += weeklyOpen() ? '<button type="button" class="weekly-card hub-card wk-hub" data-wkhub="1"><span class="tape l"></span><span class="hub-ic">' + wkIcons.slice(0, 3).map(function (sid) { return '<img src="' + SPRITES[sid] + '" alt="">'; }).join('') + '</span><span class="wk-txt"><span class="chip boss-diff d2">每周挑战</span><b>每周挑战</b>' +
+        '<small>' + wkIcons.length + ' 个BOSS · 获胜消耗 1 枚挑战许可</small></span><span class="wk-pm"><b>' + permits() + '</b> / ' + PERMIT.max + '<small>挑战许可</small></span></button>'
+        : '<div class="weekly-card hub-card wk-hub locked"><span class="tape l"></span><span class="hub-ic">🔒</span><span class="wk-txt"><span class="chip boss-diff">每周挑战</span><b>每周挑战</b><small>击败困难难度的泰戈尔或荒芜后开放</small></span></div>';
       html += '</div>';
       // 第一排：荆楚号、空间站；第二排：马亚尔星系（星系图上点星球进入）；第三排：地球
       html += '<div class="gx-rows"><div class="gx-row three">' + planetCard(planetOf('jingchu')) + planetCard(planetOf('station')) + planetCard(planetOf('sarena')) + '</div>' + mayarMap() +
@@ -4270,7 +4266,7 @@
     var btn = weekly ? '<button type="button" class="btn primary" data-weeklygo="1"' + (pn > 0 ? '' : ' disabled') + '>开始挑战（获胜时消耗 1 枚挑战许可）</button><p class="hint permit-line">挑战许可 <b>' + pn + '</b> / ' + PERMIT.max + ' · ' + permitNext() + '</p>'
       : open ? '<button type="button" class="btn primary" data-bossgo="' + k + '" data-d="' + d + '">开始挑战</button>' : '<button type="button" class="btn" disabled>' + esc(L.lockText) + '</button>';
     $('pg-explore').innerHTML = exHead(weekly ? '每周挑战：和困难难度的' + B.name + '一模一样，每次获胜消耗 1 枚挑战许可，输了不消耗。' : 'BOSS可以反复挑战。难度依次开放，每档难度第一次击败都有奖励。') +
-      '<div class="crumb"><button type="button" class="btn ghost" id="boss-back">‹ 返回' + (weekly ? '星际探索' : ex.bossFrom === 'hub' ? 'BOSS挑战' : bossWhere(B)) + '</button><b>' + (weekly ? '每周挑战 · ' : 'BOSS · ') + B.name + '</b></div>' + tabs +
+      '<div class="crumb"><button type="button" class="btn ghost" id="boss-back">‹ 返回' + (weekly ? '每周挑战' : ex.bossFrom === 'hub' ? 'BOSS挑战' : bossWhere(B)) + '</button><b>' + (weekly ? '每周挑战 · ' : 'BOSS · ') + B.name + '</b></div>' + tabs +
       '<article class="boss-card"><span class="tape l"></span><div class="boss-art"><img src="' + BG[floraBg(B.bg)] + '" alt="" class="boss-bg"><img src="' + SPRITES[B.sid] + '" alt="' + B.name + '" class="boss-mon"></div>' +
       '<div class="boss-txt"><span class="chip boss-diff d' + d + '">' + (weekly ? '每周挑战 · ' : '') + L.diff + '难度</span><h3>' + B.name + '</h3><p class="hint">' + esc(B.d) + '</p>' +
       '<ul class="boss-rules"><li><b>等级</b>LV' + L.lv + '</li><li><b>体力</b>' + fmt(L.hp) + '</li>' + rules +
@@ -4428,6 +4424,20 @@
       } });
   }
 
+  function weeklyCardsHTML() {
+    var pn = permits(), html = '';
+        WEEKLIES.forEach(function (W, wi) {
+          if (!wkOpen(W)) return; var WB = BOSSES[W.boss];
+          html += '<button type="button" class="weekly-card" data-weekly="' + (wi + 1) + '"><span class="tape l"></span><img src="' + SPRITES[WB.sid] + '" alt=""><span class="wk-txt"><span class="chip boss-diff d2">每周挑战</span><b>' + WB.name + ' · ' + WB.lv[W.d].diff + '难度</b>' +
+            '<small>获胜时消耗 1 枚挑战许可 · 击败得累积经验 ×' + fmt(W.exp) + '、' + rwList({ items: W.item }).join('、') + (W.cry ? '、' + itemName('m_mcry') + ' ×' + W.cry[0] + '–' + W.cry[1] : '') + ' 和随机掉落</small></span><span class="wk-pm"><b>' + pn + '</b> / ' + PERMIT.max + '<small>挑战许可（共用）</small></span></button>';
+        });
+    return html + ewkCardHTML(pn);
+  }
+  function renderWkHub() {
+    $('pg-explore').innerHTML = exHead('所有每周挑战都在这里，挑战许可共用：每 12 小时恢复 1 枚，最多 ' + PERMIT.max + ' 枚。获胜才消耗，输了不消耗。') +
+      '<div class="crumb"><button type="button" class="btn ghost" id="wkhub-back">‹ 返回星际探索</button><b>每周挑战</b></div>' +
+      '<p class="hint permit-line">挑战许可 <b>' + permits() + '</b> / ' + PERMIT.max + ' · ' + permitNext() + '</p><div class="boss-row">' + weeklyCardsHTML() + '</div>';
+  }
   function renderEwk() {
     var T = ewkType(ex.ewkT), sid = ewkSid(T.t), S = SPMAP[sid], d = ex.ewkD | 0, L = EWK.lv[d], pn = permits();
     var rec = (acc.bosses && acc.bosses[recKey('ewk_' + T.t, d)]) || {};
@@ -4435,7 +4445,7 @@
     var rules = fxRules(L).map(function (r) { return '<li><b>特殊</b>' + esc(r[0]) + '：' + esc(r[1]) + '</li>'; }).join('');
     var bg = ewkBg(sid);
     $('pg-explore').innerHTML = exHead(T.t + '系每周挑战：BOSS 每周一 0 点从' + T.t + '系野生精灵里随机换一只。三档难度都能直接挑战，获胜消耗 1 枚挑战许可，输了不消耗。') +
-      '<div class="crumb"><button type="button" class="btn ghost" id="ewk-back">‹ 返回星际探索</button><b>每周挑战 · ' + T.t + '系 · ' + esc(S.name) + '</b></div>' + tabs +
+      '<div class="crumb"><button type="button" class="btn ghost" id="ewk-back">‹ 返回每周挑战</button><b>每周挑战 · ' + T.t + '系 · ' + esc(S.name) + '</b></div>' + tabs +
       '<article class="boss-card"><span class="tape l"></span><div class="boss-art">' + (bg ? '<img src="' + bg + '" alt="" class="boss-bg">' : '') + '<img src="' + SPRITES[sid] + '" alt="' + esc(S.name) + '" class="boss-mon"></div>' +
       '<div class="boss-txt"><span class="chip boss-diff d' + d + '">' + T.t + '系每周挑战 · ' + L.diff + '难度</span><h3>' + esc(S.name) + '</h3><p class="hint">本周的' + T.t + '系BOSS，还剩 ' + ewkLeft() + ' 换下一只。</p>' +
       '<ul class="boss-rules"><li><b>等级</b>LV' + L.lv + '</li><li><b>体力</b>' + fmt(L.hp) + '</li>' + rules +
@@ -5615,13 +5625,15 @@
     if (b.dataset.arcplay) { arcStop(); ex.arcQ = []; ex.arc = true; startVN(b.dataset.arcplay, 'replay', $('pg-explore'), true); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
     if (b.dataset.arcall) { arcStop(); var aq = Object.keys(SITES).filter(function (id) { return !SITES[id].side && prog(id).done; }); ex.arc = true; ex.arcQ = aq.slice(1); startVN(aq[0], 'replay', $('pg-explore'), true); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
     if (b.dataset.arcgo) { var AS = SITES[b.dataset.arcgo]; ex.arc = false; ex.planet = AS.planet; if (AS.dept) { ex.view = 'area'; ex.area = AS.dept; } else { ex.view = 'sites'; if (AS.planet === 'flora') { ex.fpart = 'story'; ex.flSt = AS.side ? 'side' : 'main'; } } renderExplore(); return; }
+    if (b.dataset.wkhub) { ex.view = 'wkhub'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
+    if (b.id === 'wkhub-back') { ex.view = 'planets'; renderExplore(); return; }
     if (b.dataset.ewk) { ex.ewkT = b.dataset.ewk; ex.view = 'ewk'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
     if (b.dataset.ewkd) { ex.ewkD = +b.dataset.ewkd; renderEwk(); return; }
     if (b.dataset.ewkgo) { startEwk(ex.ewkT, ex.ewkD | 0); return; }
-    if (b.id === 'ewk-back') { ex.view = 'planets'; renderExplore(); return; }
+    if (b.id === 'ewk-back') { ex.view = 'wkhub'; renderExplore(); return; }
     if (b.id === 'boss-back') {
       var BK2 = BOSSES[ex.boss];
-      if (ex.view === 'weekly') ex.view = 'planets';
+      if (ex.view === 'weekly') ex.view = 'wkhub';
       else if (ex.bossFrom === 'hub') ex.view = 'bosshub';
       else if (ex.bossFrom === 'field' && BK2.region) { enterField(BK2.region); return; }
       else if (BK2.dept) { ex.view = 'area'; ex.area = BK2.dept; }
