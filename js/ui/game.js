@@ -1735,6 +1735,41 @@
   function ctName(u) { return (CT.data && CT.data.names && CT.data.names[u]) || u; }
   function bjText(t) { var d = new Date(t + 8 * 3600 * 1000); return (d.getUTCMonth() + 1) + ' 月 ' + d.getUTCDate() + ' 日 ' + ('0' + d.getUTCHours()).slice(-2) + ':' + ('0' + d.getUTCMinutes()).slice(-2); }
   function leftText(ms) { if (ms <= 0) return '马上'; var h = Math.floor(ms / 3600000), m = Math.ceil(ms % 3600000 / 60000); return h >= 24 ? Math.floor(h / 24) + ' 天 ' + (h % 24) + ' 小时' : h ? h + ' 小时 ' + m + ' 分' : m + ' 分钟'; }
+  // 和 Bttp 的 bo3：本地对战，打完把结果交给服务器
+  function bttpTeam(n) {
+    var my = (acc.teams[acc.active] || []).map(mon).filter(Boolean).slice(0, n), avg = my.length ? Math.round(my.reduce(function (t, m) { return t + m.lv; }, 0) / my.length) : 50;
+    var r = seeded('ct-bttp|' + CONTEST.id + '|' + (CT.data && CT.data.myMatch ? CT.data.myMatch.round : 0)), pool = NPC_POOL.filter(function (id) { return id !== 'bone'; }), pick = [];
+    while (pick.length < n - 1) { var id = pool[Math.floor(r() * pool.length)]; if (pick.indexOf(id) < 0) pick.push(id); }
+    pick.splice(2, 0, 'bone');   // Bttp 的第三只固定是骨刃
+    return pick.slice(0, n).map(function (sid) { var o = storyMon({ sid: sid, lv: Math.max(1, Math.min(100, avg)), moves: [] }); delete o.u; delete o.hl; return o; });
+  }
+  function ctNpcFight() {
+    var M0 = CT.data && CT.data.myMatch; if (!M0 || !M0.npc || M0.done) return;
+    if (!CT.npc || CT.npc.round !== M0.round) CT.npc = { round: M0.round, w: 0, l: 0 };
+    if (CT.npc.w >= 2 || CT.npc.l >= 2) { ctNpcSubmit(); return; }
+    var team = (acc.teams[acc.active] || []).map(mon).filter(Boolean).slice(0, 5); if (!team.length) { toast('出战配队里还没有精灵。'); return; }
+    var g = CT.npc.w + CT.npc.l + 1;
+    stopTimers(); ex.fighting = true; document.body.classList.add('story-fight'); syncBattle();
+    $('pg-explore').hidden = true; $('pg-arena').hidden = false;
+    window.HSBATTLE.start({ p: team.map(storyMon), a: bttpTeam(5), foe: 'Bttp', diff: CONTEST.name + ' · 第 ' + M0.round + ' 轮 · 第 ' + g + ' 局', bgm: 'pvp', back: '太空竞技场', ai: rankAI(5),
+      onEnd: function (res) {
+        if (res === 'win') CT.npc.w++; else CT.npc.l++;
+        ex.fighting = false; document.body.classList.remove('story-fight');
+        $('pg-arena').hidden = page !== 'arena'; $('pg-explore').hidden = page !== 'explore';
+        renderTop(); syncBattle();
+        var N = CT.npc;
+        if (N.w >= 2 || N.l >= 2) ctNpcSubmit();
+        else { toast('第 ' + g + ' 局' + (res === 'win' ? '你赢了' : '你输了') + '，比分 ' + N.w + ' : ' + N.l + '。准备好了就继续下一局。'); renderExplore(); }
+      } });
+  }
+  function ctNpcSubmit() {
+          var N = CT.npc, win = N.w >= 2;
+          CLOUD.api('POST', '/api/contest/npc', { win: win, score: [N.w, N.l] }).then(function (r) {
+            if (r._code === 200) { CT.data = r; CT.npc = null; toast((win ? '你以 ' : '你以 ') + N.w + ' : ' + N.l + (win ? ' 战胜了 Bttp！这一轮算你获胜。' : ' 输给了 Bttp。Bttp：神早就算到了。')); }
+            else toast(r.error || '结果没有交上去，请稍后重试');
+            renderExplore();
+          }).catch(function () { toast('连不上服务器，结果没有交上去。稍后再点一次「挑战 Bttp」就会重新提交。'); renderExplore(); });
+  }
   function contestLoad(cb) {
     if (cb) (CT.cbs = CT.cbs || []).push(cb);
     if (CT.busy || typeof CLOUD === 'undefined' || !CLOUD.api) return; CT.busy = true;
@@ -1794,7 +1829,11 @@
     h += '<div class="soc-foot ct-tools"><button type="button" class="btn ghost" data-ctdraw="1">▶ 回放抽签</button></div>';
     // 我的对局
     var M0 = D.myMatch;
-    if (M0 && !M0.done) {
+    if (M0 && !M0.done && M0.npc) {   // 2026-10-21：奇数人的那一轮，和电脑对手 Bttp 打
+      h += '<div class="ct-my"><span class="tape l"></span><b>你的第 ' + M0.round + ' 轮对手：Bttp</b> <span class="dot on"></span><small>随时可以挑战</small>' +
+        '<p class="hint">这一轮人数是奇数，你的对手是电脑操控的 Bttp。bo3，用你出战配队的前 5 只，先赢 2 局获胜（中途退出算这一局输）。请在 ' + bjText(M0.deadline) + ' 之前打完，到时还没打完算输。' + (CT.npc ? '当前比分 ' + CT.npc.w + ' : ' + CT.npc.l + '。' : '') + '</p>' +
+        '<div class="soc-foot"><button type="button" class="btn primary" data-ctnpc="1">⚔ ' + (CT.npc ? '继续第 ' + (CT.npc.w + CT.npc.l + 1) + ' 局' : '挑战 Bttp') + '</button></div></div>';
+    } else if (M0 && !M0.done) {
       var wsOk = window.HSSOCIAL && window.HSSOCIAL.wsOk && window.HSSOCIAL.wsOk(), can = M0.oppOnline && wsOk;
       h += '<div class="ct-my"><span class="tape l"></span><b>你的' + (M0.final ? '决赛' : '第 ' + M0.round + ' 轮') + '对手：' + esc(M0.oppName) + '</b> <span class="dot' + (M0.oppOnline ? ' on' : '') + '"></span><small>' + (M0.oppOnline ? '在线' : '不在线') + '</small>' +
         '<p class="hint">bo3，各带 6 只、禁对方 1 只，5v5。请在 ' + bjText(M0.deadline) + ' 之前和对手同时上线完成对战；到时还没打，在线时间更长的一方获胜。</p>' +
@@ -3176,7 +3215,7 @@
    * 第 60 层：死神「帕努托尔」LV80、体力 10000，【不朽】【肃穆】【死神】。击败后：称号「死神」、死神代币（一个账号最多 3 颗）、大量经验和代币，回到第 1 层。
    * 每天从塔里最多拿 150000 经验、1000 先驱代币（正好是通关两次的量）。
    * 存档：acc.tower = { f 当前层, cp 存档点, best 最高通过层, clears 通关次数, death 已获得的死神代币, tok 先驱代币, day: { d, exp, tok } } */
-  var TOWER = { top: 60, cps: [1, 11, 21, 31, 41, 51], dayExp: 150000, dayTok: 1000, deathMax: 3 };
+  var TOWER = { top: 60, cps: [1, 11, 21, 31, 41, 51], dayExp: 450000, dayTok: 5000, deathMax: 3 };   // 2026-10-21：每层经验 ×10、代币 ×5，每日经验上限 ×3（150000 → 450000），代币上限跟着 ×5
   var TW_POOL = ['leaf', 'squid', 'shroom', 'wind', 'mush', 'kaleo', 'faraday', 'firemouse', 'frost', 'gorgon', 'hephaestus', 'leigong', 'pede', 'siren', 'turkey', 'wild', 'tagore', 'leafcat', 'moon', 'bone', 'aegis'];
   var TW_FX = ['armor', 'regen', 'thorn', 'rage', 'swift', 'guard', 'noStatus', 'focus'];   // 只用塔里通用的特性，不用BOSS专属的（星球聚能、东北的纷争等）
   var TW_SHOP = [
@@ -3189,8 +3228,10 @@
     return T;
   }
   function twLv(f) { return f >= TOWER.top ? 80 : 40 + Math.round((f - 1) * 40 / 58); }
-  function twExp(f) { return f >= TOWER.top ? 16000 : 400 + 20 * f; }          // 一次通关合计 75000
-  function twTok(f) { return f >= TOWER.top ? 232 : 2 + Math.floor(f / 10); }   // 一次通关合计 500
+  function twExp(f) { return 10 * (f >= TOWER.top ? 16000 : 400 + 20 * f); }          // 一次通关合计 750000（2026-10-21 ×10）
+  function twExp0(f) { return f >= TOWER.top ? 16000 : 400 + 20 * f; }   // 调整前（补偿邮件用）
+  function twTok(f) { return 5 * (f >= TOWER.top ? 232 : 2 + Math.floor(f / 10)); }   // 一次通关合计 2500（2026-10-21 ×5）
+  function twTok0(f) { return f >= TOWER.top ? 232 : 2 + Math.floor(f / 10); }
   function twFloor(f) {
     if (f >= TOWER.top) return { boss: true, foes: [{ sid: 'pluto', lv: 80, hp: 10000, fx: { immortal: 1, solemn: 1, reaper: 1, ppLim: 1 } }] };
     var g = seeded('pioneer-tower:' + f), gate = f % 10 === 0, n = gate ? 1 : 1 + Math.floor(g() * 3), lv = twLv(f), used = {}, foes = [];
@@ -3524,10 +3565,10 @@
   var MAIL_MAX = 100;
   function dayStr() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
   function mails() { if (!Array.isArray(acc.mail)) acc.mail = []; if (!acc.mailSeen) acc.mailSeen = {}; return acc.mail; }
-  function hasAtt(a) { return !!(a && (a.exp || a.energy || a.merit || a.tokens || (a.items && Object.keys(a.items).length) || (a.mons && a.mons.length))); }
+  function hasAtt(a) { return !!(a && (a.exp || a.energy || a.merit || a.tokens || a.twTok || (a.items && Object.keys(a.items).length) || (a.mons && a.mons.length))); }
   function attList(a) {
     var r = []; if (!a) return r;
-    if (a.exp) r.push('累积经验 ×' + fmt(a.exp)); if (a.energy) r.push('能量 ×' + fmt(a.energy)); if (a.merit) r.push('功勋点 ×' + fmt(a.merit)); if (a.tokens) r.push('竞技代币 ×' + fmt(a.tokens));
+    if (a.exp) r.push('累积经验 ×' + fmt(a.exp)); if (a.energy) r.push('能量 ×' + fmt(a.energy)); if (a.merit) r.push('功勋点 ×' + fmt(a.merit)); if (a.tokens) r.push('竞技代币 ×' + fmt(a.tokens)); if (a.twTok) r.push('先驱代币 ×' + fmt(a.twTok));
     if (a.items) for (var k in a.items) r.push(itemName(k) + ' ×' + a.items[k]);
     (a.mons || []).forEach(function (g) { if (SPMAP[g.sid]) r.push(form(g).name + ' LV' + g.lv); });
     return r;
@@ -3601,6 +3642,14 @@
     hlFix();
     var me = window.CLOUD && window.CLOUD.user ? window.CLOUD.user() : null, today = dayStr(), changed = false;
     mails();
+    // 2026-10-21：先驱之塔奖励提高（经验 ×10、代币 ×5），给之前爬过塔的船员补差额：按通关次数 + 当前这一轮爬到的层数算
+    if (!acc.tower && !acc.mailSeen['tower-x10']) acc.mailSeen['tower-x10'] = Date.now();   // 没爬过塔的：以后按新奖励算，不补
+    if (acc.tower && !acc.mailSeen['tower-x10']) {
+      var TW0 = acc.tower, nf = (TW0.clears || 0) * TOWER.top + Math.max(0, (TW0.f || 1) - 1), ce = 0, ct = 0;
+      for (var tf = 0; tf < nf; tf++) { var fl = tf % TOWER.top + 1; ce += twExp0(fl) * 9; ct += twTok0(fl) * 4; }
+      if (nf > 0 && sendMail({ id: 'tower-x10', title: '先驱之塔奖励提高 · 补发', body: '先驱之塔每层的经验提高到 10 倍、先驱代币提高到 5 倍，每天的经验上限提高到 3 倍。\n按你之前通过的 ' + nf + ' 层（' + (TW0.clears || 0) + ' 次通关 + 当前这一轮的 ' + Math.max(0, (TW0.f || 1) - 1) + ' 层），补发差额。', att: { exp: ce, twTok: ct } })) changed = true;
+      else acc.mailSeen['tower-x10'] = Date.now();
+    }
     (typeof MAILS !== 'undefined' ? MAILS : []).forEach(function (M0) {
       if (!M0 || !M0.id || acc.mailSeen[M0.id]) return;
       if (M0.to && !((me && M0.to.indexOf(me) >= 0) || M0.to.indexOf(acc.name) >= 0)) return;   // to 里写登录账号名或做题家名字都行
@@ -3699,6 +3748,7 @@
     if (a.energy) acc.energy = (acc.energy || 0) + a.energy;
     if (a.merit) giveMerit(a.merit);
     if (a.tokens) acc.tokens = (acc.tokens || 0) + a.tokens;
+    if (a.twTok) { twRec(); acc.tower.tok = (acc.tower.tok || 0) + a.twTok; }
     if (a.items) giveItems(a.items);
     (a.mons || []).forEach(function (g) { if (!SPMAP[g.sid]) return; var nm = newMon(g.sid, g.lv), T = acc.teams[acc.active]; if (T.length < TEAM_SIZE) T.push(nm.u); });
     m.got = true; m.read = true;
@@ -5705,6 +5755,7 @@
     if (b.id === 'ex-ship') { ex.view = 'sites'; ex.planet = 'jingchu'; renderExplore(); return; }
     if (b.dataset.ctsign) { contestSign(); return; }
     if (b.dataset.ctdraw) { ctDrawShow(); return; }
+    if (b.dataset.ctnpc) { ctNpcFight(); return; }
     if (b.dataset.ctfight) { if (window.HSSOCIAL && window.HSSOCIAL.ctAsk) { var M1 = CT.data && CT.data.myMatch; window.HSSOCIAL.ctAsk(b.dataset.ctfight, M1 ? M1.oppName : '', CONTEST.name + (M1 ? ' · ' + (M1.final ? '决赛' : '第 ' + M1.round + ' 轮') : '')); } return; }
     if (b.dataset.ctwatch) { if (window.HSSOCIAL && window.HSSOCIAL.watch) window.HSSOCIAL.watch(b.dataset.ctwatch); return; }
     if (b.dataset.ctrep) { if (window.HSSOCIAL && window.HSSOCIAL.replay) window.HSSOCIAL.replay(b.dataset.ctrep); return; }

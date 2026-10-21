@@ -1046,7 +1046,7 @@ function doStatus(S, evs, i, mv) {
     case 'block100': me.fx.shield = Math.max(me.fx.shield || 0, 100); timer('block', 3, nm(me) + '坚不可摧：3回合内每回合抵挡100点伤害'); break;
     case 'recoilQ': timer('recoil', 4, nm(me) + '充能磁暴反冲（4回合）'); break;
     case 'rice': eatRice(S, evs, i); break;
-    case 'rice3': log(S, evs, '米饭太香了！'); for (var rk = 0; rk < 3 && !me.fainted; rk++) eatRice(S, evs, i); break;
+    case 'rice3': log(S, evs, '米饭太香了！'); var rn = RNG() < 0.25 ? 3 : 2; for (var rk = 0; rk < rn && !me.fainted; rk++) eatRice(S, evs, i); if (rn === 3) log(S, evs, '实在太香了，忍不住又吃了一口！', 'fxl'); break;   // 2026-10-21：吃 2 口，25% 再吃一口
   }
   if (i === 0) hqAfterStatus(S, evs, me, foe, mv);
 }

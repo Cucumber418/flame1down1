@@ -239,7 +239,7 @@ var M = {
   魔鬼之叶: { type: '草', cat: '物攻', power: 70, tgtStage: { def: -1 }, tgtChance: 0.45, d: '威力70，45%概率降低对方1级物防' },
   进食: { type: '普通', cat: '物攻', power: 10, fixed: 100, d: '威力10，附加100点固定伤害' },
   吃米饭: { type: '普通', cat: '变化', custom: 'rice', d: '吃一口米饭：随机回复1/5体力、提升1级物攻、提升1级速度三者之一（各1/3）' },
-  米饭香: { type: '普通', cat: '变化', custom: 'rice3', hidden: true, d: '米饭太香了！连续吃3口米饭' },
+  米饭香: { type: '普通', cat: '变化', custom: 'rice3', hidden: true, d: '米饭太香了！连续吃2口米饭，25%几率再吃一口' },
   飞空连击: { type: '飞行', cat: '物攻', power: 10, hits: [6, 10], fixedHit: 5, d: '威力10，连击6-10次，每次攻击附带5点固定伤害' },
   非凡连击: { type: '飞行', cat: '物攻', power: 10, hits: [6, 10], fixedHit: 5, custom: 'riceHits', hidden: true, d: '非同凡响的连击：威力10，连击6-10次，每吃过一口米饭连击数+1（最多15次），每次攻击附带5点固定伤害' },
   // —— 费尔茅斯（火）
