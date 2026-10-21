@@ -102,7 +102,9 @@ function aiChoose(S) {
   var me = act(S, 1), foe = act(S, 0), P0 = S.ai || AI_DEFAULT, P = {};
   for (var pk in P0) P[pk] = P0[pk];
   P.randomP = Math.max(P.randomP || 0, AI_DUMB.randomP); P.noise = Math.max(P.noise || 0, AI_DUMB.noise);
-  var usable = []; me.moves.forEach(function (slot, idx) { if (slot.pp > 0 && !moveBlocked(me, slot)) usable.push(idx); });
+  // 2026-10-21：BOSS / 每周挑战的泰戈尔前两回合不用自我崩坏、元神崩坏
+  var early = me.boss && me.id === 'tagore' && S.turn <= 2, banned = function (slot) { return early && (slot.n === '自我崩坏' || slot.n === '元神崩坏'); };
+  var usable = []; me.moves.forEach(function (slot, idx) { if (slot.pp > 0 && !moveBlocked(me, slot) && !banned(slot)) usable.push(idx); });
   if (usable.length && RNG() < P.randomP) return { kind: 'move', i: usable[Math.floor(RNG() * usable.length)] };
   if (!me.tm.noSwitch && !bossOf(S) && RNG() < P.switchP) {   // BOSS战里电脑不主动换人（傀儡要打倒才会换回BOSS）
     var threat = bestEst(foe, me) / Math.max(1, me.hp), mine = bestEst(me, foe) / Math.max(1, foe.hp);
@@ -118,7 +120,7 @@ function aiChoose(S) {
   }
   var best = null;
   me.moves.forEach(function (slot, idx) {
-    if (slot.pp <= 0 || moveBlocked(me, slot)) return;
+    if (slot.pp <= 0 || moveBlocked(me, slot) || banned(slot)) return;
     var v = scoreMove(S, me, foe, M[slot.n]) * (1 - P.noise + RNG() * 2 * P.noise);
     if (!best || v > best.v) best = { v: v, i: idx };
   });

@@ -705,7 +705,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   if (me.fainted) return;
   if (!extra && cantAct(S, evs, me)) return;
   if (slotIdx >= 0 && moveBlocked(me, me.moves[slotIdx])) { log(S, evs, (me.flags && me.flags.sy && mv.cat === '变化' ? '沈阳大街上不讲究这些花架子，' + nm(me) + '无法使用「' : nm(me) + '处于光影之月，无法使用「') + mv.name + '」'); return; }
-  if (!mv.struggle && slotIdx >= 0 && !(me.boss && (me.boss.immortal || me.boss.ppInf))) me.moves[slotIdx].pp--;   // 「不朽」：PP 无限
+  if (!mv.struggle && slotIdx >= 0 && !(me.boss && ((me.boss.immortal && !me.boss.ppLim) || me.boss.ppInf))) me.moves[slotIdx].pp--;   // ppLim：先驱之塔的死神虽有「不朽」，PP 也有限   // 「不朽」：PP 无限
   if (S.silenced[i] && !extra) { log(S, evs, nm(me) + '的「' + mv.name + '」被黑暗吞没，失效了！', 'bad'); return; }
   var firstMover = !S.turnActed[j];
   var mt = mvType(me, mv);
@@ -1189,7 +1189,7 @@ var BOSS_FX = [
   { k: 'erode', t: '深度侵蚀', h: '深度侵蚀', d: function (m) { return '物攻、特攻永久提升 ' + Math.round((erodeMult(m) - 1) * 100) + '%（直接算进能力值，不会被消除）'; } },
   { k: 'mute', t: '无法交流', h: '无法交流', d: function () { return '完全失去理智，只会使用攻击技能'; } },
   { k: 'purify', t: '净化光芒', h: '净化光芒', d: function () { return '对沾染瘴气的目标造成的伤害提升 100%'; } },
-  { k: 'immortal', t: '不朽', h: '不朽', d: function () { return '免疫任何异常状态，也免疫自身能力等级的下降（提升不受影响）；技能 PP 无限'; } },
+  { k: 'immortal', t: '不朽', h: '不朽', d: function (m) { return '免疫任何异常状态，也免疫自身能力等级的下降（提升不受影响）' + (m && m.boss && m.boss.ppLim ? '' : '；技能 PP 无限'); } },
   // 先驱之塔（2026-10-17）
   { k: 'regen', t: '再生', h: '再生', d: function (m) { return '每回合结束时恢复 ' + Math.round((m.boss.regen === true ? 0.06 : m.boss.regen) * 100) + '% 最大体力'; } },
   { k: 'thorn', t: '荆棘', h: '荆棘', d: function () { return '受到攻击时，把这次伤害的 15% 反弹给攻击者'; } },

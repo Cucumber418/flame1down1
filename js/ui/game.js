@@ -3192,11 +3192,11 @@
   function twExp(f) { return f >= TOWER.top ? 16000 : 400 + 20 * f; }          // 一次通关合计 75000
   function twTok(f) { return f >= TOWER.top ? 232 : 2 + Math.floor(f / 10); }   // 一次通关合计 500
   function twFloor(f) {
-    if (f >= TOWER.top) return { boss: true, foes: [{ sid: 'pluto', lv: 80, hp: 10000, fx: { immortal: 1, solemn: 1, reaper: 1 } }] };
+    if (f >= TOWER.top) return { boss: true, foes: [{ sid: 'pluto', lv: 80, hp: 10000, fx: { immortal: 1, solemn: 1, reaper: 1, ppLim: 1 } }] };
     var g = seeded('pioneer-tower:' + f), gate = f % 10 === 0, n = gate ? 1 : 1 + Math.floor(g() * 3), lv = twLv(f), used = {}, foes = [];
     for (var i = 0; i < n; i++) {
       var sid; do { sid = TW_POOL[Math.floor(g() * TW_POOL.length)]; } while (used[sid]); used[sid] = 1;
-      var mult = gate ? 4 : n === 1 ? 3 : n === 2 ? 2 : 1.5, nfx = gate || f >= 30 ? 2 : 1, fx = { pp: 99 }, pick = {};
+      var mult = gate ? 4 : n === 1 ? 3 : n === 2 ? 2 : 1.5, nfx = gate || f >= 30 ? 2 : 1, fx = {}, pick = {};   // 2026-10-21：敌人技能 PP 有限（原来统一 99）
       while (Object.keys(pick).length < nfx) pick[TW_FX[Math.floor(g() * TW_FX.length)]] = 1;
       Object.keys(pick).forEach(function (k) { fx[k] = k === 'regen' ? 0.06 : 1; });
       foes.push({ sid: sid, lv: lv + (gate ? 2 : 0), hp: Math.round(calcStat(SPMAP[sid].base.hp, 'hp', lv) * mult), fx: fx });
