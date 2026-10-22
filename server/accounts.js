@@ -48,6 +48,42 @@ function progScore(data) {
   var st = 0; if (acc.story) for (var k in acc.story) if (acc.story[k] && acc.story[k].done) st++;
   return lv + st * 20;
 }
+/* ---------- 防改档（2026-10-22）：上传的存档和服务器上那份比，数值涨得离谱就拒收 ----------
+ * 只看几项关键数值：经验背包、能量、竞技代币、先驱代币、道具数量、精灵等级（换算成大致的总经验 lv³）。
+ * 门槛放得很宽（正常游戏、补发邮件都不会碰到），只拦直接改数值的情况。 */
+function stats(data) {
+  var acc = null; try { acc = JSON.parse((data || {})['hs-account-v1'] || 'null'); } catch (e) {}
+  if (!acc || typeof acc !== 'object') return null;
+  var num = function (v) { v = +v; return isFinite(v) ? v : 1e18; };
+  var o = { exp: num(acc.exp || 0), energy: num(acc.energy || 0), tokens: num(acc.tokens || 0), twTok: num((acc.tower && acc.tower.tok) || 0), item: 0, itemSum: 0, mxp: 0, maxLv: 0, mons: Array.isArray(acc.mons) ? acc.mons.length : 0 };
+  if (acc.items && typeof acc.items === 'object') for (var k in acc.items) { var n = num(acc.items[k] || 0); o.itemSum += n; if (n > o.item) o.item = n; }
+  (Array.isArray(acc.mons) ? acc.mons : []).forEach(function (m) { var lv = num(m && m.lv || 0); o.mxp += Math.pow(Math.min(lv, 1000), 3); if (lv > o.maxLv) o.maxLv = lv; });
+  return o;
+}
+var CHEAT = {
+  abs: { exp: 60e6, energy: 30e6, tokens: 2e6, twTok: 2e6, item: 200000, maxLv: 100, mons: 3000 },
+  // 每次上传相对上一份最多涨多少：base + perHour × 间隔小时数
+  delta: { exp: [20e6, 3e6], energy: [3e6, 5e5], tokens: [2e5, 5e4], twTok: [1e5, 3e4], itemSum: [50000, 10000], mxp: [25e6, 4e6] }
+};
+function cheatCheck(oldData, newData, dtMs) {
+  var b = stats(newData); if (!b) return null;
+  for (var k in CHEAT.abs) if (b[k] > CHEAT.abs[k]) return k + ' 超出上限（' + b[k] + '）';
+  var a = stats(oldData); if (!a) return null;
+  var h = Math.max(1 / 60, (dtMs || 0) / 3600000);
+  for (var d in CHEAT.delta) { var lim = CHEAT.delta[d][0] + CHEAT.delta[d][1] * h; if (b[d] - a[d] > lim) return d + ' 一次涨了 ' + Math.round(b[d] - a[d]) + '（上限 ' + Math.round(lim) + '）'; }
+  return null;
+}
+// 每天（北京时间）累计涨幅上限：防止每次只涨一点、靠频繁上传慢慢刷
+var DAY_CAP = { exp: 30e6, energy: 5e6, tokens: 3e5, twTok: 2e5, itemSum: 80000, mxp: 40e6 };
+function dayCheck(u, oldData, newData) {
+  var a = stats(oldData), b = stats(newData); if (!a || !b) return null;
+  var d = new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);
+  var g = u.gain && u.gain.d === d ? u.gain : { d: d };
+  for (var k in DAY_CAP) { var inc = Math.max(0, b[k] - a[k]); if ((g[k] || 0) + inc > DAY_CAP[k]) return k + ' 今天累计涨幅超出上限'; }
+  for (var k2 in DAY_CAP) g[k2] = (g[k2] || 0) + Math.max(0, b[k2] - a[k2]);
+  u.gain = g; return null;
+}
+function cheatLog(name, why) { try { fs.appendFileSync(path.join(DATA_DIR, 'cheat.log'), new Date().toISOString() + '\t' + name + '\t' + why + '\n'); } catch (e) {} }
 function loadUser(name) { return readJSON(userFile(name), null); }
 function saveUser(u) {
   var f = userFile(u.name);
@@ -159,7 +195,7 @@ function handle(req, res) {
         if (e) return reply(res, 500, { error: '服务器出错了' });
         if (loadUser(name)) return reply(res, 409, { error: '这个账号名已经被注册了' });
         var u = { name: name, salt: salt, hash: h, created: Date.now(), save: null };
-        if (body.data) u.save = { data: body.data, rev: 1, savedAt: Date.now() };
+        if (body.data && !cheatCheck(null, body.data, 0)) u.save = { data: body.data, rev: 1, savedAt: Date.now() };
         saveUser(u);
         addFail(ip);   // 注册也计入次数，防止有人批量注册
         reply(res, 200, { token: newSession(name), user: name, save: saveOut(u) });
@@ -185,7 +221,9 @@ function handle(req, res) {
       // 管理员恢复过的存档（save.guard）：保护期内拒绝进度明显倒退的上传（不管是不是强行覆盖）
       var G = me.save && me.save.guard;
       if (G && Date.now() < G.until && progScore(body.data) < G.min) return reply(res, 409, { error: '存档刚由管理员恢复过，请使用服务器上的进度', save: saveOut(me) });
-      if (!body.force && (body.rev | 0) !== cur) return reply(res, 409, { error: '存档在别的设备上更新过', save: saveOut(me) });
+      var why = cheatCheck(me.save && me.save.data, body.data, me.save ? Date.now() - (me.save.savedAt || 0) : 0) || ((body.rev | 0) === cur ? dayCheck(me, me.save && me.save.data, body.data) : null);
+      if (why) { cheatLog(me.name, why); return reply(res, 409, { error: '存档数值异常，已恢复为服务器上的进度', cheat: true, save: saveOut(me) }); }
+      if ((body.rev | 0) !== cur) return reply(res, 409, { error: '存档在别的设备上更新过', save: saveOut(me) });
       me.save = { data: body.data, rev: cur + 1, savedAt: Date.now(), guard: G && Date.now() < G.until ? G : undefined };
       saveUser(me);
       return reply(res, 200, { rev: me.save.rev, savedAt: me.save.savedAt });
@@ -247,4 +285,4 @@ function allUsers() {
 }
 
 module.exports = { handle: handle, use: function (fn) { extra.push(fn); }, whoIs: whoIs, whoToken: whoToken, loadUser: loadUser, saveUser: saveUser, allUsers: allUsers,
-  reply: reply, readBody: readBody, userCount: userCount, resetPassword: resetPassword, listUsers: listUsers, DATA_DIR: DATA_DIR, progScore: progScore };
+  reply: reply, readBody: readBody, userCount: userCount, resetPassword: resetPassword, listUsers: listUsers, DATA_DIR: DATA_DIR, progScore: progScore, cheatCheck: cheatCheck, cheatStats: stats };

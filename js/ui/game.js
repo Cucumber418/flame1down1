@@ -629,7 +629,10 @@
   function clip(v) { return Array.from(v).slice(0, NAME_MAX).join(''); }
   function renderOnboard() {
     var ob = ui.ob, el = $('onboard');
-    if (acc && !acc.introDone) { if (ex.mode !== 'intro' || !$('vn')) startVN('school', 'intro', el, false); return; }
+    if (acc && !acc.introDone) {   // 2026-10-22：新玩家要读完全部地球剧情（第一 ~ 三段）才进入游戏
+      if (ex.mode !== 'intro' || !$('vn')) { var e0 = INTRO_SITES.filter(function (id) { return !prog(id).done; })[0]; if (!e0) { finishIntro(); return; } startVN(e0, 'intro', el, false); }
+      return;
+    }
     el.innerHTML = '<div class="onboard"><span class="tape l"></span><span class="tape r"></span>' +
       '<h2>欢迎来到 Flame1Down - 1</h2>' +
       '<p>请先创建账号。选择主角的性别，再给自己起一个做题家名字，最多 ' + NAME_MAX + ' 个字。</p>' +
@@ -663,6 +666,7 @@
     acc.starter = sid; acc.rival = rivalOf(sid);
     var m = newMon(sid, START_LV); acc.teams[0] = [m.u]; acc.active = 0; ui.sel = m.u; save();
   }
+  var INTRO_SITES = ['school', 'river', 'jiuquan'];
   function finishIntro() {
     acc.introDone = true; ex.mode = null; ex.view = 'planets'; stopTimers(); save();
     $('onboard').innerHTML = '';
@@ -5748,7 +5752,7 @@
   function renderVN() {
     ex.curBg = null;   // 整个舞台会重建（例如剧情对战打完回来），背景图要重新设置，不然会是空白
     var S = SITES[ex.site], P = PLANETS.filter(function (p) { return p.id === S.planet; })[0], intro = ex.mode === 'intro';
-    ex.host.innerHTML = (intro ? '<div class="vn-intro-head"><span class="sc-tag">' + S.chapter + '</span><span class="hint">点击画面、按空格或回车继续。读完序章后进入游戏。</span></div>' : '') +
+    ex.host.innerHTML = (intro ? '<div class="vn-intro-head"><span class="sc-tag">' + S.chapter + '</span><span class="hint">点击画面、按空格或回车继续。读完地球上的三段剧情后进入游戏。</span></div>' : '') +
       '<div class="vn" id="vn" tabindex="0" aria-label="剧情对话，点击或按空格继续">' +
       '<img class="vn-bg" id="vn-bg" alt=""><img class="vn-bg vn-bg2" id="vn-bg2" alt="">' +
       '<div class="vn-chars" id="vn-chars"></div>' +
@@ -5947,7 +5951,7 @@
       (nxt && !unlocked(nxt) && SITES[nxt].needText && !SITES[ex.site].endText ? '<p><b class="red">任务：' + SITES[nxt].needText + '。</b></p>' : '') +
       (UNLOCK[ex.site] && !SITES[ex.site].endText ? '<p><b class="red">「' + UNLOCK[ex.site] + '」已开放！</b>' + (ex.site === 'storage' ? '<br><span class="hint">在荆楚号 · 荆门 · 物资仓储里进入</span>' : ex.site === 'medal' ? '<br><span class="hint">在荆楚号 · 黄冈 · 学院部里进入</span>' : '') + '</p>' : '') +
       '<p>' + (SITES[ex.site].endText ? SITES[ex.site].endText : nxt && !unlocked(nxt) ? '完成任务后，下一段「' + SITES[nxt].chapter.split(' · ')[1] + '」就会开放。' : nxt ? (SITES[nxt].side ? '支线「' : '下一段「') + SITES[nxt].chapter.split(' · ')[1] + '」已解锁，可在星际探索 · ' + nxtP.name + (SITES[nxt].dept ? ' · ' + DEPTS[SITES[nxt].dept][0] : '') + '中继续。' : '后续剧情正在制作中。') + '</p>' +
-      '<div class="row">' + (intro ? '<button type="button" class="btn primary" data-vn="enter">进入游戏</button>'
+      '<div class="row">' + (intro ? (INTRO_SITES.indexOf(ex.site) >= 0 && INTRO_SITES[INTRO_SITES.indexOf(ex.site) + 1] ? '<button type="button" class="btn primary" data-vn="inext" data-nx="' + INTRO_SITES[INTRO_SITES.indexOf(ex.site) + 1] + '">继续下一段</button>' : '<button type="button" class="btn primary" data-vn="enter">进入游戏</button>')
         : ex.arc ? '<button type="button" class="btn" data-vn="replay">重温一遍</button>' + (ex.arcQ && ex.arcQ.length ? '<button type="button" class="btn" data-vn="next" data-nx="' + ex.arcQ[0] + '">连播下一段：' + esc(SITES[ex.arcQ[0]].chapter) + '</button>' : '') + '<button type="button" class="btn primary" data-vn="exit">返回剧情回顾</button>'
         : '<button type="button" class="btn" data-vn="replay">重温一遍</button>' + (nxt && unlocked(nxt) ? '<button type="button" class="btn" data-vn="next" data-nx="' + nxt + '">继续下一段</button>' : '') + '<button type="button" class="btn primary" data-vn="exit">' + (SITES[ex.site].dept ? '返回区域' : '返回地点') + '</button>') + '</div></div>';
     syncBtns();
@@ -5970,6 +5974,7 @@
       if (a === 'next' && ex.arc && ex.arcQ && ex.arcQ[0] === b.dataset.nx) ex.arcQ.shift();
       if (a === 'next') { startVN(b.dataset.nx, 'replay', ex.host, prog(b.dataset.nx).done || !prog(b.dataset.nx).at); return; }
       if (a === 'enter') { finishIntro(); return; }
+      if (a === 'inext') { startVN(b.dataset.nx, 'intro', ex.host, true); return; }
       if (a === 'auto') { ex.auto = !ex.auto; ex.skip = false; syncBtns(); if (ex.auto && !ex.typing && !ex.tick) ex.timer = setTimeout(next, 600); return; }
       if (a === 'skip') { ex.skip = !ex.skip; ex.auto = false; syncBtns(); if (ex.skip) { if (ex.typing) doneTyping(); next(); } return; }
       if (a === 'log') { openLog(); return; }

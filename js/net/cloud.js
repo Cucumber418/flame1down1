@@ -65,18 +65,9 @@
       // 本机有这个账号还没上传的进度
       // 关页面时用 keepalive 传上去的那一份，服务器收到了但本机没来得及记下新版本号：内容一样就不算冲突
       if (!save || save.rev === localRev || sameData(save.data)) { st.rev = save ? save.rev : 0; done(); schedule(0); return; }
-      return askConflict(save, function () { done(); });
+      // 2026-10-22：存档一律以服务器为准，本机和服务器对不上时直接用服务器的
     }
-    if (!owner && legacySave()) {
-      if (!save) {
-        // 新账号、云端是空的：问要不要把本机旧存档带上来
-        return askUpload(legacySave(), function (yes) {
-          if (yes) { st.rev = 0; done(); markDirty(); }
-          else { backupLegacy(); apply(null); st.rev = 0; done(); }
-        });
-      }
-      backupLegacy();   // 云端已有进度：本机旧存档另存一份备用，不会丢
-    }
+    if (!owner && legacySave()) backupLegacy();   // 本机没绑定账号的旧存档不再上传，只另存一份备用
     apply(save ? save.data : null);
     st.rev = save ? save.rev : 0;
     lsDel(DIRTY);
@@ -97,7 +88,7 @@
         if (r._code === 200) {
           st.rev = r.rev; lsSet(REV, String(r.rev)); st.retry = 0;
           if (st.changeNo === no) { lsDel(DIRTY); setStatus('ok'); } else schedule(1000);
-        } else if (r._code === 409) { setStatus('conflict'); askConflict(r.save, function () {}); }
+        } else if (r._code === 409) { setStatus('conflict'); takeCloud(r.save, r.cheat ? r.error : '这个账号在别的设备上保存过新的进度，已切换成服务器上的进度。'); }
         else if (r._code === 401) { setStatus('expired'); }
         else { setStatus('err', r.error); retryLater(); }
       })
@@ -186,6 +177,12 @@
     wire(d, function () { d.remove(); });
   }
   function fmtTime(t) { try { return new Date(t).toLocaleString('zh-CN'); } catch (e) { return ''; } }
+  // 存档以服务器为准：拿服务器上的进度覆盖本机，然后重新加载
+  function takeCloud(save, msg) {
+    apply(save ? save.data : null); st.rev = save ? save.rev : 0; lsSet(REV, String(st.rev)); lsDel(DIRTY);
+    dialog('<span class="step">存档</span><h2>已使用服务器上的进度</h2><p>' + esc(msg || '') + '</p><div class="ob-foot"><button class="btn primary" id="cf-ok">好的</button></div>',
+      function (d, close) { d.querySelector('#cf-ok').addEventListener('click', function () { close(); location.reload(); }); });
+  }
   function askConflict(save, after) {
     dialog('<span class="step">存档冲突</span><h2>两边的进度不一样</h2>' +
       '<p>这个账号在另一台设备上保存过新的进度（' + esc(fmtTime(save && save.savedAt)) + '），和这台设备上还没上传的进度对不上。要保留哪一份？</p>' +
@@ -275,7 +272,7 @@
           api('POST', '/api/login', { user: keep, pass: d.querySelector('#rl-pass').value }).then(function (r) {
             if (r._code !== 200) { d.querySelector('#rl-err').textContent = r.error || '登录失败'; return; }
             setToken(r.token, st.remember); close();
-            if (r.save && r.save.rev !== st.rev) askConflict(r.save, function () {}); else { setStatus('wait'); push(true); }
+            if (r.save && r.save.rev !== st.rev) takeCloud(r.save, '这个账号在别的设备上保存过新的进度，已切换成服务器上的进度。'); else { setStatus('wait'); push(); }
           }).catch(function () { d.querySelector('#rl-err').textContent = '连不上服务器'; });
         });
       });

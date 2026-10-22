@@ -2488,3 +2488,4 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .wk-hub .hub-ic img { width: 40px !important; height: 54px !important; }
 .wk-hub .hub-ic img + img { margin-left: -14px; }
 .wk-hub.locked { cursor: default; opacity: .6; }
+.no-acc.story-fight #pg-arena { display: block !important; }   /* 2026-10-22：新手引导里的地球剧情也有剧情对战（第三段） */
