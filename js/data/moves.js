@@ -239,6 +239,12 @@ var M = {
   魔鬼之叶: { type: '草', cat: '物攻', power: 70, tgtStage: { def: -1 }, tgtChance: 0.45, d: '威力70，45%概率降低对方1级物防' },
   进食: { type: '普通', cat: '物攻', power: 10, fixed: 100, d: '威力10，附加100点固定伤害' },
   吃米饭: { type: '普通', cat: '变化', custom: 'rice', d: '吃一口米饭：随机回复1/5体力、提升1级物攻、提升1级速度三者之一（各1/3）' },
+  // —— 光霆主（电 · 光，2026-10-22）
+  光辉蚀迹: { type: '光', cat: '特攻', power: 75, custom: 'etch', d: '威力75，叠加一层蚀迹，叠满2层时必定使对方失明2回合；之后对方进入蚀迹冷却（失明期间无法叠加蚀迹）' },
+  联觉光晕: { type: '光', cat: '特攻', power: 50, pri: 1, custom: 'copyStages', d: '威力50，先制+1，复制对方的能力上升与下降等级' },
+  断觉霆闪: { type: '电', cat: '物攻', power: 95, custom: 'clearSelfDmg', d: '威力95，清空自身的全部能力上升与下降，每清空1级就造成50固定伤害' },
+  闪电云: { type: '电', cat: '变化', custom: 'thunderCloud', hidden: true, d: '接下来3回合内每回合末对对方造成100固定伤害' },
+  雷明之影: { type: '电', cat: '变化', hidden: true, selfStage: { atk: 1, spa: 1, spe: 1 }, d: '提升1级物攻、特攻、速度' },
   米饭香: { type: '普通', cat: '变化', custom: 'rice3', hidden: true, d: '米饭太香了！连续吃2口米饭，25%几率再吃一口' },
   飞空连击: { type: '飞行', cat: '物攻', power: 10, hits: [6, 10], fixedHit: 5, d: '威力10，连击6-10次，每次攻击附带5点固定伤害' },
   非凡连击: { type: '飞行', cat: '物攻', power: 10, hits: [6, 10], fixedHit: 5, custom: 'riceHits', hidden: true, d: '非同凡响的连击：威力10，连击6-10次，每吃过一口米饭连击数+1（最多15次），每次攻击附带5点固定伤害' },

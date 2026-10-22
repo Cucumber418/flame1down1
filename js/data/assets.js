@@ -31,6 +31,7 @@ var SPRITES = {
   "phantom": "images/sprites/phantom.png",
   "shroom": "images/sprites/shroom.webp",
   "firemouse": "images/sprites/firemouse.webp",
+  "leiming": "images/sprites/leiming.webp",
   "turkey": "images/sprites/turkey.webp",
   "dummy": "images/sprites/dummy.svg",
   "plantbomb": "images/sprites/plantbomb.webp"   // 第八段 Bttp 的炸弹（剧情木桩用，不是精灵）
@@ -110,6 +111,7 @@ var PRE_SPRITES = {
   "phantom_s2": "images/pre_sprites/phantom_s2.png",
   "shroom_s1": "images/pre_sprites/shroom_s1.webp",
   "firemouse_s1": "images/pre_sprites/firemouse_s1.webp",
+  "leiming_s1": "images/pre_sprites/leiming_s1.webp",
   "shroom_s2": "images/pre_sprites/shroom_s2.webp",
   "turkey_s1": "images/pre_sprites/turkey_s1_v2.webp",
   "turkey_s2": "images/pre_sprites/turkey_s2_v2.webp"
@@ -310,7 +312,9 @@ var SILHOUETTES = {
   "shroom_0": "images/silhouettes/shroom_0.png",
   "shroom_2": "images/silhouettes/shroom_2.png",
   "firemouse_0": "images/silhouettes/firemouse_0.png",
-  "firemouse_1": "images/silhouettes/firemouse_1.png"
+  "firemouse_1": "images/silhouettes/firemouse_1.png",
+  "leiming_0": "images/silhouettes/leiming_0.png",
+  "leiming_1": "images/silhouettes/leiming_1.png"
 };
 
 // 异色精灵的立绘（只有部分形态有）：键名规则和 PRE_SPRITES 一样，最终形态用精灵 id
@@ -329,7 +333,9 @@ var SHINY_SPRITES = {
   "mush": "images/shiny/mush.webp",
   "mush_2": "images/shiny/mush_2.webp",
   "firemouse_s1": "images/shiny/firemouse_s1.webp",
-  "firemouse": "images/shiny/firemouse.webp"
+  "firemouse": "images/shiny/firemouse.webp",
+  "leiming_s1": "images/shiny/leiming_s1.webp",
+  "leiming": "images/shiny/leiming.webp"
 };
 
 // 剧情里出现的道具图（储存箱里的剧情道具也用这些图）

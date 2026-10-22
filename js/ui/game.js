@@ -835,7 +835,7 @@
     // 各星球特产（2026-10-18）：和芙罗拉玉一样，100 个让该星球的普通野生精灵一系领悟一个隐藏技能；也用来解锁同属性精灵的等级上限
     kbDrop: { name: '不化水滴', sid: null, sids: ['pede', 'gorgon', 'siren'], kind: 'jade', cost: 100, gem: '水', sd: '坎伯兰星的特产。可以让坎伯兰星的普通野生精灵领悟隐藏技能，也能提高水系精灵的等级上限。', d: '坎伯兰星浅海里凝成的水滴，永远不会蒸发。100 个可以让坎克托斯、戈耳贡、塞壬一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；水系精灵达到 LV70 后，也可以用它解锁更高的等级上限。在坎伯兰星的野外场景里每天有机会捡到。', none: '你还没有坎克托斯、戈耳贡或塞壬（进化前的形态也算）。去坎伯兰星捕捉吧。' },
     ppAsh: { name: '火山灰烬', sid: null, sids: ['hephaestus', 'firemouse'], kind: 'jade', cost: 100, gem: '火', sd: '庞贝星的特产。可以让庞贝星的普通野生精灵领悟隐藏技能，也能提高火系精灵的等级上限。', d: '庞贝星火山喷出的灰烬，摸上去还是温热的。100 个可以让赫菲斯托斯、费尔茅斯一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；火系精灵达到 LV70 后，也可以用它解锁更高的等级上限。在庞贝星的野外场景里每天有机会捡到。', none: '你还没有赫菲斯托斯或费尔茅斯（进化前的形态也算）。去庞贝星捕捉吧。' },
-    ltOrb: { name: '闪电球体', sid: null, sids: ['leigong', 'faraday'], kind: 'jade', cost: 100, gem: '电', sd: '莱汀陨石带的特产。可以让陨石带的普通野生精灵领悟隐藏技能，也能提高电系精灵的等级上限。', d: '雷暴里凝成的一团电光，握在手里噼啪作响。100 个可以让雷公、法拉第一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；电系精灵达到 LV70 后，也可以用它解锁更高的等级上限。在莱汀陨石带的野外场景里每天有机会捡到。', none: '你还没有雷公或法拉第（进化前的形态也算）。去莱汀陨石带捕捉吧。' },
+    ltOrb: { name: '闪电球体', sid: null, sids: ['leigong', 'faraday', 'leiming'], kind: 'jade', cost: 100, gem: '电', sd: '莱汀陨石带的特产。可以让陨石带的普通野生精灵领悟隐藏技能，也能提高电系精灵的等级上限。', d: '雷暴里凝成的一团电光，握在手里噼啪作响。100 个可以让雷公、法拉第一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；电系精灵达到 LV70 后，也可以用它解锁更高的等级上限。在莱汀陨石带的野外场景里每天有机会捡到。', none: '你还没有雷公或法拉第（进化前的形态也算）。去莱汀陨石带捕捉吧。' },
     whFrost: { name: '永久冻土', sid: null, sids: ['frost'], kind: 'jade', cost: 100, gem: '冰', sd: '白之星的特产。可以让白之星的普通野生精灵领悟隐藏技能，也能提高冰系精灵的等级上限。', d: '白之星冰原下挖出的冻土，一万年都不会化开。100 个可以让霜冻之冠一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；冰系精灵达到 LV70 后，也可以用它解锁更高的等级上限。在白之星的野外场景里每天有机会捡到。', none: '你还没有霜冻之冠（进化前的形态也算）。去白之星的永冻冰原捕捉吧。' },
     formDev: { name: '形态切换装置', sid: null, kind: 'form', sd: '给一只精灵永久解锁一个可以切换的外观形态。', d: '黄石 · 冶炼坊用星核和星砂合成的装置。用在一只精灵身上，给这只精灵永久解锁一个它已经长到过的更小形态的样子（比如让最终形态变回第一形态的样子）。解锁之后，在精灵资料的「外观形态」里，原本的形态和解锁过的形态之间随时免费切换。只改变外观，数值、技能都不变；每只精灵分开解锁。' },
     floraJade: { name: '芙罗拉玉', gem: '草', sd: '芙罗拉星的特产。可以让芙罗拉星的普通野生精灵领悟隐藏技能，也能提高草系精灵的等级上限。', sid: null, sids: ['mush', 'wind', 'kaleo'], kind: 'jade', cost: 100, d: '芙罗拉星深处凝成的绿色玉石。100 个可以让玛西露姆、六尾风王、卡莱奥丹一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能，不用再满足战斗里的领悟条件。隐藏技能要到 LV' + HIDDEN_MIN_LV + ' 才能装备。瘴气驱逐战的全服奖励会发放；芙罗拉星的丛林、草甸里，每天也有机会捡到少量。', none: '你还没有玛西露姆、六尾风王或卡莱奥丹（进化前的形态也算）。去芙罗拉星的丛林、草甸捕捉吧。' }
@@ -1004,6 +1004,7 @@
     if (k) {
       var it = USE_ITEMS[k], body = '';
       if (k === 'permit') body = '<p>进行「每周挑战」时消耗 1 枚。每 12 小时恢复 1 枚，最多同时持有 ' + PERMIT.max + ' 枚。</p><p class="hint">当前 ' + pn + ' 枚 · ' + permitNext() + '</p><button type="button" class="btn" data-itgo="weekly">去每周挑战</button>';
+      else if (k === 'ctTicket') body = '<p>' + esc(MATS.ctTicket.d) + '</p><p class="hint">1 张可以兑换 1 只 LV10 的「雷明灯」（光霆主的一阶，电 · 光系）。</p><button type="button" class="btn primary" data-ituse="ctTicket"' + ((acc.items.ctTicket || 0) > 0 ? '' : ' disabled') + '>兑换神秘精灵</button>';
       else if (k === 'rename') body = '<p>' + esc(SHOP_X.rename.d) + '</p><button type="button" class="btn primary" data-ituse="rename">使用改名卡</button>';
       else if (k === 'auto') body = '<p>' + esc(TEA_SHOP.auto.d) + '</p><button type="button" class="btn" data-itgo="home">去我的茶室装上</button>';
       else if (ITEMS[k]) body = '<p>' + esc(ITEMS[k].d) + '</p><p class="hint">在剧情、野外和BOSS对战的「道具」页使用，会占用一回合。</p>';
@@ -1040,6 +1041,11 @@
     $('pg-items').innerHTML = '<div class="page-head"><h2 class="sec">储存箱</h2><p class="hint">你拥有的所有道具。点道具查看说明和使用方法。</p></div>' + itemsHTML();
   }
   function useBagItem(k) {
+    if (k === 'ctTicket') {   // 2026-10-22：神秘精灵兑换券 → LV10 雷明灯
+      if (!(acc.items.ctTicket > 0)) return;
+      acc.items.ctTicket--; var nm0 = newMon('leiming', 10), T0 = acc.teams[acc.active], ad = T0.length < TEAM_SIZE; if (ad) T0.push(nm0.u);
+      seeMon('leiming', 10); save(); ui.itMsg = '兑换成功！雷明灯（LV10，' + nm0.nat + '）' + (ad ? '加入了' + TEAM_NAME[acc.active] + '。' : '已收入精灵仓库。'); renderItems(); toast(ui.itMsg); return;
+    }
     if (k === 'rename') { setTimeout(function () { renaming = true; renderRename(); $('who-menu').hidden = false; $('who-btn').setAttribute('aria-expanded', true); window.scrollTo(0, 0); }, 0); return; }   // 等这次点击处理完再打开名字菜单，免得被「点别处关闭」立刻关上
     var sel = $('it-nat'), r = applyMonItem(k, mon(ui.itTarget), sel && sel.value);
     ui.itMsg = r.msg; if (r.ok) ui.itNat = null;
@@ -1734,7 +1740,7 @@
   var CONTEST = { id: 'quiz1', name: '第一届做题大王争霸赛' }, CT = { data: null, busy: false, err: '', at: 0 };
   var CT_RW = [{ exp: 300000, t: 1 }, { exp: 200000, t: 1 }, { exp: 150000, t: 1 }, { exp: 120000, t: 1 }];   // 第 1~4 名；之后都按 CT_RW0（兑换券每人 1 张）
   var CT_RW0 = { exp: 80000, t: 1 };
-  MATS.ctTicket = { name: '神秘精灵兑换券', d: '做题大王争霸赛的参赛奖励。能兑换什么精灵？之后揭晓。' };
+  MATS.ctTicket = { name: '神秘精灵兑换券', d: '做题大王争霸赛的参赛奖励。可以兑换神秘精灵「雷明灯」。' };
   function contestMe() { return !!(acc && acc.contest && acc.contest[CONTEST.id]) || !!(CT.data && CT.data.mine); }
   function ctName(u) { return (CT.data && CT.data.names && CT.data.names[u]) || u; }
   function bjText(t) { var d = new Date(t + 8 * 3600 * 1000); return (d.getUTCMonth() + 1) + ' 月 ' + d.getUTCDate() + ' 日 ' + ('0' + d.getUTCHours()).slice(-2) + ':' + ('0' + d.getUTCMinutes()).slice(-2); }
@@ -3535,7 +3541,7 @@
     var r = []; if (!a) return r;
     if (a.exp) r.push('累积经验 ×' + fmt(a.exp)); if (a.energy) r.push('能量 ×' + fmt(a.energy)); if (a.merit) r.push('功勋点 ×' + fmt(a.merit)); if (a.tokens) r.push('竞技代币 ×' + fmt(a.tokens)); if (a.twTok) r.push('先驱代币 ×' + fmt(a.twTok));
     if (a.items) for (var k in a.items) r.push(itemName(k) + ' ×' + a.items[k]);
-    (a.mons || []).forEach(function (g) { if (SPMAP[g.sid]) r.push(form(g).name + ' LV' + g.lv); });
+    (a.mons || []).forEach(function (g) { if (SPMAP[g.sid]) r.push((g.shiny ? '异色' : '') + form(g).name + ' LV' + g.lv); });
     return r;
   }
   function sendMail(m) {
@@ -3715,7 +3721,7 @@
     if (a.tokens) acc.tokens = (acc.tokens || 0) + a.tokens;
     if (a.twTok) { twRec(); acc.tower.tok = (acc.tower.tok || 0) + a.twTok; }
     if (a.items) giveItems(a.items);
-    (a.mons || []).forEach(function (g) { if (!SPMAP[g.sid]) return; var nm = newMon(g.sid, g.lv), T = acc.teams[acc.active]; if (T.length < TEAM_SIZE) T.push(nm.u); });
+    (a.mons || []).forEach(function (g) { if (!SPMAP[g.sid]) return; var nm = newMon(g.sid, g.lv), T = acc.teams[acc.active]; if (g.shiny) nm.shiny = g.shiny; if (T.length < TEAM_SIZE) T.push(nm.u); });
     m.got = true; m.read = true;
     return got;
   }

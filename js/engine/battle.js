@@ -6,13 +6,13 @@
 var STG = ['atk', 'def', 'spa', 'spd', 'spe', 'acc', 'eva'];
 var STG_NAME = { atk: '物攻', def: '物防', spa: '特攻', spd: '特防', spe: '速度', acc: '命中', eva: '闪避' };
 var BASE_NAME = { hp: '体力', atk: '物攻', def: '物防', spa: '特攻', spd: '特防', spe: '速度' };
-var TM_NAME = { brandCd: '烙印冷却', cap: '逆鳞', genggu: '恒压', green: '绿色幻境', immune: '免疫异常', reflect: '风王结界', dodge: '光滑皮肤',
+var TM_NAME = { brandCd: '烙印冷却', etchCd: '蚀迹冷却', lmE: '雷明·电', lmL: '雷明·光', tcloud: '闪电云', cap: '逆鳞', genggu: '恒压', green: '绿色幻境', immune: '免疫异常', reflect: '风王结界', dodge: '光滑皮肤',
   noSwitch: '无法切换', prio: '先制+1', rain: '祈雨', tri: '三相归元', soul: '收魂',
   voidPhys: '虚空化', induct: '电磁感应', vortex: '闪电漩涡', darkside: '月之暗面', hail: '冰雹', noBoost: '禁止强化',
   seal: '万灵封印', liuhuo: '流火', calm: '静谧水域', halfPhys: '物伤减半', tide: '黑雾潮汐', vuln: '易伤', weak: '伤害-30%',
   swamp: '孢子沼泽', mist: '白雾', jungle: '丛林法则', siren: '海妖之歌', dr40: '减伤40%', crit2: '必定暴击', retal: '寂灭幽映',
   block: '坚不可摧', recoil: '磁暴反冲', sure3: '谛听', ear: '灵耳谛听', noHeal: '禁疗' };
-var FOE_TM = { brandCd: 1, noSwitch: 1, soul: 1, noBoost: 1, seal: 1, vuln: 1, weak: 1, noHeal: 1 };
+var FOE_TM = { brandCd: 1, etchCd: 1, noSwitch: 1, soul: 1, noBoost: 1, seal: 1, vuln: 1, weak: 1, noHeal: 1 };
 /* 进化链长度不固定（三阶或两阶），最后一阶是最终形态 */
 function evoLast(s) { return s && s.evo ? s.evo.length - 1 : 0; }
 function isFin(s, i) { return !s || !s.evo || i === s.evo.length - 1; }
@@ -157,6 +157,7 @@ var ST_DESC = {
 };
 var TM_DESC = {
   brandCd: '闪电烙印麻痹过后的冷却：这段时间里叠不上闪电烙印',
+  etchCd: '光辉蚀迹失明期间的冷却：这段时间里叠不上蚀迹', lmE: '特性「雷明」：每回合结束对对方造成25点固定伤害', lmL: '特性「雷明」：每回合结束恢复20体力', tcloud: '闪电云：每回合结束对对方造成100点固定伤害',
   cap: '单次受到的伤害不超过250，超出部分等额反馈给对方', genggu: '每回合提升1级特攻，恢复1/6最大体力',
   green: '每回合恢复已损失体力的1/5', immune: '免疫异常状态', reflect: '免疫并反弹对方施加的异常状态',
   dodge: '每次受到攻击有40%概率闪避', noSwitch: '无法切换精灵', prio: '所有技能先制+1',
@@ -198,6 +199,7 @@ function abilityLive(m, foe) {
   var lowSelf = m.hp <= m.maxhp / 3;
   switch (ab) {
     case '旅行': return '每次被替换上场时，提升1级速度（首发上场不触发）';
+    case '雷明': return '使用电系技能后，3回合内每回合末对对方造成25固定伤害' + (m.tm.lmE > 0 ? '（生效中，剩 ' + m.tm.lmE + ' 回合）' : '') + '；使用光系技能后，3回合内每回合末恢复20体力' + (m.tm.lmL > 0 ? '（生效中，剩 ' + m.tm.lmL + ' 回合）' : '') + '。各自不能叠加，但可以同时生效';
     case '饭香': return '每回合结束时 20% 概率吃一口米饭' + (m.perm.rice ? '（本场已吃 ' + m.perm.rice + ' 口）' : '');
     case '龙啸': if (!f) return '对手不在场，暂不生效';
       on = f.hp < m.hp; return on ? '生效中：对手体力 ' + f.hp + ' 低于自己 ' + m.hp + '，造成伤害 +15%' : '未生效：对手体力 ' + f.hp + ' 不低于自己 ' + m.hp;
@@ -244,6 +246,7 @@ function chipsOf(m, foe) {
   if (m.fx.shield > 0) c.push({ t: '护盾 ' + m.fx.shield, k: 'fx', h: '护盾', d: '先吸收接下来受到的 ' + m.fx.shield + ' 点伤害' });
   if (m.fx.absDef) c.push({ t: '免疫下次攻击', k: 'fx', h: '免疫下次攻击', d: '闪避下一次受到的攻击' });
   if (m.fx.endure) c.push({ t: '不灭之躯', k: 'fx', h: '不灭之躯', d: '下一次受到致死攻击时残留1点体力' });
+  if (m.fx.etch) c.push({ t: '蚀迹 ' + m.fx.etch + '/2', k: 'st', h: '光辉蚀迹', d: '叠满2层时必定陷入失明2回合' });
   if (m.fx.brand) c.push({ t: '烙印 ' + m.fx.brand + '/2', k: 'st', h: '闪电烙印', d: '叠满2层时必定陷入麻痹2回合' });
   if (m.fx.leiyin) c.push({ t: '引雷', k: 'st', h: '引雷', d: '下一次受到的伤害提升20%' });
   if (m.fx.sureHit && !m.fx.sureCrit) c.push({ t: '下次必中', k: 'fx', h: '下次必中', d: '下一次攻击必定命中' });
@@ -722,6 +725,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   me.fx.starNow = 0; me.fx.canyueNow = 0;
   if (mv.custom === 'starMagic') { me.perm.star = (me.perm.star || 0) + 1; me.fx.starNow = 1; }
   if (mv.custom === 'canyue') { me.flags.canyue = (me.flags.canyue || 0) + 1; me.fx.canyueNow = 1; E(S, evs, 'stage', { side: i }); }   // 和星星魔法一样：使用就计数（打空也算）
+  if (ability(me) === '雷明' && !extra) { var lmt = mvType(me, mv); if (lmt === '电') me.tm.lmE = 3; else if (lmt === '光') me.tm.lmL = 3; }   // 特性「雷明」（2026-10-22）：用了技能就算，3 回合内每回合末生效，重复使用只刷新回合数
   if (mv.cat !== '变化') { if (extra) me.fx.chargeNow = 0; else { me.fx.chargeNow = me.fx.charge || 0; me.fx.charge = 0; me.fx.atkT = S.turn; } }   // 特性「爆燃」：主动攻击时把蓄力全部用掉
   if (mv.cat === '变化') { doStatus(S, evs, i, mv); return; }
 
@@ -842,6 +846,19 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
         log(S, evs, nm(foe) + '身上的闪电烙印：' + foe.fx.brand + ' / 2', 'fxl');
         if (foe.fx.brand >= 2) { foe.fx.brand = 0; addStatus(S, evs, j, '麻痹', 2, i); foe.tm.brandCd = (foe.st['麻痹'] || 0) + 1; E(S, evs, 'stage', { side: j }); }
         E(S, evs, 'stage', { side: j }); break;
+      case 'etch':   // 光辉蚀迹：和闪电烙印一样叠 2 层，叠满必定失明 2 回合；失明期间叠不上
+        if (foe.tm.etchCd > 0 || foe.st['失明'] > 0) { log(S, evs, nm(foe) + '处于蚀迹冷却中，光辉蚀迹没能叠上'); break; }
+        foe.fx.etch = (foe.fx.etch || 0) + 1;
+        log(S, evs, nm(foe) + '身上的光辉蚀迹：' + foe.fx.etch + ' / 2', 'fxl');
+        if (foe.fx.etch >= 2) { foe.fx.etch = 0; addStatus(S, evs, j, '失明', 2, i); foe.tm.etchCd = foe.st['失明'] || 0; }
+        E(S, evs, 'stage', { side: j }); break;
+      case 'copyStages':   // 联觉光晕：把对方的能力等级（上升和下降）复制到自己身上
+        STG.forEach(function (k) { me.stages[k] = foe.stages[k] || 0; }); E(S, evs, 'stage', { side: i }); log(S, evs, nm(me) + '复制了' + nm(foe) + '的能力等级', 'fxl'); break;
+      case 'clearSelfDmg':   // 断觉霆闪：清空自己的能力等级，每清空 1 级附加 50 固定伤害
+        var cl = 0; STG.forEach(function (k) { cl += Math.abs(me.stages[k] || 0); me.stages[k] = 0; });
+        E(S, evs, 'stage', { side: i });
+        if (cl) { log(S, evs, nm(me) + '清空了 ' + cl + ' 级能力变化，附加 ' + (cl * 50) + ' 点固定伤害', 'fxl'); applyDamage(S, evs, j, cl * 50, i, {}); }
+        break;
       case 'flashLeaf': foe.fx.flash = 1; E(S, evs, 'stage', { side: j }); log(S, evs, nm(foe) + '被闪光飞叶的光芒笼罩：下一次受到攻击时会额外降低1级命中', 'fxl'); break;
       case 'vuln': foe.tm.vuln = 3; E(S, evs, 'stage', { side: j }); log(S, evs, nm(foe) + '被恶魔触手缠住，3回合内受到的伤害增加30%', 'bad'); break;
       case 'weak3': foe.tm.weak = 3; E(S, evs, 'stage', { side: j }); log(S, evs, nm(foe) + '的力量被荒芜侵蚀，3回合内伤害降低30%', 'bad'); break;
@@ -1039,6 +1056,7 @@ function doStatus(S, evs, i, mv) {
     case 'silentSea': foe.tm = {}; E(S, evs, 'stage', { side: j }); log(S, evs, '寂静之海消除了' + nm(foe) + '身上所有回合类效果', 'fxl'); break;
     case 'dr40': timer('dr40', 3, nm(me) + '受到潮汐庇佑：3回合内受伤减免40%'); break;
     case 'weak2': foeTimer('weak', 2, nm(foe) + '的魂魄被封住，2回合内伤害降低30%'); break;
+    case 'thunderCloud': timer('tcloud', 3, nm(me) + '召来了闪电云：接下来3回合每回合末对对方造成100点固定伤害'); break;
     case 'crit2': timer('crit2', 3, nm(me) + '接下来2回合的攻击必定致命一击'); break;
     case 'endure': me.fx.endure = 1; flag(nm(me) + '进入不灭之躯：下一次受到致死攻击时会残留1体力'); break;
     case 'sureHitNext': me.fx.sureHit = 1; flag(nm(me) + '的下一次攻击必定命中'); break;
@@ -1355,6 +1373,9 @@ function endOfTurn(S, evs) {
       if (!o.fainted && S.sides[1 - i].active === m.fx.sirenFoe) { log(S, evs, '海妖之歌唱完了，' + nm(o) + '失去了全部体力！', 'crit'); S.dotSrc = '海妖之歌'; applyDamage(S, evs, 1 - i, o.hp + (o.fx.shield || 0), null, {}); S.dotSrc = null; }
       else log(S, evs, '海妖之歌唱完了，但听歌的对手已经不在场上');
     }
+    if (!m.fainted && m.tm.tcloud > 0 && !o.fainted && !S.over) { log(S, evs, '闪电云劈向' + nm(o), 'fxl'); S.dotSrc = '闪电云'; applyDamage(S, evs, 1 - i, 100, null, {}); S.dotSrc = null; }
+    if (!m.fainted && m.tm.lmE > 0 && !o.fainted && !S.over) { log(S, evs, nm(m) + '的「雷明」：电光对' + nm(o) + '造成 25 点固定伤害', 'fxl'); S.dotSrc = '雷明'; applyDamage(S, evs, 1 - i, 25, null, {}); S.dotSrc = null; }
+    if (!m.fainted && m.tm.lmL > 0 && m.hp < m.maxhp) heal(S, evs, i, 20);
     if (!m.fainted && ability(m) === '饭香' && !S.over && RNG() < 0.2) eatRice(S, evs, i, nm(m) + '的「饭香」发动了，吃了一口米饭');
     if (!m.fainted && ability(m) === '爆燃' && m.fx.atkT !== S.turn && (m.fx.charge || 0) < 3 && !S.over) { m.fx.charge = (m.fx.charge || 0) + 1; E(S, evs, 'stage', { side: i }); log(S, evs, nm(m) + '的「爆燃」蓄力了（' + m.fx.charge + ' / 3），下一次攻击伤害 +' + m.fx.charge * 10 + '%', 'fxl'); }
     if (!m.fainted) m.fx.fieldT = (m.fx.fieldT || 0) + 1;
