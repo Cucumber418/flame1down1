@@ -117,6 +117,7 @@ audio/                背景音乐（界面：ui / arena / earth / flora / flora
 server/
   server.js           服务器程序：发网页 + 在 /ws 上给联网对战传话
   accounts.js         账号与云存档（注册、登录、上传存档）
+  pvp.js              联网对战的服务器裁判：切磋、平衡模式、竞技征召、争霸赛、精灵大乱斗由服务器结算每一回合（精灵资料见 js/engine/pvp.js）
   claims.js           进账申报与钱包核对：一次性奖励只认一次，上传的存档里没申报的增加不认（试运行 / 正式两种模式）
   tx.js               交易结算：商城、代币商店、抽奖等由服务器扣费发货（规则在 js/engine/tx.js），并记账；/api/version 给出游戏版本
   social.js           社交：玩家列表、好友、名片、在线状态、切磋邀请与对战转发、观战转播
@@ -165,6 +166,10 @@ sudo git clone --depth 1 https://github.com/Cucumber418/flame1down1 /opt/flame1d
 - 对不上的记录：记录在 `/opt/flame1down-data/wallet.log`（`sudo tail -n 30 /opt/flame1down-data/wallet.log`）；`/status` 的 `wallet` 里能看到上传次数（`uploads`）、对不上的次数（`mismatch`）和最近几条（`recent`，不含账号名；`old: true` 表示是还没刷新的旧页面传上来的，可以忽略）。
 - 如果 `recent` 里出现 `old: false` 的记录，多半是有进账的地方漏了 `earn`，照着记录里的字段去找。
 - 还没保护到的：奖励的具体数额仍由浏览器计算（服务器只卡上限和次数）；精灵的等级、天赋、学习力等不在核对范围内，由原来的防改档检查（`accounts.js` 的 `cheatCheck` / `dayCheck`）兜底。
+
+**联网对战由服务器当裁判（2026-10-24，第二批第 2 块）**：
+- 以前切磋、争霸赛、大乱斗由发起方的浏览器结算，现在由服务器结算：服务器用 `js/engine/pvp.js` 把双方配队变成对战用的精灵（规则和 game.js 里的 `HSACC.spec` / `balSpec` / `brawlSpec` 一致），用 `battle.js` 算每一回合，双方浏览器只提交出招、播放结果。出招不合法或超时（90 秒 + 15 秒动画）由服务器代选；认输只能发 `quit`，不能提前结束对局。争霸赛每一局的胜负由服务器记录，不再听浏览器报的。
+- 浏览器连上时在 `auth` 里报 `pv: 2`（支持服务器裁判）。双方有一方是旧页面时：北京时间 2026-10-26 00:00 之前仍按旧办法由发起方结算，之后拒绝开打并提示刷新（`server/pvp.js` 的 `GRACE_UNTIL`）。
 
 **版本检查**：服务器启动时按网页、样式、脚本的内容算一个版本号（`GET /api/version`）。开着的页面每 3 分钟、以及切回页面时检查一次，发现服务器上的版本变了就弹窗提示刷新；用旧页面兑换东西时服务器会拒绝（不扣费）并提示刷新。
 

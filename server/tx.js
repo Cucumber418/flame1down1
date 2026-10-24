@@ -42,7 +42,7 @@ var VERSION = computeVersion();
 
 /* ---------- 加载游戏规则 ---------- */
 // 加载失败（比如服务器上的 Node.js 太老、不认识某种新写法）时不让整个服务器挂掉：只是暂时不能兑换，原因记在 LOAD_ERR 里（/status 能看到）
-var TX = null, LOAD_ERR = null;
+var TX = null, LOAD_ERR = null, ENGINE = null;   // ENGINE：加载了游戏数据和对战引擎的运行环境（联网对战的服务器裁判也用它，见 pvp.js）
 try {
   var html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
   var files = [];
@@ -51,6 +51,7 @@ try {
   files.forEach(function (f) { vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx, { filename: f }); });
   TX = vm.runInContext('TX', ctx);
   if (!TX || typeof TX.run !== 'function') throw new Error('js/engine/tx.js 里没有 TX');
+  ENGINE = ctx;
 } catch (e) { TX = null; LOAD_ERR = String(e && e.stack || e).split('\n').slice(0, 3).join(' | '); console.error('交易规则加载失败：', LOAD_ERR); }
 
 /* ---------- 记账 ---------- */
@@ -95,4 +96,4 @@ A.use(function (req, res, url) {
   return true;
 });
 
-module.exports = { VERSION: VERSION, TX: TX, status: function () { return { v: VERSION, ok: !!TX, err: LOAD_ERR || undefined }; } };
+module.exports = { VERSION: VERSION, TX: TX, engine: function () { return ENGINE; }, status: function () { return { v: VERSION, ok: !!TX, err: LOAD_ERR || undefined }; } };

@@ -58,6 +58,7 @@
 
 var crypto = require('crypto');
 var A = require('./accounts');
+var pvp = require('./pvp');   // 联网对战的服务器裁判（2026-10-24）
 
 var CH_SECONDS = 30;          // 宣战弹窗等待回应的时间
 var BRAWL_SECONDS = 60;       // 大乱斗等待别人接受的时间
@@ -245,6 +246,7 @@ function endMatch(id, leaver, reason) {
   var m = matches[id]; if (!m) return;
   delete matches[id];
   if (m.prep) clearTimeout(m.prep.timer);
+  pvp.stop(m);
   if (m.ct) setTimeout(function () { ctAfter(m, leaver, reason); }, 0);
   m.socks.forEach(function (w) {
     if (w.match === id) w.match = null;
@@ -345,9 +347,10 @@ function prepNext(m) {
   var teams = [0, 1].map(function (side) { var S = P.sub[side]; return S.picks.map(function (sid) { return { sid: sid, lv: BAL_LV, moves: S.moves[sid] || [] }; }); });
   var auto = [!!P.sub[0].auto, !!P.sub[1].auto], kind = P.kind, mode = P.mode, reveal = { pools: P.pools, bans: P.bans };
   delete m.prep;
-  var base = { type: 'match', id: m.id, mode: mode, bal: true, rule: 'balance', pick: kind, names: m.names, auto: auto, draft: kind === 'draft' ? reveal : null };
+  var base = { type: 'match', id: m.id, mode: mode, bal: true, rule: 'balance', pick: kind, names: m.names, auto: auto, draft: kind === 'draft' ? reveal : null, srv: !!m.srvOk };
   out(m.socks[0], Object.assign({}, base, { side: 0, peer: m.users[1], peerName: m.names[1], teams: teams }));
   out(m.socks[1], Object.assign({}, base, { side: 1, peer: m.users[0], peerName: m.names[0] }));
+  if (m.srvOk) pvp.start(m, teams, 'balSpec', { mode: mode, bal: true, pick: kind });
 }
 
 /* ---------- 做题大王争霸赛（rule = 'contest'，见 contest.js） ----------
@@ -379,9 +382,10 @@ function ctTeams(m) {
 }
 function ctSendMatch(m) {
   var ct = m.ct, names = m.names;
-  var base = { type: 'match', id: m.id, mode: 5, rule: 'contest', names: names, ct: { round: ct.round, final: ct.final, game: ct.game, wins: ct.wins.slice(), label: ctLabel(ct), bans: ct.banInfo } };
+  var base = { type: 'match', id: m.id, mode: 5, rule: 'contest', names: names, ct: { round: ct.round, final: ct.final, game: ct.game, wins: ct.wins.slice(), label: ctLabel(ct), bans: ct.banInfo }, srv: !!m.srvOk };
   out(m.socks[0], Object.assign({}, base, { side: 0, peer: m.users[1], peerName: names[1], teams: ct.teams }));
   out(m.socks[1], Object.assign({}, base, { side: 1, peer: m.users[0], peerName: names[0] }));
+  if (m.srvOk) pvp.start(m, ct.teams, 'spec', { mode: 5 });
   m.open = true;
   m.users.forEach(presence);
   if (ct.final) setTimeout(function () {   // 决赛：给全服在线玩家发观战邀请
@@ -419,7 +423,7 @@ function ctAfter(m, leaver, reason) {
     }
     var nid = newId();
     ct.game++;
-    var nm2 = { id: nid, socks: m.socks, users: m.users, names: m.names, ct: ct, open: true };
+    var nm2 = { id: nid, socks: m.socks, users: m.users, names: m.names, ct: ct, open: true, srvOk: m.srvOk };
     matches[nid] = nm2; m.socks.forEach(function (w) { w.match = nid; });
     ctSendMatch(nm2);
   }, CT_GAP);
@@ -500,7 +504,7 @@ function onMessage(ws, msg) {
       var who = A.whoToken(msg.token);
       if (!who) { out(ws, { type: 'auth-fail' }); return true; }
       if (ws.user === who.user) return true;
-      ws.user = who.user;
+      ws.user = who.user; ws.pv = msg.pv | 0;   // pv ≥ 2：支持服务器裁判
       var first = !isOnline(who.user);
       (online[who.user] = online[who.user] || []).push(ws);
       out(ws, { type: 'authed', user: who.user });
@@ -548,12 +552,13 @@ function onMessage(ws, msg) {
       if (c2.from.readyState !== 1 || c2.from.match || ws.match) { endChallenge(c2, 'gone'); return true; }
       delete challenges[c2.id]; clearTimeout(c2.timer);
       (online[c2.to] || []).forEach(function (w) { if (w !== ws) out(w, { type: 'ch-end', id: c2.id, reason: 'taken', side: 'to' }); });
-      var id = c2.id, host = c2.from;
+      var id = c2.id, host = c2.from, md0 = pvp.mode({ socks: [host, ws] });
+      if (!md0.srv && !md0.legacy) { var oldMsg = '有一方的游戏版本太旧，请刷新页面后再来'; out(host, { type: 'ch-end', id: id, reason: 'error', msg: oldMsg, side: 'from' }); out(ws, { type: 'ch-end', id: id, reason: 'error', msg: oldMsg, side: 'to' }); return true; }
       if (c2.rule === 'contest') {
         var cp2 = contest().pairOf(c2.fromUser, c2.to);
         if (!cp2) { out(host, { type: 'ch-end', id: id, reason: 'error', msg: '这场对局已经结束了', side: 'from' }); out(ws, { type: 'ch-end', id: id, reason: 'error', msg: '这场对局已经结束了', side: 'to' }); return true; }
         matches[id] = { id: id, socks: [host, ws], users: [c2.fromUser, c2.to], names: [gameName(c2.fromUser), gameName(c2.to)], open: true,
-          ct: { key: cp2.key, round: cp2.round, final: cp2.final, game: 1, wins: [0, 0], res: null } };
+          ct: { key: cp2.key, round: cp2.round, final: cp2.final, game: 1, wins: [0, 0], res: null }, srvOk: md0.srv };
         host.match = id; ws.match = id;
         ctPrepStart(matches[id]);
         presence(c2.fromUser); presence(c2.to);
@@ -561,7 +566,7 @@ function onMessage(ws, msg) {
       }
       if (c2.rule === 'balance') {   // 平衡模式：先进入选人阶段
         if (c2.pick === 'draft' && (ownedSids(c2.fromUser).length < DRAFT_MIN || ownedSids(c2.to).length < DRAFT_MIN)) { out(host, { type: 'ch-end', id: id, reason: 'error', msg: '有一方的精灵不到 ' + DRAFT_MIN + ' 种', side: 'from' }); out(ws, { type: 'ch-end', id: id, reason: 'error', msg: '有一方的精灵不到 ' + DRAFT_MIN + ' 种', side: 'to' }); return true; }
-        matches[id] = { id: id, socks: [host, ws], users: [c2.fromUser, c2.to], names: [gameName(c2.fromUser), gameName(c2.to)] };
+        matches[id] = { id: id, socks: [host, ws], users: [c2.fromUser, c2.to], names: [gameName(c2.fromUser), gameName(c2.to)], srvOk: md0.srv };
         host.match = id; ws.match = id;
         prepStart(matches[id], c2);
         presence(c2.fromUser); presence(c2.to);
@@ -569,11 +574,12 @@ function onMessage(ws, msg) {
       }
       var teams = [teamSpec(c2.fromUser, c2.mode), teamSpec(c2.to, c2.mode)];
       if (!teams[0].length || !teams[1].length) { out(host, { type: 'ch-end', id: id, reason: 'error', msg: '有一方没有精灵', side: 'from' }); out(ws, { type: 'ch-end', id: id, reason: 'error', msg: '有一方没有精灵', side: 'to' }); return true; }
-      matches[id] = { id: id, socks: [host, ws], users: [c2.fromUser, c2.to] };
-      host.match = id; ws.match = id;
       var names = [gameName(c2.fromUser), gameName(c2.to)];
-      out(host, { type: 'match', id: id, side: 0, mode: c2.mode, peer: c2.to, peerName: names[1], names: names, teams: teams });
-      out(ws, { type: 'match', id: id, side: 1, mode: c2.mode, peer: c2.fromUser, peerName: names[0], names: names });
+      matches[id] = { id: id, socks: [host, ws], users: [c2.fromUser, c2.to], names: names, srvOk: md0.srv };
+      host.match = id; ws.match = id;
+      out(host, { type: 'match', id: id, side: 0, mode: c2.mode, peer: c2.to, peerName: names[1], names: names, teams: teams, srv: md0.srv });
+      out(ws, { type: 'match', id: id, side: 1, mode: c2.mode, peer: c2.fromUser, peerName: names[0], names: names, srv: md0.srv });
+      if (md0.srv) pvp.start(matches[id], teams, 'spec', { mode: c2.mode });
       presence(c2.fromUser); presence(c2.to);
       return true;
     }
@@ -604,12 +610,15 @@ function onMessage(ws, msg) {
       if (ws.match || ba.ws.readyState !== 1 || ba.ws.match) { out(ws, { type: 'brawl-end', id: msg.id, reason: 'gone', side: 'to' }); return true; }
       var pk2 = brawlPick(ws.user, msg.us);
       if (pk2.err) { out(ws, { type: 'brawl-end', id: msg.id, reason: 'error', msg: pk2.err, side: 'to' }); return true; }
+      var md2 = pvp.mode({ socks: [ba.ws, ws] });
+      if (!md2.srv && !md2.legacy) { out(ws, { type: 'brawl-end', id: msg.id, reason: 'error', msg: '有一方的游戏版本太旧，请刷新页面后再来', side: 'to' }); return true; }
       endBrawl(ba, 'taken', '', ws.user);   // 其他被邀请的人：已经被接走了（发起方这里随后收到 match）
       var mid = ba.id, host2 = ba.ws, teams2 = dealBrawl(ba.sids, pk2.sids), names2 = [gameName(ba.user), gameName(ws.user)];
-      matches[mid] = { id: mid, socks: [host2, ws], users: [ba.user, ws.user] };
+      matches[mid] = { id: mid, socks: [host2, ws], users: [ba.user, ws.user], names: names2, srvOk: md2.srv };
       host2.match = mid; ws.match = mid;
-      out(host2, { type: 'match', id: mid, side: 0, mode: 3, brawl: true, peer: ws.user, peerName: names2[1], names: names2, teams: teams2 });
-      out(ws, { type: 'match', id: mid, side: 1, mode: 3, brawl: true, peer: ba.user, peerName: names2[0], names: names2, teams: teams2 });
+      out(host2, { type: 'match', id: mid, side: 0, mode: 3, brawl: true, peer: ws.user, peerName: names2[1], names: names2, teams: teams2, srv: md2.srv });
+      out(ws, { type: 'match', id: mid, side: 1, mode: 3, brawl: true, peer: ba.user, peerName: names2[0], names: names2, teams: teams2, srv: md2.srv });
+      if (md2.srv) pvp.start(matches[mid], teams2, 'brawlSpec', { mode: 3, brawl: true });
       presence(ba.user); presence(ws.user);
       return true;
     }
@@ -627,13 +636,14 @@ function onMessage(ws, msg) {
     case 'mm': {
       var m = matches[msg.id];
       if (!m || ws.match !== msg.id) return true;
+      if (m.srv) { pvp.onMsg(m, m.socks[0] === ws ? 0 : 1, msg.data); return true; }   // 服务器裁判：交给 pvp.js 结算
       out(m.socks[m.socks[0] === ws ? 1 : 0], { type: 'mm', id: msg.id, data: msg.data });
       return true;
     }
     case 'cast': onCast(ws, msg); return true;
     case 'ct-res': {   // 争霸赛：一局打完，双方各报一次结果（以先收到的为准）
       var mr = matches[msg.id];
-      if (!mr || !mr.ct || ws.match !== msg.id || mr.ct.res != null) return true;
+      if (!mr || !mr.ct || ws.match !== msg.id || mr.ct.res != null || mr.srv) return true;   // 服务器裁判的对局：结果由服务器记，不听浏览器报的
       var sd = mr.socks[0] === ws ? 0 : 1, r = msg.r;
       if (r === 'win') mr.ct.res = sd; else if (r === 'lose') mr.ct.res = 1 - sd;   // 平局不计，重打这一局
       return true;
@@ -679,6 +689,7 @@ function onMessage(ws, msg) {
     case 'watch-stop': unwatch(ws); return true;
     case 'mm-over': {
       var m2 = matches[msg.id];
+      if (m2 && m2.srv && !pvp.over(m2)) return true;   // 服务器裁判的对局还没打完：不能靠这条消息提前结束（要认输就发 quit）
       if (m2 && ws.match === msg.id) endMatch(msg.id, ws, 'over');
       return true;
     }

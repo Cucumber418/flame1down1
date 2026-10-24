@@ -331,7 +331,7 @@
     var ws;
     try { ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws'); } catch (e) { return retry(); }
     st.ws = ws;
-    ws.onopen = function () { ws.send(JSON.stringify({ type: 'auth', token: C.token() })); };
+    ws.onopen = function () { ws.send(JSON.stringify({ type: 'auth', token: C.token(), pv: 2 })); };   // pv 2：支持服务器当裁判（server/pvp.js）
     ws.onmessage = function (ev) { var m; try { m = JSON.parse(ev.data); } catch (e) { return; } onMsg(m); };
     ws.onclose = function () {
       if (st.ws !== ws) return;
@@ -499,11 +499,12 @@
     st.bw.wait = null; closeBwInvite();
     [].forEach.call(document.querySelectorAll('.soc-dlg'), function (d) { d.remove(); });
     closePrep();
-    st.match = { id: m.id, side: m.side, mode: m.mode, foe: m.peerName, names: m.names, brawl: !!m.brawl, bal: !!m.bal, pick: m.pick || null, label: m.brawl ? null : m.ct ? m.ct.label : fightLabel(m.mode, m.rule, m.pick), ct: m.ct || null };
+    st.match = { id: m.id, side: m.side, srv: !!m.srv, mode: m.mode, foe: m.peerName, names: m.names, brawl: !!m.brawl, bal: !!m.bal, pick: m.pick || null, label: m.brawl ? null : m.ct ? m.ct.label : fightLabel(m.mode, m.rule, m.pick), ct: m.ct || null };
     if (m.ct) st.match.notes = ctNotes(m);
     if (m.brawl) { st.match.notes = brawlNotes(m); brawlShow(m); }
     if (m.bal) st.match.notes = balNotes(m);
-    if (m.side === 0) {
+    // 2026-10-24：服务器当裁判（m.srv）时双方都等服务器发来 init；旧办法（发起方结算）只在对方还是旧页面时用
+    if (m.side === 0 && !m.srv) {
       var mk = m.brawl ? A.brawlSpec : m.bal ? A.balSpec : A.spec;
       var p = (m.teams[0] || []).map(mk).filter(Boolean), a = (m.teams[1] || []).map(mk).filter(Boolean);
       var S = newBattle(p, a);
@@ -519,9 +520,9 @@
     var M0 = st.match;
     A.enterBattle();
     HB.startPvp({ S: S, side: M0.side, foe: M0.foe, mode: M0.mode, label: M0.label, seconds: TURN_SEC, notes: M0.notes, brawl: M0.brawl,
-      onAct: function (a) { if (M0.side === 0) hostGot(0, 'act', a); else send({ type: 'mm', id: M0.id, data: { k: 'act', a: a } }); },
-      onRepl: function (k) { if (M0.side === 0) hostGot(0, 'repl', k); else send({ type: 'mm', id: M0.id, data: { k: 'repl', i: k } }); },
-      onQuit: function () { if (M0.side === 0) hostQuit(0); else send({ type: 'mm', id: M0.id, data: { k: 'quit' } }); },
+      onAct: function (a) { if (M0.side === 0 && !M0.srv) hostGot(0, 'act', a); else send({ type: 'mm', id: M0.id, data: { k: 'act', a: a } }); },
+      onRepl: function (k) { if (M0.side === 0 && !M0.srv) hostGot(0, 'repl', k); else send({ type: 'mm', id: M0.id, data: { k: 'repl', i: k } }); },
+      onQuit: function () { if (M0.side === 0 && !M0.srv) hostQuit(0); else send({ type: 'mm', id: M0.id, data: { k: 'quit' } }); },
       onEmote: function (e) { send({ type: 'mm', id: M0.id, data: { k: 'emote', e: String(e).slice(0, 32) } }); },
       onOver: function (mine) {
         stopHost();
@@ -541,7 +542,7 @@
   function mmMsg(d) {
     var M0 = st.match; if (!M0) return;
     if (d.k === 'emote') { if (HB.peerEmote) HB.peerEmote(d.e); return; }   // 对方发的表情
-    if (M0.side === 1) {
+    if (M0.side === 1 || M0.srv) {   // 应战方，或者服务器当裁判时的双方：只播放结果
       if (d.k === 'init') begin(d.S);
       else if (d.k === 'turn') { if (d.quit != null) M0.quitSide = d.quit; HB.pvpApply(d.evs || [], d.S, d.sec); }
       return;
