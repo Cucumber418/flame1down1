@@ -5792,7 +5792,7 @@
   $('pg-explore').addEventListener('keydown', function (e) { if (e.target.id === 'home-name') { if (e.key === 'Enter') { e.preventDefault(); saveHomeName(); } else if (e.key === 'Escape') { ex.homeEdit = false; renderHome(); } } });
 
   /* ---------- 任务：主线 / 支线 / 世界 ---------- */
-  var MAIN_Q = ['school', 'river', 'jiuquan', 'board', 'flora1', 'flora2', 'flora3', 'flora4', 'flora5', 'flora6'], SIDE_Q = ['academy', 'xiaogan', 'brawl', 'draft', 'storage', 'tiger', 'tiger2', 'tea', 'rare', 'mingming', 'medal', 'spa', 'fl_chal', 'hiddenSk'];
+  var MAIN_Q = ['school', 'river', 'jiuquan', 'board', 'flora1', 'flora2', 'flora3', 'flora4', 'flora5', 'flora6', 'flora7'], EVENT_Q = ['mmTrial'], SIDE_Q = ['academy', 'xiaogan', 'brawl', 'draft', 'storage', 'tiger', 'tiger2', 'tea', 'rare', 'mingming', 'medal', 'spa', 'fl_chal', 'hiddenSk'];
   // 世界任务（奖励暂定）
   var WQ = [
     { id: 'w_first', n: '初到芙罗拉', d: '荆楚号已经抵达芙罗拉星。去丛林或草甸，和那里的野生精灵过过招吧。', where: '芙罗拉星 · 丛林 / 草甸', steps: [{ t: '在芙罗拉星击败 1 只野生精灵', k: 'wins', n: 1 }], reward: { energy: 100 }, after: 'flora1', go: 'flora' },
@@ -5827,12 +5827,13 @@
     if (id === 'draft') return pr.done && draftPlayed() ? 'done' : pr.done || pr.at > 0 ? 'doing' : 'todo';
     if (id === 'rare') return prog('rare_r').done ? 'done' : pr.done || pr.at > 0 ? 'doing' : 'todo';
     if (id === 'fl_chal') return pr.done && chalStars('fl2') > 0 && helperSet() ? 'done' : pr.done || pr.at > 0 ? 'doing' : 'todo';
+    if (id === 'mmTrial') return acc.mm && acc.mm.clr && Object.keys(acc.mm.clr).some(function (k) { return k.indexOf('final') === 0; }) ? 'done' : pr.done || pr.at > 0 ? 'doing' : 'todo';
     if (id === 'flora2') return pr.done && spareN() >= SPARE_N ? 'done' : pr.done || pr.at > 0 ? 'doing' : 'todo';
     return pr.done ? 'done' : pr.at > 0 ? 'doing' : 'todo';
   }
   function wq(id) { for (var i = 0; i < WQ.length; i++) if (WQ[i].id === id) return WQ[i]; return null; }
   var QLAB = { lock: '未解锁', todo: '可进行', doing: '进行中', claim: '可领取', done: '已完成' };
-  function qList(tab) { return tab === 'main' ? MAIN_Q : tab === 'side' ? SIDE_Q : tab === 'daily' ? [] : WQ.map(function (w) { return w.id; }); }
+  function qList(tab) { return tab === 'main' ? MAIN_Q : tab === 'side' ? SIDE_Q : tab === 'event' ? EVENT_Q.filter(function (id) { return id !== 'mmTrial' || mmLive() || prog(id).done; }) : tab === 'daily' ? [] : WQ.map(function (w) { return w.id; }); }
   function qTodo(tab) { if (tab === 'daily') { var D = daily(); return D ? D.list.filter(function (t) { return !t.c; }).length : 0; } return qList(tab).filter(function (id) { var st = qState(id); return st === 'todo' || st === 'doing' || st === 'claim'; }).length; }
   function exHead(hint) {
     return '<div class="page-head ex-head"><h2 class="sec">星际探索</h2><p class="hint">' + hint + '</p></div>';
@@ -5859,6 +5860,7 @@
       if (id === 'draft') steps = [{ t: '在孝感大厅听 Dr.黄 介绍竞技征召', ok: pr.done }, { t: '和其他船员打一场竞技征召（社交 → 向在线玩家宣战 → 5v5 · 平衡模式 · 竞技征召，胜负都算）', ok: draftPlayed() }];
       if (id === 'tiger2') { steps = [{ t: '在古城防卫部听泰戈尔介绍普通难度', ok: pr.done }, { t: '挑战并击败普通难度的「泰戈尔」（LV40，体力 1500，东北的纷争：物攻永久提升 30%）', ok: bossWon('tiger', 1) }]; R = { mon: '普通拳纹章、累积经验 ×20,000（首次击败普通难度）' }; }
       if (id === 'flora2') steps = [{ t: '前往 ' + qWhere(id), ok: pr.done || pr.at > 0 }, { t: '读完剧情「' + qName(id) + '」', ok: pr.done }, { t: '在芙罗拉星的丛林或草甸「假装击败」野生精灵（这个任务里野生精灵不会倒下，体力剩 1 点时就会逃走）', ok: spareN() >= SPARE_N, p: spareN() + ' / ' + SPARE_N }];
+      if (id === 'mmTrial') { var mmC = acc.mm && acc.mm.clr ? Object.keys(acc.mm.clr).length : 0; steps = [{ t: '在古城防卫部听明明教官说明试炼', ok: pr.done }, { t: '到空间站的「全息作战场地」通过一个关卡（每天开放一个属性）', ok: mmC > 0, p: mmC + ' / 1' }, { t: '通过「明明的最终试炼」', ok: !!(acc.mm && acc.mm.clr && Object.keys(acc.mm.clr).some(function (k) { return k.indexOf('final') === 0; })) }]; }
       if (id === 'fl_chal') steps = [{ t: '在古城防卫部听明明教官介绍挑战路线', ok: pr.done }, { t: '通过芙罗拉星挑战第二关（星际探索 → 芙罗拉星 → 挑战）', ok: chalStars('fl2') > 0 }, { t: '自己也挂一只助战精灵：社交 → 我的名片 → 助战精灵', ok: helperSet() }];
       if (id === 'rare') { var rr = prog('rare_r'); steps = [{ t: '在学院部听 Bttp 说明任务', ok: pr.done }, { t: '捕捉一种稀有精灵（芙罗拉星的丛林深处可能会有）', ok: rr.done || !!rareOwned() }, { t: '回到学院部，向 Bttp 汇报', ok: rr.done }]; R = SITES.rare_r.reward; desc = S.d; }
       if (st === 'lock') need = S.need && prog(S.after).done && !S.need() ? S.needText + (id === 'mingming' ? '（当前 ' + litCount() + ' / 10）' : id === 'brawl' ? '（当前持有 ' + acc.mons.length + ' 只）' : id === 'draft' ? '（当前 ' + speciesN() + ' / 10 种）' : id === 'flora3' ? '（当前 ' + spareN() + ' / ' + SPARE_N + '）' : '') + '。' : '先读完「' + SITES[S.after].chapter.split(' · ')[1] + '」。';
@@ -5888,7 +5890,7 @@
       var pick = null; ['claim', 'doing', 'todo', 'done'].some(function (k) { var f = ids.filter(function (id) { return qState(id) === k; }); if (f.length) { pick = k === 'done' ? f[f.length - 1] : f[0]; return true; } });
       ex.qsel = pick;
     }
-    var tabs = [['main', '主线任务'], ['side', '支线任务'], ['world', '世界任务'], ['daily', '每日任务']].map(function (t) { var n = qTodo(t[0]); return '<button type="button" role="tab" class="tab' + (tab === t[0] ? ' on' : '') + '" aria-selected="' + (tab === t[0]) + '" data-qtab="' + t[0] + '">' + t[1] + (n ? '<i class="q-badge">' + n + '</i>' : '') + '</button>'; }).join('');
+    var tabs = [['main', '主线任务'], ['side', '支线任务'], ['event', '活动任务'], ['world', '世界任务'], ['daily', '每日任务']].map(function (t) { var n = qTodo(t[0]); return '<button type="button" role="tab" class="tab' + (tab === t[0] ? ' on' : '') + '" aria-selected="' + (tab === t[0]) + '" data-qtab="' + t[0] + '">' + t[1] + (n ? '<i class="q-badge">' + n + '</i>' : '') + '</button>'; }).join('');
     var body = $('quest-body'); if (!body) return;
     renderQBadge();
     if (tab === 'daily') {
@@ -5916,6 +5918,7 @@
       if (W.go === 'dex') { if (dexOpen()) go('dex'); return; }
       ex.planet = W.go; ex.view = 'sites'; ex.fpart = W.fpart || 'catch'; go('explore'); renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return;
     }
+    if (id === 'mmTrial' && prog(id).done && mmOpen()) { ex.planet = 'station'; ex.view = 'mmArena'; go('explore'); renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }   // 读完活动任务后直接去全息作战场地
     var S = SITES[id]; ex.planet = S.planet; go('explore');
     if (id === 'fl_chal' && prog('fl_chal').done) { if (chalStars('fl2') > 0 && !helperSet()) { go('social'); toast('在「我的名片」里选一只助战精灵，保存名片即可。'); return; } ex.planet = 'flora'; ex.view = 'sites'; ex.fpart = 'challenge'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
     if (S.dept) { teleport(S.dept); return; }
@@ -5929,7 +5932,7 @@
   }
 
   /* ---------- 顶栏「任务」：在名字旁边。鼠标移上去看进行中任务的进度，点开是完整的任务面板 ---------- */
-  function qAllTodo() { try { return qTodo('main') + qTodo('side') + qTodo('world') + dailyClaimable(); } catch (e) { return 0; } }
+  function qAllTodo() { try { return qTodo('main') + qTodo('side') + qTodo('event') + qTodo('world') + dailyClaimable(); } catch (e) { return 0; } }
   function renderQBadge() { var b = $('qtop-badge'); if (!b || !ready()) return; var n = qAllTodo(); b.hidden = !n; b.textContent = n > 99 ? '99+' : n; }
   function openQuests(tab) {
     if (!ready()) return;
@@ -5940,7 +5943,7 @@
       d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'quest-dlg';
       d.innerHTML = '<div class="soc-box quest-box" role="dialog" aria-modal="true" aria-label="任务"><span class="tape l"></span><span class="tape r"></span>' +
         '<div class="quest-head"><div><span class="step">任务</span><h2>任务面板</h2></div><button type="button" class="btn ghost" data-qx="1">关闭</button></div>' +
-        '<p class="hint">主线、支线、世界任务和每日任务。点一个任务，查看需要做什么，并可以一键前往。</p><div id="quest-body"></div></div>';
+        '<p class="hint">主线、支线、活动、世界任务和每日任务。点一个任务，查看需要做什么，并可以一键前往。</p><div id="quest-body"></div></div>';
       document.body.appendChild(d);
       d.addEventListener('click', questClick);
     }
@@ -5961,7 +5964,7 @@
   // 悬停小窗：只列进行中 / 可领取的任务，每个写出当前这一步和进度
   function qPeekHTML() {
     var rows = [];
-    [['main', '主线'], ['side', '支线'], ['world', '世界']].forEach(function (T) {
+    [['main', '主线'], ['side', '支线'], ['event', '活动'], ['world', '世界']].forEach(function (T) {
       qList(T[0]).forEach(function (id) {
         var st = qState(id); if (st !== 'doing' && st !== 'claim') return;
         var I = qInfo(id), done = I.steps.filter(function (x) { return x.ok; }).length, n = I.steps.length;
@@ -5997,7 +6000,7 @@
       var r = e.target.closest('[data-qpeek]'); if (!r) { openQuests(); return; }
       var id = r.dataset.qpeek;
       if (id === 'daily') { openQuests('daily'); return; }
-      ex.qtab = wq(id) ? 'world' : SITES[id].side ? 'side' : 'main'; ex.qsel = id; openQuests();
+      ex.qtab = wq(id) ? 'world' : SITES[id].event ? 'event' : SITES[id].side ? 'side' : 'main'; ex.qsel = id; openQuests();
     });
   }
 
