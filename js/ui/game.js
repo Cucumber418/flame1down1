@@ -4933,17 +4933,16 @@
     var stage = function (t, i) {
       var open = mmStageOpen(i), f = MM_TEAM[t], img = SPRITES[f[2]];
       return '<article class="mm-st' + (open ? '' : ' locked') + '"><span class="tape r"></span><div class="mm-art">' + (open ? '<img src="' + img + '" alt="">' : '<span class="mm-lock">🔒</span>') + '</div><div class="mm-txt"><h3>' + t + '系关卡</h3>' +
-        (open ? '<p class="hint">对手：' + f.map(function (sid) { return esc(MM_NICK[sid] || SPMAP[sid].name); }).join('、') + '</p><div class="mm-btns">' + MM_DIFF.map(function (D, d) { var c = R.clr[t + ':' + d]; return '<button type="button" class="btn' + (d ? ' primary' : '') + '" data-mmgo="' + t + '" data-d="' + d + '">' + D.n + '（LV' + (d ? '75' : '40–50') + '）' + (c ? ' ✓' : '') + '</button>'; }).join('') + '</div>'
+        (open ? '<p class="hint">对手：' + f.map(function (sid) { return esc(MM_NICK[sid] || SPMAP[sid].name); }).join('、') + '</p><div class="mm-btns">' + MM_DIFF.map(function (D, d) { var c = R.clr[t + ':' + d]; return '<button type="button" class="btn' + (d ? ' primary' : '') + '" data-mmgo="' + t + '" data-d="' + d + '">' + D.n + (c ? ' ✓' : '') + '</button>'; }).join('') + '</div>'
           : '<p class="hint">' + mmOpenText(i) + '</p>') + '</div></article>';
     };
     var finOpen = mmStageOpen(5);
     $('pg-explore').innerHTML = exHead('明明教官在空间站安置的全息作战场地。每天开放一个属性的关卡，打败对方的 3 只精灵就能获得明明代币。') +
       '<div class="crumb"><button type="button" class="btn ghost" id="mm-back">‹ 返回空间站</button><b>空间站 · 全息作战场地</b><span class="hint">限时活动 · ' + mmLeftText() + '</span></div>' +
       '<div class="mm-bar"><span>明明代币 <b>' + fmt(tok) + '</b></span><button type="button" class="btn primary" data-mmgacha="1">去抽奖</button></div>' +
-      '<p class="hint">通常难度：对手 LV40–50（第三只最强）。高难难度：对手 LV75，带特效【明明之赐】（物攻、特攻 +50%），第三只另有【星球聚能】。每通过一次给明明代币（通常 10–15 个、高难 30–40 个），每关每个难度首次通过另有明明代币、累积经验和 1 颗星核。</p>' +
       '<div class="mm-grid">' + MM.order.map(stage).join('') +
       '<article class="mm-st final' + (finOpen ? '' : ' locked') + '"><span class="tape r"></span><div class="mm-art">' + (finOpen ? '<img src="' + SPRITES.leiming + '" alt="">' : '<span class="mm-lock">🔒</span>') + '</div><div class="mm-txt"><h3>明明的最终试炼</h3>' +
-        (finOpen ? '<p class="hint">随机两只高难难度的精灵先上场，第三只是明明教官的光霆主（LV80，体力 2000），带特效【星球聚能】【雷明尊者】（特性「雷明」增幅 300%）。通过给明明代币 50–60 个。</p><div class="mm-btns"><button type="button" class="btn primary" data-mmgo="final" data-d="0">挑战' + (R.clr.final ? ' ✓' : '') + '</button></div>'
+        (finOpen ? '<p class="hint">最后，明明教官会亲自带着光霆主上场。</p><div class="mm-btns"><button type="button" class="btn primary" data-mmgo="final" data-d="0">挑战' + (R.clr.final ? ' ✓' : '') + '</button></div>'
           : '<p class="hint">' + mmOpenText(5) + '</p>') + '</div></article></div>';
   }
   /* ----- 明明代币抽奖 ----- */
