@@ -11,7 +11,7 @@
  *   POST /api/register   { user, pass, data? }  注册；data 是可选的初始存档（把本机旧存档带上来）
  *   POST /api/login      { user, pass }         登录，返回 token 和存档
  *   GET  /api/me                                用 token 取回账号和存档
- *   PUT  /api/save       { data, rev }          上传存档；rev 是这份存档基于的版本号，对不上返回 409
+ *   PUT  /api/save       { data, rev, claims }  上传存档；rev 是这份存档基于的版本号，对不上返回 409；claims 是进账申报（见 claims.js）
  *   POST /api/password   { old, pass }          修改密码（会让其他设备上的登录失效）
  *   POST /api/logout                            退出登录
  */
@@ -29,6 +29,8 @@ var MAX_BODY = 2 * 1024 * 1024;   // 存档上限 2MB
 var NAME_RE = /^[一-龥A-Za-z0-9_]{2,16}$/;
 
 fs.mkdirSync(USER_DIR, { recursive: true });
+var claims = require('./claims');   // 进账申报与钱包核对（2026-10-24）
+claims.init(DATA_DIR);
 
 /* ---------- 文件读写（先写临时文件再改名，断电也不会写坏一半） ---------- */
 function readJSON(file, dflt) {
@@ -224,8 +226,11 @@ function handle(req, res) {
       var why = cheatCheck(me.save && me.save.data, body.data, me.save ? Date.now() - (me.save.savedAt || 0) : 0) || ((body.rev | 0) === cur ? dayCheck(me, me.save && me.save.data, body.data) : null);
       if (why) { cheatLog(me.name, why); return reply(res, 409, { error: '存档数值异常，已恢复为服务器上的进度', cheat: true, save: saveOut(me) }); }
       if ((body.rev | 0) !== cur) return reply(res, 409, { error: '存档在别的设备上更新过', save: saveOut(me) });
-      me.save = { data: body.data, rev: cur + 1, savedAt: Date.now(), guard: G && Date.now() < G.until ? G : undefined };
+      // 进账申报 + 钱包核对：试运行模式只记录，正式模式会把多出来的数值改回去
+      var W = claims.onUpload(me, body.claims, me.save && me.save.data, body.data, { claims: Array.isArray(body.claims), v: body.v });
+      me.save = { data: W.data, rev: cur + 1, savedAt: Date.now(), guard: G && Date.now() < G.until ? G : undefined };
       saveUser(me);
+      if (W.fixed) return reply(res, 200, { rev: me.save.rev, savedAt: me.save.savedAt, fixed: W.fixed, save: saveOut(me) });
       return reply(res, 200, { rev: me.save.rev, savedAt: me.save.savedAt });
     }
 
@@ -285,4 +290,4 @@ function allUsers() {
 }
 
 module.exports = { handle: handle, use: function (fn) { extra.push(fn); }, whoIs: whoIs, whoToken: whoToken, loadUser: loadUser, saveUser: saveUser, allUsers: allUsers,
-  reply: reply, readBody: readBody, userCount: userCount, resetPassword: resetPassword, listUsers: listUsers, DATA_DIR: DATA_DIR, progScore: progScore, cheatCheck: cheatCheck, cheatStats: stats };
+  reply: reply, readBody: readBody, userCount: userCount, walletStatus: claims.status, resetPassword: resetPassword, listUsers: listUsers, DATA_DIR: DATA_DIR, progScore: progScore, cheatCheck: cheatCheck, cheatStats: stats };

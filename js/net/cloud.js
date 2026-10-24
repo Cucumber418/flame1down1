@@ -11,6 +11,8 @@
   'use strict';
   // 要同步到服务器的本地存档键（游戏主存档、竞技段位、选将记录、沙盒设置、竞技对战里每只精灵的配招）
   var KEYS = ['hs-account-v1', 'hs-rank-v1', 'hs-draft-v1', 'hs-train-v1', 'hs-loadout-v1'];
+  // 进账申报（2026-10-24）：game.js 的 earn() 记下的申报先放这里，随下一次存档上传一起发给服务器，服务器收下后删掉
+  var CLAIMS = 'hs-claims-v1';
   var TOK = 'hs-cloud-token', OWNER = 'hs-cloud-owner', REV = 'hs-cloud-rev', DIRTY = 'hs-cloud-dirty', LEGACY = 'hs-legacy-backup', LAST = 'hs-cloud-lastuser';
   var LS = window.localStorage;
   // 登录凭证：勾了「自动登录」存在 localStorage（关掉浏览器也记得，60 天内免登录）；
@@ -43,7 +45,16 @@
   /* ---------- 本地存档 ⇄ 服务器存档 ---------- */
   function sameData(data) { var c = collect(); data = data || {}; return KEYS.every(function (k) { return (c[k] == null ? null : String(c[k])) === (data[k] == null ? null : String(data[k])); }); }
   function collect() { var d = {}; KEYS.forEach(function (k) { var v = lsGet(k); if (v != null) d[k] = v; }); return d; }
+  function claimsGet() { try { var q = JSON.parse(lsGet(CLAIMS) || '[]'); return Array.isArray(q) ? q : []; } catch (e) { return []; } }
+  function claimsDrop(sent) {   // 服务器收下了这些申报：从队列里删掉（按编号删，期间新加的留着）
+    if (!sent || !sent.length) return;
+    var ids = {}; sent.forEach(function (c) { ids[c.c] = 1; });
+    var q = claimsGet().filter(function (c) { return !ids[c.c]; });
+    if (q.length) lsSet(CLAIMS, JSON.stringify(q)); else lsDel(CLAIMS);
+  }
+  function claim(list) { if (!st.user || !list || !list.length) return; lsSet(CLAIMS, JSON.stringify(claimsGet().concat(list))); }
   function apply(data) {
+    lsDel(CLAIMS);   // 本机存档被服务器上的（或空的）替换掉了，还没上传的申报跟着作废
     st.applying = true;
     KEYS.forEach(function (k) { if (data && data[k] != null) lsSet(k, data[k]); else lsDel(k); });
     st.applying = false;
@@ -82,12 +93,13 @@
     if (st.txing) { schedule(300); return; }   // 正在结算交易：等它结束再传，免得版本号对不上
     if (lsGet(DIRTY) !== '1' && !force) return;
     st.pushing = true; setStatus('saving');
-    var no = st.changeNo;
-    api('PUT', '/api/save', { data: collect(), rev: st.rev, force: force === true })
+    var no = st.changeNo, sent = claimsGet();
+    api('PUT', '/api/save', { data: collect(), rev: st.rev, force: force === true, claims: sent, v: st.ver })
       .then(function (r) {
         st.pushing = false;
         if (r._code === 200) {
-          st.rev = r.rev; lsSet(REV, String(r.rev)); st.retry = 0;
+          st.rev = r.rev; lsSet(REV, String(r.rev)); st.retry = 0; claimsDrop(sent);
+          if (r.fixed && r.save) { takeCloud(r.save, '有些数值和服务器的记录对不上（' + (r.fixed || '') + '），已按服务器的记录修正。'); return; }
           if (st.changeNo === no) { lsDel(DIRTY); setStatus('ok'); } else schedule(1000);
         } else if (r._code === 409) { setStatus('conflict'); takeCloud(r.save, r.cheat ? r.error : '这个账号在别的设备上保存过新的进度，已切换成服务器上的进度。'); }
         else if (r._code === 401) { setStatus('expired'); }
@@ -99,7 +111,7 @@
   // 关页面、切到后台时，有没传完的就立刻传
   function flushNow() {
     if (!st.user || lsGet(DIRTY) !== '1') return;
-    var body = { data: collect(), rev: st.rev };
+    var body = { data: collect(), rev: st.rev, claims: claimsGet(), v: st.ver };   // 申报留在队列里，下次上传再带一遍，服务器按编号去重
     if (JSON.stringify(body).length < 60000) api('PUT', '/api/save', body, { keepalive: true }).catch(function () {});
     else push();
   }
@@ -162,7 +174,7 @@
     if (lsGet(DIRTY) !== '1') return bye();
     // 还有没上传的进度：先试着传一次
     setStatus('saving');
-    api('PUT', '/api/save', { data: collect(), rev: st.rev }).then(function (r) {
+    api('PUT', '/api/save', { data: collect(), rev: st.rev, claims: claimsGet(), v: st.ver }).then(function (r) {
       if (r._code === 200) { lsDel(DIRTY); bye(); }
       else if (confirm('还有进度没能保存到服务器（' + (r.error || '未知原因') + '）。现在退出会丢掉这部分进度，确定退出吗？')) bye();
     }).catch(function () {
@@ -376,5 +388,5 @@
     setInterval(checkVersion, 3 * 60 * 1000);
     document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') checkVersion(); });
   }
-  window.CLOUD = { boot: boot, user: function () { return st.user; }, token: function () { return st.token; }, api: api, flush: flush, tx: tx, resync: resync };
+  window.CLOUD = { boot: boot, user: function () { return st.user; }, token: function () { return st.token; }, api: api, flush: flush, tx: tx, resync: resync, claim: claim };
 })();

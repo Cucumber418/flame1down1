@@ -123,7 +123,7 @@ var server = http.createServer(function (req, res) {
   if (req.url === '/ping') return send(res, 200, 'text/plain; charset=utf-8', 'ok');
   if (req.url === '/status') {
     return send(res, 200, 'application/json; charset=utf-8', JSON.stringify({
-      ok: true, since: STARTED.toISOString(), users: accounts.userCount(), players: social.onlineCount(), online: wss.clients.size, rooms: Object.keys(rooms).length, backups: backupInfo(), node: process.version, tx: txs.status()
+      ok: true, since: STARTED.toISOString(), users: accounts.userCount(), players: social.onlineCount(), online: wss.clients.size, rooms: Object.keys(rooms).length, backups: backupInfo(), node: process.version, tx: txs.status(), wallet: accounts.walletStatus()
     }));
   }
   serveFile(req, res);
