@@ -19,7 +19,10 @@
 var fs = require('fs');
 var path = require('path');
 
-var MODE = process.env.WALLET_MODE || 'observe';   // 试运行几天、确认没有误报后改成 'enforce'
+var MODE = process.env.WALLET_MODE || 'enforce';   // 'observe' 只记录；'enforce' 改回多出来的数值（2026-10-24 起正式开启）
+// 宽限期：还没刷新的旧页面（上线进账申报之前打开的）传不了申报，到这个时间之前只记录、不修正，免得误伤
+var GRACE_UNTIL = Date.UTC(2026, 9, 25, 16, 0, 0);   // 北京时间 2026-10-26 00:00
+var LABEL = { exp: '经验背包', energy: '能量', tokens: '竞技代币', twTok: '先驱代币', merit: '功勋', meritXp: '功勋经验' };
 
 var SRC = {
   // 一次性：同一个编号只认一次
@@ -105,8 +108,10 @@ function onUpload(u, list, oldData, newData, info) {
   stat.uploads++; if (!info.claims) stat.oldClient++;
   if (!over.length && !notes.length) return { data: newData, fixed: '' };
   if (over.length) { stat.over++; stat.last.unshift({ t: new Date(now).toISOString(), old: !info.claims, over: over.map(function (x) { return x.f + ' +' + x.by; }) }); stat.last = stat.last.slice(0, 15); }
-  log({ t: new Date(now).toISOString(), u: u.name, mode: MODE, oldClient: !info.claims, over: over, notes: notes });
-  if (MODE !== 'enforce' || !over.length) return { data: newData, fixed: '' };
+  var enforce = MODE === 'enforce' && (info.claims || now >= GRACE_UNTIL);
+  log({ t: new Date(now).toISOString(), u: u.name, mode: enforce ? 'enforce' : 'observe', oldClient: !info.claims, over: over, notes: notes });
+  if (!enforce || !over.length) return { data: newData, fixed: '' };
+  stat.fixed++;
   // 正式模式：把多出来的改回去
   over.forEach(function (x) {
     if (x.f.indexOf('items.') === 0) { if (!B.items) B.items = {}; B.items[x.f.slice(6)] = x.to; }
@@ -115,12 +120,13 @@ function onUpload(u, list, oldData, newData, info) {
   });
   var out = {}; for (var key2 in newData) out[key2] = newData[key2];
   out['hs-account-v1'] = JSON.stringify(B);
-  return { data: out, fixed: over.map(function (x) { return x.f; }).join('、') };
+  var names = []; over.forEach(function (x) { var n = x.f.indexOf('items.') === 0 ? '道具' : LABEL[x.f] || x.f; if (names.indexOf(n) < 0) names.push(n); });
+  return { data: out, fixed: names.join('、') };
 }
 function sane(d) { var o = { items: {} }; FIELDS.forEach(function (f) { var v = +d[f]; if (v > 0 && isFinite(v)) o[f] = v; }); if (d.items && typeof d.items === 'object') for (var k in d.items) { var n = +d.items[k]; if (n > 0 && isFinite(n)) o.items[k] = n; } return o; }
 
 // /status 里显示的统计（不含账号名）：从服务器启动起有多少次上传、多少次对不上
-var stat = { since: new Date().toISOString(), uploads: 0, oldClient: 0, over: 0, last: [] };
-function status() { return { mode: MODE, since: stat.since, uploads: stat.uploads, oldClient: stat.oldClient, mismatch: stat.over, recent: stat.last }; }
+var stat = { since: new Date().toISOString(), uploads: 0, oldClient: 0, over: 0, fixed: 0, last: [] };
+function status() { return { mode: MODE, graceUntil: new Date(GRACE_UNTIL).toISOString(), since: stat.since, uploads: stat.uploads, oldClient: stat.oldClient, mismatch: stat.over, fixed: stat.fixed, recent: stat.last }; }
 
 module.exports = { init: init, onUpload: onUpload, status: status, SRC: SRC, MODE: MODE };

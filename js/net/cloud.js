@@ -89,7 +89,7 @@
   function markDirty() { st.changeNo++; lsSet(DIRTY, '1'); setStatus('wait'); schedule(2000); }
   function schedule(ms) { clearTimeout(st.timer); st.timer = setTimeout(push, ms); }
   function push(force) {
-    if (!st.user || st.pushing) return;
+    if (!st.user || st.pushing || st.reloading) return;   // 已经换成服务器的进度、等着重新加载：不再上传本机内存里的旧数据
     if (st.txing) { schedule(300); return; }   // 正在结算交易：等它结束再传，免得版本号对不上
     if (lsGet(DIRTY) !== '1' && !force) return;
     st.pushing = true; setStatus('saving');
@@ -110,7 +110,7 @@
   function retryLater() { st.retry = Math.min(st.retry + 1, 6); schedule([5, 10, 20, 30, 60, 120][st.retry - 1] * 1000); }
   // 关页面、切到后台时，有没传完的就立刻传
   function flushNow() {
-    if (!st.user || lsGet(DIRTY) !== '1') return;
+    if (!st.user || st.reloading || lsGet(DIRTY) !== '1') return;
     var body = { data: collect(), rev: st.rev, claims: claimsGet(), v: st.ver };   // 申报留在队列里，下次上传再带一遍，服务器按编号去重
     if (JSON.stringify(body).length < 60000) api('PUT', '/api/save', body, { keepalive: true }).catch(function () {});
     else push();
@@ -119,7 +119,7 @@
   // 盯住游戏对本地存档的读写：游戏代码不用改，调用 localStorage.setItem 时这里会知道
   function watchStorage() {
     var P = Storage.prototype, set = P.setItem, del = P.removeItem;
-    P.setItem = function (k, v) { var old = this === LS ? this.getItem(k) : null; set.call(this, k, v); if (this === LS && !st.applying && KEYS.indexOf(k) >= 0 && old !== String(v)) markDirty(); };
+    P.setItem = function (k, v) { if (this === LS && st.reloading && KEYS.indexOf(k) >= 0) return; var old = this === LS ? this.getItem(k) : null; set.call(this, k, v); if (this === LS && !st.applying && KEYS.indexOf(k) >= 0 && old !== String(v)) markDirty(); };
     P.removeItem = function (k) { var had = this === LS && this.getItem(k) != null; del.call(this, k); if (had && !st.applying && KEYS.indexOf(k) >= 0) markDirty(); };
     document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') flushNow(); });
     window.addEventListener('pagehide', flushNow);
@@ -192,7 +192,9 @@
   function fmtTime(t) { try { return new Date(t).toLocaleString('zh-CN'); } catch (e) { return ''; } }
   // 存档以服务器为准：拿服务器上的进度覆盖本机，然后重新加载
   function takeCloud(save, msg) {
-    apply(save ? save.data : null); st.rev = save ? save.rev : 0; lsSet(REV, String(st.rev)); lsDel(DIRTY);
+    if (st.reloading) return;
+    apply(save ? save.data : null);
+    st.reloading = true;   // 从现在到页面重新加载：游戏内存里还是旧数据，不许它再写回本机存档、也不再上传 st.rev = save ? save.rev : 0; lsSet(REV, String(st.rev)); lsDel(DIRTY);
     dialog('<span class="step">存档</span><h2>已使用服务器上的进度</h2><p>' + esc(msg || '') + '</p><div class="ob-foot"><button class="btn primary" id="cf-ok">好的</button></div>',
       function (d, close) { d.querySelector('#cf-ok').addEventListener('click', function () { close(); location.reload(); }); });
   }

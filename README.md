@@ -161,8 +161,9 @@ sudo git clone --depth 1 https://github.com/Cucumber418/flame1down1 /opt/flame1d
 - `js/ui/game.js` 里所有让经验背包、能量、竞技代币、先驱代币、功勋、道具**变多**的地方，都要写成 `earn(来源, 编号, { exp, energy, tokens, twTok, merit, meritXp, items: { 道具: 数量 } })`。它先在本机加上，再记一条申报，随下一次上传存档一起发给服务器。花掉、用掉（变少）不用申报。旧写法 `giveItems` / `giveMerit` 还能用，会自动申报成来源 `misc`，新代码请用 `earn` 并写明来源。
 - 服务器（`server/claims.js`）逐条检查：来源要在 `SRC` 里（1 = 一次性，同一个编号只认一次；0 = 可重复）；数值不能超过单条上限；同一条申报重复上传只算一次。认过的一次性奖励记在账号文件的 `claimed` 里，改存档改不到。新增一种来源要在 `SRC` 里加上。
 - 然后核对钱包：上传存档里的每一项不能超过「服务器上一份存档 + 这次认可的申报」。
-- **现在是试运行（`MODE = 'observe'`）**：对不上的只记录、不修改。记录在 `/opt/flame1down-data/wallet.log`（`sudo tail -n 30 /opt/flame1down-data/wallet.log`）；`/status` 的 `wallet` 里能看到上传次数（`uploads`）、对不上的次数（`mismatch`）和最近几条（`recent`，不含账号名；`old: true` 表示是还没刷新的旧页面传上来的，可以忽略）。
-- 试运行几天、`recent` 里没有 `old: false` 的误报之后，把 `server/claims.js` 里的 `MODE` 改成 `'enforce'`：多出来的数值会被改回去，玩家页面会弹窗说明并用服务器的进度重新加载。
+- **已正式开启（`MODE = 'enforce'`，2026-10-24）**：多出来的数值会改回去，玩家页面弹窗说明并用服务器的进度重新加载。上线前就打开、还没刷新的旧页面传不了申报，北京时间 2026-10-26 00:00 之前对它们只记录不修正（`GRACE_UNTIL`）。要临时退回只记录，把 `MODE` 改成 `'observe'`。
+- 对不上的记录：记录在 `/opt/flame1down-data/wallet.log`（`sudo tail -n 30 /opt/flame1down-data/wallet.log`）；`/status` 的 `wallet` 里能看到上传次数（`uploads`）、对不上的次数（`mismatch`）和最近几条（`recent`，不含账号名；`old: true` 表示是还没刷新的旧页面传上来的，可以忽略）。
+- 如果 `recent` 里出现 `old: false` 的记录，多半是有进账的地方漏了 `earn`，照着记录里的字段去找。
 - 还没保护到的：奖励的具体数额仍由浏览器计算（服务器只卡上限和次数）；精灵的等级、天赋、学习力等不在核对范围内，由原来的防改档检查（`accounts.js` 的 `cheatCheck` / `dayCheck`）兜底。
 
 **版本检查**：服务器启动时按网页、样式、脚本的内容算一个版本号（`GET /api/version`）。开着的页面每 3 分钟、以及切回页面时检查一次，发现服务器上的版本变了就弹窗提示刷新；用旧页面兑换东西时服务器会拒绝（不扣费）并提示刷新。
