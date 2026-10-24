@@ -128,6 +128,26 @@
   migrateMats();
   function ready() { return !!(acc && acc.introDone); }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(acc)); } catch (e) {} }
+  /* ---------- 交易（2026-10-24）：商城、代币商店、温泉、茶室扩容、矿石换能量、明明代币抽奖都先交给服务器结算 ----------
+   * 规则和价格在 js/engine/tx.js。服务器结算成功后，本机用服务器给的随机数和时间再算一遍（结果和服务器一样），然后 done(结果)。
+   * 本地双击打开（没有服务器）时直接在本机结算。 */
+  var txBusy = false;
+  function txRun(op, args, done) {
+    if (txBusy) return; txBusy = true;
+    var C = window.CLOUD, p = C && C.tx ? C.tx(op, args) : Promise.resolve({ local: true });
+    p.then(function (r) {
+      txBusy = false;
+      if (!r.local && !r.ok) { if (r.err) toast(r.err); return; }
+      var res = TX.run(acc, op, args, r.local ? { now: Date.now(), rand: Math.random } : { now: r.now, rand: TX.replay(r.rolls) });
+      if (!res.ok) {
+        if (r.local) { toast(res.err); return; }
+        // 服务器结算成功、本机却算不出来：本机存档和服务器对不上，以服务器为准
+        if (C.resync) C.resync('本机的进度和服务器对不上，已切换成服务器上的进度。');
+        return;
+      }
+      save(); done(res);
+    }, function () { txBusy = false; toast('连不上服务器，这次没有兑换，请稍后再试。'); });
+  }
   function savePage() { try { localStorage.setItem(PKEY, page); } catch (e) {} }
 
   /* ---------- 精灵实例 ---------- */
@@ -2161,14 +2181,9 @@
    * 荆楚号 · 宜昌的能源核心主人日透骨消：答对考核题（10 题对 7 题）领挖矿钻头（永久，耐久 80 次，5 题对 3 题修满）。
    * 芙罗拉星、坎伯兰星的每个野外场景里各有一处矿点（马亚尔煤炭 / 铁矿交替），每处每天挖 1 次，挖一次要等 10 秒。
    * 矿石在能源核心换能量，每天最多换 MINE.cap 能量。题库在 js/data/xcq.js（编码过） */
-  var DRILL_MAX = 80, DRILL_LOW = 0.2;   // 钻头耐久：挖一次 −1，满 80；低于 20% 挖完会提醒；在能源核心答 5 题对 3 题修满
-  var MINE = { regions: ['forest', 'grass', 'kb_surf', 'kb_sea', 'kb_deep'], spot: { x: 10, y: 92 }, sec: 10, n: [2, 3], price: { m_cu: 150, m_fe: 250 }, cap: 3000, quiz: 10, pass: 7, hard: 2 };
-  function mineRec() {
-    var day = dayNum(Date.now());
-    if (acc.mine && acc.mine.drill && !acc.drill) acc.drill = { dur: DRILL_MAX };   // 钻头改成永久之前领过的（当天有效那版）：直接给一个满耐久的
-    if (!acc.mine || acc.mine.day !== day) acc.mine = { day: day, got: {}, ex: 0 };
-    return acc.mine;
-  }
+  var DRILL_MAX = TX.D.DRILL_MAX, DRILL_LOW = 0.2;   // 钻头耐久：挖一次 −1，满 80；低于 20% 挖完会提醒；在能源核心答 5 题对 3 题修满
+  var MINE = { regions: ['forest', 'grass', 'kb_surf', 'kb_sea', 'kb_deep'], spot: { x: 10, y: 92 }, sec: 10, n: [2, 3], price: TX.D.MINE_PRICE, cap: TX.D.MINE_CAP, quiz: 10, pass: 7, hard: 2 };
+  function mineRec() { return TX.mineRec(acc, Date.now()); }   // 规则在 js/engine/tx.js
   function drill() { return acc.drill || null; }   // { dur }：领过钻头就一直有，耐久用完要修
   function oreKind(si) { return si % 2 ? 'm_fe' : 'm_cu'; }
   function oreHTML(R, F, si) {
@@ -2342,11 +2357,10 @@
       [['离开', null], ['兑换能量', exchangeOre, !(cu || fe) || left <= 0], !drill() ? ['参加钻头考核', function () { startQuiz(false); }] : ['修复钻头', function () { startQuiz(true); }, drill().dur >= DRILL_MAX]]);
   }
   function exchangeOre() {
-    var M0 = mineRec(), left = MINE.cap - M0.ex, got = 0, used = {};
-    ['m_fe', 'm_cu'].forEach(function (k) { var p = MINE.price[k]; while ((acc.items[k] || 0) > 0 && left >= p) { acc.items[k]--; left -= p; got += p; used[k] = (used[k] || 0) + 1; } });
-    if (!got) { toast(left <= 0 ? '今天能换的能量已经到上限了，明天再来吧。' : '矿石不够换了。'); return; }
-    M0.ex += got; acc.energy += got; save(); renderRes();
-    toast('交出了' + Object.keys(used).map(function (k) { return MATS[k].name + ' ×' + used[k]; }).join('、') + '，换到能量 ×' + fmt(got) + '。今天还能换 ' + fmt(MINE.cap - M0.ex) + '。');
+    txRun('ore', {}, function (r) {   // 规则在 js/engine/tx.js
+      renderRes();
+      toast('交出了' + Object.keys(r.used).map(function (k) { return MATS[k].name + ' ×' + r.used[k]; }).join('、') + '，换到能量 ×' + fmt(r.got) + '。今天还能换 ' + fmt(r.left) + '。');
+    });
   }
   var REPAIR = { n: 5, pass: 3, hard: 1 };
   function startQuiz(rp) {   // rp：修复钻头（5 题对 3 题）；否则是领钻头的考核（10 题对 7 题）
@@ -3266,15 +3280,8 @@
   var TOWER = { top: 60, cps: [1, 11, 21, 31, 41, 51], dayExp: 450000, dayTok: 5000, deathMax: 3 };   // 2026-10-21：每层经验 ×10、代币 ×5，每日经验上限 ×3（150000 → 450000），代币上限跟着 ×5
   var TW_POOL = ['leaf', 'squid', 'shroom', 'wind', 'mush', 'kaleo', 'faraday', 'firemouse', 'frost', 'gorgon', 'hephaestus', 'leigong', 'pede', 'siren', 'turkey', 'wild', 'tagore', 'leafcat', 'moon', 'bone', 'aegis'];
   var TW_FX = ['armor', 'regen', 'thorn', 'rage', 'swift', 'guard', 'noStatus', 'focus'];   // 只用塔里通用的特性，不用BOSS专属的（星球聚能、东北的纷争等）
-  var TW_SHOP = [
-    { k: 'floraJade', cost: 10 }, { k: 'kbDrop', cost: 10 }, { k: 'ppAsh', cost: 10 }, { k: 'ltOrb', cost: 10 }, { k: 'whFrost', cost: 10 }, { k: 'fruit2', cost: 60 }, { k: 'cap3', cost: 80 }, { k: 'evAny', cost: 150 }, { k: 'evReset', cost: 200 },
-    { k: 'ivReroll', cost: 400 }, { k: 'natAny', cost: 2000 }, { k: 'e_pluto', cost: 3000, death: 1 }
-  ];
-  function twRec() {
-    if (!acc.tower) acc.tower = { f: 1, cp: 1, best: 0, clears: 0, death: 0, tok: 0 };
-    var T = acc.tower, d = bjDay(); if (!T.day || T.day.d !== d) T.day = { d: d, exp: 0, tok: 0 };
-    return T;
-  }
+  var TW_SHOP = TX.D.TW_SHOP;   // 商品和价格在 js/engine/tx.js
+  function twRec() { return TX.twRec(acc, Date.now()); }
   function twLv(f) { return f >= TOWER.top ? 80 : 40 + Math.round((f - 1) * 40 / 58); }
   function twExp(f) { return 10 * (f >= TOWER.top ? 16000 : 400 + 20 * f); }          // 一次通关合计 750000（2026-10-21 ×10）
   function twExp0(f) { return f >= TOWER.top ? 16000 : 400 + 20 * f; }   // 调整前（补偿邮件用）
@@ -3395,9 +3402,10 @@
     if (b.dataset.twbuy != null && b.dataset.twbuy !== undefined) {
       var T = twRec(), x = TW_SHOP[+b.dataset.twbuy]; if (!x) return true;
       if (T.tok < x.cost || (x.death && (acc.items.deathTok || 0) < x.death)) { toast('代币不够。'); return true; }
-      T.tok -= x.cost; if (x.death) acc.items.deathTok -= x.death;
-      var o = {}; o[x.k] = 1; giveItems(o); save(); renderExplore();
-      toast('兑换了「' + itemName(x.k) + '」，已放入储存箱。' + (x.k === 'e_pluto' ? '放进神农架 · 精灵保育仓就能孵化。' : ''));
+      txRun('tower', { i: +b.dataset.twbuy }, function () {
+        renderExplore();
+        toast('兑换了「' + itemName(x.k) + '」，已放入储存箱。' + (x.k === 'e_pluto' ? '放进神农架 · 精灵保育仓就能孵化。' : ''));
+      });
       return true;
     }
     return false;
@@ -4132,13 +4140,7 @@
   /* ---------- 竞技代币商店（2026-10-14） ----------
    * 竞技代币：平衡排位每天前 10 局每局掉 20 个。商店在竞技对战 · 平衡排位的段位卡里打开（弹窗）。
    * 卖的都是精灵道具，买到后放进储存箱，在储存箱或精灵资料里使用。 */
-  var TOKEN_SHOP = [
-    { k: 'moonStone', price: 2 }, { k: 'boneDust', price: 2 },   // 2026-10-18：小月亮、骨刃的隐藏技能和等级上限道具
-    { k: 'ivMoon', price: 100 }, { k: 'ivBone', price: 100 }, { k: 'evAny', price: 100 },
-    { k: 'fruit1', price: 30 }, { k: 'fruit2', price: 60 },
-    { k: 'evReset', price: 80 },
-    { k: 'ivReroll', price: 200 }
-  ];
+  var TOKEN_SHOP = TX.D.TOKEN_SHOP;   // 商品和价格在 js/engine/tx.js
   function tokens() { return (acc && acc.tokens) || 0; }
   function tokenBarHTML() {
     if (!ready()) return '';
@@ -4174,8 +4176,10 @@
       if ((t = e.target.closest('[data-tkbuy]')) && !t.disabled) {
         var k = t.dataset.tkbuy, T = TOKEN_SHOP.filter(function (x) { return x.k === k; })[0], q = tkQty[k] || 1, cost = T ? T.price * q : 0;
         if (!T || tokens() < cost) return;
-        acc.tokens = tokens() - cost; var g0 = {}; g0[k] = q; giveItems(g0); tkQty[k] = 1; save(); draw();
-        toast('兑换成功：' + itemName(k) + ' ×' + q + '，消耗 ' + cost + ' 竞技代币。已放进储存箱。');
+        txRun('token', { k: k, n: q }, function (r) {
+          tkQty[k] = 1; if (d.isConnected) draw();
+          toast('兑换成功：' + itemName(k) + ' ×' + r.n + '，消耗 ' + r.cost + ' 竞技代币。已放进储存箱。');
+        });
       }
     });
   }
@@ -4950,39 +4954,20 @@
           : '<p class="hint">' + mmOpenText(5) + '</p>') + '</div></article></div>';
   }
   /* ----- 明明代币抽奖 ----- */
-  function mmPool(n) {
-    var P = [];
-    [1000, 1000, 1000, 1000, 3000, 3000, 3000, 10000].forEach(function (e) { P.push({ exp: e }); });
-    [['floraJade', 10], ['floraJade', 10], ['ltOrb', 10], ['kbDrop', 10], ['ppAsh', 10], ['whFrost', 10], ['mmTok', 5], ['mmTok', 5], ['mmTok', 20], ['fruit2', 2], ['evAny', 1], ['g_core', 1]].forEach(function (x) { var it = {}; it[x[0]] = x[1]; P.push({ items: it }); });
-    if (n === 10) P[0] = { items: { e_leiming: 1 }, big: 1 };
-    if (n === 20 || n === 30) P[0] = { items: { mmEye: 100 }, big: 1 };
-    return P;
-  }
+  function mmPool(n) { return TX.mmPool(n); }   // 奖池内容在 js/engine/tx.js
   function mmPrizeText(z) { return z.exp ? '累积经验 ×' + fmt(z.exp) : Object.keys(z.items).map(function (k) { return itemName(k) + ' ×' + z.items[k]; }).join('、'); }
-  function mmG() {
-    var R = mmRec(), d = bjDay();
-    if (!R.g) R.g = { n: 1, left: mmPool(1).map(function (x, i) { return i; }), d: d, opened: 0 };
-    if (R.g.d !== d) { R.g.d = d; R.g.opened = 0; }
-    return R.g;
-  }
-  var MM_POOL_DAY = 100;
+  function mmG() { return TX.mmG(acc, Date.now()); }
+  var MM_POOL_DAY = TX.D.MM_POOL_DAY;
   function mmDraw(times) {
-    var G = mmG(), cost = 10 * times;
+    var cost = TX.D.MM_COST * times;
     if ((acc.items.mmTok || 0) < cost) { toast('明明代币不够，需要 ' + cost + ' 个。'); return; }
-    var got = [], spent = 0, stop = '';
-    for (var i = 0; i < times; i++) {
-      if (!G.left.length) {
-        if (G.opened >= MM_POOL_DAY) { stop = '今天已经解锁了 ' + MM_POOL_DAY + ' 个奖池，明天再来吧。'; break; }
-        G.n++; G.opened++; G.left = mmPool(G.n).map(function (x, k) { return k; });
-      }
-      var pick = Math.floor(Math.random() * G.left.length), idx = G.left.splice(pick, 1)[0], z = mmPool(G.n)[idx];
-      if (z.exp) acc.exp = (acc.exp || 0) + z.exp; else giveItems(z.items);
-      spent += 10; got.push((z.big ? '★ ' : '') + mmPrizeText(z));
-    }
-    acc.items.mmTok = (acc.items.mmTok || 0) - spent; save(); renderRes();
-    if (IG.acc === acc) IG.snap = igSnap();   // 抽奖有自己的结果面板，不再弹「获得物品」
-    if (got.length) mmShowDraw(got, stop); else if (stop) toast(stop);
-    if (ex.view === 'mmGacha') renderMmGacha();
+    txRun('mm', { times: times }, function (r) {   // 抽奖规则在 js/engine/tx.js，由服务器掷随机数
+      var got = r.got.map(function (z) { return (z.big ? '★ ' : '') + mmPrizeText(z); });
+      renderRes();
+      if (IG.acc === acc) IG.snap = igSnap();   // 抽奖有自己的结果面板，不再弹「获得物品」
+      if (got.length) mmShowDraw(got, r.stop); else if (r.stop) toast(r.stop);
+      if (ex.view === 'mmGacha') renderMmGacha();
+    });
   }
   function mmShowDraw(got, stop) {
     var d = document.createElement('div'); d.className = 'soc-dlg';
@@ -5021,7 +5006,7 @@
   /* ---------- 商城：荆门 · 物资仓储 ---------- */
   var shopQty = {};
   // 不在战斗里用的商品
-  var SHOP_X = { rename: { name: '改名卡', price: 1000, d: '使用后可以修改做题家名字（最多 ' + NAME_MAX + ' 个字）。兑换后点右上角的名字，在菜单里使用。' } };
+  var SHOP_X = { rename: { name: '改名卡', price: TX.D.RENAME_PRICE, d: '使用后可以修改做题家名字（最多 ' + NAME_MAX + ' 个字）。兑换后点右上角的名字，在菜单里使用。' } };
   function goods(k) { return ITEMS[k] || SHOP_X[k]; }
   function renderShop() {
     var grp = [['捕捉装置', ['cap1']], ['体力补药', ['pot1', 'pot2']], ['其他', ['rename']]];
@@ -5044,8 +5029,10 @@
     var b = e.target.closest('[data-buy]'); if (!b) return false; if (b.disabled) return true;
     var k = b.dataset.buy, n = shopQty[k] || 1, cost = goods(k).price * n;
     if (acc.energy < cost) return true;
-    acc.energy -= cost; acc.items[k] = (acc.items[k] || 0) + n; shopQty[k] = 1; save();
-    renderRes(); renderShop(); renderRename(); toast('兑换成功：' + goods(k).name + ' ×' + n + '，消耗 ' + fmt(cost) + ' 能量。' + (k === 'rename' ? '点右上角的名字即可使用。' : ''));
+    txRun('shop', { k: k, n: n }, function (r) {
+      shopQty[k] = 1; renderRes(); if (ex.view === 'shop') renderShop(); renderRename();
+      toast('兑换成功：' + goods(k).name + ' ×' + r.n + '，消耗 ' + fmt(r.cost) + ' 能量。' + (k === 'rename' ? '点右上角的名字即可使用。' : ''));
+    });
     return true;
   }
 
@@ -5069,15 +5056,15 @@
    *   - 经验是以前的 4 倍：每只每小时 (120 + 等级 × 24) × 4；喝了「经验翻倍橘子汁」期间再 ×2。
    *   - 休息室（背景 spa_lounge）：用能量买东西：经验翻倍橘子汁、泡温泉精灵栏位 +1（价格 3000 起，每次 ×3）。
    * 存档 acc.spa = { u: [精灵编号或 null…], got: { 编号: 累计 }, extra: 已买的栏位, juice: 橘子汁效果到期时间 } */
-  var SPA_BASE = 2, SPA_EXTRA_MAX = 4, SPA_TICK = 2000, SPA_GAP = 30000, SPA_JUICE = { price: 500, min: 30 };
+  var SPA_BASE = 2, SPA_EXTRA_MAX = TX.D.SPA_EXTRA_MAX, SPA_TICK = 2000, SPA_GAP = 30000, SPA_JUICE = TX.D.SPA_JUICE;   // 价格在 js/engine/tx.js
   var SPA = { on: false, t0: 0, last: 0, carry: {}, sess: {}, total: 0 };
   // 温泉音乐：默认 spa；GrassTalk、Memory 在休息室用能量解锁
-  var SPA_BGM = [{ k: 'spa', n: 'Spa', price: 0 }, { k: 'grassTalk', n: 'GrassTalk', price: 10000 }, { k: 'memory', n: 'Memory', price: 15000 }];
+  var SPA_BGM = TX.D.SPA_BGM;
   function spaBgmOwn(k) { return k === 'spa' || !!(acc && acc.spa && acc.spa.bgmOwn && acc.spa.bgmOwn[k]); }
   function spaBgm() { var k = acc && acc.spa && acc.spa.bgm; return k && spaBgmOwn(k) ? k : 'spa'; }
   function spaOpen() { return !!(acc && prog('spa').done); }
   function spaN() { return SPA_BASE + Math.min(SPA_EXTRA_MAX, (acc.spa && acc.spa.extra) || 0); }
-  function spaSlotPrice() { var e = (acc.spa && acc.spa.extra) || 0; return e >= SPA_EXTRA_MAX ? 0 : 3000 * Math.pow(3, e); }
+  function spaSlotPrice() { return TX.spaSlotPrice(acc.spa && acc.spa.extra); }
   function spa() { if (!acc.spa || !Array.isArray(acc.spa.u)) acc.spa = { u: [], got: {} }; var n = spaN(); while (acc.spa.u.length < n) acc.spa.u.push(null); acc.spa.u = acc.spa.u.slice(0, n).map(function (u) { return u != null && mon(u) ? u : null; }); if (!acc.spa.got) acc.spa.got = {}; return acc.spa; }
   function juiceOn() { return !!(acc.spa && acc.spa.juice > Date.now()); }
   function spaRate(m) { return (120 + m.lv * 24) * 4 * (juiceOn() ? 2 : 1); }
@@ -5220,13 +5207,14 @@
     d.addEventListener('click', function (e) {
       var bg = e.target.closest('[data-spabgm]'), bb = e.target.closest('[data-spabgmbuy]');
       if (bg) { acc.spa.bgm = bg.dataset.spabgm; save(); bgmScene(); openSpaRoom(); return; }
-      if (bb) { var X = SPA_BGM.filter(function (x) { return x.k === bb.dataset.spabgmbuy; })[0]; if (!X || (acc.energy || 0) < X.price) return; acc.energy -= X.price; if (!acc.spa.bgmOwn) acc.spa.bgmOwn = {}; acc.spa.bgmOwn[X.k] = 1; acc.spa.bgm = X.k; save(); renderRes(); bgmScene(); toast('解锁了温泉音乐「' + X.n + '」，已经换上。'); openSpaRoom(); return; }
+      if (bb) { var X = SPA_BGM.filter(function (x) { return x.k === bb.dataset.spabgmbuy; })[0]; if (!X || (acc.energy || 0) < X.price) return; txRun('spa', { k: 'bgm', m: X.k }, function () { renderRes(); bgmScene(); toast('解锁了温泉音乐「' + X.n + '」，已经换上。'); if (d.isConnected) openSpaRoom(); }); return; }
       var b = e.target.closest('[data-spabuy]');
       if (b) {
         var k = b.dataset.spabuy;
-        if (k === 'juice') { if ((acc.energy || 0) < SPA_JUICE.price) return; acc.energy -= SPA_JUICE.price; acc.spa.juice = Math.max(Date.now(), acc.spa.juice || 0) + SPA_JUICE.min * 60000; toast('咕嘟咕嘟……接下来温泉经验翻倍！'); }
-        if (k === 'slot') { var pr = spaSlotPrice(); if (!pr || (acc.energy || 0) < pr) return; acc.energy -= pr; acc.spa.extra = (acc.spa.extra || 0) + 1; spa(); toast('温泉扩建好了，现在可以泡 ' + spaN() + ' 只精灵。'); }
-        save(); renderRes(); renderSpa(); openSpaRoom(); return;
+        var after = function () { renderRes(); renderSpa(); if (d.isConnected) openSpaRoom(); };
+        if (k === 'juice') { if ((acc.energy || 0) < SPA_JUICE.price) return; txRun('spa', { k: 'juice' }, function () { toast('咕嘟咕嘟……接下来温泉经验翻倍！'); after(); }); }
+        if (k === 'slot') { var pr = spaSlotPrice(); if (!pr || (acc.energy || 0) < pr) return; txRun('spa', { k: 'slot' }, function () { spa(); save(); toast('温泉扩建好了，现在可以泡 ' + spaN() + ' 只精灵。'); after(); }); }
+        return;
       }
       if (e.target === d || e.target.closest('[data-spax]')) d.remove();
     });
@@ -5500,8 +5488,8 @@
   /* 茶室商店（茶室大厅）
    * auto：7日自律训练装置，装在展示中的精灵身上；每满 1 天自动收回结算经验、再开始下一天，一共 7 天
    * cap：茶室精灵容量 +1，价格依次 2000 / 5000 / 10000 / 20000 能量，最多 4 次 */
-  var AUTO_DAYS = 7, DAY_MS = 24 * 3600 * 1000, CAP_PRICE = [2000, 5000, 10000, 20000];
-  var TEA_SHOP = { auto: { name: '7日自律训练装置', price: 1500, d: '装在茶室里展示中的一只精灵身上。它每训练满 1 天，就自动收回、结算经验，再开始下一天，一共 7 天。7 天里不用每天回来收精灵。' } };
+  var AUTO_DAYS = 7, DAY_MS = 24 * 3600 * 1000, CAP_PRICE = TX.D.CAP_PRICE;   // 价格在 js/engine/tx.js
+  var TEA_SHOP = { auto: { name: '7日自律训练装置', price: TX.D.AUTO_PRICE, d: '装在茶室里展示中的一只精灵身上。它每训练满 1 天，就自动收回、结算经验，再开始下一天，一共 7 天。7 天里不用每天回来收精灵。' } };
   // 展示经验：每小时 30 + LV × 6 点，按分钟累计，最多累计 24 小时（离线也照样计时）
   function homeRate(m) { return 30 + m.lv * 6; }
   function homeMins(x) { return Math.max(0, Math.min(HOME_CAP_H * 60, Math.floor((Date.now() - x.t) / 60000))); }
@@ -5630,14 +5618,19 @@
     if (k === 'auto') {
       var q = shopQty.tsauto || 1, cost = TEA_SHOP.auto.price * q;
       if (acc.energy < cost) return;
-      acc.energy -= cost; acc.items.auto = (acc.items.auto || 0) + q; shopQty.tsauto = 1; save(); renderRes(); renderTeaShop();
-      toast('兑换成功：7日自律训练装置 ×' + q + '，消耗 ' + fmt(cost) + ' 能量。去「我的房间」给展示中的精灵装上。'); return;
+      txRun('tea', { k: 'auto', n: q }, function (r) {
+        shopQty.tsauto = 1; renderRes(); if (ex.view === 'teashop') renderTeaShop();
+        toast('兑换成功：7日自律训练装置 ×' + r.n + '，消耗 ' + fmt(r.cost) + ' 能量。去「我的房间」给展示中的精灵装上。');
+      });
+      return;
     }
     if (k === 'cap') {
       var H = home(), n = Math.min(4, H.cap || 0), price = CAP_PRICE[n];
       if (!price || acc.energy < price) return;
-      acc.energy -= price; H.cap = n + 1; save(); renderRes(); renderTeaShop();
-      toast('茶室扩容成功！现在可以同时展示 ' + homeMax() + ' 只精灵。');
+      txRun('tea', { k: 'cap' }, function () {
+        renderRes(); if (ex.view === 'teashop') renderTeaShop();
+        toast('茶室扩容成功！现在可以同时展示 ' + homeMax() + ' 只精灵。');
+      });
     }
   }
   // 大厅：从这里进入自己和朋友们的房间

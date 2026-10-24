@@ -21,7 +21,7 @@
   function setToken(t, remember) { st.token = t; st.remember = remember; if (remember) { lsSet(TOK, t); ssDel(TOK); } else { ssSet(TOK, t); lsDel(TOK); } }
   function clearToken() { st.token = null; lsDel(TOK); ssDel(TOK); }
   var $ = function (id) { return document.getElementById(id); };
-  var st = { user: null, token: null, remember: true, rev: 0, applying: false, pushing: false, changeNo: 0, timer: null, retry: 0, scripts: [], status: '' };
+  var st = { user: null, token: null, remember: true, rev: 0, applying: false, pushing: false, changeNo: 0, timer: null, retry: 0, scripts: [], status: '', ver: null, txing: false, txq: false, updShown: false };
 
   function lsGet(k) { try { return LS.getItem(k); } catch (e) { return null; } }
   function lsSet(k, v) { try { LS.setItem(k, v); } catch (e) {} }
@@ -79,6 +79,7 @@
   function schedule(ms) { clearTimeout(st.timer); st.timer = setTimeout(push, ms); }
   function push(force) {
     if (!st.user || st.pushing) return;
+    if (st.txing) { schedule(300); return; }   // 正在结算交易：等它结束再传，免得版本号对不上
     if (lsGet(DIRTY) !== '1' && !force) return;
     st.pushing = true; setStatus('saving');
     var no = st.changeNo;
@@ -310,7 +311,7 @@
       else showLogin('连不上服务器，请检查网络后刷新页面。', start);
     });
   }
-  function start() { watchStorage(); loadGame(); }
+  function start() { watchStorage(); watchVersion(); loadGame(); }
 
   // 等本机还没上传的进度传完（最多等 5 秒）。发起切磋前用，保证服务器拿到的是最新的配队
   function flush() {
@@ -323,5 +324,57 @@
       }, 200);
     });
   }
-  window.CLOUD = { boot: boot, user: function () { return st.user; }, token: function () { return st.token; }, api: api, flush: flush };
+  // 等正在进行的上传结束（最多等 8 秒）
+  function idle() {
+    return new Promise(function (done) {
+      if (!st.pushing) return done();
+      var t0 = Date.now(), iv = setInterval(function () { if (!st.pushing || Date.now() - t0 > 8000) { clearInterval(iv); done(); } }, 100);
+    });
+  }
+  /* ---------- 交易（2026-10-24）：商城、代币商店、抽奖等交给服务器结算，规则在 js/engine/tx.js ----------
+   * 先把本机还没上传的进度传上去（服务器要按最新的余额结算），再发交易。
+   * 返回 { ok, now, rolls } 或 { ok: false, err }；没有登录（本地双击打开）时返回 { local: true }，由本机自己结算。 */
+  function tx(op, args) {
+    if (!st.user) return Promise.resolve({ local: true });
+    if (st.txq) return Promise.resolve({ ok: false, err: '上一笔还在处理，请稍等。' });
+    st.txq = true;
+    function end(r) { st.txing = false; st.txq = false; return r; }
+    return flush().then(idle).then(function () {
+      st.txing = true;
+      return api('POST', '/api/tx', { op: op, args: args || {}, v: st.ver });
+    }).then(function (r) {
+      if (r._code === 200 && r.ok) { st.rev = r.rev; lsSet(REV, String(r.rev)); return end(r); }
+      if (r._code === 409 && r.update) { end(null); showUpdate(true); return { ok: false, err: '' }; }
+      if (r._code === 401) { setStatus('expired'); return end({ ok: false, err: '登录已失效，请先重新登录（点右上角的账号）。' }); }
+      return end({ ok: false, err: r.error || '没能完成，请稍后再试。' });
+    }, function () { return end({ ok: false, err: '连不上服务器，这次没有兑换，请稍后再试。' }); });
+  }
+  // 本机和服务器对不上时：取回服务器上的存档，用它重新加载
+  function resync(msg) {
+    api('GET', '/api/me').then(function (r) { if (r._code === 200) takeCloud(r.save, msg); else location.reload(); }).catch(function () { location.reload(); });
+  }
+  /* ---------- 版本检查：服务器上的游戏更新后，提示开着旧页面的人刷新 ---------- */
+  function checkVersion() {
+    if (!st.user) return;
+    api('GET', '/api/version').then(function (r) {
+      if (!r || !r.v) return;
+      if (!st.ver) st.ver = r.v; else if (r.v !== st.ver) showUpdate(false);
+    }).catch(function () {});
+  }
+  function showUpdate(force) {
+    if ((st.updShown && !force) || document.getElementById('cloud-upd')) return;
+    st.updShown = true;
+    dialog('<span class="step">游戏更新</span><h2 id="cloud-upd">游戏已经更新了</h2><p>服务器上有新版本。刷新页面就能用上新版本，刷新前会先保存你的进度。' + (force ? '刚才的操作没有完成，也没有扣费，刷新后再试一次吧。' : '') + '</p>' +
+      '<div class="ob-foot"><button class="btn" id="upd-later">等会儿再说</button><button class="btn primary" id="upd-now">现在刷新</button></div>',
+      function (d, close) {
+        d.querySelector('#upd-later').addEventListener('click', close);
+        d.querySelector('#upd-now').addEventListener('click', function () { this.disabled = true; this.textContent = '正在保存…'; flush().then(function () { location.reload(); }); });
+      });
+  }
+  function watchVersion() {
+    checkVersion();
+    setInterval(checkVersion, 3 * 60 * 1000);
+    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') checkVersion(); });
+  }
+  window.CLOUD = { boot: boot, user: function () { return st.user; }, token: function () { return st.token; }, api: api, flush: flush, tx: tx, resync: resync };
 })();
