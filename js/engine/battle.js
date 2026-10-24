@@ -376,11 +376,14 @@ function faint(S, evs, j) {
 }
 // S.cs：我方（side 0）这场战斗的表现统计，星球挑战的星级要求用（2026-10-17）
 function CS(S) { return S.cs || (S.cs = { crit: 0, st: {}, up6: 0, down6: 0, heal: 0, maxHit: 0, oneShot: 0, dotKO: 0, items: 0, sw: 0 }); }
+// 伤害数字的来源（2026-10-24）：异常状态的持续伤害显示状态名，其他非技能直击的伤害显示「固伤」
+var DOT_KINDS = ['寄生', '溺水', '流血', '中毒', '烧伤', '冻伤', '凋零之蚀'];
+function dotKind(why) { for (var i = 0; i < DOT_KINDS.length; i++) if (why && why.indexOf(DOT_KINDS[i]) >= 0 && why.indexOf('额外吸取') < 0) return DOT_KINDS[i]; return 'fixed'; }
 function loseHp(S, evs, j, amt, why) {
   var t = act(S, j); if (t.fainted || amt <= 0) return 0;
   if (t.id === 'dummy' && !t.breakable) { amt = Math.floor(amt); recordDummy(S, amt, why ? (S.curMove && why.indexOf('混沌水域') < 0 && why.indexOf('额外吸取') < 0 ? S.curMove : dotLabel(why)) : null); E(S, evs, 'hit', { side: j, amount: amt }); if (why) log(S, evs, why + '（' + amt + '）'); return amt; }
   amt = Math.min(t.hp, Math.floor(amt)); t.hp -= amt;
-  E(S, evs, 'hit', { side: j, amount: amt });
+  E(S, evs, 'hit', { side: j, amount: amt, kind: dotKind(why) });
   if (why) log(S, evs, why);
   if (t.boss && t.boss.rebirth && !t.boss.reborn && t.hp < 2500) { rebirthBarren(S, evs, j, t); return amt; }
   if (t.hp <= 0 && why) hqDot(S, evs, t, why);
@@ -407,7 +410,7 @@ function applyDamage(S, evs, j, amount, src, o) {
   var shown = amt;   // 2026-10-19：伤害溢出时界面和日志仍显示完整伤害（实际扣血不超过剩余体力）
   amt = Math.min(t.hp, amt); t.hp -= amt; S.lastShown = shown;
   if (amt > 0 && t.st['睡眠'] > 0 && src != null) { delete t.st['睡眠']; log(S, evs, nm(t) + '被打醒了'); }
-  E(S, evs, 'hit', { side: j, amount: shown, crit: o.crit, eff: o.eff });
+  E(S, evs, 'hit', { side: j, amount: shown, crit: o.crit, eff: o.eff, kind: o.eff === undefined && !o.crit ? 'fixed' : undefined });
   if (t.boss && t.boss.thorn && src != null && src !== j && amt > 0 && !act(S, src).fainted) { var th = Math.max(1, Math.floor(amt * 0.15)); loseHp(S, evs, src, th, nm(t) + '的「荆棘」反弹了 ' + th + ' 点伤害'); }
   if (excess > 0) {
     log(S, evs, nm(t) + '的龙之逆鳞把 ' + excess + ' 点伤害反馈给了对方！', 'fxl');
@@ -733,7 +736,7 @@ function pvpReplace(S, picks) {
 }
 
 function cantAct(S, evs, me) {
-  for (var k in CANT_ACT) if (me.st[k] > 0) { log(S, evs, nm(me) + CANT_ACT[k] + '！', 'bad'); return true; }
+  for (var k in CANT_ACT) if (me.st[k] > 0) { E(S, evs, 'cant', { side: S.sides[0].team.indexOf(me) >= 0 ? 0 : 1, st: k }); log(S, evs, nm(me) + CANT_ACT[k] + '！', 'bad'); return true; }
   return false;
 }
 
