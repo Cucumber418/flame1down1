@@ -4632,7 +4632,7 @@
     ['flora', 'FloraBackground', '芙罗拉星'], ['floraGrass', 'Flora1', '芙罗拉星 · 草甸'], ['floraForest', 'Flora2', '芙罗拉星 · 丛林'], ['floraFallen', 'Flora3 · The Great Cover', '瘴气化之后的芙罗拉星'],
     ['grassTalk', 'Grass Talk', '剧情'], ['memory', 'Memory', '剧情'], ['saver', 'Saver', '剧情'], ['disCommunication', 'Dis-communication', '瘴气化之后的野外对战'], ['beforeEnd', 'before the end', '？'],
     ['spa', '温泉', '温泉疗养'], ['kb', '坎伯兰星', '坎伯兰星'], ['kbSurface', '坎伯兰星 · 水面', '坎伯兰星水面'], ['kbShallow', '坎伯兰星 · 浅海', '坎伯兰星浅海'], ['kbDeep', 'Cumberland Deeps', '坎伯兰星 · 深海'], ['temple', '古代神殿', '坎伯兰星 · 古代神殿'], ['vitalVoyage', 'Vital Voyage', '？'],
-    ['floraLab', 'Flora Lab', '盐碱地 · 地下实验室'], ['pompeiiCity', 'Pompeii City', '？'], ['mingTheme', 'Ming Theme', '明明教官的试炼'], ['mingBattle1', 'Ming Battle 1', '明明教官的试炼 · 关卡'], ['mingBattle2', 'Ming Battle 2', '？'], ['mingFinal1', 'Ming Final Battle 1', '明明教官的试炼 · 第三只精灵'], ['mingFinal2', 'Ming Final Battle 2', '？']
+    ['floraLab', 'Flora Lab', '盐碱地 · 地下实验室'], ['pompeiiCity', 'Pompeii City', '？'], ['mingTheme', 'Ming Theme', '明明教官的试炼'], ['mingBattle1', 'Ming Battle 1', '明明教官的试炼 · 关卡'], ['mingBattle2', 'Ming Battle 2', '明明教官的试炼 · 高难 / 最终试炼'], ['mingFinal1', 'Ming Final Battle 1', '明明教官的试炼 · 通常 · 第三只精灵'], ['mingFinal2', 'Ming Final Battle 2', '明明教官的试炼 · 高难 / 最终试炼 · 第三只精灵']
   ];
   var MUSIC_ALIAS = { disComScene: 'disCommunication', faceEnemyScene: 'faceEnemy' };
   window.HSHEARD = function (k) {
@@ -4865,8 +4865,8 @@
   var MM_TEAM = { 水: ['pede', 'squid', 'gorgon'], 火: ['firemouse', 'shroom', 'hephaestus'], 草: ['mush', 'leaf', 'kaleo'], 电: ['faraday', 'leigong', 'faraday'], 冰: ['frost', 'wild', 'frost'] };
   var MM_TEAM_HARD = { 草: ['mush', 'leaf', 'wind'] };
   var MM_DIFF = [
-    { n: '通常', lv: [40, 45, 50], tok: [10, 15], first: { tok: 30, exp: 20000 } },
-    { n: '高难', lv: [75, 75, 75], tok: [30, 40], first: { tok: 80, exp: 50000 }, fx: [{ mmGift: 1, pp: 99 }, { mmGift: 1, pp: 99 }, { mmGift: 1, dr: 0.15, pp: 99 }] }
+    { n: '通常', lv: [40, 45, 55], tok: [10, 15], first: { tok: 30, exp: 20000 }, hp3: 1500, fx3: { dr: 0.15, focus: 1, pp: 99 } },   // 2026-10-24：第三只显著加强（hp3 体力、fx3 特性）
+    { n: '高难', lv: [75, 75, 75], tok: [30, 40], first: { tok: 80, exp: 50000 }, fx: [{ mmGift: 1, pp: 99 }, { mmGift: 1, pp: 99 }, { mmGift: 1, dr: 0.25, focus: 1, pp: 99 }], lv3: 80, hp3: 3500 }
   ];
   var MM_FINAL = { tok: [50, 60], first: { tok: 120, exp: 80000 } };
   MATS.mmTok = { name: '明明代币', d: '活动「明明教官的试炼」里通过关卡获得，可以在全息作战场地或航行日志里抽奖：10 个抽一次，100 个十连。' };
@@ -4882,13 +4882,13 @@
   function mmOpenText(i) { var t = MM.start + i * BJ_DAY, d = new Date(t + 8 * 3600e3); return (d.getUTCMonth() + 1) + ' 月 ' + d.getUTCDate() + ' 日开放'; }
   function mmFoes(type, d) {
     var L = MM_DIFF[d], sids = (d && MM_TEAM_HARD[type]) || MM_TEAM[type];
-    return sids.map(function (sid, k) { var o = { sid: sid, lv: L.lv[k], nick: MM_NICK[sid] || null }; if (L.fx) o.boss = JSON.parse(JSON.stringify(L.fx[k])); if (k === 2 && !d) o.boss = { pp: 99 }; return o; });
+    return sids.map(function (sid, k) { var o = { sid: sid, lv: L.lv[k], nick: MM_NICK[sid] || null }; if (L.fx) o.boss = JSON.parse(JSON.stringify(L.fx[k])); if (k === 2) { if (L.fx3) o.boss = JSON.parse(JSON.stringify(L.fx3)); if (L.lv3) o.lv = L.lv3; o.maxhp = L.hp3; } return o; });
   }
   function mmFinalFoes() {
     var pool = []; MM.order.forEach(function (t) { ((MM_TEAM_HARD[t]) || MM_TEAM[t]).forEach(function (sid) { if (pool.indexOf(sid) < 0) pool.push(sid); }); });
     var a = pool[Math.floor(Math.random() * pool.length)], b; do { b = pool[Math.floor(Math.random() * pool.length)]; } while (b === a);
     return [{ sid: a, lv: 75, nick: MM_NICK[a] || null, boss: { mmGift: 1, pp: 99 } }, { sid: b, lv: 75, nick: MM_NICK[b] || null, boss: { mmGift: 1, pp: 99 } },
-      { sid: 'leiming', lv: 80, nick: '明明教官的光霆主', maxhp: 2000, boss: { dr: 0.15, lmBoost: 1, pp: 99 } }];
+      { sid: 'leiming', lv: 85, nick: '明明教官的光霆主', maxhp: 4500, boss: { dr: 0.25, lmBoost: 1, focus: 1, pp: 99 } }];   // 2026-10-24：加强
   }
   function mmFoeSpec(x) {
     var mv = defaultMoves(x.sid, x.lv), o = { id: x.sid, lv: x.lv, moves: mv, nick: x.nick || form({ sid: x.sid, lv: x.lv }).name, img: SPRITES[x.sid], maxhp: x.maxhp, boss: x.boss };
@@ -4902,7 +4902,8 @@
     var fin = key === 'final', foes = fin ? mmFinalFoes() : mmFoes(key, d), a = foes.map(mmFoeSpec);
     stopTimers(); ex.fighting = true; document.body.classList.add('story-fight'); syncBattle();
     $('pg-explore').hidden = true; $('pg-arena').hidden = false;
-    window.HSBATTLE.start({ p: team.map(storyMon), a: a, foe: '明明教官的试炼', diff: fin ? '明明的最终试炼' : key + '系关卡 · ' + MM_DIFF[d].n, bgm: 'mingBattle1', bgmAt: { 2: 'mingFinal1' }, items: invCopy(), onItem: useInv, bg: BG.bridge_p, back: '全息作战场地',
+    window.HSBATTLE.start({ p: team.map(storyMon), a: a, foe: '明明教官的试炼', diff: fin ? '明明的最终试炼' : key + '系关卡 · ' + MM_DIFF[d].n, bgm: fin || d === 1 ? 'mingBattle2' : 'mingBattle1', bgmAt: { 2: fin || d === 1 ? 'mingFinal2' : 'mingFinal1' },   // 高难和最终试炼：MingBattle2 → 第三只 MingFinalBattle2
+      items: invCopy(), onItem: useInv, bg: BG.bridge_p, back: '全息作战场地',
       onEnd: function (res, seen, downs) {
         var msg = [], R = mmRec(), ck = fin ? 'final' : key + ':' + d;
         dailyHit('pve');
