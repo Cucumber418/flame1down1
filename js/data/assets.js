@@ -189,6 +189,7 @@ var BG = {
 var CHARS = {
   "ship_icon": "images/characters/ship_icon.webp",
   "zwg": "images/characters/zwg.webp",
+  "mm": "images/characters/mm.webp",   // 明明教官（暂定立绘）
   "threego": "images/characters/threego.webp",
   "vanber": "images/characters/vanber.webp",
   "vanber_sweat": "images/characters/vanber_sweat.webp",

@@ -1411,7 +1411,7 @@
     b: { name: function () { return 'Bttp'; }, color: '#7a5a7e', tall: 1.0, img: 'bttp' },
     h: { name: function () { return 'Dr.黄'; }, color: '#a8841f', tall: 1.0, img: 'drh' },
     ai: { name: function () { return '舰载广播'; }, color: '#2a7bd8' },
-    mm: { name: function () { return '明明教官'; }, color: '#4a6a8a', tall: 1.0 },
+    mm: { name: function () { return '明明教官'; }, color: '#4a6a8a', tall: 1.0, img: 'mm' },   // 2026-10-24：暂定立绘
     tg: { name: function () { return '泰戈尔'; }, color: '#b0702a', tall: 0.92, spr: 'tagore' },
     kr: { name: function () { return '卡罗'; }, color: '#4f9159', tall: 0.55, spr: 'wind', sprLv: 3 },     // 戴上精灵翻译器之后能听懂的卡罗
     kl: { name: function () { return '卡莱'; }, color: '#3f6d3a', tall: 0.7, spr: 'kaleo', sprLv: 15 },
