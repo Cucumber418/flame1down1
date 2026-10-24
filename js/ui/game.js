@@ -4222,7 +4222,7 @@
         { diff: '简单', lv: 40, hp: 1000, boss: { dr: 0.15, pp: 99 }, bgm: 'boss3', open: function () { return planetOpen(planetOf('kamble')); }, lockText: '开放坎伯兰星后开放', reward: { items: { e_odo: 1 } } },
         { diff: '普通', lv: 65, hp: 3000, boss: { dr: 0.15, ambush: 200, pp: 99 }, bgm: 'boss3', open: function () { return bossWon('odo', 0); }, lockText: '击败简单难度后开放', reward: { items: { odoFin: 40 } } },
         { diff: '困难', lv: 70, hp: 2500, boss: { dr: 0.15, ambush: 400, odoRate: 1, odoWill: 1, rainbow: 1, odoSwap: 1, pp: 99 }, bgm: 'boss3', open: function () { return bossWon('odo', 1); }, lockText: '击败普通难度后开放', reward: { exp: 50000, items: { odoFin: 80 } },
-          hpText: '歼灭形态 2500 · 护阵形态 5000 · 虹霓暴走 4000',
+          hpText: '歼灭形态 2500 · 护阵形态 5000 · 虹霓暴走 4000', bgmAt: { 2: 'vitalVoyage' },
           team: [
             { nick: '奥多亚克 · 歼灭形态', odoForm: 'atk', maxhp: 2500, boss: { dr: 0.15, ambush: 400, odoRate: 1, odoSwap: 1, orderRepl: 1, pp: 99 } },
             { nick: '奥多亚克 · 护阵形态', odoForm: 'def', maxhp: 5000, boss: { dr: 0.15, ambush: 400, odoWill: 1, odoSwap: 1, orderRepl: 1, pp: 99 } },
@@ -4497,7 +4497,7 @@
     var rec = bossRec(k, weekly ? 'w' : d); rec.tries++; save();
     stopTimers(); ex.fighting = true; document.body.classList.add('story-fight'); syncBattle();
     $('pg-explore').hidden = true; $('pg-arena').hidden = false;
-    window.HSBATTLE.start({ p: p, a: a, foe: 'BOSS', diff: weekly ? '每周挑战' : L.diff + '难度', bgm: L.bgm, items: invCopy(), onItem: useInv, bg: BG[floraBg(B.bg)], back: weekly ? '每周挑战' : bossWhere(B),
+    window.HSBATTLE.start({ p: p, a: a, foe: 'BOSS', diff: weekly ? '每周挑战' : L.diff + '难度', bgm: L.bgm, bgmAt: L.bgmAt, items: invCopy(), onItem: useInv, bg: BG[floraBg(B.bg)], back: weekly ? '每周挑战' : bossWhere(B),
       onEnd: function (res, seen, downs) {
         var msg = [], first = false, wasWeekly = weeklyOpen();
         dailyHit('boss'); dailyHit('pve');
@@ -4597,7 +4597,7 @@
     ['boss', 'Boss', '简单难度BOSS战'], ['boss2', 'Boss2', '普通难度BOSS战'], ['boss3', 'Boss3', '困难难度BOSS战与每周挑战'], ['tigerFinal', '东北的往事', '？'],
     ['flora', 'FloraBackground', '芙罗拉星'], ['floraGrass', 'Flora1', '芙罗拉星 · 草甸'], ['floraForest', 'Flora2', '芙罗拉星 · 丛林'], ['floraFallen', 'Flora3 · The Great Cover', '瘴气化之后的芙罗拉星'],
     ['grassTalk', 'Grass Talk', '剧情'], ['memory', 'Memory', '剧情'], ['saver', 'Saver', '剧情'], ['disCommunication', 'Dis-communication', '瘴气化之后的野外对战'], ['beforeEnd', 'before the end', '？'],
-    ['spa', '温泉', '温泉疗养'], ['kb', '坎伯兰星', '坎伯兰星'], ['kbSurface', '坎伯兰星 · 水面', '坎伯兰星水面'], ['kbShallow', '坎伯兰星 · 浅海', '坎伯兰星浅海'], ['temple', '古代神殿', '坎伯兰星深海'],
+    ['spa', '温泉', '温泉疗养'], ['kb', '坎伯兰星', '坎伯兰星'], ['kbSurface', '坎伯兰星 · 水面', '坎伯兰星水面'], ['kbShallow', '坎伯兰星 · 浅海', '坎伯兰星浅海'], ['kbDeep', 'Cumberland Deeps', '坎伯兰星 · 深海'], ['temple', '古代神殿', '坎伯兰星 · 古代神殿'], ['vitalVoyage', 'Vital Voyage', '？'],
     ['floraLab', 'Flora Lab', '盐碱地 · 地下实验室'], ['pompeiiCity', 'Pompeii City', '？'], ['mingTheme', 'Ming Theme', '明明教官的试炼'], ['mingBattle1', 'Ming Battle 1', '明明教官的试炼 · 关卡'], ['mingBattle2', 'Ming Battle 2', '？'], ['mingFinal1', 'Ming Final Battle 1', '明明教官的试炼 · 第三只精灵'], ['mingFinal2', 'Ming Final Battle 2', '？']
   ];
   var MUSIC_ALIAS = { disComScene: 'disCommunication', faceEnemyScene: 'faceEnemy' };
@@ -4763,7 +4763,7 @@
     var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'wiki-dlg';
     var draw = function (t) {
       var L = t ? list.filter(function (s) { return s.types.indexOf(t) >= 0; }) : list;
-      d.querySelector('#wk-body').innerHTML = '<p class="hint">共 ' + L.length + ' 系精灵，按图鉴编号排列。</p>' + L.map(wikiCard).join('');
+      d.querySelector('#wk-body').innerHTML = '<p class="hint">共 ' + L.length + ' 系精灵，按图鉴编号排列。</p>' + L.map(function (s) { try { return wikiCard(s); } catch (err) { return '<article class="wk-card"><h3>' + esc(s.name) + '</h3><p class="hint">这一条资料读取出错：' + esc(err && err.message || String(err)) + '</p></article>'; } }).join('');
       d.querySelectorAll('[data-wkt]').forEach(function (b) { b.classList.toggle('on', b.dataset.wkt === (t || '')); });
     };
     d.innerHTML = '<div class="soc-box wiki-box" role="dialog" aria-modal="true" aria-label="Wiki"><span class="tape l"></span><span class="tape r"></span><div class="wk-top"><h2>Wiki · 精灵资料</h2><button type="button" class="btn ghost" data-wkx="1">关闭</button></div>' +
@@ -4774,7 +4774,11 @@
       var b = e.target.closest('[data-wkt]'); if (b) draw(b.dataset.wkt || '');
     });
   }
-  if ($('wiki-btn')) $('wiki-btn').addEventListener('click', function () { if (acc) openWiki(); });
+  // 2026-10-24：改成在 document 上监听（按钮被重新渲染也不会失效），出错时把原因提示出来
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest || !e.target.closest('#wiki-btn')) return;
+    try { openWiki(); } catch (err) { var o = $('wiki-dlg'); if (o) o.remove(); toast('Wiki 打开失败：' + (err && err.message || err)); try { console.error(err); } catch (e2) {} }
+  });
   /* ---------- 活动 · 明明教官的试炼（2026-10-24，首个大型活动） ----------
    * 读完第十一段 → 活动任务「明明教官的试炼」（古城防卫部）→ 空间站「全息作战场地」开放（限时）。
    * 关卡按日期每天开放一个属性：水、火、草、电、冰；五个都开放后的第二天开放「明明的最终试炼」。
@@ -6457,9 +6461,10 @@
         return rid_ === 'grass' ? 'floraGrass' : rid_ === 'forest' ? 'floraForest' : 'flora';
       }
       if (ex.view === 'boss' && BOSSES[ex.boss] && BOSSES[ex.boss].planet === 'flora') return 'flora';
+      if (ex.view === 'boss' && BOSSES[ex.boss] && BOSSES[ex.boss].region === 'kb_deep') return 'kbDeep';   // 奥多亚克的BOSS页
       if (ex.view === 'field' && fields[ex.region] && fields[ex.region].scenes) { var sc_ = fields[ex.region].scenes[fields[ex.region].scene]; if (sc_ && sc_.bgKey === 'kb_temple') return 'temple'; }   // 坎伯兰星 · 古代神殿
       if (ex.view === 'sites' && ex.planet === 'kamble') return 'kb';   // 坎伯兰星界面
-      if (ex.view === 'field' && regionById(ex.region) && regionById(ex.region).planet === 'kamble') return ex.region === 'kb_sea' ? 'kbShallow' : ex.region === 'kb_surf' ? 'kbSurface' : 'kb';   // 2026-10-19：水面换成 Cumberland1Surface
+      if (ex.view === 'field' && regionById(ex.region) && regionById(ex.region).planet === 'kamble') return ex.region === 'kb_sea' ? 'kbShallow' : ex.region === 'kb_surf' ? 'kbSurface' : ex.region === 'kb_deep' ? 'kbDeep' : 'kb';   // 2026-10-19：水面换成 Cumberland1Surface
     }
     return 'ui';
   }
