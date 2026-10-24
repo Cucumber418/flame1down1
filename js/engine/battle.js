@@ -880,7 +880,8 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   if (mv.drain && total > 0) { var dh = heal(S, evs, i, total * mv.drain); hqR(me).h[mv.name] = (hqR(me).h[mv.name] || 0) + dh; }
   if (mv.struggle && total > 0) loseHp(S, evs, i, Math.max(1, Math.floor(total / 4)), nm(me) + '受到了反作用伤害');
   if (me.boss && me.boss.odoRate && firstMover && total > 0 && !foe.fainted && foe.hp > 0) { RV(me, 'odoRate'); log(S, evs, nm(me) + '的「歼灭速率」：抢先出手，追加 ' + Math.floor(foe.maxhp / 4) + ' 点固定伤害', 'fxl'); applyDamage(S, evs, j, Math.floor(foe.maxhp / 4), i, {}); if (foe.hp <= 0 && !foe.fainted) faint(S, evs, j); }
-  if (mv.selfTiredHit && !me.fainted) { me.st['疲惫'] = mv.selfTiredHit + 1; E(S, evs, 'stage', { side: i }); log(S, evs, nm(me) + '耗尽了力气，陷入「疲惫」状态（' + mv.selfTiredHit + '回合）', 'bad'); }   // 全弹发射
+  if (mv.selfTiredHit && !me.fainted && me.boss && (me.boss.immortal || me.boss.noStatus)) { RV(me, 'immortal'); RV(me, 'noStatus'); log(S, evs, nm(me) + '免疫异常状态，没有陷入「疲惫」', 'fxl'); }   // 不朽 / 免疫异常：自己技能带来的疲惫也免疫
+  else if (mv.selfTiredHit && !me.fainted) { me.st['疲惫'] = mv.selfTiredHit + 1; E(S, evs, 'stage', { side: i }); log(S, evs, nm(me) + '耗尽了力气，陷入「疲惫」状态（' + mv.selfTiredHit + '回合）', 'bad'); }   // 全弹发射
   if (mv.recoil && total > 0 && !me.fainted) loseHp(S, evs, i, Math.max(1, Math.floor(total * mv.recoil)), nm(me) + '受到了反弹伤害');   // 烈焰冲锋
   if (total > 0 && me.tm.induct > 0) { log(S, evs, '电磁感应生效', 'fxl'); changeStages(S, evs, i, { spa: 1 }); }
   me.fx.hqRaw = raw;   // 这一招算出来的伤害（不按对方剩余体力截断），隐藏技能「淬命之焰」的领悟条件用
@@ -1018,7 +1019,8 @@ function doStatus(S, evs, i, mv) {
   if (sst) changeStages(S, evs, i, sst);
   if (mv.heal) heal(S, evs, i, me.maxhp * (mv.lowHeal && me.hp < me.maxhp / 4 ? mv.lowHeal : mv.heal));
   if (mv.healLost) heal(S, evs, i, (me.maxhp - me.hp) * mv.healLost);   // 按已损失体力回复（生命遁迹）
-  if (mv.selfTired && !me.fainted) { me.st['疲惫'] = mv.selfTired + 1; E(S, evs, 'stage', { side: i }); log(S, evs, nm(me) + '耗尽了力气，陷入「疲惫」状态（' + mv.selfTired + '回合）', 'bad'); }   // 余烬涅槃：代价是自己疲惫（本回合结束时会先减 1，所以多记 1）
+  if (mv.selfTired && !me.fainted && me.boss && (me.boss.immortal || me.boss.noStatus)) { RV(me, 'immortal'); RV(me, 'noStatus'); log(S, evs, nm(me) + '免疫异常状态，没有陷入「疲惫」', 'fxl'); }
+  else if (mv.selfTired && !me.fainted) { me.st['疲惫'] = mv.selfTired + 1; E(S, evs, 'stage', { side: i }); log(S, evs, nm(me) + '耗尽了力气，陷入「疲惫」状态（' + mv.selfTired + '回合）', 'bad'); }   // 余烬涅槃：代价是自己疲惫（本回合结束时会先减 1，所以多记 1）
   if (mv.clearSelfDown) {
     var any = false; STG.forEach(function (k) { if (me.stages[k] < 0) { me.stages[k] = 0; any = true; } });
     E(S, evs, 'stage', { side: i });
