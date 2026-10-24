@@ -4980,6 +4980,7 @@
       spent += 10; got.push((z.big ? '★ ' : '') + mmPrizeText(z));
     }
     acc.items.mmTok = (acc.items.mmTok || 0) - spent; save(); renderRes();
+    if (IG.acc === acc) IG.snap = igSnap();   // 抽奖有自己的结果面板，不再弹「获得物品」
     if (got.length) mmShowDraw(got, stop); else if (stop) toast(stop);
     if (ex.view === 'mmGacha') renderMmGacha();
   }
