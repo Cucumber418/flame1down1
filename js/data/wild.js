@@ -53,12 +53,15 @@ var WILD_POOLS = {
   ]
 };
 // 只在某个场景出现的精灵（按背景键）：和所在区域的野外表合在一起抽。w 按区域表总权重 100 来算，11.1 ≈ 这个场景里 10%
+WILD_POOLS.fl_record = WILD_POOLS.forest.concat(WILD_POOLS.grass).filter(function (w) { return !w.rare; });
 var WILD_SCENE = {
   pp_core: [{ sid: 'firemouse', lv: [14, 18], w: 11.1, rate: 0.5, tag: '中等', shiny: 0.03 }]   // 火月鼠：只在饮火城 · 炙热核心
 };
 var WILD_REGIONS = [
   { id: 'forest', planet: 'flora', name: '丛林', en: 'Forest', d: '高大的树木遮住了天空，林下潮湿又安静。玛西很常见，偶尔能撞见稀有的卡莱。', pool: 'forest', bgs: ['fl_path', 'fl_beech', 'fl_sun', 'fl_maple'] },
   { id: 'grass', planet: 'flora', name: '草甸', en: 'Grassland', d: '一望无际的草甸，风吹过时像绿色的海浪。卡罗成群地在这里奔跑。', pool: 'grass', bgs: ['fl_meadow', 'fl_lake', 'fl_horizon'] },
+  // 2026-10-24：芙罗拉星恢复以后，用来做「瘴气驱逐战」的地方：两张瘴气化的地图（草甸、丛林），里面依然是瘴气精灵
+  { id: 'fl_record', planet: 'flora', name: '瘴气污染的记录', en: 'Miasma Record', record: true, d: '芙罗拉星被瘴气污染时的记录。草甸和丛林依旧缠满深紫色的脉络，里面的瘴气精灵可以继续用来进行瘴气驱逐战。', pool: 'fl_record', bgs: ['fl_meadow_mia', 'fl_beech_mia'] },
   { id: 'salt', planet: 'flora', name: '盐碱地', en: 'Saline-alkali Land', d: '寸草不生的白色荒原，四处飘着灰紫色的瘴气。着陆舱就是在这里迫降的。瘴气的源头——草系BOSS「荒芜」就潜伏在地底。这里没有野生精灵。', boss: '荒芜', bgs: ['fl_salt'] }
 ,
   { id: 'kb_surf', planet: 'kamble', name: '水面', en: 'Surface', d: '码头的灯照着翻涌的海浪，远处的冥岛不时喷出高高的水柱。这里的精灵最温和。传说在冥岛吹响号角，会引来唱歌的小精灵。', pool: 'kb_surf', bgs: ['kb_dock', 'kb_isle'] },

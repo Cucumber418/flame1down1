@@ -68,7 +68,8 @@ var HP_MULT = 1.75;   // 体力在原公式基础上 ×1.75
 function calcStat(b, k, lv, iv) { lv = lv || LV; var v = Math.floor((2 * b + (iv == null ? 31 : iv)) * lv / 100); return k === 'hp' ? Math.floor((v + lv + 10) * HP_MULT) : v + 5; }
 function blankStages() { var o = {}; STG.forEach(function (k) { o[k] = 0; }); return o; }
 function sp(m) { return m.id === 'dummy' ? (m.dummySpec || DUMMY) : SPMAP[m.id]; }
-function ability(m) { return sp(m).ability ? sp(m).ability.n : '无'; }
+function abilObj(m) { return m.abil || sp(m).ability; }   // 剧情里可以临时换特性（m.abil，如第十一段叶子喵的「脚伤」）
+function ability(m) { var a = abilObj(m); return a ? a.n : '无'; }
 // 纹章：账号里获得过某类精灵的纹章后，带进战斗的这类精灵会带上 emblem（见 EMBLEMS）
 var EMBLEMS = {
   tagore: { m: '普通拳', n: '普通拳纹章', d: '每场战斗第一次使用普通拳时，不会降低自身命中，并解除自身的能力下降和异常状态' },
@@ -109,6 +110,7 @@ function mkFrom(t) {
   if (t.maxhp) m.maxhp = m.hp = t.maxhp;          // BOSS：固定体力
   // breakable：剧情里可以被打破的木桩（如第八段的炸弹），体力不再无限，打到 0 就倒下；ability 可以换成剧情里的说明
   if (t.id === 'dummy' && t.breakable) { m.breakable = true; m.dummySpec = Object.assign({}, DUMMY, { name: t.nick || DUMMY.name, ability: t.ability || DUMMY.ability }); }
+  if (t.ability && t.id !== 'dummy') m.abil = t.ability;
   if (t.lvq) m.lvq = 1;                         // 星球挑战：等级显示为「LV.??」
   if (t.onlyHit) m.onlyHit = t.onlyHit;           // BOSS：只有这些属性的技能能命中它
   if (t.shiny) m.shiny = t.shiny === 2 ? 2 : true;   // 异色精灵（只是配色不同，能力一样）
@@ -116,6 +118,7 @@ function mkFrom(t) {
   // BOSS的特殊能力（见 BOSS_FX）；pp：BOSS技能的 PP（长时间战斗不会用光）
   if (t.boss) { m.boss = JSON.parse(JSON.stringify(t.boss)); if (m.boss.pp) m.moves.forEach(function (x) { if (M[x.n].custom !== 'annihilate') x.pp = x.max = m.boss.pp; }); }   // 灭却除外，仍按原本的 PP
   if (m.boss) m.boss.atk0 = m.stats.atk;
+  if (m.boss && m.boss.mmGift) { m.stats.atk = Math.floor(m.stats.atk * 1.5); m.stats.spa = Math.floor(m.stats.spa * 1.5); }   // 「明明之赐」：双攻 +50%
   if (m.boss && m.boss.feud) m.stats.atk = Math.floor(m.stats.atk * 1.3);   // 「东北的纷争」：物攻永久 +30%（直接算进能力值，不是能力等级，不会被消除）
   if (m.boss && m.boss.erode) { var em = erodeMult(m); m.stats.atk = Math.floor(m.stats.atk * em); m.stats.spa = Math.floor(m.stats.spa * em); }   // 「深度侵蚀」：物攻、特攻永久提升（erode: 1 或 true 为 +100%；写数字 2 表示 +200%）
   if (t.u != null) { m.u = t.u; m.hl = t.hl || []; }   // 账号里的精灵：可以在战斗中领悟隐藏技能
@@ -208,6 +211,7 @@ function abilityLive(m, foe) {
   var lowSelf = m.hp <= m.maxhp / 3;
   switch (ab) {
     case '旅行': return '每次被替换上场时，提升1级速度（首发上场不触发）';
+    case '脚伤': return '脚底被瘴气浸透，陷入永久的流血状态，无法被解除';
     case '形态重构': return '切换形态时恢复 100 体力' + (m.perm && m.perm.odoForm ? '（当前：' + (m.perm.odoForm === 'atk' ? '歼灭形态' : '护阵形态') + '）' : '（当前：稳态）');
     case '雷明': return '使用电系技能后，3回合内每回合末对对方造成25固定伤害' + (m.tm.lmE > 0 ? '（生效中，剩 ' + m.tm.lmE + ' 回合）' : '') + '；使用光系技能后，3回合内每回合末恢复20体力' + (m.tm.lmL > 0 ? '（生效中，剩 ' + m.tm.lmL + ' 回合）' : '') + '。各自不能叠加，但可以同时生效';
     case '饭香': return '每回合结束时 20% 概率吃一口米饭' + (m.perm.rice ? '（本场已吃 ' + m.perm.rice + ' 口）' : '');
@@ -242,11 +246,11 @@ function abilityLive(m, foe) {
     case '爆燃': return m.fx.charge ? '生效中：已蓄力 ' + m.fx.charge + ' / 3 层，下一次攻击伤害 +' + m.fx.charge * 10 + '%' : '未生效：不进行主动攻击的回合结束时蓄力 1 层（每层下一次攻击伤害 +10%，最多 3 层）';
     case '幻叶': return lowSelf ? '生效中：体力已低于1/3，受到伤害 -15%' : '未生效：体力降到 ' + Math.floor(m.maxhp / 3) + ' 以下时，受到伤害 -15%';
   }
-  return sp(m).ability ? sp(m).ability.d : '';
+  return abilObj(m) ? abilObj(m).d : '';
 }
 function chipsOf(m, foe) {
   var c = [];
-  var abo = sp(m).ability;
+  var abo = abilObj(m);
   if (abo && abo.n !== '无') c.push({ t: '特性 · ' + abo.n, k: 'ab' + (/^生效中/.test(abilityLive(m, foe)) ? ' on' : ''), d: abilityLive(m, foe), h: abo.n + ' · 当前效果' });
   STG.forEach(function (k) { var v = m.stages[k]; if (v) c.push({ t: STG_NAME[k] + (v > 0 ? '+' : '') + v, k: v > 0 ? 'up' : 'down', h: STG_NAME[k] + (v > 0 ? ' 提升' : ' 下降'), d: stageText(k, v) }); });
   for (var s in m.st) if (m.st[s] > 0) {
@@ -344,7 +348,7 @@ function snap(S) {
     turn: S.turn,
     sides: S.sides.map(function (sd) {
       var m = sd.team[sd.active];
-      var ab = sp(m).ability || { n: '无', d: '图鉴里还没写特性' };
+      var ab = abilObj(m) || { n: '无', d: '图鉴里还没写特性' };
       return { id: m.id, name: m.nick || sp(m).name, img: liveImg(m), types: typesOf(m), lv: m.lv || LV, lvq: !!m.lvq, dummy: m.id === 'dummy' && !m.breakable, ability: { n: ab.n, d: ab.d, extra: ab.extra || '' }, stats: statSheet(m, S.sides[1 - S.sides.indexOf(sd)].team[S.sides[1 - S.sides.indexOf(sd)].active]), hp: m.hp, maxhp: m.maxhp, fainted: m.fainted, chips: chipsOf(m, S.sides[1 - S.sides.indexOf(sd)].team[S.sides[1 - S.sides.indexOf(sd)].active]),
         team: sd.team.map(function (x, k) { return { id: x.id, nick: x.nick || null, fainted: x.fainted, active: k === sd.active, hp: x.hp, maxhp: x.maxhp, seen: !!x.seen }; }) };
     })
@@ -1238,6 +1242,9 @@ var BOSS_FX = [
   { k: 'relive', t: '往日重现', h: '往日重现', d: function () { return '受到攻击时有 50% 的概率，让对方随机陷入烧伤、冻伤、中毒之一（1~3 回合）'; } },
   { k: 'sy', t: '沈阳大街', h: '沈阳大街（场地）', d: function () { return '场地效果：双方都不能使用变化类技能'; } },
   { k: 'ne', t: '来东北试试', h: '来东北试试', d: function () { return '使用普通拳时不会降低自身命中，并解除自身的能力下降状态'; } },
+  { k: 'nourish', t: '养料汲取', h: '养料汲取', d: function () { return '每回合结束时恢复 50 体力'; } },   // 2026-10-24 第十一段 · 实验室里的荒芜
+  { k: 'mmGift', t: '明明之赐', h: '明明之赐', d: function () { return '物攻、特攻提升 50%'; } },   // 明明教官的试炼 · 高难
+  { k: 'lmBoost', t: '雷明尊者', h: '雷明尊者', d: function () { return '自身的特性「雷明」效果增幅 300%（固定伤害 100、回复 80）'; } },   // 明明教官的光霆主
   { k: 'dr', t: '星球聚能', h: '星球聚能', d: function (m) { return '受到的伤害减少 ' + Math.round(m.boss.dr * 100) + '%'; } },
   { k: 'mia', t: '瘴气领域', h: '瘴气领域', d: function () { return '只要它还没倒下，每回合结束时为对手在场的精灵添加 1 层瘴气'; } },
   { k: 'puppet', t: '瘴毒傀儡', h: '瘴毒傀儡', d: function (m) { var cd = puppetCd(m), left = m.boss.last == null ? 0 : Math.max(0, cd - (m.boss.now - m.boss.last));
@@ -1393,6 +1400,7 @@ function endOfTurn(S, evs) {
     var e8 = Math.max(1, Math.floor(m.maxhp / 8)), e10 = Math.max(1, Math.floor(m.maxhp / 10));
     if (m.st['寄生'] > 0) { var got = loseHp(S, evs, i, e10, nm(m) + '被寄生之种吸取了体力'); if (!o.fainted) heal(S, evs, 1 - i, got); }
     if (!m.fainted && m.st['溺水'] > 0) loseHp(S, evs, i, e8, nm(m) + '因溺水受到伤害');
+    if (!m.fainted && ability(m) === '脚伤') m.st['流血'] = 99;   // 第十一段 · 叶子喵的脚伤：永久流血，解不掉
     if (!m.fainted && m.st['流血'] > 0) loseHp(S, evs, i, 60, nm(m) + '因流血受到伤害');
     if (!m.fainted && m.st['中毒'] > 0) { var pz = m.fx.poison || 1; loseHp(S, evs, i, Math.max(1, Math.floor(m.maxhp * pz / 16)), nm(m) + '因中毒受到伤害' + (pz > 1 ? '（' + pz + ' 层）' : '')); }
     if (!m.fainted && m.st['烧伤'] > 0) loseHp(S, evs, i, e8, nm(m) + '因烧伤受到伤害');
@@ -1412,8 +1420,9 @@ function endOfTurn(S, evs) {
       else log(S, evs, '海妖之歌唱完了，但听歌的对手已经不在场上');
     }
     if (!m.fainted && m.tm.tcloud > 0 && !o.fainted && !S.over) { log(S, evs, '闪电云劈向' + nm(o), 'fxl'); S.dotSrc = '闪电云'; applyDamage(S, evs, 1 - i, 100, null, {}); S.dotSrc = null; }
-    if (!m.fainted && m.tm.lmE > 0 && !o.fainted && !S.over) { log(S, evs, nm(m) + '的「雷明」：电光对' + nm(o) + '造成 25 点固定伤害', 'fxl'); S.dotSrc = '雷明'; applyDamage(S, evs, 1 - i, 25, null, {}); S.dotSrc = null; }
-    if (!m.fainted && m.tm.lmL > 0 && m.hp < m.maxhp) heal(S, evs, i, 20);
+    if (!m.fainted && m.tm.lmE > 0 && !o.fainted && !S.over) { var lmk = m.boss && m.boss.lmBoost ? 4 : 1; log(S, evs, nm(m) + '的「雷明」：电光对' + nm(o) + '造成 ' + 25 * lmk + ' 点固定伤害', 'fxl'); S.dotSrc = '雷明'; applyDamage(S, evs, 1 - i, 25 * lmk, null, {}); S.dotSrc = null; }
+    if (!m.fainted && m.tm.lmL > 0 && m.hp < m.maxhp) heal(S, evs, i, 20 * (m.boss && m.boss.lmBoost ? 4 : 1));
+    if (!m.fainted && m.boss && m.boss.nourish && m.hp < m.maxhp && !S.over) { log(S, evs, nm(m) + '的「养料汲取」发动了', 'fxl'); heal(S, evs, i, 50); }
     if (!m.fainted && ability(m) === '饭香' && !S.over && RNG() < 0.2) eatRice(S, evs, i, nm(m) + '的「饭香」发动了，吃了一口米饭');
     if (!m.fainted && ability(m) === '爆燃' && m.fx.atkT !== S.turn && (m.fx.charge || 0) < 3 && !S.over) { m.fx.charge = (m.fx.charge || 0) + 1; E(S, evs, 'stage', { side: i }); log(S, evs, nm(m) + '的「爆燃」蓄力了（' + m.fx.charge + ' / 3），下一次攻击伤害 +' + m.fx.charge * 10 + '%', 'fxl'); }
     if (!m.fainted) m.fx.fieldT = (m.fx.fieldT || 0) + 1;

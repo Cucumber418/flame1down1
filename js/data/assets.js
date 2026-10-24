@@ -167,6 +167,7 @@ var BG = {
   "fl_meadow": "images/backgrounds/fl_meadow.jpg",
   "fl_sun": "images/backgrounds/fl_sun.jpg",
   "fl_salt": "images/backgrounds/fl_salt.jpg",
+  "fl_lab": "images/backgrounds/fl_lab.jpg",
   "fl_village": "images/backgrounds/fl_village.jpg",
   "fl_horizon": "images/backgrounds/fl_horizon.jpg",
   "fl_jungle_corrupt": "images/backgrounds/fl_jungle_corrupt.jpg",

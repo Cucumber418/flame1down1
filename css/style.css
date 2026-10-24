@@ -2515,3 +2515,31 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .wk-items span { display: inline-block; min-width: 128px; font-weight: 700; }
 .wk-items small { display: block; color: #888; margin-left: 128px; }
 @media (max-width: 560px) { .wk-items span { display: block; } .wk-items small { margin-left: 0; } .wk-head { grid-template-columns: 64px minmax(0, 1fr); } .wk-head img { width: 64px; height: 64px; } }
+/* ---------- 第十一段：水系精灵一起喷水（2026-10-24） ---------- */
+.vn-team { position: absolute; left: 0; right: 0; top: 25%; bottom: 0; display: flex; justify-content: center; gap: 4%; pointer-events: none; }
+.vn-team .vn-mon { position: relative; left: auto; transform: none; bottom: auto; }
+.vn-mon.spray::after { content: ''; position: absolute; left: 50%; bottom: 70%; width: 14px; height: 0; margin-left: -7px; border-radius: 7px; background: linear-gradient(to top, rgba(110, 190, 255, .9), rgba(200, 235, 255, .2)); animation: vnSpray 1.4s ease-out infinite; }
+@keyframes vnSpray { 0% { height: 0; opacity: 1; } 60% { height: 180px; opacity: .9; } 100% { height: 220px; opacity: 0; } }
+.vn-fx.water { animation: vnLight 2s ease-out forwards; background: radial-gradient(circle at 50% 80%, rgba(200, 235, 255, .9) 0%, rgba(120, 190, 255, .6) 30%, rgba(80, 150, 230, 0) 70%); }
+/* ---------- 明明教官的试炼（2026-10-24） ---------- */
+.mm-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 10px 0; padding: 10px 14px; border: 1.5px solid var(--ink); border-radius: 12px; background: linear-gradient(100deg, #e4ecfb, var(--paper-2) 70%); }
+.mm-bar b { font-size: 18px; }
+.mm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; margin-top: 10px; }
+.mm-st { position: relative; display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 12px; padding: 12px; border: 1.5px solid var(--ink); border-radius: 14px; background: var(--paper-2); box-shadow: 3px 3px 0 var(--ink); }
+.mm-st.final { background: linear-gradient(100deg, #fbe6e6, var(--paper-2) 70%); }
+.mm-st.locked { opacity: .55; }
+.mm-art { display: grid; place-items: center; }
+.mm-art img { width: 96px; height: 96px; object-fit: contain; }
+.mm-lock { font-size: 40px; }
+.mm-txt h3 { margin: 0 0 4px; }
+.mm-btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.mm-ic { font-size: 54px; display: block; text-align: center; }
+.mm-pool { list-style: none; margin: 10px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; counter-reset: mmp; }
+.mm-pool li { position: relative; padding: 10px 12px; border: 1.5px solid var(--ink); border-radius: 10px; background: var(--paper-2); font-size: 13px; }
+.mm-pool li.big { background: #fff3c9; border-color: #c48a1a; font-weight: 700; }
+.mm-pool li.got { opacity: .45; text-decoration: line-through; }
+.mm-pool li em { position: absolute; right: 8px; top: 8px; font-style: normal; font-size: 11px; color: #888; text-decoration: none; }
+.mm-got { list-style: none; padding: 0; margin: 10px 0; display: grid; gap: 4px; }
+.mm-got li { padding: 4px 10px; border-radius: 8px; background: var(--paper-2); }
+.mm-got li.big { background: #fff3c9; font-weight: 700; }
+.mm-card { background: linear-gradient(100deg, #e4ecfb, var(--paper-2) 70%); }

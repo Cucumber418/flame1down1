@@ -594,7 +594,8 @@
     if (opt.items) app.S.items = opt.items;
     if (opt.env) app.S.env = opt.env;
     if (opt.wild) app.S.wild = opt.wild;
-    if (opt.ai) app.S.ai = opt.ai;   // 电脑的操作水平（例如白银段位）
+    if (opt.ai) app.S.ai = opt.ai;
+    if (opt.bgmAt) app.S.bgmAt = opt.bgmAt;   // 对方第 N 只（从 0 数）上场时换战斗曲，如明明教官的试炼第三只换 MingFinalBattle1   // 电脑的操作水平（例如白银段位）
     storyEnd = opt.onEnd; itemUsed = opt.onItem || null; starOpt = opt.stars || null; starOpen = false;
     app.screen = 'battle'; app.logHTML = ''; $('log').innerHTML = '';
     $('builder').hidden = true; $('battle').hidden = false; $('endcard').hidden = true;
@@ -813,7 +814,7 @@
         case 'hit': renderSnap(e.snap); if (e.amount > 0) castFx({ a: 'hit', i: V(e.side), n: e.amount, c: !!e.crit, lb: hitLabel(e) }); if (app.S && app.S.training && e.side === 1) renderStats(); if (e.amount > 0) { restartAnim($('mon' + V(e.side)), 'hit'); floatNum(V(e.side), hitLabel(e) + '-' + e.amount, e.crit ? 'crit' : e.eff > 1 ? 'super' : e.eff > 0 && e.eff < 1 ? 'resist' : ''); if (e.crit) shakeField(); } await wait(480); break;
         case 'miss': renderSnap(e.snap); castFx({ a: 'miss', i: V(e.side) }); floatNum(V(e.side), '未命中', 'miss'); await wait(380); break;
         case 'heal': renderSnap(e.snap); castFx({ a: 'heal', i: V(e.side), n: e.amount }); restartAnim($('mon' + V(e.side)), 'heal'); floatNum(V(e.side), '+' + e.amount, 'heal'); await wait(380); break;
-        case 'switch': renderSnap(e.snap); await wait(520); break;
+        case 'switch': renderSnap(e.snap); if (app.S && app.S.bgmAt && e.side === 1 && e.snap) { var swi = e.snap.sides[1].team.findIndex(function (x) { return x.active; }); if (app.S.bgmAt[swi]) bgm(app.S.bgmAt[swi]); } await wait(520); break;
         case 'throw': renderSnap(e.snap); castFx({ a: 'throw', i: 1 }); restartAnim($('mon1'), 'throw'); await wait(900); break;
         case 'faint': renderSnap(e.snap); await wait(650); break;
         case 'scene': renderSnap(e.snap); if (e.fx && window.HSEV) window.HSEV('bossfx', { k: e.fx }); await showScene(e.lines); if (e.fx === 'past') bgm('tigerFinal'); else if (e.fx === 'rebirth') bgm('beforeEnd'); break;

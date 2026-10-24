@@ -19,7 +19,7 @@
   /* ---------- 存档 ---------- */
   function valid(a) { return a && typeof a.name === 'string' && Array.isArray(a.mons) && Array.isArray(a.teams); }
   // 隐藏技能只能用道具解锁的种族（2026-10-18，说明见 avail 上方）；读存档时就要用到，所以放在最前面
-  var HL_GATED = { mush: 1, wind: 1, kaleo: 1, pede: 1, gorgon: 1, hephaestus: 1, firemouse: 1, leigong: 1, faraday: 1, frost: 1, tagore: 1, barren: 1, pluto: 1, leaf: 1, squid: 1, shroom: 1, moon: 1, bone: 1, siren: 1 };
+  var HL_GATED = { mush: 1, wind: 1, kaleo: 1, pede: 1, gorgon: 1, hephaestus: 1, firemouse: 1, leigong: 1, faraday: 1, frost: 1, tagore: 1, barren: 1, pluto: 1, leaf: 1, squid: 1, shroom: 1, moon: 1, bone: 1, siren: 1, leiming: 1 };
   window.HL_GATED = HL_GATED;   // battle.js 里用来跳过战斗中领悟
   try { var raw = JSON.parse(localStorage.getItem(KEY) || 'null'); if (valid(raw)) acc = raw; } catch (e) {}
   try { var pg = localStorage.getItem(PKEY); if (pg) page = pg; } catch (e) {}
@@ -835,7 +835,7 @@
     // 各星球特产（2026-10-18）：和芙罗拉玉一样，100 个让该星球的普通野生精灵一系领悟一个隐藏技能；也用来解锁同属性精灵的等级上限
     kbDrop: { name: '不化水滴', sid: null, sids: ['pede', 'gorgon', 'siren', 'odo'], kind: 'jade', cost: 100, gem: '水', sd: '坎伯兰星的特产。可以让坎伯兰星的普通野生精灵领悟隐藏技能，也能提高水系精灵的等级上限。', d: '坎伯兰星浅海里凝成的水滴，永远不会蒸发。100 个可以让坎克托斯、戈耳贡、塞壬一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；水系精灵达到 LV70 后，也可以用它解锁更高的等级上限。在坎伯兰星的野外场景里每天有机会捡到。', none: '你还没有坎克托斯、戈耳贡或塞壬（进化前的形态也算）。去坎伯兰星捕捉吧。' },
     ppAsh: { name: '火山灰烬', sid: null, sids: ['hephaestus', 'firemouse'], kind: 'jade', cost: 100, gem: '火', sd: '庞贝星的特产。可以让庞贝星的普通野生精灵领悟隐藏技能，也能提高火系精灵的等级上限。', d: '庞贝星火山喷出的灰烬，摸上去还是温热的。100 个可以让赫菲斯托斯、费尔茅斯一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；火系精灵达到 LV70 后，也可以用它解锁更高的等级上限。在庞贝星的野外场景里每天有机会捡到。', none: '你还没有赫菲斯托斯或费尔茅斯（进化前的形态也算）。去庞贝星捕捉吧。' },
-    ltOrb: { name: '闪电球体', sid: null, sids: ['leigong', 'faraday', 'leiming'], kind: 'jade', cost: 100, gem: '电', sd: '莱汀陨石带的特产。可以让陨石带的普通野生精灵领悟隐藏技能，也能提高电系精灵的等级上限。', d: '雷暴里凝成的一团电光，握在手里噼啪作响。100 个可以让雷公、法拉第一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；电系精灵达到 LV70 后，也可以用它解锁更高的等级上限。在莱汀陨石带的野外场景里每天有机会捡到。', none: '你还没有雷公或法拉第（进化前的形态也算）。去莱汀陨石带捕捉吧。' },
+    ltOrb: { name: '闪电球体', sid: null, sids: ['leigong', 'faraday'], kind: 'jade', cost: 100, gem: '电', sd: '莱汀陨石带的特产。可以让陨石带的普通野生精灵领悟隐藏技能，也能提高电系精灵的等级上限。', d: '雷暴里凝成的一团电光，握在手里噼啪作响。100 个可以让雷公、法拉第一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；电系精灵达到 LV70 后，也可以用它解锁更高的等级上限。在莱汀陨石带的野外场景里每天有机会捡到。', none: '你还没有雷公或法拉第（进化前的形态也算）。去莱汀陨石带捕捉吧。' },
     whFrost: { name: '永久冻土', sid: null, sids: ['frost'], kind: 'jade', cost: 100, gem: '冰', sd: '白之星的特产。可以让白之星的普通野生精灵领悟隐藏技能，也能提高冰系精灵的等级上限。', d: '白之星冰原下挖出的冻土，一万年都不会化开。100 个可以让霜冻之冠一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；冰系精灵达到 LV70 后，也可以用它解锁更高的等级上限。在白之星的野外场景里每天有机会捡到。', none: '你还没有霜冻之冠（进化前的形态也算）。去白之星的永冻冰原捕捉吧。' },
     formDev: { name: '形态切换装置', sid: null, kind: 'form', sd: '给一只精灵永久解锁一个可以切换的外观形态。', d: '黄石 · 冶炼坊用星核和星砂合成的装置。用在一只精灵身上，给这只精灵永久解锁一个它已经长到过的更小形态的样子（比如让最终形态变回第一形态的样子）。解锁之后，在精灵资料的「外观形态」里，原本的形态和解锁过的形态之间随时免费切换。只改变外观，数值、技能都不变；每只精灵分开解锁。' },
     floraJade: { name: '芙罗拉玉', gem: '草', sd: '芙罗拉星的特产。可以让芙罗拉星的普通野生精灵领悟隐藏技能，也能提高草系精灵的等级上限。', sid: null, sids: ['mush', 'wind', 'kaleo'], kind: 'jade', cost: 100, d: '芙罗拉星深处凝成的绿色玉石。100 个可以让玛西露姆、六尾风王、卡莱奥丹一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能，不用再满足战斗里的领悟条件。隐藏技能要到 LV' + HIDDEN_MIN_LV + ' 才能装备。瘴气驱逐战的全服奖励会发放；芙罗拉星的丛林、草甸里，每天也有机会捡到少量。', none: '你还没有玛西露姆、六尾风王或卡莱奥丹（进化前的形态也算）。去芙罗拉星的丛林、草甸捕捉吧。' }
@@ -849,7 +849,7 @@
   // 野外采集物：每个区域 2 个采集点，每个点每天 1 次。星砂做加强装置，星核做华为装置。
   var GATHER_ITEMS = {
     g_sand: { name: '星砂', d: '从星球表面收来的矿砂，冶炼坊用来装配加强捕捉装置。', from: '芙罗拉星的丛林和草甸、坎伯兰星的水面、浅水区和深海区、庞贝星的熔岩原', n: 12 },
-    g_core: { name: '星核', d: '雷暴和永冻里凝出来的核，四颗可以合成一个华为捕捉装置。', from: '莱汀陨石带的雷暴陨石群、白之星的永冻冰原', n: 1 }
+    g_core: { name: '星核', d: '雷暴和永冻里凝出来的核，四颗可以合成一个华为捕捉装置。', from: '活动「明明教官的试炼」每关每个难度首次通过', n: 1 }
   };
   var GATHER_ORDER = ['g_sand', 'g_core'];
   // 精灵素材：旅行精灵掉落的叶片，以及合成出来的精元（精元放进神农架 · 精灵保育仓孵化，见 NURSERY）
@@ -1304,7 +1304,7 @@
     { id: 'station', name: '空间站', d: '停泊在荆楚号后方的空间站，先驱之塔就建在这里。', sites: [], station: true, after: 'flora1' },
     { id: 'sarena', name: '太空竞技场', d: '空间站旁边新建的竞技场，各种比赛都在这里举办。', sites: [], sarena: true, after: 'flora1' },   // 2026-10-19
     { id: 'tower', name: '先驱之塔', d: '空间站里的一座高塔，共 60 层。每一层都守着一批强大的精灵，塔顶住着死神。', sites: [], tower: true, after: 'flora1', inStation: true },
-    { id: 'flora', name: '芙罗拉星', d: '草系星球。丛林、草甸和盐碱地里栖息着许多野生精灵。', sites: ['flora1', 'flora2', 'flora3', 'flora4', 'flora5', 'flora6', 'travelcat'], wild: true, ptype: '草系星球', color: ['#9fd08a', '#3f7d4a'], get img() { return floraFallen() ? 'images/planets/flora_corrupt.webp?v=3' : 'images/planets/flora.webp?v=3'; }, after: 'board' },
+    { id: 'flora', name: '芙罗拉星', d: '草系星球。丛林、草甸和盐碱地里栖息着许多野生精灵。', sites: ['flora1', 'flora2', 'flora3', 'flora4', 'flora5', 'flora6', 'flora7', 'travelcat'], wild: true, ptype: '草系星球', color: ['#9fd08a', '#3f7d4a'], get img() { return floraFallen() ? 'images/planets/flora_corrupt.webp?v=3' : 'images/planets/flora.webp?v=3'; }, after: 'board' },
     { id: 'kamble', name: '坎伯兰星', d: '水系星球。整颗星球都被海洋覆盖，从水面一直往下，是浅水区和深不见底的深海区。', sites: [], wild: true, ptype: '水系星球', color: ['#8cc6ea', '#2a6fb0'], get img() { return 'images/planets/kamble_' + kbStage() + '.webp?v=2'; }, after: 'flora1' },
     { id: 'pompeii', name: '庞贝星', d: '火系星球。火山终年喷发，地面被熔岩烤得发烫。', sites: [], wild: true, ptype: '火系星球', color: ['#f2a46b', '#b3401f'], img: 'images/planets/pompeii.webp', after: 'flora1' },
     { id: 'laiting', name: '莱汀陨石带', d: '电系区域。无数陨石在雷暴中漂浮。', sites: [], wild: true, ptype: '电系陨石带', color: ['#f1dd73', '#7a6a1a'], belt: true, after: 'flora1' },
@@ -1341,6 +1341,10 @@
     flora4: { name: '丛林深处', planet: 'flora', chapter: '第八段 · 深入丛林', bg: 'fl_maple', d: 'Threego 循着点点的气味独自闯进了丛林，Vanber 又被头盔砸晕了。天快黑了，只能一个人进去找她……', after: 'flora3', need: function () { return prog('travelcat').done; }, needText: '完成世界任务「旅行猫」', reward: { exp: 2000, energy: 800 } },
     flora5: { name: '山毛榉林', planet: 'flora', chapter: '第九段 · 林中的猎手', bg: 'fl_beech', d: 'Vanber 也追进了丛林。大家会合之后，那些训练有素的卡莱，又出现了……', after: 'flora4', reward: { exp: 2000, energy: 800 } },
     flora6: { name: '盐碱地边缘', planet: 'flora', chapter: '第十段 · 瘴气之源', bg: 'fl_salt', d: '一行人决定前往盐碱地，去看看瘴气真正的源头。注意：读完这一段后，芙罗拉星的野外环境会永久改变，野生精灵将无法捕捉。', after: 'flora5', reward: { exp: 3000, energy: 1200 } },
+    // 2026-10-24：全服瘴气驱逐战击破 500 只后开放；读完后芙罗拉星恢复（瘴气精灵移到「瘴气污染的记录」里），第一章完结
+    flora7: { name: '盐碱地之下', planet: 'flora', chapter: '第十一段 · 盐碱地之下', bg: 'fl_salt', d: '芙罗拉星上的大多数精灵依然被瘴气缠着。必须从根源上解决问题——这一次，一行人决定真正踏上盐碱地。', after: 'flora6', reward: { exp: 5000, energy: 2000 },
+      need: function () { pwFetch(); return !!(PW.data && PW.data.total >= 500); }, get needText() { return '全服「瘴气驱逐战」击破数达到 500（目前 ' + (PW.data ? PW.data.total : '?') + ' 只）'; } },
+    mmTrial: { name: '古城防卫部', planet: 'jingchu', dept: '襄阳', chapter: '活动任务 · 明明教官的试炼', side: true, event: true, bg: 'bridge_p', d: '明明教官说，要带大家去一个「好地方」。读完后开放活动「明明教官的试炼」。', after: 'flora7', pos: [42, 60] },
     tea: { name: '陆羽茶室', planet: 'jingchu', dept: '天门', chapter: '支线 · 陆羽茶室', side: true, bg: 'tea_p', d: '从芙罗拉星回来后，舰上要给第一支地面小队分配休息舱。读完后开放你自己的「茶室」（家园）。', after: 'flora1', pos: [50, 84] },
     mingming: { name: '古城防卫部', planet: 'jingchu', dept: '襄阳', chapter: '支线 · 明明教官的礼物', side: true, bg: 'bridge_p', d: '古城防卫部的明明教官听说你在黄冈秘鉴里点亮了十类精灵，想见见你。', after: 'board', pos: [48, 82], need: function () { return litCount() >= 10; }, needText: '在黄冈秘鉴中点亮 10 类精灵后开放', reward: { gift: [{ sid: 'aegis', lv: 10 }] } },
     tiger: { name: '古城防卫部', planet: 'jingchu', dept: '襄阳', chapter: '支线 · 东北来的泰戈尔', side: true, bg: 'bridge_p', d: '古城防卫部来了一只从东北招募的特殊虎系精灵，专门辅助船员训练。读完后开放BOSS「泰戈尔」的挑战。', after: 'board', pos: [30, 70] },
@@ -1363,7 +1367,7 @@
   // 已有画面的舰内区域；其余区域先用占位画面
   var AREA_BG = { 宜昌: 'energy_core', 黄冈: 'pod_p', 鄂州: 'hangar_p', 孝感: 'xiaogan', 武汉: 'cockpit_p', 咸宁: 'cabin_p', 仙桃: 'gym_p', 荆门: 'storage_p', 恩施: 'greenhouse_p', 天门: 'teahall', 随州: 'bridge2_p', 襄阳: 'bridge_p' };
   var BG_POS = { qiyi: '50% 42%', desert: '50% 40%', jslc: '50% 38%', street: '50% 55%', bridge: '45% 55%', tower: '50% 55%' };
-  var BG_NAME = { gate: '校门', school: '校门', flag: '教学楼', garden: '牌坊花园', qiyi: '起义门', street: '彭刘杨路', bridge: '长江大桥', desert: '鸣沙山 · 月牙泉', jslc: '发射中心', tower: '发射塔', launch: '火箭升空', orbit: '地球轨道', hangar: '鄂州港 · 停泊区', cockpit_p: '武汉 · 指挥中枢', hangar_p: '鄂州港 · 停泊区', cabin_p: '温泉生活区', greenhouse_p: '太空温室', pp_lake: '熔浆大湖', pp_slag: '熔渣矿区', pp_fort: '湖心堡垒', pp_core: '炙热核心', gym_p: '体能馆', storage_p: '物资仓储', pod_p: '学院部 · 资料室', tea_p: '陆羽茶室 · 04 号舱', teahall: '陆羽茶室 · 大厅', bridge2_p: '编钟通讯站', bridge_p: '古城防卫部', xiaogan: '孝感大厅', paifang: '惟楚有材牌坊', hall: '报告厅', field: '操场', aerial: '校园全景' };
+  var BG_NAME = { gate: '校门', school: '校门', flag: '教学楼', garden: '牌坊花园', qiyi: '起义门', street: '彭刘杨路', bridge: '长江大桥', desert: '鸣沙山 · 月牙泉', jslc: '发射中心', tower: '发射塔', launch: '火箭升空', orbit: '地球轨道', hangar: '鄂州港 · 停泊区', cockpit_p: '武汉 · 指挥中枢', hangar_p: '鄂州港 · 停泊区', cabin_p: '温泉生活区', greenhouse_p: '太空温室', pp_lake: '熔浆大湖', pp_slag: '熔渣矿区', pp_fort: '湖心堡垒', pp_core: '炙热核心', fl_lab: '地下实验室', fl_meadow_mia: '瘴气草甸', fl_beech_mia: '瘴气丛林', gym_p: '体能馆', storage_p: '物资仓储', pod_p: '学院部 · 资料室', tea_p: '陆羽茶室 · 04 号舱', teahall: '陆羽茶室 · 大厅', bridge2_p: '编钟通讯站', bridge_p: '古城防卫部', xiaogan: '孝感大厅', paifang: '惟楚有材牌坊', hall: '报告厅', field: '操场', aerial: '校园全景' };
   // 芙罗拉星的场景名；瘴气化后的 *_mia 版本沿用同一个名字
   Object.assign(BG_NAME, { kb_dock: '水星码头', kb_isle: '冥岛', kb_lookup: '仰望水面', kb_shoal: '群灵深海', kb_temple: '古代神殿', kb_floor: '幽深地', kb_abyss: '深渊潜底' });
   Object.assign(BG_NAME, { fl_path: '林间小路', fl_lake: '草甸湖畔', fl_beech: '山毛榉林', fl_maple: '丛林边缘', fl_meadow: '草甸', fl_sun: '丛林深处', fl_salt: '盐碱地', fl_village: '叶之村落', fl_horizon: '草甸尽头', fl_jungle_corrupt: '瘴气丛林' });
@@ -1384,6 +1388,7 @@
     kl: { name: function () { return '卡莱'; }, color: '#3f6d3a', tall: 0.7, spr: 'kaleo', sprLv: 15 },
     lc: { name: function () { return '叶子喵'; }, color: '#5f9a3e', tall: 0.8, spr: 'leafcat', sprLv: 30 },   // 世界任务「旅行猫」里的叶子喵（戴着翻译器能听懂）
     cy: { name: function () { return '辰爷'; }, color: '#3a4a66', tall: 1.0, img: 'cy' },
+    hw: { name: function () { return '荒芜'; }, color: '#5a3d6e', tall: 0.95, spr: 'barren', sprLv: 30 },
     r: { name: function () { return '日透骨消'; }, color: '#5a6a8a', tall: 1.0, img: 'rtg' },   // 三峡能源核心主人
     ms: { name: function () { return '玛西'; }, color: '#8a5a9a', tall: 0.55, spr: 'mush', sprLv: 10 }   // 戴着翻译器能听懂的玛西（第八段）   // 「常春藤怀克」，常春藤组织的特工（第八段登场）
   };
@@ -1428,7 +1433,7 @@
    * wip 表示这一章还没写完（未完待续），写完之前不算通关 */
   var CHAPTERS = [
     { id: 'prologue', n: '序章', d: '从省实验中学出发，一路到登上荆楚号。', sites: ['school', 'river', 'jiuquan', 'board'], reward: { exp: 5000 } },
-    { id: 'ch1', n: '第一章 · 芙罗拉星', d: '降落芙罗拉星，追查瘴气和猎杀者的真相。', sites: ['flora1', 'flora2', 'flora3', 'flora4', 'flora5', 'flora6'], wip: true, reward: { exp: 20000, energy: 3000 } }   // 2026-10-17：茶室音乐「芙罗拉星」移除，章节大奖改为经验和能量
+    { id: 'ch1', n: '第一章 · 芙罗拉星', d: '降落芙罗拉星，追查瘴气和猎杀者的真相。', sites: ['flora1', 'flora2', 'flora3', 'flora4', 'flora5', 'flora6', 'flora7'], reward: { exp: 20000, energy: 3000 } }   // 2026-10-17：茶室音乐「芙罗拉星」移除，章节大奖改为经验和能量
   ];
   function chapterOf(site) { return CHAPTERS.filter(function (C) { return C.sites.indexOf(site) >= 0; })[0] || null; }
   function chapterDone(C) { return !C.wip && C.sites.every(function (id) { return prog(id).done; }); }
@@ -1496,6 +1501,11 @@
   // 剧情对战的对手配置
   var LEAF_ALLY = { sid: 'leafcat', lv: 40, nick: '叶子喵', boss: { purify: 1 }, moves: ['闪光飞叶', '种子炸弹', '星星魔法', '光束'] };
   var FIGHTS = {
+    // 第十一段 · 盐碱地之下（2026-10-24）
+    brSalt: { foe: '荒芜', bgm: 'boss2', team: [{ sid: 'barren', lv: 45, nick: '荒芜', boss: { pp: 99 } }],
+      allyMon: { sid: 'leafcat', lv: 40, nick: '叶子喵', boss: { purify: 1 }, moves: ['闪光飞叶', '种子炸弹', '星星魔法', '光束'], ability: { n: '脚伤', d: '脚底被瘴气浸透，陷入永久的流血状态，无法被解除' } },
+      env: 'miasma', bg: 'fl_salt_mia', desc: '荒芜（LV45）· 叶子喵助战（特性「脚伤」：永久流血）' },
+    brLab: { foe: '荒芜', bgm: 'boss3', team: [{ sid: 'barren', lv: 50, nick: '荒芜', boss: { nourish: 1, pp: 99 } }], env: 'miasma', bg: 'fl_lab', desc: '荒芜（LV50）· 特效「养料汲取」：每回合恢复 50 体力' },
     threego: { foe: 'Threego', team: [{ sid: 'tagore', lv: 3 }] },
     karo: { foe: '被瘴气污染的野生精灵', team: [{ sid: 'wind', lv: 3, miasma: 5 }], env: 'miasma', bg: 'fl_salt', desc: '被瘴气污染的卡罗（LV3）' },
     hunter: { foe: '神秘的猎杀者', team: [{ sid: 'kaleo', lv: 15 }], bg: 'fl_maple', desc: '猎杀者卡莱（LV15）' },
@@ -1621,6 +1631,8 @@
     if (ex.view === 'weekly') { if (weeklyOpen()) { ex.boss = curWk().boss; renderBoss(true); return; } ex.view = 'planets'; }
     if (ex.view !== 'archive' && ex.arcPlay) arcStop();
     if (ex.view === 'archive') { renderArchive(); return; }
+    if (ex.view === 'mmArena') { if (mmOpen()) { renderMmArena(); return; } ex.view = 'planets'; }
+    if (ex.view === 'mmGacha') { if (acc.mm || mmOpen()) { renderMmGacha(); return; } ex.view = 'planets'; }
     if (ex.view === 'wkhub') { if (weeklyOpen()) { renderWkHub(); return; } ex.view = 'planets'; }
     if (ex.view === 'ewk') { if (weeklyOpen() && ewkType(ex.ewkT)) { renderEwk(); return; } ex.view = 'planets'; }
     if (ex.view === 'room') { if (homeOpen()) { renderRoom(); return; } ex.view = 'area'; renderArea(); return; }
@@ -1652,7 +1664,7 @@
       if (P.ship) { el.innerHTML = html + shipMap(P); return; }
       if (P.wild) { el.innerHTML = html + (P.id === 'flora' ? floraPage() : wildPage(P)); return; }
       if (P.tower) { el.innerHTML = html + towerPage(); return; }
-      if (P.station) { el.innerHTML = html + '<div class="planets">' + planetCard(planetOf('tower')) + '</div>'; return; }
+      if (P.station) { el.innerHTML = html + '<div class="planets">' + planetCard(planetOf('tower')) + (prog('flora7').done && mmLive() ? '<button type="button" class="planet' + (mmOpen() ? '' : ' locked') + '"' + (mmOpen() ? ' data-mmarena="1"' : ' disabled') + '><span class="tape l"></span><span class="mm-ic" aria-hidden="true">🛰</span><span class="pn">全息作战场地<span class="chip ptype">限时</span></span><span class="hint">明明教官安置的全息作战场地。活动「明明教官的试炼」期间开放。</span><span class="pc">' + (mmOpen() ? '明明代币 ' + fmt(acc.items.mmTok || 0) + ' · ' + mmLeftText() : '先完成活动任务「明明教官的试炼」') + '</span></button>' : '') + '</div>'; return; }
       if (P.sarena) { el.innerHTML = html + sarenaPage(); return; }
       html += '<div class="sites">' + P.sites.map(function (id) {
         var S = SITES[id], pr = prog(id), started = pr.at > 0 && !pr.done, open = unlocked(id);
@@ -1997,7 +2009,7 @@
     if (part === 'story') return head + sp;
     if (part === 'task') return head + planetTasks('flora');
     if (part === 'challenge') return head + chalPage('flora');
-    var regs = REGIONS.map(function (R) {
+    var regs = REGIONS.filter(function (R) { return !R.record || regionOpen(R); }).map(function (R) {
       var BK = Object.keys(BOSSES).filter(function (k) { return BOSSES[k].region === R.id; })[0], locked = !prog('flora1').done;
       return '<article class="region' + (locked ? ' locked' : '') + '"><div class="rg-art">' + (R.bgs && BG[R.bgs[0]] ? '<img src="' + BG[R.bgs[0]] + '" alt="' + R.name + '">' + (R.bgs.length > 1 ? '<span class="rg-more">' + R.bgs.slice(1).map(function (k) { return '<img src="' + BG[k] + '" alt="">'; }).join('') + '</span>' : '') : regionArt(R.id)) + '</div><div class="rg-txt"><h4>' + R.name + ' <small>' + R.en + '</small></h4><p class="hint">' + R.d + '</p>' +
         (BK ? '<p class="rg-boss">BOSS · ' + BOSSES[BK].name + '　<span>' + (bossOpen(BK) ? BOSSES[BK].lv.filter(function (L, i) { return levelOpen(BK, i); }).map(function (L) { return L.diff; }).join(' / ') + ' 难度可挑战' : '暂未开放') + '</span></p>' +
@@ -2005,10 +2017,10 @@
           locked ? '<p class="rg-boss">BOSS · ' + R.boss + '　<span>暂未开放</span></p>' : prog('flora1').done ? '<button type="button" class="btn primary" data-field="' + R.id + '">进入' + R.name + '</button>' : '<button type="button" class="btn" disabled>读完主线「降临芙罗拉」后开放</button>') + '</div></article>';
     }).join('');
     var sids = [];
-    REGIONS.forEach(function (R) { (WILD[R.pool] || []).forEach(function (w) { if (sids.indexOf(w.sid) < 0) sids.push(w.sid); }); });
+    REGIONS.forEach(function (R) { if (R.record) return; (WILD[R.pool] || []).forEach(function (w) { if (sids.indexOf(w.sid) < 0) sids.push(w.sid); }); });
     var list = sids.map(function (sid) {
       var w, where = [];
-      REGIONS.forEach(function (R) { (WILD[R.pool] || []).forEach(function (x) { if (x.sid === sid) { w = x; where.push(R.name + ' ' + x.w + '%'); } }); });
+      REGIONS.forEach(function (R) { if (R.record) return; (WILD[R.pool] || []).forEach(function (x) { if (x.sid === sid) { w = x; where.push(R.name + ' ' + x.w + '%'); } }); });
       var k = wildKnown(sid), f = form({ sid: sid, lv: w.lv[0] }), sid_ = sid;
       return '<li class="wl ' + (k || 'unk') + '">' + (k ? '<img src="' + f.img + '" alt="">' : silTag(sid_, f.stage)) + '<span><b>' + (k ? esc(f.name) : '？？？') + '</b>' + (w.rare ? '<span class="chip rare">稀有</span>' : '') +
         '<small>LV' + (w.lv[0] === w.lv[1] ? w.lv[0] + '（固定）' : w.lv[0] + '–' + w.lv[1]) + ' · 捕捉率' + w.tag + '</small><small>出现：' + where.join('，') + '</small>' +
@@ -2061,7 +2073,7 @@
   var GATHER = {
     forest: { item: 'g_sand', n: 12 }, grass: { item: 'g_sand', n: 12 },
     kb_surf: { item: 'g_sand', n: 12 }, kb_sea: { item: 'g_sand', n: 12 }, kb_deep: { item: 'g_sand', n: 12 }, pp_lava: { item: 'g_sand', n: 12 }, pp_city: { item: 'g_sand', n: 12 },
-    lt_belt: { item: 'g_core', n: 1 }, wh_snow: { item: 'g_core', n: 1 }
+    lt_belt: { item: 'g_sand', n: 12 }, wh_snow: { item: 'g_sand', n: 12 }   // 2026-10-24：星核不再在野外采集到（改为明明教官的试炼首通奖励）
   };
   function gatherRec() {
     var day = dayNum(Date.now());
@@ -2189,7 +2201,7 @@
   function sideCheck() {
     if (!ready() || !acc.introDone || ex.fighting || ex.view === 'vn' || document.querySelector('.soc-dlg') || ($('battle') && !$('battle').hidden)) return;
     if (!acc.sideSeen) { acc.sideSeen = {}; Object.keys(SITES).forEach(function (id) { if (SITES[id].side && SIDE_NEW.indexOf(id) < 0) acc.sideSeen[id] = 1; }); save(); }
-    var nw = Object.keys(SITES).filter(function (id) { var S = SITES[id]; return S.side && !acc.sideSeen[id] && !prog(id).done && unlocked(id) && (!S.dept || deptOpen(S.dept)); });
+    var nw = Object.keys(SITES).filter(function (id) { var S = SITES[id]; return S.side && !S.event && !acc.sideSeen[id] && !prog(id).done && unlocked(id) && (!S.dept || deptOpen(S.dept)); });
     if (!nw.length) return;
     nw.forEach(function (id) { acc.sideSeen[id] = 1; }); save();
     var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'side-dlg';
@@ -2552,7 +2564,7 @@
   }
   function spawnFieldMon(R, slot, force) {
     var hit = force || riceSpawn(R, slot) || rollWild(R.pool, (typeof WILD_SCENE !== 'undefined' && WILD_SCENE[slot.bgKey]) || null), shiny = rollShiny(hit.w);
-    var corrupt = R.planet === 'flora' && floraFallen();
+    var corrupt = regionFallen(R);
     if (corrupt) hit = { w: hit.w, lv: 40 + Math.floor(Math.random() * 11) };   // 瘴气化后：强制 LV40–50
     var f = form({ sid: hit.w.sid, lv: hit.lv, shiny: shiny });
     var img = f.img, name = f.name;
@@ -2581,8 +2593,8 @@
     var R = regionById(rid); if (!R) return null;   // 没有野外表（R.pool）的区域（盐碱地）也能进，只是没有野生精灵
     if (!fields[rid]) {
       var bgs = (R.bgs || []).filter(function (k) { return BG[k]; }), n = sceneCount(R), now = Date.now();
-      var fallen = R.planet === 'flora' && floraFallen();
-      if (fallen) { bgs = bgs.map(floraBg); if (R.id === 'forest') bgs.push('fl_jungle_corrupt'); }   // 瘴气化之后：每个场景换成画了深紫色脉络的 *_mia 版本，丛林再多一张瘴气丛林
+      var fallen = regionFallen(R);
+      if (fallen && !R.record) { bgs = bgs.map(floraBg); if (R.id === 'forest') bgs.push('fl_jungle_corrupt'); }   // 瘴气化之后：每个场景换成画了深紫色脉络的 *_mia 版本，丛林再多一张瘴气丛林
       var F = fields[rid] = { seq: 0, scene: Math.floor(Math.random() * n), scenes: [] };
       for (var i = 0; i < n; i++) {
         var sc = { bgKey: bgs.length ? bgs[i % bgs.length] : '', bg: bgs.length ? BG[bgs[i % bgs.length]] : '', flip: i >= bgs.length && i % 2 === 1, corrupt: fallen && !/_mia$|_corrupt$/.test(bgs[i % bgs.length] || ''), slots: FIELD_SLOTS.map(function (s) { return { hx: s.hx, hy: s.hy, r: s.r, mon: null, next: 0 }; }) };
@@ -2685,12 +2697,13 @@
   function spareN() { return (acc && acc.story && acc.story.flora2 && acc.story.flora2.spare) || 0; }
   function spareActive() { return prog('flora2').done && spareN() < SPARE_N; }
   // 第十段「瘴气之源」读完后：芙罗拉星整体瘴气化，野外精灵强制变成瘴气异变的最高阶段（见 spawnFieldMon），bgm 也随之切换
-  function floraFallen() { return prog('flora6').done; }   // 2026-10-17 第八段拆成三段后，改为读完第十段才瘴气化
+  function floraFallen() { return prog('flora6').done && !prog('flora7').done; }   // 2026-10-24：读完第十一段后芙罗拉星恢复
+  function regionFallen(R) { return !!R && R.planet === 'flora' && (R.record || floraFallen()); }   // 「瘴气污染的记录」一直是瘴气化的样子   // 2026-10-17 第八段拆成三段后，改为读完第十段才瘴气化
   // 瘴气化之后，芙罗拉星的背景换成画了瘴气脉络的版本（有 *_mia 图的才换）
   function floraBg(k) { return k && floraFallen() && BG[k + '_mia'] ? k + '_mia' : k; }
   // 对战背景：传入背景键。F.bg 可以写成 'fl_salt' 这样的键，统一在这里换成图片地址
   function fightBg(k) { return BG[k] || null; }
-  function regionOpen(R) { return R.planet === 'flora' ? prog('flora1').done : planetOpen(planetOf(R.planet)); }
+  function regionOpen(R) { if (R.record) return prog('flora7').done; return R.planet === 'flora' ? prog('flora1').done : planetOpen(planetOf(R.planet)); }
   function startWildBattle(o) {
     var team = (acc.teams[acc.active] || []).map(mon).filter(Boolean);
     if (!team.length) team = acc.mons.slice(0, 1);
@@ -2729,7 +2742,7 @@
         if ((o.taint || (o.corrupt && purgeActive())) && downs && downs.length) msg = msg.concat(purgeHit());   // 瘴气化之后的腐化精灵也计入「祛除瘴气」
         if (o.corrupt && pwOpen() && downs && downs.length) {
           var pd = pwDay();
-          if (pd.n < PW.cap) { pd.n++; acc.exp = (acc.exp || 0) + PW.exp; save(); renderRes(); msg.push('瘴气驱逐战：击破 +1（今天 ' + pd.n + ' / ' + PW.cap + '），经验背包 +' + fmt(PW.exp) + (pwOnline() ? '。' : '（没有联网，全服进度没有计入）。')); pwHit(); }
+          if (pd.n < PW.cap) { pd.n++; var pwe = pwExpNow(); acc.exp = (acc.exp || 0) + pwe; save(); renderRes(); msg.push('瘴气驱逐战：击破 +1（今天 ' + pd.n + ' / ' + PW.cap + '），经验背包 +' + fmt(pwe) + (pwOnline() ? '。' : '（没有联网，全服进度没有计入）。')); pwHit(); }
           else msg.push('瘴气驱逐战：今天已经击破 ' + PW.cap + ' 次，达到每日上限，明天再来吧。');
         }
         if (o.travel && downs && downs.length) {   // 旅行精灵：累积经验 ×3000，50% 掉落叶片
@@ -3438,7 +3451,9 @@
    * 全服击破 10 / 50 / 100、之后每 50 只：贡献过（击破 ≥ 1）的船员各收到一封奖励邮件（经验、能量、芙罗拉玉、星砂、星核，数额暂定） */
   var PW = { exp: 1000, cap: 50, data: null, at: 0, busy: false, err: '' };   // cap：每人每天最多计入 50 次击破（服务器同样限制）
   function pwDay() { var d = bjDay(); if (!acc.pwd || acc.pwd.d !== d) acc.pwd = { d: d, n: 0 }; return acc.pwd; }
-  function pwOpen() { return floraFallen(); }
+  // 全服击破满 1000 后，每只的经验降到 1/4；每个账号的前 5 次仍按原来的给（不对玩家公布）
+  function pwExpNow() { var d = PW.data; return d && d.total >= 1000 && (d.me || 0) >= 5 ? Math.floor(PW.exp / 4) : PW.exp; }
+  function pwOpen() { return prog('flora6').done; }   // 芙罗拉星恢复以后，驱逐战在「瘴气污染的记录」里继续
   function pwOnline() { return !!(window.CLOUD && CLOUD.user && CLOUD.user()); }
   function pwMilestones(upTo) { var L = [10, 50, 100]; for (var m = 150; m <= upTo; m += 50) L.push(m); return L.filter(function (x) { return x <= upTo; }); }
   function pwNext(t) { if (t < 10) return 10; if (t < 50) return 50; if (t < 100) return 100; return (Math.floor(t / 50) + 1) * 50; }
@@ -4066,7 +4081,7 @@
     var wait = on ? '' : (function () { var t = new Date(now); t.setHours(MYSTERY.from, 0, 0, 0); var m = Math.max(0, Math.round((t - now) / 60000)); return '距离今天的活动开始还有 ' + Math.floor(m / 60) + ' 小时 ' + (m % 60) + ' 分钟'; })();
     $('pg-log').innerHTML = '<div class="page-head"><h2 class="sec">航行日志</h2><p class="hint">荆楚号的公告板：更新公告、限时活动、每日任务和新BOSS。</p></div>' +
       '<div class="log-grid">' + '<article class="log-card wide qq-card"><span class="tape l"></span><span class="tape r"></span><div class="qq-txt"><span class="chip log-tag">船员交流</span><h3>QQ 群：<b class="qq-no">' + QQ_GROUP + '</b></h3><p class="hint">攻略、组队切磋、bug 反馈、新精灵立绘抢先看，都在群里。</p></div><button type="button" class="btn primary" data-copyqq="1">复制群号</button></article>' + '<div class="log-pair">' + changelogHTML() + monChangesHTML() + '</div>' +
-      pwCardHTML('log') + contestLogHTML() + barrenLogHTML() + travelLogHTML() + pickHTML() + coreLogHTML() + hornLogHTML() + riceLogHTML() +   // 立绘更新投票已结束移除（2026-10-17）；荒芜放在更新公告正下方
+      mmLogHTML() + pwCardHTML('log') + contestLogHTML() + barrenLogHTML() + travelLogHTML() + pickHTML() + coreLogHTML() + hornLogHTML() + riceLogHTML() +   // 立绘更新投票已结束移除（2026-10-17）；荒芜放在更新公告正下方
       '<article class="log-card ev"><span class="tape l"></span><span class="chip log-tag">限时活动</span><h3>神秘精灵出没</h3>' +
         '<p>每天 <b>16:00–24:00</b>，在星际探索的任何场景，都有 <b>3%</b> 的概率刷出一只神秘精灵！</p><p class="hint">它是什么？只有遇到过的人才知道。</p>' +
         '<p class="log-st ' + (on ? 'on' : '') + '">' + (on ? '活动进行中，今天 24:00 结束' : wait) + '</p></article>' +
@@ -4149,6 +4164,7 @@
   $('pg-log').addEventListener('click', function (e) {
     var c = e.target.closest('[data-dclaim]'); if (c) { claimDaily(+c.dataset.dclaim); renderLog(); return; }
     if (e.target.closest('[data-gocore]')) { ex.planet = 'jingchu'; go('explore'); teleport('宜昌'); return; }
+    var ml = e.target.closest('[data-mmlog]'); if (ml) { var mk = ml.dataset.mmlog; if (mk === 'task') { ex.planet = 'jingchu'; go('explore'); teleport('襄阳'); return; } ex.mmFrom = mk === 'gacha' ? 'log' : 'arena'; ex.view = mk === 'gacha' ? 'mmGacha' : 'mmArena'; go('explore'); renderExplore(); return; }
     if (e.target.closest('[data-gosarena]')) { ex.planet = 'sarena'; ex.view = 'sites'; go('explore'); return; }
     var hd = e.target.closest('[data-hornday]'); if (hd && !hd.disabled && ready() && !hornDayGot()) { var hk = HORN.day[0] + Math.floor(Math.random() * (HORN.day[1] - HORN.day[0] + 1)); acc.hornDay = dayNum(Date.now()); giveItems({ m_hfhorn: hk }); save(); toast('领取了赫菲角片 ×' + hk + '，已放入储存箱。'); renderLog(); return; }
     var ap = e.target.closest('[data-avpick]');
@@ -4548,7 +4564,7 @@
     ['flora', 'FloraBackground', '芙罗拉星'], ['floraGrass', 'Flora1', '芙罗拉星 · 草甸'], ['floraForest', 'Flora2', '芙罗拉星 · 丛林'], ['floraFallen', 'Flora3 · The Great Cover', '瘴气化之后的芙罗拉星'],
     ['grassTalk', 'Grass Talk', '剧情'], ['memory', 'Memory', '剧情'], ['saver', 'Saver', '剧情'], ['disCommunication', 'Dis-communication', '瘴气化之后的野外对战'], ['beforeEnd', 'before the end', '？'],
     ['spa', '温泉', '温泉疗养'], ['kb', '坎伯兰星', '坎伯兰星'], ['kbSurface', '坎伯兰星 · 水面', '坎伯兰星水面'], ['kbShallow', '坎伯兰星 · 浅海', '坎伯兰星浅海'], ['temple', '古代神殿', '坎伯兰星深海'],
-    ['floraLab', 'Flora Lab', '？'], ['pompeiiCity', 'Pompeii City', '？'], ['mingTheme', 'Ming Theme', '？'], ['mingBattle1', 'Ming Battle 1', '？'], ['mingBattle2', 'Ming Battle 2', '？'], ['mingFinal1', 'Ming Final Battle 1', '？'], ['mingFinal2', 'Ming Final Battle 2', '？']
+    ['floraLab', 'Flora Lab', '盐碱地 · 地下实验室'], ['pompeiiCity', 'Pompeii City', '？'], ['mingTheme', 'Ming Theme', '明明教官的试炼'], ['mingBattle1', 'Ming Battle 1', '明明教官的试炼 · 关卡'], ['mingBattle2', 'Ming Battle 2', '？'], ['mingFinal1', 'Ming Final Battle 1', '明明教官的试炼 · 第三只精灵'], ['mingFinal2', 'Ming Final Battle 2', '？']
   ];
   var MUSIC_ALIAS = { disComScene: 'disCommunication', faceEnemyScene: 'faceEnemy' };
   window.HSHEARD = function (k) {
@@ -4676,7 +4692,7 @@
     leafcat: '击败旅行精灵叶子喵掉落叶片，5 片在冶炼坊合成精元，再到精灵保育仓孵化', moon: '平衡排位首次达到铂金段位的奖励', bone: '平衡排位首次达到王者段位的奖励',
     aegis: '支线「明明教官的礼物」（古城防卫部）', phantom: '每天 16:00–24:00 切换探索场景时偶尔出现的神秘精灵', hauris: '每天 16:00–24:00 切换探索场景时偶尔出现的神秘精灵',
     turkey: '在庞贝星熔岩原放下一碗米饭后有机会出现', siren: '在坎伯兰星水面的冥岛吹响奇声号角', pluto: '先驱之塔商店用死神代币等兑换精元后孵化',
-    firemouse: '庞贝星饮火城 · 炙热核心的野生精灵；炙热核心的火月鼠（一次性）', leiming: '暂未开放获得', odo: '暂未开放获得'
+    firemouse: '庞贝星饮火城 · 炙热核心的野生精灵；炙热核心的火月鼠（一次性）', leiming: '活动「明明教官的试炼」：明明代币抽奖第 10 个奖池的「雷明灯的精元」，在精灵保育仓孵化', odo: '暂未开放获得'
   };
   function wikiNo(s) { var n = (s.evo || []).map(function (e) { return e.no; }).filter(Boolean); return n.length ? +n[0] : 9999; }
   function wikiGet(sid) {
@@ -4725,6 +4741,166 @@
     });
   }
   if ($('wiki-btn')) $('wiki-btn').addEventListener('click', function () { if (acc) openWiki(); });
+  /* ---------- 活动 · 明明教官的试炼（2026-10-24，首个大型活动） ----------
+   * 读完第十一段 → 活动任务「明明教官的试炼」（古城防卫部）→ 空间站「全息作战场地」开放（限时）。
+   * 关卡按日期每天开放一个属性：水、火、草、电、冰；五个都开放后的第二天开放「明明的最终试炼」。
+   * 每关打败对方 3 只精灵（按顺序上场，前两只弱一些，第三只强）；通常 / 高难两种难度；赢了给明明代币，每关每个难度首次通过另有奖励。
+   * 明明代币在航行日志或场地里抽奖：10 个抽一次、100 个十连；每个奖池 20 个固定奖励，抽完进下一个奖池（每天最多解锁 100 个奖池）。
+   * 存档 acc.mm = { clr: { '水:0': 首通时间 }, wins: 次数, g: { n 当前奖池, left [剩余奖励序号], d 日期, opened 今天解锁的奖池数 } } */
+  var BJ_DAY = 86400000;
+  var MM = { start: Date.UTC(2026, 9, 23, 16, 0, 0), end: Date.UTC(2026, 10, 15, 16, 0, 0), order: ['水', '火', '草', '电', '冰'] };   // 2026-10-24 00:00 ~ 2026-11-16 00:00（北京时间）
+  var MM_NICK = { gorgon: '明明的蛇', pede: '明明的鱼', hephaestus: '明明的甲虫', firemouse: '明明的鼠鼠', wind: '明明的萝卜', mush: '明明的蘑菇', kaleo: '明明的大虫子', squid: '明明的水臂', leaf: '明明的力果', shroom: '明明的方头' };
+  var MM_TEAM = { 水: ['pede', 'squid', 'gorgon'], 火: ['firemouse', 'shroom', 'hephaestus'], 草: ['mush', 'leaf', 'kaleo'], 电: ['faraday', 'leigong', 'faraday'], 冰: ['frost', 'wild', 'frost'] };
+  var MM_TEAM_HARD = { 草: ['mush', 'leaf', 'wind'] };
+  var MM_DIFF = [
+    { n: '通常', lv: [40, 45, 50], tok: [10, 15], first: { tok: 30, exp: 20000 } },
+    { n: '高难', lv: [75, 75, 75], tok: [30, 40], first: { tok: 80, exp: 50000 }, fx: [{ mmGift: 1, pp: 99 }, { mmGift: 1, pp: 99 }, { mmGift: 1, dr: 0.15, pp: 99 }] }
+  ];
+  var MM_FINAL = { tok: [50, 60], first: { tok: 120, exp: 80000 } };
+  MATS.mmTok = { name: '明明代币', d: '活动「明明教官的试炼」里通过关卡获得，可以在全息作战场地或航行日志里抽奖：10 个抽一次，100 个十连。' };
+  MATS.e_leiming = { name: '雷明灯的精元', d: '明明代币抽奖第 10 个奖池里的奖励。放进神农架 · 精灵保育仓，孵化 8 小时后会诞生一只雷明灯。', hatch: { sid: 'leiming', lv: 1, min: 480 } };
+  USE_ITEMS.mmEye = { name: '雷明之眼', sid: null, sids: ['leiming'], kind: 'jade', cost: 100, sd: '雷明灯一系的专属道具。100 个可以让雷明灯一系领悟一个隐藏技能。', d: '明明代币抽奖第 20、30 个奖池里的奖励，每次 100 个。100 个可以让雷明灯一系（进化前的形态也可以）领悟一个还没领悟的隐藏技能。' };
+  if (MON_ORDER.indexOf('mmEye') < 0) MON_ORDER.splice(MON_ORDER.indexOf('boneDust') + 1, 0, 'mmEye');
+  ['mmTok', 'e_leiming'].forEach(function (k) { if (MAT_ORDER.indexOf(k) < 0) MAT_ORDER.push(k); });
+  function mmRec() { if (!acc.mm) acc.mm = { clr: {}, wins: 0 }; if (!acc.mm.clr) acc.mm.clr = {}; return acc.mm; }
+  function mmDay(t) { return Math.floor(((t || Date.now()) - MM.start) / BJ_DAY); }
+  function mmLive() { var t = Date.now(); return t >= MM.start && t < MM.end; }
+  function mmOpen() { return !!acc && prog('mmTrial').done && mmLive(); }
+  function mmStageOpen(i) { return mmDay() >= i; }   // i = 0..4 五个属性，5 = 最终试炼
+  function mmOpenText(i) { var t = MM.start + i * BJ_DAY, d = new Date(t + 8 * 3600e3); return (d.getUTCMonth() + 1) + ' 月 ' + d.getUTCDate() + ' 日开放'; }
+  function mmFoes(type, d) {
+    var L = MM_DIFF[d], sids = (d && MM_TEAM_HARD[type]) || MM_TEAM[type];
+    return sids.map(function (sid, k) { var o = { sid: sid, lv: L.lv[k], nick: MM_NICK[sid] || null }; if (L.fx) o.boss = JSON.parse(JSON.stringify(L.fx[k])); if (k === 2 && !d) o.boss = { pp: 99 }; return o; });
+  }
+  function mmFinalFoes() {
+    var pool = []; MM.order.forEach(function (t) { ((MM_TEAM_HARD[t]) || MM_TEAM[t]).forEach(function (sid) { if (pool.indexOf(sid) < 0) pool.push(sid); }); });
+    var a = pool[Math.floor(Math.random() * pool.length)], b; do { b = pool[Math.floor(Math.random() * pool.length)]; } while (b === a);
+    return [{ sid: a, lv: 75, nick: MM_NICK[a] || null, boss: { mmGift: 1, pp: 99 } }, { sid: b, lv: 75, nick: MM_NICK[b] || null, boss: { mmGift: 1, pp: 99 } },
+      { sid: 'leiming', lv: 80, nick: '明明教官的光霆主', maxhp: 2000, boss: { dr: 0.15, lmBoost: 1, pp: 99 } }];
+  }
+  function mmFoeSpec(x) {
+    var mv = defaultMoves(x.sid, x.lv), o = { id: x.sid, lv: x.lv, moves: mv, nick: x.nick || form({ sid: x.sid, lv: x.lv }).name, img: SPRITES[x.sid], maxhp: x.maxhp, boss: x.boss };
+    seeMon(x.sid, x.lv); return o;
+  }
+  function mmTokRange(d) { return d === 'f' ? MM_FINAL.tok : MM_DIFF[d].tok; }
+  function mmStart(key, d) {   // key = 属性 或 'final'
+    if (!mmOpen()) return;
+    var team = (acc.teams[acc.active] || []).map(mon).filter(Boolean); if (!team.length) team = acc.mons.slice(0, 1);
+    team = team.slice(0, TEAM_SIZE);
+    var fin = key === 'final', foes = fin ? mmFinalFoes() : mmFoes(key, d), a = foes.map(mmFoeSpec);
+    stopTimers(); ex.fighting = true; document.body.classList.add('story-fight'); syncBattle();
+    $('pg-explore').hidden = true; $('pg-arena').hidden = false;
+    window.HSBATTLE.start({ p: team.map(storyMon), a: a, foe: '明明教官的试炼', diff: fin ? '明明的最终试炼' : key + '系关卡 · ' + MM_DIFF[d].n, bgm: 'mingBattle1', bgmAt: { 2: 'mingFinal1' }, items: invCopy(), onItem: useInv, bg: BG.bridge_p, back: '全息作战场地',
+      onEnd: function (res, seen, downs) {
+        var msg = [], R = mmRec(), ck = fin ? 'final' : key + ':' + d;
+        dailyHit('pve');
+        if (res === 'win') {
+          var rg = mmTokRange(fin ? 'f' : d), tok = rg[0] + Math.floor(Math.random() * (rg[1] - rg[0] + 1)), it = { mmTok: tok };
+          R.wins = (R.wins || 0) + 1;
+          msg.push('通过了' + (fin ? '「明明的最终试炼」' : key + '系关卡（' + MM_DIFF[d].n + '）') + '！获得明明代币 ×' + tok + '。');
+          if (!R.clr[ck]) {
+            R.clr[ck] = Date.now(); var F = fin ? MM_FINAL.first : MM_DIFF[d].first;
+            it.mmTok += F.tok; it.g_core = 1; acc.exp = (acc.exp || 0) + F.exp;
+            msg.push('首次通过奖励：明明代币 ×' + F.tok + '、累积经验 ×' + fmt(F.exp) + '、星核 ×1。');
+          }
+          giveItems(it);
+        }
+        msg = msg.concat(battleRewards(team, seen, downs));
+        save();
+        ex.fighting = false; document.body.classList.remove('story-fight');
+        ex.view = 'mmArena';
+        $('pg-arena').hidden = page !== 'arena'; $('pg-explore').hidden = page !== 'explore';
+        renderTop(); syncBattle(); window.scrollTo(0, $('pg-explore').offsetTop - 8);
+        if (msg.length) toast(msg.join(''));
+      } });
+  }
+  function mmLeftText() { var ms = MM.end - Date.now(), dd = Math.floor(ms / BJ_DAY), h = Math.floor(ms % BJ_DAY / 3600000); return ms <= 0 ? '已结束' : '剩余 ' + (dd ? dd + ' 天 ' : '') + h + ' 小时'; }
+  function renderMmArena() {
+    var R = mmRec(), tok = acc.items.mmTok || 0;
+    var stage = function (t, i) {
+      var open = mmStageOpen(i), f = MM_TEAM[t], img = SPRITES[f[2]];
+      return '<article class="mm-st' + (open ? '' : ' locked') + '"><span class="tape r"></span><div class="mm-art">' + (open ? '<img src="' + img + '" alt="">' : '<span class="mm-lock">🔒</span>') + '</div><div class="mm-txt"><h3>' + t + '系关卡</h3>' +
+        (open ? '<p class="hint">对手：' + f.map(function (sid) { return esc(MM_NICK[sid] || SPMAP[sid].name); }).join('、') + '</p><div class="mm-btns">' + MM_DIFF.map(function (D, d) { var c = R.clr[t + ':' + d]; return '<button type="button" class="btn' + (d ? ' primary' : '') + '" data-mmgo="' + t + '" data-d="' + d + '">' + D.n + '（LV' + (d ? '75' : '40–50') + '）' + (c ? ' ✓' : '') + '</button>'; }).join('') + '</div>'
+          : '<p class="hint">' + mmOpenText(i) + '</p>') + '</div></article>';
+    };
+    var finOpen = mmStageOpen(5);
+    $('pg-explore').innerHTML = exHead('明明教官在空间站安置的全息作战场地。每天开放一个属性的关卡，打败对方的 3 只精灵就能获得明明代币。') +
+      '<div class="crumb"><button type="button" class="btn ghost" id="mm-back">‹ 返回空间站</button><b>空间站 · 全息作战场地</b><span class="hint">限时活动 · ' + mmLeftText() + '</span></div>' +
+      '<div class="mm-bar"><span>明明代币 <b>' + fmt(tok) + '</b></span><button type="button" class="btn primary" data-mmgacha="1">去抽奖</button></div>' +
+      '<p class="hint">通常难度：对手 LV40–50（第三只最强）。高难难度：对手 LV75，带特效【明明之赐】（物攻、特攻 +50%），第三只另有【星球聚能】。每通过一次给明明代币（通常 10–15 个、高难 30–40 个），每关每个难度首次通过另有明明代币、累积经验和 1 颗星核。</p>' +
+      '<div class="mm-grid">' + MM.order.map(stage).join('') +
+      '<article class="mm-st final' + (finOpen ? '' : ' locked') + '"><span class="tape r"></span><div class="mm-art">' + (finOpen ? '<img src="' + SPRITES.leiming + '" alt="">' : '<span class="mm-lock">🔒</span>') + '</div><div class="mm-txt"><h3>明明的最终试炼</h3>' +
+        (finOpen ? '<p class="hint">随机两只高难难度的精灵先上场，第三只是明明教官的光霆主（LV80，体力 2000），带特效【星球聚能】【雷明尊者】（特性「雷明」增幅 300%）。通过给明明代币 50–60 个。</p><div class="mm-btns"><button type="button" class="btn primary" data-mmgo="final" data-d="0">挑战' + (R.clr.final ? ' ✓' : '') + '</button></div>'
+          : '<p class="hint">' + mmOpenText(5) + '</p>') + '</div></article></div>';
+  }
+  /* ----- 明明代币抽奖 ----- */
+  function mmPool(n) {
+    var P = [];
+    [1000, 1000, 1000, 1000, 3000, 3000, 3000, 10000].forEach(function (e) { P.push({ exp: e }); });
+    [['floraJade', 10], ['floraJade', 10], ['ltOrb', 10], ['kbDrop', 10], ['ppAsh', 10], ['whFrost', 10], ['mmTok', 5], ['mmTok', 5], ['mmTok', 20], ['fruit2', 2], ['evAny', 1], ['g_core', 1]].forEach(function (x) { var it = {}; it[x[0]] = x[1]; P.push({ items: it }); });
+    if (n === 10) P[0] = { items: { e_leiming: 1 }, big: 1 };
+    if (n === 20 || n === 30) P[0] = { items: { mmEye: 100 }, big: 1 };
+    return P;
+  }
+  function mmPrizeText(z) { return z.exp ? '累积经验 ×' + fmt(z.exp) : Object.keys(z.items).map(function (k) { return itemName(k) + ' ×' + z.items[k]; }).join('、'); }
+  function mmG() {
+    var R = mmRec(), d = bjDay();
+    if (!R.g) R.g = { n: 1, left: mmPool(1).map(function (x, i) { return i; }), d: d, opened: 0 };
+    if (R.g.d !== d) { R.g.d = d; R.g.opened = 0; }
+    return R.g;
+  }
+  var MM_POOL_DAY = 100;
+  function mmDraw(times) {
+    var G = mmG(), cost = 10 * times;
+    if ((acc.items.mmTok || 0) < cost) { toast('明明代币不够，需要 ' + cost + ' 个。'); return; }
+    var got = [], spent = 0, stop = '';
+    for (var i = 0; i < times; i++) {
+      if (!G.left.length) {
+        if (G.opened >= MM_POOL_DAY) { stop = '今天已经解锁了 ' + MM_POOL_DAY + ' 个奖池，明天再来吧。'; break; }
+        G.n++; G.opened++; G.left = mmPool(G.n).map(function (x, k) { return k; });
+      }
+      var pick = Math.floor(Math.random() * G.left.length), idx = G.left.splice(pick, 1)[0], z = mmPool(G.n)[idx];
+      if (z.exp) acc.exp = (acc.exp || 0) + z.exp; else giveItems(z.items);
+      spent += 10; got.push((z.big ? '★ ' : '') + mmPrizeText(z));
+    }
+    acc.items.mmTok = (acc.items.mmTok || 0) - spent; save(); renderRes();
+    if (got.length) mmShowDraw(got, stop); else if (stop) toast(stop);
+    if (ex.view === 'mmGacha') renderMmGacha();
+  }
+  function mmShowDraw(got, stop) {
+    var d = document.createElement('div'); d.className = 'soc-dlg';
+    d.innerHTML = '<div class="soc-box side-new" role="dialog" aria-modal="true"><span class="tape l"></span><span class="tape r"></span><span class="step">明明代币抽奖</span><h2>抽到了 ' + got.length + ' 个奖励</h2><ul class="mm-got">' + got.map(function (t) { return '<li' + (t.indexOf('★') === 0 ? ' class="big"' : '') + '>' + esc(t) + '</li>'; }).join('') + '</ul>' + (stop ? '<p class="hint">' + esc(stop) + '</p>' : '') +
+      '<div class="soc-foot"><button type="button" class="btn primary" data-gotx="1">好的</button></div></div>';
+    document.body.appendChild(d);
+    d.addEventListener('click', function (e) { if (e.target === d || e.target.closest('[data-gotx]')) d.remove(); });
+  }
+  function renderMmGacha() {
+    var G = mmG(), P = mmPool(G.n), tok = acc.items.mmTok || 0;
+    $('pg-explore').innerHTML = exHead('用明明代币抽奖：每个奖池有 20 个固定奖励，抽完一个奖池就会进入下一个。第 10 个奖池有「雷明灯的精元」，第 20、30 个奖池有 100 个「雷明之眼」。') +
+      '<div class="crumb"><button type="button" class="btn ghost" id="mmg-back">‹ 返回' + (ex.mmFrom === 'log' ? '航行日志' : '全息作战场地') + '</button><b>明明代币抽奖 · 第 ' + G.n + ' 个奖池</b></div>' +
+      '<div class="mm-bar"><span>明明代币 <b>' + fmt(tok) + '</b></span><span>剩余 <b>' + G.left.length + '</b> / 20</span><span class="hint">今天已解锁 ' + G.opened + ' / ' + MM_POOL_DAY + ' 个新奖池</span>' +
+      '<button type="button" class="btn" data-mmdraw="1"' + (tok >= 10 ? '' : ' disabled') + '>抽一次（10）</button><button type="button" class="btn primary" data-mmdraw="10"' + (tok >= 100 ? '' : ' disabled') + '>十连抽（100）</button></div>' +
+      '<ol class="mm-pool">' + P.map(function (z, i) { var left = G.left.indexOf(i) >= 0; return '<li class="' + (left ? '' : 'got') + (z.big ? ' big' : '') + '">' + esc(mmPrizeText(z)) + (left ? '' : '<em>已抽到</em>') + '</li>'; }).join('') + '</ol>';
+  }
+  function mmEventPop() {
+    var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'mm-pop';
+    d.innerHTML = '<div class="soc-box side-new" role="dialog" aria-modal="true" aria-label="新活动"><span class="tape l"></span><span class="tape r"></span><span class="step">新活动</span><h2>明明教官的试炼</h2>' +
+      '<p>首个大型活动开始了！先到荆楚号 · 襄阳 · 古城防卫部，完成活动任务「明明教官的试炼」。</p><p class="hint">之后可以在空间站的全息作战场地挑战水、火、草、电、冰五个属性的关卡（每天开放一个），赢取明明代币抽奖。活动' + mmLeftText() + '。</p>' +
+      '<div class="soc-foot"><button type="button" class="btn ghost" data-mmx="1">知道了</button><button type="button" class="btn primary" data-mmpopgo="1">去古城防卫部</button></div></div>';
+    document.body.appendChild(d);
+    d.addEventListener('click', function (e) {
+      if (e.target === d || e.target.closest('[data-mmx]')) { d.remove(); return; }
+      if (e.target.closest('[data-mmpopgo]')) { d.remove(); ex.planet = 'jingchu'; go('explore'); teleport('襄阳'); }
+    });
+  }
+  function mmLogHTML() {
+    if (!acc || !prog('flora7').done || !mmLive()) return '';
+    var open = prog('mmTrial').done;
+    return '<article class="log-card wide mm-card"><span class="tape l"></span><span class="tape r"></span><span class="chip log-tag">限时活动</span><h3>明明教官的试炼</h3>' +
+      '<p>明明教官在空间站安置了全息作战场地。每天开放一个属性的关卡（水 → 火 → 草 → 电 → 冰），最后还有「明明的最终试炼」。赢取明明代币，参加抽奖！</p>' +
+      '<p class="hint">活动' + mmLeftText() + (open ? ' · 明明代币 ' + fmt(acc.items.mmTok || 0) : ' · 先完成古城防卫部的活动任务「明明教官的试炼」') + '</p>' +
+      '<div class="soc-foot">' + (open ? '<button type="button" class="btn" data-mmlog="gacha">代币抽奖</button><button type="button" class="btn primary" data-mmlog="arena">传送到全息作战场地</button>' : '<button type="button" class="btn primary" data-mmlog="task">去古城防卫部</button>') + '</div></article>';
+  }
   /* ---------- 商城：荆门 · 物资仓储 ---------- */
   var shopQty = {};
   // 不在战斗里用的商品
@@ -5738,6 +5914,12 @@
     if (b.dataset.arcplay) { arcStop(); ex.arcQ = []; ex.arc = true; startVN(b.dataset.arcplay, 'replay', $('pg-explore'), true); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
     if (b.dataset.arcall) { arcStop(); var aq = Object.keys(SITES).filter(function (id) { return !SITES[id].side && prog(id).done; }); ex.arc = true; ex.arcQ = aq.slice(1); startVN(aq[0], 'replay', $('pg-explore'), true); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
     if (b.dataset.arcgo) { var AS = SITES[b.dataset.arcgo]; ex.arc = false; ex.planet = AS.planet; if (AS.dept) { ex.view = 'area'; ex.area = AS.dept; } else { ex.view = 'sites'; if (AS.planet === 'flora') { ex.fpart = 'story'; ex.flSt = AS.side ? 'side' : 'main'; } } renderExplore(); return; }
+    if (b.dataset.mmarena) { ex.view = 'mmArena'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
+    if (b.dataset.mmgo) { mmStart(b.dataset.mmgo, +b.dataset.d || 0); return; }
+    if (b.dataset.mmgacha) { ex.mmFrom = 'arena'; ex.view = 'mmGacha'; renderExplore(); return; }
+    if (b.dataset.mmdraw) { mmDraw(+b.dataset.mmdraw || 1); return; }
+    if (b.id === 'mm-back') { ex.view = 'sites'; ex.planet = 'station'; renderExplore(); return; }
+    if (b.id === 'mmg-back') { if (ex.mmFrom === 'log') { go('log'); return; } ex.view = 'mmArena'; renderExplore(); return; }
     if (b.dataset.wkhub) { ex.view = 'wkhub'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
     if (b.id === 'wkhub-back') { ex.view = 'planets'; renderExplore(); return; }
     if (b.dataset.ewk) { ex.ewkT = b.dataset.ewk; ex.view = 'ewk'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
@@ -5928,6 +6110,10 @@
     if (mode && mode.indexOf('item:') === 0) { var ip = mode.split(':'); return ITEM_IMG[ip[1]] ? '<figure class="vn-mon tw plain item"><img src="' + ITEM_IMG[ip[1]] + '" alt=""><figcaption>' + esc(ip[2] || '') + '</figcaption></figure>' : ''; }   // item:道具图:标签（剧情里出现的道具）
     if (mode && mode.indexOf('mon:') === 0) { var mp = mode.split(':'); return '<figure class="vn-mon tw plain"><img src="' + form({ sid: mp[1], lv: +mp[2] || 1 }).img + '" alt=""><figcaption>' + esc(mp[3] || form({ sid: mp[1], lv: +mp[2] || 1 }).name) + '</figcaption></figure>'; }   // mon:精灵:等级:标签
     if (mode && mode.indexOf('mia:') === 0) { var xp = mode.split(':'), xl = +xp[2] || 1, xf = form({ sid: xp[1], lv: xl }), fx = typeof FORM_FX_SPRITES !== 'undefined' && FORM_FX_SPRITES[xp[1]]; return '<figure class="vn-mon tw plain mia"><img src="' + (fx && fx.miasma && xl >= 50 ? fx.miasma : xf.img) + '" alt=""><figcaption>' + esc(xp[3] || '瘴气' + xf.name) + '</figcaption></figure>'; }   // mia:精灵:等级:标签（瘴气变异的样子，带紫色光晕）
+    if (mode && mode.indexOf('team:') === 0) {   // 配队里某种属性的精灵（第十一段：水系精灵一起喷水）
+      var tt = mode.slice(5), L = (acc.teams[acc.active] || []).map(mon).filter(function (m) { return m && SPMAP[m.sid] && SPMAP[m.sid].types.indexOf(tt) >= 0; }).slice(0, 4);
+      return '<div class="vn-team">' + L.map(function (m) { return '<figure class="vn-mon tw plain spray"><img src="' + form(m).img + '" alt=""><figcaption>' + esc(form(m).name) + '</figcaption></figure>'; }).join('') + '</div>';
+    }
     if (mode === 'mine' && acc.starter) return img(acc.starter, 'me', starterName());
     if (mode === 'pair' && acc.starter) return img(acc.starter, 'me', starterName()) + (acc.rival ? img(acc.rival, 'rv', monName(acc.rival)) : '');
     return '';
@@ -5980,8 +6166,15 @@
     var st = SCRIPT[ex.site][ex.i];
     if (st && st.pick) { openPick(); return; }
     if (st && st.battle) { openFight(st.battle); return; }
+    if (st && st.needType && !teamHasType(st.needType)) { openNeedType(st.needType); return; }
     $('vn-next').hidden = false;
     if (ex.auto) ex.timer = setTimeout(next, 1200 + Array.from(ex.full).length * 45);
+  }
+  // 剧本里要求配队里有某种属性的精灵（needType）：没有就停在这里，调整配队后点「重新检查」继续
+  function teamHasType(t) { return (acc.teams[acc.active] || []).map(mon).filter(Boolean).some(function (m) { return SPMAP[m.sid] && SPMAP[m.sid].types.indexOf(t) >= 0; }); }
+  function openNeedType(t) {
+    var el = $('vn-pick'); el.hidden = false; $('vn-box').classList.add('wait');
+    el.innerHTML = '<div class="vn-fight"><b>需要一只' + t + '系精灵</b><p>在当前出战配队（' + TEAM_NAME[acc.active] + '）里放一只' + t + '系精灵，再继续剧情。</p><p class="hint">可以先点右上角「退出」，到「精灵背包」调整配队，回来时会从这里接着读。</p><button type="button" class="btn primary" data-vn="needok">重新检查</button></div>';
   }
   function openFight(key) {
     var F = FIGHTS[key], el = $('vn-pick'), fteam = fightTeam(F), f0 = fteam[0];
@@ -6031,7 +6224,8 @@
     stopTimers();
     var pr = prog(ex.site), firstDone = !pr.done; pr.done = true; pr.at = 0; save();
     var R = grant(ex.site), intro = ex.mode === 'intro';
-    if (ex.site === 'flora6' && firstDone) setTimeout(floraFallenNotice, 600);   // 第一次读完第十段：芙罗拉星被腐化的提示
+    if (ex.site === 'flora6' && firstDone) setTimeout(floraFallenNotice, 600);
+    if (ex.site === 'flora7' && firstDone) { fields = {}; if (mmLive()) setTimeout(mmEventPop, 900); }   // 芙罗拉星恢复：野外场景重建；弹出新活动   // 第一次读完第十段：芙罗拉星被腐化的提示
     var CH = chapterOf(ex.site), chPaid = CH && chapterDone(CH) && !chapterGot(CH.id) && !intro ? (chapterPay(CH), CH) : null;
     if (chPaid) renderRes();
     if (R && ready()) renderRes();
@@ -6048,7 +6242,7 @@
       (chPaid ? '<div class="vn-chap"><b>「' + chPaid.n + '」完成！</b><p>章节大奖</p><div class="vn-reward">' + rwList(chPaid.reward).map(function (x) { return '<span>' + x + '</span>'; }).join('') + '</div></div>' : '') +
       (nxt && !unlocked(nxt) && SITES[nxt].needText && !SITES[ex.site].endText ? '<p><b class="red">任务：' + SITES[nxt].needText + '。</b></p>' : '') +
       (UNLOCK[ex.site] && !SITES[ex.site].endText ? '<p><b class="red">「' + UNLOCK[ex.site] + '」已开放！</b>' + (ex.site === 'storage' ? '<br><span class="hint">在荆楚号 · 荆门 · 物资仓储里进入</span>' : ex.site === 'medal' ? '<br><span class="hint">在荆楚号 · 黄冈 · 学院部里进入</span>' : '') + '</p>' : '') +
-      '<p>' + (SITES[ex.site].endText ? SITES[ex.site].endText : nxt && !unlocked(nxt) ? '完成任务后，下一段「' + SITES[nxt].chapter.split(' · ')[1] + '」就会开放。' : nxt ? (SITES[nxt].side ? '支线「' : '下一段「') + SITES[nxt].chapter.split(' · ')[1] + '」已解锁，可在星际探索 · ' + nxtP.name + (SITES[nxt].dept ? ' · ' + DEPTS[SITES[nxt].dept][0] : '') + '中继续。' : '后续剧情正在制作中。') + '</p>' +
+      '<p>' + (SITES[ex.site].endText ? SITES[ex.site].endText : nxt && !unlocked(nxt) ? '完成任务后，下一段「' + SITES[nxt].chapter.split(' · ')[1] + '」就会开放。' : nxt ? (SITES[nxt].event ? '活动任务「' : SITES[nxt].side ? '支线「' : '下一段「') + SITES[nxt].chapter.split(' · ')[1] + '」已解锁，可在星际探索 · ' + nxtP.name + (SITES[nxt].dept ? ' · ' + DEPTS[SITES[nxt].dept][0] : '') + '中继续。' : '后续剧情正在制作中。') + '</p>' +
       '<div class="row">' + (intro ? (INTRO_SITES.indexOf(ex.site) >= 0 && INTRO_SITES[INTRO_SITES.indexOf(ex.site) + 1] ? '<button type="button" class="btn primary" data-vn="inext" data-nx="' + INTRO_SITES[INTRO_SITES.indexOf(ex.site) + 1] + '">继续下一段</button>' : '<button type="button" class="btn primary" data-vn="enter">进入游戏</button>')
         : ex.arc ? '<button type="button" class="btn" data-vn="replay">重温一遍</button>' + (ex.arcQ && ex.arcQ.length ? '<button type="button" class="btn" data-vn="next" data-nx="' + ex.arcQ[0] + '">连播下一段：' + esc(SITES[ex.arcQ[0]].chapter) + '</button>' : '') + '<button type="button" class="btn primary" data-vn="exit">返回剧情回顾</button>'
         : '<button type="button" class="btn" data-vn="replay">重温一遍</button>' + (nxt && unlocked(nxt) ? '<button type="button" class="btn" data-vn="next" data-nx="' + nxt + '">继续下一段</button>' : '') + '<button type="button" class="btn primary" data-vn="exit">' + (SITES[ex.site].dept ? '返回区域' : '返回地点') + '</button>') + '</div></div>';
@@ -6071,6 +6265,7 @@
       if (a === 'replay') { startVN(ex.site, 'replay', ex.host, true); return; }
       if (a === 'next' && ex.arc && ex.arcQ && ex.arcQ[0] === b.dataset.nx) ex.arcQ.shift();
       if (a === 'next') { startVN(b.dataset.nx, 'replay', ex.host, prog(b.dataset.nx).done || !prog(b.dataset.nx).at); return; }
+      if (a === 'needok') { var nst = SCRIPT[ex.site][ex.i]; if (nst && nst.needType && !teamHasType(nst.needType)) { toast('出战配队里还没有' + nst.needType + '系精灵。'); return; } $('vn-pick').hidden = true; $('vn-box').classList.remove('wait'); next(); return; }
       if (a === 'enter') { finishIntro(); return; }
       if (a === 'inext') { startVN(b.dataset.nx, 'intro', ex.host, true); return; }
       if (a === 'auto') { ex.auto = !ex.auto; ex.skip = false; syncBtns(); if (ex.auto && !ex.typing && !ex.tick) ex.timer = setTimeout(next, 600); return; }
@@ -6220,6 +6415,8 @@
     if (page === 'social' && window.HSSOCIAL && HSSOCIAL.visitBgm) { var vb = HSSOCIAL.visitBgm(); if (vb) return vb; }   // 拜访别人的茶室：放主人选的
     if (page === 'explore') {
       if (vnSite === 'flora') return 'flora';
+      if (ex.view === 'mmArena' || ex.view === 'mmGacha') return 'mingTheme';
+      if (ex.view === 'field' && ex.region === 'fl_record') return 'floraFallen';
       if (ex.view === 'sites' && ex.planet === 'flora') return 'flora';
       if (ex.view === 'field' && fields[ex.region] && regionById(ex.region) && regionById(ex.region).planet === 'flora') {   // 芙罗拉星野外：草甸放 floraGrass，丛林放 floraForest
         var rid_ = regionById(ex.region).id;
