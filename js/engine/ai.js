@@ -40,7 +40,7 @@ function scoreMove(S, me, foe, mv) {
     if (mv.status && (!foe.st[mv.status.k] || mv.status.k === '中毒') && !(mv.status.k === '流血' && typesOf(foe).indexOf('机械') >= 0)) s += 18 * mv.status.chance;
     return s;
   }
-  if (mv.heal || mv.healLost) s += hpR < 0.55 ? (mv.healLost ? 50 : 75) * (1 - hpR) + 15 : 0;
+  if (mv.heal || mv.healLost) s += hpR < 0.4 ? (mv.healLost ? 30 : 45) * (1 - hpR) + 6 : 0;   // 2026-10-24：电脑少用回血技能（原来体力 55% 以下就积极回血）
   if (mv.selfStage) for (var k in mv.selfStage) if (me.stages[k] < 4 && !me.tm.noBoost && !me.tm.seal) s += (hpR > 0.5 ? 16 : 4) * mv.selfStage[k];
   if (mv.selfStage && me.tm.seal > 0) s -= 40;
   if (mv.selfStageOne && !me.tm.noBoost && !me.tm.seal) s += hpR > 0.5 ? 8 : 2;
@@ -65,7 +65,7 @@ function scoreMove(S, me, foe, mv) {
     case 'absDef': s += me.fx.absDef ? 0 : 26; break;
     case 'immune': s += me.tm.immune ? 0 : 12; break;
     case 'reflect': s += me.tm.reflect ? 0 : 22; break;
-    case 'green': s += me.tm.green ? 0 : 40 * (1 - hpR) + 12; break;
+    case 'green': s += me.tm.green || hpR >= 0.5 ? 0 : 25 * (1 - hpR); break;
     case 'silence': s += faster ? 34 : 0; break;
     case 'rain': s += me.tm.rain ? 0 : 26; break;
     case 'boostNext': s += me.fx.boostNext ? 0 : 14; break;
@@ -104,6 +104,11 @@ function aiChoose(S) {
   P.randomP = Math.max(P.randomP || 0, AI_DUMB.randomP); P.noise = Math.max(P.noise || 0, AI_DUMB.noise);
   // 2026-10-21：BOSS / 每周挑战的泰戈尔前两回合不用自我崩坏、元神崩坏
   var early = me.boss && me.id === 'tagore' && S.turn <= 2, banned = function (slot) { return early && (slot.n === '自我崩坏' || slot.n === '元神崩坏'); };
+  // 2026-10-24：BOSS奥多亚克（简单 / 普通）从第 2 回合起每 2 回合切换一次形态；困难难度三只是固定形态，不带形态技能
+  if (me.boss && me.id === 'odo' && S.turn >= 2 && S.turn % 2 === 0) {
+    var oi = me.moves.findIndex(function (slot) { return slot.n === '歼灭形态' && slot.pp > 0 && !moveBlocked(me, slot); });
+    if (oi >= 0) return { kind: 'move', i: oi };
+  }
   var usable = []; me.moves.forEach(function (slot, idx) { if (slot.pp > 0 && !moveBlocked(me, slot) && !banned(slot)) usable.push(idx); });
   if (usable.length && RNG() < P.randomP) return { kind: 'move', i: usable[Math.floor(RNG() * usable.length)] };
   if (!me.tm.noSwitch && !bossOf(S) && RNG() < P.switchP) {   // BOSS战里电脑不主动换人（傀儡要打倒才会换回BOSS）

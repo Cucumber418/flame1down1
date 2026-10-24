@@ -4226,7 +4226,8 @@
           team: [
             { nick: '奥多亚克 · 歼灭形态', odoForm: 'atk', maxhp: 2500, boss: { dr: 0.15, ambush: 400, odoRate: 1, odoSwap: 1, orderRepl: 1, pp: 99 } },
             { nick: '奥多亚克 · 护阵形态', odoForm: 'def', maxhp: 5000, boss: { dr: 0.15, ambush: 400, odoWill: 1, odoSwap: 1, orderRepl: 1, pp: 99 } },
-            { nick: '奥多亚克 · 虹霓暴走', maxhp: 4000, boss: { dr: 0.15, rainbow: 1, orderRepl: 1, pp: 99 } }
+            { nick: '奥多亚克 · 虹霓暴走', maxhp: 4000, moves: ['流形蛮冲', '全弹搭载', '究极爆破', '解析导弹', '坚守阵地', '强效外壳', '重构坚甲', '侵扰投弹'],   // 掌握歼灭、护阵两种形态的全部技能
+              boss: { dr: 0.15, rainbow: 1, orderRepl: 1, pp: 99 } }
           ] }
       ] }
   };
@@ -4487,7 +4488,7 @@
     if (bossFx && bossFx.past && acc.seenFx && acc.seenFx.past) bossFx.pastKnown = 1;   // 「东北的往事」第一次发动之前不显示
     if (bossFx && bossFx.rebirth && acc.seenFx && acc.seenFx.rebirth) bossFx.rebirthKnown = 1;   // 「枯萎中蜕生」第一次发动之前不显示
     var a = L.team ? L.team.map(function (T) {   // 多只BOSS（奥多亚克困难）：形态切换技能不放进技能表
-      return { id: B.sid, lv: L.lv, moves: defaultMoves(B.sid, L.lv).filter(function (n) { return n !== '歼灭形态' && n !== '护阵形态'; }), nick: T.nick, img: SPRITES[B.sid], maxhp: T.maxhp, odoForm: T.odoForm, boss: JSON.parse(JSON.stringify(T.boss)) };
+      return { id: B.sid, lv: L.lv, moves: T.moves || defaultMoves(B.sid, L.lv).filter(function (n) { return n !== '歼灭形态' && n !== '护阵形态'; }), nick: T.nick, img: SPRITES[B.sid], maxhp: T.maxhp, odoForm: T.odoForm, boss: JSON.parse(JSON.stringify(T.boss)) };
     }) : [{ id: B.sid, lv: L.lv, moves: defaultMoves(B.sid, L.lv), nick: B.name, img: SPRITES[B.sid], maxhp: L.hp, onlyHit: L.only, boss: bossFx }];
     seeMon(B.sid, L.lv);
     var rec = bossRec(k, weekly ? wkKey(WK) : d); rec.tries++; save();
