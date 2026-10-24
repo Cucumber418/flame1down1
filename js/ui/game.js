@@ -833,7 +833,7 @@
     brTwig: { name: '生长枯枝', sid: null, sids: ['barren'], kind: 'jade', cost: 100, sd: '困难难度荒芜的专属道具。可以让荒芜领悟隐藏技能，也能提高荒芜的等级上限。', d: '从荒芜身上折下的枯枝，枝头却冒出了一点新芽。100 个可以让荒芜一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；荒芜达到 LV70 后，也用它解锁 LV75（500 个）、LV80（1000 个）的等级上限。首次击败困难难度的荒芜得 80 个，每周挑战每次击败得 50 个。', none: '你还没有荒芜。击败简单难度的BOSS「荒芜」可以得到一只。' },
     deathTok: { name: '死神代币', sid: null, sids: ['pluto'], kind: 'jade', cost: 1, d: '击败先驱之塔第 60 层的死神获得，一个账号最多 3 颗。1 颗可以让帕努托尔一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；先驱之塔的代币商店里，兑换「帕努托尔的精元」也要用到它。', none: '你还没有帕努托尔。在先驱之塔的代币商店里，用 3000 先驱代币 + 1 颗死神代币可以兑换「帕努托尔的精元」。' },
     // 各星球特产（2026-10-18）：和芙罗拉玉一样，100 个让该星球的普通野生精灵一系领悟一个隐藏技能；也用来解锁同属性精灵的等级上限
-    kbDrop: { name: '不化水滴', sid: null, sids: ['pede', 'gorgon', 'siren'], kind: 'jade', cost: 100, gem: '水', sd: '坎伯兰星的特产。可以让坎伯兰星的普通野生精灵领悟隐藏技能，也能提高水系精灵的等级上限。', d: '坎伯兰星浅海里凝成的水滴，永远不会蒸发。100 个可以让坎克托斯、戈耳贡、塞壬一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；水系精灵达到 LV70 后，也可以用它解锁更高的等级上限。在坎伯兰星的野外场景里每天有机会捡到。', none: '你还没有坎克托斯、戈耳贡或塞壬（进化前的形态也算）。去坎伯兰星捕捉吧。' },
+    kbDrop: { name: '不化水滴', sid: null, sids: ['pede', 'gorgon', 'siren', 'odo'], kind: 'jade', cost: 100, gem: '水', sd: '坎伯兰星的特产。可以让坎伯兰星的普通野生精灵领悟隐藏技能，也能提高水系精灵的等级上限。', d: '坎伯兰星浅海里凝成的水滴，永远不会蒸发。100 个可以让坎克托斯、戈耳贡、塞壬一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；水系精灵达到 LV70 后，也可以用它解锁更高的等级上限。在坎伯兰星的野外场景里每天有机会捡到。', none: '你还没有坎克托斯、戈耳贡或塞壬（进化前的形态也算）。去坎伯兰星捕捉吧。' },
     ppAsh: { name: '火山灰烬', sid: null, sids: ['hephaestus', 'firemouse'], kind: 'jade', cost: 100, gem: '火', sd: '庞贝星的特产。可以让庞贝星的普通野生精灵领悟隐藏技能，也能提高火系精灵的等级上限。', d: '庞贝星火山喷出的灰烬，摸上去还是温热的。100 个可以让赫菲斯托斯、费尔茅斯一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；火系精灵达到 LV70 后，也可以用它解锁更高的等级上限。在庞贝星的野外场景里每天有机会捡到。', none: '你还没有赫菲斯托斯或费尔茅斯（进化前的形态也算）。去庞贝星捕捉吧。' },
     ltOrb: { name: '闪电球体', sid: null, sids: ['leigong', 'faraday', 'leiming'], kind: 'jade', cost: 100, gem: '电', sd: '莱汀陨石带的特产。可以让陨石带的普通野生精灵领悟隐藏技能，也能提高电系精灵的等级上限。', d: '雷暴里凝成的一团电光，握在手里噼啪作响。100 个可以让雷公、法拉第一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；电系精灵达到 LV70 后，也可以用它解锁更高的等级上限。在莱汀陨石带的野外场景里每天有机会捡到。', none: '你还没有雷公或法拉第（进化前的形态也算）。去莱汀陨石带捕捉吧。' },
     whFrost: { name: '永久冻土', sid: null, sids: ['frost'], kind: 'jade', cost: 100, gem: '冰', sd: '白之星的特产。可以让白之星的普通野生精灵领悟隐藏技能，也能提高冰系精灵的等级上限。', d: '白之星冰原下挖出的冻土，一万年都不会化开。100 个可以让霜冻之冠一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；冰系精灵达到 LV70 后，也可以用它解锁更高的等级上限。在白之星的野外场景里每天有机会捡到。', none: '你还没有霜冻之冠（进化前的形态也算）。去白之星的永冻冰原捕捉吧。' },
@@ -1004,7 +1004,6 @@
     if (k) {
       var it = USE_ITEMS[k], body = '';
       if (k === 'permit') body = '<p>进行「每周挑战」时消耗 1 枚。每 12 小时恢复 1 枚，最多同时持有 ' + PERMIT.max + ' 枚。</p><p class="hint">当前 ' + pn + ' 枚 · ' + permitNext() + '</p><button type="button" class="btn" data-itgo="weekly">去每周挑战</button>';
-      else if (k === 'ctTicket') body = '<p>' + esc(MATS.ctTicket.d) + '</p><p class="hint">1 张可以兑换 1 只 LV10 的「雷明灯」（光霆主的一阶，电 · 光系）。</p><button type="button" class="btn primary" data-ituse="ctTicket"' + ((acc.items.ctTicket || 0) > 0 ? '' : ' disabled') + '>兑换神秘精灵</button>';
       else if (k === 'rename') body = '<p>' + esc(SHOP_X.rename.d) + '</p><button type="button" class="btn primary" data-ituse="rename">使用改名卡</button>';
       else if (k === 'auto') body = '<p>' + esc(TEA_SHOP.auto.d) + '</p><button type="button" class="btn" data-itgo="home">去我的茶室装上</button>';
       else if (ITEMS[k]) body = '<p>' + esc(ITEMS[k].d) + '</p><p class="hint">在剧情、野外和BOSS对战的「道具」页使用，会占用一回合。</p>';
@@ -1041,11 +1040,6 @@
     $('pg-items').innerHTML = '<div class="page-head"><h2 class="sec">储存箱</h2><p class="hint">你拥有的所有道具。点道具查看说明和使用方法。</p></div>' + itemsHTML();
   }
   function useBagItem(k) {
-    if (k === 'ctTicket') {   // 2026-10-22：神秘精灵兑换券 → LV10 雷明灯
-      if (!(acc.items.ctTicket > 0)) return;
-      acc.items.ctTicket--; var nm0 = newMon('leiming', 10), T0 = acc.teams[acc.active], ad = T0.length < TEAM_SIZE; if (ad) T0.push(nm0.u);
-      seeMon('leiming', 10); save(); ui.itMsg = '兑换成功！雷明灯（LV10，' + nm0.nat + '）' + (ad ? '加入了' + TEAM_NAME[acc.active] + '。' : '已收入精灵仓库。'); renderItems(); toast(ui.itMsg); return;
-    }
     if (k === 'rename') { setTimeout(function () { renaming = true; renderRename(); $('who-menu').hidden = false; $('who-btn').setAttribute('aria-expanded', true); window.scrollTo(0, 0); }, 0); return; }   // 等这次点击处理完再打开名字菜单，免得被「点别处关闭」立刻关上
     var sel = $('it-nat'), r = applyMonItem(k, mon(ui.itTarget), sel && sel.value);
     ui.itMsg = r.msg; if (r.ok) ui.itNat = null;
@@ -1740,7 +1734,7 @@
   var CONTEST = { id: 'quiz1', name: '第一届做题大王争霸赛' }, CT = { data: null, busy: false, err: '', at: 0 };
   var CT_RW = [{ exp: 300000, t: 1 }, { exp: 200000, t: 1 }, { exp: 150000, t: 1 }, { exp: 120000, t: 1 }];   // 第 1~4 名；之后都按 CT_RW0（兑换券每人 1 张）
   var CT_RW0 = { exp: 80000, t: 1 };
-  MATS.ctTicket = { name: '神秘精灵兑换券', d: '做题大王争霸赛的参赛奖励。可以兑换神秘精灵「雷明灯」。' };
+  MATS.ctTicket = { name: '神秘精灵兑换券', d: '做题大王争霸赛的参赛奖励。能兑换什么精灵？之后揭晓。' };   // 2026-10-24：改回待定（之后补充新精灵），不再兑换雷明灯
   function contestMe() { return !!(acc && acc.contest && acc.contest[CONTEST.id]) || !!(CT.data && CT.data.mine); }
   function ctName(u) { return (CT.data && CT.data.names && CT.data.names[u]) || u; }
   function bjText(t) { var d = new Date(t + 8 * 3600 * 1000); return (d.getUTCMonth() + 1) + ' 月 ' + d.getUTCDate() + ' 日 ' + ('0' + d.getUTCHours()).slice(-2) + ':' + ('0' + d.getUTCMinutes()).slice(-2); }
@@ -2211,6 +2205,46 @@
     });
   }
   setInterval(sideCheck, 3000);
+  /* ---------- 新手指引（2026-10-24）：弹窗提醒继续主线、去野外捕捉精灵 ----------
+   * 主线：下一段可以读了、或者还差任务才能读时，各提醒一次（acc.guide.main 记着提醒过哪一段的哪种状态）
+   * 捕捉：能进野外以后，精灵还很少的话提醒一次（acc.guide.caught） */
+  function mainNext() { var ids = Object.keys(SITES).filter(function (id) { var S = SITES[id]; return !S.side && !prog(id).done && (!S.after || prog(S.after).done); }); return ids[0] || null; }
+  function guideGo(id, part) {
+    var S = SITES[id]; ex.planet = S.planet;
+    if (S.dept) { go('explore'); teleport(S.dept); return; }
+    ex.view = 'sites'; if (S.planet === 'flora') { ex.fpart = part || 'story'; ex.flSt = 'main'; }
+    go('explore'); renderExplore();
+  }
+  function guidePop(step, title, html, btn, fn) {
+    var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'guide-dlg';
+    d.innerHTML = '<div class="soc-box side-new" role="dialog" aria-modal="true" aria-label="' + esc(title) + '"><span class="tape l"></span><span class="tape r"></span><span class="step">' + esc(step) + '</span><h2>' + esc(title) + '</h2>' + html +
+      '<div class="soc-foot"><button type="button" class="btn ghost" data-gdx="1">知道了</button><button type="button" class="btn primary" data-gdgo="1">' + esc(btn) + '</button></div></div>';
+    document.body.appendChild(d);
+    d.addEventListener('click', function (e) {
+      if (e.target === d || e.target.closest('[data-gdx]')) { d.remove(); return; }
+      if (e.target.closest('[data-gdgo]')) { d.remove(); fn(); }
+    });
+  }
+  function guideCheck() {
+    if (!ready() || ex.fighting || ex.view === 'vn' || ex.mode || document.querySelector('.soc-dlg') || ($('battle') && !$('battle').hidden)) return;
+    if (!acc.guide) acc.guide = {};
+    var G = acc.guide, id = mainNext();
+    if (id) {
+      var S = SITES[id], ok = unlocked(id), key = id + (ok ? ':open' : ':need');
+      if (G.main !== key && (ok || S.needText)) {
+        G.main = key; save();
+        var P = planetOf(S.planet), where = (P ? P.name : '') + (S.dept ? ' · ' + (DEPTS[S.dept] ? DEPTS[S.dept][0] : S.dept) : ' · ' + S.name);
+        if (ok) guidePop('主线指引', '继续主线：' + S.chapter, '<p class="hint">' + esc(where) + '</p><p>' + esc(S.d) + '</p>', '前往', function () { guideGo(id, 'story'); });
+        else guidePop('主线指引', '下一段主线：' + S.chapter, '<p>要继续主线，先完成这个任务：</p><p><b class="red">' + esc(S.needText) + '</b></p>', '去完成', function () { guideGo(id, S.planet === 'flora' ? 'catch' : 'story'); });
+        return;
+      }
+    }
+    if (!G.caught && prog('flora1').done && acc.mons.length < 3) {
+      G.caught = 1; save();
+      guidePop('新手指引', '去野外捕捉精灵吧', '<p>芙罗拉星的丛林和草甸里有很多野生精灵。点场景里走动的精灵就能和它对战，在对战的「道具」页使用捕捉装置就能把它收进队伍。</p><p class="hint">打到对方体力越低、对方身上有异常状态，越容易捕捉成功。捕捉装置可以在荆楚号 · 荆门 · 物资仓储的商城兑换。</p>', '去捕捉', function () { ex.planet = 'flora'; ex.view = 'sites'; ex.fpart = 'catch'; go('explore'); renderExplore(); });
+    }
+  }
+  setInterval(guideCheck, 4000);
   /* 做题大王争霸赛（2026-10-19）：进游戏后先读一次赛事状态。报名期间还没报名的弹报名窗（每次打开游戏一次）；没看过的全服公告补弹最新一条 */
   var ctPopped = false;
   function ctPopCheck() {
@@ -4513,7 +4547,8 @@
     ['boss', 'Boss', '简单难度BOSS战'], ['boss2', 'Boss2', '普通难度BOSS战'], ['boss3', 'Boss3', '困难难度BOSS战与每周挑战'], ['tigerFinal', '东北的往事', '？'],
     ['flora', 'FloraBackground', '芙罗拉星'], ['floraGrass', 'Flora1', '芙罗拉星 · 草甸'], ['floraForest', 'Flora2', '芙罗拉星 · 丛林'], ['floraFallen', 'Flora3 · The Great Cover', '瘴气化之后的芙罗拉星'],
     ['grassTalk', 'Grass Talk', '剧情'], ['memory', 'Memory', '剧情'], ['saver', 'Saver', '剧情'], ['disCommunication', 'Dis-communication', '瘴气化之后的野外对战'], ['beforeEnd', 'before the end', '？'],
-    ['spa', '温泉', '温泉疗养'], ['kb', '坎伯兰星', '坎伯兰星'], ['kbSurface', '坎伯兰星 · 水面', '坎伯兰星水面'], ['kbShallow', '坎伯兰星 · 浅海', '坎伯兰星浅海'], ['temple', '古代神殿', '坎伯兰星深海']
+    ['spa', '温泉', '温泉疗养'], ['kb', '坎伯兰星', '坎伯兰星'], ['kbSurface', '坎伯兰星 · 水面', '坎伯兰星水面'], ['kbShallow', '坎伯兰星 · 浅海', '坎伯兰星浅海'], ['temple', '古代神殿', '坎伯兰星深海'],
+    ['floraLab', 'Flora Lab', '？'], ['pompeiiCity', 'Pompeii City', '？'], ['mingTheme', 'Ming Theme', '？'], ['mingBattle1', 'Ming Battle 1', '？'], ['mingBattle2', 'Ming Battle 2', '？'], ['mingFinal1', 'Ming Final Battle 1', '？'], ['mingFinal2', 'Ming Final Battle 2', '？']
   ];
   var MUSIC_ALIAS = { disComScene: 'disCommunication', faceEnemyScene: 'faceEnemy' };
   window.HSHEARD = function (k) {
@@ -4633,6 +4668,63 @@
     var nm = main.filter(function (id) { return prog(id).done; }).length, ns = side.filter(function (id) { return prog(id).done; }).length;
     return '<button type="button" class="arc-entry" data-archive="1"><span class="tape l"></span><span class="arc-e-ic" aria-hidden="true">📖</span><span class="arc-e-txt"><b>剧情回顾</b><small>主线 ' + nm + ' 段 · 支线 ' + ns + ' 段 · 画廊 · 音乐鉴赏 · 角色立绘</small></span><span class="wk-pm">›</span></button>';
   }
+  /* ---------- Wiki（2026-10-24）：顶栏入口，按图鉴编号列出所有精灵的全部技能，
+   * 标出隐藏技能用什么道具解锁、等级上限用什么道具提升，以及精灵的获得方式；可以按属性筛选 ---------- */
+  var WIKI_GET = {
+    leaf: '初始精灵（三选一）；芙罗拉星丛林、草甸的稀有野生精灵', squid: '初始精灵（三选一）；坎伯兰星的稀有野生精灵', shroom: '初始精灵（三选一）；庞贝星的稀有野生精灵',
+    tagore: '击败简单难度的BOSS「泰戈尔」（古城防卫部）', barren: '击败简单难度的BOSS「荒芜」（芙罗拉星 · 盐碱地）',
+    leafcat: '击败旅行精灵叶子喵掉落叶片，5 片在冶炼坊合成精元，再到精灵保育仓孵化', moon: '平衡排位首次达到铂金段位的奖励', bone: '平衡排位首次达到王者段位的奖励',
+    aegis: '支线「明明教官的礼物」（古城防卫部）', phantom: '每天 16:00–24:00 切换探索场景时偶尔出现的神秘精灵', hauris: '每天 16:00–24:00 切换探索场景时偶尔出现的神秘精灵',
+    turkey: '在庞贝星熔岩原放下一碗米饭后有机会出现', siren: '在坎伯兰星水面的冥岛吹响奇声号角', pluto: '先驱之塔商店用死神代币等兑换精元后孵化',
+    firemouse: '庞贝星饮火城 · 炙热核心的野生精灵；炙热核心的火月鼠（一次性）', leiming: '暂未开放获得', odo: '暂未开放获得'
+  };
+  function wikiNo(s) { var n = (s.evo || []).map(function (e) { return e.no; }).filter(Boolean); return n.length ? +n[0] : 9999; }
+  function wikiGet(sid) {
+    var where = [];
+    WILD_REGIONS.forEach(function (R) {
+      var hit = (WILD[R.pool] || []).some(function (w) { return w.sid === sid; }) || (R.bgs || []).some(function (bk) { return ((typeof WILD_SCENE !== 'undefined' && WILD_SCENE[bk]) || []).some(function (w) { return w.sid === sid; }); });
+      if (hit) { var P = planetOf(R.planet); where.push((P ? P.name + ' · ' : '') + R.name); }
+    });
+    var t = WIKI_GET[sid] || '';
+    if (where.length && !/野生精灵/.test(t)) t = (t ? t + '；' : '') + '野外：' + where.join('、');
+    return t || '暂未开放获得';
+  }
+  function wikiItem(k, tail) { var it = USE_ITEMS[k] || MATS[k] || {}; return '<b>' + esc(itemName(k)) + '</b>' + (tail ? '（' + esc(tail) + '）' : '') + (it.d ? '<small>' + esc(it.d) + '</small>' : ''); }
+  function wikiCard(s) {
+    var forms = (s.evo || []).map(function (e, i) { var n = formRawName(s, i) || s.name; return (e.no ? 'No.' + e.no + ' ' : '') + n.replace('?', '') + (i ? '（LV' + e.lv + '）' : ''); }).join(' → ') || s.name;
+    var jade = Object.keys(USE_ITEMS).filter(function (k) { return USE_ITEMS[k].kind === 'jade' && (USE_ITEMS[k].sids || []).indexOf(s.id) >= 0; });
+    var cap = capGem({ sid: s.id });
+    var mv = function (n, i, hid) {
+      var m = M[n]; if (!m) return '';
+      var how = hid ? (HL_GATED[s.id] ? '道具解锁' : 'LV50' + (LEARN[n] ? '，领悟条件：' + LEARN[n] : '')) : 'LV' + (i ? i * 5 : 1);
+      return '<li' + (hid ? ' class="hid"' : '') + '><span class="wk-mn">' + esc(n) + (hid ? '<i>隐藏</i>' : '') + '</span>' + tchips([m.type]) + '<span class="wk-mc">' + m.cat + (m.power ? ' · 威力' + m.power : '') + (m.pri ? ' · 先制+' + m.pri : '') + '</span><span class="wk-ml">' + esc(how) + '</span><p>' + esc(m.d || '') + '</p></li>';
+    };
+    var img = SPRITES[s.id] || '';
+    return '<article class="wk-card"><div class="wk-head">' + (img ? '<img src="' + img + '" alt="">' : '') + '<div><h3>' + esc(s.name) + ' ' + tchips(s.types) + '</h3><p class="hint">' + esc(forms) + '</p>' +
+      (s.ability ? '<p class="wk-ab"><b>特性 · ' + esc(s.ability.n) + '</b>' + esc(s.ability.d || '') + '</p>' : '') + '<p class="wk-get"><b>获得方式</b>' + esc(wikiGet(s.id)) + '</p></div></div>' +
+      '<ul class="wk-moves">' + (s.moves || []).map(function (n, i) { return mv(n, i, false); }).join('') + (s.hidden || []).map(function (n) { return mv(n, 0, true); }).join('') + '</ul>' +
+      '<div class="wk-items"><p><span>隐藏技能解锁道具</span>' + (jade.length ? jade.map(function (k) { return wikiItem(k, USE_ITEMS[k].cost + ' 个领悟一个'); }).join('') : (HL_GATED[s.id] ? '暂无' : '不需要道具，LV50 习得')) + '</p>' +
+      '<p><span>等级上限提升道具</span>' + (cap ? wikiItem(cap, CAP_STEPS.map(function (c0) { return 'LV' + c0.lv + ' 需 ' + c0.jade + ' 个'; }).join('，')) : '暂无（上限 LV' + BASE_CAP + '）') + '</p></div></article>';
+  }
+  function openWiki() {
+    var old = $('wiki-dlg'); if (old) old.remove();
+    var list = SP.concat(EXTRA_SP).filter(function (s) { return s && s.id && s.id !== 'dummy' && !s.placeholder && SPRITES[s.id]; }).sort(function (a, b) { return wikiNo(a) - wikiNo(b); });
+    var types = []; list.forEach(function (s) { s.types.forEach(function (t) { if (types.indexOf(t) < 0) types.push(t); }); });
+    var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'wiki-dlg';
+    var draw = function (t) {
+      var L = t ? list.filter(function (s) { return s.types.indexOf(t) >= 0; }) : list;
+      d.querySelector('#wk-body').innerHTML = '<p class="hint">共 ' + L.length + ' 系精灵，按图鉴编号排列。</p>' + L.map(wikiCard).join('');
+      d.querySelectorAll('[data-wkt]').forEach(function (b) { b.classList.toggle('on', b.dataset.wkt === (t || '')); });
+    };
+    d.innerHTML = '<div class="soc-box wiki-box" role="dialog" aria-modal="true" aria-label="Wiki"><span class="tape l"></span><span class="tape r"></span><div class="wk-top"><h2>Wiki · 精灵资料</h2><button type="button" class="btn ghost" data-wkx="1">关闭</button></div>' +
+      '<div class="wk-filter"><button type="button" class="chip on" data-wkt="">全部</button>' + types.map(function (t) { return '<button type="button" class="chip" data-wkt="' + esc(t) + '">' + esc(t) + '</button>'; }).join('') + '</div><div id="wk-body"></div></div>';
+    document.body.appendChild(d); draw('');
+    d.addEventListener('click', function (e) {
+      if (e.target === d || e.target.closest('[data-wkx]')) { d.remove(); return; }
+      var b = e.target.closest('[data-wkt]'); if (b) draw(b.dataset.wkt || '');
+    });
+  }
+  if ($('wiki-btn')) $('wiki-btn').addEventListener('click', function () { if (acc) openWiki(); });
   /* ---------- 商城：荆门 · 物资仓储 ---------- */
   var shopQty = {};
   // 不在战斗里用的商品

@@ -6,7 +6,7 @@
 var STG = ['atk', 'def', 'spa', 'spd', 'spe', 'acc', 'eva'];
 var STG_NAME = { atk: '物攻', def: '物防', spa: '特攻', spd: '特防', spe: '速度', acc: '命中', eva: '闪避' };
 var BASE_NAME = { hp: '体力', atk: '物攻', def: '物防', spa: '特攻', spd: '特防', spe: '速度' };
-var TM_NAME = { brandCd: '烙印冷却', etchCd: '蚀迹冷却', lmE: '雷明·电', lmL: '雷明·光', tcloud: '闪电云', cap: '逆鳞', genggu: '恒压', green: '绿色幻境', immune: '免疫异常', reflect: '风王结界', dodge: '光滑皮肤',
+var TM_NAME = { odoAtk: '全弹搭载', odoDef: '强效外壳', brandCd: '烙印冷却', etchCd: '蚀迹冷却', lmE: '雷明·电', lmL: '雷明·光', tcloud: '闪电云', cap: '逆鳞', genggu: '恒压', green: '绿色幻境', immune: '免疫异常', reflect: '风王结界', dodge: '光滑皮肤',
   noSwitch: '无法切换', prio: '先制+1', rain: '祈雨', tri: '三相归元', soul: '收魂',
   voidPhys: '虚空化', induct: '电磁感应', vortex: '闪电漩涡', darkside: '月之暗面', hail: '冰雹', noBoost: '禁止强化',
   seal: '万灵封印', liuhuo: '流火', calm: '静谧水域', halfPhys: '物伤减半', tide: '黑雾潮汐', vuln: '易伤', weak: '伤害-30%',
@@ -43,11 +43,19 @@ function liveImg(m) {
     var F = FORM_FX_SPRITES[k];
     if (m.perm && m.perm.moonFull && F.full) return F.full;
     if (m.tm && m.tm.darkside > 0 && F.dark) return F.dark;
+    if (m.boss && m.boss.rainbow && F.rainbow) return F.rainbow;   // 奥多亚克 · 虹霓暴走（剧情 / BOSS 限定）
+    if (m.perm && m.perm.odoForm === 'atk' && F.atk) return F.atk;
+    if (m.perm && m.perm.odoForm === 'def' && F.def) return F.def;
     if (miaN(m) > 0) { if (m.shiny === 2 && F.miasmaShiny2) return F.miasmaShiny2; if (m.shiny && F.miasmaShiny) return F.miasmaShiny; if (F.miasma) return F.miasma; }
   }
   return m.img || null;
 }
-function liveMove(me, mv) { return mv && mv.custom === 'darkside' && me.tm && me.tm.darkside > 0 ? LIGHTSIDE : mv; }
+// 奥多亚克的形态技能：稳态版本 → [歼灭形态版本, 护阵形态版本]（2026-10-24）
+var ODO_VAR = { 钢铁冲击: ['流形蛮冲', '坚守阵地'], 自体维修: ['全弹搭载', '强效外壳'], 机体引爆: ['究极爆破', '重构坚甲'], 基要扫描: ['解析导弹', '侵扰投弹'] };
+function liveMove(me, mv) {
+  if (mv && me.perm && me.perm.odoForm && ODO_VAR[mv.name]) return M[ODO_VAR[mv.name][me.perm.odoForm === 'atk' ? 0 : 1]];
+  return mv && mv.custom === 'darkside' && me.tm && me.tm.darkside > 0 ? LIGHTSIDE : mv;
+}
 
 function stageMult(n) { return n >= 0 ? (2 + n) / 2 : 2 / (2 - n); }
 // 命中修正：先算净等级（自己的命中等级 − 对方的闪避等级），提升命中维持原样（每级 +1/3）。
@@ -156,6 +164,7 @@ var ST_DESC = {
   失明: '攻击时有50%概率落空', 冻伤: '每回合结束损失1/8最大体力'
 };
 var TM_DESC = {
+  odoAtk: '全弹搭载：造成的伤害提升25%', odoDef: '强效外壳：受到的伤害减少20%',
   brandCd: '闪电烙印麻痹过后的冷却：这段时间里叠不上闪电烙印',
   etchCd: '光辉蚀迹失明期间的冷却：这段时间里叠不上蚀迹', lmE: '特性「雷明」：每回合结束对对方造成25点固定伤害', lmL: '特性「雷明」：每回合结束恢复20体力', tcloud: '闪电云：每回合结束对对方造成100点固定伤害',
   cap: '单次受到的伤害不超过250，超出部分等额反馈给对方', genggu: '每回合提升1级特攻，恢复1/6最大体力',
@@ -199,6 +208,7 @@ function abilityLive(m, foe) {
   var lowSelf = m.hp <= m.maxhp / 3;
   switch (ab) {
     case '旅行': return '每次被替换上场时，提升1级速度（首发上场不触发）';
+    case '形态重构': return '切换形态时恢复 100 体力' + (m.perm && m.perm.odoForm ? '（当前：' + (m.perm.odoForm === 'atk' ? '歼灭形态' : '护阵形态') + '）' : '（当前：稳态）');
     case '雷明': return '使用电系技能后，3回合内每回合末对对方造成25固定伤害' + (m.tm.lmE > 0 ? '（生效中，剩 ' + m.tm.lmE + ' 回合）' : '') + '；使用光系技能后，3回合内每回合末恢复20体力' + (m.tm.lmL > 0 ? '（生效中，剩 ' + m.tm.lmL + ' 回合）' : '') + '。各自不能叠加，但可以同时生效';
     case '饭香': return '每回合结束时 20% 概率吃一口米饭' + (m.perm.rice ? '（本场已吃 ' + m.perm.rice + ' 口）' : '');
     case '龙啸': if (!f) return '对手不在场，暂不生效';
@@ -246,6 +256,9 @@ function chipsOf(m, foe) {
   if (m.fx.shield > 0) c.push({ t: '护盾 ' + m.fx.shield, k: 'fx', h: '护盾', d: '先吸收接下来受到的 ' + m.fx.shield + ' 点伤害' });
   if (m.fx.absDef) c.push({ t: '免疫下次攻击', k: 'fx', h: '免疫下次攻击', d: '闪避下一次受到的攻击' });
   if (m.fx.endure) c.push({ t: '不灭之躯', k: 'fx', h: '不灭之躯', d: '下一次受到致死攻击时残留1点体力' });
+  if (m.perm && m.perm.odoForm) c.push({ t: m.perm.odoForm === 'atk' ? '歼灭形态' : '护阵形态', k: 'fx', h: m.perm.odoForm === 'atk' ? '歼灭形态' : '护阵形态', d: '部分技能切换为' + (m.perm.odoForm === 'atk' ? '歼灭' : '护阵') + '形态的版本' });
+  if (m.perm && m.perm.odoMark) c.push({ t: '解析 ×' + m.perm.odoMark, k: 'st', h: '解析导弹', d: '受到的伤害提升 ' + m.perm.odoMark * 10 + '%' });
+  if (m.perm && m.perm.odoJam) c.push({ t: '侵扰 ×' + m.perm.odoJam, k: 'st', h: '侵扰投弹', d: '造成的伤害降低 ' + m.perm.odoJam * 8 + '%' });
   if (m.fx.etch) c.push({ t: '蚀迹 ' + m.fx.etch + '/2', k: 'st', h: '光辉蚀迹', d: '叠满2层时必定陷入失明2回合' });
   if (m.fx.brand) c.push({ t: '烙印 ' + m.fx.brand + '/2', k: 'st', h: '闪电烙印', d: '叠满2层时必定陷入麻痹2回合' });
   if (m.fx.leiyin) c.push({ t: '引雷', k: 'st', h: '引雷', d: '下一次受到的伤害提升20%' });
@@ -530,6 +543,10 @@ function calcDamage(me, foe, mv, firstMover, est) {
   if (fab === '枯萎') mod *= Math.max(0.7, 1 - 0.05 * (foe.fx.fieldT || 0));
   if (fab === '幻叶' && foe.hp <= foe.maxhp / 3) mod *= 0.85;
   if (fab === '盾甲') mod *= 0.9;
+  if (me.tm.odoAtk > 0) mod *= 1.25;   // 全弹搭载
+  if (foe.tm.odoDef > 0) mod *= 0.8;   // 强效外壳
+  if (foe.perm && foe.perm.odoMark) mod *= 1 + 0.1 * foe.perm.odoMark;   // 解析导弹
+  if (me.perm && me.perm.odoJam) mod *= Math.max(0, 1 - 0.08 * me.perm.odoJam);   // 侵扰投弹
   if (fab === '水形' && STG.some(function (k) { return foe.stages[k] > 0; })) mod *= 0.9;
   switch (mv.custom) {
     case 'halfHpBoost': if (foe.hp < foe.maxhp / 2) mod *= 1.5; break;
@@ -681,9 +698,11 @@ function doSwitch(S, evs, i, to, midTurn) {
   side.active = to;
   var inn = act(S, i); inn.seen = true;
   if (side.soulMark) { inn.tm.soul = 1; side.soulMark = false; }
+  var odoA = side.odoAlly; side.odoAlly = false;
   E(S, evs, 'switch', { side: i });
   log(S, evs, side.name + '派出了' + nm(inn) + '！');
   if (inn.tm.soul) log(S, evs, '收魂的诅咒缠上了' + nm(inn) + '，本回合受到的伤害提升', 'bad');
+  if (odoA) { log(S, evs, '重构坚甲的碎片附着在' + nm(inn) + '身上', 'fxl'); changeStages(S, evs, i, { def: 1, spd: 1 }); }
   onEnter(S, evs, i, midTurn);
 }
 function playerReplace(S, idx) {
@@ -826,6 +845,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   if (me.fainted) return;
   if (mv.drain && total > 0) { var dh = heal(S, evs, i, total * mv.drain); hqR(me).h[mv.name] = (hqR(me).h[mv.name] || 0) + dh; }
   if (mv.struggle && total > 0) loseHp(S, evs, i, Math.max(1, Math.floor(total / 4)), nm(me) + '受到了反作用伤害');
+  if (mv.selfTiredHit && !me.fainted) { me.st['疲惫'] = mv.selfTiredHit + 1; E(S, evs, 'stage', { side: i }); log(S, evs, nm(me) + '耗尽了力气，陷入「疲惫」状态（' + mv.selfTiredHit + '回合）', 'bad'); }   // 全弹发射
   if (mv.recoil && total > 0 && !me.fainted) loseHp(S, evs, i, Math.max(1, Math.floor(total * mv.recoil)), nm(me) + '受到了反弹伤害');   // 烈焰冲锋
   if (total > 0 && me.tm.induct > 0) { log(S, evs, '电磁感应生效', 'fxl'); changeStages(S, evs, i, { spa: 1 }); }
   me.fx.hqRaw = raw;   // 这一招算出来的伤害（不按对方剩余体力截断），隐藏技能「淬命之焰」的领悟条件用
@@ -846,6 +866,10 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
         log(S, evs, nm(foe) + '身上的闪电烙印：' + foe.fx.brand + ' / 2', 'fxl');
         if (foe.fx.brand >= 2) { foe.fx.brand = 0; addStatus(S, evs, j, '麻痹', 2, i); foe.tm.brandCd = (foe.st['麻痹'] || 0) + 1; E(S, evs, 'stage', { side: j }); }
         E(S, evs, 'stage', { side: j }); break;
+      case 'odoShield': me.fx.shield = (me.fx.shield || 0) + 50; E(S, evs, 'stage', { side: i }); log(S, evs, nm(me) + '获得了 50 点护盾', 'fxl'); break;
+      case 'odoScan': changeStages(S, evs, i, { acc: 1 }); break;
+      case 'odoMark': if ((foe.perm.odoMark || 0) < 5) { foe.perm.odoMark = (foe.perm.odoMark || 0) + 1; E(S, evs, 'stage', { side: j }); log(S, evs, nm(foe) + '被解析了：受到的伤害永久提升 ' + foe.perm.odoMark * 10 + '%', 'fxl'); } break;
+      case 'odoJam': if ((foe.perm.odoJam || 0) < 5) { foe.perm.odoJam = (foe.perm.odoJam || 0) + 1; E(S, evs, 'stage', { side: j }); log(S, evs, nm(foe) + '受到侵扰：造成的伤害永久降低 ' + foe.perm.odoJam * 8 + '%', 'fxl'); } break;
       case 'etch':   // 光辉蚀迹：和闪电烙印一样叠 2 层，叠满必定失明 2 回合；失明期间叠不上
         if (foe.tm.etchCd > 0 || foe.st['失明'] > 0) { log(S, evs, nm(foe) + '处于蚀迹冷却中，光辉蚀迹没能叠上'); break; }
         foe.fx.etch = (foe.fx.etch || 0) + 1;
@@ -1028,6 +1052,20 @@ function doStatus(S, evs, i, mv) {
     case 'capacitor':
       if (hasEmblem(me, '恐怖电容')) { me.fx.shield = (me.fx.shield || 0) + 150; flag('纹章生效：' + nm(me) + '额外获得 150 点护盾'); }
       break;
+    case 'odoAtk': case 'odoDef':   // 奥多亚克切换形态
+      var to = c === 'odoAtk' ? 'atk' : 'def';
+      if (me.perm.odoForm === to) { log(S, evs, nm(me) + '已经是' + (to === 'atk' ? '歼灭' : '护阵') + '形态了'); break; }
+      me.perm.odoForm = to; log(S, evs, nm(me) + '切换为' + (to === 'atk' ? '歼灭' : '护阵') + '形态！', 'fxl');
+      if (to === 'atk') { changeStages(S, evs, i, { atk: 1, spa: 1 }); for (var osk in me.st) if (ST_DESC[osk]) delete me.st[osk]; }
+      else { changeStages(S, evs, i, { def: 1, spd: 1 }); STG.forEach(function (k) { if (me.stages[k] < 0) me.stages[k] = 0; }); }
+      if (ability(me) === '形态重构') { log(S, evs, nm(me) + '的「形态重构」发动了', 'fxl'); heal(S, evs, i, 100); }
+      E(S, evs, 'stage', { side: i }); break;
+    case 'odoBuffAtk': timer('odoAtk', 4, nm(me) + '全弹搭载完毕：4回合内造成的伤害提升25%'); break;
+    case 'odoBuffDef': timer('odoDef', 4, nm(me) + '换上了强效外壳：4回合内受到的伤害减少20%'); break;
+    case 'odoBoom':
+      if (!foe.fainted) { log(S, evs, nm(me) + '引爆了机体！', 'crit'); applyDamage(S, evs, j, mv.boom, i, {}); if (mv.boomDown && !foe.fainted) changeStages(S, evs, j, { def: -1, spd: -1 }, i); }
+      if (mv.boomAlly) S.sides[i].odoAlly = true;
+      me.hp = 0; faint(S, evs, i); break;
     case 'selfDestruct':
       if (!foe.fainted) { addStatus(S, evs, j, '疲惫', 2, i); changeStages(S, evs, j, { def: -1, spd: -1 }, i); }
       log(S, evs, nm(me) + '自爆了！'); me.hp = 0; faint(S, evs, i); break;

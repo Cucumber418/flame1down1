@@ -2489,3 +2489,29 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .wk-hub .hub-ic img + img { margin-left: -14px; }
 .wk-hub.locked { cursor: default; opacity: .6; }
 .no-acc.story-fight #pg-arena { display: block !important; }   /* 2026-10-22：新手引导里的地球剧情也有剧情对战（第三段） */
+/* ---------- Wiki（2026-10-24） ---------- */
+.soc-box.wiki-box { max-width: 980px; width: calc(100vw - 32px); max-height: calc(100vh - 40px); overflow-y: auto; }
+.wk-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.wk-top h2 { margin: 0; }
+.wk-filter { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; position: sticky; top: -18px; background: var(--paper, #fbfaf3); padding: 8px 0; z-index: 2; }
+.wk-filter .chip { cursor: pointer; border: 1.5px solid var(--ink); background: var(--paper-2); }
+.wk-filter .chip.on { background: var(--ink); color: #fff; }
+.wk-card { border: 1.5px solid var(--ink); border-radius: 14px; padding: 12px; margin: 0 0 12px; background: var(--paper-2); }
+.wk-head { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 12px; align-items: start; }
+.wk-head img { width: 96px; height: 96px; object-fit: contain; }
+.wk-head h3 { margin: 0 0 2px; font-size: 19px; }
+.wk-ab, .wk-get { margin: 4px 0 0; font-size: 13px; }
+.wk-ab b, .wk-get b { margin-right: 6px; }
+.wk-moves { list-style: none; margin: 10px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 6px; }
+.wk-moves li { border: 1px solid rgba(0, 0, 0, .15); border-radius: 10px; padding: 6px 8px; background: var(--paper); font-size: 13px; }
+.wk-moves li.hid { border-color: #c42f3a; background: #fdf0ec; }
+.wk-mn { font-weight: 700; margin-right: 6px; }
+.wk-mn i { font-style: normal; font-size: 11px; color: #fff; background: #c42f3a; border-radius: 6px; padding: 0 5px; margin-left: 4px; }
+.wk-mc, .wk-ml { color: #777; font-size: 12px; margin-left: 6px; }
+.wk-ml { float: right; }
+.wk-moves p { margin: 3px 0 0; color: #555; font-size: 12px; }
+.wk-items { margin-top: 8px; font-size: 13px; }
+.wk-items p { margin: 4px 0; }
+.wk-items span { display: inline-block; min-width: 128px; font-weight: 700; }
+.wk-items small { display: block; color: #888; margin-left: 128px; }
+@media (max-width: 560px) { .wk-items span { display: block; } .wk-items small { margin-left: 0; } .wk-head { grid-template-columns: 64px minmax(0, 1fr); } .wk-head img { width: 64px; height: 64px; } }

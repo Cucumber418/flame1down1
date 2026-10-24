@@ -32,6 +32,7 @@ var SPRITES = {
   "shroom": "images/sprites/shroom.webp",
   "firemouse": "images/sprites/firemouse.webp",
   "leiming": "images/sprites/leiming.webp",
+  "odo": "images/sprites/odo.webp",
   "turkey": "images/sprites/turkey.webp",
   "dummy": "images/sprites/dummy.svg",
   "plantbomb": "images/sprites/plantbomb.webp"   // 第八段 Bttp 的炸弹（剧情木桩用，不是精灵）
@@ -112,6 +113,7 @@ var PRE_SPRITES = {
   "shroom_s1": "images/pre_sprites/shroom_s1.webp",
   "firemouse_s1": "images/pre_sprites/firemouse_s1.webp",
   "leiming_s1": "images/pre_sprites/leiming_s1.webp",
+  "odo_s1": "images/pre_sprites/odo_s1.webp",
   "shroom_s2": "images/pre_sprites/shroom_s2.webp",
   "turkey_s1": "images/pre_sprites/turkey_s1_v2.webp",
   "turkey_s2": "images/pre_sprites/turkey_s2_v2.webp"
@@ -314,7 +316,9 @@ var SILHOUETTES = {
   "firemouse_0": "images/silhouettes/firemouse_0.png",
   "firemouse_1": "images/silhouettes/firemouse_1.png",
   "leiming_0": "images/silhouettes/leiming_0.png",
-  "leiming_1": "images/silhouettes/leiming_1.png"
+  "leiming_1": "images/silhouettes/leiming_1.png",
+  "odo_0": "images/silhouettes/odo_0.png",
+  "odo_1": "images/silhouettes/odo_1.png"
 };
 
 // 异色精灵的立绘（只有部分形态有）：键名规则和 PRE_SPRITES 一样，最终形态用精灵 id
@@ -378,6 +382,7 @@ function emoteMsg(text) { var m = /^\[\[e:([a-z_]+)\]\]$/.exec(text || ''); retu
 var FORM_FX_SPRITES = {
   "moon": { "dark": "images/sprites/moon_dark.webp", "full": "images/sprites/moon_full.webp" },
   "wind": { "miasma": "images/sprites/wind_miasma.webp" },   // 瘴气六尾风王（2026-10-18 画师立绘）
+  "odo": { "atk": "images/sprites/odo_atk.webp", "def": "images/sprites/odo_def.webp", "rainbow": "images/sprites/odo_rainbow.webp" },   // 奥多亚克：歼灭形态（红）/ 护阵形态（黄）/ 虹霓暴走（剧情、BOSS 限定）
   "mush": { "miasma": "images/sprites/mush_miasma.webp", "miasmaShiny": "images/sprites/mush_miasma_shiny.webp", "miasmaShiny2": "images/sprites/mush_miasma_shiny2.webp" }
 };
 var AWAKE_SPRITES = {

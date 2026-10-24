@@ -38,7 +38,10 @@
     beforeEnd: 'audio/bgm_before_end.mp3', spa: 'audio/bgm_spa.mp3', temple: 'audio/bgm_temple.mp3', kb: 'audio/bgm_kb.mp3', kbShallow: 'audio/bgm_kb_shallow.mp3', kbSurface: 'audio/bgm_kb_surface.mp3',   // kb：坎伯兰星界面；kbShallow：坎伯兰星浅水区   // temple：坎伯兰星 · 古代神殿场景   // spa：温泉的默认音乐（2026-10-18）
     // 剧情里逐行切换的曲目（剧本行写 bgm: '键名'，见 game.js 的 sceneNowRaw）
     grassTalk: 'audio/bgm_grass_talk.mp3', memory: 'audio/bgm_memory.mp3', saver: 'audio/bgm_saver.mp3',
-    disComScene: 'audio/bgm_dis_communication.mp3', faceEnemyScene: 'audio/bgm_face_enemy.mp3'
+    disComScene: 'audio/bgm_dis_communication.mp3', faceEnemyScene: 'audio/bgm_face_enemy.mp3',
+    // 2026-10-24 上传，用法之后再定：FloraLab、MingTraining 系列（MingTheme / MingBattle1、2 / MingFinalBattle1、2）、PompeiiCity
+    floraLab: 'audio/bgm_flora_lab.mp3', mingTheme: 'audio/bgm_ming_theme.mp3', mingBattle1: 'audio/bgm_ming_battle1.mp3', mingBattle2: 'audio/bgm_ming_battle2.mp3',
+    mingFinal1: 'audio/bgm_ming_final1.mp3', mingFinal2: 'audio/bgm_ming_final2.mp3', pompeiiCity: 'audio/bgm_pompeii_city.mp3'
   };
   // silence：剧情里「音乐突然停止」，没有曲子
   var SCENES = { kb: 1, kbShallow: 1, kbSurface: 1, temple: 1, spa: 1, ui: 1, arena: 1, earth: 1, flora: 1, floraGrass: 1, floraForest: 1, floraFallen: 1, grassTalk: 1, memory: 1, saver: 1, disComScene: 1, faceEnemyScene: 1, silence: 1 };
