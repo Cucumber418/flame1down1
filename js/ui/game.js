@@ -4728,7 +4728,7 @@
     turkey: '在庞贝星熔岩原放下一碗米饭后有机会出现', siren: '在坎伯兰星水面的冥岛吹响奇声号角', pluto: '先驱之塔商店用死神代币等兑换精元后孵化',
     firemouse: '庞贝星饮火城 · 炙热核心的野生精灵；炙热核心的火月鼠（一次性）', leiming: '活动「明明教官的试炼」：明明代币抽奖第 10 个奖池的「雷明灯的精元」，在精灵保育仓孵化', odo: '坎伯兰星深海区的BOSS「奥多亚克」：首次击败简单难度得到「奥多的精元」，在精灵保育仓孵化'
   };
-  function wikiNo(s) { var n = (s.evo || []).map(function (e) { return e.no; }).filter(Boolean); return n.length ? +n[0] : 9999; }
+  function wikiNo(s) { var n = (s.evo || []).map(function (e) { return e.no; }).filter(Boolean); return n.length ? +n[0] : 9999; }   // 没有编号的排在最后
   function wikiGet(sid) {
     var where = [];
     WILD_REGIONS.forEach(function (R) {
@@ -4739,39 +4739,72 @@
     if (where.length && !/野生精灵/.test(t)) t = (t ? t + '；' : '') + '野外：' + where.join('、');
     return t || '暂未开放获得';
   }
-  function wikiItem(k, tail) { var it = USE_ITEMS[k] || MATS[k] || {}; return '<b>' + esc(itemName(k)) + '</b>' + (tail ? '（' + esc(tail) + '）' : '') + (it.d ? '<small>' + esc(it.d) + '</small>' : ''); }
-  function wikiCard(s) {
-    var forms = (s.evo || []).map(function (e, i) { var n = formRawName(s, i) || s.name; return (e.no ? 'No.' + e.no + ' ' : '') + n.replace('?', '') + (i ? '（LV' + e.lv + '）' : ''); }).join(' → ') || s.name;
-    var jade = Object.keys(USE_ITEMS).filter(function (k) { return USE_ITEMS[k].kind === 'jade' && (USE_ITEMS[k].sids || []).indexOf(s.id) >= 0; });
-    var cap = capGem({ sid: s.id });
+  function wikiItem(k, tail) { var it = USE_ITEMS[k] || MATS[k] || {}; return '<div class="wk-it"><b>' + esc(itemName(k)) + '</b>' + (tail ? '<span class="wk-tail">' + esc(tail) + '</span>' : '') + (it.d ? '<small>' + esc(it.d) + '</small>' : '') + '</div>'; }
+  /* 2026-10-24：Wiki 改成和竞技对战「精灵图鉴」一样的样式：左边卡片网格（按图鉴编号），右边资料面板 */
+  var WK = { sel: null, t: '', v: null };
+  function wikiNoText(s) { var a = (s.evo || []).map(function (e) { return e.no; }).filter(Boolean); return a.length ? 'No.' + a[0] + (a.length > 1 ? '–' + a[a.length - 1] : '') : ''; }
+  function wikiGrid(list) {
+    return list.map(function (s) {
+      var no = wikiNoText(s);
+      return '<div class="cw"><button type="button" class="card' + (WK.sel === s.id ? ' sel' : '') + '" data-wks="' + s.id + '">' + (no ? '<span class="hgno">' + no + '</span>' : '') +
+        '<img src="' + SPRITES[s.id] + '" alt=""><span class="nm">' + esc(s.name) + '</span><span class="meta">' + tchips(s.types) + '<span>种族值 ' + total(s) + '</span></span></button></div>';
+    }).join('');
+  }
+  function wikiDetail(s) {
+    if (!s) return '<p class="empty-note">点击左边的精灵，查看它的全部技能、特性、获得方式和培养道具。</p>';
+    var v = WK.v != null && s.evo && s.evo[WK.v] ? WK.v : (s.evo ? evoLast(s) : 0), fin = !s.evo || isFin(s, v), ev = s.evo ? s.evo[v] : {};
+    var vName = fin ? s.name : String(ev.n || s.name).replace('?', ''), vImg = s.evo ? formImg(s, v) : SPRITES[s.id], vLore = ev.d || (fin ? s.lore || '' : '');
+    var evo = '';
+    if (s.evo && s.evo.length > 1) {
+      evo = '<div class="evo"><div class="evo-head"><h4>进化链</h4><span class="hint">点击形态查看它的立绘和介绍</span></div><ol class="evo-row' + (s.evo.length === 2 ? ' n2' : '') + '">' + s.evo.map(function (e, i) {
+        var n = isFin(s, i) ? s.name : String(formRawName(s, i) || s.name).replace('?', '');
+        return (i ? '<li class="evo-arrow" aria-hidden="true"><span>LV' + e.lv + '</span></li>' : '') + '<li><button type="button" class="evo-card' + (isFin(s, i) ? ' final' : '') + (i === v ? ' cur' : '') + '" data-wkv="' + i + '"><span class="evo-img"><img src="' + formImg(s, i) + '" alt=""></span>' +
+          '<span class="evo-name">' + esc(n) + '</span><span class="evo-lv">' + (e.no ? 'No.' + e.no + ' · ' : '') + stageLabel(s, i) + ' · ' + (i === 0 ? 'LV1 起' : 'LV' + e.lv + ' 进化') + '</span></button></li>';
+      }).join('') + '</ol></div>';
+    }
+    var stats = ['hp', 'atk', 'def', 'spa', 'spd', 'spe'].map(function (k) { var b = s.base[k]; return '<span>' + BASE_NAME[k] + '</span><span>' + b + '</span><span class="bar"><i style="width:' + Math.min(100, b / 150 * 100) + '%"></i></span><span class="real">LV100：' + calcStat(b, k) + '</span>'; }).join('') + '<span class="sum">种族值总和 ' + total(s) + '</span>';
     var mv = function (n, i, hid) {
       var m = M[n]; if (!m) return '';
-      var how = hid ? (HL_GATED[s.id] ? '道具解锁' : 'LV50' + (LEARN[n] ? '，领悟条件：' + LEARN[n] : '')) : 'LV' + (i ? i * 5 : 1);
-      return '<li' + (hid ? ' class="hid"' : '') + '><span class="wk-mn">' + esc(n) + (hid ? '<i>隐藏</i>' : '') + '</span>' + tchips([m.type]) + '<span class="wk-mc">' + m.cat + (m.power ? ' · 威力' + m.power : '') + (m.pri ? ' · 先制+' + m.pri : '') + '</span><span class="wk-ml">' + esc(how) + '</span><p>' + esc(m.d || '') + '</p></li>';
+      var how = hid ? (HL_GATED[s.id] ? '道具解锁' : 'LV50' + (LEARN[n] ? ' · ' + LEARN[n] : '')) : 'LV' + (i ? i * 5 : 1);
+      return '<div class="mrow wk-mrow' + (hid ? ' hid' : '') + '"><span class="wk-lv">' + esc(how) + '</span><span class="l1"><span class="mn">' + esc(n) + '</span>' + tchips([m.type]) + '<span class="mm">' + m.cat + (m.power ? ' · 威力' + m.power : '') + (m.pri ? ' · 先制+' + m.pri : '') + ' · PP' + m.pp + '</span>' + (hid ? '<span class="tag">隐藏</span>' : '') + '</span><span class="md">' + esc(m.d || '') + '</span></div>';
     };
-    var img = SPRITES[s.id] || '';
-    return '<article class="wk-card"><div class="wk-head">' + (img ? '<img src="' + img + '" alt="">' : '') + '<div><h3>' + esc(s.name) + ' ' + tchips(s.types) + '</h3><p class="hint">' + esc(forms) + '</p>' +
-      (s.ability ? '<p class="wk-ab"><b>特性 · ' + esc(s.ability.n) + '</b>' + esc(s.ability.d || '') + '</p>' : '') + '<p class="wk-get"><b>获得方式</b>' + esc(wikiGet(s.id)) + '</p></div></div>' +
-      '<ul class="wk-moves">' + (s.moves || []).map(function (n, i) { return mv(n, i, false); }).join('') + (s.hidden || []).map(function (n) { return mv(n, 0, true); }).join('') + '</ul>' +
-      '<div class="wk-items"><p><span>隐藏技能解锁道具</span>' + (jade.length ? jade.map(function (k) { return wikiItem(k, USE_ITEMS[k].cost + ' 个领悟一个'); }).join('') : (HL_GATED[s.id] ? '暂无' : '不需要道具，LV50 习得')) + '</p>' +
-      '<p><span>等级上限提升道具</span>' + (cap ? wikiItem(cap, CAP_STEPS.map(function (c0) { return 'LV' + c0.lv + ' 需 ' + c0.jade + ' 个'; }).join('，')) : '暂无（上限 LV' + BASE_CAP + '）') + '</p></div></article>';
+    var jade = Object.keys(USE_ITEMS).filter(function (k) { return USE_ITEMS[k].kind === 'jade' && (USE_ITEMS[k].sids || []).indexOf(s.id) >= 0; });
+    var cap = capGem({ sid: s.id });
+    return '<span class="tape r"></span>' +
+      '<div class="d-head"><div class="d-art"><img src="' + vImg + '" alt=""></div><div><h3>' + (ev.no ? '<span class="dexno">No.' + ev.no + '</span>' : '') + esc(vName) + '</h3>' + tchips(s.types) +
+      (s.evo && !fin ? '<p class="formnote">' + stageLabel(s, v) + '形态 · 下方的能力、特性和技能按最终形态「' + esc(s.name) + '」显示</p>' : '') + (vLore ? '<p class="lore">' + esc(vLore) + '</p>' : '') + '</div></div>' +
+      '<div class="wk-get2"><b>获得方式</b><span>' + esc(wikiGet(s.id)) + '</span></div>' + evo +
+      '<div class="stats">' + stats + '</div>' +
+      (s.ability ? '<div class="trait"><p><b>特性 · ' + esc(s.ability.n) + '</b>　<span class="blue">' + esc(s.ability.d || '') + '</span></p></div>' : '') +
+      '<div><div class="moves-head"><h4>全部技能</h4><span class="hint">普通技能按等级习得；带「隐藏」的要另外领悟</span></div><div class="mlist">' +
+      (s.moves || []).map(function (n, i) { return mv(n, i, false); }).join('') + (s.hidden || []).map(function (n) { return mv(n, 0, true); }).join('') + '</div></div>' +
+      '<div class="wk-items2"><h4>培养道具</h4><p class="wk-lab">隐藏技能解锁</p>' + (jade.length ? jade.map(function (k) { return wikiItem(k, USE_ITEMS[k].cost + ' 个领悟一个'); }).join('') : '<p class="hint">' + (HL_GATED[s.id] ? '暂无' : '不需要道具，LV50 习得') + '</p>') +
+      '<p class="wk-lab">等级上限提升</p>' + (cap ? wikiItem(cap, CAP_STEPS.map(function (c0) { return 'LV' + c0.lv + ' 需 ' + c0.jade + ' 个'; }).join('，')) : '<p class="hint">暂无（上限 LV' + BASE_CAP + '）</p>') + '</div>';
   }
   function openWiki() {
     var old = $('wiki-dlg'); if (old) old.remove();
     var list = SP.concat(EXTRA_SP).filter(function (s) { return s && s.id && s.id !== 'dummy' && !s.placeholder && SPRITES[s.id]; }).sort(function (a, b) { return wikiNo(a) - wikiNo(b); });
     var types = []; list.forEach(function (s) { s.types.forEach(function (t) { if (types.indexOf(t) < 0) types.push(t); }); });
+    if (!WK.sel || !SPMAP[WK.sel]) WK.sel = list[0] && list[0].id;
     var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'wiki-dlg';
-    var draw = function (t) {
-      var L = t ? list.filter(function (s) { return s.types.indexOf(t) >= 0; }) : list;
-      d.querySelector('#wk-body').innerHTML = '<p class="hint">共 ' + L.length + ' 系精灵，按图鉴编号排列。</p>' + L.map(function (s) { try { return wikiCard(s); } catch (err) { return '<article class="wk-card"><h3>' + esc(s.name) + '</h3><p class="hint">这一条资料读取出错：' + esc(err && err.message || String(err)) + '</p></article>'; } }).join('');
-      d.querySelectorAll('[data-wkt]').forEach(function (b) { b.classList.toggle('on', b.dataset.wkt === (t || '')); });
-    };
     d.innerHTML = '<div class="soc-box wiki-box" role="dialog" aria-modal="true" aria-label="Wiki"><span class="tape l"></span><span class="tape r"></span><div class="wk-top"><h2>Wiki · 精灵资料</h2><button type="button" class="btn ghost" data-wkx="1">关闭</button></div>' +
-      '<div class="wk-filter"><button type="button" class="chip on" data-wkt="">全部</button>' + types.map(function (t) { return '<button type="button" class="chip" data-wkt="' + esc(t) + '">' + esc(t) + '</button>'; }).join('') + '</div><div id="wk-body"></div></div>';
-    document.body.appendChild(d); draw('');
+      '<div class="wk-filter"></div><div class="build wk-build"><div><p class="hint" id="wk-cnt"></p><div class="dex-grid" id="wk-grid"></div></div><article class="detail" id="wk-detail"></article></div></div>';
+    document.body.appendChild(d);
+    var draw = function (scroll) {
+      var L = WK.t ? list.filter(function (s) { return s.types.indexOf(WK.t) >= 0; }) : list;
+      d.querySelector('.wk-filter').innerHTML = '<button type="button" class="chip' + (WK.t ? '' : ' on') + '" data-wkt="">全部</button>' + types.map(function (t) { return '<button type="button" class="chip' + (WK.t === t ? ' on' : '') + '" data-wkt="' + esc(t) + '">' + esc(t) + '</button>'; }).join('');
+      d.querySelector('#wk-cnt').textContent = '共 ' + L.length + ' 系精灵，按图鉴编号排列。';
+      d.querySelector('#wk-grid').innerHTML = wikiGrid(L);
+      var det = d.querySelector('#wk-detail'), sp = SPMAP[WK.sel];
+      try { det.innerHTML = wikiDetail(sp); } catch (err) { det.innerHTML = '<p class="hint">这一条资料读取出错：' + esc(err && err.message || String(err)) + '</p>'; }
+      if (scroll) { var bx = d.querySelector('.wiki-box'); if (window.innerWidth < 900) det.scrollIntoView({ block: 'start', behavior: 'smooth' }); else if (bx) bx.scrollTo({ top: det.offsetTop - 10, behavior: 'smooth' }); }
+    };
+    draw(false);
     d.addEventListener('click', function (e) {
       if (e.target === d || e.target.closest('[data-wkx]')) { d.remove(); return; }
-      var b = e.target.closest('[data-wkt]'); if (b) draw(b.dataset.wkt || '');
+      var b = e.target.closest('[data-wkt]'); if (b) { WK.t = b.dataset.wkt || ''; draw(false); return; }
+      var c = e.target.closest('[data-wks]'); if (c) { WK.sel = c.dataset.wks; WK.v = null; draw(true); return; }
+      var v = e.target.closest('[data-wkv]'); if (v) { WK.v = +v.dataset.wkv; draw(false); }
     });
   }
   // 2026-10-24：改成在 document 上监听（按钮被重新渲染也不会失效），出错时把原因提示出来

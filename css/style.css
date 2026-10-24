@@ -2550,3 +2550,25 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .float.cant { font-size: 34px; color: #ffd21f; -webkit-text-stroke: 1.6px #2b2b2b; text-shadow: 0 2px 0 rgba(0, 0, 0, .4), 0 0 6px rgba(0, 0, 0, .3); white-space: nowrap; }
 .float.dot, .float.fixed { white-space: nowrap; }
 @media (max-width: 560px) { .float.dot, .float.fixed { font-size: 26px; } .float.cant { font-size: 23px; } }
+
+/* Wiki（2026-10-24 改版）：和竞技对战的精灵图鉴同一套样式 */
+.soc-box.wiki-box { max-width: 1240px; width: calc(100vw - 24px); }
+.wk-build { margin-top: 10px; }
+.wk-build > div:first-child { position: sticky; top: 0; max-height: calc(100vh - 190px); overflow-y: auto; padding: 4px; }
+.wk-build .d-art { border: 1.5px solid var(--rule); border-radius: 12px; background: #fff; display: grid; place-items: center; padding: 6px; height: 150px; }
+.wk-build .d-art img { max-width: 100%; max-height: 138px; object-fit: contain; }
+.wk-build .dexno { font-family: var(--f-body); font-size: 14px; color: var(--pencil); margin-right: 8px; vertical-align: middle; }
+.wk-build .card .hgno { top: 6px; left: 8px; }
+.wk-get2 { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; padding: 8px 10px; background: var(--paper); border: 1px dashed var(--rule); border-radius: 10px; font-size: 13.5px; }
+.wk-get2 b { color: var(--red); white-space: nowrap; }
+.wk-mrow { cursor: default; }
+.wk-mrow .wk-lv { font-size: 11.5px; font-weight: 700; color: var(--blue); min-width: 64px; padding-top: 2px; font-variant-numeric: tabular-nums; }
+.wk-mrow.hid .wk-lv { color: var(--red); }
+.wk-items2 { display: grid; gap: 6px; }
+.wk-items2 h4 { margin: 0; font-size: 15px; }
+.wk-items2 .wk-lab { margin: 4px 0 0; font-size: 12px; font-weight: 700; color: var(--pencil); }
+.wk-it { padding: 8px 10px; background: var(--paper); border: 1px solid var(--rule); border-radius: 10px; display: grid; gap: 2px; }
+.wk-it b { color: var(--red); }
+.wk-it .wk-tail { font-size: 12px; color: var(--blue); }
+.wk-it small { color: var(--pencil); font-size: 12px; line-height: 1.5; }
+@media (max-width: 900px) { .wk-build > div:first-child { position: static; max-height: none; overflow: visible; } }
