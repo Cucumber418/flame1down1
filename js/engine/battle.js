@@ -571,7 +571,7 @@ function calcDamage(me, foe, mv, firstMover, est) {
   if (fab === '盾甲') mod *= 0.9;
   if (me.tm.odoAtk > 0) mod *= 1.25;   // 全弹搭载
   if (foe.tm.odoDef > 0) mod *= 0.8;
-  if (foe.boss && foe.boss.odoRate && foe.fx.lateT === S.turn) { mod *= 1.25; if (!est) RV(foe, 'odoRate'); }   // 强效外壳
+  if (foe.boss && foe.boss.odoRate && foe.fx.lateNow) { mod *= 1.25; if (!est) RV(foe, 'odoRate'); }   // 强效外壳
   if (foe.perm && foe.perm.odoMark) mod *= 1 + 0.1 * foe.perm.odoMark;   // 解析导弹
   if (me.perm && me.perm.odoJam) mod *= Math.max(0, 1 - 0.08 * me.perm.odoJam);   // 侵扰投弹
   if (fab === '水形' && STG.some(function (k) { return foe.stages[k] > 0; })) mod *= 0.9;
@@ -630,6 +630,7 @@ function speedOf(m) { if (m.boss && m.boss.odoRate) return 1000 * stageMult(m.st
 function resolveTurn(S, acts) {
   var evs = [];
   S.turnActed = [false, false]; S.silenced = [false, false]; S.order = [];
+  S.sides.forEach(function (sd) { sd.team.forEach(function (m) { if (m.fx) m.fx.lateNow = 0; }); });   // 歼灭速率：「这回合被抢先出手」只算当回合
   log(S, evs, '第 ' + S.turn + ' 回合', 'turn');
   if (S.turn === 1 && !S.ambushed) { S.ambushed = 1; var amb = act(S, 1); if (amb.boss && amb.boss.ambush && !act(S, 0).fainted) { RV(amb, 'ambush'); log(S, evs, nm(amb) + '使用了「突然袭击」！', 'use'); E(S, evs, 'use', { side: 1, move: '突然袭击', type: typesOf(amb)[0] }); applyDamage(S, evs, 0, amb.boss.ambush, null, {}); if (act(S, 0).fainted && !S.over) { checkOver(S, evs); } } }
   if (acts[0].kind === 'item') { useItem(S, evs, 0, acts[0].key); S.turnActed[0] = true; if (S.over) { S.turn++; return evs; } }
@@ -762,7 +763,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   if (!mv.struggle && slotIdx >= 0 && !(me.boss && ((me.boss.immortal && !me.boss.ppLim) || me.boss.ppInf))) me.moves[slotIdx].pp--;   // ppLim：先驱之塔的死神虽有「不朽」，PP 也有限   // 「不朽」：PP 无限
   if (S.silenced[i] && !extra) { log(S, evs, nm(me) + '的「' + mv.name + '」被黑暗吞没，失效了！', 'bad'); return; }
   var firstMover = !S.turnActed[j];
-  if (foe.boss && foe.boss.odoRate && firstMover) foe.fx.lateT = S.turn;   // 歼灭速率：被对方抢先出手，这回合受伤 +25%
+  if (foe.boss && foe.boss.odoRate && firstMover) foe.fx.lateNow = 1;   // 歼灭速率：被对方抢先出手，这回合受伤 +25%
   var mt = mvType(me, mv);
   S.curMove = i === 0 ? mv.name : null;
   E(S, evs, 'use', { side: i, move: mv.name, type: mt });
@@ -878,7 +879,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   if (me.fainted) return;
   if (mv.drain && total > 0) { var dh = heal(S, evs, i, total * mv.drain); hqR(me).h[mv.name] = (hqR(me).h[mv.name] || 0) + dh; }
   if (mv.struggle && total > 0) loseHp(S, evs, i, Math.max(1, Math.floor(total / 4)), nm(me) + '受到了反作用伤害');
-  if (me.boss && me.boss.odoRate && firstMover && total > 0 && !foe.fainted && foe.hp > 0) { RV(me, 'odoRate'); log(S, evs, nm(me) + '的「歼灭速率」：抢先出手，追加 ' + Math.floor(foe.maxhp / 4) + ' 点固定伤害', 'fxl'); applyDamage(S, evs, j, Math.floor(foe.maxhp / 4), i, { noFaint: true }); }
+  if (me.boss && me.boss.odoRate && firstMover && total > 0 && !foe.fainted && foe.hp > 0) { RV(me, 'odoRate'); log(S, evs, nm(me) + '的「歼灭速率」：抢先出手，追加 ' + Math.floor(foe.maxhp / 4) + ' 点固定伤害', 'fxl'); applyDamage(S, evs, j, Math.floor(foe.maxhp / 4), i, {}); if (foe.hp <= 0 && !foe.fainted) faint(S, evs, j); }
   if (mv.selfTiredHit && !me.fainted) { me.st['疲惫'] = mv.selfTiredHit + 1; E(S, evs, 'stage', { side: i }); log(S, evs, nm(me) + '耗尽了力气，陷入「疲惫」状态（' + mv.selfTiredHit + '回合）', 'bad'); }   // 全弹发射
   if (mv.recoil && total > 0 && !me.fainted) loseHp(S, evs, i, Math.max(1, Math.floor(total * mv.recoil)), nm(me) + '受到了反弹伤害');   // 烈焰冲锋
   if (total > 0 && me.tm.induct > 0) { log(S, evs, '电磁感应生效', 'fxl'); changeStages(S, evs, i, { spa: 1 }); }
