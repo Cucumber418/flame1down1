@@ -829,9 +829,9 @@
     earthShard: { name: '地球元素', sid: null, sids: ['leaf', 'squid', 'shroom'], kind: 'jade', cost: 100, sd: '从地球带来的元素结晶。专门用于叶粒之果、水臂领主、涅槃方头（三只初始精灵）的隐藏技能和等级上限。', d: '出发前从地球上带来的一小份元素结晶，带着家乡的气息。100 个可以让叶粒之果、水臂领主、涅槃方头一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能，解锁后你持有的这一种族都能使用；它们达到 LV70 后，也用它解锁 LV75（500 个）、LV80（1000 个）的等级上限。', none: '你还没有叶粒之果、乌贼领主或涅槃方头。' },
     moonStone: { name: '新月辉石', sid: null, sids: ['moon'], kind: 'jade', cost: 100, sd: '小月亮的专属道具。可以让小月亮领悟隐藏技能，也能提高小月亮的等级上限。', d: '一块映着新月微光的石头。100 个可以让小月亮一系（朔望月灵也可以）直接领悟一个还没领悟的隐藏技能，解锁后你持有的小月亮都能使用；小月亮达到 LV70 后，也用它解锁 LV75（500 个）、LV80（1000 个）的等级上限。在竞技代币商店兑换。', none: '你还没有小月亮。平衡排位第一次达到铂金时会送一只。' },
     boneDust: { name: '灵骨粉末', sid: null, sids: ['bone'], kind: 'jade', cost: 100, sd: '骨刃的专属道具。可以让骨刃领悟隐藏技能，也能提高骨刃的等级上限。', d: '泛着幽光的骨粉，摸上去凉凉的。100 个可以让骨刃一系（凶骨也可以）直接领悟一个还没领悟的隐藏技能，解锁后你持有的骨刃都能使用；骨刃达到 LV70 后，也用它解锁 LV75（500 个）、LV80（1000 个）的等级上限。在竞技代币商店兑换。', none: '你还没有骨刃一系的精灵。' },
-    tgPearl: { name: '虎啸凝珠', sid: null, sids: ['tagore'], kind: 'jade', cost: 100, sd: '困难难度泰戈尔的专属道具。可以让泰戈尔领悟隐藏技能，也能提高泰戈尔的等级上限。', d: '泰戈尔一声虎啸凝成的珠子。100 个可以让泰戈尔一系（小胖虎、胖虎也可以）直接领悟一个还没领悟的隐藏技能；泰戈尔达到 LV70 后，也用它解锁 LV75（500 个）、LV80（1000 个）的等级上限。首次击败困难难度的泰戈尔得 80 个，每周挑战每次击败得 50 个。', none: '你还没有泰戈尔（小胖虎、胖虎也算）。击败简单难度的BOSS「泰戈尔」可以领养一只小胖虎。' },
-    brTwig: { name: '莠去津', sid: null, sids: ['barren'], kind: 'jade', cost: 100, sd: '荒芜的专属道具。可以让荒芜领悟隐藏技能，也能提高荒芜的等级上限。', d: '从荒芜体内的古代除草程序里提取出的一小瓶药剂，标签上写着「莠去津」。100 个可以让荒芜一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；荒芜达到 LV70 后，也用它解锁 LV75（500 个）、LV80（1000 个）的等级上限。首次击败普通难度的荒芜得 40 个、困难难度得 80 个，每周挑战每次击败得 50 个，BOSS每日挑战也会掉落。', none: '你还没有荒芜。击败简单难度的BOSS「荒芜」可以得到一只。' },
-    odoFin: { name: '先祖鳍甲', sid: null, sids: ['odo'], kind: 'jade', cost: 100, sd: '奥多亚克的专属道具。可以让奥多亚克领悟隐藏技能，也能提高奥多亚克的等级上限。', d: '从深海的奥多亚克身上脱落的一片古老鳍甲，表面刻着看不懂的纹路。100 个可以让奥多亚克一系（奥多也可以）直接领悟一个还没领悟的隐藏技能；奥多亚克达到 LV70 后，也用它解锁 LV75（500 个）、LV80（1000 个）的等级上限。首次击败普通难度的奥多亚克得 40 个、困难难度得 80 个，BOSS每日挑战也会掉落。', none: '你还没有奥多亚克（奥多也算）。击败简单难度的BOSS「奥多亚克」可以得到奥多的精元。' },
+    tgPearl: { name: '虎啸凝珠', sid: null, sids: ['tagore'], kind: 'jade', cost: 100, sd: '困难难度泰戈尔的专属道具。可以让泰戈尔领悟隐藏技能，也能提高泰戈尔的等级上限。', d: '泰戈尔一声虎啸凝成的珠子。100 个可以让泰戈尔一系（小胖虎、胖虎也可以）直接领悟一个还没领悟的隐藏技能；泰戈尔达到 LV70 后，也用它解锁 LV75（500 个）、LV80（1000 个）的等级上限。首次击败困难难度的泰戈尔得 80 个，每周挑战每次击败得 15 / 30 / 50 个（简单 / 普通 / 困难）。', none: '你还没有泰戈尔（小胖虎、胖虎也算）。击败简单难度的BOSS「泰戈尔」可以领养一只小胖虎。' },
+    brTwig: { name: '莠去津', sid: null, sids: ['barren'], kind: 'jade', cost: 100, sd: '荒芜的专属道具。可以让荒芜领悟隐藏技能，也能提高荒芜的等级上限。', d: '从荒芜体内的古代除草程序里提取出的一小瓶药剂，标签上写着「莠去津」。100 个可以让荒芜一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；荒芜达到 LV70 后，也用它解锁 LV75（500 个）、LV80（1000 个）的等级上限。首次击败普通难度的荒芜得 40 个、困难难度得 80 个，每周挑战每次击败得 15 / 30 / 50 个（简单 / 普通 / 困难）。', none: '你还没有荒芜。击败简单难度的BOSS「荒芜」可以得到一只。' },
+    odoFin: { name: '先祖鳍甲', sid: null, sids: ['odo'], kind: 'jade', cost: 100, sd: '奥多亚克的专属道具。可以让奥多亚克领悟隐藏技能，也能提高奥多亚克的等级上限。', d: '从深海的奥多亚克身上脱落的一片古老鳍甲，表面刻着看不懂的纹路。100 个可以让奥多亚克一系（奥多也可以）直接领悟一个还没领悟的隐藏技能；奥多亚克达到 LV70 后，也用它解锁 LV75（500 个）、LV80（1000 个）的等级上限。首次击败普通难度的奥多亚克得 40 个、困难难度得 80 个，每周挑战每次击败得 15 / 30 / 50 个（简单 / 普通 / 困难）。', none: '你还没有奥多亚克（奥多也算）。击败简单难度的BOSS「奥多亚克」可以得到奥多的精元。' },
     deathTok: { name: '死神代币', sid: null, sids: ['pluto'], kind: 'jade', cost: 1, d: '击败先驱之塔第 60 层的死神获得，一个账号最多 3 颗。1 颗可以让帕努托尔一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；先驱之塔的代币商店里，兑换「帕努托尔的精元」也要用到它。', none: '你还没有帕努托尔。在先驱之塔的代币商店里，用 3000 先驱代币 + 1 颗死神代币可以兑换「帕努托尔的精元」。' },
     // 各星球特产（2026-10-18）：和芙罗拉玉一样，100 个让该星球的普通野生精灵一系领悟一个隐藏技能；也用来解锁同属性精灵的等级上限
     kbDrop: { name: '不化水滴', sid: null, sids: ['pede', 'gorgon', 'siren'], kind: 'jade', cost: 100, gem: '水', sd: '坎伯兰星的特产。可以让坎伯兰星的普通野生精灵领悟隐藏技能，也能提高水系精灵的等级上限。', d: '坎伯兰星浅海里凝成的水滴，永远不会蒸发。100 个可以让坎克托斯、戈耳贡、塞壬一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；水系精灵达到 LV70 后，也可以用它解锁更高的等级上限。在坎伯兰星的野外场景里每天有机会捡到。', none: '你还没有坎克托斯、戈耳贡或塞壬（进化前的形态也算）。去坎伯兰星捕捉吧。' },
@@ -1652,7 +1652,7 @@
       html += arcBarHTML();
       html += '<div class="boss-row"><button type="button" class="weekly-card hub-card" data-bosshub="1"><span class="tape l"></span><span class="hub-ic">' + Object.keys(BOSSES).map(function (k) { return '<img src="' + SPRITES[BOSSES[k].sid] + '" alt="">'; }).join('') + '</span><span class="wk-txt"><span class="chip boss-diff">BOSS挑战</span><b>BOSS一览</b>' +
         '<small>' + Object.keys(BOSSES).map(function (k) { return BOSSES[k].name; }).join('、') + ' · 已开放 ' + nOpen + ' / ' + Object.keys(BOSSES).length + '</small></span><span class="wk-pm">›</span></button>';
-      var wkIcons = WEEKLIES.filter(wkOpen).map(function (W) { return BOSSES[W.boss].sid; }).concat(EWK.types.map(function (T) { return ewkSid(T.t); }).filter(Boolean));
+      var wkIcons = WEEKLIES.filter(wkOpen).map(function (W) { return BOSSES[W.boss].sid; }).filter(function (x, i, a) { return a.indexOf(x) === i; }).concat(EWK.types.map(function (T) { return ewkSid(T.t); }).filter(Boolean));
       html += weeklyOpen() ? '<button type="button" class="weekly-card hub-card wk-hub" data-wkhub="1"><span class="tape l"></span><span class="hub-ic">' + wkIcons.slice(0, 3).map(function (sid) { return '<img src="' + SPRITES[sid] + '" alt="">'; }).join('') + '</span><span class="wk-txt"><span class="chip boss-diff d2">每周挑战</span><b>每周挑战</b>' +
         '<small>' + wkIcons.length + ' 个BOSS · 获胜消耗 1 枚挑战许可</small></span><span class="wk-pm"><b>' + permits() + '</b> / ' + PERMIT.max + '<small>挑战许可</small></span></button>'
         : '<div class="weekly-card hub-card wk-hub locked"><span class="tape l"></span><span class="hub-ic">🔒</span><span class="wk-txt"><span class="chip boss-diff">每周挑战</span><b>每周挑战</b><small>击败困难难度的泰戈尔或荒芜后开放</small></span></div>';
@@ -4230,29 +4230,25 @@
           ] }
       ] }
   };
-  // 2026-10-24：BOSS每日挑战。每个BOSS每档难度（开放后）每天第一次获胜，额外得到累积经验、BOSS专属道具和马亚尔晶体（北京时间 0 点刷新）
-  var BOSS_DAILY = [{ exp: 3000, item: 10, cry: 10 }, { exp: 6000, item: 20, cry: 20 }, { exp: 12000, item: 30, cry: 40 }];
-  function bossItem(k) { return CAP_SID[BOSSES[k].sid]; }
-  function bossDailyDone(k, d) { var D = acc.bossDaily; return !!(D && D.day === dayNum(Date.now()) && D.done[k + ':' + d]); }
-  function bossDailyText(k, d) { var X = BOSS_DAILY[d] || BOSS_DAILY[BOSS_DAILY.length - 1]; return '累积经验 ×' + fmt(X.exp) + '、' + itemName(bossItem(k)) + ' ×' + X.item + '、' + itemName('m_mcry') + ' ×' + X.cry; }
-  function bossDailyGive(k, d) {
-    if (bossDailyDone(k, d)) return [];
-    var t = dayNum(Date.now()); if (!acc.bossDaily || acc.bossDaily.day !== t) acc.bossDaily = { day: t, done: {} };
-    acc.bossDaily.done[k + ':' + d] = 1;
-    var X = BOSS_DAILY[d] || BOSS_DAILY[BOSS_DAILY.length - 1], it = { m_mcry: X.cry }; it[bossItem(k)] = X.item;
-    acc.exp = (acc.exp || 0) + X.exp; giveItems(it);
-    return ['每日挑战奖励：' + bossDailyText(k, d) + '。'];
-  }
   // 2026-10-19：每个BOSS每档难度首次击败都送马亚尔晶体，难度越高越多（简单 100 / 普通 200 / 困难 400）
   var BOSS_CRY = [100, 200, 400];
   Object.keys(BOSSES).forEach(function (k) { BOSSES[k].lv.forEach(function (L, i) { if (!L.reward) L.reward = {}; if (!L.reward.items) L.reward.items = {}; L.reward.items.m_mcry = BOSS_CRY[i] || BOSS_CRY[BOSS_CRY.length - 1]; }); });
   // 每周挑战：击败困难难度的泰戈尔后开放，规则和困难难度一样，每次消耗 1 枚挑战许可
   // 2026-10-18：每周挑战改成可以有多个BOSS（击败对应BOSS的困难难度后各自开放），挑战许可共用。item 是每次击败必得的BOSS专属道具
+  // 2026-10-24：每个BOSS的每一档难度都有每周挑战（击败该难度后开放），规则和对应难度一样
   var WEEKLIES = [
+    { boss: 'tiger', d: 0, exp: 2000, item: { tgPearl: 15 }, cry: [10, 20], drops: [{ items: { evTagore: 1 } }, { energy: 1000 }, { exp: 1000 }] },
+    { boss: 'tiger', d: 1, exp: 3500, item: { tgPearl: 30 }, cry: [20, 40], drops: [{ items: { natTagore: 1 } }, { items: { evTagore: 1 } }, { energy: 1500 }, { exp: 1500 }] },
     { boss: 'tiger', d: 2, exp: 5000, item: { tgPearl: 50 }, cry: [40, 80],   // cry：2026-10-19 每次必掉 40–80 个马亚尔晶体
       drops: [{ items: { natTagore: 1 } }, { items: { evTagore: 1 } }, { energy: 2000 }, { exp: 2000 }] },
-    { boss: 'barren', d: 2, exp: 5000, item: { brTwig: 50 }, drops: [{ items: { floraJade: 20 } }, { items: { evAny: 1 } }, { energy: 2000 }, { exp: 2000 }] }
+    { boss: 'barren', d: 0, exp: 2000, item: { brTwig: 15 }, cry: [10, 20], drops: [{ items: { floraJade: 8 } }, { energy: 1000 }, { exp: 1000 }] },
+    { boss: 'barren', d: 1, exp: 3500, item: { brTwig: 30 }, cry: [20, 40], drops: [{ items: { floraJade: 12 } }, { items: { evAny: 1 } }, { energy: 1500 }, { exp: 1500 }] },
+    { boss: 'barren', d: 2, exp: 5000, item: { brTwig: 50 }, drops: [{ items: { floraJade: 20 } }, { items: { evAny: 1 } }, { energy: 2000 }, { exp: 2000 }] },
+    { boss: 'odo', d: 0, exp: 2000, item: { odoFin: 15 }, cry: [10, 20], drops: [{ items: { kbDrop: 8 } }, { energy: 1000 }, { exp: 1000 }] },
+    { boss: 'odo', d: 1, exp: 3500, item: { odoFin: 30 }, cry: [20, 40], drops: [{ items: { kbDrop: 12 } }, { items: { evAny: 1 } }, { energy: 1500 }, { exp: 1500 }] },
+    { boss: 'odo', d: 2, exp: 5000, item: { odoFin: 50 }, cry: [40, 80], drops: [{ items: { kbDrop: 20 } }, { items: { evAny: 1 } }, { energy: 2000 }, { exp: 2000 }] }
   ];
+  function wkKey(W) { return W.d === 2 ? 'w' : 'w' + W.d; }   // 战绩：困难难度沿用原来的「id:w」，简单、普通是「id:w0」「id:w1」
   function wkOpen(W) { return !!acc && !!W && bossWon(W.boss, W.d); }
   function curWk() { var W = WEEKLIES[ex.wk | 0]; return wkOpen(W) ? W : WEEKLIES.filter(wkOpen)[0] || WEEKLIES[0]; }
   /* ---------- 属性每周挑战（2026-10-20）：草、水、火、冰、电各一个BOSS，和泰戈尔、荒芜的每周挑战并列 ----------
@@ -4283,7 +4279,7 @@
     }).join('');
   }
   var PERMIT = { max: 24, every: 12 * 3600 * 1000 };   // 每 12 小时恢复 1 枚，最多 24 枚
-  function recKey(k, d) { return d === 'w' ? k + ':w' : d ? k + ':' + d : k; }
+  function recKey(k, d) { return d ? k + ':' + d : k; }
   function bossRec(k, d) { if (!acc.bosses) acc.bosses = {}; var rk = recKey(k, d); if (!acc.bosses[rk]) acc.bosses[rk] = { wins: 0, tries: 0 }; return acc.bosses[rk]; }
   function bossWon(k, d) { var r = acc.bosses && acc.bosses[recKey(k, d || 0)]; return !!(r && r.wins > 0); }
   function bossOpen(k) { var B = BOSSES[k]; return !!(B && B.lv[0].open()); }
@@ -4357,7 +4353,7 @@
   }
   function renderBoss(weekly) {
     var WK = weekly ? curWk() : null, k = ex.boss, B = BOSSES[k], d = weekly ? WK.d : bossSel(k), L = B.lv[d], won = bossWon(k, d);
-    var rec = (acc.bosses && acc.bosses[recKey(k, weekly ? 'w' : d)]) || {}, open = weekly ? weeklyOpen() : levelOpen(k, d), pn = weekly ? permits() : 0;
+    var rec = (acc.bosses && acc.bosses[recKey(k, weekly ? wkKey(WK) : d)]) || {}, open = weekly ? weeklyOpen() : levelOpen(k, d), pn = weekly ? permits() : 0;
     var tabs = weekly ? '' : '<div class="fparts boss-tabs" role="tablist">' + B.lv.map(function (x, i) {
       var op = levelOpen(k, i);
       return '<button type="button" role="tab" class="tab' + (i === d ? ' on' : '') + (op ? '' : ' lock') + '" aria-selected="' + (i === d) + '"' + (op ? ' data-bossd="' + i + '"' : ' disabled title="' + esc(x.lockText) + '"') + '>' + (op ? '' : '🔒 ') + x.diff + (bossWon(k, i) ? ' ✓' : '') + '</button>';
@@ -4367,13 +4363,13 @@
       : (won ? '已领取（首次击败：' + rewardText(L.reward) + '）；再次击败只获得经验和学习力' : '首次击败：' + rewardText(L.reward) + '；另有经验和学习力');
     var btn = weekly ? '<button type="button" class="btn primary" data-weeklygo="1"' + (pn > 0 ? '' : ' disabled') + '>开始挑战（获胜时消耗 1 枚挑战许可）</button><p class="hint permit-line">挑战许可 <b>' + pn + '</b> / ' + PERMIT.max + ' · ' + permitNext() + '</p>'
       : open ? '<button type="button" class="btn primary" data-bossgo="' + k + '" data-d="' + d + '">开始挑战</button>' : '<button type="button" class="btn" disabled>' + esc(L.lockText) + '</button>';
-    $('pg-explore').innerHTML = exHead(weekly ? '每周挑战：和困难难度的' + B.name + '一模一样，每次获胜消耗 1 枚挑战许可，输了不消耗。' : 'BOSS可以反复挑战。难度依次开放，每档难度第一次击败都有奖励。') +
+    $('pg-explore').innerHTML = exHead(weekly ? '每周挑战：和' + L.diff + '难度的' + B.name + '一模一样，每次获胜消耗 1 枚挑战许可，输了不消耗。' : 'BOSS可以反复挑战。难度依次开放，每档难度第一次击败都有奖励。') +
       '<div class="crumb"><button type="button" class="btn ghost" id="boss-back">‹ 返回' + (weekly ? '每周挑战' : ex.bossFrom === 'hub' ? 'BOSS挑战' : bossWhere(B)) + '</button><b>' + (weekly ? '每周挑战 · ' : 'BOSS · ') + B.name + '</b></div>' + tabs +
       '<article class="boss-card"><span class="tape l"></span><div class="boss-art"><img src="' + BG[floraBg(B.bg)] + '" alt="" class="boss-bg"><img src="' + SPRITES[B.sid] + '" alt="' + B.name + '" class="boss-mon"></div>' +
       '<div class="boss-txt"><span class="chip boss-diff d' + d + '">' + (weekly ? '每周挑战 · ' : '') + L.diff + '难度</span><h3>' + B.name + '</h3><p class="hint">' + esc(B.d) + '</p>' +
       '<ul class="boss-rules"><li><b>等级</b>LV' + L.lv + '</li><li><b>体力</b>' + (L.hpText || fmt(L.hp)) + '</li>' + rules +
       '<li><b>时限</b>' + MAX_TURNS + ' 回合内没有击败BOSS，算挑战失败</li>' +
-      '<li><b>奖励</b>' + rw + '</li>' + (weekly ? '' : '<li><b>每日</b>' + (bossDailyDone(k, d) ? '今天的每日挑战已完成，明天 0 点刷新' : '今天第一次获胜额外获得 ' + bossDailyText(k, d)) + '</li>') + '<li><b>战绩</b>' + (rec.wins || 0) + ' 胜 / ' + (rec.tries || 0) + ' 次挑战</li></ul>' +
+      '<li><b>奖励</b>' + rw + '</li><li><b>战绩</b>' + (rec.wins || 0) + ' 胜 / ' + (rec.tries || 0) + ' 次挑战</li></ul>' +
       '<p class="hint">会使用你当前的出战配队（' + TEAM_NAME[acc.active] + '）。' + (L.only ? '记得带上会' + L.only.join('、') + '系技能的精灵。' : '') + '对战中可以使用补药。</p>' +
       btn + '</div></article>' + (weekly ? '' : '<section class="bsoc" id="bsoc"><p class="hint">读取攻略中……</p></section>');
     if (!weekly) bsocLoad(k, d);
@@ -4480,7 +4476,7 @@
     return ['每周挑战奖励：累积经验 +' + fmt(W.exp) + '、' + rwList({ items: fix }).join('、') + '；掉落了「' + dropName(D) + '」！'];
   }
   function startBoss(k, d, weekly) {
-    var B = BOSSES[k], WK = weekly ? WEEKLIES.filter(function (x) { return x.boss === k; })[0] : null; if (weekly) d = WK.d;
+    var B = BOSSES[k], WK = weekly ? WEEKLIES.filter(function (x) { return x.boss === k && x.d === d; })[0] : null; if (weekly && !WK) return;
     var L = B.lv[d]; if (!L || !(weekly ? wkOpen(WK) : L.open())) return;
     if (weekly && permits() < 1) { toast('挑战许可用完了。' + permitNext() + '。'); return; }   // 2026-10-18：只有打赢才消耗挑战许可
     var team = (acc.teams[acc.active] || []).map(mon).filter(Boolean);
@@ -4494,7 +4490,7 @@
       return { id: B.sid, lv: L.lv, moves: defaultMoves(B.sid, L.lv).filter(function (n) { return n !== '歼灭形态' && n !== '护阵形态'; }), nick: T.nick, img: SPRITES[B.sid], maxhp: T.maxhp, odoForm: T.odoForm, boss: JSON.parse(JSON.stringify(T.boss)) };
     }) : [{ id: B.sid, lv: L.lv, moves: defaultMoves(B.sid, L.lv), nick: B.name, img: SPRITES[B.sid], maxhp: L.hp, onlyHit: L.only, boss: bossFx }];
     seeMon(B.sid, L.lv);
-    var rec = bossRec(k, weekly ? 'w' : d); rec.tries++; save();
+    var rec = bossRec(k, weekly ? wkKey(WK) : d); rec.tries++; save();
     stopTimers(); ex.fighting = true; document.body.classList.add('story-fight'); syncBattle();
     $('pg-explore').hidden = true; $('pg-arena').hidden = false;
     window.HSBATTLE.start({ p: p, a: a, foe: 'BOSS', diff: weekly ? '每周挑战' : L.diff + '难度', bgm: L.bgm, bgmAt: L.bgmAt, items: invCopy(), onItem: useInv, bg: BG[floraBg(B.bg)], back: weekly ? '每周挑战' : bossWhere(B),
@@ -4508,10 +4504,9 @@
           else if (first) {
             msg = msg.concat(firstReward(L));
             if (B.lv[d + 1] && levelOpen(k, d + 1)) msg.push(B.lv[d + 1].diff + '难度已开放。');
-            if (L.diff === '困难' && WEEKLIES.some(function (x) { return x.boss === k && x.d === d; })) msg.push('「' + B.name + '」的每周挑战已开放：在星际探索的星球列表上方进入，每次获胜消耗 1 枚挑战许可。');
+            if (WEEKLIES.some(function (x) { return x.boss === k && x.d === d; })) msg.push('「' + B.name + '」' + L.diff + '难度的每周挑战已开放：在星际探索的星球列表上方进入，每次获胜消耗 1 枚挑战许可。');
             if (!wasWeekly && weeklyOpen()) msg.push('「每周挑战」已开放：在星际探索的星球列表上方进入，每次获胜消耗 1 枚挑战许可（已送你 1 枚）。');
           }
-          if (!weekly) msg = msg.concat(bossDailyGive(k, d));
         }
         msg = msg.concat(battleRewards(team, seen, downs));
         if (weeklyOpen()) permits();
@@ -4533,7 +4528,7 @@
     var pn = permits(), html = '';
         WEEKLIES.forEach(function (W, wi) {
           if (!wkOpen(W)) return; var WB = BOSSES[W.boss];
-          html += '<button type="button" class="weekly-card" data-weekly="' + (wi + 1) + '"><span class="tape l"></span><img src="' + SPRITES[WB.sid] + '" alt=""><span class="wk-txt"><span class="chip boss-diff d2">每周挑战</span><b>' + WB.name + ' · ' + WB.lv[W.d].diff + '难度</b>' +
+          html += '<button type="button" class="weekly-card" data-weekly="' + (wi + 1) + '"><span class="tape l"></span><img src="' + SPRITES[WB.sid] + '" alt=""><span class="wk-txt"><span class="chip boss-diff d' + W.d + '">每周挑战</span><b>' + WB.name + ' · ' + WB.lv[W.d].diff + '难度</b>' +
             '<small>获胜时消耗 1 枚挑战许可 · 击败得累积经验 ×' + fmt(W.exp) + '、' + rwList({ items: W.item }).join('、') + (W.cry ? '、' + itemName('m_mcry') + ' ×' + W.cry[0] + '–' + W.cry[1] : '') + ' 和随机掉落</small></span><span class="wk-pm"><b>' + pn + '</b> / ' + PERMIT.max + '<small>挑战许可（共用）</small></span></button>';
         });
     return html + ewkCardHTML(pn);
