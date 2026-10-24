@@ -765,6 +765,7 @@
   }
   function restartAnim(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); setTimeout(function () { el.classList.remove(cls); }, 900); }
   // 异常状态伤害数字的颜色（2026-10-24）
+  var CANT_COLOR = { 麻痹: '#ffd21f', 害怕: '#9b4fd6', 冰冻: '#6fd3f5', 睡眠: '#7d8ec9', 石化: '#a08c72', 疲惫: '#9aa0a8' };   // 无法行动提示：每种状态各自的颜色
   var DOT_COLOR = { 寄生: '#2f8f3a', 溺水: '#1d3a8f', 流血: '#a3161c', 中毒: '#7b34b8', 烧伤: '#e35a12', 冻伤: '#2a9fd0', 凋零之蚀: '#5a4636' };
   function floatNum(i, text, cls, color) {
     var f = document.createElement('div'); f.className = 'float ' + (cls || ''); f.textContent = text; if (color) f.style.color = color;
@@ -814,7 +815,7 @@
         case 'text': addLog(e.text, e.cls); renderSnap(e.snap); flashAbility(e.text, flipSnap(e.snap)); await wait(e.cls === 'turn' ? 120 : 300); break;
         case 'use': renderSnap(e.snap); castFx({ a: 'use', i: V(e.side), m: e.move, ty: e.type }); restartAnim($('mon' + V(e.side)), 'lunge' + V(e.side)); banner(e.move, e.type); await wait(450); break;
         case 'hit': renderSnap(e.snap); if (e.amount > 0) castFx({ a: 'hit', i: V(e.side), n: e.amount, c: !!e.crit, lb: e.kind ? (e.kind === 'fixed' ? '固伤' : e.kind) : hitLabel(e) }); if (app.S && app.S.training && e.side === 1) renderStats(); if (e.amount > 0) { restartAnim($('mon' + V(e.side)), 'hit'); if (e.kind) floatNum(V(e.side), (e.kind === 'fixed' ? '固伤' : e.kind) + '-' + e.amount, e.kind === 'fixed' ? 'fixed' : 'dot', DOT_COLOR[e.kind]); else floatNum(V(e.side), hitLabel(e) + '-' + e.amount, e.crit ? 'crit' : e.eff > 1 ? 'super' : e.eff > 0 && e.eff < 1 ? 'resist' : ''); if (e.crit) shakeField(); } await wait(480); break;
-        case 'cant': renderSnap(e.snap); floatNum(V(e.side), e.st + '无法行动', 'cant'); await wait(420); break;
+        case 'cant': renderSnap(e.snap); floatNum(V(e.side), e.st + '无法行动', 'cant', CANT_COLOR[e.st]); await wait(420); break;
         case 'miss': renderSnap(e.snap); castFx({ a: 'miss', i: V(e.side) }); floatNum(V(e.side), '未命中', 'miss'); await wait(380); break;
         case 'heal': renderSnap(e.snap); castFx({ a: 'heal', i: V(e.side), n: e.amount }); restartAnim($('mon' + V(e.side)), 'heal'); floatNum(V(e.side), '+' + e.amount, 'heal'); await wait(380); break;
         case 'switch': renderSnap(e.snap); if (app.S && app.S.bgmAt && e.side === 1 && e.snap) { var swi = e.snap.sides[1].team.findIndex(function (x) { return x.active; }); if (app.S.bgmAt[swi]) bgm(app.S.bgmAt[swi]); } await wait(520); break;

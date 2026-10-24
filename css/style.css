@@ -2547,6 +2547,6 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 /* 伤害数字：异常状态（状态名-数值，各自颜色）、固定伤害（白色）、无法行动（黄色）（2026-10-24） */
 .float.dot { font-size: 38px; }
 .float.fixed { font-size: 38px; color: #fff; -webkit-text-stroke: 1.6px #2b2b2b; text-shadow: 0 2px 0 rgba(0, 0, 0, .45), 0 0 6px rgba(0, 0, 0, .35); }
-.float.cant { font-size: 34px; color: #ffd21f; -webkit-text-stroke: 1.6px #5a4300; text-shadow: 0 2px 0 rgba(0, 0, 0, .4), 0 0 6px rgba(0, 0, 0, .3); white-space: nowrap; }
+.float.cant { font-size: 34px; color: #ffd21f; -webkit-text-stroke: 1.6px #2b2b2b; text-shadow: 0 2px 0 rgba(0, 0, 0, .4), 0 0 6px rgba(0, 0, 0, .3); white-space: nowrap; }
 .float.dot, .float.fixed { white-space: nowrap; }
 @media (max-width: 560px) { .float.dot, .float.fixed { font-size: 26px; } .float.cant { font-size: 23px; } }
