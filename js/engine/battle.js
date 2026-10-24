@@ -53,6 +53,7 @@ function liveImg(m) {
 // 奥多亚克的形态技能：稳态版本 → [歼灭形态版本, 护阵形态版本]（2026-10-24）
 var ODO_VAR = { 钢铁冲击: ['流形蛮冲', '坚守阵地'], 自体维修: ['全弹搭载', '强效外壳'], 机体引爆: ['究极爆破', '重构坚甲'], 基要扫描: ['解析导弹', '侵扰投弹'] };
 function liveMove(me, mv) {
+  if (mv && mv.name === '歼灭形态' && me.perm && me.perm.odoForm === 'atk') return M['护阵形态'];   // 形态切换是同一个技能：稳态 / 护阵形态时是「歼灭形态」，歼灭形态时是「护阵形态」
   if (mv && me.perm && me.perm.odoForm && ODO_VAR[mv.name]) return M[ODO_VAR[mv.name][me.perm.odoForm === 'atk' ? 0 : 1]];
   return mv && mv.custom === 'darkside' && me.tm && me.tm.darkside > 0 ? LIGHTSIDE : mv;
 }
@@ -111,6 +112,7 @@ function mkFrom(t) {
   // breakable：剧情里可以被打破的木桩（如第八段的炸弹），体力不再无限，打到 0 就倒下；ability 可以换成剧情里的说明
   if (t.id === 'dummy' && t.breakable) { m.breakable = true; m.dummySpec = Object.assign({}, DUMMY, { name: t.nick || DUMMY.name, ability: t.ability || DUMMY.ability }); }
   if (t.ability && t.id !== 'dummy') m.abil = t.ability;
+  if (t.odoForm) m.perm.odoForm = t.odoForm;   // BOSS 奥多亚克：一开场就是某个形态
   if (t.lvq) m.lvq = 1;                         // 星球挑战：等级显示为「LV.??」
   if (t.onlyHit) m.onlyHit = t.onlyHit;           // BOSS：只有这些属性的技能能命中它
   if (t.shiny) m.shiny = t.shiny === 2 ? 2 : true;   // 异色精灵（只是配色不同，能力一样）
@@ -118,7 +120,7 @@ function mkFrom(t) {
   // BOSS的特殊能力（见 BOSS_FX）；pp：BOSS技能的 PP（长时间战斗不会用光）
   if (t.boss) { m.boss = JSON.parse(JSON.stringify(t.boss)); if (m.boss.pp) m.moves.forEach(function (x) { if (M[x.n].custom !== 'annihilate') x.pp = x.max = m.boss.pp; }); }   // 灭却除外，仍按原本的 PP
   if (m.boss) m.boss.atk0 = m.stats.atk;
-  if (m.boss && m.boss.mmGift) { m.stats.atk = Math.floor(m.stats.atk * 1.5); m.stats.spa = Math.floor(m.stats.spa * 1.5); }   // 「明明之赐」：双攻 +50%
+  if (m.boss && (m.boss.mmGift || m.boss.rainbow)) { m.stats.atk = Math.floor(m.stats.atk * 1.5); m.stats.spa = Math.floor(m.stats.spa * 1.5); }   // 「明明之赐」：双攻 +50%
   if (m.boss && m.boss.feud) m.stats.atk = Math.floor(m.stats.atk * 1.3);   // 「东北的纷争」：物攻永久 +30%（直接算进能力值，不是能力等级，不会被消除）
   if (m.boss && m.boss.erode) { var em = erodeMult(m); m.stats.atk = Math.floor(m.stats.atk * em); m.stats.spa = Math.floor(m.stats.spa * em); }   // 「深度侵蚀」：物攻、特攻永久提升（erode: 1 或 true 为 +100%；写数字 2 表示 +200%）
   if (t.u != null) { m.u = t.u; m.hl = t.hl || []; }   // 账号里的精灵：可以在战斗中领悟隐藏技能
@@ -212,7 +214,7 @@ function abilityLive(m, foe) {
   switch (ab) {
     case '旅行': return '每次被替换上场时，提升1级速度（首发上场不触发）';
     case '脚伤': return '脚底被瘴气浸透，陷入永久的流血状态，无法被解除';
-    case '形态重构': return '切换形态时恢复 100 体力' + (m.perm && m.perm.odoForm ? '（当前：' + (m.perm.odoForm === 'atk' ? '歼灭形态' : '护阵形态') + '）' : '（当前：稳态）');
+    case '重构': return '切换形态时恢复 100 体力' + (m.perm && m.perm.odoForm ? '（当前：' + (m.perm.odoForm === 'atk' ? '歼灭形态' : '护阵形态') + '）' : '（当前：稳态）');
     case '雷明': return '使用电系技能后，3回合内每回合末对对方造成25固定伤害' + (m.tm.lmE > 0 ? '（生效中，剩 ' + m.tm.lmE + ' 回合）' : '') + '；使用光系技能后，3回合内每回合末恢复20体力' + (m.tm.lmL > 0 ? '（生效中，剩 ' + m.tm.lmL + ' 回合）' : '') + '。各自不能叠加，但可以同时生效';
     case '饭香': return '每回合结束时 20% 概率吃一口米饭' + (m.perm.rice ? '（本场已吃 ' + m.perm.rice + ' 口）' : '');
     case '龙啸': if (!f) return '对手不在场，暂不生效';
@@ -359,7 +361,7 @@ function log(S, evs, text, cls) { E(S, evs, 'text', { text: text, cls: cls || ''
 
 /* ---------- 基础操作 ---------- */
 function faint(S, evs, j) {
-  var t = act(S, j);
+  var t = act(S, j); if (t.fainted) return;
   // 主线任务「引出猎杀者」：野生精灵不会倒下，体力剩 1 点时逃走（S.wild.spare）
   if (j === 1 && S.wild && S.wild.spare && !S.pvp) {
     t.hp = 1; t.fainted = false;
@@ -391,6 +393,7 @@ function applyDamage(S, evs, j, amount, src, o) {
   var t = act(S, j); if (t.fainted) return 0;
   var amt = Math.floor(amount), excess = 0;
   if (t.tm.cap > 0 && amt > 250 && src != null) { excess = amt - 250; amt = 250; }
+  var willEx = 0; if (t.boss && t.boss.odoWill && amt > 200 && src != null && src !== j) { willEx = amt - 200; amt = 200; }   // 护阵意志：单次受伤不超过 200，超出的反弹
   if (t.fx.shield > 0) {
     var ab = Math.min(t.fx.shield, amt); t.fx.shield -= ab; amt -= ab;
     if (ab) log(S, evs, nm(t) + '的护盾吸收了 ' + ab + ' 点伤害');
@@ -410,8 +413,15 @@ function applyDamage(S, evs, j, amount, src, o) {
     log(S, evs, nm(t) + '的龙之逆鳞把 ' + excess + ' 点伤害反馈给了对方！', 'fxl');
     loseHp(S, evs, src, excess);
   }
+  if (willEx > 0 && !act(S, src).fainted) { log(S, evs, nm(t) + '的「护阵意志」把 ' + willEx + ' 点伤害反弹了回去！', 'fxl'); loseHp(S, evs, src, willEx); }
   if (t.boss && t.boss.rebirth && !t.boss.reborn && t.hp < 2500) { rebirthBarren(S, evs, j, t); return amt; }
   if (t.hp <= 0 && !o.noFaint) faint(S, evs, j);
+  // 虹霓暴走：对对方累计造成 1000 点伤害（不算溢出）就爆破一次，自己损失 500，对方受到 500 固定伤害
+  var rbm = src != null && src !== j ? act(S, src) : null;
+  if (rbm && rbm.boss && rbm.boss.rainbow && amt > 0 && !rbm.fainted) {
+    rbm.fx.rb = (rbm.fx.rb || 0) + amt;
+    while (rbm.fx.rb >= 1000 && !rbm.fainted && !S.over) { rbm.fx.rb -= 1000; log(S, evs, nm(rbm) + '体内的虹光满溢，爆破了！', 'crit'); loseHp(S, evs, src, 500, nm(rbm) + '损失了 500 体力'); if (!act(S, j).fainted) applyDamage(S, evs, j, 500, null, {}); }
+  }
   return amt;
 }
 function heal(S, evs, i, amount) {
@@ -548,7 +558,8 @@ function calcDamage(me, foe, mv, firstMover, est) {
   if (fab === '幻叶' && foe.hp <= foe.maxhp / 3) mod *= 0.85;
   if (fab === '盾甲') mod *= 0.9;
   if (me.tm.odoAtk > 0) mod *= 1.25;   // 全弹搭载
-  if (foe.tm.odoDef > 0) mod *= 0.8;   // 强效外壳
+  if (foe.tm.odoDef > 0) mod *= 0.8;
+  if (foe.boss && foe.boss.odoRate && foe.fx.lateT === S.turn) mod *= 1.25;   // 强效外壳
   if (foe.perm && foe.perm.odoMark) mod *= 1 + 0.1 * foe.perm.odoMark;   // 解析导弹
   if (me.perm && me.perm.odoJam) mod *= Math.max(0, 1 - 0.08 * me.perm.odoJam);   // 侵扰投弹
   if (fab === '水形' && STG.some(function (k) { return foe.stages[k] > 0; })) mod *= 0.9;
@@ -600,12 +611,13 @@ function moveFor(m, i) {
   var slot = m.moves[i];
   return slot && slot.pp > 0 ? M[slot.n] : STRUGGLE;
 }
-function speedOf(m) { return m.stats.spe * stageMult(m.stages.spe); }
+function speedOf(m) { if (m.boss && m.boss.odoRate) return 1000 * stageMult(m.stages.spe); return m.stats.spe * stageMult(m.stages.spe); }   // 歼灭速率：先天速度约 1000
 
 function resolveTurn(S, acts) {
   var evs = [];
   S.turnActed = [false, false]; S.silenced = [false, false]; S.order = [];
   log(S, evs, '第 ' + S.turn + ' 回合', 'turn');
+  if (S.turn === 1 && !S.ambushed) { S.ambushed = 1; var amb = act(S, 1); if (amb.boss && amb.boss.ambush && !act(S, 0).fainted) { log(S, evs, nm(amb) + '发动了「突然袭击」！', 'crit'); applyDamage(S, evs, 0, amb.boss.ambush, null, {}); if (act(S, 0).fainted && !S.over) { checkOver(S, evs); } } }
   if (acts[0].kind === 'item') { useItem(S, evs, 0, acts[0].key); S.turnActed[0] = true; if (S.over) { S.turn++; return evs; } }
   [0, 1].forEach(function (i) { if (acts[i].kind === 'switch') doSwitch(S, evs, i, acts[i].to, true); });
   // BOSS「瘴毒傀儡」：占用BOSS这一回合，下场并召唤傀儡
@@ -734,6 +746,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   if (!mv.struggle && slotIdx >= 0 && !(me.boss && ((me.boss.immortal && !me.boss.ppLim) || me.boss.ppInf))) me.moves[slotIdx].pp--;   // ppLim：先驱之塔的死神虽有「不朽」，PP 也有限   // 「不朽」：PP 无限
   if (S.silenced[i] && !extra) { log(S, evs, nm(me) + '的「' + mv.name + '」被黑暗吞没，失效了！', 'bad'); return; }
   var firstMover = !S.turnActed[j];
+  if (foe.boss && foe.boss.odoRate && firstMover) foe.fx.lateT = S.turn;   // 歼灭速率：被对方抢先出手，这回合受伤 +25%
   var mt = mvType(me, mv);
   S.curMove = i === 0 ? mv.name : null;
   E(S, evs, 'use', { side: i, move: mv.name, type: mt });
@@ -849,6 +862,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   if (me.fainted) return;
   if (mv.drain && total > 0) { var dh = heal(S, evs, i, total * mv.drain); hqR(me).h[mv.name] = (hqR(me).h[mv.name] || 0) + dh; }
   if (mv.struggle && total > 0) loseHp(S, evs, i, Math.max(1, Math.floor(total / 4)), nm(me) + '受到了反作用伤害');
+  if (me.boss && me.boss.odoRate && firstMover && total > 0 && !foe.fainted && foe.hp > 0) { log(S, evs, nm(me) + '的「歼灭速率」：抢先出手，追加 ' + Math.floor(foe.maxhp / 4) + ' 点固定伤害', 'fxl'); applyDamage(S, evs, j, Math.floor(foe.maxhp / 4), i, { noFaint: true }); }
   if (mv.selfTiredHit && !me.fainted) { me.st['疲惫'] = mv.selfTiredHit + 1; E(S, evs, 'stage', { side: i }); log(S, evs, nm(me) + '耗尽了力气，陷入「疲惫」状态（' + mv.selfTiredHit + '回合）', 'bad'); }   // 全弹发射
   if (mv.recoil && total > 0 && !me.fainted) loseHp(S, evs, i, Math.max(1, Math.floor(total * mv.recoil)), nm(me) + '受到了反弹伤害');   // 烈焰冲锋
   if (total > 0 && me.tm.induct > 0) { log(S, evs, '电磁感应生效', 'fxl'); changeStages(S, evs, i, { spa: 1 }); }
@@ -1062,7 +1076,7 @@ function doStatus(S, evs, i, mv) {
       me.perm.odoForm = to; log(S, evs, nm(me) + '切换为' + (to === 'atk' ? '歼灭' : '护阵') + '形态！', 'fxl');
       if (to === 'atk') { changeStages(S, evs, i, { atk: 1, spa: 1 }); for (var osk in me.st) if (ST_DESC[osk]) delete me.st[osk]; }
       else { changeStages(S, evs, i, { def: 1, spd: 1 }); STG.forEach(function (k) { if (me.stages[k] < 0) me.stages[k] = 0; }); }
-      if (ability(me) === '形态重构') { log(S, evs, nm(me) + '的「形态重构」发动了', 'fxl'); heal(S, evs, i, 100); }
+      if (ability(me) === '重构') { log(S, evs, nm(me) + '的「重构」发动了', 'fxl'); heal(S, evs, i, 100); }
       E(S, evs, 'stage', { side: i }); break;
     case 'odoBuffAtk': timer('odoAtk', 4, nm(me) + '全弹搭载完毕：4回合内造成的伤害提升25%'); break;
     case 'odoBuffDef': timer('odoDef', 4, nm(me) + '换上了强效外壳：4回合内受到的伤害减少20%'); break;
@@ -1245,6 +1259,11 @@ var BOSS_FX = [
   { k: 'nourish', t: '养料汲取', h: '养料汲取', d: function () { return '每回合结束时恢复 50 体力'; } },   // 2026-10-24 第十一段 · 实验室里的荒芜
   { k: 'mmGift', t: '明明之赐', h: '明明之赐', d: function () { return '物攻、特攻提升 50%'; } },   // 明明教官的试炼 · 高难
   { k: 'lmBoost', t: '雷明尊者', h: '雷明尊者', d: function () { return '自身的特性「雷明」效果增幅 300%（固定伤害 100、回复 80）'; } },   // 明明教官的光霆主
+  { k: 'ambush', t: '突然袭击', h: '突然袭击', d: function (m) { return '第一回合率先出手，对你的出战精灵造成 ' + m.boss.ambush + ' 点固定伤害'; } },   // 奥多亚克BOSS
+  { k: 'odoRate', t: '歼灭速率', h: '歼灭速率', d: function () { return '先天速度极高（约 1000）。先出手时附加对方最大体力 1/4 的固定伤害；后出手时本回合受到的伤害增加 25%'; } },
+  { k: 'odoWill', t: '护阵意志', h: '护阵意志', d: function () { return '每次受到的伤害不会超过 200，超过的部分全部反弹给攻击者'; } },
+  { k: 'rainbow', t: '虹霓暴走', h: '虹霓暴走', d: function () { return '物攻、特攻提升 50%。对你每累计造成 1000 点伤害（不计溢出）就爆破一次：自身损失 500 体力，并对你造成 500 点固定伤害'; } },
+  { k: 'odoSwap', t: '形态切换', h: '形态切换', d: function () { return '歼灭形态和护阵形态每 2 回合主动切换一次；两种形态都被击败后，化为虹霓暴走'; } },
   { k: 'dr', t: '星球聚能', h: '星球聚能', d: function (m) { return '受到的伤害减少 ' + Math.round(m.boss.dr * 100) + '%'; } },
   { k: 'mia', t: '瘴气领域', h: '瘴气领域', d: function () { return '只要它还没倒下，每回合结束时为对手在场的精灵添加 1 层瘴气'; } },
   { k: 'puppet', t: '瘴毒傀儡', h: '瘴毒傀儡', d: function (m) { var cd = puppetCd(m), left = m.boss.last == null ? 0 : Math.max(0, cd - (m.boss.now - m.boss.last));
@@ -1437,5 +1456,11 @@ function endOfTurn(S, evs) {
       }
     }
   });
+  // BOSS 奥多亚克（困难）：歼灭形态、护阵形态每两回合主动切换一次（另一个形态还在的话）
+  var osw = S.sides[1], om = act(S, 1);
+  if (!S.over && om && !om.fainted && om.boss && om.boss.odoSwap && S.turn % 2 === 0) {
+    var oth = osw.active === 0 ? 1 : osw.active === 1 ? 0 : -1;
+    if (oth >= 0 && osw.team[oth] && !osw.team[oth].fainted) { log(S, evs, nm(om) + '切换了形态！', 'fxl'); doSwitch(S, evs, 1, oth, true); }
+  }
   E(S, evs, 'stage', { side: 0 });
 }

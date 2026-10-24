@@ -127,6 +127,7 @@ function aiChoose(S) {
   return { kind: 'move', i: best ? best.i : -1 };
 }
 function aiPickReplacement(S) {
+  if (S.sides[1].team.some(function (t) { return t.boss && t.boss.orderRepl; })) return aliveIdx(S, 1)[0];   // 按顺序上场（奥多亚克困难：歼灭 → 护阵 → 虹霓暴走）
   var foe = act(S, 0), bestK = aliveIdx(S, 1)[0], bestV = -1e9;
   if (S.ai && S.ai.dumbRepl && RNG() < S.ai.dumbRepl) { var al = aliveIdx(S, 1); return al[Math.floor(RNG() * al.length)]; }
   aliveIdx(S, 1).forEach(function (k) {
