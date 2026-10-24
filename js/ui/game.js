@@ -4260,6 +4260,8 @@
       ] }
   };
   // 2026-10-19：每个BOSS每档难度首次击败都送马亚尔晶体，难度越高越多（简单 100 / 普通 200 / 困难 400）
+  // 2026-10-24：困难难度的BOSS都带【不朽】（之后新增的困难BOSS自动加上；困难泰戈尔保持原样）
+  Object.keys(BOSSES).forEach(function (k) { if (k === 'tiger') return; BOSSES[k].lv.forEach(function (L) { if (L.diff !== '困难') return; if (L.boss) L.boss.immortal = 1; (L.team || []).forEach(function (T) { T.boss.immortal = 1; }); }); });
   var BOSS_CRY = [100, 200, 400];
   Object.keys(BOSSES).forEach(function (k) { BOSSES[k].lv.forEach(function (L, i) { if (!L.reward) L.reward = {}; if (!L.reward.items) L.reward.items = {}; L.reward.items.m_mcry = BOSS_CRY[i] || BOSS_CRY[BOSS_CRY.length - 1]; }); });
   // 每周挑战：击败困难难度的泰戈尔后开放，规则和困难难度一样，每次消耗 1 枚挑战许可
