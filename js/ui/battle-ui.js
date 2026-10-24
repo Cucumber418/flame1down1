@@ -591,6 +591,7 @@
     // FaceTheEnemy（遇敌曲）只在剧情对话里遇敌前后用来渲染气氛（剧本行 bgm: 'faceEnemyScene'），进入战斗后不再放（2026-10-17）
     bgm(opt.bgm || 'normal');
     app.S = newBattle(opt.p, opt.a); app.S.story = { foe: opt.foe, back: opt.back || null, diff: opt.diff || null };
+    app.S.noLimit = true;   // 2026-10-24：所有 PVE（剧情、野外、BOSS、挑战、先驱之塔、茶室等）不限回合
     if (opt.items) app.S.items = opt.items;
     if (opt.env) app.S.env = opt.env;
     if (opt.wild) app.S.wild = opt.wild;
@@ -728,9 +729,9 @@
   function renderSnap(sn, instant) {
     sn = flipSnap(sn);
     if (CAST.on) { CAST.snap = castSnap(sn); castQueue(); }
-    var trn = app.S && app.S.training;
-    $('turnNo').textContent = trn ? sn.turn : Math.min(sn.turn, MAX_TURNS);
-    var left = MAX_TURNS - sn.turn; $('turnMax').textContent = trn ? '训练 · 不限回合' : left <= 0 ? '最后一回合' : '上限 ' + MAX_TURNS; $('turnMax').className = 'tmax' + (!trn && left <= 10 ? ' warn' : '');
+    var trn = app.S && app.S.training, nol = trn || (app.S && app.S.noLimit);
+    $('turnNo').textContent = nol ? sn.turn : Math.min(sn.turn, MAX_TURNS);
+    var left = nol ? 999 : MAX_TURNS - sn.turn; $('turnMax').textContent = trn ? '训练 · 不限回合' : nol ? '不限回合' : left <= 0 ? '最后一回合' : '上限 ' + MAX_TURNS; $('turnMax').className = 'tmax' + (!trn && left <= 10 ? ' warn' : '');
     sn.sides.forEach(function (sd, i) {
       var pl = $('plate' + i);
       var html = '<span class="tape ' + (i ? 'r' : 'l') + '"></span>' +

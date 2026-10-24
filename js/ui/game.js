@@ -4408,7 +4408,6 @@
       '<article class="boss-card"><span class="tape l"></span><div class="boss-art"><img src="' + BG[floraBg(B.bg)] + '" alt="" class="boss-bg"><img src="' + SPRITES[B.sid] + '" alt="' + B.name + '" class="boss-mon"></div>' +
       '<div class="boss-txt"><span class="chip boss-diff d' + d + '">' + (weekly ? '每周挑战 · ' : '') + L.diff + '难度</span><h3>' + B.name + '</h3><p class="hint">' + esc(B.d) + '</p>' +
       '<ul class="boss-rules"><li><b>等级</b>LV' + L.lv + '</li><li><b>体力</b>' + (L.hpText || fmt(L.hp)) + '</li>' + rules +
-      '<li><b>时限</b>' + MAX_TURNS + ' 回合内没有击败BOSS，算挑战失败</li>' +
       '<li><b>奖励</b>' + rw + '</li><li><b>战绩</b>' + (rec.wins || 0) + ' 胜 / ' + (rec.tries || 0) + ' 次挑战</li></ul>' +
       '<p class="hint">会使用你当前的出战配队（' + TEAM_NAME[acc.active] + '）。' + (L.only ? '记得带上会' + L.only.join('、') + '系技能的精灵。' : '') + '对战中可以使用补药。</p>' +
       btn + '</div></article>' + (weekly ? '' : '<section class="bsoc" id="bsoc"><p class="hint">读取攻略中……</p></section>');
@@ -4590,7 +4589,6 @@
       '<article class="boss-card"><span class="tape l"></span><div class="boss-art">' + (bg ? '<img src="' + bg + '" alt="" class="boss-bg">' : '') + '<img src="' + SPRITES[sid] + '" alt="' + esc(S.name) + '" class="boss-mon"></div>' +
       '<div class="boss-txt"><span class="chip boss-diff d' + d + '">' + T.t + '系每周挑战 · ' + L.diff + '难度</span><h3>' + esc(S.name) + '</h3><p class="hint">本周的' + T.t + '系BOSS，还剩 ' + ewkLeft() + ' 换下一只。</p>' +
       '<ul class="boss-rules"><li><b>等级</b>LV' + L.lv + '</li><li><b>体力</b>' + fmt(L.hp) + '</li>' + rules +
-      '<li><b>时限</b>' + MAX_TURNS + ' 回合内没有击败BOSS，算挑战失败</li>' +
       '<li><b>奖励</b>每次击败获得' + itemName(T.item) + ' ×' + L.drop[0] + '–' + L.drop[1] + '、累积经验 ×' + fmt(L.exp) + '，另有经验和学习力</li><li><b>战绩</b>' + (rec.wins || 0) + ' 胜 / ' + (rec.tries || 0) + ' 次挑战</li></ul>' +
       '<p class="hint">会使用你当前的出战配队（' + TEAM_NAME[acc.active] + '）。对战中可以使用补药。</p>' +
       '<button type="button" class="btn primary" data-ewkgo="1"' + (pn > 0 ? '' : ' disabled') + '>开始挑战（获胜时消耗 1 枚挑战许可）</button><p class="hint permit-line">挑战许可 <b>' + pn + '</b> / ' + PERMIT.max + ' · ' + permitNext() + '</p></div></article>';

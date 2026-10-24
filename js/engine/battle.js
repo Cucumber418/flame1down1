@@ -653,7 +653,7 @@ function resolveTurn(S, acts) {
   }
   if (!S.over) endOfTurn(S, evs);
   checkOver(S, evs);
-  if (!S.over && !S.training && S.turn >= MAX_TURNS) timeUp(S, evs);
+  if (!S.over && !S.training && !S.noLimit && S.turn >= MAX_TURNS) timeUp(S, evs);   // noLimit：PVE 不限回合（2026-10-24），竞技对战仍是 60 回合
   if (!S.over) {
     if (S.pvp) { S.need = [act(S, 0).fainted, act(S, 1).fainted]; S.needSwitch = false; }   // 联网切磋：双方各自选替补
     else {
