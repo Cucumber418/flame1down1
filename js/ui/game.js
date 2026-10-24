@@ -705,9 +705,15 @@
       return (i ? '<span>→ LV' + e.lv + ' →</span>' : '') + '<b class="' + (i === st ? 'cur' : '') + '">' + esc(n) + '</b>';
     }).join('') + '</div>';
   }
+  // 2026-10-24：奥多亚克在背包 / 仓库 / Wiki 里可以切换形态查看技能（只是查看，战斗开始依然是稳态）
+  var ODO_FORMS = [['', '稳态'], ['atk', '歼灭形态'], ['def', '护阵形态']];
+  function odoMoveAs(n, f) { if (!f) return n; if (n === '歼灭形态' && f === 'atk') return '护阵形态'; return ODO_VAR[n] ? ODO_VAR[n][f === 'atk' ? 0 : 1] : n; }
+  function odoImgAs(img, f) { var F = typeof FORM_FX_SPRITES !== 'undefined' && FORM_FX_SPRITES.odo; return f && F && F[f] ? F[f] : img; }
+  function odoTabs(cur, attr) { return '<div class="odo-tabs"><span class="hint">查看形态</span>' + ODO_FORMS.map(function (x) { return '<button type="button" class="chip' + (x[0] === cur ? ' on' : '') + '" ' + attr + '="' + x[0] + '">' + x[1] + '</button>'; }).join('') + '<span class="hint">只是查看，战斗开始时依然是稳态</span></div>'; }
   function monDetail(m) {
     if (!m) return '<p class="empty-note">点击一只精灵查看资料、配置技能。</p>';
     var s = SPMAP[m.sid], f = form(m), a = avail(m.sid, m.lv, m.hl || []), n = m.moves.length, ts = teamsOf(m.u);
+    var odoOn = m.sid === 'odo' && isFin(s, f.stage), odoF = odoOn && ui.odoF && ui.odoF.u === m.u ? ui.odoF.f : '';
     var free = m.evFree || 0, sum = evSum(m), stats = '', iv = ivOf(m), ivSum = iv ? STAT_KEYS.reduce(function (a, k) { return a + iv[k]; }, 0) : 0;
     STAT_KEYS.forEach(function (k) {
       var b = s.base[k], v = stat(m, k), ev = (m.ev && m.ev[k]) || 0, nm = natureMult(m.nat, k), room = Math.min(free, EV_MAX - ev, EV_TOTAL - sum);
@@ -722,7 +728,7 @@
       (iv ? '<div class="ivhead"><b>天赋</b><span>合计 ' + ivSum + ' / 186 ' + gradeTag(m) + '</span><span class="hint">每项能力的天赋是 0~31 的随机数，越高越强。用「天赋重组合剂」可以把六项天赋全部重新随机。合计 0~89 一般，90~119 良，120~149 优，150~169 稀，170 以上极品。</span></div>' : '') +
       '<div class="stats evstats">' + stats + '<span class="sum">实际能力值 = LV' + m.lv + ' 的数值（受种族值和天赋影响） + 学习力加成，再乘性格修正' + (s.placeholder ? ' · 数值为占位' : s.unsure && s.unsure.length >= 6 ? ' · 种族值暂定' : '') + '</span></div>';
     var row = function (mv) {
-      var M_ = M[mv], on = m.moves.indexOf(mv) >= 0, ok = a.indexOf(mv) >= 0, id = 'am-' + m.u + '-' + mv;
+      var M_ = M[odoMoveAs(mv, odoF)] || M[mv], on = m.moves.indexOf(mv) >= 0, ok = a.indexOf(mv) >= 0, id = 'am-' + m.u + '-' + mv;
       var meta = M_.cat + (M_.power ? ' · 威力' + M_.power : '') + (M_.pri ? ' · 先制+' + M_.pri : '') + ' · PP' + M_.pp;
       return '<label class="mrow' + (on ? ' on' : '') + (M_.hidden ? ' hid' : '') + (ok ? '' : ' locked') + '" for="' + id + '">' +
         '<input type="checkbox" id="' + id + '" data-amove="' + mv + '"' + (on ? ' checked' : '') + (ok ? '' : ' disabled') + '>' +
@@ -736,7 +742,7 @@
       return '<button class="btn primary" type="button" data-in="' + i + '"' + (t.length >= TEAM_SIZE ? ' disabled title="' + TEAM_NAME[i] + '已满 5 只"' : '') + '>加入' + TEAM_NAME[i] + '</button>';
     }).join('');
     return '<span class="tape r"></span>' +
-      '<div class="d-head"><button type="button" class="d-art" data-abig="' + m.sid + '|' + f.stage + '" title="点击查看大图" aria-label="查看' + esc(f.name) + '的大图"><img src="' + f.img + '" alt="' + esc(f.name) + '"></button><div>' +
+      '<div class="d-head"><button type="button" class="d-art" data-abig="' + m.sid + '|' + f.stage + '" title="点击查看大图" aria-label="查看' + esc(f.name) + '的大图"><img src="' + (odoF && !m.shiny ? odoImgAs(f.img, odoF) : f.img) + '" alt="' + esc(f.name) + '"></button><div>' +
       '<h3>' + (f.no ? '<span class="dexno">No.' + f.no + '</span>' : '') + esc(f.name) + (f.unsure ? '<i class="q" title="字迹没看清">?</i>' : '') + (m.shiny ? '<span class="shiny-tag big" title="异色精灵：和同类长得不一样的稀有配色">异色</span>' : '') + '</h3>' +
       '<p style="margin:0 0 6px"><span class="lvbig">LV' + m.lv + '</span>' + tchips(s.types) + '</p>' +
       '<p class="hint">' + stageLabel(s, f.stage) + (!isFin(s, f.stage) ? ' · 最终进化为' + (s.placeholder || s.tbdForms ? '？' : s.name) : '') +
@@ -748,6 +754,7 @@
       monItemsHTML(m) +
       '<div><div class="moves-head"><h4>出战技能 <span class="' + (n === 4 ? 'blue' : 'red') + '">' + n + '/4</span></h4>' +
       '<span class="hint">普通技能 LV1 学会第 1 个，之后每 5 级学会一个；隐藏技能要在战斗中满足特定条件才能领悟</span></div>' +
+      (odoOn ? odoTabs(odoF, 'data-odof="' + m.u + '" data-of') : '') +
       '<div class="mlist">' + s.moves.concat(s.hidden).filter(function (mv) { return a.indexOf(mv) >= 0; }).map(row).join('') + '</div>' + nextMoveHint(m) + '</div>' +
       '<div class="d-actions">' + acts + '</div>';
   }
@@ -4770,7 +4777,8 @@
   function wikiDetail(s) {
     if (!s) return '<p class="empty-note">点击左边的精灵，查看它的全部技能、特性、获得方式和培养道具。</p>';
     var v = WK.v != null && s.evo && s.evo[WK.v] ? WK.v : (s.evo ? evoLast(s) : 0), fin = !s.evo || isFin(s, v), ev = s.evo ? s.evo[v] : {};
-    var vName = fin ? s.name : String(ev.n || s.name).replace('?', ''), vImg = s.evo ? formImg(s, v) : SPRITES[s.id], vLore = ev.d || (fin ? s.lore || '' : '');
+    var odoF = s.id === 'odo' && fin ? (WK.of || '') : '';
+    var vName = fin ? s.name : String(ev.n || s.name).replace('?', ''), vImg = odoImgAs(s.evo ? formImg(s, v) : SPRITES[s.id], odoF), vLore = ev.d || (fin ? s.lore || '' : '');
     var evo = '';
     if (s.evo && s.evo.length > 1) {
       evo = '<div class="evo"><div class="evo-head"><h4>进化链</h4><span class="hint">点击形态查看它的立绘和介绍</span></div><ol class="evo-row' + (s.evo.length === 2 ? ' n2' : '') + '">' + s.evo.map(function (e, i) {
@@ -4781,9 +4789,9 @@
     }
     var stats = ['hp', 'atk', 'def', 'spa', 'spd', 'spe'].map(function (k) { var b = s.base[k]; return '<span>' + BASE_NAME[k] + '</span><span>' + b + '</span><span class="bar"><i style="width:' + Math.min(100, b / 150 * 100) + '%"></i></span><span class="real">LV100：' + calcStat(b, k) + '</span>'; }).join('') + '<span class="sum">种族值总和 ' + total(s) + '</span>';
     var mv = function (n, i, hid) {
-      var m = M[n]; if (!m) return '';
+      var m = M[odoMoveAs(n, odoF)] || M[n]; if (!m) return ''; var shown = m.name || n;
       var how = hid ? (HL_GATED[s.id] ? '道具解锁' : 'LV50' + (LEARN[n] ? ' · ' + LEARN[n] : '')) : 'LV' + (i ? i * 5 : 1);
-      return '<div class="mrow wk-mrow' + (hid ? ' hid' : '') + '"><span class="wk-lv">' + esc(how) + '</span><span class="l1"><span class="mn">' + esc(n) + '</span>' + tchips([m.type]) + '<span class="mm">' + m.cat + (m.power ? ' · 威力' + m.power : '') + (m.pri ? ' · 先制+' + m.pri : '') + ' · PP' + m.pp + '</span>' + (hid ? '<span class="tag">隐藏</span>' : '') + '</span><span class="md">' + esc(m.d || '') + '</span></div>';
+      return '<div class="mrow wk-mrow' + (hid ? ' hid' : '') + '"><span class="wk-lv">' + esc(how) + '</span><span class="l1"><span class="mn">' + esc(shown) + '</span>' + tchips([m.type]) + '<span class="mm">' + m.cat + (m.power ? ' · 威力' + m.power : '') + (m.pri ? ' · 先制+' + m.pri : '') + ' · PP' + m.pp + '</span>' + (hid ? '<span class="tag">隐藏</span>' : '') + '</span><span class="md">' + esc(m.d || '') + '</span></div>';
     };
     var jade = Object.keys(USE_ITEMS).filter(function (k) { return USE_ITEMS[k].kind === 'jade' && (USE_ITEMS[k].sids || []).indexOf(s.id) >= 0; });
     var cap = capGem({ sid: s.id });
@@ -4793,7 +4801,7 @@
       '<div class="wk-get2"><b>获得方式</b><span>' + esc(wikiGet(s.id)) + '</span></div>' + evo +
       '<div class="stats">' + stats + '</div>' +
       (s.ability ? '<div class="trait"><p><b>特性 · ' + esc(s.ability.n) + '</b>　<span class="blue">' + esc(s.ability.d || '') + '</span></p></div>' : '') +
-      '<div><div class="moves-head"><h4>全部技能</h4><span class="hint">普通技能按等级习得；带「隐藏」的要另外领悟</span></div><div class="mlist">' +
+      '<div><div class="moves-head"><h4>全部技能</h4><span class="hint">普通技能按等级习得；带「隐藏」的要另外领悟</span></div>' + (s.id === 'odo' && fin ? odoTabs(odoF, 'data-wkof') : '') + '<div class="mlist">' +
       (s.moves || []).map(function (n, i) { return mv(n, i, false); }).join('') + (s.hidden || []).map(function (n) { return mv(n, 0, true); }).join('') + '</div></div>' +
       '<div class="wk-items2"><h4>培养道具</h4><p class="wk-lab">隐藏技能解锁</p>' + (jade.length ? jade.map(function (k) { return wikiItem(k, USE_ITEMS[k].cost + ' 个领悟一个'); }).join('') : '<p class="hint">' + (HL_GATED[s.id] ? '暂无' : '不需要道具，LV50 习得') + '</p>') +
       '<p class="wk-lab">等级上限提升</p>' + (cap ? wikiItem(cap, CAP_STEPS.map(function (c0) { return 'LV' + c0.lv + ' 需 ' + c0.jade + ' 个'; }).join('，')) : '<p class="hint">暂无（上限 LV' + BASE_CAP + '）</p>') + '</div>';
@@ -4820,10 +4828,16 @@
     d.addEventListener('click', function (e) {
       if (e.target === d || e.target.closest('[data-wkx]')) { d.remove(); return; }
       var b = e.target.closest('[data-wkt]'); if (b) { WK.t = b.dataset.wkt || ''; draw(false); return; }
-      var c = e.target.closest('[data-wks]'); if (c) { WK.sel = c.dataset.wks; WK.v = null; draw(true); return; }
+      var c = e.target.closest('[data-wks]'); if (c) { WK.sel = c.dataset.wks; WK.v = null; WK.of = ''; draw(true); return; }
+      var of = e.target.closest('[data-wkof]'); if (of) { WK.of = of.dataset.wkof || ''; draw(false); return; }
       var v = e.target.closest('[data-wkv]'); if (v) { WK.v = +v.dataset.wkv; draw(false); }
     });
   }
+  document.addEventListener('click', function (e) {   // 奥多亚克：背包 / 仓库资料里切换查看的形态
+    var b = e.target.closest && e.target.closest('[data-odof]'); if (!b) return;
+    var u = +b.dataset.odof, m = mon(u), det = b.closest('.detail'); if (!m || !det) return;
+    ui.odoF = { u: u, f: b.dataset.of || '' }; det.innerHTML = monDetail(m);
+  });
   // 2026-10-24：改成在 document 上监听（按钮被重新渲染也不会失效），出错时把原因提示出来
   document.addEventListener('click', function (e) {
     if (!e.target.closest || !e.target.closest('#wiki-btn')) return;

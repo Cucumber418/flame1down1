@@ -2572,3 +2572,8 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .wk-it .wk-tail { font-size: 12px; color: var(--blue); }
 .wk-it small { color: var(--pencil); font-size: 12px; line-height: 1.5; }
 @media (max-width: 900px) { .wk-build > div:first-child { position: static; max-height: none; overflow: visible; } }
+
+/* 奥多亚克：切换查看形态（2026-10-24） */
+.odo-tabs { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 6px 0 4px; }
+.odo-tabs .chip { cursor: pointer; }
+.odo-tabs .chip.on { background: var(--ink); color: #fff; border-color: var(--ink); }
