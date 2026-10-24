@@ -1373,7 +1373,7 @@
     // 2026-10-24：全服瘴气驱逐战击破 500 只后开放；读完后芙罗拉星恢复（瘴气精灵移到「瘴气污染的记录」里），第一章完结
     flora7: { name: '盐碱地之下', planet: 'flora', chapter: '第十一段 · 盐碱地之下', bg: 'fl_salt', d: '芙罗拉星上的大多数精灵依然被瘴气缠着。必须从根源上解决问题——这一次，一行人决定真正踏上盐碱地。', after: 'flora6', reward: { exp: 5000, energy: 2000 },
       need: function () { pwFetch(); return !!(PW.data && PW.data.total >= 500); }, get needText() { return '全服「瘴气驱逐战」击破数达到 500（目前 ' + (PW.data ? PW.data.total : '?') + ' 只）'; } },
-    mmTrial: { name: '古城防卫部', planet: 'jingchu', dept: '襄阳', chapter: '活动任务 · 明明教官的试炼', side: true, event: true, bg: 'bridge_p', d: '明明教官说，要带大家去一个「好地方」。读完后开放活动「明明教官的试炼」。', after: 'flora7', pos: [42, 60] },
+    mmTrial: { name: '古城防卫部', planet: 'jingchu', dept: '襄阳', chapter: '活动任务 · 明明教官的试炼', side: true, event: true, bg: 'bridge_p', d: '明明教官说，要带大家去一个「好地方」。读完后开放活动「明明教官的试炼」。', after: 'flora7', pos: [42, 60], reward: { items: { mmTok: 500 } } },   // 2026-10-24：读完即完成任务，送 500 明明代币
     tea: { name: '陆羽茶室', planet: 'jingchu', dept: '天门', chapter: '支线 · 陆羽茶室', side: true, bg: 'tea_p', d: '从芙罗拉星回来后，舰上要给第一支地面小队分配休息舱。读完后开放你自己的「茶室」（家园）。', after: 'flora1', pos: [50, 84] },
     mingming: { name: '古城防卫部', planet: 'jingchu', dept: '襄阳', chapter: '支线 · 明明教官的礼物', side: true, bg: 'bridge_p', d: '古城防卫部的明明教官听说你在黄冈秘鉴里点亮了十类精灵，想见见你。', after: 'board', pos: [48, 82], need: function () { return litCount() >= 10; }, needText: '在黄冈秘鉴中点亮 10 类精灵后开放', reward: { gift: [{ sid: 'aegis', lv: 10 }] } },
     tiger: { name: '古城防卫部', planet: 'jingchu', dept: '襄阳', chapter: '支线 · 东北来的泰戈尔', side: true, bg: 'bridge_p', d: '古城防卫部来了一只从东北招募的特殊虎系精灵，专门辅助船员训练。读完后开放BOSS「泰戈尔」的挑战。', after: 'board', pos: [30, 70] },
@@ -3713,6 +3713,8 @@
       if (!bossWon(x[0], 2)) return; var it = {}; it[x[1]] = 80;
       if (sendMail({ id: 'boss-item-' + x[0], title: '困难难度「' + x[2] + '」首次击败奖励补发', body: '{name}，你好！\n困难难度的BOSS「' + x[2] + '」新增了首次击败奖励「' + itemName(x[1]) + '」×80。你之前已经击败过它了，这份奖励给你补上。\n' + itemName(x[1]) + '可以让' + x[2] + '领悟隐藏技能，也能提高' + x[2] + '的等级上限。另外，' + x[2] + '的每周挑战也已经开放。', att: { items: it } })) changed = true;
     });
+    // 2026-10-24：活动任务「明明教官的试炼」读完送 500 明明代币，之前已经读完的补发
+    if (prog('mmTrial').done && !prog('mmTrial').rewarded) { prog('mmTrial').rewarded = true; if (sendMail({ id: 'mm-task-tok', title: '活动任务「明明教官的试炼」奖励补发', body: '{name}，你好！\n活动任务「明明教官的试炼」现在读完即算完成，奖励明明代币 ×500。你之前已经读完了，这份奖励给你补上，可以去全息作战场地抽奖。', att: { items: { mmTok: 500 } } })) changed = true; }
     // 2026-10-24：普通难度荒芜新增首次击败奖励「莠去津」×40（原来写着「之后添加」），已经打过的补发
     if (bossWon('barren', 1) && sendMail({ id: 'boss-n-barren', title: '普通难度「荒芜」首次击败奖励补发', body: '{name}，你好！\n普通难度的BOSS「荒芜」的首次击败奖励定下来了：荒芜的专属道具「莠去津」×40（原来的「生长枯枝」也改名为「莠去津」，作用不变）。你之前已经击败过它了，这份奖励给你补上。', att: { items: { brTwig: 40 } } })) changed = true;
     // 2026-10-19：BOSS 各难度首次击败新增马亚尔晶体，之前已经击败过的通过邮箱补发（每个BOSS一封，合计已击败的各档）
@@ -4624,7 +4626,7 @@
   }
   /* ---------- 剧情回顾（2026-10-20）：星际探索第一排的入口，集中重温剧情 ----------
    * 主线（按章节，可以一口气连播）、支线（含世界任务）、画廊（所有 CG）、音乐鉴赏（只列出听过的曲子）、角色立绘（只显示见过的角色，资料按剧情进度揭示） */
-  var ARC_TABS = [['main', '主线'], ['side', '支线'], ['cg', '画廊'], ['music', '音乐鉴赏'], ['chars', '角色立绘']];
+  var ARC_TABS = [['main', '主线任务'], ['side', '支线任务'], ['world', '世界任务'], ['event', '活动任务'], ['cg', '画廊'], ['music', '音乐鉴赏'], ['chars', '角色立绘']];
   var MUSIC = [
     ['ui', '大厅 · HMS_JC', '主界面'], ['uiOld', '大厅（旧版）', '主界面（旧版）'], ['arena', '竞技大厅', '竞技对战'], ['earth', '地球', '地球的剧情'],
     ['faceEnemy', '遇敌', '剧情对战开场'], ['normal', '寻常', '野外与剧情对战'], ['stage', '关卡', '星球挑战'], ['pvp', 'PVP', '竞技对战与切磋'],
@@ -4699,14 +4701,16 @@
     if (rest.length) h += '<section class="arc-sec"><h3>其他</h3><ol class="arc-list">' + rest.map(function (id) { return arcRow(id, 'main'); }).join('') + '</ol></section>';
     return h;
   }
-  function arcSide() {
-    var ids = Object.keys(SITES).filter(function (id) { return SITES[id].side; });
-    var world = ids.filter(function (id) { return SITES[id].chapter.indexOf('世界任务') === 0; }), side = ids.filter(function (id) { return world.indexOf(id) < 0; });
-    var vis = function (L) { return L.filter(function (id) { return prog(id).done || unlocked(id); }); };
-    var n = ids.filter(function (id) { return prog(id).done; }).length;
-    return '<p class="hint">已读完 ' + n + ' / ' + ids.length + ' 段支线和世界任务。还没开放的不会显示。</p>' +
-      '<section class="arc-sec"><h3>支线</h3><ol class="arc-list">' + (vis(side).map(function (id) { return arcRow(id, 'side'); }).join('') || '<li class="hint">还没有开放的支线。</li>') + '</ol></section>' +
-      (vis(world).length ? '<section class="arc-sec"><h3>世界任务</h3><ol class="arc-list">' + vis(world).map(function (id) { return arcRow(id, 'side'); }).join('') + '</ol></section>' : '');
+  function arcSide(kind) {   // 2026-10-24：支线 / 世界任务 / 活动任务分成三个并列的分页
+    var ids = Object.keys(SITES).filter(function (id) {
+      var S = SITES[id]; if (!S.side) return false;
+      var k = S.event ? 'event' : S.chapter.indexOf('世界任务') === 0 ? 'world' : 'side';
+      return k === kind;
+    });
+    var vis = ids.filter(function (id) { return prog(id).done || unlocked(id); });
+    var n = ids.filter(function (id) { return prog(id).done; }).length, nm = kind === 'event' ? '活动任务' : kind === 'world' ? '世界任务' : '支线';
+    return '<p class="hint">已读完 ' + n + ' / ' + ids.length + ' 段' + nm + '。还没开放的不会显示。</p>' +
+      '<section class="arc-sec"><ol class="arc-list">' + (vis.map(function (id) { return arcRow(id, 'side'); }).join('') || '<li class="hint">还没有开放的' + nm + '。</li>') + '</ol></section>';
   }
   function arcMusic() {
     var n = MUSIC.filter(function (m) { return heard(m[0]); }).length;
@@ -4741,7 +4745,7 @@
   }
   function renderArchive() {
     var tab = ex.arcTab || 'main';
-    var body = tab === 'side' ? arcSide() : tab === 'cg' ? cgGallery(Object.keys(SITES)) : tab === 'music' ? arcMusic() : tab === 'chars' ? arcChars() : arcMain();
+    var body = tab === 'side' ? arcSide('side') : tab === 'world' ? arcSide('world') : tab === 'event' ? arcSide('event') : tab === 'cg' ? cgGallery(Object.keys(SITES)) : tab === 'music' ? arcMusic() : tab === 'chars' ? arcChars() : arcMain();
     $('pg-explore').innerHTML = exHead('在这里重温读过的剧情、看过的 CG、听过的音乐和遇见过的角色。') +
       '<div class="crumb"><button type="button" class="btn ghost" id="arc-back">‹ 返回星际探索</button><b>剧情回顾</b></div>' +
       '<div class="fparts arc-tabs" role="tablist">' + ARC_TABS.map(function (t) { return '<button type="button" role="tab" class="tab' + (t[0] === tab ? ' on' : '') + '" aria-selected="' + (t[0] === tab) + '" data-arctab="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>' +
@@ -5827,7 +5831,6 @@
     if (id === 'draft') return pr.done && draftPlayed() ? 'done' : pr.done || pr.at > 0 ? 'doing' : 'todo';
     if (id === 'rare') return prog('rare_r').done ? 'done' : pr.done || pr.at > 0 ? 'doing' : 'todo';
     if (id === 'fl_chal') return pr.done && chalStars('fl2') > 0 && helperSet() ? 'done' : pr.done || pr.at > 0 ? 'doing' : 'todo';
-    if (id === 'mmTrial') return acc.mm && acc.mm.clr && Object.keys(acc.mm.clr).some(function (k) { return k.indexOf('final') === 0; }) ? 'done' : pr.done || pr.at > 0 ? 'doing' : 'todo';
     if (id === 'flora2') return pr.done && spareN() >= SPARE_N ? 'done' : pr.done || pr.at > 0 ? 'doing' : 'todo';
     return pr.done ? 'done' : pr.at > 0 ? 'doing' : 'todo';
   }
@@ -5860,7 +5863,6 @@
       if (id === 'draft') steps = [{ t: '在孝感大厅听 Dr.黄 介绍竞技征召', ok: pr.done }, { t: '和其他船员打一场竞技征召（社交 → 向在线玩家宣战 → 5v5 · 平衡模式 · 竞技征召，胜负都算）', ok: draftPlayed() }];
       if (id === 'tiger2') { steps = [{ t: '在古城防卫部听泰戈尔介绍普通难度', ok: pr.done }, { t: '挑战并击败普通难度的「泰戈尔」（LV40，体力 1500，东北的纷争：物攻永久提升 30%）', ok: bossWon('tiger', 1) }]; R = { mon: '普通拳纹章、累积经验 ×20,000（首次击败普通难度）' }; }
       if (id === 'flora2') steps = [{ t: '前往 ' + qWhere(id), ok: pr.done || pr.at > 0 }, { t: '读完剧情「' + qName(id) + '」', ok: pr.done }, { t: '在芙罗拉星的丛林或草甸「假装击败」野生精灵（这个任务里野生精灵不会倒下，体力剩 1 点时就会逃走）', ok: spareN() >= SPARE_N, p: spareN() + ' / ' + SPARE_N }];
-      if (id === 'mmTrial') { var mmC = acc.mm && acc.mm.clr ? Object.keys(acc.mm.clr).length : 0; steps = [{ t: '在古城防卫部听明明教官说明试炼', ok: pr.done }, { t: '到空间站的「全息作战场地」通过一个关卡（每天开放一个属性）', ok: mmC > 0, p: mmC + ' / 1' }, { t: '通过「明明的最终试炼」', ok: !!(acc.mm && acc.mm.clr && Object.keys(acc.mm.clr).some(function (k) { return k.indexOf('final') === 0; })) }]; }
       if (id === 'fl_chal') steps = [{ t: '在古城防卫部听明明教官介绍挑战路线', ok: pr.done }, { t: '通过芙罗拉星挑战第二关（星际探索 → 芙罗拉星 → 挑战）', ok: chalStars('fl2') > 0 }, { t: '自己也挂一只助战精灵：社交 → 我的名片 → 助战精灵', ok: helperSet() }];
       if (id === 'rare') { var rr = prog('rare_r'); steps = [{ t: '在学院部听 Bttp 说明任务', ok: pr.done }, { t: '捕捉一种稀有精灵（芙罗拉星的丛林深处可能会有）', ok: rr.done || !!rareOwned() }, { t: '回到学院部，向 Bttp 汇报', ok: rr.done }]; R = SITES.rare_r.reward; desc = S.d; }
       if (st === 'lock') need = S.need && prog(S.after).done && !S.need() ? S.needText + (id === 'mingming' ? '（当前 ' + litCount() + ' / 10）' : id === 'brawl' ? '（当前持有 ' + acc.mons.length + ' 只）' : id === 'draft' ? '（当前 ' + speciesN() + ' / 10 种）' : id === 'flora3' ? '（当前 ' + spareN() + ' / ' + SPARE_N + '）' : '') + '。' : '先读完「' + SITES[S.after].chapter.split(' · ')[1] + '」。';
