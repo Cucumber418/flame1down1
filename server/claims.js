@@ -55,8 +55,11 @@ function blank() { return { exp: 0, energy: 0, tokens: 0, twTok: 0, merit: 0, me
 function addTo(sum, d) { FIELDS.forEach(function (f) { if (d[f]) sum[f] += d[f]; }); for (var k in d.items || {}) sum.items[k] = (sum.items[k] || 0) + d.items[k]; }
 
 /* ---------- 检查一条申报，返回整理好的数值；不合格返回 null ---------- */
+// 2026-10-24 起由服务器直接发的奖励：浏览器不该再申报，宽限期过后这些来源的申报一律不认
+var SERVER_ONLY = { tower: 1, towerDeath: 1 };
 function clean(c) {
   if (!c || typeof c !== 'object' || typeof c.c !== 'string' || c.c.length > 40 || !SRC.hasOwnProperty(c.s)) return null;
+  if (SERVER_ONLY[c.s] && Date.now() >= GRACE_UNTIL) return null;
   var d = c.d && typeof c.d === 'object' ? c.d : {}, o = { items: {} }, any = false;
   for (var i = 0; i < FIELDS.length; i++) {
     var f = FIELDS[i]; if (d[f] == null) continue;
@@ -76,6 +79,8 @@ function clean(c) {
 
 /* ---------- 处理一次上传：u 是账号记录（会记下 claimed / cids），oldData / newData 是上一份和这次上传的存档 ----------
  * 返回 { data: 要保存的存档（enforce 模式下可能改过）, fixed: 修正说明（没改就是空） } */
+// 把塔的进度改回服务器上的（服务器那份没有的字段就删掉）
+function twBack(A, B, keys) { keys.forEach(function (k) { if (A.tower[k] === undefined) delete B.tower[k]; else B.tower[k] = JSON.parse(JSON.stringify(A.tower[k])); }); }
 function onUpload(u, list, oldData, newData, info) {
   var now = Date.now(), ok = blank(), bad = blank(), notes = [];
   if (!u.claimed || typeof u.claimed !== 'object') u.claimed = {};
@@ -106,12 +111,21 @@ function onUpload(u, list, oldData, newData, info) {
   FIELDS.forEach(function (f) { chk(f, a[f], b[f], ok[f], bad[f]); });
   Object.keys(b.items).forEach(function (k) { chk('items.' + k, a.items[k] || 0, b.items[k], ok.items[k] || 0, bad.items[k] || 0); });
   stat.uploads++; if (!info.claims) stat.oldClient++;
-  if (!over.length && !notes.length) return { data: newData, fixed: '' };
-  if (over.length) { stat.over++; stat.last.unshift({ t: new Date(now).toISOString(), old: !info.claims, over: over.map(function (x) { return x.f + ' +' + x.by; }) }); stat.last = stat.last.slice(0, 15); }
   var enforce = MODE === 'enforce' && (info.claims || now >= GRACE_UNTIL);
-  log({ t: new Date(now).toISOString(), u: u.name, mode: enforce ? 'enforce' : 'observe', oldClient: !info.claims, over: over, notes: notes });
+  // 先驱之塔的进度（层数、存档点、通关次数、死神代币次数、今天的塔内奖励）只由服务器推进（server/pve.js）：上传的存档改不了
+  var TWK = ['f', 'cp', 'best', 'clears', 'death', 'day'], twFix = [];
+  if (A.tower && B.tower && enforce) TWK.forEach(function (k) { if (JSON.stringify(A.tower[k]) !== JSON.stringify(B.tower[k])) twFix.push(k); });
+  if (!over.length && !notes.length && !twFix.length) return { data: newData, fixed: '' };
+  if (over.length) { stat.over++; stat.last.unshift({ t: new Date(now).toISOString(), old: !info.claims, over: over.map(function (x) { return x.f + ' +' + x.by; }) }); stat.last = stat.last.slice(0, 15); }
+  if (over.length || notes.length) log({ t: new Date(now).toISOString(), u: u.name, mode: enforce ? 'enforce' : 'observe', oldClient: !info.claims, over: over, notes: notes });
+  if (twFix.length && !over.length) {   // 只有塔的进度对不上：悄悄改回服务器的（正常情况下是本机跨天重置了今天的计数，不弹窗）
+    twBack(A, B, twFix);
+    var o2 = {}; for (var kk in newData) o2[kk] = newData[kk]; o2['hs-account-v1'] = JSON.stringify(B);
+    return { data: o2, fixed: '' };
+  }
   if (!enforce || !over.length) return { data: newData, fixed: '' };
   stat.fixed++;
+  twBack(A, B, twFix);
   // 正式模式：把多出来的改回去
   over.forEach(function (x) {
     if (x.f.indexOf('items.') === 0) { if (!B.items) B.items = {}; B.items[x.f.slice(6)] = x.to; }

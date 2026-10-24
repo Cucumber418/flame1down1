@@ -143,8 +143,10 @@ setInterval(function () { var now = Date.now(); Object.keys(fails).forEach(funct
 
 /* ---------- HTTP 小工具 ---------- */
 function reply(res, code, obj) {
+  if (res.headersSent) return;   // 已经回过了（比如处理到一半出错）：不再回第二次
+  var body = JSON.stringify(obj);   // 先转好再写响应头：转不了时抛出的错误由调用方处理，不会留下半截响应
   res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
-  res.end(JSON.stringify(obj));
+  res.end(body);
 }
 function readBody(req, cb) {
   var chunks = [], size = 0, done = false;
@@ -156,7 +158,12 @@ function readBody(req, cb) {
   });
   req.on('end', function () {
     if (done) return; done = true;
-    try { cb(null, JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}')); } catch (e) { cb(e); }
+    var body;
+    try { body = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}'); } catch (e) { cb(e); return; }
+    try { cb(null, body); } catch (e) {   // 处理时出错：记下来，回「请求格式不对」（已经回过的就不再回）
+      console.error('处理请求出错', req.method, req.url, e && e.stack);
+      try { cb(e); } catch (e2) {}
+    }
   });
 }
 function clientIp(req) { return (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket.remoteAddress || '?'; }

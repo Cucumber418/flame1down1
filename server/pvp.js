@@ -30,7 +30,10 @@ function mode(m) {
   return { srv: false, legacy: Date.now() < GRACE_UNTIL };
 }
 
-function send(m, data) { m.socks.forEach(function (w) { out(w, { type: 'mm', id: m.id, data: data }); }); }
+function send(m, data) {
+  if (m.S) data = JSON.parse(X().battleJSON(m.S, data));   // 精灵之间的相互引用去掉，免得转 JSON 时循环引用
+  m.socks.forEach(function (w) { out(w, { type: 'mm', id: m.id, data: data }); });
+}
 
 /* ---------- 开打：kind = 'spec' 常规 / 争霸赛，'balSpec' 平衡模式，'brawlSpec' 大乱斗 ---------- */
 function start(m, teams, kind, opt) {

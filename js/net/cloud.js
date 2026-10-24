@@ -363,6 +363,25 @@
       return end({ ok: false, err: r.error || '没能完成，请稍后再试。' });
     }, function () { return end({ ok: false, err: '连不上服务器，这次没有兑换，请稍后再试。' }); });
   }
+  /* ---------- 单人对战（2026-10-24）：先驱之塔由服务器结算（server/pve.js） ----------
+   * body = { op: 'start' | 'act' | 'repl' | 'quit', ... }。开打前先把本机进度传上去（服务器按最新的配队和道具开打）。
+   * 每次请求期间不上传存档；打完时服务器已经把结果写进存档，这里更新版本号，浏览器再照 end 更新本机存档。
+   * 返回服务器的回复；连不上时 { ok: false, net: true, err }（可以原样重试：同一个 seq 服务器只结算一次） */
+  function pve(body) {
+    if (!st.user) return Promise.resolve({ ok: false, err: '没有登录' });
+    function end(r) { st.txing = false; return r; }
+    var pre = body.op === 'start' ? flush().then(idle) : idle();
+    return pre.then(function () {
+      st.txing = true;
+      body.v = st.ver;
+      return api('POST', '/api/pve', body);
+    }).then(function (r) {
+      if (r._code === 200 && r.ok) { if (r.end && r.end.rev) { st.rev = r.end.rev; lsSet(REV, String(r.end.rev)); } return end(r); }
+      if (r._code === 409 && r.update) { end(null); showUpdate(true); return { ok: false, err: '游戏已经更新了，刷新页面后再来挑战吧。' }; }
+      if (r._code === 401) { setStatus('expired'); return end({ ok: false, err: '登录已失效，请先重新登录（点右上角的账号）。' }); }
+      return end({ ok: false, gone: r._code === 410, err: r.error || '服务器没有回应，请稍后再试。' });
+    }, function () { return end({ ok: false, net: true, err: '网络不稳，没连上服务器。' }); });
+  }
   // 本机和服务器对不上时：取回服务器上的存档，用它重新加载
   function resync(msg) {
     api('GET', '/api/me').then(function (r) { if (r._code === 200) takeCloud(r.save, msg); else location.reload(); }).catch(function () { location.reload(); });
@@ -390,5 +409,5 @@
     setInterval(checkVersion, 3 * 60 * 1000);
     document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') checkVersion(); });
   }
-  window.CLOUD = { boot: boot, user: function () { return st.user; }, token: function () { return st.token; }, api: api, flush: flush, tx: tx, resync: resync, claim: claim };
+  window.CLOUD = { boot: boot, user: function () { return st.user; }, token: function () { return st.token; }, api: api, flush: flush, tx: tx, pve: pve, resync: resync, claim: claim };
 })();

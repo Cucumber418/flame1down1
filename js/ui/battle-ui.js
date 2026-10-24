@@ -591,9 +591,11 @@
     // 战斗里一律放战斗曲：默认「寻常」，剧情可以指定专属曲（如第八段的变异玛西露姆用 dis-communication）。
     // FaceTheEnemy（遇敌曲）只在剧情对话里遇敌前后用来渲染气氛（剧本行 bgm: 'faceEnemyScene'），进入战斗后不再放（2026-10-17）
     bgm(opt.bgm || 'normal');
-    app.S = newBattle(opt.p, opt.a); app.S.story = { foe: opt.foe, back: opt.back || null, diff: opt.diff || null };
+    // opt.remote：由服务器结算的对战（2026-10-24，先驱之塔）。opt.S 是服务器开好的对战，出招都交给 opt.remote(body) 发给服务器
+    remote = opt.remote || null; rSeq = 0; srvEnd = opt.onSrvEnd || null;
+    app.S = opt.S || newBattle(opt.p, opt.a); app.S.story = { foe: opt.foe, back: opt.back || null, diff: opt.diff || null };
     app.S.noLimit = true;   // 2026-10-24：所有 PVE（剧情、野外、BOSS、挑战、先驱之塔、茶室等）不限回合
-    if (opt.items) app.S.items = opt.items;
+    if (opt.items && !remote) app.S.items = opt.items;
     if (opt.env) app.S.env = opt.env;
     if (opt.wild) app.S.wild = opt.wild;
     if (opt.ai) app.S.ai = opt.ai;
@@ -604,6 +606,7 @@
     $('builder').hidden = true; $('battle').hidden = false; $('endcard').hidden = true;
     shownIds = [null, null]; castBegin();
     var nn = function (x) { return x.nick || SPMAP[x.id].name; };
+    if (remote) { opt.p = app.S.sides[0].team; opt.a = app.S.sides[1].team; }
     if (opt.wild) { addLog('野生的【' + nn(opt.a[0]) + '】（LV' + opt.a[0].lv + '）出现了！你派出了【' + nn(opt.p[0]) + '】！', ''); addLog(opt.wild.where + ' · 野外对战', 'turn'); }
     else { addLog(opt.foe + '派出了【' + nn(opt.a[0]) + '】，你派出了【' + nn(opt.p[0]) + '】！', ''); addLog(opt.diff ? 'BOSS战 · ' + opt.diff : '剧情对战 · ' + opt.foe, 'turn'); }
     if (opt.env === 'miasma') addLog('这里弥漫着瘴气：每回合结束时，场上的精灵各获得 1 层瘴气（每层物攻、特攻 +5%，物防、特防 −5%）', 'bad');
@@ -615,6 +618,34 @@
     drawStars();
   }
   var storyEnd = null, itemUsed = null, storyCuts = [];
+  /* ---------- 服务器结算的对战：出招发给服务器，播放服务器算好的这一回合 ---------- */
+  var remote = null, rSeq = 0, srvEnd = null;
+  async function rCall(body) {
+    body.seq = ++rSeq;
+    for (var k = 0; ; k++) {
+      var r = await remote(body);
+      if (r && r.ok) return r;
+      if (r && r.net && k < 2) { var h = $('cmd-hint'); h.textContent = '网络不稳，正在重试……'; h.className = 'hint alert'; await wait(1500); continue; }
+      if (r && r.net) rSeq--;   // 下次点击重发同一个请求：服务器要是已经结算过，会直接回上次的结果
+      return r || { ok: false, err: '' };
+    }
+  }
+  async function rApply(body) {
+    var S0 = app.S; busy = true; refreshCmd();
+    var r = await rCall(body);
+    if (app.S !== S0) return;
+    if (!r.ok) {
+      busy = false;
+      if (r.net) { addLog('网络不稳，这一步没有送到服务器，再点一次试试。', 'bad'); refreshCmd(); return; }
+      addLog((r.err || '这场对战作废了') + (r.gone ? '' : '（这场对战作废，不扣层数）'), 'bad');
+      app.S.over = 'void'; afterTurn(); return;
+    }
+    app.S = r.S;
+    // 打完了：马上把结算结果记进本机存档（在播放动画之前），免得这期间自动上传的还是旧存档
+    if (r.end) { app.S.srvEnd = r.end; if (srvEnd) { var f0 = srvEnd; srvEnd = null; try { f0(r.end); } catch (e) { console.error(e); } } }
+    await play(r.evs || []);
+    busy = false; afterTurn();
+  }
   // 星球挑战：对战界面顶部可以拉下来的「星级要求」面板（opt.stars = { title, list(S) → [{ t, st, s, had }] }）
   var starOpt = null, starOpen = false;
   function drawStars() {
@@ -906,6 +937,7 @@
   async function doTurn(pAct) {
     var S = app.S; if (busy || S.over) return;
     if (pvp) { if (pvp.waiting) return; pvp.waiting = true; refreshCmd(); pvp.onAct(pAct); return; }
+    if (remote) return rApply({ op: 'act', a: pAct });
     busy = true; refreshCmd();
     var evs = resolveTurn(S, [pAct, S.training ? { kind: 'pass' } : aiChoose(S)]);
     await play(evs);
@@ -1002,6 +1034,7 @@
       else { showTab('moves'); doTurn({ kind: 'switch', to: k }); }
       return;
     }
+    if (S.needSwitch && remote) { showTab('moves'); rApply({ op: 'repl', k: k }); return; }
     if (S.needSwitch) {
       busy = true; refreshCmd();
       await play(playerReplace(S, k));
@@ -1049,6 +1082,7 @@
     if (app.S.training) { app.S.over = 'train'; showEnd(); return; }
     if (app.S.wild) { app.S.over = 'flee'; addLog('你带着精灵们逃走了。', 'dmg'); showEnd(); return; }
     if (pvp && Date.now() - quitArmed < 3000) { b.textContent = '认输'; quitArmed = 0; pvp.onQuit(); return; }
+    if (remote && Date.now() - quitArmed < 3000) { quitArmed = 0; b.textContent = '认输'; addLog('你认输了。', 'bad'); rApply({ op: 'quit' }); return; }
     if (Date.now() - quitArmed < 3000) { app.S.over = 'lose'; app.S.quit = true; addLog('你认输了。', 'bad'); b.textContent = '认输'; showEnd(); return; }
     quitArmed = Date.now(); b.textContent = '再点一次确认';
     setTimeout(function () { b.textContent = '认输'; }, 3000);
@@ -1064,7 +1098,7 @@
     }
     if (app.S && app.S.story) {
       starOpt = null; drawStars();
-      var endS = app.S, res = app.S.over, quit = !!app.S.quit, cb = storyEnd, seen = app.S.sides[0].team.map(function (x) { return !!x.seen; }), downs = app.S.sides[1].team.filter(function (x) { return x.fainted; }).map(function (x) { return { id: x.id, lv: x.lv }; }); storyEnd = null; itemUsed = null;
+      var endS = app.S, res = app.S.over, quit = !!app.S.quit, cb = storyEnd, seen = app.S.sides[0].team.map(function (x) { return !!x.seen; }), downs = app.S.sides[1].team.filter(function (x) { return x.fainted; }).map(function (x) { return { id: x.id, lv: x.lv }; }); storyEnd = null; itemUsed = null; remote = null; srvEnd = null;
       app.screen = 'builder'; app.S = null; $('battle').hidden = true; $('builder').hidden = false; $('log').innerHTML = ''; $('btn-again').hidden = false; setFieldBg(null);
       if (cb) cb(res, seen, downs, quit, endS); return;
     }

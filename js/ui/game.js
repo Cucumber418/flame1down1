@@ -3302,28 +3302,12 @@
    * 第 60 层：死神「帕努托尔」LV80、体力 10000，【不朽】【肃穆】【死神】。击败后：称号「死神」、死神代币（一个账号最多 3 颗）、大量经验和代币，回到第 1 层。
    * 每天从塔里最多拿 150000 经验、1000 先驱代币（正好是通关两次的量）。
    * 存档：acc.tower = { f 当前层, cp 存档点, best 最高通过层, clears 通关次数, death 已获得的死神代币, tok 先驱代币, day: { d, exp, tok } } */
-  var TOWER = { top: 60, cps: [1, 11, 21, 31, 41, 51], dayExp: 450000, dayTok: 5000, deathMax: 3 };   // 2026-10-21：每层经验 ×10、代币 ×5，每日经验上限 ×3（150000 → 450000），代币上限跟着 ×5
-  var TW_POOL = ['leaf', 'squid', 'shroom', 'wind', 'mush', 'kaleo', 'faraday', 'firemouse', 'frost', 'gorgon', 'hephaestus', 'leigong', 'pede', 'siren', 'turkey', 'wild', 'tagore', 'leafcat', 'moon', 'bone', 'aegis'];
-  var TW_FX = ['armor', 'regen', 'thorn', 'rage', 'swift', 'guard', 'noStatus', 'focus'];   // 只用塔里通用的特性，不用BOSS专属的（星球聚能、东北的纷争等）
+  // 先驱之塔的规则（层数、对手、奖励）在 js/engine/pve.js，服务器和本机共用（2026-10-24）
+  var TOWER = PVE.TOWER, twLv = PVE.twLv, twExp = PVE.twExp, twTok = PVE.twTok, twFloor = PVE.twFloor;
   var TW_SHOP = TX.D.TW_SHOP;   // 商品和价格在 js/engine/tx.js
   function twRec() { return TX.twRec(acc, Date.now()); }
-  function twLv(f) { return f >= TOWER.top ? 80 : 40 + Math.round((f - 1) * 40 / 58); }
-  function twExp(f) { return 10 * (f >= TOWER.top ? 16000 : 400 + 20 * f); }          // 一次通关合计 750000（2026-10-21 ×10）
   function twExp0(f) { return f >= TOWER.top ? 16000 : 400 + 20 * f; }   // 调整前（补偿邮件用）
-  function twTok(f) { return 5 * (f >= TOWER.top ? 232 : 2 + Math.floor(f / 10)); }   // 一次通关合计 2500（2026-10-21 ×5）
   function twTok0(f) { return f >= TOWER.top ? 232 : 2 + Math.floor(f / 10); }
-  function twFloor(f) {
-    if (f >= TOWER.top) return { boss: true, foes: [{ sid: 'pluto', lv: 80, hp: 10000, fx: { immortal: 1, solemn: 1, reaper: 1, ppLim: 1 } }] };
-    var g = seeded('pioneer-tower:' + f), gate = f % 10 === 0, n = gate ? 1 : 1 + Math.floor(g() * 3), lv = twLv(f), used = {}, foes = [];
-    for (var i = 0; i < n; i++) {
-      var sid; do { sid = TW_POOL[Math.floor(g() * TW_POOL.length)]; } while (used[sid]); used[sid] = 1;
-      var mult = gate ? 4 : n === 1 ? 3 : n === 2 ? 2 : 1.5, nfx = gate || f >= 30 ? 2 : 1, fx = {}, pick = {};   // 2026-10-21：敌人技能 PP 有限（原来统一 99）
-      while (Object.keys(pick).length < nfx) pick[TW_FX[Math.floor(g() * TW_FX.length)]] = 1;
-      Object.keys(pick).forEach(function (k) { fx[k] = k === 'regen' ? 0.06 : 1; });
-      foes.push({ sid: sid, lv: lv + (gate ? 2 : 0), hp: Math.round(calcStat(SPMAP[sid].base.hp, 'hp', lv) * mult), fx: fx });
-    }
-    return { gate: gate, foes: foes };
-  }
   function fxNames(fx) { return BOSS_FX.filter(function (x) { return fx[x.k]; }).map(function (x) { return x; }); }
   function towerSvg() {
     return '<svg viewBox="0 0 120 120" aria-hidden="true"><path d="M60 8 L72 30 H48 Z" fill="#c42f3a" stroke="#23222b" stroke-width="3" stroke-linejoin="round"/>' +
@@ -3389,7 +3373,63 @@
       if (b.dataset.twc === 'go') startTower(); else go('bag');
     });
   }
+  // 用服务器网址玩时，先驱之塔由服务器开打和结算（server/pve.js）；本地双击打开时在本机结算（下面的 startTower）
+  var twBusy = false;
   function startTower() {
+    if (!(window.CLOUD && CLOUD.user())) return startTowerLocal();
+    if (twBusy) return; twBusy = true;
+    var T0 = twRec(), F = twFloor(T0.f);
+    toast('正在进入先驱之塔……');
+    CLOUD.pve({ op: 'start', kind: 'tower', pick: ex.twPick }).then(function (r) {
+      twBusy = false;
+      if (!r || !r.ok) { if (r && r.err) toast(r.err); return; }
+      var S = r.S, o = r.opt, team = S.sides[0].team.map(function (x) { return mon(x.u); });
+      S.sides[1].team.forEach(function (x) { seeMon(x.id, x.lv); });
+      stopTimers(); ex.fighting = true; document.body.classList.add('story-fight'); syncBattle();
+      $('pg-explore').hidden = true; $('pg-arena').hidden = false;
+      var msg = [], applied = false;
+      // 服务器结算的结果一到就记进本机存档（battle-ui.js 在播放最后一回合的动画之前调用）
+      function apply(e) {
+        if (!e || e.err || applied) return;
+        applied = true; var f = e.f;
+        dailyHit('pve');
+        PVE.towerApply(acc, e);
+        if (e.res === 'win') {
+          msg.push('先驱之塔第 ' + f + ' 层通过！' + (e.ge || e.gt ? '获得累积经验 ×' + fmt(e.ge) + '、先驱代币 ×' + e.gt + (e.ge < twExp(f) || e.gt < twTok(f) ? '（已到今天的塔内奖励上限）' : '') + '。' : '今天从先驱之塔获得的奖励已经到上限了。'));
+          if (e.boss) { msg.push(e.death ? '获得「死神代币」×1（' + e.T.death + ' / ' + TOWER.deathMax + '）。' : '死神代币已经拿满 ' + TOWER.deathMax + ' 颗了。'); msg.push('塔顶的光芒把你送回了第 1 层。'); }
+          else if (e.cp) msg.push('到达第 ' + e.T.f + ' 层，进度已自动存档。');
+        } else msg.push((e.quit ? '退出了挑战' : '挑战失败了') + '……回到存档点第 ' + e.T.cp + ' 层。');
+        msg = msg.concat(towerXpMsg(team, e.xp));
+        save();
+      }
+      window.HSBATTLE.start({ S: S, remote: CLOUD.pve, onSrvEnd: apply, foe: o.foe, diff: o.diff, bgm: o.bgm, back: o.back, onItem: useInv,
+        onEnd: function (res, seen, downs, quit, endS) {
+          var e = endS && endS.srvEnd;
+          if (e && !e.err) apply(e);   // 正常情况下已经记过了（apply 只生效一次）
+          else if (res === 'void') msg.push('这场对战作废了，塔的进度没有变化。');
+          else if (e && e.err) msg.push('结算出了问题：' + e.err);
+          ex.fighting = false; document.body.classList.remove('story-fight');
+          ex.view = 'sites'; ex.planet = 'tower'; ex.twTab = 'climb';
+          $('pg-arena').hidden = page !== 'arena'; $('pg-explore').hidden = page !== 'explore';
+          renderTop(); syncBattle(); renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8);
+          if (msg.length) toast(msg.join(''));
+        } });
+    });
+  }
+  // 服务器结算的战斗经验：经验背包和今天的计数已经由 PVE.towerApply 更新，这里给出战的精灵加经验和学习力
+  function towerXpMsg(team, x) {
+    if (!x || !x.n) return [];
+    var out = [], parts = x.parts.map(mon).filter(Boolean);
+    if (x.xp > 0) {
+      out.push('击败了 ' + x.n + ' 只精灵，共获得 ' + fmt(x.xp) + ' 点经验' + (x.xp < x.raw ? '（今天的战斗经验已达上限 ' + fmt(PVE_XP_CAP) + '）' : '') + '：');
+      out.push(parts.map(function (m) { return gainExp(m, x.share); }).filter(Boolean).join(''));
+      out.push('经验背包 +' + fmt(x.pool) + '。');
+    } else out.push('击败了 ' + x.n + ' 只精灵。今天通过战斗获得的经验已达上限（' + fmt(PVE_XP_CAP) + '），明天再来吧。');
+    var got = giveEv(x.parts, x.ev);
+    if (got.length) out.push(got.join('、') + (got.length > 1 ? ' 各' : ' ') + '获得 ' + x.ev + ' 点学习力。');
+    return out;
+  }
+  function startTowerLocal() {
     var T = twRec(), f = T.f, F = twFloor(f);
     var team = (acc.teams[acc.active] || []).map(mon).filter(Boolean); if (!team.length) return;
     team = F.boss ? [mon(ex.twPick) || team[0]] : team.slice(0, TEAM_SIZE);

@@ -1198,6 +1198,14 @@ function hqLand(me, foe, n, i) {
   var q = hqR(me); q.n[n] = (q.n[n] || 0) + 1;
   if (i === 0) { if (!foe.hqBy) foe.hqBy = {}; foe.hqBy[n] = 1; }
 }
+// 把对战状态（和这一回合的事件）转成 JSON，发给浏览器用（服务器结算的对战，2026-10-24）。
+// 精灵身上会记着别的精灵（比如隐藏技能的领悟条件记了「是谁让它冰冻的」），直接转 JSON 会循环引用：
+// 精灵只在 S.sides[i].team 里原样输出，别处引用到的一律去掉（浏览器只播放，不需要这些）
+function battleJSON(S, obj) {
+  var mons = new Set(), teams = new Set();
+  S.sides.forEach(function (sd) { teams.add(sd.team); sd.team.forEach(function (t) { mons.add(t); }); });
+  return JSON.stringify(obj, function (k, v) { return v && typeof v === 'object' && mons.has(v) && !teams.has(this) ? undefined : v; });
+}
 function hqStatus(S, evs, t, k, by) {
   if (!t.hqSt) t.hqSt = {}; t.hqSt[k] = { mv: S.hqMv, by: by };
   if (k === '冰冻' && S.hqMv === '冰冻打击' && by.u != null) { var q = hqR(by); q.n['冻结'] = (q.n['冻结'] || 0) + 1; if (q.n['冻结'] >= 2) hqGet(S, evs, by, '急冻打击'); }
