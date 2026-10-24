@@ -159,6 +159,7 @@
       ivMoon: ['flask', '#e86fb2', '天'], ivBone: ['flask', '#b07ad9', '天'], ivReroll: ['flask', '#e86fb2', '重'], evAny: ['flask', '#d9534f', '学'], evTagore: ['flask', '#e08a2e', '学'],
       natAny: ['pill', '#8e6fd6', '性'], natTagore: ['flask', '#8e6fd6', '性'], evReset: ['pill', '#9aa0a6', '退'], fruit1: ['fruit', '#e74c3c'], fruit2: ['fruit', '#f39c12', '✦'],
       g_sand: ['pile', '#f2d58a', '#fff6c8'], g_core: ['orb', '#ff8a3d', '✦'], s_herb: ['seed', '#8bc34a'], s_rice: ['seed', '#e8d9a8'], c_herb: ['leaf', '#4caf50'], c_rice: ['grain', '#f5f0dc'],
+      mmTok: ['coin', '#4a6a8a', '明'], mmEye: ['orb', '#f2c94c', '眼'], e_leiming: ['orb', '#e8b830', '精'], e_odo: ['orb', '#5a7aa8', '精'], odoFin: ['gem', '#6a86b8'], hrDisk: ['coin', '#7b5ac8', '✦'], exp: ['orb', '#3b8fd9', '经'], energy: ['orb', '#e0a020', '能'],
       e_pluto: ['orb', '#5b4a8a', '精'], ctTicket: ['ticket', '#f2c94c', '券'], permit: ['ticket', '#c42f3a', '许'], auto: ['box', '#5b8fd0', '自']
     }[k];
     if (G) return genIcon(G[0], G[1], G[2]);

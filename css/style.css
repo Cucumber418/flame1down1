@@ -2577,3 +2577,9 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .odo-tabs { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 6px 0 4px; }
 .odo-tabs .chip { cursor: pointer; }
 .odo-tabs .chip.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+/* 明明代币奖池：道具图标（2026-10-24） */
+.mm-pool li { display: flex; align-items: center; gap: 8px; }
+.mm-pool .mmp-ic { flex: none; width: 34px; height: 34px; display: grid; place-items: center; }
+.mm-pool .mmp-ic .it-ic { width: 34px; height: 34px; }
+.mm-pool li.got .mmp-ic { filter: grayscale(1); }

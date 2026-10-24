@@ -4996,7 +4996,7 @@
       '<div class="crumb"><button type="button" class="btn ghost" id="mmg-back">‹ 返回' + (ex.mmFrom === 'log' ? '航行日志' : '全息作战场地') + '</button><b>明明代币抽奖 · 第 ' + G.n + ' 个奖池</b></div>' +
       '<div class="mm-bar"><span>明明代币 <b>' + fmt(tok) + '</b></span><span>剩余 <b>' + G.left.length + '</b> / 20</span><span class="hint">今天已解锁 ' + G.opened + ' / ' + MM_POOL_DAY + ' 个新奖池</span>' +
       '<button type="button" class="btn" data-mmdraw="1"' + (tok >= 10 ? '' : ' disabled') + '>抽一次（10）</button><button type="button" class="btn primary" data-mmdraw="10"' + (tok >= 100 ? '' : ' disabled') + '>十连抽（100）</button></div>' +
-      '<ol class="mm-pool">' + P.map(function (z, i) { var left = G.left.indexOf(i) >= 0; return '<li class="' + (left ? '' : 'got') + (z.big ? ' big' : '') + '">' + esc(mmPrizeText(z)) + (left ? '' : '<em>已抽到</em>') + '</li>'; }).join('') + '</ol>';
+      '<ol class="mm-pool">' + P.map(function (z, i) { var left = G.left.indexOf(i) >= 0; return '<li class="' + (left ? '' : 'got') + (z.big ? ' big' : '') + '"><span class="mmp-ic">' + H.itemIcon(z.exp ? 'exp' : Object.keys(z.items)[0]) + '</span><span class="mmp-t">' + esc(mmPrizeText(z)) + '</span>' + (left ? '' : '<em>已抽到</em>') + '</li>'; }).join('') + '</ol>';
   }
   function mmEventPop() {
     var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'mm-pop';
