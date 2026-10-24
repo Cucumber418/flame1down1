@@ -19,7 +19,7 @@
   /* ---------- 存档 ---------- */
   function valid(a) { return a && typeof a.name === 'string' && Array.isArray(a.mons) && Array.isArray(a.teams); }
   // 隐藏技能只能用道具解锁的种族（2026-10-18，说明见 avail 上方）；读存档时就要用到，所以放在最前面
-  var HL_GATED = { mush: 1, wind: 1, kaleo: 1, pede: 1, gorgon: 1, hephaestus: 1, firemouse: 1, leigong: 1, faraday: 1, frost: 1, tagore: 1, barren: 1, pluto: 1, leaf: 1, squid: 1, shroom: 1, moon: 1, bone: 1, siren: 1, leiming: 1, odo: 1 };
+  var HL_GATED = { mush: 1, wind: 1, kaleo: 1, pede: 1, gorgon: 1, hephaestus: 1, firemouse: 1, leigong: 1, faraday: 1, frost: 1, tagore: 1, barren: 1, pluto: 1, leaf: 1, squid: 1, shroom: 1, moon: 1, bone: 1, siren: 1, leiming: 1, odo: 1, leafcat: 1, turkey: 1, hauris: 1 };
   window.HL_GATED = HL_GATED;   // battle.js 里用来跳过战斗中领悟
   try { var raw = JSON.parse(localStorage.getItem(KEY) || 'null'); if (valid(raw)) acc = raw; } catch (e) {}
   try { var pg = localStorage.getItem(PKEY); if (pg) page = pg; } catch (e) {}
@@ -30,6 +30,25 @@
     if (!(acc.active >= 0 && acc.active < TEAM_N)) acc.active = 0;
     if (acc.introDone == null) acc.introDone = acc.mons.length > 0;   // 旧存档：已有精灵视为看过序章
     if (acc.starter && !acc.rival) acc.rival = rivalOf(acc.starter);
+    // 2026-10-24：道具解锁的隐藏技能改成按个体记（m.hl），不再整个种族共用。
+    // 以前按种族解锁过的：只保留给当时用道具的那一只——记录里没有是哪一只，就给装备着这个技能的；都没装备，给这一族等级最高的那只。
+    // 叶子喵、火鸡、幽灵鱼一系改成道具解锁：以前已经学会（LV50 习得 / 战斗中领悟）的都保留。
+    if (!(acc.hlV >= 3) && acc.hlV >= 1) {
+      acc.mons.forEach(function (m) {
+        if (!SPMAP[m.sid] || ['leafcat', 'turkey', 'hauris'].indexOf(m.sid) < 0) return;
+        if (!Array.isArray(m.hl)) m.hl = [];
+        SPMAP[m.sid].hidden.forEach(function (n) { if (hidOk(m.lv, m.hl, n) && m.hl.indexOf(n) < 0) m.hl.push(n); });
+      });
+      if (acc.hlSp) Object.keys(acc.hlSp).forEach(function (sid) {
+        var own = acc.mons.filter(function (m) { return m.sid === sid; }); if (!own.length) return;
+        (acc.hlSp[sid] || []).map(moveName).forEach(function (n) {
+          var eq = own.filter(function (m) { return (m.moves || []).map(moveName).indexOf(n) >= 0; });
+          if (!eq.length) eq = [own.slice().sort(function (a, b) { return b.lv - a.lv; })[0]];
+          eq.forEach(function (m) { if (!Array.isArray(m.hl)) m.hl = []; if (m.hl.indexOf(n) < 0) m.hl.push(n); });
+        });
+      });
+      acc.hlSpOld = acc.hlSp || null; delete acc.hlSp; acc.hlV = Math.max(acc.hlV || 0, 3);
+    }
     acc.mons.forEach(function (m) {
       if (!m.nat || !(m.nat in NATURES)) m.nat = NAT_KEYS[Math.floor(Math.random() * NAT_KEYS.length)];
       if (!m.ev) m.ev = {}; if (!(m.evFree >= 0)) m.evFree = 0;
@@ -53,7 +72,7 @@
       if (!m.moves.length) m.moves = defaultMoves(m.sid, m.lv, m.hl);
     });
     if (acc.hlSp) Object.keys(acc.hlSp).forEach(function (k) { if (Array.isArray(acc.hlSp[k])) acc.hlSp[k] = acc.hlSp[k].map(moveName).filter(function (n, i, a) { return a.indexOf(n) === i; }); });   // 改过名字的隐藏技能（高温禁锢 → 余烬涅槃）
-    acc.hlV = 2;
+    acc.hlV = Math.max(acc.hlV || 0, 2);
     acc.expV = expV();
     if (!(acc.exp >= 0)) acc.exp = 0; if (!(acc.energy >= 0)) acc.energy = 0;
     if (!acc.items || typeof acc.items !== 'object') acc.items = {};
@@ -139,17 +158,17 @@
   function hlItemOf(sid) { for (var k in USE_ITEMS) if (USE_ITEMS[k].kind === 'jade' && USE_ITEMS[k].sids && USE_ITEMS[k].sids.indexOf(sid) >= 0) return k; return null; }
   function lockText(m, mv) {
     if (!M[mv] || !M[mv].hidden) return 'LV' + moveLv(m.sid, mv) + ' 习得';
-    if (HL_GATED[m.sid]) { var it = hlItemOf(m.sid); return spHL(m.sid).indexOf(mv) >= 0 ? '已解锁 · LV' + HIDDEN_MIN_LV + ' 才能装备' : '未解锁 · 用 100 个「' + (it ? itemName(it) : '道具') + '」解锁'; }
+    if (HL_GATED[m.sid]) { var it = hlItemOf(m.sid); return (m.hl || []).indexOf(mv) >= 0 ? '已解锁 · LV' + HIDDEN_MIN_LV + ' 才能装备' : '未解锁 · 用 ' + (it ? USE_ITEMS[it].cost : 100) + ' 个「' + (it ? itemName(it) : '道具') + '」解锁'; }
     if (LEARN[mv]) return (m.hl || []).indexOf(mv) >= 0 ? '已领悟 · LV' + HIDDEN_MIN_LV + ' 才能装备' : '未领悟 · 在战斗中' + LEARN[mv];
     return 'LV50 习得';
   }
   function hidOk(lv, hl, n) { return hl && LEARN[n] ? hl.indexOf(n) >= 0 && lv >= HIDDEN_MIN_LV : lv >= 50; }   // 战斗中领悟的隐藏技能也要 LV40 以上才能用（HIDDEN_MIN_LV 在 battle.js）
   /* 2026-10-18：这些精灵的隐藏技能改成只能用道具解锁（星球特产、BOSS专属道具、死神代币、三主宠的地球元素），不再在战斗中领悟。
-   * 解锁是按种族记的（acc.hlSp[种族] = [技能]）：解锁一次，自己持有的这一种族全部都能用（LV40 以上才能装备）。 */
+   * 2026-10-24 起解锁按个体记（m.hl）：道具用在哪一只身上，只有那一只能用（LV40 以上才能装备）。 */
   // HL_GATED 定义在文件开头（读存档时就要用到）
   function spHL(sid) { return (acc && acc.hlSp && acc.hlSp[sid]) || []; }
   function avail(sid, lv, hl) {
-    var s = SPMAP[sid], gated = Array.isArray(hl) && HL_GATED[sid], sh = gated ? spHL(sid) : null;
+    var s = SPMAP[sid], gated = Array.isArray(hl) && HL_GATED[sid], sh = gated ? hl : null;
     return s.moves.filter(function (n, i) { return lv >= learnLv(i); }).concat(s.hidden.filter(function (n) { return gated ? sh.indexOf(n) >= 0 && lv >= HIDDEN_MIN_LV : hidOk(lv, hl, n); }));
   }
   function defaultMoves(sid, lv, hl) {
@@ -826,22 +845,24 @@
     fruit1: { name: '成长果实', sid: null, kind: 'exp', rate: 100, d: '给一只精灵直接增加经验。等级越高，得到的经验越多。' },
     fruit2: { name: '迅速成长果实', sid: null, kind: 'exp', rate: 250, d: '给一只精灵直接增加经验，比成长果实效果更好。等级越高，得到的经验越多。' },
     // 瘴气驱逐战（2026-10-17）：100 个让芙罗拉星三种精灵领悟一个隐藏技能
-    earthShard: { name: '地球元素', sid: null, sids: ['leaf', 'squid', 'shroom'], kind: 'jade', cost: 100, sd: '从地球带来的元素结晶。专门用于叶粒之果、水臂领主、涅槃方头（三只初始精灵）的隐藏技能和等级上限。', d: '出发前从地球上带来的一小份元素结晶，带着家乡的气息。100 个可以让叶粒之果、水臂领主、涅槃方头一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能，解锁后你持有的这一种族都能使用；它们达到 LV70 后，也用它解锁 LV75（500 个）、LV80（1000 个）的等级上限。', none: '你还没有叶粒之果、乌贼领主或涅槃方头。' },
-    moonStone: { name: '新月辉石', sid: null, sids: ['moon'], kind: 'jade', cost: 100, sd: '小月亮的专属道具。可以让小月亮领悟隐藏技能，也能提高小月亮的等级上限。', d: '一块映着新月微光的石头。100 个可以让小月亮一系（朔望月灵也可以）直接领悟一个还没领悟的隐藏技能，解锁后你持有的小月亮都能使用；小月亮达到 LV70 后，也用它解锁 LV75（500 个）、LV80（1000 个）的等级上限。在竞技代币商店兑换。', none: '你还没有小月亮。平衡排位第一次达到铂金时会送一只。' },
-    boneDust: { name: '灵骨粉末', sid: null, sids: ['bone'], kind: 'jade', cost: 100, sd: '骨刃的专属道具。可以让骨刃领悟隐藏技能，也能提高骨刃的等级上限。', d: '泛着幽光的骨粉，摸上去凉凉的。100 个可以让骨刃一系（凶骨也可以）直接领悟一个还没领悟的隐藏技能，解锁后你持有的骨刃都能使用；骨刃达到 LV70 后，也用它解锁 LV75（500 个）、LV80（1000 个）的等级上限。在竞技代币商店兑换。', none: '你还没有骨刃一系的精灵。' },
-    tgPearl: { name: '虎啸凝珠', sid: null, sids: ['tagore'], kind: 'jade', cost: 100, sd: '困难难度泰戈尔的专属道具。可以让泰戈尔领悟隐藏技能，也能提高泰戈尔的等级上限。', d: '泰戈尔一声虎啸凝成的珠子。100 个可以让泰戈尔一系（小胖虎、胖虎也可以）直接领悟一个还没领悟的隐藏技能；泰戈尔达到 LV70 后，也用它解锁 LV75（500 个）、LV80（1000 个）的等级上限。首次击败困难难度的泰戈尔得 80 个，每周挑战每次击败得 15 / 30 / 50 个（简单 / 普通 / 困难）。', none: '你还没有泰戈尔（小胖虎、胖虎也算）。击败简单难度的BOSS「泰戈尔」可以领养一只小胖虎。' },
-    brTwig: { name: '莠去津', sid: null, sids: ['barren'], kind: 'jade', cost: 100, sd: '荒芜的专属道具。可以让荒芜领悟隐藏技能，也能提高荒芜的等级上限。', d: '从荒芜体内的古代除草程序里提取出的一小瓶药剂，标签上写着「莠去津」。100 个可以让荒芜一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；荒芜达到 LV70 后，也用它解锁 LV75（500 个）、LV80（1000 个）的等级上限。首次击败普通难度的荒芜得 40 个、困难难度得 80 个，每周挑战每次击败得 15 / 30 / 50 个（简单 / 普通 / 困难）。', none: '你还没有荒芜。击败简单难度的BOSS「荒芜」可以得到一只。' },
-    odoFin: { name: '先祖鳍甲', sid: null, sids: ['odo'], kind: 'jade', cost: 100, sd: '奥多亚克的专属道具。可以让奥多亚克领悟隐藏技能，也能提高奥多亚克的等级上限。', d: '从深海的奥多亚克身上脱落的一片古老鳍甲，表面刻着看不懂的纹路。100 个可以让奥多亚克一系（奥多也可以）直接领悟一个还没领悟的隐藏技能；奥多亚克达到 LV70 后，也用它解锁 LV75（500 个）、LV80（1000 个）的等级上限。首次击败普通难度的奥多亚克得 40 个、困难难度得 80 个，每周挑战每次击败得 15 / 30 / 50 个（简单 / 普通 / 困难）。', none: '你还没有奥多亚克（奥多也算）。击败简单难度的BOSS「奥多亚克」可以得到奥多的精元。' },
+    earthShard: { name: '地球元素', sid: null, sids: ['leaf', 'squid', 'shroom'], kind: 'jade', cost: 100, sd: '从地球带来的元素结晶。专门用于叶粒之果、水臂领主、涅槃方头（三只初始精灵）的隐藏技能和等级上限。', d: '出发前从地球上带来的一小份元素结晶，带着家乡的气息。100 个可以让一只叶粒之果、水臂领主、涅槃方头一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能，解锁后你持有的这一种族都能使用；它们达到 LV70 后，也用它解锁 LV75（500 个）、LV80（1000 个）的等级上限。', none: '你还没有叶粒之果、乌贼领主或涅槃方头。' },
+    moonStone: { name: '新月辉石', sid: null, sids: ['moon'], kind: 'jade', cost: 100, sd: '小月亮的专属道具。可以让小月亮领悟隐藏技能，也能提高小月亮的等级上限。', d: '一块映着新月微光的石头。100 个可以让一只小月亮一系（朔望月灵也可以）直接领悟一个还没领悟的隐藏技能，解锁后你持有的小月亮都能使用；小月亮达到 LV70 后，也用它解锁 LV75（500 个）、LV80（1000 个）的等级上限。在竞技代币商店兑换。', none: '你还没有小月亮。平衡排位第一次达到铂金时会送一只。' },
+    boneDust: { name: '灵骨粉末', sid: null, sids: ['bone'], kind: 'jade', cost: 100, sd: '骨刃的专属道具。可以让骨刃领悟隐藏技能，也能提高骨刃的等级上限。', d: '泛着幽光的骨粉，摸上去凉凉的。100 个可以让一只骨刃一系（凶骨也可以）直接领悟一个还没领悟的隐藏技能，解锁后你持有的骨刃都能使用；骨刃达到 LV70 后，也用它解锁 LV75（500 个）、LV80（1000 个）的等级上限。在竞技代币商店兑换。', none: '你还没有骨刃一系的精灵。' },
+    tgPearl: { name: '虎啸凝珠', sid: null, sids: ['tagore'], kind: 'jade', cost: 100, sd: '困难难度泰戈尔的专属道具。可以让泰戈尔领悟隐藏技能，也能提高泰戈尔的等级上限。', d: '泰戈尔一声虎啸凝成的珠子。100 个可以让一只泰戈尔一系（小胖虎、胖虎也可以）直接领悟一个还没领悟的隐藏技能；泰戈尔达到 LV70 后，也用它解锁 LV75（500 个）、LV80（1000 个）的等级上限。首次击败困难难度的泰戈尔得 80 个，每周挑战每次击败得 15 / 30 / 50 个（简单 / 普通 / 困难）。', none: '你还没有泰戈尔（小胖虎、胖虎也算）。击败简单难度的BOSS「泰戈尔」可以领养一只小胖虎。' },
+    brTwig: { name: '莠去津', sid: null, sids: ['barren'], kind: 'jade', cost: 100, sd: '荒芜的专属道具。可以让荒芜领悟隐藏技能，也能提高荒芜的等级上限。', d: '从荒芜体内的古代除草程序里提取出的一小瓶药剂，标签上写着「莠去津」。100 个可以让一只荒芜一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；荒芜达到 LV70 后，也用它解锁 LV75（500 个）、LV80（1000 个）的等级上限。首次击败普通难度的荒芜得 40 个、困难难度得 80 个，每周挑战每次击败得 15 / 30 / 50 个（简单 / 普通 / 困难）。', none: '你还没有荒芜。击败简单难度的BOSS「荒芜」可以得到一只。' },
+    hrDisk: { name: '星盘', sid: null, sids: ['hauris'], kind: 'jade', cost: 100, sd: '幽灵鱼一系的专属道具。可以让幽灵鱼一系领悟隐藏技能。', d: '击败野外随机出现的幽灵鱼时掉落的小星盘，盘面上的星点会自己转动。100 个可以让一只幽灵鱼一系（幽灵鱼、哈蒙德、哈尔达蒙）直接领悟一个还没领悟的隐藏技能。每击败一只幽灵鱼掉落 50–70 个。', none: '你还没有幽灵鱼一系的精灵。' },
+    m_lcleaf: { name: '叶子喵的叶片', sid: null, sids: ['leafcat'], kind: 'jade', cost: 2, sd: '叶子喵一系的隐藏技能解锁道具。', d: '旅行精灵叶子喵身上掉下来的叶片。2 片可以让一只叶子喵一系直接领悟一个还没领悟的隐藏技能；5 片可以在冶炼坊合成叶子喵的精元。', none: '你还没有叶子喵一系的精灵。' },
+    odoFin: { name: '先祖鳍甲', sid: null, sids: ['odo'], kind: 'jade', cost: 100, sd: '奥多亚克的专属道具。可以让奥多亚克领悟隐藏技能，也能提高奥多亚克的等级上限。', d: '从深海的奥多亚克身上脱落的一片古老鳍甲，表面刻着看不懂的纹路。100 个可以让一只奥多亚克一系（奥多也可以）直接领悟一个还没领悟的隐藏技能；奥多亚克达到 LV70 后，也用它解锁 LV75（500 个）、LV80（1000 个）的等级上限。首次击败普通难度的奥多亚克得 40 个、困难难度得 80 个，每周挑战每次击败得 15 / 30 / 50 个（简单 / 普通 / 困难）。', none: '你还没有奥多亚克（奥多也算）。击败简单难度的BOSS「奥多亚克」可以得到奥多的精元。' },
     deathTok: { name: '死神代币', sid: null, sids: ['pluto'], kind: 'jade', cost: 1, d: '击败先驱之塔第 60 层的死神获得，一个账号最多 3 颗。1 颗可以让帕努托尔一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；先驱之塔的代币商店里，兑换「帕努托尔的精元」也要用到它。', none: '你还没有帕努托尔。在先驱之塔的代币商店里，用 3000 先驱代币 + 1 颗死神代币可以兑换「帕努托尔的精元」。' },
     // 各星球特产（2026-10-18）：和芙罗拉玉一样，100 个让该星球的普通野生精灵一系领悟一个隐藏技能；也用来解锁同属性精灵的等级上限
-    kbDrop: { name: '不化水滴', sid: null, sids: ['pede', 'gorgon', 'siren'], kind: 'jade', cost: 100, gem: '水', sd: '坎伯兰星的特产。可以让坎伯兰星的普通野生精灵领悟隐藏技能，也能提高水系精灵的等级上限。', d: '坎伯兰星浅海里凝成的水滴，永远不会蒸发。100 个可以让坎克托斯、戈耳贡、塞壬一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；水系精灵达到 LV70 后，也可以用它解锁更高的等级上限。在坎伯兰星的野外场景里每天有机会捡到。', none: '你还没有坎克托斯、戈耳贡或塞壬（进化前的形态也算）。去坎伯兰星捕捉吧。' },
-    ppAsh: { name: '火山灰烬', sid: null, sids: ['hephaestus', 'firemouse'], kind: 'jade', cost: 100, gem: '火', sd: '庞贝星的特产。可以让庞贝星的普通野生精灵领悟隐藏技能，也能提高火系精灵的等级上限。', d: '庞贝星火山喷出的灰烬，摸上去还是温热的。100 个可以让赫菲斯托斯、费尔茅斯一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；火系精灵达到 LV70 后，也可以用它解锁更高的等级上限。在庞贝星的野外场景里每天有机会捡到。', none: '你还没有赫菲斯托斯或费尔茅斯（进化前的形态也算）。去庞贝星捕捉吧。' },
-    ltOrb: { name: '闪电球体', sid: null, sids: ['leigong', 'faraday'], kind: 'jade', cost: 100, gem: '电', sd: '莱汀陨石带的特产。可以让陨石带的普通野生精灵领悟隐藏技能，也能提高电系精灵的等级上限。', d: '雷暴里凝成的一团电光，握在手里噼啪作响。100 个可以让雷公、法拉第一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；电系精灵达到 LV70 后，也可以用它解锁更高的等级上限。在莱汀陨石带的野外场景里每天有机会捡到。', none: '你还没有雷公或法拉第（进化前的形态也算）。去莱汀陨石带捕捉吧。' },
-    whFrost: { name: '永久冻土', sid: null, sids: ['frost'], kind: 'jade', cost: 100, gem: '冰', sd: '白之星的特产。可以让白之星的普通野生精灵领悟隐藏技能，也能提高冰系精灵的等级上限。', d: '白之星冰原下挖出的冻土，一万年都不会化开。100 个可以让霜冻之冠一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；冰系精灵达到 LV70 后，也可以用它解锁更高的等级上限。在白之星的野外场景里每天有机会捡到。', none: '你还没有霜冻之冠（进化前的形态也算）。去白之星的永冻冰原捕捉吧。' },
+    kbDrop: { name: '不化水滴', sid: null, sids: ['pede', 'gorgon', 'siren'], kind: 'jade', cost: 100, gem: '水', sd: '坎伯兰星的特产。可以让坎伯兰星的普通野生精灵领悟隐藏技能，也能提高水系精灵的等级上限。', d: '坎伯兰星浅海里凝成的水滴，永远不会蒸发。100 个可以让一只坎克托斯、戈耳贡、塞壬一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；水系精灵达到 LV70 后，也可以用它解锁更高的等级上限。在坎伯兰星的野外场景里每天有机会捡到。', none: '你还没有坎克托斯、戈耳贡或塞壬（进化前的形态也算）。去坎伯兰星捕捉吧。' },
+    ppAsh: { name: '火山灰烬', sid: null, sids: ['hephaestus', 'firemouse', 'turkey'], kind: 'jade', cost: 100, gem: '火', sd: '庞贝星的特产。可以让庞贝星的普通野生精灵领悟隐藏技能，也能提高火系精灵的等级上限。', d: '庞贝星火山喷出的灰烬，摸上去还是温热的。100 个可以让一只赫菲斯托斯、费尔茅斯、冲锋火鸡一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；火系精灵达到 LV70 后，也可以用它解锁更高的等级上限。在庞贝星的野外场景里每天有机会捡到。', none: '你还没有赫菲斯托斯、费尔茅斯或冲锋火鸡（进化前的形态也算）。去庞贝星捕捉吧。' },
+    ltOrb: { name: '闪电球体', sid: null, sids: ['leigong', 'faraday'], kind: 'jade', cost: 100, gem: '电', sd: '莱汀陨石带的特产。可以让陨石带的普通野生精灵领悟隐藏技能，也能提高电系精灵的等级上限。', d: '雷暴里凝成的一团电光，握在手里噼啪作响。100 个可以让一只雷公、法拉第一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；电系精灵达到 LV70 后，也可以用它解锁更高的等级上限。在莱汀陨石带的野外场景里每天有机会捡到。', none: '你还没有雷公或法拉第（进化前的形态也算）。去莱汀陨石带捕捉吧。' },
+    whFrost: { name: '永久冻土', sid: null, sids: ['frost'], kind: 'jade', cost: 100, gem: '冰', sd: '白之星的特产。可以让白之星的普通野生精灵领悟隐藏技能，也能提高冰系精灵的等级上限。', d: '白之星冰原下挖出的冻土，一万年都不会化开。100 个可以让一只霜冻之冠一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能；冰系精灵达到 LV70 后，也可以用它解锁更高的等级上限。在白之星的野外场景里每天有机会捡到。', none: '你还没有霜冻之冠（进化前的形态也算）。去白之星的永冻冰原捕捉吧。' },
     formDev: { name: '形态切换装置', sid: null, kind: 'form', sd: '给一只精灵永久解锁一个可以切换的外观形态。', d: '黄石 · 冶炼坊用星核和星砂合成的装置。用在一只精灵身上，给这只精灵永久解锁一个它已经长到过的更小形态的样子（比如让最终形态变回第一形态的样子）。解锁之后，在精灵资料的「外观形态」里，原本的形态和解锁过的形态之间随时免费切换。只改变外观，数值、技能都不变；每只精灵分开解锁。' },
-    floraJade: { name: '芙罗拉玉', gem: '草', sd: '芙罗拉星的特产。可以让芙罗拉星的普通野生精灵领悟隐藏技能，也能提高草系精灵的等级上限。', sid: null, sids: ['mush', 'wind', 'kaleo'], kind: 'jade', cost: 100, d: '芙罗拉星深处凝成的绿色玉石。100 个可以让玛西露姆、六尾风王、卡莱奥丹一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能，不用再满足战斗里的领悟条件。隐藏技能要到 LV' + HIDDEN_MIN_LV + ' 才能装备。瘴气驱逐战的全服奖励会发放；芙罗拉星的丛林、草甸里，每天也有机会捡到少量。', none: '你还没有玛西露姆、六尾风王或卡莱奥丹（进化前的形态也算）。去芙罗拉星的丛林、草甸捕捉吧。' }
+    floraJade: { name: '芙罗拉玉', gem: '草', sd: '芙罗拉星的特产。可以让芙罗拉星的普通野生精灵领悟隐藏技能，也能提高草系精灵的等级上限。', sid: null, sids: ['mush', 'wind', 'kaleo'], kind: 'jade', cost: 100, d: '芙罗拉星深处凝成的绿色玉石。100 个可以让一只玛西露姆、六尾风王、卡莱奥丹一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能，不用再满足战斗里的领悟条件。隐藏技能要到 LV' + HIDDEN_MIN_LV + ' 才能装备。瘴气驱逐战的全服奖励会发放；芙罗拉星的丛林、草甸里，每天也有机会捡到少量。', none: '你还没有玛西露姆、六尾风王或卡莱奥丹（进化前的形态也算）。去芙罗拉星的丛林、草甸捕捉吧。' }
   };
-  var MON_ORDER = ['formDev', 'earthShard', 'floraJade', 'kbDrop', 'ppAsh', 'ltOrb', 'whFrost', 'moonStone', 'boneDust', 'tgPearl', 'brTwig', 'odoFin', 'deathTok', 'ivMoon', 'ivBone', 'ivReroll', 'evAny', 'evTagore', 'natAny', 'natTagore', 'evReset', 'fruit1', 'fruit2'], GEN_ORDER = ['trans', 'helmet', 'auto', 'rename', 'cap1', 'cap2', 'cap3', 'pot1', 'pot2', 'pot200'];
+  var MON_ORDER = ['formDev', 'earthShard', 'floraJade', 'kbDrop', 'ppAsh', 'ltOrb', 'whFrost', 'moonStone', 'boneDust', 'tgPearl', 'brTwig', 'odoFin', 'hrDisk', 'deathTok', 'ivMoon', 'ivBone', 'ivReroll', 'evAny', 'evTagore', 'natAny', 'natTagore', 'evReset', 'fruit1', 'fruit2'], GEN_ORDER = ['trans', 'helmet', 'auto', 'rename', 'cap1', 'cap2', 'cap3', 'pot1', 'pot2', 'pot200'];
   // 剧情道具：主线里拿到的，不能使用也不会消耗
   var KEY_ITEMS = {
     trans: { name: '精灵翻译器', d: '汉街总部国际A座的情报显示，这个翻译器能凭一己之力考到雅思 6.5 分。这样一来，翻译精灵的语言也一定能行吧……', img: 'translator' },
@@ -893,7 +914,7 @@
     return '<div class="fsw"><b>外观形态</b>' + list.map(function (i) { return '<button type="button" class="btn' + (i === cur ? ' primary' : '') + '" data-fsw="' + i + '"' + (i === cur ? ' disabled' : '') + '>' + esc(formLabel(s, i)) + (i === nat ? '（原本）' : '') + '</button>'; }).join('') + '<span class="hint">随时免费切换，只改外观</span></div>';
   }
   function itemFits(k, m) { var it = USE_ITEMS[k]; return !!(it && m && (it.sids ? it.sids.indexOf(m.sid) >= 0 : !it.sid || it.sid === m.sid)); }
-  function jadeMoves(m) { var have = HL_GATED[m.sid] ? spHL(m.sid) : (m.hl || []); return SPMAP[m.sid].hidden.filter(function (n) { return have.indexOf(n) < 0; }); }
+  function jadeMoves(m) { var have = m.hl || []; return SPMAP[m.sid].hidden.filter(function (n) { return have.indexOf(n) < 0; }); }
   // 把精灵道具用在 m 身上；nat 是性格药剂要改成的性格。返回 { ok, msg }
   function applyMonItem(k, m, nat) {
     var it = USE_ITEMS[k];
@@ -903,10 +924,9 @@
       if (acc.items[k] < it.cost) return { ok: false, msg: it.name + '不够：需要 ' + it.cost + ' 个，你现在有 ' + acc.items[k] + ' 个。' };
       var left = jadeMoves(m); if (!left.length) return { ok: false, msg: form(m).name + ' 已经领悟了全部隐藏技能。' };
       if (left.indexOf(nat) < 0) nat = left[0];
-      if (HL_GATED[m.sid]) { if (!acc.hlSp) acc.hlSp = {}; if (!acc.hlSp[m.sid]) acc.hlSp[m.sid] = []; acc.hlSp[m.sid].push(nat); }
-      else { if (!Array.isArray(m.hl)) m.hl = []; m.hl.push(nat); }
+      if (!Array.isArray(m.hl)) m.hl = []; m.hl.push(nat);   // 2026-10-24：只对这一只生效
       acc.items[k] -= it.cost; save();
-      return { ok: true, msg: (HL_GATED[m.sid] ? '你所有的' + SPMAP[m.sid].name + '一系' : form(m).name) + '都领悟了隐藏技能「' + nat + '」！' + 'LV' + HIDDEN_MIN_LV + ' 以上的就能在精灵资料的技能栏里装备。' };
+      return { ok: true, msg: form(m).name + '领悟了隐藏技能「' + nat + '」！' + 'LV' + HIDDEN_MIN_LV + ' 以上的就能在精灵资料的技能栏里装备。' };
     }
     if (it.kind === 'form') {
       var fo = formOpts(m), v = parseInt(nat, 10);
@@ -947,7 +967,7 @@
   }
   // 精灵资料里的「精灵道具」：只列出能用在这只精灵身上、手里有的
   function monItemsHTML(m) {
-    var ks = MON_ORDER.filter(function (k) { return acc.items[k] > 0 && itemFits(k, m); });
+    var ks = MON_ORDER.concat(['m_lcleaf']).filter(function (k) { return acc.items[k] > 0 && itemFits(k, m); });
     if (!ks.length) return '';
     return '<div class="md-items"><h4>精灵道具 <span class="hint">直接用在' + esc(form(m).name) + '身上</span></h4>' + ks.map(function (k) {
       var it = USE_ITEMS[k], act;
@@ -2754,6 +2774,7 @@
         }
         if (o.travel) setTimeout(function () { travelDlg(pickOne(downs && downs.length ? TRAVEL_TALK.win : res === 'lose' ? TRAVEL_TALK.lose : TRAVEL_TALK.quit), [['知道了', null]]); }, 700);   // 打完夸一句；她会留在原地，满 20 分钟才走
         if (o.sid === 'hephaestus' && downs && downs.length) { var hn = 0; downs.forEach(function () { hn += hornDrop(); }); giveItems({ m_hfhorn: hn }); msg.push('它掉下了赫菲角片 ×' + hn + '，已放入储存箱（60 片可以合成奇声号角）。'); }
+        if (o.sid === 'hauris' && downs && downs.length) { var hd = 0; downs.forEach(function () { hd += 50 + Math.floor(Math.random() * 21); }); giveItems({ hrDisk: hd }); msg.push('它掉下了星盘 ×' + hd + '，已放入储存箱（100 个可以让一只幽灵鱼一系领悟隐藏技能）。'); }   // 2026-10-24
         if (o.bait && (res === 'caught' || (downs && downs.length))) { acc.riceBowl = null; msg.push('放在熔岩原的那碗米饭被吃得一粒不剩。'); }
         if (o.flora && downs && downs.length) {   // 芙罗拉星野外：每击败一只，10% 掉落水稻种子
           var seeds = 0; downs.forEach(function () { if (Math.random() < RICE.seedDrop) seeds++; });
@@ -3651,8 +3672,8 @@
       var got = [];
       ['moon', 'bone'].forEach(function (sid) {
         var L = (r.sp && Array.isArray(r.sp[sid]) ? r.sp[sid] : []).filter(function (n) { return typeof n === 'string' && SPMAP[sid] && (SPMAP[sid].hidden || []).indexOf(moveName(n)) >= 0; }).map(moveName);
-        if (!L.length) return; if (!acc.hlSp) acc.hlSp = {}; if (!acc.hlSp[sid]) acc.hlSp[sid] = [];
-        L.forEach(function (n) { if (acc.hlSp[sid].indexOf(n) < 0) { acc.hlSp[sid].push(n); got.push(SPMAP[sid].name + '「' + n + '」'); } });
+        if (!L.length) return; var own = acc.mons.filter(function (m) { return m.sid === sid; }); if (!own.length) return;
+        L.forEach(function (n) { var eq = own.filter(function (m) { return (m.moves || []).indexOf(n) >= 0; }); if (!eq.length) eq = [own.slice().sort(function (a, b) { return b.lv - a.lv; })[0]]; var add = 0; eq.forEach(function (m) { if (!Array.isArray(m.hl)) m.hl = []; if (m.hl.indexOf(n) < 0) { m.hl.push(n); add = 1; } }); if (add) got.push(SPMAP[sid].name + '「' + n + '」'); });
       });
       acc.hlFix = 1;
       if (got.length) sendMail({ id: 'hl-fix', title: '小月亮、骨刃的隐藏技能已恢复', body: '{name}，你好！\n小月亮、骨刃之前已经领悟过的隐藏技能，这次全部保留，不需要重新学习。已经帮你恢复：' + got.join('、') + '。\n以后还没领悟的，可以用「新月辉石」「灵骨粉末」解锁（竞技代币商店兑换）。给你添麻烦了！' });
@@ -4826,7 +4847,7 @@
   var MM_FINAL = { tok: [50, 60], first: { tok: 120, exp: 80000 } };
   MATS.mmTok = { name: '明明代币', d: '活动「明明教官的试炼」里通过关卡获得，可以在全息作战场地或航行日志里抽奖：10 个抽一次，100 个十连。' };
   MATS.e_leiming = { name: '雷明灯的精元', d: '明明代币抽奖第 10 个奖池里的奖励。放进神农架 · 精灵保育仓，孵化 8 小时后会诞生一只雷明灯。', hatch: { sid: 'leiming', lv: 1, min: 480 } };
-  USE_ITEMS.mmEye = { name: '雷明之眼', sid: null, sids: ['leiming'], kind: 'jade', cost: 100, sd: '雷明灯一系的专属道具。100 个可以让雷明灯一系领悟一个隐藏技能。', d: '明明代币抽奖第 20、30 个奖池里的奖励，每次 100 个。100 个可以让雷明灯一系（进化前的形态也可以）领悟一个还没领悟的隐藏技能。' };
+  USE_ITEMS.mmEye = { name: '雷明之眼', sid: null, sids: ['leiming'], kind: 'jade', cost: 100, sd: '雷明灯一系的专属道具。100 个可以让一只雷明灯一系领悟一个隐藏技能。', d: '明明代币抽奖第 20、30 个奖池里的奖励，每次 100 个。100 个可以让一只雷明灯一系（进化前的形态也可以）领悟一个还没领悟的隐藏技能。' };
   if (MON_ORDER.indexOf('mmEye') < 0) MON_ORDER.splice(MON_ORDER.indexOf('boneDust') + 1, 0, 'mmEye');
   ['mmTok', 'e_leiming'].forEach(function (k) { if (MAT_ORDER.indexOf(k) < 0) MAT_ORDER.push(k); });
   function mmRec() { if (!acc.mm) acc.mm = { clr: {}, wins: 0 }; if (!acc.mm.clr) acc.mm.clr = {}; return acc.mm; }
