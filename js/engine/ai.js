@@ -111,7 +111,7 @@ function aiChoose(S) {
   }
   var usable = []; me.moves.forEach(function (slot, idx) { if (slot.pp > 0 && !moveBlocked(me, slot) && !banned(slot)) usable.push(idx); });
   if (usable.length && RNG() < P.randomP) return { kind: 'move', i: usable[Math.floor(RNG() * usable.length)] };
-  if (!me.tm.noSwitch && !bossOf(S) && RNG() < P.switchP) {   // BOSS战里电脑不主动换人（傀儡要打倒才会换回BOSS）
+  if (!me.tm.noSwitch && !bossOf(S) && !S.ordered && RNG() < P.switchP) {   // ordered：按顺序上场的对战（明明教官的试炼）不主动换人   // BOSS战里电脑不主动换人（傀儡要打倒才会换回BOSS）
     var threat = bestEst(foe, me) / Math.max(1, me.hp), mine = bestEst(me, foe) / Math.max(1, foe.hp);
     if (threat >= (P.threat || 1) && mine < 1) {
       var bestK = -1, bestV = -1e9;
@@ -132,7 +132,7 @@ function aiChoose(S) {
   return { kind: 'move', i: best ? best.i : -1 };
 }
 function aiPickReplacement(S) {
-  if (S.sides[1].team.some(function (t) { return t.boss && t.boss.orderRepl; })) return aliveIdx(S, 1)[0];   // 按顺序上场（奥多亚克困难：歼灭 → 护阵 → 虹霓暴走）
+  if (S.ordered || S.sides[1].team.some(function (t) { return t.boss && t.boss.orderRepl; })) return aliveIdx(S, 1)[0];   // 按顺序上场（奥多亚克困难：歼灭 → 护阵 → 虹霓暴走）
   var foe = act(S, 0), bestK = aliveIdx(S, 1)[0], bestV = -1e9;
   if (S.ai && S.ai.dumbRepl && RNG() < S.ai.dumbRepl) { var al = aliveIdx(S, 1); return al[Math.floor(RNG() * al.length)]; }
   aliveIdx(S, 1).forEach(function (k) {

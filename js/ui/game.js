@@ -4906,7 +4906,7 @@
     var fin = key === 'final', foes = fin ? mmFinalFoes() : mmFoes(key, d), a = foes.map(mmFoeSpec);
     stopTimers(); ex.fighting = true; document.body.classList.add('story-fight'); syncBattle();
     $('pg-explore').hidden = true; $('pg-arena').hidden = false;
-    window.HSBATTLE.start({ p: team.map(storyMon), a: a, foe: '明明教官的试炼', diff: fin ? '明明的最终试炼' : key + '系关卡 · ' + MM_DIFF[d].n, bgm: fin || d === 1 ? 'mingBattle2' : 'mingBattle1', bgmAt: { 2: fin || d === 1 ? 'mingFinal2' : 'mingFinal1' },   // 高难和最终试炼：MingBattle2 → 第三只 MingFinalBattle2
+    window.HSBATTLE.start({ p: team.map(storyMon), a: a, foe: '明明教官的试炼', diff: fin ? '明明的最终试炼' : key + '系关卡 · ' + MM_DIFF[d].n, ordered: true, bgm: fin || d === 1 ? 'mingBattle2' : 'mingBattle1', bgmAt: { 2: fin || d === 1 ? 'mingFinal2' : 'mingFinal1' },   // 高难和最终试炼：MingBattle2 → 第三只 MingFinalBattle2
       items: invCopy(), onItem: useInv, bg: BG.bridge_p, back: '全息作战场地',
       onEnd: function (res, seen, downs) {
         var msg = [], R = mmRec(), ck = fin ? 'final' : key + ':' + d;

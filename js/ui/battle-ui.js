@@ -596,6 +596,7 @@
     if (opt.env) app.S.env = opt.env;
     if (opt.wild) app.S.wild = opt.wild;
     if (opt.ai) app.S.ai = opt.ai;
+    if (opt.ordered) app.S.ordered = true;   // 对方按顺序上场、不主动换人
     if (opt.bgmAt) app.S.bgmAt = opt.bgmAt;   // 对方第 N 只（从 0 数）上场时换战斗曲，如明明教官的试炼第三只换 MingFinalBattle1   // 电脑的操作水平（例如白银段位）
     storyEnd = opt.onEnd; itemUsed = opt.onItem || null; starOpt = opt.stars || null; starOpen = false;
     app.screen = 'battle'; app.logHTML = ''; $('log').innerHTML = '';
