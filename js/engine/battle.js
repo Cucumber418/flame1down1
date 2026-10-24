@@ -153,6 +153,7 @@ function dotLabel(why) {
 function recordDummy(S, amt, src) { if (S.training && amt > 0) S.training.log.push({ turn: S.turn, src: src || S.curMove || '其他', amt: amt }); }
 function newBattle(pTeam, aTeam) {
   var S = newBattle0(pTeam, aTeam);
+  FX_PEND.length = 0; S.sides[1].team.forEach(function (m) { if (m.boss && m.boss.solemn) { m.boss.seen = m.boss.seen || {}; m.boss.seen.solemn = 1; } });   // 「肃穆」开场就生效
   [0, 1].forEach(function (i) { var m = act(S, i); m.seen = true; if (ability(m) === '踏浪') m.tm.prio = 1; });
   return S;
 }
@@ -273,7 +274,7 @@ function chipsOf(m, foe) {
   if (m.onlyHit) c.push({ t: '元素亲和', k: 'fx', h: 'BOSS · 元素亲和', d: '只有' + m.onlyHit.join('、') + '系技能才能命中它，其他属性的技能都会被挡下' });
   if (m.boss) BOSS_FX.forEach(function (f) {
     if (!m.boss[f.k]) return;
-    if (f.hide && f.hide(m)) { c.push({ t: '？？？', k: 'fx', h: '？？？ · 尚未揭晓', d: '它好像还藏着什么本事……' }); return; }   // 隐藏特效：第一次发动前只显示问号
+    if ((f.hide && f.hide(m)) || !fxKnown(m, f.k)) { c.push({ t: '？？？', k: 'fx', h: '？？？ · 尚未揭晓', d: '它好像还藏着什么本事……' }); return; }   // 隐藏特效：第一次发动前只显示问号
     c.push({ t: f.t, k: 'fx', h: f.h, d: f.d(m) });
   });
   if (m.flags && m.flags.sy && !m.boss) c.push({ t: '沈阳大街', k: 'bad', h: '沈阳大街（场地）', d: '场地效果：不能使用变化类技能' });
@@ -356,7 +357,15 @@ function snap(S) {
     })
   };
 }
-function E(S, evs, t, o) { var e = o || {}; e.t = t; e.snap = snap(S); evs.push(e); }
+// 2026-10-24：BOSS特性第一次发动前显示「？？？」。RV(m, 键名)：这一项第一次真正生效时调用，记进 m.boss.seen，
+// 并在下一个事件前插一个 bossfx 事件（界面据此记进 acc.seenFx，以后BOSS页和对战里都直接显示）
+var FX_PEND = [];
+function RV(m, k) { if (!m || !m.boss || !m.boss[k]) return; var s0 = m.boss.seen || (m.boss.seen = {}); if (s0[k]) return; s0[k] = 1; FX_PEND.push(k); }
+function fxKnown(m, k) { return !!((m.boss && m.boss.seen && m.boss.seen[k]) || (typeof window !== 'undefined' && window.HS_SEENFX && window.HS_SEENFX[k])); }
+function E(S, evs, t, o) {
+  if (FX_PEND.length) { var pk = FX_PEND.splice(0), sn = snap(S); pk.forEach(function (k) { evs.push({ t: 'bossfx', k: k, snap: sn }); }); }
+  var e = o || {}; e.t = t; e.snap = snap(S); evs.push(e);
+}
 function log(S, evs, text, cls) { E(S, evs, 'text', { text: text, cls: cls || '' }); }
 
 /* ---------- 基础操作 ---------- */
@@ -396,7 +405,7 @@ function applyDamage(S, evs, j, amount, src, o) {
   var t = act(S, j); if (t.fainted) return 0;
   var amt = Math.floor(amount), excess = 0;
   if (t.tm.cap > 0 && amt > 250 && src != null) { excess = amt - 250; amt = 250; }
-  var willEx = 0; if (t.boss && t.boss.odoWill && amt > 200 && src != null && src !== j) { willEx = amt - 200; amt = 200; }   // 护阵意志：单次受伤不超过 200，超出的反弹
+  var willEx = 0; if (t.boss && t.boss.odoWill && amt > 200 && src != null && src !== j) { willEx = amt - 200; amt = 200; RV(t, 'odoWill'); }   // 护阵意志：单次受伤不超过 200，超出的反弹
   if (t.fx.shield > 0) {
     var ab = Math.min(t.fx.shield, amt); t.fx.shield -= ab; amt -= ab;
     if (ab) log(S, evs, nm(t) + '的护盾吸收了 ' + ab + ' 点伤害');
@@ -405,13 +414,13 @@ function applyDamage(S, evs, j, amount, src, o) {
     amt = t.hp - 1; t.fx.endure = 0; log(S, evs, nm(t) + '的不灭之躯撑住了，残留 1 点体力！', 'fxl'); hqGet(S, evs, t, '寂灭幽映');
   }
   if (t.id === 'dummy' && !t.breakable) { recordDummy(S, amt, src == null ? (S.dotSrc || '持续/附加效果') : null); E(S, evs, 'hit', { side: j, amount: amt, crit: o.crit, eff: o.eff }); return amt; }
-  if (t.boss && t.boss.guard && !t.boss.guardUsed && amt >= t.hp && t.hp > 1) { amt = t.hp - 1; t.boss.guardUsed = 1; log(S, evs, nm(t) + '的「坚壁」发动了，残留 1 点体力！', 'fxl'); }
+  if (t.boss && t.boss.guard && !t.boss.guardUsed && amt >= t.hp && t.hp > 1) { amt = t.hp - 1; t.boss.guardUsed = 1; RV(t, 'guard'); log(S, evs, nm(t) + '的「坚壁」发动了，残留 1 点体力！', 'fxl'); }
   if (j === 1 && src === 0 && !S.pvp) { var cs = CS(S); if (o.crit) cs.crit++; if (amount > cs.maxHit) cs.maxHit = Math.floor(amount); if (t.hp >= t.maxhp && amount >= t.maxhp) cs.oneShot++; }
   var shown = amt;   // 2026-10-19：伤害溢出时界面和日志仍显示完整伤害（实际扣血不超过剩余体力）
   amt = Math.min(t.hp, amt); t.hp -= amt; S.lastShown = shown;
   if (amt > 0 && t.st['睡眠'] > 0 && src != null) { delete t.st['睡眠']; log(S, evs, nm(t) + '被打醒了'); }
   E(S, evs, 'hit', { side: j, amount: shown, crit: o.crit, eff: o.eff, kind: o.eff === undefined && !o.crit ? 'fixed' : undefined });
-  if (t.boss && t.boss.thorn && src != null && src !== j && amt > 0 && !act(S, src).fainted) { var th = Math.max(1, Math.floor(amt * 0.15)); loseHp(S, evs, src, th, nm(t) + '的「荆棘」反弹了 ' + th + ' 点伤害'); }
+  if (t.boss && t.boss.thorn && src != null && src !== j && amt > 0 && !act(S, src).fainted) { var th = Math.max(1, Math.floor(amt * 0.15)); RV(t, 'thorn'); loseHp(S, evs, src, th, nm(t) + '的「荆棘」反弹了 ' + th + ' 点伤害'); }
   if (excess > 0) {
     log(S, evs, nm(t) + '的龙之逆鳞把 ' + excess + ' 点伤害反馈给了对方！', 'fxl');
     loseHp(S, evs, src, excess);
@@ -423,7 +432,7 @@ function applyDamage(S, evs, j, amount, src, o) {
   var rbm = src != null && src !== j ? act(S, src) : null;
   if (rbm && rbm.boss && rbm.boss.rainbow && amt > 0 && !rbm.fainted) {
     rbm.fx.rb = (rbm.fx.rb || 0) + amt;
-    while (rbm.fx.rb >= 1000 && !rbm.fainted && !S.over) { rbm.fx.rb -= 1000; log(S, evs, nm(rbm) + '体内的虹光满溢，爆破了！', 'crit'); loseHp(S, evs, src, 500, nm(rbm) + '损失了 500 体力'); if (!act(S, j).fainted) applyDamage(S, evs, j, 500, null, {}); }
+    while (rbm.fx.rb >= 1000 && !rbm.fainted && !S.over) { rbm.fx.rb -= 1000; RV(rbm, 'rainbow'); log(S, evs, nm(rbm) + '体内的虹光满溢，爆破了！', 'crit'); loseHp(S, evs, src, 500, nm(rbm) + '损失了 500 体力'); if (!act(S, j).fainted) applyDamage(S, evs, j, 500, null, {}); }
   }
   return amt;
 }
@@ -445,7 +454,7 @@ function changeStages(S, evs, i, obj, src) {
   for (var k in obj) {
     var v = obj[k];
     if (v > 0 && (m.tm.noBoost > 0 || m.tm.seal > 0)) { tried = true; continue; }
-    if (v < 0 && m.boss && m.boss.immortal) { parts.push(STG_NAME[k] + '被「不朽」免疫'); continue; }
+    if (v < 0 && m.boss && m.boss.immortal) { RV(m, 'immortal'); parts.push(STG_NAME[k] + '被「不朽」免疫'); continue; }
     if (v < 0 && m.tm.mist > 0) { parts.push(STG_NAME[k] + '被白雾保护'); continue; }
     var old = m.stages[k], nv = Math.max(-6, Math.min(6, old + v));
     m.stages[k] = nv;
@@ -463,7 +472,7 @@ var CONTROL = { 害怕: 1, 石化: 1, 睡眠: 1, 麻痹: 1, 冰冻: 1, 疲惫: 1
 var CANT_ACT = { 害怕: '害怕得无法行动', 石化: '被石化了，无法行动', 睡眠: '正在睡觉', 麻痹: '身体麻痹，无法行动', 冰冻: '被冻住了，无法行动', 疲惫: '疲惫得无法行动' };
 function addStatus(S, evs, j, k, turns, src, noReflect, refresh) {
   var t = act(S, j); if (t.fainted) return;
-  if (t.boss && (t.boss.noStatus || t.boss.immortal)) { log(S, evs, nm(t) + '免疫异常状态，「' + k + '」没有效果'); return; }
+  if (t.boss && (t.boss.noStatus || t.boss.immortal)) { RV(t, 'noStatus'); RV(t, 'immortal'); log(S, evs, nm(t) + '免疫异常状态，「' + k + '」没有效果'); return; }
   if (k === '寄生' && typesOf(t).indexOf('草') >= 0) { log(S, evs, nm(t) + '是草系精灵，不会被寄生'); return; }
   if (t.tm.reflect > 0) {
     if (!noReflect && src != null && !act(S, src).fainted) {
@@ -562,7 +571,7 @@ function calcDamage(me, foe, mv, firstMover, est) {
   if (fab === '盾甲') mod *= 0.9;
   if (me.tm.odoAtk > 0) mod *= 1.25;   // 全弹搭载
   if (foe.tm.odoDef > 0) mod *= 0.8;
-  if (foe.boss && foe.boss.odoRate && foe.fx.lateT === S.turn) mod *= 1.25;   // 强效外壳
+  if (foe.boss && foe.boss.odoRate && foe.fx.lateT === S.turn) { mod *= 1.25; if (!est) RV(foe, 'odoRate'); }   // 强效外壳
   if (foe.perm && foe.perm.odoMark) mod *= 1 + 0.1 * foe.perm.odoMark;   // 解析导弹
   if (me.perm && me.perm.odoJam) mod *= Math.max(0, 1 - 0.08 * me.perm.odoJam);   // 侵扰投弹
   if (fab === '水形' && STG.some(function (k) { return foe.stages[k] > 0; })) mod *= 0.9;
@@ -583,12 +592,14 @@ function calcDamage(me, foe, mv, firstMover, est) {
   if (foe.fx.leiyin) { mod *= 1.2; if (!est) foe.fx.leiyin = 0; }
   if (phys && foe.tm.halfPhys > 0) mod *= 0.5;
   if (foe.tm.dr40 > 0) mod *= 0.6;
-  if (foe.boss && foe.boss.dr) mod *= 1 - foe.boss.dr;   // BOSS「星球聚能」
-  if (foe.boss && foe.boss.eternal) mod *= 1.2;   // 复活后的泰戈尔「永续的纷争」：受到的伤害 +20%
-  if (me.boss && me.boss.purify && miaN(foe) > 0) mod *= 2;
-  if (me.boss && me.boss.rage && me.hp < me.maxhp / 2) mod *= 1.3;
-  if (me.boss && me.boss.focus) mod *= 1.2;   // 先驱之塔「专注」
-  if (foe.boss && foe.boss.armor) mod *= 0.8;   // 先驱之塔「厚甲」   // 先驱之塔「狂暴」
+  if (foe.boss && foe.boss.dr) { mod *= 1 - foe.boss.dr; if (!est) RV(foe, 'dr'); }   // BOSS「星球聚能」
+  if (!est && me.boss) ['feud', 'mmGift', 'rainbow', 'erode', 'eternal'].forEach(function (k) { RV(me, k); });   // 物攻 / 特攻加成类：第一次出手造成伤害时揭晓
+  if (foe.boss && foe.boss.eternal) { mod *= 1.2; if (!est) RV(foe, 'eternal'); }   // 复活后的泰戈尔「永续的纷争」：受到的伤害 +20%
+  if (me.boss && me.boss.purify && miaN(foe) > 0) { mod *= 2; if (!est) RV(me, 'purify'); }
+  if (me.boss && me.boss.rage && me.hp < me.maxhp / 2) { mod *= 1.3; if (!est) RV(me, 'rage'); }
+  if (me.boss && me.boss.focus) { mod *= 1.2; if (!est) RV(me, 'focus'); }   // 先驱之塔「专注」
+  if (foe.boss && foe.boss.armor) { mod *= 0.8; if (!est) RV(foe, 'armor'); }   // 先驱之塔「厚甲」   // 先驱之塔「狂暴」
+  if (me.boss && me.boss.reaper && !est) RV(me, 'reaper');
   if (me.boss && me.boss.reaper) mod *= 1.25 + 0.02 * Math.max(0, Math.floor((1 - foe.hp / foe.maxhp) * 100));   // 「死神」   // 叶子喵剧情限定特性「净化光芒」：对沾染瘴气的目标伤害 +100%
   return { dmg: Math.max(1, Math.floor(base * mod)), crit: crit, eff: e };
 }
@@ -620,13 +631,14 @@ function resolveTurn(S, acts) {
   var evs = [];
   S.turnActed = [false, false]; S.silenced = [false, false]; S.order = [];
   log(S, evs, '第 ' + S.turn + ' 回合', 'turn');
-  if (S.turn === 1 && !S.ambushed) { S.ambushed = 1; var amb = act(S, 1); if (amb.boss && amb.boss.ambush && !act(S, 0).fainted) { log(S, evs, nm(amb) + '发动了「突然袭击」！', 'crit'); applyDamage(S, evs, 0, amb.boss.ambush, null, {}); if (act(S, 0).fainted && !S.over) { checkOver(S, evs); } } }
+  if (S.turn === 1 && !S.ambushed) { S.ambushed = 1; var amb = act(S, 1); if (amb.boss && amb.boss.ambush && !act(S, 0).fainted) { RV(amb, 'ambush'); log(S, evs, nm(amb) + '使用了「突然袭击」！', 'use'); E(S, evs, 'use', { side: 1, move: '突然袭击', type: typesOf(amb)[0] }); applyDamage(S, evs, 0, amb.boss.ambush, null, {}); if (act(S, 0).fainted && !S.over) { checkOver(S, evs); } } }
   if (acts[0].kind === 'item') { useItem(S, evs, 0, acts[0].key); S.turnActed[0] = true; if (S.over) { S.turn++; return evs; } }
   [0, 1].forEach(function (i) { if (acts[i].kind === 'switch') doSwitch(S, evs, i, acts[i].to, true); });
   // BOSS「瘴毒傀儡」：占用BOSS这一回合，下场并召唤傀儡
   if (!S.pvp && acts[1].kind === 'move' && puppetRoll(S)) { summonPuppet(S, evs); acts = [acts[0], { kind: 'pass' }]; S.turnActed[1] = true; }
   var info = [0, 1].filter(function (i) { return acts[i].kind === 'move'; }).map(function (i) {
     var m = act(S, i), mv = moveFor(m, acts[i].i);
+    if (m.boss && m.boss.swift) RV(m, 'swift'); if (m.boss && m.boss.reaper) RV(m, 'reaper');
     return { i: i, mv: mv, slot: acts[i].i, pri: mv.pri + (m.tm.prio > 0 ? 1 : 0) + (m.boss && (m.boss.swift || m.boss.reaper) ? 1 : 0), spe: speedOf(m), r: RNG() };
   });
   info.sort(function (a, b) { return b.pri - a.pri || b.spe - a.spe || a.r - b.r; });
@@ -741,6 +753,7 @@ function cantAct(S, evs, me) {
 }
 
 function useMove(S, evs, i, mv, slotIdx, extra) {
+  if (!extra) RV(act(S, i), 'mute');
   var me = act(S, i), j = 1 - i, foe = act(S, j);
   mv = liveMove(me, mv);
   if (me.fainted) return;
@@ -851,7 +864,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
     if (foe.fx.flash && !foe.fainted) { foe.fx.flash = 0; log(S, evs, '闪光飞叶的光芒刺痛了' + nm(foe) + '的眼睛', 'fxl'); changeStages(S, evs, j, { acc: -1 }, i); }
   }
   // 受击方的反击类效果
-  if (total > 0 && !me.fainted && !foe.fainted && foe.boss && foe.boss.relive && RNG() < 0.5) {   // 复活后的泰戈尔「往日重现」
+  if (total > 0 && !me.fainted && !foe.fainted && foe.boss && foe.boss.relive && RNG() < 0.5) { RV(foe, 'relive');   // 复活后的泰戈尔「往日重现」
     var rk = ['烧伤', '冻伤', '中毒'][rint(0, 2)];
     log(S, evs, nm(foe) + '的「往日重现」：东北街头的记忆涌了上来！', 'fxl');
     addStatus(S, evs, i, rk, rint(1, 3), j);
@@ -865,7 +878,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   if (me.fainted) return;
   if (mv.drain && total > 0) { var dh = heal(S, evs, i, total * mv.drain); hqR(me).h[mv.name] = (hqR(me).h[mv.name] || 0) + dh; }
   if (mv.struggle && total > 0) loseHp(S, evs, i, Math.max(1, Math.floor(total / 4)), nm(me) + '受到了反作用伤害');
-  if (me.boss && me.boss.odoRate && firstMover && total > 0 && !foe.fainted && foe.hp > 0) { log(S, evs, nm(me) + '的「歼灭速率」：抢先出手，追加 ' + Math.floor(foe.maxhp / 4) + ' 点固定伤害', 'fxl'); applyDamage(S, evs, j, Math.floor(foe.maxhp / 4), i, { noFaint: true }); }
+  if (me.boss && me.boss.odoRate && firstMover && total > 0 && !foe.fainted && foe.hp > 0) { RV(me, 'odoRate'); log(S, evs, nm(me) + '的「歼灭速率」：抢先出手，追加 ' + Math.floor(foe.maxhp / 4) + ' 点固定伤害', 'fxl'); applyDamage(S, evs, j, Math.floor(foe.maxhp / 4), i, { noFaint: true }); }
   if (mv.selfTiredHit && !me.fainted) { me.st['疲惫'] = mv.selfTiredHit + 1; E(S, evs, 'stage', { side: i }); log(S, evs, nm(me) + '耗尽了力气，陷入「疲惫」状态（' + mv.selfTiredHit + '回合）', 'bad'); }   // 全弹发射
   if (mv.recoil && total > 0 && !me.fainted) loseHp(S, evs, i, Math.max(1, Math.floor(total * mv.recoil)), nm(me) + '受到了反弹伤害');   // 烈焰冲锋
   if (total > 0 && me.tm.induct > 0) { log(S, evs, '电磁感应生效', 'fxl'); changeStages(S, evs, i, { spa: 1 }); }
@@ -927,7 +940,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
     if (any) { log(S, evs, nm(me) + '把自身的能力下降转移给了对方', 'fxl'); if (!foe.fainted) changeStages(S, evs, j, moved, i); else E(S, evs, 'stage', { side: i }); }
   }
   if (mv.custom === 'normalPunch') {
-    if (me.boss && me.boss.ne) {
+    if (me.boss && me.boss.ne) { RV(me, 'ne');
       var anyN = false; STG.forEach(function (k) { if (me.stages[k] < 0) { me.stages[k] = 0; anyN = true; } });
       E(S, evs, 'stage', { side: i });
       log(S, evs, nm(me) + '的「来东北试试」：普通拳没有降低命中' + (anyN ? '，还甩掉了身上的能力下降！' : ''), 'fxl');
@@ -1306,7 +1319,7 @@ function reviveTiger(S, evs, j, t) {
   b.pastKnown = 1;
   TIGER_PAST.forEach(function (l) { log(S, evs, (l[0] === 'tg' ? '泰戈尔：' : '') + l[1], 'fxl'); });
   t.lv = 60; t.maxhp = t.hp = 3000; t.stages = blankStages(); t.st = {}; t.fx.poison = 0;
-  delete b.feud; b.eternal = 1; b.relive = 1; b.sy = 1;
+  delete b.feud; b.eternal = 1; b.relive = 1; b.sy = 1; RV(t, 'past'); RV(t, 'sy');
   t.stats.atk = Math.floor((b.atk0 || t.stats.atk) * 1.6);
   t.nick = '热血·' + (t.nick || sp(t).name).replace(/^热血·/, '');
   if (typeof AWAKE_SPRITES !== 'undefined' && AWAKE_SPRITES[t.id]) t.img = AWAKE_SPRITES[t.id];   // 换成复活后的形态，一直保持到战斗结束
@@ -1333,6 +1346,7 @@ function puppetMoves(id) {
     .sort(function (a, b) { return (M[b].power || 0) - (M[a].power || 0); }).slice(0, 4);
 }
 function summonPuppet(S, evs) {
+  RV(act(S, 1), 'puppet');
   var side = S.sides[1], b = act(S, 1), id = PUPPETS[Math.floor(RNG() * PUPPETS.length)], plv = (b.boss && b.boss.puppetLv) || 50;
   var m = mkFrom({ id: id, lv: plv, moves: puppetMoves(id), nick: '瘴毒傀儡·' + SPMAP[id].name, miasma: 10 });
   m.puppet = true; side.team.push(m);
@@ -1361,6 +1375,7 @@ function rebirthBarren(S, evs, j, t) {
 var HUMUS_OPTS = ['spe', 'atk', 'spa', 'parasite', 'miasma'];
 function humusField(S, evs) {
   var b = bossOf(S); if (!b || !b.boss || !b.boss.humus || b.fainted) return;
+  RV(b, 'humus');
   var m = act(S, 0); if (m.fainted) return;
   var n = b.boss.humusN || 1, label = n > 1 ? '腐殖乐园' : '腐殖质';
   var pool = HUMUS_OPTS.slice(), picks = [];
@@ -1376,6 +1391,7 @@ function humusField(S, evs) {
 // 除草机 / 抹除装置：每回合结束时附带固定伤害（除草机会逐回合 +2，抹除装置冻结不再增长），对草系精灵伤害翻倍
 function weedField(S, evs) {
   var b = bossOf(S); if (!b || !b.boss || !b.boss.weed || b.fainted) return;
+  RV(b, 'weed');
   var m = act(S, 0); if (m.fainted) return;
   var label = b.boss.weedFrozen ? '抹除装置' : '除草机', dmg = b.boss.weedDmg || 30;
   if (typesOf(m).indexOf('草') >= 0) dmg *= 2;
@@ -1384,6 +1400,7 @@ function weedField(S, evs) {
 }
 function miasmaField(S, evs) {
   var b = bossOf(S); if (!b || !b.boss.mia || b.fainted) return;
+  RV(b, 'mia');
   var m = act(S, 0); if (m.fainted) return;
   m.perm.miasma = miaN(m) + 1; E(S, evs, 'stage', { side: 0 });
   log(S, evs, nm(b) + '的「瘴气领域」：' + nm(m) + '受到瘴气侵染（瘴气 ×' + m.perm.miasma + '）', 'bad');
@@ -1415,7 +1432,7 @@ function endOfTurn(S, evs) {
   miasmaField(S, evs);
   humusField(S, evs);
   weedField(S, evs);
-  [0, 1].forEach(function (i) { var m = act(S, i); if (!m.fainted && m.boss && m.boss.regen && m.hp < m.maxhp) { log(S, evs, nm(m) + '的「再生」发动了', 'fxl'); heal(S, evs, i, m.maxhp * (m.boss.regen === true ? 0.06 : m.boss.regen)); } });   // 先驱之塔「再生」
+  [0, 1].forEach(function (i) { var m = act(S, i); if (!m.fainted && m.boss && m.boss.regen && m.hp < m.maxhp) { RV(m, 'regen'); log(S, evs, nm(m) + '的「再生」发动了', 'fxl'); heal(S, evs, i, m.maxhp * (m.boss.regen === true ? 0.06 : m.boss.regen)); } });   // 先驱之塔「再生」
   [0, 1].forEach(function (i) {
     var m = act(S, i); if (m.fainted) return;
     var o = act(S, 1 - i);
@@ -1442,9 +1459,9 @@ function endOfTurn(S, evs) {
       else log(S, evs, '海妖之歌唱完了，但听歌的对手已经不在场上');
     }
     if (!m.fainted && m.tm.tcloud > 0 && !o.fainted && !S.over) { log(S, evs, '闪电云劈向' + nm(o), 'fxl'); S.dotSrc = '闪电云'; applyDamage(S, evs, 1 - i, 100, null, {}); S.dotSrc = null; }
-    if (!m.fainted && m.tm.lmE > 0 && !o.fainted && !S.over) { var lmk = m.boss && m.boss.lmBoost ? 4 : 1; log(S, evs, nm(m) + '的「雷明」：电光对' + nm(o) + '造成 ' + 25 * lmk + ' 点固定伤害', 'fxl'); S.dotSrc = '雷明'; applyDamage(S, evs, 1 - i, 25 * lmk, null, {}); S.dotSrc = null; }
+    if (!m.fainted && m.tm.lmE > 0 && !o.fainted && !S.over) { var lmk = m.boss && m.boss.lmBoost ? 4 : 1; RV(m, 'lmBoost'); log(S, evs, nm(m) + '的「雷明」：电光对' + nm(o) + '造成 ' + 25 * lmk + ' 点固定伤害', 'fxl'); S.dotSrc = '雷明'; applyDamage(S, evs, 1 - i, 25 * lmk, null, {}); S.dotSrc = null; }
     if (!m.fainted && m.tm.lmL > 0 && m.hp < m.maxhp) heal(S, evs, i, 20 * (m.boss && m.boss.lmBoost ? 4 : 1));
-    if (!m.fainted && m.boss && m.boss.nourish && m.hp < m.maxhp && !S.over) { log(S, evs, nm(m) + '的「养料汲取」发动了', 'fxl'); heal(S, evs, i, 50); }
+    if (!m.fainted && m.boss && m.boss.nourish && m.hp < m.maxhp && !S.over) { RV(m, 'nourish'); log(S, evs, nm(m) + '的「养料汲取」发动了', 'fxl'); heal(S, evs, i, 50); }
     if (!m.fainted && ability(m) === '饭香' && !S.over && RNG() < 0.2) eatRice(S, evs, i, nm(m) + '的「饭香」发动了，吃了一口米饭');
     if (!m.fainted && ability(m) === '爆燃' && m.fx.atkT !== S.turn && (m.fx.charge || 0) < 3 && !S.over) { m.fx.charge = (m.fx.charge || 0) + 1; E(S, evs, 'stage', { side: i }); log(S, evs, nm(m) + '的「爆燃」蓄力了（' + m.fx.charge + ' / 3），下一次攻击伤害 +' + m.fx.charge * 10 + '%', 'fxl'); }
     if (!m.fainted) m.fx.fieldT = (m.fx.fieldT || 0) + 1;
@@ -1462,6 +1479,7 @@ function endOfTurn(S, evs) {
   // BOSS 奥多亚克（困难）：歼灭形态、护阵形态每两回合主动切换一次（另一个形态还在的话）
   var osw = S.sides[1], om = act(S, 1);
   if (!S.over && om && !om.fainted && om.boss && om.boss.odoSwap && S.turn % 2 === 0) {
+    RV(om, 'odoSwap');
     var oth = osw.active === 0 ? 1 : osw.active === 1 ? 0 : -1;
     if (oth >= 0 && osw.team[oth] && !osw.team[oth].fainted) { log(S, evs, nm(om) + '切换了形态！', 'fxl'); doSwitch(S, evs, 1, oth, true); }
   }

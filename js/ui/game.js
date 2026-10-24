@@ -4342,13 +4342,22 @@
     }).join('');
   }
   // SECRET_FX：第一次发动前只显示「？？？」的隐藏BOSS特效（触发后 acc.seenFx[键名] 会被 HSEV('bossfx',...) 记下）
-  var SECRET_FX = { past: 1, rebirth: 1 };
+  var SECRET_FX = { past: 1, rebirth: 1 };   // 2026-10-24 起所有BOSS特性都是第一次发动前显示「？？？」（见 fxRules）
+  // 2026-10-24：特性改成第一次发动前显示「？？？」之前就挑战过的BOSS难度，它的特性视为都见过了（第二形态之类的隐藏特效除外）
+  function seedSeenFx() {
+    if (!acc || acc.fxSeed) return; acc.fxSeed = 1; if (!acc.seenFx) acc.seenFx = {};
+    var mark = function (L) { if (L && L.boss) Object.keys(L.boss).forEach(function (k) { if (!SECRET_FX[k] && !acc.seenFx[k]) acc.seenFx[k] = Date.now(); }); };
+    Object.keys(BOSSES).forEach(function (k) { BOSSES[k].lv.forEach(function (L, i) { var r = acc.bosses && acc.bosses[recKey(k, i)]; if (r && r.tries > 0) { mark(L); (L.team || []).forEach(mark); } }); });
+    EWK.lv.forEach(function (L, i) { if (EWK.types.some(function (T) { var r = acc.bosses && acc.bosses[recKey('ewk_' + T.t, i)]; return r && r.tries > 0; })) mark(L); });
+  }
+  try { Object.defineProperty(window, 'HS_SEENFX', { get: function () { return acc && acc.seenFx; }, configurable: true }); } catch (e) {}
   function fxRules(L) {
+    seedSeenFx();
     var fake = { boss: Object.assign({}, L.boss || {}, { rebirthKnown: !!(acc.seenFx && acc.seenFx.rebirth) }), hp: L.hp }, out = [];   // 没打出过第二形态时，和第二形态有关的说明全部隐藏
     if (L.only) out.push(['【元素亲和】', '只有' + L.only.join('、') + '系技能才能命中它']);
     if (L.boss) BOSS_FX.forEach(function (f) {
       if (!L.boss[f.k]) return;
-      if (SECRET_FX[f.k] && !(acc.seenFx && acc.seenFx[f.k])) { out.push(['【？？？】', '尚未揭晓。它好像还藏着什么本事……']); return; }
+      if (!(acc.seenFx && acc.seenFx[f.k])) { out.push(['【？？？】', '尚未揭晓。打一场看看它会什么……']); return; }
       out.push(['【' + f.h + '】', f.d(fake).split('\n')[0]]);
     });
     var pastKnown = !!(acc.seenFx && acc.seenFx.past);
@@ -4508,6 +4517,7 @@
     var B = BOSSES[k], WK = weekly ? WEEKLIES.filter(function (x) { return x.boss === k && x.d === d; })[0] : null; if (weekly && !WK) return;
     var L = B.lv[d]; if (!L || !(weekly ? wkOpen(WK) : L.open())) return;
     if (weekly && permits() < 1) { toast('挑战许可用完了。' + permitNext() + '。'); return; }   // 2026-10-18：只有打赢才消耗挑战许可
+    seedSeenFx();
     var team = (acc.teams[acc.active] || []).map(mon).filter(Boolean);
     if (!team.length) team = acc.mons.slice(0, 1);
     team = team.slice(0, TEAM_SIZE);
