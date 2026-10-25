@@ -96,6 +96,7 @@ function startMode(E, res, name, kind, u, acc, args) {
   var items0 = {}; E.ITEM_ORDER.forEach(function (k) { items0[k] = (acc.items && acc.items[k]) || 0; });
   if (!st.noItems) S.items = JSON.parse(JSON.stringify(items0));
   var out = { ok: true, S: S, opt: o };
+  if (st.preStrike) out.pre = E.resolveTurn(S, [{ kind: 'pass' }, E.aiChoose(S)]);   // 剧情：对方偷袭，开场先出一招
   if (st.dirty) { out.rev = saveAcc(u, acc); out.acc = u.save.data['hs-account-v1']; }
   sessions[name] = { kind: kind, S: S, ctx: st.ctx || {}, items0: items0, used: {}, t: now, seq: 0, last: null, done: false };
   return A.reply(res, 200, JSON.parse(E.battleJSON(S, out)));

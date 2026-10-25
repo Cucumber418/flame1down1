@@ -617,7 +617,114 @@ var PVE = (function () {
     }
   };
 
-  return { MODES: MODES, CUMBER: CUMBER, NPC_WIN_EXP: NPC_WIN_EXP, NPC_HOURS: NPC_HOURS, NPC_FROM: NPC_FROM, NPC_TO: NPC_TO, NPC_AI_RANK: NPC_AI_RANK, NPC: NPC, NPC_SECRET: NPC_SECRET, NPC_POOL: NPC_POOL, npcPlan: npcPlan, bjDay: bjDay, TEA_DAILY: TEA_DAILY, TEA_EXP: TEA_EXP, MM: MM, MM_NICK: MM_NICK, MM_TEAM: MM_TEAM, MM_TEAM_HARD: MM_TEAM_HARD, MM_DIFF: MM_DIFF, MM_FINAL: MM_FINAL, mmFoes: mmFoes, mmDay: mmDay, CHAL: CHAL, starOk: starOk, chalLevelOpen: chalLevelOpen, chalTotal: chalTotal, MM_HELPER: MM_HELPER, ONLY3: ONLY3, BOSSES: BOSSES, BOSS_CRY: BOSS_CRY, WEEKLIES: WEEKLIES, EWK: EWK, PERMIT: PERMIT, SECRET_FX: SECRET_FX,
+  /* ---------- 剧情对战 ----------
+   * F.pteam：剧情限定，用一支固定的队伍代替玩家自己的配队出战，不计入经验/学习力
+   * F.allyMon：在玩家自己配队的最前面加一只固定的助战精灵（默认首发），不计入经验/学习力；allyOpt：可以不带
+   * F.team：精灵数组，或一个按存档算出精灵数组的函数（如等级跟玩家首发联动的BOSS）
+   * 每一项：sid、lv，可选 moves、boss（battle.js 的 BOSS_FX）、maxhp、nick、img、miasma、breakable、ability */
+  var LEAF_ALLY = { sid: 'leafcat', lv: 40, nick: '叶子喵', boss: { purify: 1 }, moves: ['闪光飞叶', '种子炸弹', '星星魔法', '光束'] };
+  var FIGHTS = {
+    // 第十一段 · 盐碱地之下（2026-10-24）
+    brSalt: { foe: '荒芜', bgm: 'boss2', team: [{ sid: 'barren', lv: 45, nick: '荒芜', boss: { pp: 99 } }],
+      allyMon: { sid: 'leafcat', lv: 40, nick: '叶子喵', boss: { purify: 1 }, moves: ['闪光飞叶', '种子炸弹', '星星魔法', '光束'], ability: { n: '脚伤', d: '脚底被瘴气浸透，陷入永久的流血状态，无法被解除' } },
+      env: 'miasma', bg: 'fl_salt_mia', desc: '荒芜（LV45）· 叶子喵助战（特性「脚伤」：永久流血）' },
+    brLab: { foe: '荒芜', bgm: 'boss3', team: [{ sid: 'barren', lv: 50, nick: '荒芜', boss: { nourish: 1, pp: 99 } }], env: 'miasma', bg: 'fl_lab', desc: '荒芜（LV50）· 特效「养料汲取」：每回合恢复 50 体力' },
+    threego: { foe: 'Threego', team: [{ sid: 'tagore', lv: 3 }] },
+    karo: { foe: '被瘴气污染的野生精灵', team: [{ sid: 'wind', lv: 3, miasma: 5 }], env: 'miasma', bg: 'fl_salt', desc: '被瘴气污染的卡罗（LV3）' },
+    hunter: { foe: '神秘的猎杀者', team: [{ sid: 'kaleo', lv: 15 }], bg: 'fl_maple', desc: '猎杀者卡莱（LV15）' },
+    kaleo4: { foe: '瘴气卡莱群', team: [{ sid: 'kaleo', lv: 20, miasma: 5 }, { sid: 'kaleo', lv: 20, miasma: 5 }, { sid: 'kaleo', lv: 20, miasma: 5 }, { sid: 'kaleo', lv: 20, miasma: 5 }], bg: 'fl_beech', desc: '被瘴气侵染的卡莱 ×4（LV20）' },
+    // 剧情助战的叶子喵：LV40，带高威力攻击技能，默认首发（见 startFight）
+    // ↓ 第八段 · 深入丛林（flora4）专用。boss 字段见 battle.js 的 BOSS_FX：erode 深度侵蚀（1 = 双攻 +100%，2 = +200%）、mute 无法交流（只用攻击技能）、purify 净化光芒
+    // allyOpt：叶子喵助战可选，开战前在对战卡上勾选；preStrike：对方偷袭先出一招；cuts：对方体力降到某个数值时插播对话
+    cyThreego: { foe: '瘴气玛西', pteam: [{ sid: 'tagore', lv: 12, nick: '小胖虎' }],   // 操控 Threego 的小胖虎迎战（剧情杀）
+      team: [{ sid: 'mush', lv: 24, nick: '瘴气玛西', miasma: 8, boss: { erode: 2, mute: 1 } }],
+      env: 'miasma', bg: 'fl_sun', desc: '瘴气玛西（LV24）' },
+    cyRescue: { foe: '瘴气玛西',
+      team: [{ sid: 'mush', lv: 20, nick: '瘴气玛西', miasma: 6, boss: { mute: 1 } }, { sid: 'mush', lv: 21, nick: '瘴气玛西', miasma: 6, boss: { mute: 1 } }],
+      env: 'miasma', bg: 'fl_path', desc: '瘴气玛西 ×2（LV20 / 21）' },
+    cyBoss: { foe: '瘴气变异玛西露姆', bgm: 'disCommunication',   // 剧情杀：比玩家首发高 20 级，先制 +9 的「瘴毒灭却」一回合秒一只
+      team: function (a) {
+        var lead = ACC.team(a)[0];
+        var lv = Math.min(100, (lead ? lead.lv : 20) + 20);
+        return [{ sid: 'mush', lv: lv, nick: '瘴气变异玛西露姆', img: FORM_FX_SPRITES.mush.miasma, miasma: 10, boss: { erode: 1, mute: 1 }, moves: ['瘴毒灭却'] }];
+      },
+      env: 'miasma', bg: 'fl_sun', desc: '瘴气变异玛西露姆（比你的首发高 20 级）' },
+    cyCat: { foe: '瘴气叶子小小喵',
+      team: [{ sid: 'leafcat', lv: 18, nick: '瘴气叶子小小喵', miasma: 6, boss: { mute: 1 } }],
+      allyMon: LEAF_ALLY, allyOpt: true,
+      env: 'miasma', bg: 'fl_village', desc: '瘴气叶子小小喵（LV18）' },
+    cyVillage: { foe: '村口的守卫',
+      team: [{ sid: 'mush', lv: 20, nick: '瘴气玛西', miasma: 6, boss: { mute: 1 } }, { sid: 'mush', lv: 20, nick: '瘴气玛西', miasma: 6, boss: { mute: 1 } },
+        { sid: 'mush', lv: 20, nick: '瘴气玛西', miasma: 6, boss: { mute: 1 } }, { sid: 'leafcat', lv: 20, nick: '瘴气叶子小小喵', miasma: 6, boss: { mute: 1 } }],
+      allyMon: LEAF_ALLY, allyOpt: true,
+      env: 'miasma', bg: 'fl_village', desc: '瘴气玛西 ×3、瘴气叶子小小喵（LV20）' },
+    cyKaleo: { foe: '列队的卡莱', preStrike: true,   // 突然冲上来：卡莱第一回合先打出一招
+      team: [{ sid: 'kaleo', lv: 22, nick: '卡莱', miasma: 3 }, { sid: 'kaleo', lv: 23, nick: '卡莱', miasma: 3 }, { sid: 'kaleo', lv: 24, nick: '卡莱', miasma: 3 }],
+      allyMon: LEAF_ALLY, allyOpt: true,
+      bg: 'fl_beech', desc: '卡莱 ×3（LV22 / 23 / 24）' },
+    cyChenye: { foe: '辰爷',
+      team: [{ sid: 'kaleo', lv: 35, nick: '卡莱奥', miasma: 4 }, { sid: 'squid', lv: 40, nick: '邪恶水臂' }],
+      allyMon: LEAF_ALLY, allyOpt: true,
+      bg: 'fl_beech', desc: '辰爷的卡莱奥（LV35）、邪恶水臂（LV40）' },
+    cyBomb: { foe: '炸弹',   // 纯木桩：不会攻击、1000 体力，可以被打破；打到 700、300 时插播对话
+      team: [{ sid: 'dummy', lv: 30, nick: '炸弹', img: SPRITES.plantbomb, maxhp: 1000, breakable: true, moves: ['按兵不动'], ability: { n: '能量炸弹', d: 'Bttp 做的炸弹。不会攻击；不断注入能量（攻击它），外壳被打破时就会爆开' } }],
+      allyMon: LEAF_ALLY, allyOpt: true,
+      bg: 'fl_beech', desc: '往炸弹里注入能量（1000 体力，不会攻击）',
+      cuts: [
+        { hp: 700, lines: [
+          { s: 'cy', t: '……嗯？不好！你们在搞什么鬼？给我上！' },
+          { s: 'n', t: '辰爷一声大喝，林子里埋伏的卡莱潮水一样朝你们冲了过来。' },
+          { s: 'ms', t: '我们来了——！！' },
+          { s: 'n', t: '身后传来一片叫喊。是没被瘴气感染的玛西们！它们从四面八方的树丛里钻出来，组成了一支浩浩荡荡的联军，迎着卡莱冲了上去。' },
+          { s: 'n', t: '两边撞在一起，林子里一下子乱成一团。一时间难分胜负。' },
+          { s: 'n', t: '可是慢慢地，卡莱们靠着天生的战斗本能和瘴气的加持，一点点占了上风。' },
+          { s: 'v', t: '它们撑不了太久！{name}，继续注入能量！' }
+        ] },
+        { hp: 300, lines: [
+          { s: 'cy', t: '哈哈哈哈！偷偷摸摸的，在搞什么小动作呢？' },
+          { s: 'n', t: '玛西联军已经倒下了一大片，大部分被打晕在了地上。剩下的卡莱掉过头，朝你们围了过来。' },
+          { s: 'v', t: '加速注入能量！！快快快！！' }
+        ] }
+      ] },
+    cyGuards: { foe: '失去理智的精灵', bgm: 'disCommunication',   // 压迫感强的高形态：和战前剧情里的 dis-communication 接着放
+      team: [{ sid: 'wind', lv: 36, nick: '瘴气六尾风王', img: FORM_FX_SPRITES.wind.miasma, miasma: 8, boss: { erode: 1, mute: 1 } }, { sid: 'mush', lv: 38, nick: '瘴气玛西露姆', img: FORM_FX_SPRITES.mush.miasma, miasma: 8, boss: { erode: 1, mute: 1 } }],
+      allyMon: LEAF_ALLY, allyOpt: true,
+      env: 'miasma', bg: 'fl_salt', desc: '瘴气六尾风王（LV36）、瘴气玛西露姆（LV38）' }
+  };
+  function fightTeam(F, a) { return typeof F.team === 'function' ? F.team(a) : F.team; }
+  function resolveFoeEntry(x, rand) {
+    if (x.moves || x.boss || x.maxhp || x.nick || x.img) {
+      var defImg = x.sid === 'dummy' ? null : formImg(SPMAP[x.sid], ACC.stageOf(SPMAP[x.sid], x.lv));
+      var mv = x.moves || (x.boss && x.boss.mute && x.sid !== 'dummy' ? puppetMoves(x.sid) : ACC.defaultMoves(x.sid, x.lv));   // 「无法交流」：只会用攻击技能
+      return { id: x.sid, lv: x.lv, moves: mv, nick: x.nick, img: x.img || defImg, maxhp: x.maxhp, boss: x.boss, miasma: x.miasma, breakable: x.breakable, ability: x.ability };
+    }
+    var o = ACC.battleMon(null, { sid: x.sid, lv: x.lv, moves: ACC.foeMoves(x.sid, x.lv, undefined, rand || Math.random) }); if (x.miasma) o.miasma = x.miasma; return o;
+  }
+  MODES.story = {
+    // args = { key, allyOff }
+    start: function (a, args, env) {
+      var F = FIGHTS[String(args.key || '')]; if (!F) return { err: '没有这场剧情对战' };
+      var p, slots;
+      if (F.pteam) {
+        p = F.pteam.map(function (x) { return { id: x.sid, lv: x.lv, moves: x.moves || ACC.defaultMoves(x.sid, x.lv), nick: x.nick, img: x.img || formImg(SPMAP[x.sid], ACC.stageOf(SPMAP[x.sid], x.lv)) }; });
+        slots = p.map(function () { return null; });
+      } else {
+        var own = ACC.team(a); p = own.map(function (m) { return ACC.battleMon(a, m); }); slots = own.map(function (m) { return m.u; });
+        if (F.allyMon && !(F.allyOpt && args.allyOff)) { p = [resolveFoeEntry(F.allyMon, env.rand)].concat(p.slice(0, ACC.TEAM_SIZE - 1)); slots = [null].concat(slots.slice(0, ACC.TEAM_SIZE - 1)); }
+      }
+      var foes = fightTeam(F, a).map(function (x) { return resolveFoeEntry(x, env.rand); });
+      fightTeam(F, a).forEach(function (x) { if (SPMAP[x.sid]) ACC.seeMon(a, x.sid, x.lv); });
+      return { p: p, a: foes, ctx: { key: args.key, slots: slots }, dirty: true, preStrike: !!F.preStrike, S: { env: F.env || null }, opt: { foe: F.foe, bgm: F.bgm || null } };
+    },
+    end: function (a, c, B, env) {
+      var rep = { key: c.key, res: B.res, own: c.slots.some(function (u) { return u != null; }) };
+      var us = c.slots.filter(function (u) { return u != null; }), seen = c.slots.map(function (u, k) { return u != null ? !!(B.seen && B.seen[k]) : null; }).filter(function (v) { return v !== null; });
+      if (rep.own) rep.xp = ACC.battleXp(a, us, seen, B.downs, env);
+      return rep;
+    }
+  };
+
+  return { MODES: MODES, LEAF_ALLY: LEAF_ALLY, FIGHTS: FIGHTS, fightTeam: fightTeam, resolveFoeEntry: resolveFoeEntry, CUMBER: CUMBER, NPC_WIN_EXP: NPC_WIN_EXP, NPC_HOURS: NPC_HOURS, NPC_FROM: NPC_FROM, NPC_TO: NPC_TO, NPC_AI_RANK: NPC_AI_RANK, NPC: NPC, NPC_SECRET: NPC_SECRET, NPC_POOL: NPC_POOL, npcPlan: npcPlan, bjDay: bjDay, TEA_DAILY: TEA_DAILY, TEA_EXP: TEA_EXP, MM: MM, MM_NICK: MM_NICK, MM_TEAM: MM_TEAM, MM_TEAM_HARD: MM_TEAM_HARD, MM_DIFF: MM_DIFF, MM_FINAL: MM_FINAL, mmFoes: mmFoes, mmDay: mmDay, CHAL: CHAL, starOk: starOk, chalLevelOpen: chalLevelOpen, chalTotal: chalTotal, MM_HELPER: MM_HELPER, ONLY3: ONLY3, BOSSES: BOSSES, BOSS_CRY: BOSS_CRY, WEEKLIES: WEEKLIES, EWK: EWK, PERMIT: PERMIT, SECRET_FX: SECRET_FX,
     wkKey: wkKey, recKey: recKey, bossRec: bossRec, bossWon: bossWon, levelOpen: levelOpen, wkOpen: wkOpen, weeklyOpen: weeklyOpen, wkNum: wkNum, ewkPool: ewkPool, ewkType: ewkType, ewkSid: ewkSid,
     permits: permits, seedSeenFx: seedSeenFx, chalStars: chalStars, myTeam: myTeam,
     TOWER: TOWER, twLv: twLv, twExp: twExp, twTok: twTok, twFloor: twFloor, seeded: seeded, foeMoves: foeMoves, storyMon: storyMon,

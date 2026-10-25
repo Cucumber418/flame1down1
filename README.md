@@ -182,7 +182,7 @@ sudo git clone --depth 1 https://github.com/Cucumber418/flame1down1 /opt/flame1d
 **更多单人对战由服务器结算（2026-10-25 起，逐个模式搬）**：
 - 账号的核心规则（精灵实例、经验与升级、学习力、图鉴、战斗经验分配）搬到了 `js/engine/acc.js`（`ACC`），服务器和浏览器共用；game.js 里同名的函数（`mon`、`form`、`newMon`、`gainExp`、`giveEv`、`seeMon`……）现在只是转调它。
 - 新模式写在 `js/engine/pve.js` 的 `MODES[kind] = { start(a, args, env), end(a, ctx, B, env) }`：start 按存档和规则开一场（返回双方精灵、显示用的 opt、结算要用的 ctx），end 按规则发奖励、记战绩，直接改存档，返回发生了什么（rep）。`server/pve.js` 结算完把整份存档发回浏览器，game.js 用 `adoptAcc` 直接换上，再用 rep 写提示（`pveRemote` 是通用的开打流程）。
-- 已经接入：BOSS（`boss`）、每周挑战（`weekly`）、属性每周挑战（`ewk`）、星球挑战（`chal`，助战由服务器查好友名片：`social.js` 的 `friendHelper`；星级判定 `PVE.starOk` 用服务器上打完的对战状态）。另外还有明明教官的试炼（`mm`）、深渊潜底的？？？（`cumber`，每天一次，以服务器记的 `cumberFt` 为准）、朋友房间的对战（`npc`）、拜访茶室（`tea`，对手由 `social.js` 的 `homeFoes` 按主人茶室查）。它们的数据（`BOSSES`、`WEEKLIES`、`EWK`、挑战许可）也搬到了 pve.js，开放条件写成 `open(a, now)`。
+- 已经接入：BOSS（`boss`）、每周挑战（`weekly`）、属性每周挑战（`ewk`）、星球挑战（`chal`，助战由服务器查好友名片：`social.js` 的 `friendHelper`；星级判定 `PVE.starOk` 用服务器上打完的对战状态）。另外还有明明教官的试炼（`mm`）、深渊潜底的？？？（`cumber`，每天一次，以服务器记的 `cumberFt` 为准）、朋友房间的对战（`npc`）、拜访茶室（`tea`，对手由 `social.js` 的 `homeFoes` 按主人茶室查）。剧情对战（`story`，`FIGHTS` 搬进了 pve.js；偷袭 `preStrike` 由服务器在开打时先算一招，战斗中的插播对话仍在浏览器判断）。它们的数据（`BOSSES`、`WEEKLIES`、`EWK`、挑战许可）也搬到了 pve.js，开放条件写成 `open(a, now)`。
 - 只由服务器改的字段：`claims.js` 的 `OWNED`（塔的进度、`bosses` 战绩、`permit` 挑战许可、`chal` 挑战关卡记录、`mm.clr` / `mm.wins`、`cumberFt`、`npcWin`、`teaFight`；累计星数奖励 `chalStar` 的申报按服务器的星数核对），上传的存档里改了会悄悄改回去；由服务器直接发的奖励来源在 `SERVER_ONLY` 里，宽限期后浏览器申报的不认。
 
 **版本检查**：服务器启动时按网页、样式、脚本的内容算一个版本号（`GET /api/version`）。开着的页面每 3 分钟、以及切回页面时检查一次，发现服务器上的版本变了就弹窗提示刷新；用旧页面兑换东西时服务器会拒绝（不扣费）并提示刷新。

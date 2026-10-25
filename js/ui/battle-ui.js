@@ -614,7 +614,7 @@
     showTab('moves'); refreshCmd();
     window.scrollTo({ top: 0, behavior: 'smooth' });
     storyCuts = (opt.cuts || []).map(function (c) { return { hp: c.hp, lines: c.lines, done: false }; });
-    if (opt.preStrike) preStrike();
+    if (remote && opt.preEvs && opt.preEvs.length) prePlay(opt.preEvs); else if (opt.preStrike && !remote) preStrike();
     drawStars();
   }
   var storyEnd = null, itemUsed = null, storyCuts = [];
@@ -644,6 +644,7 @@
     // 打完了：马上把结算结果记进本机存档（在播放动画之前），免得这期间自动上传的还是旧存档
     if (r.end) { app.S.srvEnd = r.end; if (srvEnd) { var f0 = srvEnd; srvEnd = null; try { f0(r.end); } catch (e) { console.error(e); } } }
     await play(r.evs || []);
+    for (var cut = cutDue(); cut; cut = cutDue()) { renderSnap(snap(app.S)); await playCut(cut); }
     busy = false; afterTurn();
   }
   // 星球挑战：对战界面顶部可以拉下来的「星级要求」面板（opt.stars = { title, list(S) → [{ t, st, s, had }] }）
@@ -659,6 +660,12 @@
       (starOpen ? '<div class="sp-panel"><b>' + esc(starOpt.title) + '</b><ol>' + L.map(function (x) { return '<li class="sp-' + x.st + '"><span class="sp-star">' + (x.had ? '★' : '☆') + '</span><span class="sp-t">' + esc(x.t) + '</span><em>' + esc(x.s) + '</em></li>'; }).join('') + '</ol><p class="hint">★ 表示之前已经拿到过这颗星。「保持中」「目前满足」要坚持到战斗结束才算数。</p></div>' : '');
   }
   // 剧情对战：对方偷袭，开场先打出一招（玩家这一回合不行动），然后正常开始。界面上不额外说明
+  async function prePlay(evs) {   // 服务器结算的对战：播放服务器算好的偷袭
+    busy = true; refreshCmd();
+    await new Promise(function (r) { setTimeout(r, 450); });
+    await play(evs);
+    busy = false; afterTurn();
+  }
   async function preStrike() {
     var S = app.S; if (!S || S.over) return;
     busy = true; refreshCmd();
