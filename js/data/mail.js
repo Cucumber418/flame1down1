@@ -21,6 +21,11 @@ var MAILS = [
     att: { exp: 300000, items: { c_flower: 100, c_herb: 100 } }
   },
   {
+    id: 'kbdrop-leiming-1025', date: '2026-10-25', from: '荆楚号舰务处', title: '不化水滴补发', to: ['雷明尊者'],
+    body: '{name}，你好！\n这是补发给你的不化水滴 ×500，请领取附件。',
+    att: { items: { kbDrop: 500 } }
+  },
+  {
     id: 'gift-leiming-shiny', date: '2026-10-22', from: '荆楚号舰务处', title: '一只特别的雷明灯', to: ['雷明尊者'],
     body: '{name}，你好！\n新精灵「雷明灯」登场了。这是专门给你准备的一只异色雷明灯（LV10），请领取附件。',
     att: { mons: [{ sid: 'leiming', lv: 10, shiny: 1 }] }

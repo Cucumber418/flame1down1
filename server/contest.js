@@ -197,6 +197,43 @@ function tick(now) {
   if (changed) storeAll(all);
   return c;
 }
+// 2026-10-25：Cucumber418 和 雷明尊者 刚打完的那场 bo3 作废，重新打（只运行一次，记在 c.fixes）。
+// 如果这场打完后这一轮已经结束、开了下一轮（下一轮还一场都没打），就撤回下一轮，回到这一轮。结果写在 c.fixes['rematch-cu-lm']，GET /api/ctfix 查看
+function isU(u, names) { var l = String(u).toLowerCase(), g = gname(u); return names.some(function (n) { return l === n.toLowerCase() || g === n; }); }
+function fixRematch(now) {
+  var all = loadAll(), c = cur(all); if (!c.fixes) c.fixes = {};
+  var KEY = 'rematch-cu-lm'; if (c.fixes[KEY]) return;
+  var rep = { at: now, ok: false, note: '' };
+  var hit = null;
+  for (var ri = c.rounds.length - 1; ri >= 0 && !hit; ri--) c.rounds[ri].pairs.forEach(function (p, pi) {
+    if (hit) return;
+    var x = isU(p.a, ['Cucumber418', 'Cucumber41']) && isU(p.b, ['雷明尊者']), y = isU(p.b, ['Cucumber418', 'Cucumber41']) && isU(p.a, ['雷明尊者']);
+    if (x || y) hit = { ri: ri, pi: pi };
+  });
+  if (!hit) { rep.note = '没有找到这两人的对局'; c.fixes[KEY] = rep; storeAll(all); return; }
+  var R = c.rounds[hit.ri], p = R.pairs[hit.pi];
+  rep.before = { round: R.n, final: !!R.final, w: p.w, score: p.score, how: p.how };
+  if (!p.w) { rep.note = '这场还没有结果，不用处理'; c.fixes[KEY] = rep; storeAll(all); return; }
+  if (hit.ri < c.rounds.length - 1) {   // 这一轮已经结束、开了下一轮
+    var nx = c.rounds[c.rounds.length - 1];
+    if (hit.ri !== c.rounds.length - 2 || nx.pairs.some(function (q) { return q.w; })) { rep.note = '之后的轮次已经有结果了，没有自动处理'; c.fixes[KEY] = rep; storeAll(all); return; }
+    c.rounds.pop(); delete R.closed; c.seen = {};
+    c.notices = c.notices.filter(function (n) { return !(n && (n.round === R.n || n.round === nx.n) && n.t >= (p.at || 0)); });
+    if (c.status === 'final' && !R.final) c.status = 'swiss';
+    rep.undoRound = nx.n;
+  }
+  if (R.final && c.status === 'done') { c.status = 'final'; c.ranks = null; }
+  p.w = null; p.score = null; p.how = null; delete p.at; p.voided = (p.voided || []).concat([{ t: now, replays: p.replays || [] }]); p.replays = [];
+  if (R.deadline < now + 24 * 3600e3) R.deadline = now + 24 * 3600e3;   // 留出至少 24 小时重新打
+  notice(c, NAME + ' · 对局重赛', gname(p.a) + ' 和 ' + gname(p.b) + ' 第 ' + R.n + ' 轮的对局作废，需要重新打一场 bo3。这一轮截止时间：' + new Date(R.deadline + BJ).toISOString().slice(5, 16).replace('T', ' ') + '。', { round: R.n });
+  rep.ok = true; rep.deadline = R.deadline; c.fixes[KEY] = rep; storeAll(all);
+  console.log('[contest] 对局作废重赛：' + p.a + ' vs ' + p.b);
+}
+setTimeout(function () { try { fixRematch(Date.now()); } catch (e) { console.log('[contest] fixRematch', e && e.stack); } }, 3000);
+A.use(function (req, res, url) {
+  if (url !== '/api/ctfix') return false;
+  var c = cur(loadAll()); A.reply(res, 200, (c.fixes && c.fixes['rematch-cu-lm']) || { pending: true }); return true;
+});
 setInterval(function () { try { tick(); } catch (e) { console.log('[contest]', e.message); } }, TICK_MS);
 
 /* ---------- 给 social.js 用的接口 ---------- */
