@@ -91,7 +91,7 @@
     try {
       if ((!acc || acc.name !== '测试') && localStorage.getItem(KEY) && !localStorage.getItem(KEY + '-user')) localStorage.setItem(KEY + '-user', localStorage.getItem(KEY));
     } catch (e) {}
-    if (!acc || acc.name !== '测试') acc = { v: 1, name: '测试', created: Date.now(), starter: 'leaf', rival: null, next: 1, mons: [], teams: [[], []], active: 0, introDone: true, story: {}, exp: 5000, energy: 20000, items: { cap1: 5, pot1: 5 } };
+    if (!acc || acc.name !== '测试') acc = { v: 1, name: '测试', created: Date.now(), starter: 'leaf', rival: null, next: 1, mons: [], teams: [[], []], active: 0, introDone: true, story: {}, exp: 5000, energy: 20000, items: { cap1: 5, pot200: 5 } };
     if (!acc.story) acc.story = {};
     ['school', 'river', 'jiuquan', 'board', 'flora1', 'tea'].forEach(function (id) {
       var p = acc.story[id] || (acc.story[id] = {});
@@ -103,7 +103,7 @@
     // 只补一次。星砂够做约 50 个加强装置，星核够做 1 个华为装置，药草够做 100 瓶 200hp药水。
     if (acc.testKit !== 2) {
       var testStock = {
-        cap1: 10, cap2: 10, cap3: 1, pot1: 10, pot2: 10, pot200: 10,
+        cap1: 10, cap2: 10, cap3: 1, pot100: 10, pot200: 10,
         evAny: 5, evTagore: 5, natTagore: 5, trans: 1, helmet: 1, auto: 1, rename: 3,
         g_sand: 96, g_core: 4, s_herb: 4, c_herb: 200
       };
@@ -989,7 +989,7 @@
     var evt = MAT_ORDER.filter(function (k) { return listed.indexOf(k) < 0; });
     return [
       { id: 'mon', n: '精灵培养', hint: '直接用在精灵身上。也可以在精灵背包、仓库里点开精灵，在资料里使用。', subs: [['特产 · 隐藏技能与等级上限', byKind(['jade'])], ['性格 · 天赋 · 学习力', byKind(['nat', 'iv', 'iv2', 'ev', 'evreset'])], ['经验', byKind(['exp'])], ['形态', byKind(['form'])]] },
-      { id: 'battle', n: '战斗道具', hint: '在剧情、野外、BOSS对战的「道具」页使用。', subs: [['捕捉装置', ['cap1', 'cap2', 'cap3']], ['补药', ['pot1', 'pot2', 'pot100', 'pot200']], ['PP 药水', ['pp10', 'pp20', 'pp5', 'pp15']]] },
+      { id: 'battle', n: '战斗道具', hint: '在剧情、野外、BOSS对战的「道具」页使用。', subs: [['捕捉装置', ['cap1', 'cap2', 'cap3']], ['hp药水', ['pot100', 'pot200']], ['PP 药水', ['pp10', 'pp20', 'pp5', 'pp15']]] },
       { id: 'mat', n: '材料', hint: '拿到黄石 · 冶炼坊合成，或者用在种植园、保育仓。', subs: [['采集物', GATHER_ORDER], ['种子', SEED_ORDER], ['作物', CROP_ORDER], ['精灵素材与精元', listed], ['活动道具', evt]] },
       { id: 'other', n: '其他', hint: '功能道具点开后使用；剧情道具不会消耗。', subs: [['功能道具', ['rename', 'auto'].concat(wk ? ['permit'] : [])], ['剧情道具', Object.keys(KEY_ITEMS)]] }
     ];
@@ -1914,7 +1914,7 @@
   function wildKnown(sid) { return owned(sid) ? 'own' : acc.seen && acc.seen[sid] !== undefined ? 'seen' : ''; }
   function invLine() {
     var cap = ['cap1', 'cap2', 'cap3'].map(function (k) { return ITEMS[k].name.replace('精灵捕捉装置', '') + ' ×' + (acc.items[k] || 0); }).join('　');
-    var pot = ['pot1', 'pot2', 'pot100', 'pot200'].map(function (k) { return ITEMS[k].name + ' ×' + (acc.items[k] || 0); }).join('　');
+    var pot = ['pot100', 'pot200'].map(function (k) { return ITEMS[k].name + ' ×' + (acc.items[k] || 0); }).join('　');
     return '<div class="inv"><span><b>捕捉装置</b>　' + cap + '</span><span><b>补药</b>　' + pot + '</span>' +
       (shopOpen() ? '<button type="button" class="btn" data-goshop="1">去物资仓储兑换</button>' : '<span class="hint">在荆楚号 · 荆门 · 物资仓储读完支线后开放商城</span>') + '</div>';
   }
@@ -4892,8 +4892,8 @@
   var SHOP_X = { rename: { name: '改名卡', price: TX.D.RENAME_PRICE, d: '使用后可以修改做题家名字（最多 ' + NAME_MAX + ' 个字）。兑换后点右上角的名字，在菜单里使用。' } };
   function goods(k) { return ITEMS[k] || SHOP_X[k]; }
   function renderShop() {
-    var grp = [['捕捉装置', ['cap1']], ['体力补药', ['pot1', 'pot2']], ['其他', ['rename']]];
-    $('pg-explore').innerHTML = exHead('荆楚号 · 荆门物资仓储的商城。这里用能量兑换普通捕捉装置、体力补药和强能体力补药。加强捕捉装置、华为捕捉装置和 200hp药水在黄石 · 冶炼坊合成。') +
+    var grp = [['捕捉装置', ['cap1']], ['其他', ['rename']]];
+    $('pg-explore').innerHTML = exHead('荆楚号 · 荆门物资仓储的商城。这里用能量兑换普通捕捉装置和改名卡。加强捕捉装置、华为捕捉装置和 200hp药水在黄石 · 冶炼坊合成。') +
       '<div class="crumb"><button type="button" class="btn ghost" id="ex-area">‹ 返回物资仓储</button><b>物资仓储 · 商城</b></div>' +
       '<div class="shop-bal"><span class="tape l"></span>当前能量 <b>' + fmt(acc.energy) + '</b></div>' +
       grp.map(function (g) {

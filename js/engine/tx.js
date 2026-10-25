@@ -18,7 +18,8 @@ var TX = (function () {
   /* ---------- 价格表 ---------- */
   var D = {
     // 荆门 · 物资仓储的商城（能量）：捕捉装置、补药的价格写在 battle.js 的 ITEMS 里
-    SHOP: ['cap1', 'pot1', 'pot2', 'rename'], SHOP_MAX: 99, RENAME_PRICE: 1000,
+    SHOP: ['cap1', 'rename'],   // 2026-10-25：体力补药、强能体力补药下架
+    SHOP_MAX: 99, RENAME_PRICE: 1000,
     // 竞技代币商店
     TOKEN_SHOP: [
       { k: 'moonStone', price: 2 }, { k: 'boneDust', price: 2 },   // 2026-10-18：小月亮、骨刃的隐藏技能和等级上限道具

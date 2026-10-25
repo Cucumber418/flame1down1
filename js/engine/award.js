@@ -190,6 +190,17 @@ var AWD = (function () {
       if (M0.until && today > M0.until) return;
       send(a, M0, now);
     });
+    // 2026-10-25：体力补药、强能体力补药移除。手里的换成同样数量的 200hp药水，并按商城价退还能量（100 / 250）；
+    // 2026-10-26 0 点（北京时间）前登船的船员另外补偿 50000 累积经验。都放在一封邮件里
+    if (!seen['pot-swap']) {
+      var PI = a.items || {}, p1 = Math.max(0, PI.pot1 | 0), p2 = Math.max(0, PI.pot2 | 0), pn = p1 + p2, pe = p1 * 100 + p2 * 250;
+      delete PI.pot1; delete PI.pot2;
+      var oldAcc = (a.created || 0) < Date.UTC(2026, 9, 25, 16, 0, 0);
+      if (pn || oldAcc) send(a, { id: 'pot-swap', title: '体力补药下架 · 替换与补偿', body: '{name}，你好！\n「体力补药」和「强能体力补药」已经下架，以后对战中回复体力请使用 hp药水（在黄石 · 冶炼坊用药草合成）。' +
+        (pn ? '\n你手里的 ' + (p1 ? '体力补药 ×' + p1 : '') + (p1 && p2 ? '、' : '') + (p2 ? '强能体力补药 ×' + p2 : '') + ' 已经收回，换成同样数量的 200hp药水，并退还购买时花费的能量 ×' + fmt(pe) + '。' : '') +
+        (oldAcc ? '\n另外送上累积经验 ×50,000 作为补偿。' : '') + '\n请领取附件。', att: { exp: oldAcc ? 50000 : 0, energy: pe, items: pn ? { pot200: pn } : undefined } }, now);
+      else seen['pot-swap'] = now;
+    }
     // 2026-10-21：先驱之塔奖励提高，给之前爬过塔的船员补差额
     if (!seen['tower-x10']) {
       var TW0 = a.tower, nf = TW0 ? (TW0.clears || 0) * PVE.TOWER.top + Math.max(0, (TW0.f || 1) - 1) : 0, ce = 0, ct = 0;
