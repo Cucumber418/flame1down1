@@ -77,7 +77,12 @@ function saveAcc(u, acc) {
 
 // 开一场其他模式的对战
 function startMode(E, res, name, kind, u, acc, args) {
-  delete args._helper;
+  delete args._helper; delete args._foes; delete args._owner;
+  if (kind === 'tea') {   // 对手按主人茶室里展示的精灵，服务器自己查
+    var H = require('./social').homeFoes(String(args.owner || ''), name);
+    if (!H || !H.mons.length) return A.reply(res, 400, { error: '这个茶室现在没法挑战' });
+    args._foes = H.mons; args._owner = H.owner;
+  }
   if (kind === 'chal' && args.helper) {   // 助战：明明教官的，或好友名片上的（服务器自己查，不信浏览器给的资料）
     if (args.helper === 'mm') { if (E.ACC.done(acc, 'fl_chal2')) args._helper = E.PVE.MM_HELPER; }
     else if (typeof args.helper === 'object') args._helper = require('./social').friendHelper(u, String(args.helper.user || ''), args.helper.u | 0);

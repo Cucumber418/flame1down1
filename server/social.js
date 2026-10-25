@@ -780,4 +780,10 @@ function friendHelper(me, owner, unit) {
   var hm = helpersOf(fa).filter(function (m) { return m.u === unit; })[0];
   return hm ? { owner: str(fa.name, 20) || fu.name, mon: monOut(hm, fa) } : null;
 }
-module.exports = { friendHelper: friendHelper, toAll: function (obj) { allSockets.forEach(function (w) { if (w.user) out(w, obj); }); }, castLabel: function (name) { var c = castOf(name); return c ? c.cast.head.label : null; }, isBusy: isBusy, toUser: toUser, gameName: gameName, isOnline: isOnline, avatarOf: function (name) { var u = A.loadUser(name), acc = u && parseSave(u).acc; return acc ? avatarOf(acc) : null; }, onMessage: onMessage, onOpen: onOpen, onClose: onClose, onlineCount: function () { return Object.keys(online).length; } };
+// 拜访别人的茶室时的对手（server/pve.js 用）：主人茶室里展示的精灵
+function homeFoes(owner, me) {
+  var hu = A.loadUser(owner), ha = hu && parseSave(hu).acc; if (!ha || !ha.introDone || hu.name === me) return null;
+  var hm = homeOf(ha); if (!hm.open) return null;
+  return { owner: str(ha.name, 20) || hu.name, mons: hm.mons.map(function (m) { return monOut(m, ha); }) };
+}
+module.exports = { friendHelper: friendHelper, homeFoes: homeFoes, toAll: function (obj) { allSockets.forEach(function (w) { if (w.user) out(w, obj); }); }, castLabel: function (name) { var c = castOf(name); return c ? c.cast.head.label : null; }, isBusy: isBusy, toUser: toUser, gameName: gameName, isOnline: isOnline, avatarOf: function (name) { var u = A.loadUser(name), acc = u && parseSave(u).acc; return acc ? avatarOf(acc) : null; }, onMessage: onMessage, onOpen: onOpen, onClose: onClose, onlineCount: function () { return Object.keys(online).length; } };

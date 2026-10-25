@@ -2520,7 +2520,7 @@ function foeEv(lv) { return ACC.foeEv(lv); }
     d.addEventListener('click', function (e) { var b = e.target.closest('[data-npb]'); if ((e.target === d && o.close !== false) || b) { d.remove(); var fn = b && o.btns[+b.dataset.npb][1]; if (fn) fn(); } });
   }
   /* ---------- 深渊实验室的？？？（静默）：到达坎伯兰星 · 深海的「深渊潜底」时 5% 概率遇到，每天最多一次 ---------- */
-  var CUMBER = { bg: 'kb_abyss', chance: 0.05, cry: 100, team: [{ sid: 'gorgon', lv: 100 }, { sid: 'siren', lv: 100 }] };
+  var CUMBER = PVE.CUMBER;
   function cumberSay(face, line, btns) { npcDlg({ name: '？？？', img: CHARS[face] || CHARS.cumber, face: 'lz', lines: [line], btns: btns, close: false }); }
   function cumberCheck() {
     if (!ready() || ex.fighting || ex.view !== 'field' || document.querySelector('.soc-dlg')) return;
@@ -2530,6 +2530,18 @@ function foeEv(lv) { return ACC.foeEv(lv); }
     cumberSay('cumber', '……你怎么在这里？', [['……', function () { cumberFight(sc.bg); }]]);
   }
   function cumberFight(bg) {
+    if (srvMode()) return pveRemote('cumber', {}, { bg: bg || null, back: '深渊潜底', pre: function () { stopField(); $('pg-explore').hidden = true; } }, function (e, res) {
+      var msg = [], r = e && e.rep;
+      if (r) { msg = xpMsg(r.xp); dailyHit('pve'); save(); }
+      ex.fighting = false; document.body.classList.remove('story-fight');
+      $('pg-arena').hidden = page !== 'arena'; $('pg-explore').hidden = page !== 'explore';
+      renderTop(); syncBattle(); if (page === 'explore' && ex.view === 'field') renderField();
+      if (msg.length) toast(msg.join(''));
+      setTimeout(function () {
+        if (r && r.res === 'win') cumberSay('cumber_smile', '我们会再见面的。', [['收下', function () { toast('获得' + itemName('m_mcry') + ' ×' + r.cry + '，已放入储存箱。'); }]]);
+        else cumberSay('cumber_close', '这不是你该来的地方。', [['……', null]]);
+      }, 600);
+    });
     var team = (acc.teams[acc.active] || []).map(mon).filter(Boolean); if (!team.length) team = acc.mons.slice(0, 1);
     team = team.slice(0, TEAM_SIZE);
     var a = CUMBER.team.map(function (x) { return storyMon({ sid: x.sid, lv: x.lv, moves: foeMoves(x.sid, x.lv) }); });
@@ -3852,7 +3864,7 @@ function dayStr() { return ACC.dayStr(Date.now()); }   // 北京时间的日期�
   };
   var DAILY_X10_OLD = { ar_play3: 600, ar_rank2: 800, ar_win1: 1000, ar_sand1: 400, bw_1: 1000, bw_win1: 1200, wd_win5: 800, wd_catch1: 600, bs_1: 600, hm_1: 600, pve_2: 600 };   // 2026-10-18 晚：每日任务经验提高（×5）之前的经验（补差额用）
   var DAILY_OLD = { ar_play3: [300, 100], ar_rank2: [400, 120], ar_win1: [500, 150], ar_sand1: [200, 80], wd_win5: [400, 120], wd_catch1: [300, 150], bs_1: [300, 100], hm_1: [300, 100], pve_2: [300, 100] };   // 翻倍前的奖励（补差额用）
-  function todayKey() { var d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+function todayKey() { return PVE.bjDay(Date.now()); }   // 北京时间（2026-10-25 起和服务器一致）
   function seededRng(str) { var x = 7; for (var i = 0; i < str.length; i++) x = (x * 31 + str.charCodeAt(i)) % 2147483647; return function () { x = (x * 48271) % 2147483647; return x / 2147483647; }; }
   function pickN(list, n, rnd) { var a = list.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(rnd() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; } return a.slice(0, n); }
   function daily() {
@@ -4879,15 +4891,8 @@ function seedSeenFx() { if (PVE.seedSeenFx(acc, Date.now())) save(); }
    * 明明代币在航行日志或场地里抽奖：10 个抽一次、100 个十连；每个奖池 20 个固定奖励，抽完进下一个奖池（每天最多解锁 100 个奖池）。
    * 存档 acc.mm = { clr: { '水:0': 首通时间 }, wins: 次数, g: { n 当前奖池, left [剩余奖励序号], d 日期, opened 今天解锁的奖池数 } } */
   var BJ_DAY = 86400000;
-  var MM = { start: Date.UTC(2026, 9, 23, 16, 0, 0), end: Date.UTC(2026, 10, 15, 16, 0, 0), order: ['水', '火', '草', '电', '冰'] };   // 2026-10-24 00:00 ~ 2026-11-16 00:00（北京时间）
-  var MM_NICK = { gorgon: '明明的蛇', pede: '明明的鱼', hephaestus: '明明的甲虫', firemouse: '明明的鼠鼠', wind: '明明的萝卜', mush: '明明的蘑菇', kaleo: '明明的大虫子', squid: '明明的水臂', leaf: '明明的力果', shroom: '明明的方头' };
-  var MM_TEAM = { 水: ['pede', 'squid', 'gorgon'], 火: ['firemouse', 'shroom', 'hephaestus'], 草: ['mush', 'leaf', 'kaleo'], 电: ['faraday', 'leigong', 'faraday'], 冰: ['frost', 'wild', 'frost'] };
-  var MM_TEAM_HARD = { 草: ['mush', 'leaf', 'wind'] };
-  var MM_DIFF = [
-    { n: '通常', lv: [40, 45, 55], tok: [10, 15], first: { tok: 30, exp: 20000 }, hp3: 1500, fx3: { dr: 0.15, focus: 1, pp: 99 } },   // 2026-10-24：第三只显著加强（hp3 体力、fx3 特性）
-    { n: '高难', lv: [75, 75, 75], tok: [30, 40], first: { tok: 80, exp: 50000 }, fx: [{ mmGift: 1, pp: 99 }, { mmGift: 1, pp: 99 }, { mmGift: 1, dr: 0.25, focus: 1, pp: 99 }], lv3: 80, hp3: 3500 }
-  ];
-  var MM_FINAL = { tok: [50, 60], first: { tok: 120, exp: 80000 } };
+  // 活动的时间、关卡、奖励在 js/engine/pve.js（服务器和浏览器共用，2026-10-25）
+  var MM = PVE.MM, MM_NICK = PVE.MM_NICK, MM_TEAM = PVE.MM_TEAM, MM_TEAM_HARD = PVE.MM_TEAM_HARD, MM_DIFF = PVE.MM_DIFF, MM_FINAL = PVE.MM_FINAL;
   MATS.mmTok = { name: '明明代币', d: '活动「明明教官的试炼」里通过关卡获得，可以在全息作战场地或航行日志里抽奖：10 个抽一次，100 个十连。' };
   MATS.e_leiming = { name: '雷明灯的精元', d: '明明代币抽奖第 10 个奖池里的奖励。放进神农架 · 精灵保育仓，孵化 8 小时后会诞生一只雷明灯。', hatch: { sid: 'leiming', lv: 1, min: 480 } };
   USE_ITEMS.mmEye = { name: '雷明之眼', sid: null, sids: ['leiming'], kind: 'jade', cost: 100, sd: '雷明灯一系的专属道具。100 个可以让一只雷明灯一系领悟一个隐藏技能。', d: '明明代币抽奖第 20、30 个奖池里的奖励，每次 100 个。100 个可以让一只雷明灯一系（进化前的形态也可以）领悟一个还没领悟的隐藏技能。' };
@@ -4899,10 +4904,7 @@ function seedSeenFx() { if (PVE.seedSeenFx(acc, Date.now())) save(); }
   function mmOpen() { return !!acc && prog('mmTrial').done && mmLive(); }
   function mmStageOpen(i) { return mmDay() >= i; }   // i = 0..4 五个属性，5 = 最终试炼
   function mmOpenText(i) { var t = MM.start + i * BJ_DAY, d = new Date(t + 8 * 3600e3); return (d.getUTCMonth() + 1) + ' 月 ' + d.getUTCDate() + ' 日开放'; }
-  function mmFoes(type, d) {
-    var L = MM_DIFF[d], sids = (d && MM_TEAM_HARD[type]) || MM_TEAM[type];
-    return sids.map(function (sid, k) { var o = { sid: sid, lv: L.lv[k], nick: MM_NICK[sid] || null }; if (L.fx) o.boss = JSON.parse(JSON.stringify(L.fx[k])); if (k === 2) { if (L.fx3) o.boss = JSON.parse(JSON.stringify(L.fx3)); if (L.lv3) o.lv = L.lv3; o.maxhp = L.hp3; } return o; });
-  }
+function mmFoes(type, d) { return PVE.mmFoes(type, d); }
   function mmFinalFoes() {
     var pool = []; MM.order.forEach(function (t) { ((MM_TEAM_HARD[t]) || MM_TEAM[t]).forEach(function (sid) { if (pool.indexOf(sid) < 0) pool.push(sid); }); });
     var a = pool[Math.floor(Math.random() * pool.length)], b; do { b = pool[Math.floor(Math.random() * pool.length)]; } while (b === a);
@@ -4914,8 +4916,27 @@ function seedSeenFx() { if (PVE.seedSeenFx(acc, Date.now())) save(); }
     seeMon(x.sid, x.lv); return o;
   }
   function mmTokRange(d) { return d === 'f' ? MM_FINAL.tok : MM_DIFF[d].tok; }
+  function mmStartRemote(key, d) {
+    var fin = key === 'final';
+    pveRemote('mm', { key: key, d: d }, { bg: BG.bridge_p, back: '全息作战场地' }, function (e, res) {
+      var msg = [];
+      if (e) {
+        var r = e.rep;
+        dailyHit('pve');
+        if (r.res === 'win') {
+          msg.push('通过了' + (fin ? '「明明的最终试炼」' : key + '系关卡（' + MM_DIFF[d].n + '）') + '！获得明明代币 ×' + r.tok + '。');
+          if (r.first) msg.push('首次通过奖励：明明代币 ×' + r.first.tok + '、累积经验 ×' + fmt(r.first.exp) + '、星核 ×1。');
+        }
+        msg = msg.concat(xpMsg(r.xp));
+        save();
+      } else if (res === 'void') msg.push('这场对战作废了。');
+      bossBack('mmArena', function () {});
+      if (msg.length) toast(msg.join(''));
+    });
+  }
   function mmStart(key, d) {   // key = 属性 或 'final'
     if (!mmOpen()) return;
+    if (srvMode()) return mmStartRemote(key, d ? 1 : 0);
     var team = (acc.teams[acc.active] || []).map(mon).filter(Boolean); if (!team.length) team = acc.mons.slice(0, 1);
     team = team.slice(0, TEAM_SIZE);
     var fin = key === 'final', foes = fin ? mmFinalFoes() : mmFoes(key, d), a = foes.map(mmFoeSpec);
@@ -5667,42 +5688,16 @@ function seedSeenFx() { if (PVE.seedSeenFx(acc, Date.now())) save(); }
    * 时段和携带的精灵都用「北京时间的日期」做种子算出来，所有玩家同一天看到的一样（全服共通）。
    * 精灵等级 = 玩家出战配队平均等级 −5 / 0 / +5（三个等级随机分给三只）。电脑操作为白银段位水平。
    * 胜利奖励 3000 累积经验，每个人每天最多领一次。 */
-  var NPC_WIN_EXP = 3000, NPC_HOURS = 3, NPC_FROM = 9, NPC_TO = 24, NPC_AI_RANK = 2;
-  var NPC = {
-    t: { name: 'Threego', pron: '她', img: 'threego', fixed: [{ slot: 0, sid: 'leafcat' }], away: '她每天会在某个时间回房间待一阵子。',
-      lines: [['', '哟，{name}！我的叶子喵最近可厉害了，要不要来试试？'], ['laugh', '嘿嘿，今天我状态超好，输了可别哭鼻子哦！'], ['smile', '点点的消息还没查到……先陪我打一场散散心吧。']] },
-    h: { name: 'Dr.黄', pron: '他', img: 'drh', fixed: [{ slot: -1, sid: 'aegis' }], away: '他每天会在某个时间回房间待一阵子。',
-      lines: [['', '哦？你来得正好。至高之盾的防御，你破得了吗？'], ['grin', '我在孝感大厅打了很久很久……今天换你陪我练练。'], ['oh', '哦！是{name}啊。来都来了，切磋一下？']] },
-    b: { name: 'Bttp', pron: '他', img: 'bttp', fixed: [{ slot: 2, sid: 'bone' }], away: '他每天会在某个时间回房间待一阵子。',
-      lines: [['god', '神已经算到你会来了。'], ['', '我的精灵排序是有讲究的，尤其是第三只。'], ['smile', '要不要验证一下你最近的进步？来吧。']] }
-  };
-  // 随机池：竞技对战的 24 只，去掉剧情里还没揭晓的BOSS「荒芜」和神秘精灵「哈尔达蒙」（避免提前在黄冈秘鉴里解锁名字）
-  var NPC_SECRET = ['barren', 'hauris'];
-  var NPC_POOL = SP.map(function (x) { return x.id; }).filter(function (id) { return SPMAP[id] && SPRITES[id] && NPC_SECRET.indexOf(id) < 0; });
+  // 朋友们的房间：NPC 资料和每天的安排在 js/engine/pve.js（服务器和浏览器共用，2026-10-25）
+  var NPC_WIN_EXP = PVE.NPC_WIN_EXP, NPC_HOURS = PVE.NPC_HOURS, NPC_FROM = PVE.NPC_FROM, NPC_TO = PVE.NPC_TO, NPC_AI_RANK = PVE.NPC_AI_RANK, NPC = PVE.NPC, NPC_SECRET = PVE.NPC_SECRET, NPC_POOL = PVE.NPC_POOL;
   function bjNow() { return new Date(Date.now() + 8 * 3600e3); }
-  function bjDay() { var d = bjNow(); return d.getUTCFullYear() + '-' + (d.getUTCMonth() + 1) + '-' + d.getUTCDate(); }
+function bjDay() { return PVE.bjDay(Date.now()); }
   function seeded(str) {
     var h = 2166136261;
     for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
     return function () { h = (h + 0x6D2B79F5) | 0; var t = Math.imul(h ^ (h >>> 15), 1 | h); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   }
-  function npcPlan(k, day) {
-    var r = seeded('npc|' + (day || bjDay()) + '|' + k), N = NPC[k];
-    var start = NPC_FROM + Math.floor(r() * (NPC_TO - NPC_FROM - NPC_HOURS + 1));
-    var slots = [null, null, null];
-    N.fixed.forEach(function (f) { slots[f.slot >= 0 ? f.slot : Math.floor(r() * 3)] = f.sid; });
-    var pool = NPC_POOL.filter(function (id) { return !N.fixed.some(function (f) { return f.sid === id; }); });
-    slots = slots.map(function (x) {
-      if (x) return x;
-      var id; do { id = pool[Math.floor(r() * pool.length)]; } while (slots.indexOf(id) >= 0);
-      return id;
-    });
-    // 防止随机到同一只：上面的 do/while 只防了已经定下的位置，这里再去重一次
-    slots.forEach(function (x, i) { if (slots.indexOf(x) !== i) { var alt = pool.filter(function (id) { return slots.indexOf(id) < 0; }); slots[i] = alt[Math.floor(r() * alt.length)]; } });
-    var rel = [-5, 0, 5];
-    for (var i = 2; i > 0; i--) { var j = Math.floor(r() * (i + 1)), t = rel[i]; rel[i] = rel[j]; rel[j] = t; }
-    return { start: start, end: start + NPC_HOURS, team: slots.map(function (sid, i) { return { sid: sid, rel: rel[i], nat: NAT_KEYS[Math.floor(r() * NAT_KEYS.length)] }; }) };
-  }
+function npcPlan(k, day) { return PVE.npcPlan(k, day || bjDay()); }
   function npcHome(k) { if (!NPC[k]) return false; var P = npcPlan(k), d = bjNow(), h = d.getUTCHours() + d.getUTCMinutes() / 60; return h >= P.start && h < P.end; }
   function npcWon(k) { return !!(acc.npcWin && acc.npcWin.d === bjDay() && acc.npcWin[k]); }
   function teamAvgLv() {
@@ -5730,6 +5725,18 @@ function seedSeenFx() { if (PVE.seedSeenFx(acc, Date.now())) save(); }
   }
   function npcFight(k) {
     if (!npcHome(k)) { toast(NPC[k].name + ' 刚刚出门了。'); renderRoom(); return; }
+    if (srvMode()) return pveRemote('npc', { k: k }, { bg: BG.tea_p, back: NPC[k].name + ' 的房间' }, function (e, res) {
+      var N = NPC[k], msg = '', r = e && e.rep;
+      if (r && r.res === 'win') msg = r.exp ? '击败了 ' + N.name + '！累积经验 +' + fmt(r.exp) + '，已放进经验背包。' : '又赢了 ' + N.name + '！今天的胜利奖励已经领过了，明天再来。';
+      else if (r && r.res === 'lose') msg = N.name + '：嘿嘿，下次再来挑战吧！';
+      else if (res === 'void') msg = '这场对战作废了。';
+      save();
+      ex.fighting = false; document.body.classList.remove('story-fight');
+      ex.view = 'room'; ex.room = k; ex.area = '天门';
+      $('pg-arena').hidden = page !== 'arena'; $('pg-explore').hidden = page !== 'explore';
+      renderTop(); syncBattle(); window.scrollTo(0, $('pg-explore').offsetTop - 8);
+      if (msg) toast(msg);
+    });
     var N = NPC[k], team = (acc.teams[acc.active] || []).map(mon).filter(Boolean);
     if (!team.length) team = acc.mons.slice(0, 1);
     team = team.slice(0, TEAM_SIZE);
@@ -6422,9 +6429,20 @@ function seedSeenFx() { if (PVE.seedSeenFx(acc, Date.now())) save(); }
 
   /* ---------- 拜访别人的茶室：挑战茶室里展示的精灵 ----------
    * 每天前 5 场各奖励 1000 累积经验（进经验背包），赢输都算，认输不算；0 点刷新 */
-  var TEA_DAILY = 5, TEA_EXP = 1000;
+  var TEA_DAILY = PVE.TEA_DAILY, TEA_EXP = PVE.TEA_EXP;
   function teaLeft() { var t = acc && acc.teaFight; return t && t.d === todayKey() ? Math.max(0, TEA_DAILY - (t.n || 0)) : TEA_DAILY; }
   function teaFight(opt) {
+    if (srvMode() && opt.user) return pveRemote('tea', { owner: opt.user }, { bg: BG.tea_p, back: '茶室', pre: function () { ['log', 'bag', 'store', 'dex', 'items', 'social', 'explore'].forEach(function (pg) { $('pg-' + pg).hidden = true; }); $('who-menu').hidden = true; } }, function (e, res) {
+      ex.fighting = false; document.body.classList.remove('story-fight');
+      var r = e && e.rep, msg = '', quit = !!(e && e.quit);
+      if (!r) msg = res === 'void' ? '这场对战作废了，不计入奖励次数。' : '';
+      else if (r.quit) msg = '认输的茶室对战不计入奖励次数。';
+      else if (r.exp) msg = '茶室对战奖励：累积经验 +' + fmt(r.exp) + '，已放进经验背包。今天还能领 ' + r.left + ' 次。';
+      else msg = '今天的 ' + TEA_DAILY + ' 次茶室对战奖励已经领完了，明天 0 点刷新。';
+      go('social');
+      if (msg) setTimeout(function () { toast(msg); }, 300);
+      if (opt.onDone) opt.onDone(r ? r.res : res, quit);
+    });
     var team = (acc.teams[acc.active] || []).map(mon).filter(Boolean);
     if (!team.length) team = acc.mons.slice(0, 1);
     var p = team.slice(0, TEAM_SIZE).map(storyMon);

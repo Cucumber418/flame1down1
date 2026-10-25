@@ -292,7 +292,7 @@
       if ((t = e.target.closest('[data-teafight]'))) {
         var d = st.view && st.view.data; if (!d || !d.mons.length || t.disabled) return;
         var foe = d.mons.map(A.spec).filter(Boolean);
-        if (foe.length) A.teaFight({ owner: d.name, foe: foe, onDone: function (res, quit) { hbEvent(d.user, { kind: 'fight', r: quit ? 'quit' : res }); hb.at = 0; render(); } });
+        if (foe.length) A.teaFight({ owner: d.name, user: d.user, foe: foe, onDone: function (res, quit) { hbEvent(d.user, { kind: 'fight', r: quit ? 'quit' : res }); hb.at = 0; render(); } });
         return;
       }
       if ((t = e.target.closest('[data-friend]'))) { toggleFriend(t.dataset.friend); return; }
