@@ -21,7 +21,7 @@
   /* ---------- 存档 ---------- */
   function valid(a) { return a && typeof a.name === 'string' && Array.isArray(a.mons) && Array.isArray(a.teams); }
   // 隐藏技能只能用道具解锁的种族（2026-10-18，说明见 avail 上方）；读存档时就要用到，所以放在最前面
-  var HL_GATED = { mush: 1, wind: 1, kaleo: 1, pede: 1, gorgon: 1, hephaestus: 1, firemouse: 1, leigong: 1, faraday: 1, frost: 1, tagore: 1, barren: 1, pluto: 1, leaf: 1, squid: 1, shroom: 1, moon: 1, bone: 1, siren: 1, leiming: 1, odo: 1, leafcat: 1, turkey: 1, hauris: 1 };
+  var HL_GATED = ACC.HL_GATED;   // 名单在 js/engine/acc.js
   window.HL_GATED = HL_GATED;   // battle.js 里用来跳过战斗中领悟
   try { var raw = JSON.parse(localStorage.getItem(KEY) || 'null'); if (valid(raw)) acc = raw; } catch (e) {}
   try { var pg = localStorage.getItem(PKEY); if (pg) page = pg; } catch (e) {}
@@ -175,26 +175,18 @@
   function savePage() { try { localStorage.setItem(PKEY, page); } catch (e) {} }
 
   /* ---------- 精灵实例 ---------- */
-  function mon(u) { if (!acc) return null; for (var i = 0; i < acc.mons.length; i++) if (acc.mons[i].u === u) return acc.mons[i]; return null; }
-  function stageOf(s, lv) { for (var i = evoLast(s); i > 0; i--) if (lv >= s.evo[i].lv) return i; return 0; }
+function mon(u) { return ACC.mon(acc, u); }
+function stageOf(s, lv) { return ACC.stageOf(s, lv); }
   // 异色：true 是第一种异色，2 是第二种（更稀有）
-  function shinyV(v) { return v === 2 ? 2 : !!v; }
+function shinyV(v) { return ACC.shinyV(v); }
   function rollShiny(w) { var r = Math.random(); return w.shiny2 && r < w.shiny2 ? 2 : !!(w.shiny && r < (w.shiny2 || 0) + w.shiny); }
   // 形态切换装置：每用一个，这只精灵永久解锁一个更小的形态（m.fu 里记着解锁了哪些）；
   // 解锁过的形态和原本的形态之间随时免费切换（m.fs 是现在显示的形态）。只改外观，数值、技能都不变
-  function shownStage(m) { var s = SPMAP[m.sid], nat = stageOf(s, m.lv); return m.fs != null && m.fs >= 0 && m.fs < nat && (!m.u || (Array.isArray(m.fu) && m.fu.indexOf(m.fs) >= 0) || m.fu === undefined) ? m.fs | 0 : nat; }
+function shownStage(m) { return ACC.shownStage(m); }
   function formLabel(s, i) { var n = formRawName(s, i); return n ? n.replace('?', '') : s.name + '·' + stageLabel(s, i); }
-  function form(m) {
-    var s = SPMAP[m.sid], st = shownStage(m), n = formRawName(s, st), unsure = false;
-    if (n && n.slice(-1) === '?') { n = n.slice(0, -1); unsure = true; }
-    if (!n) n = s.name + '·' + stageLabel(s, st);
-    var img = formImg(s, st), sk = isFin(s, st) ? s.id : s.id + '_s' + (st + 1);
-    // 异色：有这一形态的异色立绘就用异色图，没有就照常显示（精灵身上仍然标着「异色」）
-    if (m.shiny && typeof SHINY_SPRITES !== 'undefined') { if (m.shiny === 2 && SHINY_SPRITES[sk + '_2']) img = SHINY_SPRITES[sk + '_2']; else if (SHINY_SPRITES[sk]) img = SHINY_SPRITES[sk]; }
-    return { name: n, img: img, stage: st, unsure: unsure, no: s.evo[st].no || '', d: s.evo[st].d || '', shiny: shinyV(m.shiny) };
-  }
+function form(m) { return ACC.form(m); }   // 规则在 js/engine/acc.js（服务器和浏览器共用），下同
   // 普通技能：第 1 个 LV1 习得，之后每 5 级学会下一个（LV5、LV10、LV15……）；隐藏技能暂按 LV50
-  function learnLv(i) { return i === 0 ? 1 : i * 5; }
+function learnLv(i) { return ACC.learnLv(i); }
   function moveLv(sid, mv) { var s = SPMAP[sid], i = s.moves.indexOf(mv); return i >= 0 ? learnLv(i) : 50; }
   // hl：这只精灵已领悟的隐藏技能。有领悟条件的隐藏技能只能在战斗中领悟；没写条件的仍然 LV50 习得。
   // 不传 hl（剧情里的对手）时沿用旧规则：LV50 起隐藏技能全部可用。
@@ -206,35 +198,23 @@
     if (LEARN[mv]) return (m.hl || []).indexOf(mv) >= 0 ? '已领悟 · LV' + HIDDEN_MIN_LV + ' 才能装备' : '未领悟 · 在战斗中' + LEARN[mv];
     return 'LV50 习得';
   }
-  function hidOk(lv, hl, n) { return hl && LEARN[n] ? hl.indexOf(n) >= 0 && lv >= HIDDEN_MIN_LV : lv >= 50; }   // 战斗中领悟的隐藏技能也要 LV40 以上才能用（HIDDEN_MIN_LV 在 battle.js）
+function hidOk(lv, hl, n) { return ACC.hidOk(lv, hl, n); }   // 战斗中领悟的隐藏技能也要 LV40 以上才能用（HIDDEN_MIN_LV 在 battle.js）
   /* 2026-10-18：这些精灵的隐藏技能改成只能用道具解锁（星球特产、BOSS专属道具、死神代币、三主宠的地球元素），不再在战斗中领悟。
    * 2026-10-24 起解锁按个体记（m.hl）：道具用在哪一只身上，只有那一只能用（LV40 以上才能装备）。 */
   // HL_GATED 定义在文件开头（读存档时就要用到）
   function spHL(sid) { return (acc && acc.hlSp && acc.hlSp[sid]) || []; }
-  function avail(sid, lv, hl) {
-    var s = SPMAP[sid], gated = Array.isArray(hl) && HL_GATED[sid], sh = gated ? hl : null;
-    return s.moves.filter(function (n, i) { return lv >= learnLv(i); }).concat(s.hidden.filter(function (n) { return gated ? sh.indexOf(n) >= 0 && lv >= HIDDEN_MIN_LV : hidOk(lv, hl, n); }));
-  }
-  function defaultMoves(sid, lv, hl) {
-    var s = SPMAP[sid], a = avail(sid, lv, hl), out = s.def.filter(function (n) { return a.indexOf(n) >= 0; });
-    a.forEach(function (n) { if (out.length < 4 && out.indexOf(n) < 0) out.push(n); });
-    return out;
-  }
+function avail(sid, lv, hl) { return ACC.avail(sid, lv, hl); }
+function defaultMoves(sid, lv, hl) { return ACC.defaultMoves(sid, lv, hl); }
   // 电脑精灵的技能表（2026-10-19）：以默认配招为底，60% 换掉 1 个、其中又有 40% 再换 1 个，换成它会的其他技能（不总是最优组合）
-  function foeMoves(sid, lv, hl) {
-    var out = defaultMoves(sid, lv, hl), pool = avail(sid, lv, hl).filter(function (n) { return out.indexOf(n) < 0; });
-    var n = Math.random() < 0.6 ? (Math.random() < 0.4 ? 2 : 1) : 0;
-    for (var k = 0; k < n && pool.length && out.length; k++) { var pi = Math.floor(Math.random() * pool.length); out[Math.floor(Math.random() * out.length)] = pool[pi]; pool.splice(pi, 1); }
-    return out;
-  }
+function foeMoves(sid, lv, hl) { return ACC.foeMoves(sid, lv, hl, Math.random); }
   // 商城、兑换、冶炼等列表里的简短介绍（2026-10-19）：有 sd 用 sd，否则只取介绍的第一句
   function shortD(it) { if (!it) return ''; if (it.sd) return it.sd; var d = String(it.d || ''), m = d.match(/^[^。！？]*[。！？]/); return m ? m[0] : d; }
-  function randNat() { return NAT_KEYS[Math.floor(Math.random() * NAT_KEYS.length)]; }
-  function newMon(sid, lv) { var m = { u: acc.next++, sid: sid, lv: lv, exp: expAt(lv), moves: defaultMoves(sid, lv, []), got: Date.now(), nat: randNat(), iv: randIv(), ev: {}, evFree: 0, hl: [] }; acc.mons.push(m); markForm(sid, stageOf(SPMAP[sid], lv)); return m; }
+function randNat() { return ACC.randNat(Math.random); }
+function newMon(sid, lv) { var m = ACC.newMon(acc, sid, lv); save(); return m; }
   // 天赋：六项能力各一个 0~31 的随机数，越高越强（满 31 和天赋系统上线前一样）
-  function randIv() { var o = {}; STAT_KEYS.forEach(function (k) { o[k] = Math.floor(Math.random() * 32); }); return o; }
-  function ivOk(iv) { return !!iv && typeof iv === 'object' && STAT_KEYS.every(function (k) { return iv[k] >= 0 && iv[k] <= 31 && iv[k] === Math.floor(iv[k]); }); }
-  function ivOf(m) { return ivOk(m.iv) ? m.iv : null; }
+function randIv() { return ACC.randIv(Math.random); }
+function ivOk(iv) { return ACC.ivOk(iv); }
+function ivOf(m) { return ACC.ivOf(m); }
   // 天赋评级（2026-10-17）：按六项天赋合计（0~186）分五档，颜色 白 / 绿 / 蓝 / 紫 / 橙
   var IV_GRADE = [[170, '极品', 'g5'], [150, '稀', 'g4'], [120, '优', 'g3'], [90, '良', 'g2'], [0, '一般', 'g1']];
   function ivGrade(m) { var iv = ivOf(m); if (!iv) return null; var t = STAT_KEYS.reduce(function (a, k) { return a + iv[k]; }, 0); for (var i = 0; i < IV_GRADE.length; i++) if (t >= IV_GRADE[i][0]) return { n: IV_GRADE[i][1], c: IV_GRADE[i][2], s: t }; return null; }
@@ -243,11 +223,7 @@
   function evSum(m) { return STAT_KEYS.reduce(function (a, k) { return a + ((m.ev && m.ev[k]) || 0); }, 0); }
   function natText(nat) { var n = NATURES[nat]; return n ? BASE_NAME[n[0]] + ' +10%，' + BASE_NAME[n[1]] + ' −10%' : '各项能力无修正'; }
   // 胜利后，出战过的精灵各得 1 点可分配学习力（总量不超过 750）
-  function giveEv(units, n) {
-    var got = []; n = n || 1;
-    units.forEach(function (u) { var m = mon(u), room = m ? EV_TOTAL - evSum(m) - (m.evFree || 0) : 0; if (room > 0) { m.evFree = (m.evFree || 0) + Math.min(n, room); got.push(form(m).name); } });
-    save(); return got;
-  }
+function giveEv(units, n) { var got = ACC.giveEv(acc, units, n); save(); return got.map(function (u) { return form(mon(u)).name; }); }
   /* 经验：每升一级所需经验以「等级³ 的差」为基础，按等级段调整系数（expK），expTab()[lv] = 到达该等级所需的累计经验
    * 存档 acc.expV 记录经验曲线的版本；曲线改过之后，读档清理坏数据时按「等级不变、本级进度比例不变」换算旧经验
    * （读档清理在文件最上面，比这里先执行，所以表格用到时才生成） */
@@ -255,7 +231,7 @@
   /* 等级上限（2026-10-18）：喂经验最高到 LV70。草系精灵可以用芙罗拉玉把上限解锁到 75（500 个）、80（1000 个），暂时不能超过 80；其他属性目前最高 70。
    * m.lvCap 是解锁后的上限；在这之前就已经超过 70 级的精灵保留现有等级，但不能再往上升。 */
   var BASE_CAP = 70, CAP_STEPS = [{ lv: 75, jade: 500 }, { lv: 80, jade: 1000 }];
-  function capLv(m) { return Math.min(MAX_LV, Math.max(m.lvCap || BASE_CAP, m.lv)); }
+function capLv(m) { return ACC.capLv(m); }
   function atCap(m) { return m.lv >= capLv(m); }
   var GEM_OF = { 草: 'floraJade', 水: 'kbDrop', 火: 'ppAsh', 电: 'ltOrb', 冰: 'whFrost' };   // 哪种属性用哪种星球特产解锁等级上限
   var CAP_SID = { tagore: 'tgPearl', barren: 'brTwig', odo: 'odoFin', leaf: 'earthShard', squid: 'earthShard', shroom: 'earthShard', moon: 'moonStone', bone: 'boneDust' };   // BOSS精灵用自己的专属道具（优先于属性特产）
@@ -263,7 +239,7 @@
   function capNext(m) { var g = capGem(m); if (!g) return null; var c = capLv(m); for (var i = 0; i < CAP_STEPS.length; i++) if (CAP_STEPS[i].lv > c) return { lv: CAP_STEPS[i].lv, jade: CAP_STEPS[i].jade, k: g }; return null; }
   function expV() { return 5; }
   // lv → lv+1 这一级的系数（相对等级³ 的差）。v2：50 级以上 ×2；v3（2026-10-17，隐藏调整）：50 级以上再 ×4，即 ×8
-  function expK(lv) { return lv < 25 ? 0.6 : lv >= 60 ? 16.8 : lv >= 50 ? 8 : 1; }   // v5（2026-10-18 晚）：60 级以上是 v4 的 0.7 倍（v4 是 ×24，太难升了）
+function expK(lv) { return ACC.expK(lv); }   // v5（2026-10-18 晚）：60 级以上是 v4 的 0.7 倍（v4 是 ×24，太难升了）
   function expKv4(lv) { return lv < 25 ? 0.6 : lv >= 60 ? 24 : lv >= 50 ? 8 : 1; }
   function expKv3(lv) { return lv < 25 ? 0.6 : lv >= 50 ? 8 : 1; }
   function expKv2(lv) { return lv < 25 ? 0.6 : lv >= 50 ? 2 : 1; }
@@ -274,35 +250,27 @@
   function v4ExpAt(lv) { if (!_v4Tab) _v4Tab = tabOf(expKv4); return _v4Tab[Math.max(1, Math.min(100, lv))]; }
   var _v3Tab = null;
   function v3ExpAt(lv) { if (!_v3Tab) _v3Tab = tabOf(expKv3); return _v3Tab[Math.max(1, Math.min(100, lv))]; }
-  function expTab() {
-    if (!_expTab) { _expTab = [0, 1]; for (var l = 1; l < 100; l++) _expTab[l + 1] = _expTab[l] + Math.round(((l + 1) * (l + 1) * (l + 1) - l * l * l) * expK(l)); }
-    return _expTab;
-  }
-  function expAt(lv) { lv = Math.max(1, Math.min(100, lv)); return expTab()[lv]; }
-  function lvOf(exp) { var T = expTab(), lv = 1; while (lv < MAX_LV && T[lv + 1] <= exp) lv++; return lv; }
+function expTab() { return ACC.expTab(); }
+function expAt(lv) { return ACC.expAt(lv); }
+function lvOf(exp) { return ACC.lvOf(exp); }
   function oldExpAt(lv) { return lv * lv * lv; }   // 第 1 版曲线（只用于换算旧存档）
   function fmt(n) { return Math.floor(n).toLocaleString('en-US'); }
   function giveExp(m, amt) { return gainExp(m, amt, true); }
   // fromPool：从经验分配器里扣；否则是战斗直接获得
-  function gainExp(m, amt, fromPool) {
-    var room = expAt(capLv(m)) - m.exp; amt = Math.max(0, Math.min(amt, room, fromPool ? acc.exp : Infinity)); if (!amt) return null;
-    var before = { lv: m.lv, name: form(m).name, stage: form(m).stage };
-    if (typeof REW !== 'undefined' && REW.collect) REW.gains.push({ u: m.u, lv0: m.lv, exp0: m.exp, amt: amt });
-    markForm(m.sid, before.stage);
-    m.exp += amt; if (fromPool) acc.exp -= amt; m.lv = lvOf(m.exp); markForm(m.sid, form(m).stage);
-    var after = form(m), msg = form(m).name + ' 获得了 ' + fmt(amt) + ' 点经验';
-    if (m.lv > before.lv) { msg += '，升到了 LV' + m.lv + '！'; setTimeout(function () { checkTitles(); renderTitle(); }, 0); }
+function gainExp(m, amt, fromPool) {
+    var g = ACC.gainExp(acc, m, amt, fromPool); if (!g) return null;
+    if (typeof REW !== 'undefined' && REW.collect) REW.gains.push({ u: g.u, lv0: g.lv0, exp0: g.exp0, amt: g.amt });
+    save(); return gainMsg(g);
+  }
+  // 把一次加经验的结果写成提示（服务器结算的也用这个）
+  function gainMsg(g) {
+    var msg = g.name1 + ' 获得了 ' + fmt(g.amt) + ' 点经验';
+    if (g.lv1 > g.lv0) { msg += '，升到了 LV' + g.lv1 + '！'; setTimeout(function () { checkTitles(); renderTitle(); }, 0); }
     else msg += '。';
-    if (after.stage > before.stage) msg += before.name + ' 进化成了 ' + after.name + '！';
-    var was = avail(m.sid, before.lv, m.hl || []), now = avail(m.sid, m.lv, m.hl || []).filter(function (n) { return was.indexOf(n) < 0; });
-    var regular = now.filter(function (n) { return !M[n].hidden; });
-    if (regular.length) {
-      var eq = [];
-      regular.forEach(function (n) { if (m.moves.length < 4 && m.moves.indexOf(n) < 0) { m.moves.push(n); eq.push(n); } });
-      msg += '学会了新技能：' + regular.map(function (n) { return '「' + n + '」'; }).join('、') + (eq.length ? (eq.length === regular.length ? '，已自动装备。' : '，其中' + eq.map(function (n) { return '「' + n + '」'; }).join('、') + '已自动装备。') : '。出战技能已满，可在下方替换。');
-    }
-    var hid = now.filter(function (n) { return M[n].hidden; });
-    if (hid.length) msg += '领悟了隐藏技能：' + hid.map(function (n) { return '「' + n + '」'; }).join('、') + '。';
+    if (g.st1 > g.st0) msg += g.name0 + ' 进化成了 ' + g.name1 + '！';
+    var regular = g.learned || [], eq = g.equipped || [];
+    if (regular.length) msg += '学会了新技能：' + regular.map(function (n) { return '「' + n + '」'; }).join('、') + (eq.length ? (eq.length === regular.length ? '，已自动装备。' : '，其中' + eq.map(function (n) { return '「' + n + '」'; }).join('、') + '已自动装备。') : '。出战技能已满，可在下方替换。');
+    if (g.hid && g.hid.length) msg += '领悟了隐藏技能：' + g.hid.map(function (n) { return '「' + n + '」'; }).join('、') + '。';
     return msg;
   }
   function teamsOf(u) { var r = []; acc.teams.forEach(function (t, i) { var k = t.indexOf(u); if (k >= 0) r.push({ t: i, lead: k === 0 }); }); return r; }
@@ -1285,13 +1253,7 @@
   function owned(sid) { return acc.mons.some(function (m) { return m.sid === sid; }); }
   function litCount() { return acc ? DEX_ALL.filter(function (s) { return owned(s.id); }).length : 0; }
   // 见过：剧情里出现过立绘、或在剧情对战中交过手（竞技对战不算）。只解锁名字，图仍是黑白的
-  function seeMon(sid, lv) {
-    var s = SPMAP[sid]; if (!s || !acc) return;
-    if (!acc.seen) acc.seen = {};
-    var st = stageOf(s, lv || 1);
-    markForm(sid, st);
-    if (acc.seen[sid] === undefined || st > acc.seen[sid]) { acc.seen[sid] = st; save(); }
-  }
+function seeMon(sid, lv) { if (acc && ACC.seeMon(acc, sid, lv)) save(); }
   function seeStep(st, mons) {
     if (mons === 'all' || st.pick) STARTERS.forEach(function (sid) { seeMon(sid, START_LV); });
     if ((mons === 'pair' || mons === 'all') && acc.rival) seeMon(acc.rival, START_LV);
@@ -1300,11 +1262,7 @@
     if (mons && mons.indexOf('mon:') === 0) seeMon(mons.split(':')[1], +mons.split(':')[2] || 1);
   }
   // 记录见过 / 获得过的进化形态（图鉴里没见过的形态显示为灰色）
-  function markForm(sid, st) {
-    if (!acc.forms) acc.forms = {};
-    var f = acc.forms[sid] || (acc.forms[sid] = [0, 0, 0]);
-    if (!f[st]) { f[st] = 1; save(); }
-  }
+function markForm(sid, st) { if (ACC.markForm(acc, sid, st)) save(); }
   // 图鉴标题：玩家见过的最高一阶的名字
   function topName(s) {
     var i = evoLast(s); while (i > 0 && !formKnown(s.id, i)) i--;
@@ -1642,7 +1600,7 @@
       allyMon: LEAF_ALLY, allyOpt: true,
       env: 'miasma', bg: 'fl_salt', desc: '瘴气六尾风王（LV36）、瘴气玛西露姆（LV38）' }
   };
-  function storyMon(m) { var f = form(m), hl = m.u != null ? (m.hl || []) : undefined, mv = m.moves.length ? m.moves.slice() : defaultMoves(m.sid, m.lv, hl); return { id: m.sid, lv: m.lv, moves: mv, nick: f.name, img: f.img, ev: m.ev || null, nat: m.nat || null, iv: ivOf(m), u: m.u, hl: hl, shiny: shinyV(m.shiny), emblem: m.u != null && acc.emblems && acc.emblems[m.sid] && EMBLEMS[m.sid] ? EMBLEMS[m.sid].m : null }; }
+function storyMon(m) { return ACC.battleMon(acc, m); }
   // F.pteam：剧情限定，用一支固定的队伍代替玩家自己的配队出战（如操控 Threego 的精灵），不计入经验/学习力
   // F.allyMon：在玩家自己配队的最后加一只固定的助战精灵（如旅行叶子喵），本场战斗结束后也不计入经验/学习力；写法和 F.team 的项一样
   // F.team：精灵数组，或一个返回精灵数组的函数（用于体力/等级要跟玩家首发精灵联动的BOSS，如瘴气玛西露姆）
@@ -2110,8 +2068,8 @@
   var PVE_XP_CAP = 1000000;   // 2026-10-17：120000 → 200000；2026-10-18：→ 400000（静默调整）；2026-10-24：→ 1000000
   function pveLeft() { var d = dayStr(); if (!acc.pveXp || acc.pveXp.d !== d) acc.pveXp = { d: d, n: 0 }; return Math.max(0, PVE_XP_CAP - acc.pveXp.n); }
   // 击败一只精灵：经验 = 等级² × 2 + 20；学习力按对方等级 1 / 2 / 3 点
-  function foeExp(lv) { return Math.floor((lv * lv * 2 + 20) / 2); }   // 2026-10-24：减半（不公开）
-  function foeEv(lv) { return lv <= 25 ? 1 : lv <= 50 ? 2 : 3; }
+function foeExp(lv) { return ACC.foeExp(lv); }   // 2026-10-24：减半（不公开）
+function foeEv(lv) { return ACC.foeEv(lv); }
   function battleRewards(team, seen, downs) {
     downs = downs || []; if (!downs.length) return [];
     var parts = team.filter(function (x, i) { return seen && seen[i]; }); if (!parts.length) parts = team.slice(0, 1);
@@ -3686,7 +3644,7 @@
    * acc.mail：邮件列表（新的在前）；acc.mailSeen：已经投递过的邮件编号，删掉了也不会重发
    * 全服邮件写在 js/data/mail.js；按每个人情况算的补发，在这里用 sendMail() */
   var MAIL_MAX = 100;
-  function dayStr() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+function dayStr() { return ACC.dayStr(Date.now()); }   // 北京时间的日期（2026-10-25 起和服务器一致）
   function mails() { if (!Array.isArray(acc.mail)) acc.mail = []; if (!acc.mailSeen) acc.mailSeen = {}; return acc.mail; }
   function hasAtt(a) { return !!(a && (a.exp || a.energy || a.merit || a.tokens || a.twTok || (a.items && Object.keys(a.items).length) || (a.mons && a.mons.length))); }
   function attList(a) {
@@ -4290,82 +4248,19 @@
    * lv：各档难度，按顺序解锁（open 返回是否开放）。boss 是BOSS的特殊能力，规则写在 js/engine/battle.js 的 BOSS_FX 里：
    *   noStatus 免疫异常状态 · feud 东北的纷争（物攻 +30%） · ne 来东北试试 · dr 星球聚能（减伤比例） · mia 瘴气领域 · puppet 瘴毒傀儡 · pp BOSS技能的 PP
    * 战绩存在 acc.bosses[记录名]：简单难度沿用BOSS id（兼容旧存档），其他难度是「id:序号」，每周挑战是「id:w」 */
-  var ONLY3 = ['水', '火', '草'];
-  var BOSSES = {
-    tiger: { name: '泰戈尔', sid: 'tagore', dept: '襄阳', bg: 'bridge_p', pos: [66, 52],
-      d: '从东北招募的特殊虎系精灵，常驻古城防卫部，辅助船员们训练。',
-      lv: [
-        { diff: '简单', lv: 25, hp: 500, only: ONLY3, bgm: 'boss', open: function () { return prog('tiger').done; }, lockText: '读完支线「东北来的泰戈尔」后开放', reward: { mon: { sid: 'tagore', lv: 10 } } },
-        { diff: '普通', lv: 40, hp: 1500, only: ONLY3, boss: { feud: 1, ne: 1, pp: 99 }, bgm: 'boss2', open: function () { return prog('tiger2').done; }, lockText: '击败简单难度，再听泰戈尔介绍后开放', reward: { emblem: 'tagore', exp: 20000 } },
-        { diff: '困难', lv: 60, hp: 5000, only: ONLY3, boss: { feud: 1, ne: 1, past: 1, pp: 99 }, bgm: 'boss3', open: function () { return bossWon('tiger', 1); }, lockText: '击败普通难度后开放', reward: { title: 'force', items: { tgPearl: 80, natTagore: 3 }, exp: 50000 } }
-      ] },
-    barren: { name: '荒芜', sid: 'barren', planet: 'flora', region: 'salt', bg: 'fl_salt',
-      d: '潜伏在芙罗拉星盐碱地地底的草系BOSS。盐碱地里的瘴气，就是从它身上散出来的。',
-      lv: [
-        { diff: '简单', lv: 40, hp: 1000, boss: { dr: 0.15, mia: 1, pp: 99 }, bgm: 'boss3', open: function () { return prog('flora1').done && (chalStars('fl5') > 0 || bossWon('barren', 0)); }, lockText: '通过芙罗拉星挑战第五关「猎手的领地」后开放', reward: { mon: { sid: 'barren', lv: 10 } } },
-        { diff: '普通', lv: 65, hp: 3000, boss: { dr: 0.15, mia: 1, puppet: 1, pp: 99 }, bgm: 'boss3', open: function () { return bossWon('barren', 0); }, lockText: '击败简单难度后开放', reward: { items: { brTwig: 40 } } },
-        // 困难：完成主线「第十段 · 瘴气之源」后，2026-10-18 16:00（北京时间）解锁
-        { diff: '困难', lv: 70, hp: 6000, boss: { dr: 0.15, mia: 1, immortal: 1, puppet: 1, puppetLv: 70, humus: 1, weed: 1, weedDmg: 30, rebirth: 1, pp: 99 }, bgm: 'boss3',   // 开场和困难泰戈尔第一形态同一首，蜕生后切 before the end（battle-ui 里的钩子）
-          open: function () { return prog('flora6').done && Date.now() >= Date.UTC(2026, 9, 18, 8, 0, 0); },
-          lockText: '完成主线「第十段 · 瘴气之源」后，2026-10-18 16:00 开放', reward: { title: 'guardian', exp: 50000, items: { brTwig: 80 } } }
-      ] },
-    // 2026-10-24：坎伯兰星深海区的BOSS。困难难度是三只：歼灭形态、护阵形态轮流登场（每 2 回合主动切换），都击败后化为虹霓暴走
-    odo: { name: '奥多亚克', sid: 'odo', planet: 'kamble', region: 'kb_deep', bg: 'kb_abyss',
-      d: '沉睡在坎伯兰星深海古代神殿附近的机械水系精灵，会在歼灭形态和护阵形态之间切换。',
-      lv: [
-        { diff: '简单', lv: 40, hp: 1000, boss: { dr: 0.15, pp: 99 }, bgm: 'boss3', open: function () { return planetOpen(planetOf('kamble')); }, lockText: '开放坎伯兰星后开放', reward: { items: { e_odo: 1 } } },
-        { diff: '普通', lv: 65, hp: 3000, boss: { dr: 0.15, ambush: 200, pp: 99 }, bgm: 'boss3', open: function () { return bossWon('odo', 0); }, lockText: '击败简单难度后开放', reward: { items: { odoFin: 40 } } },
-        { diff: '困难', lv: 70, hp: 2500, boss: { dr: 0.15, ambush: 400, odoRate: 1, odoWill: 1, rainbow: 1, odoSwap: 1, pp: 99 }, bgm: 'boss3', open: function () { return bossWon('odo', 1); }, lockText: '击败普通难度后开放', reward: { exp: 50000, items: { odoFin: 80 } },
-          hpText: '歼灭形态 2500 · 护阵形态 5000 · 虹霓暴走 4000', bgmAt: { 2: 'vitalVoyage' },
-          team: [
-            { nick: '奥多亚克 · 歼灭形态', odoForm: 'atk', maxhp: 2500, boss: { dr: 0.15, ambush: 400, odoRate: 1, odoSwap: 1, orderRepl: 1, pp: 99 } },
-            { nick: '奥多亚克 · 护阵形态', odoForm: 'def', maxhp: 5000, boss: { dr: 0.15, ambush: 400, odoWill: 1, odoSwap: 1, orderRepl: 1, pp: 99 } },
-            { nick: '奥多亚克 · 虹霓暴走', maxhp: 4000, moves: ['流形蛮冲', '全弹搭载', '究极爆破', '解析导弹', '坚守阵地', '强效外壳', '重构坚甲', '侵扰投弹'],   // 掌握歼灭、护阵两种形态的全部技能
-              boss: { dr: 0.15, rainbow: 1, orderRepl: 1, pp: 99 } }
-          ] }
-      ] }
-  };
-  // 2026-10-19：每个BOSS每档难度首次击败都送马亚尔晶体，难度越高越多（简单 100 / 普通 200 / 困难 400）
-  // 2026-10-24：困难难度的BOSS都带【不朽】（之后新增的困难BOSS自动加上；困难泰戈尔保持原样）
-  Object.keys(BOSSES).forEach(function (k) { if (k === 'tiger') return; BOSSES[k].lv.forEach(function (L) { if (L.diff !== '困难') return; if (L.boss) L.boss.immortal = 1; (L.team || []).forEach(function (T) { T.boss.immortal = 1; }); }); });
-  var BOSS_CRY = [100, 200, 400];
-  Object.keys(BOSSES).forEach(function (k) { BOSSES[k].lv.forEach(function (L, i) { if (!L.reward) L.reward = {}; if (!L.reward.items) L.reward.items = {}; L.reward.items.m_mcry = BOSS_CRY[i] || BOSS_CRY[BOSS_CRY.length - 1]; }); });
-  // 每周挑战：击败困难难度的泰戈尔后开放，规则和困难难度一样，每次消耗 1 枚挑战许可
-  // 2026-10-18：每周挑战改成可以有多个BOSS（击败对应BOSS的困难难度后各自开放），挑战许可共用。item 是每次击败必得的BOSS专属道具
-  // 2026-10-24：每个BOSS的每一档难度都有每周挑战（击败该难度后开放），规则和对应难度一样
-  var WEEKLIES = [
-    { boss: 'tiger', d: 0, exp: 2000, item: { tgPearl: 15 }, cry: [10, 20], drops: [{ items: { evTagore: 1 } }, { energy: 1000 }, { exp: 1000 }] },
-    { boss: 'tiger', d: 1, exp: 3500, item: { tgPearl: 30 }, cry: [20, 40], drops: [{ items: { natTagore: 1 } }, { items: { evTagore: 1 } }, { energy: 1500 }, { exp: 1500 }] },
-    { boss: 'tiger', d: 2, exp: 5000, item: { tgPearl: 50 }, cry: [40, 80],   // cry：2026-10-19 每次必掉 40–80 个马亚尔晶体
-      drops: [{ items: { natTagore: 1 } }, { items: { evTagore: 1 } }, { energy: 2000 }, { exp: 2000 }] },
-    { boss: 'barren', d: 0, exp: 2000, item: { brTwig: 15 }, cry: [10, 20], drops: [{ items: { floraJade: 8 } }, { energy: 1000 }, { exp: 1000 }] },
-    { boss: 'barren', d: 1, exp: 3500, item: { brTwig: 30 }, cry: [20, 40], drops: [{ items: { floraJade: 12 } }, { items: { evAny: 1 } }, { energy: 1500 }, { exp: 1500 }] },
-    { boss: 'barren', d: 2, exp: 5000, item: { brTwig: 50 }, drops: [{ items: { floraJade: 20 } }, { items: { evAny: 1 } }, { energy: 2000 }, { exp: 2000 }] },
-    { boss: 'odo', d: 0, exp: 2000, item: { odoFin: 15 }, cry: [10, 20], drops: [{ items: { kbDrop: 8 } }, { energy: 1000 }, { exp: 1000 }] },
-    { boss: 'odo', d: 1, exp: 3500, item: { odoFin: 30 }, cry: [20, 40], drops: [{ items: { kbDrop: 12 } }, { items: { evAny: 1 } }, { energy: 1500 }, { exp: 1500 }] },
-    { boss: 'odo', d: 2, exp: 5000, item: { odoFin: 50 }, cry: [40, 80], drops: [{ items: { kbDrop: 20 } }, { items: { evAny: 1 } }, { energy: 2000 }, { exp: 2000 }] }
-  ];
-  function wkKey(W) { return W.d === 2 ? 'w' : 'w' + W.d; }   // 战绩：困难难度沿用原来的「id:w」，简单、普通是「id:w0」「id:w1」
-  function wkOpen(W) { return !!acc && !!W && bossWon(W.boss, W.d); }
+  // BOSS、每周挑战、属性每周挑战的数据和规则在 js/engine/pve.js（服务器和浏览器共用，2026-10-25）
+  var ONLY3 = PVE.ONLY3, BOSSES = PVE.BOSSES, BOSS_CRY = PVE.BOSS_CRY, WEEKLIES = PVE.WEEKLIES;
+function wkKey(W) { return PVE.wkKey(W); }   // 战绩：困难难度沿用原来的「id:w」，简单、普通是「id:w0」「id:w1」
+function wkOpen(W) { return PVE.wkOpen(acc, W); }
   function curWk() { var W = WEEKLIES[ex.wk | 0]; return wkOpen(W) ? W : WEEKLIES.filter(wkOpen)[0] || WEEKLIES[0]; }
   /* ---------- 属性每周挑战（2026-10-20）：草、水、火、冰、电各一个BOSS，和泰戈尔、荒芜的每周挑战并列 ----------
    * BOSS 每周（北京时间周一 0 点）从该属性的野生精灵里随机抽一种（最终形态），分简单 / 普通 / 困难三档，都能直接挑战；
    * 获胜消耗 1 枚挑战许可（和其他每周挑战共用），掉落对应属性的特产。战绩存在 acc.bosses['ewk_属性:难度'] */
-  var EWK = {
-    types: [{ t: '草', item: 'floraJade' }, { t: '水', item: 'kbDrop' }, { t: '火', item: 'ppAsh' }, { t: '冰', item: 'whFrost' }, { t: '电', item: 'ltOrb' }],
-    lv: [
-      { diff: '简单', lv: 40, hp: 2000, boss: { pp: 99 }, bgm: 'boss', drop: [8, 12], exp: 3000 },
-      { diff: '普通', lv: 60, hp: 5000, boss: { dr: 0.15, pp: 99 }, bgm: 'boss2', drop: [16, 24], exp: 6000 },
-      { diff: '困难', lv: 80, hp: 10000, boss: { dr: 0.2, noStatus: 1, pp: 99 }, bgm: 'boss3', drop: [30, 45], exp: 12000 }
-    ]
-  };
-  function wkNum(t) { return Math.floor((dayNum(t) + 3) / 7); }   // 按北京时间的周一分周
-  function ewkPool(t) {
-    var o = []; for (var k in WILD) (WILD[k] || []).forEach(function (w) { var S = SPMAP[w.sid]; if (S && S.types.indexOf(t) >= 0 && o.indexOf(w.sid) < 0) o.push(w.sid); });
-    return o.sort();
-  }
-  function ewkType(t) { return EWK.types.filter(function (x) { return x.t === t; })[0]; }
-  function ewkSid(t) { var P = ewkPool(t), i = EWK.types.indexOf(ewkType(t)); return P.length ? P[thash(wkNum(Date.now()) * 7 + i * 131 + 17) % P.length] : null; }
+  var EWK = PVE.EWK;
+function wkNum(t) { return PVE.wkNum(t); }   // 按北京时间的周一分周
+function ewkPool(t) { return PVE.ewkPool(t); }
+function ewkType(t) { return PVE.ewkType(t); }
+function ewkSid(t) { return PVE.ewkSid(t, Date.now()); }
   function ewkBg(sid) { for (var i = 0; i < WILD_REGIONS.length; i++) { var R = WILD_REGIONS[i]; if ((WILD[R.pool] || []).some(function (w) { return w.sid === sid; }) && R.bgs && BG[R.bgs[0]]) return BG[floraBg(R.bgs[0])]; } return null; }
   function ewkLeft() { var end = (wkNum(Date.now()) + 1) * 7 - 3, ms = end * 86400000 - 8 * 3600e3 - Date.now(), h = Math.max(0, Math.floor(ms / 3600000)); return h >= 24 ? Math.floor(h / 24) + ' 天 ' + (h % 24) + ' 小时' : h + ' 小时'; }
   function ewkCardHTML(pn) {
@@ -4375,12 +4270,12 @@
         '<small>简单 / 普通 / 困难 · 获胜消耗 1 枚挑战许可 · 掉落' + itemName(T.item) + ' · 本周还剩 ' + ewkLeft() + '</small></span><span class="wk-pm"><b>' + pn + '</b> / ' + PERMIT.max + '<small>挑战许可（共用）</small></span></button>';
     }).join('');
   }
-  var PERMIT = { max: 24, every: 12 * 3600 * 1000 };   // 每 12 小时恢复 1 枚，最多 24 枚
-  function recKey(k, d) { return d ? k + ':' + d : k; }
-  function bossRec(k, d) { if (!acc.bosses) acc.bosses = {}; var rk = recKey(k, d); if (!acc.bosses[rk]) acc.bosses[rk] = { wins: 0, tries: 0 }; return acc.bosses[rk]; }
-  function bossWon(k, d) { var r = acc.bosses && acc.bosses[recKey(k, d || 0)]; return !!(r && r.wins > 0); }
-  function bossOpen(k) { var B = BOSSES[k]; return !!(B && B.lv[0].open()); }
-  function levelOpen(k, d) { var L = BOSSES[k] && BOSSES[k].lv[d]; return !!(L && L.open()); }
+  var PERMIT = PVE.PERMIT;   // 每 12 小时恢复 1 枚，最多 24 枚
+function recKey(k, d) { return PVE.recKey(k, d); }
+function bossRec(k, d) { return PVE.bossRec(acc, k, d); }
+function bossWon(k, d) { return PVE.bossWon(acc, k, d); }
+function bossOpen(k) { var B = BOSSES[k]; return !!(B && B.lv[0].open(acc, Date.now())); }
+function levelOpen(k, d) { return PVE.levelOpen(acc, k, d, Date.now()); }
   // 默认选中：已开放的难度里第一档还没击败的；都击败了就选最高档
   function bossSel(k) {
     var B = BOSSES[k], d = ex.bossK === k ? ex.bossD : -1;
@@ -4390,16 +4285,9 @@
     return 0;
   }
   function bossWhere(B) { return B.dept ? DEPTS[B.dept][0] : planetOf(B.planet).name + ' · ' + WILD_REGIONS.filter(function (R) { return R.id === B.region; })[0].name; }
-  function weeklyOpen() { return WEEKLIES.some(wkOpen); }
+function weeklyOpen() { return PVE.weeklyOpen(acc); }
   // 挑战许可：第一次开放每周挑战时送 1 枚，之后每 12 小时恢复 1 枚
-  function permits() {
-    if (!weeklyOpen()) return 0;
-    var p = acc.permit, now = Date.now();
-    if (!p || !(p.n >= 0)) { p = acc.permit = { n: 1, t: now }; save(); }
-    if (p.n >= PERMIT.max) p.t = now;
-    else { var k = Math.floor((now - p.t) / PERMIT.every); if (k > 0) { p.n = Math.min(PERMIT.max, p.n + k); p.t = p.n >= PERMIT.max ? now : p.t + k * PERMIT.every; save(); } }
-    return p.n;
-  }
+function permits() { var o = JSON.stringify(acc.permit || null), n = PVE.permits(acc, Date.now()); if (JSON.stringify(acc.permit || null) !== o) save(); return n; }
   function permitNext() { var n = permits(); if (n >= PERMIT.max) return '已满'; var ms = Math.max(0, acc.permit.t + PERMIT.every - Date.now()), m = Math.ceil(ms / 60000); return '下一枚 ' + Math.floor(m / 60) + ' 小时 ' + (m % 60) + ' 分后恢复'; }
   function bossSpots(n) {
     return Object.keys(BOSSES).filter(function (k) { return BOSSES[k].dept === n; }).map(function (k) {
@@ -4410,14 +4298,9 @@
     }).join('');
   }
   // SECRET_FX：第一次发动前只显示「？？？」的隐藏BOSS特效（触发后 acc.seenFx[键名] 会被 HSEV('bossfx',...) 记下）
-  var SECRET_FX = { past: 1, rebirth: 1 };   // 2026-10-24 起所有BOSS特性都是第一次发动前显示「？？？」（见 fxRules）
+  var SECRET_FX = PVE.SECRET_FX;   // 2026-10-24 起所有BOSS特性都是第一次发动前显示「？？？」（见 fxRules）
   // 2026-10-24：特性改成第一次发动前显示「？？？」之前就挑战过的BOSS难度，它的特性视为都见过了（第二形态之类的隐藏特效除外）
-  function seedSeenFx() {
-    if (!acc || acc.fxSeed) return; acc.fxSeed = 1; if (!acc.seenFx) acc.seenFx = {};
-    var mark = function (L) { if (L && L.boss) Object.keys(L.boss).forEach(function (k) { if (!SECRET_FX[k] && !acc.seenFx[k]) acc.seenFx[k] = Date.now(); }); };
-    Object.keys(BOSSES).forEach(function (k) { BOSSES[k].lv.forEach(function (L, i) { var r = acc.bosses && acc.bosses[recKey(k, i)]; if (r && r.tries > 0) { mark(L); (L.team || []).forEach(mark); } }); });
-    EWK.lv.forEach(function (L, i) { if (EWK.types.some(function (T) { var r = acc.bosses && acc.bosses[recKey('ewk_' + T.t, i)]; return r && r.tries > 0; })) mark(L); });
-  }
+function seedSeenFx() { if (PVE.seedSeenFx(acc, Date.now())) save(); }
   try { Object.defineProperty(window, 'HS_SEENFX', { get: function () { return acc && acc.seenFx; }, configurable: true }); } catch (e) {}
   function fxRules(L) {
     seedSeenFx();
@@ -4582,9 +4465,101 @@
     earn('weekly', '', { exp: W.exp + (D.exp || 0), energy: D.energy, items: wi });
     return ['每周挑战奖励：累积经验 +' + fmt(W.exp) + '、' + rwList({ items: fix }).join('、') + '；掉落了「' + dropName(D) + '」！'];
   }
-  function startBoss(k, d, weekly) {
+  /* ---------- 服务器结算的单人对战（2026-10-25）：用服务器网址玩时，BOSS、挑战等由服务器开打和结算 ----------
+   * 规则在 js/engine/pve.js 的 MODES。服务器改完存档后把整份存档发回来，这里直接换上（adoptAcc），再照服务器给的结果写提示。
+   * 本地双击打开（没有服务器）时仍走原来的本机结算。 */
+  function srvMode() { return !!(window.CLOUD && CLOUD.user()); }
+  function adoptAcc(js) {
+    try { var a = typeof js === 'string' ? JSON.parse(js) : js; if (!valid(a)) return false; acc = a; save(); return true; } catch (e) { return false; }
+  }
+  var pveBusy = false;
+  // kind、args：服务器上的模式和参数；ui = { bg, back, pre() }；done(e, res)：e 是服务器的结算结果（作废时为 null）
+  function pveRemote(kind, args, ui, done) {
+    if (pveBusy) return; pveBusy = true;
+    CLOUD.pve({ op: 'start', kind: kind, args: args }).then(function (r) {
+      pveBusy = false;
+      if (!r || !r.ok) { if (r && r.err) toast(r.err); return; }
+      if (r.acc) adoptAcc(r.acc);
+      var o = r.opt || {}, endE = null;
+      stopTimers(); ex.fighting = true; document.body.classList.add('story-fight'); syncBattle();
+      if (ui.pre) ui.pre(); else $('pg-explore').hidden = true;
+      $('pg-arena').hidden = false;
+      window.HSBATTLE.start({ S: r.S, remote: CLOUD.pve, foe: o.foe, diff: o.diff, bgm: o.bgm || null, bgmAt: o.bgmAt || null, back: ui.back || null, bg: ui.bg || null, corrupt: !!ui.corrupt, cuts: ui.cuts || null, onItem: useInv,
+        onSrvEnd: function (e) { endE = e; if (e && e.acc) adoptAcc(e.acc); },
+        onEnd: function (res, seen, downs, quit, endS) {
+          var e = endE || (endS && endS.srvEnd) || null;
+          if (e && !endE && e.acc) adoptAcc(e.acc);
+          done(e && !e.err ? e : null, res);
+        } });
+    });
+  }
+  // 服务器结算的战斗经验（ACC.battleXp 的结果）写成提示
+  function xpMsg(x) {
+    if (!x || !x.n) return [];
+    var out = [];
+    if (x.xp > 0) {
+      out.push('击败了 ' + x.n + ' 只精灵，共获得 ' + fmt(x.xp) + ' 点经验' + (x.xp < x.raw ? '（今天的战斗经验已达上限 ' + fmt(PVE_XP_CAP) + '）' : '') + '：');
+      out.push((x.gains || []).map(function (g) { if (REW.collect) REW.gains.push({ u: g.u, lv0: g.lv0, exp0: g.exp0, amt: g.amt }); return gainMsg(g); }).join(''));
+      out.push('经验背包 +' + fmt(x.pool) + '。');
+    } else out.push('击败了 ' + x.n + ' 只精灵。今天通过战斗获得的经验已达上限（' + fmt(PVE_XP_CAP) + '），明天再来吧。');
+    var got = (x.evGot || []).map(function (u) { var m = mon(u); return m ? form(m).name : ''; }).filter(Boolean);
+    if (got.length) out.push(got.join('、') + (got.length > 1 ? ' 各' : ' ') + '获得 ' + x.ev + ' 点学习力。');
+    return out;
+  }
+  // BOSS首次击败奖励（服务器已经发了）写成提示，和 firstReward 的一样
+  function firstMsg(fr) {
+    var out = []; if (!fr) return out;
+    if (fr.mon) { var m = mon(fr.mon.u); if (m) out.push('获得了 ' + form(m).name + '（LV' + m.lv + '，' + m.nat + '）！' + (fr.mon.added ? '已加入' + TEAM_NAME[acc.active] + '。' : '已收入精灵仓库。')); }
+    if (fr.emblem) out.push('获得了「' + EMBLEMS[fr.emblem].n + '」！以后你的' + SPMAP[fr.emblem].name + '（包括还没进化的）都会带着它：' + EMBLEMS[fr.emblem].d + '。');
+    if (fr.title) out.push('获得称号「' + titleName(fr.title) + '」！点右上角的名字即可佩戴。');
+    if (fr.items) out.push('获得 ' + Object.keys(fr.items).map(function (k) { return itemName(k) + ' ×' + fr.items[k]; }).join('、') + '，可以在精灵资料或「储存箱」里使用。');
+    if (fr.exp) out.push('累积经验 +' + fmt(fr.exp) + '，已放进经验背包。');
+    if (fr.bgm) out.push('获得茶室音乐「' + bgmName(fr.bgm) + '」！去陆羽茶室 · 我的房间就能换上，来拜访你茶室的船员也都能听到。');
+    if (fr.later) out.push('这一档难度的首次击败奖励将在之后添加，到时会通过邮箱补发给已经击败过的船员。');
+    return out;
+  }
+  // BOSS / 每周挑战结束后回到原来的界面
+  function bossBack(view, set) {
+    ex.fighting = false; document.body.classList.remove('story-fight');
+    ex.view = view; set();
+    $('pg-arena').hidden = page !== 'arena'; $('pg-explore').hidden = page !== 'explore';
+    renderTop(); syncBattle(); window.scrollTo(0, $('pg-explore').offsetTop - 8);
+  }
+  function startBossRemote(k, d, weekly) {
     var B = BOSSES[k], WK = weekly ? WEEKLIES.filter(function (x) { return x.boss === k && x.d === d; })[0] : null; if (weekly && !WK) return;
-    var L = B.lv[d]; if (!L || !(weekly ? wkOpen(WK) : L.open())) return;
+    var L = B.lv[d]; if (!L || !(weekly ? wkOpen(WK) : L.open(acc, Date.now()))) return;
+    if (weekly && permits() < 1) { toast('挑战许可用完了。' + permitNext() + '。'); return; }
+    pveRemote(weekly ? 'weekly' : 'boss', { k: k, d: d }, { bg: BG[floraBg(B.bg)], back: weekly ? '每周挑战' : bossWhere(B) }, function (e, res) {
+      var msg = [], first = false;
+      if (e) {
+        var r = e.rep;
+        dailyHit('boss'); dailyHit('pve');
+        if (r.res === 'win') {
+          first = !!r.first;
+          msg.push(weekly ? '每周挑战：击败了BOSS「' + B.name + '」！' : '击败了' + L.diff + '难度的BOSS「' + B.name + '」！');
+          if (weekly) { msg.push('每周挑战奖励：累积经验 +' + fmt(r.wk.exp) + '、' + rwList({ items: r.wk.fix }).join('、') + '；掉落了「' + dropName(r.wk.drop) + '」！'); msg.push('消耗了 1 枚挑战许可。'); }
+          else if (first) {
+            msg = msg.concat(firstMsg(r.fr));
+            if (B.lv[d + 1] && levelOpen(k, d + 1)) msg.push(B.lv[d + 1].diff + '难度已开放。');
+            if (WEEKLIES.some(function (x) { return x.boss === k && x.d === d; })) msg.push('「' + B.name + '」' + L.diff + '难度的每周挑战已开放：在星际探索的星球列表上方进入，每次获胜消耗 1 枚挑战许可。');
+            if (r.weeklyNew) msg.push('「每周挑战」已开放：在星际探索的星球列表上方进入，每次获胜消耗 1 枚挑战许可（已送你 1 枚）。');
+          }
+        }
+        msg = msg.concat(xpMsg(r.xp));
+        save();
+      } else if (res === 'void') msg.push('这场对战作废了，战绩和挑战许可都没有变化。');
+      bossBack(weekly ? 'weekly' : 'boss', function () { ex.boss = k; ex.bossK = k; ex.bossD = first && !weekly && levelOpen(k, d + 1) ? d + 1 : d; });
+      if (first && !weekly && k === 'tiger' && d === 0 && page === 'explore' && unlocked('tiger2') && !prog('tiger2').done) {
+        msg.push('泰戈尔好像有话要说……');
+        startVN('tiger2', 'replay', $('pg-explore'), true);
+      }
+      if (msg.length) toast(msg.join(''));
+    });
+  }
+  function startBoss(k, d, weekly) {
+    if (srvMode()) return startBossRemote(k, d, weekly);
+    var B = BOSSES[k], WK = weekly ? WEEKLIES.filter(function (x) { return x.boss === k && x.d === d; })[0] : null; if (weekly && !WK) return;
+    var L = B.lv[d]; if (!L || !(weekly ? wkOpen(WK) : L.open(acc, Date.now()))) return;
     if (weekly && permits() < 1) { toast('挑战许可用完了。' + permitNext() + '。'); return; }   // 2026-10-18：只有打赢才消耗挑战许可
     seedSeenFx();
     var team = (acc.teams[acc.active] || []).map(mon).filter(Boolean);
@@ -4661,7 +4636,24 @@
       '<p class="hint">会使用你当前的出战配队（' + TEAM_NAME[acc.active] + '）。对战中可以使用补药。</p>' +
       '<button type="button" class="btn primary" data-ewkgo="1"' + (pn > 0 ? '' : ' disabled') + '>开始挑战（获胜时消耗 1 枚挑战许可）</button><p class="hint permit-line">挑战许可 <b>' + pn + '</b> / ' + PERMIT.max + ' · ' + permitNext() + '</p></div></article>';
   }
+  function startEwkRemote(t, d) {
+    var T = ewkType(t), sid = T && ewkSid(t), L = EWK.lv[d]; if (!sid || !L || !weeklyOpen()) return;
+    if (permits() < 1) { toast('挑战许可用完了。' + permitNext() + '。'); return; }
+    pveRemote('ewk', { t: t, d: d }, { bg: ewkBg(sid), back: '每周挑战' }, function (e, res) {
+      var msg = [];
+      if (e) {
+        var r = e.rep, S = SPMAP[r.sid];
+        dailyHit('boss'); dailyHit('pve');
+        if (r.res === 'win') msg.push(t + '系每周挑战：击败了' + L.diff + '难度的「' + S.name + '」！获得' + itemName(r.drop.item) + ' ×' + r.drop.n + '、累积经验 +' + fmt(r.drop.exp) + '。消耗了 1 枚挑战许可。');
+        msg = msg.concat(xpMsg(r.xp));
+        save();
+      } else if (res === 'void') msg.push('这场对战作废了，战绩和挑战许可都没有变化。');
+      bossBack('ewk', function () { ex.ewkT = t; ex.ewkD = d; });
+      if (msg.length) toast(msg.join(''));
+    });
+  }
   function startEwk(t, d) {
+    if (srvMode()) return startEwkRemote(t, d);
     var T = ewkType(t), sid = T && ewkSid(t), L = EWK.lv[d]; if (!sid || !L || !weeklyOpen()) return;
     if (permits() < 1) { toast('挑战许可用完了。' + permitNext() + '。'); return; }
     var team = (acc.teams[acc.active] || []).map(mon).filter(Boolean); if (!team.length) team = acc.mons.slice(0, 1);

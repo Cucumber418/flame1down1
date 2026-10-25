@@ -1,8 +1,9 @@
 /*
- * 单人对战（打电脑）由服务器结算（2026-10-24）。目前接入的模式：先驱之塔（kind = 'tower'）
+ * 单人对战（打电脑）由服务器结算（2026-10-24 起）。先驱之塔（kind = 'tower'）是第一个；其他模式的规则写在 js/engine/pve.js 的 MODES 里
  *
  * POST /api/pve（需要登录）
  *   { op: 'start', kind: 'tower', pick }   开一场：服务器从存档里取出战配队，按规则生成对手。返回 { S }（对战状态）
+ *   { op: 'start', kind, args }            其他模式（boss、weekly、ewk……）；开打前改了存档时，返回里还有 acc（整份存档）和 rev
  *   { op: 'act', a }                       出招：a = { kind: 'move', i } / { kind: 'switch', to } / { kind: 'item', key }
  *   { op: 'repl', k }                      我方精灵倒下后选下一只
  *   { op: 'quit' }                         认输
@@ -50,7 +51,12 @@ function finish(name, sess) {
   var now = Date.now();
   var seen = S.sides[0].team.map(function (x) { return !!x.seen; });
   var downs = S.sides[1].team.filter(function (x) { return x.fainted; }).map(function (x) { return { id: x.id, lv: x.lv }; });
-  var end = E.PVE.towerEnd(acc, sess.f, sess.F, S.over, !!S.quit, sess.team, seen, downs, now);
+  var end;
+  if (sess.kind === 'tower') end = E.PVE.towerEnd(acc, sess.f, sess.F, S.over, !!S.quit, sess.team, seen, downs, now);
+  else {   // 其他模式：规则在 js/engine/pve.js 的 MODES；结算完把整份存档发回去，浏览器直接换上
+    var rep = E.PVE.MODES[sess.kind].end(acc, sess.ctx, { res: S.over, quit: !!S.quit, seen: seen, downs: downs }, { now: now, rand: Math.random });
+    end = { kind: sess.kind, res: S.over, quit: !!S.quit, rep: rep };
+  }
   // 战斗里用掉的道具：存档里的数量不超过「开打时 − 用掉的」
   if (!acc.items) acc.items = {};
   Object.keys(sess.used).forEach(function (k) { var cap = Math.max(0, (sess.items0[k] || 0) - sess.used[k]); if ((acc.items[k] || 0) > cap) acc.items[k] = cap; });
@@ -58,7 +64,30 @@ function finish(name, sess) {
   u.save.rev = (u.save.rev || 0) + 1; u.save.savedAt = now;
   A.saveUser(u);
   end.rev = u.save.rev; end.seen = seen; end.downs = downs;
+  if (sess.kind !== 'tower') end.acc = u.save.data['hs-account-v1'];
   return end;
+}
+// 开打前存档有改动（比如记挑战次数、图鉴）：先写进去
+function saveAcc(u, acc) {
+  u.save.data['hs-account-v1'] = JSON.stringify(acc);
+  u.save.rev = (u.save.rev || 0) + 1; u.save.savedAt = Date.now();
+  A.saveUser(u);
+  return u.save.rev;
+}
+
+// 开一场其他模式的对战
+function startMode(E, res, name, kind, u, acc, args) {
+  var now = Date.now(), st = E.PVE.MODES[kind].start(acc, args, { now: now, rand: Math.random });
+  if (!st || st.err) return A.reply(res, 400, { error: (st && st.err) || '开不了这场对战' });
+  var S = E.newBattle(st.p, st.a), o = st.opt || {};
+  S.story = { foe: o.foe, back: o.back || null, diff: o.diff || null }; S.noLimit = true; S.remote = true;
+  if (st.S) Object.keys(st.S).forEach(function (k) { if (st.S[k] != null) S[k] = st.S[k]; });   // env、wild、ai、ordered 等
+  var items0 = {}; E.ITEM_ORDER.forEach(function (k) { items0[k] = (acc.items && acc.items[k]) || 0; });
+  if (!st.noItems) S.items = JSON.parse(JSON.stringify(items0));
+  var out = { ok: true, S: S, opt: o };
+  if (st.dirty) { out.rev = saveAcc(u, acc); out.acc = u.save.data['hs-account-v1']; }
+  sessions[name] = { kind: kind, S: S, ctx: st.ctx || {}, items0: items0, used: {}, t: now, seq: 0, last: null, done: false };
+  return A.reply(res, 200, JSON.parse(E.battleJSON(S, out)));
 }
 
 A.use(function (req, res, url) {
@@ -72,9 +101,11 @@ A.use(function (req, res, url) {
     if (op === 'start' && body.v && body.v !== V) return A.reply(res, 409, { error: '游戏已经更新了，请刷新页面后再挑战。', update: true, v: V });
     try {
       if (op === 'start') {
-        if (body.kind !== 'tower') return A.reply(res, 400, { error: '不支持的对战' });
+        var kind = String(body.kind || '');
+        if (kind !== 'tower' && !E.PVE.MODES[kind]) return A.reply(res, 400, { error: '不支持的对战' });
         var u = A.loadUser(name), acc = u && accOf(u);
         if (!acc) return A.reply(res, 409, { error: '存档还没同步到服务器，请稍后再试' });
+        if (kind !== 'tower') return startMode(E, res, name, kind, u, acc, body.args && typeof body.args === 'object' ? body.args : {});
         var st = E.PVE.towerStart(acc, body.pick, Date.now(), Math.random);
         if (st.err) return A.reply(res, 400, { error: st.err });
         var S = E.newBattle(st.p, st.a);

@@ -370,13 +370,13 @@
   function pve(body) {
     if (!st.user) return Promise.resolve({ ok: false, err: '没有登录' });
     function end(r) { st.txing = false; return r; }
-    var pre = body.op === 'start' ? flush().then(idle) : idle();
+    var pre = flush().then(idle);   // 每次都先把本机进度传上去（比如刚用掉的补药），服务器结算时用的是最新的存档
     return pre.then(function () {
       st.txing = true;
       body.v = st.ver;
       return api('POST', '/api/pve', body);
     }).then(function (r) {
-      if (r._code === 200 && r.ok) { if (r.end && r.end.rev) { st.rev = r.end.rev; lsSet(REV, String(r.end.rev)); } return end(r); }
+      if (r._code === 200 && r.ok) { var rv = (r.end && r.end.rev) || r.rev; if (rv) { st.rev = rv; lsSet(REV, String(rv)); } return end(r); }
       if (r._code === 409 && r.update) { end(null); showUpdate(true); return { ok: false, err: '游戏已经更新了，刷新页面后再来挑战吧。' }; }
       if (r._code === 401) { setStatus('expired'); return end({ ok: false, err: '登录已失效，请先重新登录（点右上角的账号）。' }); }
       return end({ ok: false, gone: r._code === 410, err: r.error || '服务器没有回应，请稍后再试。' });

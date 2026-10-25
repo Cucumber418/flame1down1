@@ -179,6 +179,12 @@ sudo git clone --depth 1 https://github.com/Cucumber418/flame1down1 /opt/flame1d
 - 本地双击打开（没有服务器）时仍在本机结算，规则同一份。其他单人对战（剧情、野外、BOSS、挑战、茶室等）以后照这个框架逐个搬。
 - 对战状态发给浏览器前用 `battleJSON(S, obj)`（battle.js）去掉精灵之间的相互引用（隐藏技能的领悟条件会记「是谁让它冰冻的」），不然转 JSON 会循环引用；联网对战（`server/pvp.js`）也用它。
 
+**更多单人对战由服务器结算（2026-10-25 起，逐个模式搬）**：
+- 账号的核心规则（精灵实例、经验与升级、学习力、图鉴、战斗经验分配）搬到了 `js/engine/acc.js`（`ACC`），服务器和浏览器共用；game.js 里同名的函数（`mon`、`form`、`newMon`、`gainExp`、`giveEv`、`seeMon`……）现在只是转调它。
+- 新模式写在 `js/engine/pve.js` 的 `MODES[kind] = { start(a, args, env), end(a, ctx, B, env) }`：start 按存档和规则开一场（返回双方精灵、显示用的 opt、结算要用的 ctx），end 按规则发奖励、记战绩，直接改存档，返回发生了什么（rep）。`server/pve.js` 结算完把整份存档发回浏览器，game.js 用 `adoptAcc` 直接换上，再用 rep 写提示（`pveRemote` 是通用的开打流程）。
+- 已经接入：BOSS（`boss`）、每周挑战（`weekly`）、属性每周挑战（`ewk`）。它们的数据（`BOSSES`、`WEEKLIES`、`EWK`、挑战许可）也搬到了 pve.js，开放条件写成 `open(a, now)`。
+- 只由服务器改的字段：`claims.js` 的 `OWNED`（塔的进度、`bosses` 战绩、`permit` 挑战许可），上传的存档里改了会悄悄改回去；由服务器直接发的奖励来源在 `SERVER_ONLY` 里，宽限期后浏览器申报的不认。
+
 **版本检查**：服务器启动时按网页、样式、脚本的内容算一个版本号（`GET /api/version`）。开着的页面每 3 分钟、以及切回页面时检查一次，发现服务器上的版本变了就弹窗提示刷新；用旧页面兑换东西时服务器会拒绝（不扣费）并提示刷新。
 
 ## 小段位
