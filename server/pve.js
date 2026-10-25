@@ -30,6 +30,13 @@ setInterval(function () {
 }, 5 * 60e3).unref();
 // 刷一批野生精灵：{ rid, si, bg, n, kind }
 function wildBatch(E, name, acc, body) {
+  if (body.kind === 'mystery') {   // 神秘精灵：切换场景时来掷一次（每 10 秒最多一次）
+    var Wm = wildSp[name] || (wildSp[name] = { seq: 0, list: {} }), t0 = Date.now();
+    if (!E.PVE.mysteryTime(t0) || (Wm.myAt && t0 - Wm.myAt < 10e3)) return { ok: true, list: [] };
+    Wm.myAt = t0; if (Math.random() >= E.PVE.MYSTERY.chance) return { ok: true, list: [] };
+    var mm = E.PVE.wildRoll(acc, null, 0, '', 'mystery', Math.random); mm.id = ++Wm.seq; mm.t = t0; Wm.list[mm.id] = mm;
+    return { ok: true, list: [{ id: mm.id, sid: mm.sid, lv: mm.lv, shiny: mm.shiny, mystery: true }] };
+  }
   var R = E.PVE.regionById(String(body.rid || '')), si = body.si | 0, n = Math.max(1, Math.min(12, body.n | 0)), kind = body.kind === 'horn' ? 'horn' : '';
   if (!R || !E.PVE.regionOpen(acc, R)) return { error: '这个区域还没有开放' };
   if (kind === 'horn') { if (String(body.bg || '') !== E.PVE.HORN.bg || !(acc.items && acc.items.m_horn > 0)) return { error: '这里吹不响号角' }; n = 1; }
@@ -74,7 +81,7 @@ function finish(name, sess) {
   var end;
   if (sess.kind === 'tower') end = E.PVE.towerEnd(acc, sess.f, sess.F, S.over, !!S.quit, sess.team, seen, downs, now);
   else {   // 其他模式：规则在 js/engine/pve.js 的 MODES；结算完把整份存档发回去，浏览器直接换上
-    var env = { now: now, rand: Math.random, pw: function () { return require('./purgewar').hit(name); } };
+    var env = { now: now, rand: Math.random, data: u.save.data, pw: function () { return require('./purgewar').hit(name); } };
     var rep = E.PVE.MODES[sess.kind].end(acc, sess.ctx, { res: S.over, quit: !!S.quit, seen: seen, downs: downs, S: S }, env);
     end = { kind: sess.kind, res: S.over, quit: !!S.quit, rep: rep };
   }
@@ -86,6 +93,7 @@ function finish(name, sess) {
   A.saveUser(u);
   end.rev = u.save.rev; end.seen = seen; end.downs = downs;
   if (sess.kind !== 'tower') end.acc = u.save.data['hs-account-v1'];
+  if (end.rep && end.rep.keys) { end.keys = {}; end.rep.keys.forEach(function (k) { end.keys[k] = u.save.data[k]; }); }
   return end;
 }
 // 开打前存档有改动（比如记挑战次数、图鉴）：先写进去
@@ -114,16 +122,18 @@ function startMode(E, res, name, kind, u, acc, args) {
     else if (typeof args.helper === 'object') args._helper = require('./social').friendHelper(u, String(args.helper.user || ''), args.helper.u | 0);
     if (!args._helper) return A.reply(res, 400, { error: '借不到这只助战精灵（可能已经不是好友，或对方换了助战）' });
   }
-  var now = Date.now(), st = E.PVE.MODES[kind].start(acc, args, { now: now, rand: Math.random });
-  if (!st || st.err) return A.reply(res, 400, { error: (st && st.err) || '开不了这场对战' });
+  var now = Date.now(), st = E.PVE.MODES[kind].start(acc, args, { now: now, rand: Math.random, data: u.save.data });
+  if (!st || st.err) return A.reply(res, 400, { error: (st && st.err) || '开不了这场对战', draft: st && st.draft });
   var S = E.newBattle(st.p, st.a), o = st.opt || {};
   S.story = { foe: o.foe, back: o.back || null, diff: o.diff || null }; S.noLimit = true; S.remote = true;
+  if (st.noStory) delete S.story;   // 竞技对战：不是剧情类对战
   if (st.S) Object.keys(st.S).forEach(function (k) { if (st.S[k] != null) S[k] = st.S[k]; });   // env、wild、ai、ordered 等
   var items0 = {}; E.ITEM_ORDER.forEach(function (k) { items0[k] = (acc.items && acc.items[k]) || 0; });
   if (!st.noItems) S.items = JSON.parse(JSON.stringify(items0));
   var out = { ok: true, S: S, opt: o };
   if (st.preStrike) out.pre = E.resolveTurn(S, [{ kind: 'pass' }, E.aiChoose(S)]);   // 剧情：对方偷袭，开场先出一招
-  if (st.dirty) { out.rev = saveAcc(u, acc); out.acc = u.save.data['hs-account-v1']; }
+  if (st.dirty || st.keys) { out.rev = saveAcc(u, acc); out.acc = u.save.data['hs-account-v1']; }
+  if (st.keys) { out.keys = {}; st.keys.forEach(function (k) { out.keys[k] = u.save.data[k]; }); }   // 服务器改过的其他存档项（段位、本局阵容）
   sessions[name] = { kind: kind, S: S, ctx: st.ctx || {}, items0: items0, used: {}, t: now, seq: 0, last: null, done: false };
   return A.reply(res, 200, JSON.parse(E.battleJSON(S, out)));
 }
@@ -135,6 +145,13 @@ A.use(function (req, res, url) {
     var who = A.whoIs(req); if (!who) return A.reply(res, 401, { error: '登录已失效，请重新登录' });
     var E = X(); if (!E || !E.PVE) return A.reply(res, 503, { error: '服务器暂时不能开对战，请联系管理员' });
     var name = who.user, op = String(body.op || '');
+    if (op === 'draft') {   // 平衡排位：本局的两套阵容由服务器抽（还没用掉就沿用）
+      var ud = A.loadUser(name); if (!ud || !ud.save) return A.reply(res, 409, { error: '存档还没同步到服务器' });
+      var dd = E.PVE.readKey(ud.save.data, 'hs-draft-v1'), outD = { ok: true };
+      if (!dd || !dd.opts || dd.used) { dd = E.PVE.newDraft(); ud.save.data['hs-draft-v1'] = JSON.stringify(dd); outD.rev = saveAcc(ud, accOf(ud) || JSON.parse(ud.save.data['hs-account-v1'] || '{}')); }
+      outD.keys = { 'hs-draft-v1': ud.save.data['hs-draft-v1'] };
+      return A.reply(res, 200, outD);
+    }
     if (op === 'wild') { var uw = A.loadUser(name), aw = uw && accOf(uw); if (!aw) return A.reply(res, 409, { error: '存档还没同步到服务器' }); var rw = wildBatch(E, name, aw, body); return A.reply(res, rw.error ? 400 : 200, rw); }
     var V = require('./tx').VERSION;
     if (op === 'start' && body.v && body.v !== V) return A.reply(res, 409, { error: '游戏已经更新了，请刷新页面后再挑战。', update: true, v: V });

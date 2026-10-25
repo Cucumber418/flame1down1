@@ -3573,21 +3573,29 @@
   }
 
   /* ---------- 神秘精灵：每天 16:00–24:00，切换场景时有 3% 概率出现（真身是 LV10 幽灵鱼） ---------- */
-  var MYSTERY = { sid: 'hauris', lv: 10, rate: 0.4, chance: 0.03, shiny: 0.03, from: 16, to: 24 };
-  function mysteryTime() { var h = new Date().getHours(); return h >= MYSTERY.from && h < MYSTERY.to; }
+  var MYSTERY = PVE.MYSTERY;   // 规则在 js/engine/pve.js
+  function mysteryTime() { return PVE.mysteryTime(Date.now()); }
   function mysteryRoll(where) {
     if (!ready() || ex.fighting || !mysteryTime() || $('mys')) return;
+    if (srvMode()) {   // 出不出现、是不是异色由服务器掷（2026-10-25）
+      CLOUD.api('POST', '/api/pve', { op: 'wild', kind: 'mystery' }).then(function (r) { var sp = r && r.ok && r.list[0]; if (sp && !ex.fighting && !$('mys')) mysteryShow(where, !!sp.shiny, sp.id); }).catch(function () {});
+      return;
+    }
     if (Math.random() >= MYSTERY.chance) return;
+    mysteryShow(where, Math.random() < MYSTERY.shiny, null);
+  }
+  function mysteryShow(where, sh, sid) {
     var d = document.createElement('div'); d.id = 'mys'; d.className = 'mys'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-label', '神秘精灵');
     d.dataset.where = where || '星际探索';
-    var sh = Math.random() < MYSTERY.shiny; if (sh) d.dataset.shiny = '1';
+    if (sh) d.dataset.shiny = '1'; if (sid) d.dataset.sid = sid;
     d.innerHTML = '<div class="mys-box"><span class="tape l"></span><div class="mys-art"><img src="' + form({ sid: MYSTERY.sid, lv: MYSTERY.lv, shiny: sh }).img + '" alt=""></div><b>神秘精灵出现了！</b><p>一团忽明忽暗的影子从' + esc(d.dataset.where) + '的角落里飘了出来，正盯着你看。</p>' +
       '<div class="row"><button type="button" class="btn primary" data-mys="go">迎战</button><button type="button" class="btn" data-mys="no">放它离开</button></div></div>';
     document.body.appendChild(d);
   }
   document.addEventListener('click', function (e) {
     var b = e.target.closest('[data-mys]'); if (!b) return;
-    var d = $('mys'), where = d ? d.dataset.where : '星际探索', sh = !!(d && d.dataset.shiny); if (d) d.remove();
+    var d = $('mys'), where = d ? d.dataset.where : '星际探索', sh = !!(d && d.dataset.shiny), msid = d && d.dataset.sid; if (d) d.remove();
+    if (b.dataset.mys === 'go' && srvMode()) { if (msid) startWildRemote({ id: +msid }, { sid: MYSTERY.sid, lv: MYSTERY.lv, back: where, where: '神秘精灵 · ' + where }); return; }
     if (b.dataset.mys === 'go') startWildBattle({ sid: MYSTERY.sid, lv: MYSTERY.lv, rate: MYSTERY.rate, shiny: sh, back: where, where: '神秘精灵 · ' + where, foe: '神秘精灵' });
     else toast('神秘的影子一闪，消失不见了。');
   });
@@ -3928,6 +3936,12 @@
     if (type !== 'arena') return;
     dailyHit('arena');
     if (d.rank) { dailyHit('rankPlay'); if (d.result === 'win') dailyHit('rankWin'); } else dailyHit('sandbox');
+    if (d.srv) {   // 服务器结算的（2026-10-25）：奖励服务器已经发了，这里只写提示
+      var rx = d.srv.rexp; renderRes();
+      if (rx && !rx.full) return '平衡排位奖励：累积经验 +' + fmt(rx.exp) + '，竞技代币 +' + rx.tok + '（今天第 ' + rx.n + ' / ' + rx.max + ' 局）';
+      if (rx && rx.full) return '今天的 ' + rx.max + ' 局平衡排位奖励已经领完了';
+      return;
+    }
     // 平衡排位：每天前 10 局各给 1000 累积经验和 20 竞技代币（认输不算）
     if (d.rank && !d.quit) {
       var n = rankToday();
@@ -6503,7 +6517,7 @@
     titleName: titleName, mon: mon, fmt: fmt, milRank: milRank, avatarInner: avatarInner, avatarSpec: function () { return avatarCur(); },
     npcPlan: npcPlan, npcHome: npcHome,
     sendMail: sendMail, openMailbox: openMailbox,
-    rankToday: rankToday, RANK_EXP: { exp: RANK_EXP, n: RANK_EXP_N, token: RANK_TOKEN }, tokenBarHTML: tokenBarHTML, openTokenShop: openTokenShop, rankRwHTML: rankRwHTML, openQuests: openQuests, gender: gender,
+    rankToday: rankToday, adopt: adoptAcc, RANK_EXP: { exp: RANK_EXP, n: RANK_EXP_N, token: RANK_TOKEN }, tokenBarHTML: tokenBarHTML, openTokenShop: openTokenShop, rankRwHTML: rankRwHTML, openQuests: openQuests, gender: gender,
     brawlOpen: brawlOpen, brawlSpec: brawlSpec, brawlReward: brawlReward, brawlToday: brawlToday, BRAWL: { win: BRAWL_WIN, lose: BRAWL_LOSE, cap: BRAWL_CAP, lv: BRAWL_LV },
     // 平衡模式切磋：LV60、性格无修正、没有学习力和纹章，技能可以从全部技能里选（没选就用竞技对战里记住的配招）
     balSpec: function (raw) {

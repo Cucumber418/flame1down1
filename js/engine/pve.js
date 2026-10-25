@@ -763,9 +763,13 @@ var PVE = (function () {
   // 瘴气驱逐战：击破腐化精灵，自己经验背包 +1000，全服击破 +1（每人每天最多 50 次）
   var PW = { exp: 1000, cap: 50 };
   function pwOpen(a) { return done(a, 'flora6'); }
+  // 神秘精灵：每天 16:00–24:00（北京时间），切换场景时有 3% 概率出现（真身是 LV10 幽灵鱼）
+  var MYSTERY = { sid: 'hauris', lv: 10, rate: 0.4, chance: 0.03, shiny: 0.03, from: 16, to: 24 };
+  function mysteryTime(now) { var h = new Date(now + 8 * 3600e3).getUTCHours(); return h >= MYSTERY.from && h < MYSTERY.to; }
   function hornDrop(rand) { return HORN.drop[0] + Math.floor(rand() * (HORN.drop[1] - HORN.drop[0] + 1)); }
   /* 刷出一只野生精灵（只掷骰子，不改存档）。kind：'' 普通 / 'horn' 号角引来的塞米。返回 { sid, lv, rate, shiny, corrupt, bait, horn } 或 null */
   function wildRoll(a, R, si, bgKey, kind, rand) {
+    if (kind === 'mystery') return { sid: MYSTERY.sid, lv: MYSTERY.lv, rate: MYSTERY.rate, shiny: rand() < MYSTERY.shiny, corrupt: false, bait: false, mystery: true };
     var hit = null, corrupt = regionFallen(a, R);
     if (kind === 'horn') hit = { w: { sid: HORN.sid, lv: [HORN.lv, HORN.lv], rate: HORN.rate, rare: true, w: 0 }, lv: HORN.lv };
     else {
@@ -803,8 +807,11 @@ var PVE = (function () {
         o = { sid: TRAVEL.sid, lv: TRAVEL.lv, rate: 0, noCatch: true, travel: true, foe: '旅行精灵', tag: ' · 旅行精灵', rid: R.id };
       } else {
         var sp = args._sp; if (!sp) return { err: '它已经离开了。' };
-        R = regionById(sp.rid); if (!R || !regionOpen(a, R)) return { err: '这个区域还没有开放' };
-        o = { sid: sp.sid, lv: sp.lv, rate: sp.rate, shiny: sp.shiny, corrupt: sp.corrupt, bait: sp.bait, rid: R.id, flora: R.planet === 'flora', tag: '' };
+        if (sp.mystery) o = { sid: sp.sid, lv: sp.lv, rate: sp.rate, shiny: sp.shiny, foe: '神秘精灵', tag: '' };
+        else {
+          R = regionById(sp.rid); if (!R || !regionOpen(a, R)) return { err: '这个区域还没有开放' };
+          o = { sid: sp.sid, lv: sp.lv, rate: sp.rate, shiny: sp.shiny, corrupt: sp.corrupt, bait: sp.bait, rid: R.id, flora: R.planet === 'flora', tag: '' };
+        }
         if (sp.horn) { if (!(a.items && a.items.m_horn > 0)) return { err: '奇声号角已经用完了' }; a.items.m_horn--; o.tag += ' · 号角引来的塞米'; }
         if (o.corrupt) { o.miasma = 10; o.noCatch = true; o.foe = '瘴气侵蚀的狂暴精灵'; o.tag += ' · 瘴气异变'; }
         else if (o.flora && purgeActive(a) && env.rand() < PURGE.chance) { o.taint = true; o.miasma = 5; o.noCatch = true; o.foe = '被瘴气污染的野生精灵'; o.tag += ' · 瘴气精灵'; }
@@ -854,8 +861,84 @@ var PVE = (function () {
     }
   };
 
-  return { MODES: MODES, regionById: regionById, regionOpen: regionOpen, floraFallen: floraFallen, regionFallen: regionFallen, sceneCount: sceneCount, rollShiny: rollShiny, rollWild: rollWild,
-    RICE: RICE, HORN: HORN, TRAVEL: TRAVEL, travelAt: travelAt, PURGE: PURGE, purgeRec: purgeRec, purgeActive: purgeActive, SPARE_N: SPARE_N, spareActive: spareActive, PW: PW, wildRoll: wildRoll, LEAF_ALLY: LEAF_ALLY, FIGHTS: FIGHTS, fightTeam: fightTeam, resolveFoeEntry: resolveFoeEntry, CUMBER: CUMBER, NPC_WIN_EXP: NPC_WIN_EXP, NPC_HOURS: NPC_HOURS, NPC_FROM: NPC_FROM, NPC_TO: NPC_TO, NPC_AI_RANK: NPC_AI_RANK, NPC: NPC, NPC_SECRET: NPC_SECRET, NPC_POOL: NPC_POOL, npcPlan: npcPlan, bjDay: bjDay, TEA_DAILY: TEA_DAILY, TEA_EXP: TEA_EXP, MM: MM, MM_NICK: MM_NICK, MM_TEAM: MM_TEAM, MM_TEAM_HARD: MM_TEAM_HARD, MM_DIFF: MM_DIFF, MM_FINAL: MM_FINAL, mmFoes: mmFoes, mmDay: mmDay, CHAL: CHAL, starOk: starOk, chalLevelOpen: chalLevelOpen, chalTotal: chalTotal, MM_HELPER: MM_HELPER, ONLY3: ONLY3, BOSSES: BOSSES, BOSS_CRY: BOSS_CRY, WEEKLIES: WEEKLIES, EWK: EWK, PERMIT: PERMIT, SECRET_FX: SECRET_FX,
+  /* ==========================================================
+   * 竞技对战：平衡排位（rank）和沙盒对战（sandbox）（2026-10-25）
+   * 段位（存档里的 hs-rank-v1）和本局阵容（hs-draft-v1）只由服务器改：env.data 是整份存档，这两个模式直接读写它。
+   * ========================================================== */
+  var RANK_EXP = 1000, RANK_EXP_N = 10, RANK_TOKEN = 20;   // 平衡排位：每天前 10 局各给 1000 累积经验和 20 竞技代币（认输不算）
+  function readKey(data, k) { try { return JSON.parse((data && data[k]) || 'null'); } catch (e) { return null; } }
+  function rankState(data) { var R = readKey(data, 'hs-rank-v1'); if (!R || R.r == null) R = { r: 0, stars: 0, w: 0, l: 0, best: 0 }; return fixRank(R); }
+  function newDraft() { return { opts: drawDraft(), pick: null, order: null }; }
+  // 打完一局：星数、小段、段位怎么变（和 battle-ui.js 以前的 applyRank 一样），返回显示用的变化
+  function rankApply(R, result) {
+    fixRank(R); var x = { from: R.r, fromDv: R.dv, fromStars: R.stars };
+    if (result === 'win') {
+      R.w = (R.w || 0) + 1; R.stars = (R.stars || 0) + 1;
+      if (R.r < KING && R.stars >= 3) {
+        R.stars = 0;
+        if (hasDiv(R.r) && R.dv > 1) { R.dv--; x.kind = 'up'; x.msg = '晋级成功，升入' + rankFull(R.r, R.dv); }
+        else { R.r++; if (hasDiv(R.r)) R.dv = DIVS; else delete R.dv; x.kind = 'up'; x.msg = '晋级成功，进入' + rankFull(R.r, R.dv) + (hasDiv(R.r) ? '' : '段位'); }
+      } else x.msg = R.r === KING ? '王者段位，星数 +1' : '星数 +1，再胜 ' + (3 - R.stars) + ' 局即可晋级';
+    } else if (result === 'lose') {
+      R.l = (R.l || 0) + 1;
+      if (R.stars > 0) { R.stars--; x.msg = '星数 −1'; }
+      else if (hasDiv(R.r) && R.dv < DIVS) { R.dv++; R.stars = 2; x.kind = 'down'; x.msg = '降至' + rankFull(R.r, R.dv); }
+      else if (R.r > 0) { R.r--; if (hasDiv(R.r)) R.dv = 1; else delete R.dv; R.stars = 2; x.kind = 'down'; x.msg = '降级至' + rankFull(R.r, R.dv) + (hasDiv(R.r) ? '' : '段位'); }
+      else x.msg = '黑铁为最低段位，不再降级';
+    } else x.msg = '平局，星数不变';
+    if (R.r > (R.best || 0)) { R.best = R.r; if (hasDiv(R.r)) R.bestDv = R.dv; else delete R.bestDv; }
+    else if (R.r === R.best && hasDiv(R.r) && R.dv < (R.bestDv || DIVS + 1)) R.bestDv = R.dv;
+    if (R.r === KING) R.kingBest = Math.max(R.kingBest || 0, R.stars);
+    x.to = R.r; x.toDv = R.dv; x.toStars = R.stars; return x;
+  }
+  // 玩家自己配的技能：只能是这只精灵会的技能（含隐藏技能），最多 4 个；不合格的用默认配招
+  function arenaMoves(id, mv) {
+    var s = SPMAP[id], own = s.moves.concat(s.hidden);
+    var out = (Array.isArray(mv) ? mv : []).filter(function (n, i, a) { return typeof n === 'string' && M[n] && own.indexOf(n) >= 0 && a.indexOf(n) === i; }).slice(0, 4);
+    return out.length ? out : s.def.slice(0, 4);
+  }
+  MODES.rank = {
+    // args = { order: 出场顺序（本局阵容的 5 只）, moves: { 精灵: [技能] } }
+    start: function (a, args, env) {
+      var data = env.data, d = readKey(data, 'hs-draft-v1');
+      if (!d || !d.opts || d.used) return { err: '本局阵容已经失效了，请重新选择阵容', draft: true };
+      var pick = args.pick === 1 ? 1 : 0; if (d.pick === 0 || d.pick === 1) pick = d.pick;
+      var team = d.opts[pick], ord = Array.isArray(args.order) ? args.order : [];
+      if (!(ord.length === team.length && team.every(function (id) { return ord.indexOf(id) >= 0; }))) ord = team.slice();
+      var p = ord.map(function (id) { return { id: id, moves: arenaMoves(id, args.moves && args.moves[id]) }; });
+      var R = rankState(data), foes = buildAITeam(R.r, ord, R.stars, R.dv);
+      d.used = true; d.pick = pick; d.order = ord; data['hs-draft-v1'] = JSON.stringify(d);
+      return { p: p, a: foes, ctx: { r: R.r }, noItems: true, noStory: true, keys: ['hs-draft-v1'],
+        S: { mode: 'rank', rankAt: R.r, rankDv: R.dv, ai: rankAI(R.r, R.stars, R.dv), noLimit: false }, opt: {} };
+    },
+    end: function (a, c, B, env) {
+      var data = env.data, R = rankState(data), x = rankApply(R, B.res), rep = { res: B.res, quit: B.quit, x: x };
+      data['hs-rank-v1'] = JSON.stringify(R);
+      if (!B.quit) {
+        var d0 = bjDay(env.now), n = a.rankExp && a.rankExp.d === d0 ? a.rankExp.n || 0 : 0;
+        if (n < RANK_EXP_N) { a.rankExp = { d: d0, n: n + 1 }; a.exp = (a.exp || 0) + RANK_EXP; a.tokens = (a.tokens || 0) + RANK_TOKEN; rep.rexp = { exp: RANK_EXP, tok: RANK_TOKEN, n: n + 1, max: RANK_EXP_N }; }
+        else rep.rexp = { full: true, max: RANK_EXP_N };
+      }
+      rep.keys = ['hs-rank-v1'];
+      return rep;
+    }
+  };
+  MODES.sandbox = {
+    // args = { team: [{ id, moves }] }：沙盒随便选 5 只，对手随机；没有奖励（只算每日任务）
+    start: function (a, args, env) {
+      var team = (Array.isArray(args.team) ? args.team : []).filter(function (t) { return t && SPMAP[t.id] && SP.some(function (x) { return x.id === t.id; }); }).slice(0, 5);
+      var seen = {}; team = team.filter(function (t) { if (seen[t.id]) return false; seen[t.id] = 1; return true; });
+      if (!team.length) return { err: '背包里还没有精灵' };
+      var p = team.map(function (t) { return { id: t.id, moves: arenaMoves(t.id, t.moves) }; });
+      var ids = shuffled(SP.map(function (s) { return s.id; })).slice(0, 5);
+      var foes = ids.map(function (id) { return { id: id, moves: smartLoadout(id, 6, ids) }; });
+      return { p: p, a: foes, ctx: {}, noItems: true, noStory: true, S: { noLimit: false }, opt: {} };
+    },
+    end: function (a, c, B, env) { return { res: B.res, quit: B.quit }; }
+  };
+
+  return { MODES: MODES, RANK_EXP: RANK_EXP, RANK_EXP_N: RANK_EXP_N, RANK_TOKEN: RANK_TOKEN, rankState: rankState, rankApply: rankApply, newDraft: newDraft, readKey: readKey, regionById: regionById, regionOpen: regionOpen, floraFallen: floraFallen, regionFallen: regionFallen, sceneCount: sceneCount, rollShiny: rollShiny, rollWild: rollWild,
+    MYSTERY: MYSTERY, mysteryTime: mysteryTime, RICE: RICE, HORN: HORN, TRAVEL: TRAVEL, travelAt: travelAt, PURGE: PURGE, purgeRec: purgeRec, purgeActive: purgeActive, SPARE_N: SPARE_N, spareActive: spareActive, PW: PW, wildRoll: wildRoll, LEAF_ALLY: LEAF_ALLY, FIGHTS: FIGHTS, fightTeam: fightTeam, resolveFoeEntry: resolveFoeEntry, CUMBER: CUMBER, NPC_WIN_EXP: NPC_WIN_EXP, NPC_HOURS: NPC_HOURS, NPC_FROM: NPC_FROM, NPC_TO: NPC_TO, NPC_AI_RANK: NPC_AI_RANK, NPC: NPC, NPC_SECRET: NPC_SECRET, NPC_POOL: NPC_POOL, npcPlan: npcPlan, bjDay: bjDay, TEA_DAILY: TEA_DAILY, TEA_EXP: TEA_EXP, MM: MM, MM_NICK: MM_NICK, MM_TEAM: MM_TEAM, MM_TEAM_HARD: MM_TEAM_HARD, MM_DIFF: MM_DIFF, MM_FINAL: MM_FINAL, mmFoes: mmFoes, mmDay: mmDay, CHAL: CHAL, starOk: starOk, chalLevelOpen: chalLevelOpen, chalTotal: chalTotal, MM_HELPER: MM_HELPER, ONLY3: ONLY3, BOSSES: BOSSES, BOSS_CRY: BOSS_CRY, WEEKLIES: WEEKLIES, EWK: EWK, PERMIT: PERMIT, SECRET_FX: SECRET_FX,
     wkKey: wkKey, recKey: recKey, bossRec: bossRec, bossWon: bossWon, levelOpen: levelOpen, wkOpen: wkOpen, weeklyOpen: weeklyOpen, wkNum: wkNum, ewkPool: ewkPool, ewkType: ewkType, ewkSid: ewkSid,
     permits: permits, seedSeenFx: seedSeenFx, chalStars: chalStars, myTeam: myTeam,
     TOWER: TOWER, twLv: twLv, twExp: twExp, twTok: twTok, twFloor: twFloor, seeded: seeded, foeMoves: foeMoves, storyMon: storyMon,

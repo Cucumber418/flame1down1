@@ -56,7 +56,7 @@ function addTo(sum, d) { FIELDS.forEach(function (f) { if (d[f]) sum[f] += d[f];
 
 /* ---------- 检查一条申报，返回整理好的数值；不合格返回 null ---------- */
 // 2026-10-24 起由服务器直接发的奖励：浏览器不该再申报，宽限期过后这些来源的申报一律不认
-var SERVER_ONLY = { tower: 1, towerDeath: 1, bossFirst: 1, weekly: 1, ewk: 1, chalFirst: 1, mmFirst: 1, mm: 1, cumber: 1, npc: 1, tea: 1, purge: 1, pw: 1, travel: 1, drop: 1 };   // 这些奖励已经改由服务器直接发（server/pve.js），浏览器申报的不认
+var SERVER_ONLY = { tower: 1, towerDeath: 1, bossFirst: 1, weekly: 1, ewk: 1, chalFirst: 1, mmFirst: 1, mm: 1, cumber: 1, npc: 1, tea: 1, purge: 1, pw: 1, travel: 1, drop: 1, rankExp: 1, battle: 1 };   // 这些奖励已经改由服务器直接发（server/pve.js），浏览器申报的不认
 function clean(c) {
   if (!c || typeof c !== 'object' || typeof c.c !== 'string' || c.c.length > 40 || !SRC.hasOwnProperty(c.s)) return null;
   if (SERVER_ONLY[c.s] && Date.now() >= GRACE_UNTIL) return null;
@@ -81,7 +81,8 @@ function clean(c) {
  * 返回 { data: 要保存的存档（enforce 模式下可能改过）, fixed: 修正说明（没改就是空） } */
 // 把塔的进度改回服务器上的（服务器那份没有的字段就删掉）
 // 只由服务器改的字段（「对象.字段」或整个顶层字段）：上传的存档里改了，悄悄改回服务器的
-var OWNED = ['tower.f', 'tower.cp', 'tower.best', 'tower.clears', 'tower.death', 'tower.day', 'bosses', 'permit', 'chal', 'mm.clr', 'mm.wins', 'cumberFt', 'npcWin', 'teaFight', 'purge', 'pwd', 'travel'];
+var OWNED = ['tower.f', 'tower.cp', 'tower.best', 'tower.clears', 'tower.death', 'tower.day', 'bosses', 'permit', 'chal', 'mm.clr', 'mm.wins', 'cumberFt', 'npcWin', 'teaFight', 'purge', 'pwd', 'travel', 'rankExp'];
+var OWNED_KEYS = ['hs-rank-v1', 'hs-draft-v1'];   // 整个存档项只由服务器改：段位、平衡排位本局阵容（server/pve.js）
 function getP(o, p) { var k = p.split('.'); return k.length === 1 ? o[k[0]] : o[k[0]] && typeof o[k[0]] === 'object' ? o[k[0]][k[1]] : undefined; }
 function ownDiff(A, B) { return OWNED.filter(function (p) { var k = p.split('.'); if (k.length > 1 && (!A[k[0]] || !B[k[0]])) return false; return JSON.stringify(getP(A, p)) !== JSON.stringify(getP(B, p)); }); }
 function twBack(A, B, keys) {
@@ -90,13 +91,34 @@ function twBack(A, B, keys) {
     if (src[f] === undefined) delete dst[f]; else dst[f] = JSON.parse(JSON.stringify(src[f]));
   });
 }
+function rankOk(oldData, id) {
+  var r = +String(id).split(':').pop(), R = null;
+  try { R = JSON.parse((oldData || {})['hs-rank-v1'] || 'null'); } catch (e) {}
+  if (!R) return false;
+  return Math.max(R.best || 0, R.r || 0) >= r;
+}
 function starsOk(oldData, n) {
   var E = require('./tx').engine(), a = accOf(oldData);
   if (!E || !E.PVE || !a) return true;
   return E.PVE.chalTotal(a, 'flora') >= n;
 }
+// 只由服务器改的整个存档项：上传的改回服务器的（服务器还没有时：段位只认初始的黑铁，本局阵容不认）
+function keyFix(oldData, newData) {
+  var out = newData, ch = false;
+  OWNED_KEYS.forEach(function (k) {
+    var o = oldData && oldData[k], n = newData && newData[k], keep;
+    if (o != null) keep = o;
+    else if (k === 'hs-rank-v1') { var R = null; try { R = JSON.parse(n || 'null'); } catch (e) {} keep = R && !(R.r > 0) && !(R.best > 0) && !(R.w > 0) ? n : undefined; }
+    else keep = undefined;
+    if (n === keep) return;
+    if (!ch) { out = {}; for (var x in newData) out[x] = newData[x]; ch = true; }
+    if (keep === undefined) delete out[k]; else out[k] = keep;
+  });
+  return out;
+}
 function onUpload(u, list, oldData, newData, info) {
   var now = Date.now(), ok = blank(), bad = blank(), notes = [];
+  if (MODE === 'enforce' && (info.claims || now >= GRACE_UNTIL)) newData = keyFix(oldData, newData);
   if (!u.claimed || typeof u.claimed !== 'object') u.claimed = {};
   if (!Array.isArray(u.cids)) u.cids = [];
   var seen = {}; u.cids.forEach(function (x) { seen[x] = 1; });
@@ -106,6 +128,7 @@ function onUpload(u, list, oldData, newData, info) {
     if (c && typeof c.c === 'string') { seen[c.c] = 1; u.cids.push(c.c); }
     if (!d) { if (c && c.d) addTo(bad, c.d && typeof c.d === 'object' ? sane(c.d) : {}); notes.push('无效申报 ' + (c && c.s)); return; }
     var id = String(c.i == null ? '' : c.i).slice(0, 80);
+    if (c.s === 'rankRw' && !rankOk(oldData, id)) { addTo(bad, d); notes.push('段位不够 ' + id); return; }   // 赛季段位奖励：按服务器记的最高段位核对
     if (c.s === 'chalStar' && !starsOk(oldData, +id)) { addTo(bad, d); notes.push('星数不够 ' + id); return; }   // 挑战累计星数奖励：按服务器记的星数核对
     if (SRC[c.s] === 1) {
       var key = c.s + ':' + id;

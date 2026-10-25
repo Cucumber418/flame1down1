@@ -36,7 +36,31 @@
   app.draft = null;
   try { var savedD = JSON.parse(localStorage.getItem('hs-draft-v1') || 'null'); if (savedD && savedD.opts) app.draft = savedD; } catch (e) {}
   function saveDraft() { try { localStorage.setItem('hs-draft-v1', JSON.stringify(app.draft)); } catch (e) {} }
-  function ensureDraft() { if (!app.draft || app.draft.used) { app.draft = { opts: drawDraft(), pick: null, order: null }; saveDraft(); } return app.draft; }
+  function ensureDraft() {
+    if (!app.draft || app.draft.used) {
+      if (srvOn()) {   // 用服务器网址玩时：本局阵容由服务器抽（2026-10-25）
+        if (!app.draft || !app.draft.loading) { app.draft = { opts: null, loading: true, pick: null, order: null }; fetchDraft(); }
+        return app.draft;
+      }
+      app.draft = { opts: drawDraft(), pick: null, order: null }; saveDraft();
+    }
+    return app.draft;
+  }
+  function srvOn() { return !!(window.CLOUD && CLOUD.user && CLOUD.user() && CLOUD.pve); }
+  function fetchDraft() {
+    CLOUD.pve({ op: 'draft' }).then(function (r) {
+      if (r && r.ok && r.keys) applyKeys(r.keys); else app.draft = null;
+      if (app.screen !== 'battle') renderBuilder();
+    });
+  }
+  // 服务器改过的存档项（段位、本局阵容）：换上
+  function applyKeys(keys) {
+    Object.keys(keys || {}).forEach(function (k) {
+      var v = keys[k]; if (typeof v !== 'string') return;
+      try { localStorage.setItem(k, v); } catch (e) {}
+      try { if (k === 'hs-rank-v1') app.rank = fixRank(JSON.parse(v)); if (k === 'hs-draft-v1') app.draft = JSON.parse(v); } catch (e) {}
+    });
+  }
   function B() { if (app.mode !== 'rank') return app.bag; var d = ensureDraft(); return d.pick == null ? [] : d.order; }
   // 沙盒：对战 / 训练
   app.sub = 'battle'; app.train = { lv: 100, def: 50 };
@@ -229,6 +253,7 @@
   /* ---------------- 选精灵界面 ---------------- */
   function renderDraft() {
     var d = ensureDraft(), el = $('draft');
+    if (!d.opts) { el.innerHTML = '<p class="draft-lead">正在抽取本局的两套阵容……</p>'; return; }
     el.innerHTML = '<p class="draft-lead">系统为本局随机给出两套阵容，两套的综合实力相当。请选择其中一套出战，选定后不可更换。</p><div class="draft-opts">' +
       d.opts.map(function (team, k) {
         return '<div class="dopt"><div class="dopt-head"><b>阵容 ' + 'AB'[k] + '</b><button type="button" class="btn primary" data-pick="' + k + '">选择阵容 ' + 'AB'[k] + '</button></div><ol class="dopt-row">' +
@@ -471,7 +496,7 @@
   });
   $('draft').addEventListener('click', function (e) {
     var pk = e.target.closest('[data-pick]');
-    if (pk) { var d = ensureDraft(); d.pick = +pk.dataset.pick; d.order = d.opts[d.pick].slice(); saveDraft(); app.sel = d.order[0]; renderBuilder(); return; }
+    if (pk) { var d = ensureDraft(); if (!d.opts) return; d.pick = +pk.dataset.pick; d.order = d.opts[d.pick].slice(); saveDraft(); app.sel = d.order[0]; renderBuilder(); return; }
     var m = e.target.closest('[data-id]'); if (m) { app.sel = m.dataset.id; renderDex(); renderDetail(); }
   });
   $('btn-random').addEventListener('click', function () { app.bag = shuffle(SP.map(function (s) { return s.id; })).slice(0, 5); app.sel = app.bag[0]; renderBuilder(); });
@@ -563,9 +588,40 @@
     d.stages = blankStages(); d.st = {}; d.tm = {}; d.fx = {}; d.perm = {};
     addLog('木桩状态已重置（能力等级、异常状态、持续效果全部清除）', 'dmg'); renderSnap(snap(app.S));
   });
+  // 服务器结算的竞技对战（平衡排位、沙盒对战）
+  function startBattleRemote() {
+    var rank = app.mode === 'rank', ids = B(); if (!ids.length) return;
+    if (rank && (!app.draft || app.draft.pick == null)) return;
+    var mv = {}; ids.forEach(function (id) { mv[id] = app.loadout[id].slice(); });
+    var body = rank ? { op: 'start', kind: 'rank', args: { pick: app.draft.pick, order: ids, moves: mv } } : { op: 'start', kind: 'sandbox', args: { team: ids.map(function (id) { return { id: id, moves: mv[id] }; }) } };
+    $('btn-start').disabled = true;
+    CLOUD.pve(body).then(function (r) {
+      $('btn-start').disabled = false;
+      if (!r || !r.ok) { $('bag-msg').textContent = (r && r.err) || '没能开始，请稍后再试。'; $('bag-msg').className = 'hint red'; if (r && r.draft) { app.draft = null; ensureDraft(); renderBuilder(); } return; }
+      if (r.acc && window.HSACC && HSACC.adopt) HSACC.adopt(r.acc);
+      if (r.keys) applyKeys(r.keys);
+      bgm('pvp');
+      remote = CLOUD.pve; rSeq = 0;
+      srvEnd = function (e) { if (e.acc && window.HSACC && HSACC.adopt) HSACC.adopt(e.acc); if (e.keys) applyKeys(e.keys); if (app.S) { app.S.srvRep = e.rep || {}; if (e.rep && e.rep.x) app.S.rankApplied = e.rep.x; } };
+      var S = r.S, a = S.sides[1].team;
+      app.lastP = ids.map(function (id) { return { id: id, moves: mv[id] }; });
+      app.S = S;
+      app.screen = 'battle'; app.logHTML = ''; $('log').innerHTML = '';
+      $('builder').hidden = true; $('battle').hidden = false; $('endcard').hidden = true;
+      shownIds = [null, null]; castBegin();
+      addLog('对手派出了【' + SPMAP[a[0].id].name + '】，你派出了【' + SPMAP[S.sides[0].team[0].id].name + '】！', '');
+      if (rank) addLog('平衡排位 · ' + rankFull(app.rank.r, app.rank.dv) + '段位 · 对手其余 4 只精灵尚未公开', 'turn');
+      else { addLog('对手背包：' + a.map(function (x) { return SPMAP[x.id].name; }).join('、'), 'dmg'); a.forEach(function (x) { addLog('　' + SPMAP[x.id].name + '：' + x.moves.map(function (m) { return M[m.n].name; }).join('、'), 'dmg'); }); }
+      renderSnap(snap(app.S), true);
+      showTab('moves'); refreshCmd();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
   function startBattle() {
     setFieldBg(null);
     if (training()) return startTraining();
+    remote = null;
+    if (srvOn()) return startBattleRemote();
     bgm('pvp');
     var p = B().map(function (id) { return { id: id, moves: app.loadout[id].slice() }; });
     var rank = app.mode === 'rank';
@@ -1016,7 +1072,7 @@
     }
     var rr = $('end-rank'); rr.hidden = !rankOn(); rr.innerHTML = '';
     if (rankOn()) {
-      if (!S.rankApplied) { S.rankApplied = applyRank(r); }
+      if (!S.rankApplied) { S.rankApplied = S.remote ? { from: app.rank.r, fromDv: app.rank.dv, fromStars: app.rank.stars, to: app.rank.r, toDv: app.rank.dv, toStars: app.rank.stars, msg: '这局作废了，段位不变' } : applyRank(r); }
       var x = S.rankApplied;
       rr.innerHTML = '<div class="er-row">' + rankBadge(x.from, x.fromDv) + starsHTML(x.fromStars, x.from) + '<span class="er-arrow">→</span>' + rankBadge(x.to, x.toDv) + starsHTML(x.toStars, x.to) + '</div>' +
         '<p class="er-msg ' + (x.kind === 'up' ? 'up' : x.kind === 'down' ? 'down' : '') + '">' + esc(x.msg) + '</p>' +
@@ -1027,7 +1083,7 @@
     refreshCmd();
     // 剧情 / 野外 / 挑战 / BOSS这类对战（2026-10-18）：不再停在结束卡片上，直接结算，奖励面板马上弹出
     if (S.story) { $('endcard').hidden = true; setTimeout(function () { if (app.S === S) $('btn-back').click(); }, 0); return; }
-    if (!S.story && !S.evSent) { S.evSent = 1; var em = window.HSEV ? window.HSEV('arena', { rank: rankOn(), result: r, quit: !!S.quit }) : null; if (em) S.evMsg = em; }
+    if (!S.story && !S.evSent) { S.evSent = 1; var em = window.HSEV ? window.HSEV('arena', { rank: rankOn(), result: r, quit: !!S.quit, srv: S.remote ? (S.srvRep || {}) : null }) : null; if (em) S.evMsg = em; }
     if (S.evMsg) $('end-sub').textContent += ' · ' + S.evMsg;
   }
 
@@ -1110,6 +1166,7 @@
       app.screen = 'builder'; app.S = null; $('battle').hidden = true; $('builder').hidden = false; $('log').innerHTML = ''; $('btn-again').hidden = false; setFieldBg(null);
       if (cb) cb(res, seen, downs, quit, endS); return;
     }
+    remote = null;
     app.screen = 'builder'; app.S = null; $('statsbox').hidden = true; $('battle').hidden = true; $('builder').hidden = false; $('log').innerHTML = ''; renderMode(); renderBuilder();
   });
   document.addEventListener('keydown', function (e) {

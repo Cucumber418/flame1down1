@@ -379,7 +379,7 @@
       if (r._code === 200 && r.ok) { var rv = (r.end && r.end.rev) || r.rev; if (rv) { st.rev = rv; lsSet(REV, String(rv)); } return end(r); }
       if (r._code === 409 && r.update) { end(null); showUpdate(true); return { ok: false, err: '游戏已经更新了，刷新页面后再来挑战吧。' }; }
       if (r._code === 401) { setStatus('expired'); return end({ ok: false, err: '登录已失效，请先重新登录（点右上角的账号）。' }); }
-      return end({ ok: false, gone: r._code === 410, err: r.error || '服务器没有回应，请稍后再试。' });
+      return end({ ok: false, gone: r._code === 410, draft: !!r.draft, err: r.error || '服务器没有回应，请稍后再试。' });
     }, function () { return end({ ok: false, net: true, err: '网络不稳，没连上服务器。' }); });
   }
   // 本机和服务器对不上时：取回服务器上的存档，用它重新加载
