@@ -199,10 +199,10 @@ var PVE = (function () {
         { diff: '困难', lv: 70, hp: 2500, boss: { dr: 0.15, ambush: 400, odoRate: 1, odoWill: 1, rainbow: 1, odoSwap: 1, pp: 99 }, bgm: 'boss3', open: function (a, now) { return bossWon(a, 'odo', 1); }, lockText: '击败普通难度后开放', reward: { exp: 50000, items: { odoFin: 80 } },
           hpText: '歼灭形态 2500 · 护阵形态 5000 · 虹霓暴走 4000', bgmAt: { 2: 'vitalVoyage' },
           team: [
-            { nick: '奥多亚克 · 歼灭形态', odoForm: 'atk', maxhp: 2500, boss: { dr: 0.15, ambush: 400, odoRate: 1, odoSwap: 1, orderRepl: 1, pp: 99 } },
-            { nick: '奥多亚克 · 护阵形态', odoForm: 'def', maxhp: 5000, boss: { dr: 0.15, ambush: 400, odoWill: 1, odoSwap: 1, orderRepl: 1, pp: 99 } },
+            { nick: '奥多亚克 · 歼灭形态', odoForm: 'atk', maxhp: 2500, boss: { dr: 0.15, ambush: 400, odoRate: 1, odoSwap: 1, orderRepl: 1, pp: 99, healCd: 25 } },
+            { nick: '奥多亚克 · 护阵形态', odoForm: 'def', maxhp: 5000, boss: { dr: 0.15, ambush: 400, odoWill: 1, odoSwap: 1, orderRepl: 1, pp: 99, healCd: 25 } },
             { nick: '奥多亚克 · 虹霓暴走', maxhp: 4000, moves: ['流形蛮冲', '全弹搭载', '究极爆破', '解析导弹', '坚守阵地', '强效外壳', '重构坚甲', '侵扰投弹'],   // 掌握歼灭、护阵两种形态的全部技能
-              boss: { dr: 0.15, rainbow: 1, orderRepl: 1, pp: 99 } }
+              boss: { dr: 0.15, rainbow: 1, orderRepl: 1, pp: 99, healCd: 25 } }
           ] }
       ] }
   };

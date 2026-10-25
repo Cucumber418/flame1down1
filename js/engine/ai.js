@@ -103,7 +103,8 @@ function aiChoose(S) {
   for (var pk in P0) P[pk] = P0[pk];
   P.randomP = Math.max(P.randomP || 0, AI_DUMB.randomP); P.noise = Math.max(P.noise || 0, AI_DUMB.noise);
   // 2026-10-21：BOSS / 每周挑战的泰戈尔前两回合不用自我崩坏、元神崩坏
-  var early = me.boss && me.id === 'tagore' && S.turn <= 2, banned = function (slot) { return early && (slot.n === '自我崩坏' || slot.n === '元神崩坏'); };
+  var early = me.boss && me.id === 'tagore' && S.turn <= 2, healCd = me.boss && me.boss.healCd && S.bossHealAt != null && S.turn - S.bossHealAt < me.boss.healCd;
+  var banned = function (slot) { return (early && (slot.n === '自我崩坏' || slot.n === '元神崩坏')) || (healCd && M[slot.n] && M[slot.n].heal); };   // healCd：回血技能隔这么多回合才能再用
   // 2026-10-24：BOSS奥多亚克（简单 / 普通）从第 2 回合起每 2 回合切换一次形态；困难难度三只是固定形态，不带形态技能
   if (me.boss && me.id === 'odo' && S.turn >= 2 && S.turn % 2 === 0) {
     var oi = me.moves.findIndex(function (slot) { return slot.n === '歼灭形态' && slot.pp > 0 && !moveBlocked(me, slot); });

@@ -771,7 +771,9 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   if (me.fainted) return;
   if (!extra && cantAct(S, evs, me)) return;
   if (slotIdx >= 0 && moveBlocked(me, me.moves[slotIdx])) { log(S, evs, (me.flags && me.flags.sy && mv.cat === '变化' ? '沈阳大街上不讲究这些花架子，' + nm(me) + '无法使用「' : nm(me) + '处于光影之月，无法使用「') + mv.name + '」'); return; }
-  if (!mv.struggle && slotIdx >= 0 && !(me.boss && ((me.boss.immortal && !me.boss.ppLim) || me.boss.ppInf))) me.moves[slotIdx].pp--;   // ppLim：先驱之塔的死神虽有「不朽」，PP 也有限   // 「不朽」：PP 无限
+  if (!mv.struggle && slotIdx >= 0 && !(me.boss && ((me.boss.immortal && !me.boss.ppLim) || me.boss.ppInf))) me.moves[slotIdx].pp--;
+  if (me.boss && me.boss.healCd && mv.heal && !extra) S.bossHealAt = S.turn;   // 回血技能的冷却（见 ai.js 的 aiChoose）
+  // ppLim：先驱之塔的死神虽有「不朽」，PP 也有限   // 「不朽」：PP 无限
   if (S.silenced[i] && !extra) { log(S, evs, nm(me) + '的「' + mv.name + '」被黑暗吞没，失效了！', 'bad'); return; }
   var firstMover = !S.turnActed[j];
   if (foe.boss && foe.boss.odoRate && firstMover) foe.fx.lateNow = 1;   // 歼灭速率：被对方抢先出手，这回合受伤 +25%
