@@ -56,7 +56,7 @@ function addTo(sum, d) { FIELDS.forEach(function (f) { if (d[f]) sum[f] += d[f];
 
 /* ---------- 检查一条申报，返回整理好的数值；不合格返回 null ---------- */
 // 2026-10-24 起由服务器直接发的奖励：浏览器不该再申报，宽限期过后这些来源的申报一律不认
-var SERVER_ONLY = { tower: 1, towerDeath: 1, bossFirst: 1, weekly: 1, ewk: 1, chalFirst: 1, mmFirst: 1, mm: 1, cumber: 1, npc: 1, tea: 1 };   // 这些奖励已经改由服务器直接发（server/pve.js），浏览器申报的不认
+var SERVER_ONLY = { tower: 1, towerDeath: 1, bossFirst: 1, weekly: 1, ewk: 1, chalFirst: 1, mmFirst: 1, mm: 1, cumber: 1, npc: 1, tea: 1, purge: 1, pw: 1, travel: 1, drop: 1 };   // 这些奖励已经改由服务器直接发（server/pve.js），浏览器申报的不认
 function clean(c) {
   if (!c || typeof c !== 'object' || typeof c.c !== 'string' || c.c.length > 40 || !SRC.hasOwnProperty(c.s)) return null;
   if (SERVER_ONLY[c.s] && Date.now() >= GRACE_UNTIL) return null;
@@ -81,7 +81,7 @@ function clean(c) {
  * 返回 { data: 要保存的存档（enforce 模式下可能改过）, fixed: 修正说明（没改就是空） } */
 // 把塔的进度改回服务器上的（服务器那份没有的字段就删掉）
 // 只由服务器改的字段（「对象.字段」或整个顶层字段）：上传的存档里改了，悄悄改回服务器的
-var OWNED = ['tower.f', 'tower.cp', 'tower.best', 'tower.clears', 'tower.death', 'tower.day', 'bosses', 'permit', 'chal', 'mm.clr', 'mm.wins', 'cumberFt', 'npcWin', 'teaFight'];
+var OWNED = ['tower.f', 'tower.cp', 'tower.best', 'tower.clears', 'tower.death', 'tower.day', 'bosses', 'permit', 'chal', 'mm.clr', 'mm.wins', 'cumberFt', 'npcWin', 'teaFight', 'purge', 'pwd', 'travel'];
 function getP(o, p) { var k = p.split('.'); return k.length === 1 ? o[k[0]] : o[k[0]] && typeof o[k[0]] === 'object' ? o[k[0]][k[1]] : undefined; }
 function ownDiff(A, B) { return OWNED.filter(function (p) { var k = p.split('.'); if (k.length > 1 && (!A[k[0]] || !B[k[0]])) return false; return JSON.stringify(getP(A, p)) !== JSON.stringify(getP(B, p)); }); }
 function twBack(A, B, keys) {

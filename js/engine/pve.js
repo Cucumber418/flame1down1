@@ -724,7 +724,138 @@ var PVE = (function () {
     }
   };
 
-  return { MODES: MODES, LEAF_ALLY: LEAF_ALLY, FIGHTS: FIGHTS, fightTeam: fightTeam, resolveFoeEntry: resolveFoeEntry, CUMBER: CUMBER, NPC_WIN_EXP: NPC_WIN_EXP, NPC_HOURS: NPC_HOURS, NPC_FROM: NPC_FROM, NPC_TO: NPC_TO, NPC_AI_RANK: NPC_AI_RANK, NPC: NPC, NPC_SECRET: NPC_SECRET, NPC_POOL: NPC_POOL, npcPlan: npcPlan, bjDay: bjDay, TEA_DAILY: TEA_DAILY, TEA_EXP: TEA_EXP, MM: MM, MM_NICK: MM_NICK, MM_TEAM: MM_TEAM, MM_TEAM_HARD: MM_TEAM_HARD, MM_DIFF: MM_DIFF, MM_FINAL: MM_FINAL, mmFoes: mmFoes, mmDay: mmDay, CHAL: CHAL, starOk: starOk, chalLevelOpen: chalLevelOpen, chalTotal: chalTotal, MM_HELPER: MM_HELPER, ONLY3: ONLY3, BOSSES: BOSSES, BOSS_CRY: BOSS_CRY, WEEKLIES: WEEKLIES, EWK: EWK, PERMIT: PERMIT, SECRET_FX: SECRET_FX,
+  /* ==========================================================
+   * 野外（2026-10-25）：刷出哪只精灵（种类、等级、异色）由服务器掷骰子
+   * 浏览器进入场景时向服务器要一批「刷出来的精灵」（server/pve.js 的 op: 'wild'），只是把它们画出来、让它们走动；
+   * 点中开战时只告诉服务器是哪一只（编号），服务器按记下的资料开打，捕捉、掉落、各种任务计数都在服务器上算。
+   * ========================================================== */
+  function regionById(rid) { for (var i = 0; i < WILD_REGIONS.length; i++) if (WILD_REGIONS[i].id === rid) return WILD_REGIONS[i]; return null; }
+  function regionOpen(a, R) { return R.record ? done(a, 'flora7') : done(a, 'flora1'); }
+  function floraFallen(a) { return done(a, 'flora6') && !done(a, 'flora7'); }
+  function regionFallen(a, R) { return !!R && R.planet === 'flora' && (R.record || floraFallen(a)); }
+  function sceneCount(R) { return Math.max(R.pool ? 2 : 1, (R.bgs || []).filter(function (k) { return BG[k]; }).length); }
+  function rollShiny(w, rand) { var r = rand(); return w.shiny2 && r < w.shiny2 ? 2 : !!(w.shiny && r < (w.shiny2 || 0) + w.shiny); }
+  function rollWild(pool, extra, rand) {   // extra：只在这个场景出现的精灵（WILD_SCENE），和区域表合在一起抽
+    var P = extra ? WILD_POOLS[pool].concat(extra) : WILD_POOLS[pool], tot = P.reduce(function (s, w) { return s + w.w; }, 0), r = rand() * tot, w = P[0];
+    for (var i = 0; i < P.length; i++) { r -= P[i].w; if (r < 0) { w = P[i]; break; } }
+    return { w: w, lv: w.lv[0] + Math.floor(rand() * (w.lv[1] - w.lv[0] + 1)) };
+  }
+  // 一碗饭和米饭火鸡：放了饭的场景每次刷新有 2% 是米饭火鸡
+  var RICE = { seedDrop: 0.1, sid: 'turkey', lv: 12, rate: 0.45, chance: 0.02, regions: ['pp_lava'] };
+  // 奇声号角 → 塞米：在冥岛吹响号角会来一只塞米，和它开战时号角用掉
+  var HORN = { sid: 'siren', lv: 12, rate: 0.4, bg: 'kb_isle', drop: [3, 6], day: [12, 15], need: 60 };
+  // 旅行精灵叶子喵：全服共享的时间表，每小时在某个区域的某个场景停留 20 分钟；每次出现每人只能挑战 1 次
+  var TRAVEL = { sid: 'leafcat', lv: 30, exp: 3000, leaf: 0.5, dur: 20, regions: ['forest', 'grass', 'kb_surf', 'kb_sea', 'kb_deep', 'pp_lava', 'pp_city', 'lt_belt', 'wh_snow'],
+    spots: [{ x: 50, y: 64 }, { x: 32, y: 62 }, { x: 70, y: 66 }] };
+  function travelAt(now) {
+    var h = Math.floor(now / 3600000), s = ACC.thash(h + 7919), start = h * 3600000 + (s % 41) * 60000;
+    var R = regionById(TRAVEL.regions[(s >>> 8) % TRAVEL.regions.length]);
+    return { h: h, start: start, end: start + TRAVEL.dur * 60000, rid: R.id, si: (s >>> 16) % sceneCount(R), spot: TRAVEL.spots[(s >>> 20) % TRAVEL.spots.length], active: now >= start && now < start + TRAVEL.dur * 60000 };
+  }
+  // 芙罗拉星 · 祛除瘴气：任务完成前，在芙罗拉星作战有 10% 概率遇到瘴气精灵，击败它们累计计数
+  var PURGE = { chance: 0.1, goal: 30, steps: [{ n: 1, exp: 3000 }, { n: 5, exp: 10000 }, { n: 10, exp: 20000 }, { n: 20, exp: 40000 }, { n: 30, exp: 120000, title: 'purifier' }] };
+  function purgeRec(a) { if (!a.purge) a.purge = { n: 0, got: {} }; if (!a.purge.got) a.purge.got = {}; return a.purge; }
+  function purgeActive(a) { return done(a, 'flora1') && purgeRec(a).n < PURGE.goal; }
+  // 主线任务「引出猎杀者」：芙罗拉星的野生精灵不会倒下，体力剩 1 点就逃走
+  var SPARE_N = 5;
+  function spareN(a) { return (a.story && a.story.flora2 && a.story.flora2.spare) || 0; }
+  function spareActive(a) { return done(a, 'flora2') && spareN(a) < SPARE_N; }
+  // 瘴气驱逐战：击破腐化精灵，自己经验背包 +1000，全服击破 +1（每人每天最多 50 次）
+  var PW = { exp: 1000, cap: 50 };
+  function pwOpen(a) { return done(a, 'flora6'); }
+  function hornDrop(rand) { return HORN.drop[0] + Math.floor(rand() * (HORN.drop[1] - HORN.drop[0] + 1)); }
+  /* 刷出一只野生精灵（只掷骰子，不改存档）。kind：'' 普通 / 'horn' 号角引来的塞米。返回 { sid, lv, rate, shiny, corrupt, bait, horn } 或 null */
+  function wildRoll(a, R, si, bgKey, kind, rand) {
+    var hit = null, corrupt = regionFallen(a, R);
+    if (kind === 'horn') hit = { w: { sid: HORN.sid, lv: [HORN.lv, HORN.lv], rate: HORN.rate, rare: true, w: 0 }, lv: HORN.lv };
+    else {
+      if (!R.pool) return null;
+      var b = a.riceBowl;
+      if (RICE.regions.indexOf(R.id) >= 0 && b && b.rid === R.id && b.si === si && rand() < RICE.chance) {
+        var w0 = (WILD_POOLS[R.pool] || []).filter(function (x) { return x.sid === RICE.sid; })[0] || { sid: RICE.sid, lv: [RICE.lv, RICE.lv], rate: RICE.rate, rare: true };
+        hit = { w: w0, lv: w0.lv[0], bait: true };
+      } else hit = rollWild(R.pool, (typeof WILD_SCENE !== 'undefined' && WILD_SCENE[bgKey]) || null, rand);
+    }
+    var shiny = rollShiny(hit.w, rand);
+    if (corrupt) hit = { w: hit.w, lv: 40 + Math.floor(rand() * 11), bait: hit.bait };   // 瘴气化后：强制 LV40–50
+    return { sid: hit.w.sid, lv: hit.lv, rate: hit.w.rate, shiny: shiny, corrupt: corrupt, bait: !!hit.bait, horn: kind === 'horn' };
+  }
+  function wildFoe(a, o, rand) {
+    var s = SPMAP[o.sid];
+    if (o.corrupt) {   // 瘴气异变：强制最高阶段立绘、只会用攻击技能、深度侵蚀双攻 +100%
+      return { id: o.sid, lv: o.lv, moves: puppetMoves(o.sid), nick: '瘴气' + s.name, img: o.shiny === 2 ? (SHINY_SPRITES[o.sid + '_2'] || SHINY_SPRITES[o.sid] || SPRITES[o.sid]) : o.shiny ? (SHINY_SPRITES[o.sid] || SPRITES[o.sid]) : SPRITES[o.sid], shiny: ACC.shinyV(o.shiny), miasma: o.miasma, boss: { erode: 1, mute: 1 } };
+    }
+    var f = ACC.battleMon(a, { sid: o.sid, lv: o.lv, moves: ACC.foeMoves(o.sid, o.lv, undefined, rand), shiny: ACC.shinyV(o.shiny) });
+    delete f.u; delete f.hl;
+    if (o.shiny) f.nick = '异色' + f.nick;
+    if (o.taint) { f.miasma = o.miasma; f.nick = '被污染的' + f.nick; }
+    return f;
+  }
+  MODES.wild = {
+    // args = { sp: 服务器刷出来的那只（server/pve.js 按编号取出，放在 args._sp） } 或 { travel: 小时编号 }
+    start: function (a, args, env) {
+      var o, R;
+      if (args.travel != null) {
+        var t = travelAt(env.now);
+        if (!done(a, 'travelcat') || !t.active || t.h !== (args.travel | 0)) return { err: '叶子喵已经背起行囊，去别的地方旅行了。' };
+        if (a.travel && a.travel.h === t.h) return { err: '这次已经和叶子喵切磋过了。' };
+        a.travel = { h: t.h }; R = regionById(t.rid);
+        o = { sid: TRAVEL.sid, lv: TRAVEL.lv, rate: 0, noCatch: true, travel: true, foe: '旅行精灵', tag: ' · 旅行精灵', rid: R.id };
+      } else {
+        var sp = args._sp; if (!sp) return { err: '它已经离开了。' };
+        R = regionById(sp.rid); if (!R || !regionOpen(a, R)) return { err: '这个区域还没有开放' };
+        o = { sid: sp.sid, lv: sp.lv, rate: sp.rate, shiny: sp.shiny, corrupt: sp.corrupt, bait: sp.bait, rid: R.id, flora: R.planet === 'flora', tag: '' };
+        if (sp.horn) { if (!(a.items && a.items.m_horn > 0)) return { err: '奇声号角已经用完了' }; a.items.m_horn--; o.tag += ' · 号角引来的塞米'; }
+        if (o.corrupt) { o.miasma = 10; o.noCatch = true; o.foe = '瘴气侵蚀的狂暴精灵'; o.tag += ' · 瘴气异变'; }
+        else if (o.flora && purgeActive(a) && env.rand() < PURGE.chance) { o.taint = true; o.miasma = 5; o.noCatch = true; o.foe = '被瘴气污染的野生精灵'; o.tag += ' · 瘴气精灵'; }
+        if (o.flora && spareActive(a) && !o.corrupt) { o.spare = true; o.tag += ' · 手下留情'; }
+      }
+      ACC.seeMon(a, o.sid, o.lv);
+      var T = myTeam(a);
+      return { p: T.p, a: [wildFoe(a, o, env.rand)], ctx: { o: o, team: T.us }, dirty: true,
+        S: { wild: { rate: o.rate, noCatch: !!o.noCatch, spare: !!o.spare, back: '', where: '' } },
+        opt: { foe: o.foe || '野生精灵', bgm: o.corrupt ? 'disCommunication' : null, tag: o.tag, rid: o.rid, corrupt: !!o.corrupt, travel: !!o.travel } };
+    },
+    end: function (a, c, B, env) {
+      var o = c.o, rep = { res: B.res, sid: o.sid, lv: o.lv, travel: !!o.travel }, downs = (B.downs || []).slice();
+      if (B.res === 'spared') {   // 「假装击败」：它逃走了，照样算击败（有经验），并计入主线任务
+        downs.push({ id: o.sid, lv: o.lv });
+        var sp = ACC.prog(a, 'flora2'); sp.spare = Math.min(SPARE_N, (sp.spare || 0) + 1); rep.spare = sp.spare; rep.spareN = SPARE_N;
+      }
+      if (B.res === 'caught') { var g = ACC.giveMon(a, o.sid, o.lv, env, o.shiny); rep.caught = { u: g.m.u, added: g.added }; }
+      var n = downs.length;
+      if (n) { if (!a.stats) a.stats = {}; a.stats.wildWins = (a.stats.wildWins || 0) + n; }
+      rep.downs = n;
+      if ((o.taint || (o.corrupt && purgeActive(a))) && n) {   // 祛除瘴气
+        var P = purgeRec(a); P.n++; rep.purge = { n: P.n, goal: PURGE.goal, steps: [] };
+        PURGE.steps.forEach(function (st) {
+          if (P.n >= st.n && !P.got[st.n]) {
+            P.got[st.n] = env.now; a.exp = (a.exp || 0) + st.exp; var e = { n: st.n, exp: st.exp };
+            if (st.title) { if (!a.titles) a.titles = []; if (a.titles.indexOf(st.title) < 0) a.titles.push(st.title); e.title = st.title; }
+            rep.purge.steps.push(e);
+          }
+        });
+      }
+      if (o.corrupt && pwOpen(a) && n) {   // 瘴气驱逐战
+        var d = bjDay(env.now); if (!a.pwd || a.pwd.d !== d) a.pwd = { d: d, n: 0 };
+        if (a.pwd.n < PW.cap) {
+          a.pwd.n++; var pw = env.pw ? env.pw() : null;   // 服务器：记一次全服击破，返回全服的进度
+          var pe = pw && pw.total >= 1000 && (pw.me || 0) > 5 ? Math.floor(PW.exp / 4) : PW.exp;
+          a.exp = (a.exp || 0) + pe; rep.pw = { n: a.pwd.n, cap: PW.cap, exp: pe, data: pw };
+        } else rep.pw = { full: true, cap: PW.cap };
+      }
+      if (o.travel && n) { var lf = env.rand() < TRAVEL.leaf; a.exp = (a.exp || 0) + TRAVEL.exp; if (lf) ACC.addItems(a, { m_lcleaf: 1 }); rep.trav = { exp: TRAVEL.exp, leaf: lf }; }
+      if (o.sid === 'hephaestus' && n) { var hn = 0; downs.forEach(function () { hn += hornDrop(env.rand); }); ACC.addItems(a, { m_hfhorn: hn }); rep.horn = hn; }
+      if (o.sid === 'hauris' && n) { var hd = 0; downs.forEach(function () { hd += 50 + Math.floor(env.rand() * 21); }); ACC.addItems(a, { hrDisk: hd }); rep.disk = hd; }
+      if (o.bait && (B.res === 'caught' || n)) { a.riceBowl = null; rep.bowl = true; }
+      if (o.flora && n) { var seeds = 0; downs.forEach(function () { if (env.rand() < RICE.seedDrop) seeds++; }); if (seeds) { ACC.addItems(a, { s_rice: seeds }); rep.seeds = seeds; } }
+      rep.xp = ACC.battleXp(a, c.team, B.seen, downs, env);
+      return rep;
+    }
+  };
+
+  return { MODES: MODES, regionById: regionById, regionOpen: regionOpen, floraFallen: floraFallen, regionFallen: regionFallen, sceneCount: sceneCount, rollShiny: rollShiny, rollWild: rollWild,
+    RICE: RICE, HORN: HORN, TRAVEL: TRAVEL, travelAt: travelAt, PURGE: PURGE, purgeRec: purgeRec, purgeActive: purgeActive, SPARE_N: SPARE_N, spareActive: spareActive, PW: PW, wildRoll: wildRoll, LEAF_ALLY: LEAF_ALLY, FIGHTS: FIGHTS, fightTeam: fightTeam, resolveFoeEntry: resolveFoeEntry, CUMBER: CUMBER, NPC_WIN_EXP: NPC_WIN_EXP, NPC_HOURS: NPC_HOURS, NPC_FROM: NPC_FROM, NPC_TO: NPC_TO, NPC_AI_RANK: NPC_AI_RANK, NPC: NPC, NPC_SECRET: NPC_SECRET, NPC_POOL: NPC_POOL, npcPlan: npcPlan, bjDay: bjDay, TEA_DAILY: TEA_DAILY, TEA_EXP: TEA_EXP, MM: MM, MM_NICK: MM_NICK, MM_TEAM: MM_TEAM, MM_TEAM_HARD: MM_TEAM_HARD, MM_DIFF: MM_DIFF, MM_FINAL: MM_FINAL, mmFoes: mmFoes, mmDay: mmDay, CHAL: CHAL, starOk: starOk, chalLevelOpen: chalLevelOpen, chalTotal: chalTotal, MM_HELPER: MM_HELPER, ONLY3: ONLY3, BOSSES: BOSSES, BOSS_CRY: BOSS_CRY, WEEKLIES: WEEKLIES, EWK: EWK, PERMIT: PERMIT, SECRET_FX: SECRET_FX,
     wkKey: wkKey, recKey: recKey, bossRec: bossRec, bossWon: bossWon, levelOpen: levelOpen, wkOpen: wkOpen, weeklyOpen: weeklyOpen, wkNum: wkNum, ewkPool: ewkPool, ewkType: ewkType, ewkSid: ewkSid,
     permits: permits, seedSeenFx: seedSeenFx, chalStars: chalStars, myTeam: myTeam,
     TOWER: TOWER, twLv: twLv, twExp: twExp, twTok: twTok, twFloor: twFloor, seeded: seeded, foeMoves: foeMoves, storyMon: storyMon,

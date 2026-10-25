@@ -19,9 +19,29 @@
 var A = require('./accounts');
 function X() { return require('./tx').engine(); }
 
-var sessions = {};   // 账号名 -> { kind, S, team, f, F, items0, used, t, seq, last, done }
+var sessions = {};
+/* 野外刷出来的精灵（2026-10-25）：账号名 -> { seq, list: { 编号: { rid, si, sid, lv, rate, shiny, corrupt, bait, horn, t } } }
+ * 浏览器进入场景时来要一批（op: 'wild'），开战时按编号取走（取走就没了）。只放内存，30 分钟没打就作废 */
+var wildSp = {}, WILD_AGE = 30 * 60e3, WILD_MAX = 80;   // 账号名 -> { kind, S, team, f, F, items0, used, t, seq, last, done }
 var MAX_AGE = 3 * 3600e3;
-setInterval(function () { var now = Date.now(); Object.keys(sessions).forEach(function (k) { if (now - sessions[k].t > MAX_AGE) delete sessions[k]; }); }, 10 * 60e3).unref();
+setInterval(function () {
+  var now = Date.now(); Object.keys(sessions).forEach(function (k) { if (now - sessions[k].t > MAX_AGE) delete sessions[k]; });
+  Object.keys(wildSp).forEach(function (k) { var L = wildSp[k].list; Object.keys(L).forEach(function (id) { if (now - L[id].t > WILD_AGE) delete L[id]; }); if (!Object.keys(L).length) delete wildSp[k]; });
+}, 5 * 60e3).unref();
+// 刷一批野生精灵：{ rid, si, bg, n, kind }
+function wildBatch(E, name, acc, body) {
+  var R = E.PVE.regionById(String(body.rid || '')), si = body.si | 0, n = Math.max(1, Math.min(12, body.n | 0)), kind = body.kind === 'horn' ? 'horn' : '';
+  if (!R || !E.PVE.regionOpen(acc, R)) return { error: '这个区域还没有开放' };
+  if (kind === 'horn') { if (String(body.bg || '') !== E.PVE.HORN.bg || !(acc.items && acc.items.m_horn > 0)) return { error: '这里吹不响号角' }; n = 1; }
+  var W = wildSp[name] || (wildSp[name] = { seq: 0, list: {} }), now = Date.now(), out = [];
+  var ids = Object.keys(W.list); if (ids.length + n > WILD_MAX) ids.sort(function (x, y) { return W.list[x].t - W.list[y].t; }).slice(0, ids.length + n - WILD_MAX).forEach(function (id) { delete W.list[id]; });
+  for (var i = 0; i < n; i++) {
+    var m = E.PVE.wildRoll(acc, R, si, String(body.bg || ''), kind, Math.random); if (!m) break;
+    m.id = ++W.seq; m.rid = R.id; m.si = si; m.t = now; W.list[m.id] = m;
+    out.push({ id: m.id, sid: m.sid, lv: m.lv, rate: m.rate, shiny: m.shiny, corrupt: m.corrupt, bait: m.bait, horn: m.horn });
+  }
+  return { ok: true, list: out };
+}
 
 function accOf(u) { try { var a = JSON.parse(((u.save || {}).data || {})['hs-account-v1'] || 'null'); return a && Array.isArray(a.mons) ? a : null; } catch (e) { return null; } }
 
@@ -54,7 +74,8 @@ function finish(name, sess) {
   var end;
   if (sess.kind === 'tower') end = E.PVE.towerEnd(acc, sess.f, sess.F, S.over, !!S.quit, sess.team, seen, downs, now);
   else {   // 其他模式：规则在 js/engine/pve.js 的 MODES；结算完把整份存档发回去，浏览器直接换上
-    var rep = E.PVE.MODES[sess.kind].end(acc, sess.ctx, { res: S.over, quit: !!S.quit, seen: seen, downs: downs, S: S }, { now: now, rand: Math.random });
+    var env = { now: now, rand: Math.random, pw: function () { return require('./purgewar').hit(name); } };
+    var rep = E.PVE.MODES[sess.kind].end(acc, sess.ctx, { res: S.over, quit: !!S.quit, seen: seen, downs: downs, S: S }, env);
     end = { kind: sess.kind, res: S.over, quit: !!S.quit, rep: rep };
   }
   // 战斗里用掉的道具：存档里的数量不超过「开打时 − 用掉的」
@@ -77,7 +98,12 @@ function saveAcc(u, acc) {
 
 // 开一场其他模式的对战
 function startMode(E, res, name, kind, u, acc, args) {
-  delete args._helper; delete args._foes; delete args._owner;
+  delete args._helper; delete args._foes; delete args._owner; delete args._sp;
+  if (kind === 'wild' && args.travel == null) {   // 野外：按编号取出服务器刷出来的那只
+    var W = wildSp[name], sp = W && W.list[args.id | 0];
+    if (!sp) return A.reply(res, 400, { error: '它已经离开了。' });
+    delete W.list[args.id | 0]; args._sp = sp;
+  }
   if (kind === 'tea') {   // 对手按主人茶室里展示的精灵，服务器自己查
     var H = require('./social').homeFoes(String(args.owner || ''), name);
     if (!H || !H.mons.length) return A.reply(res, 400, { error: '这个茶室现在没法挑战' });
@@ -109,6 +135,7 @@ A.use(function (req, res, url) {
     var who = A.whoIs(req); if (!who) return A.reply(res, 401, { error: '登录已失效，请重新登录' });
     var E = X(); if (!E || !E.PVE) return A.reply(res, 503, { error: '服务器暂时不能开对战，请联系管理员' });
     var name = who.user, op = String(body.op || '');
+    if (op === 'wild') { var uw = A.loadUser(name), aw = uw && accOf(uw); if (!aw) return A.reply(res, 409, { error: '存档还没同步到服务器' }); var rw = wildBatch(E, name, aw, body); return A.reply(res, rw.error ? 400 : 200, rw); }
     var V = require('./tx').VERSION;
     if (op === 'start' && body.v && body.v !== V) return A.reply(res, 409, { error: '游戏已经更新了，请刷新页面后再挑战。', update: true, v: V });
     try {
@@ -143,7 +170,8 @@ A.use(function (req, res, url) {
         if (!t || t.fainted || k === S2.sides[0].active) k = E.aliveIdx(S2, 0).filter(function (x) { return x !== S2.sides[0].active; })[0];
         evs = E.playerReplace(S2, k);
       } else if (op === 'quit') {
-        S2.over = 'lose'; S2.quit = true; evs = [];
+        if (S2.wild) { S2.over = 'flee'; evs = []; }   // 野外：逃跑
+        else { S2.over = 'lose'; S2.quit = true; evs = []; }
       } else return A.reply(res, 400, { error: '不支持的操作' });
       var out = { ok: true, evs: evs, S: S2 };
       if (S2.over) out.end = finish(name, sess);

@@ -2088,7 +2088,7 @@
    * 芙罗拉星的野外战斗：每击败一只野生精灵，10% 掉落水稻种子。种植园 12 小时收获米饭 ×250，冶炼坊 500 粒米饭 = 一碗饭。
    * 一碗饭可以放在庞贝星熔岩原的任意一个场景（acc.riceBowl = { rid, si }），之后这个场景每次刷新精灵有 2% 是米饭火鸡（平时不出现）。
    * 捕捉或击败这只米饭火鸡后，这碗饭被吃掉（acc.riceBowl 清空）；逃跑或输了，饭还在。 */
-  var RICE = { seedDrop: 0.1, sid: 'turkey', lv: 12, rate: 0.45, chance: 0.02, regions: ['pp_lava'] };
+  var RICE = PVE.RICE;   // 规则在 js/engine/pve.js（服务器和浏览器共用）
   function riceBowlAt(rid, si) { var b = acc && acc.riceBowl; return !!(b && b.rid === rid && b.si === si); }
   function riceSpawn(R, slot) {
     if (slot.si == null || !riceBowlAt(R.id, slot.si) || Math.random() >= RICE.chance) return null;
@@ -2333,7 +2333,7 @@
   /* ---------- 奇声号角 → 塞米 ----------
    * 塞壬一系不会自然出现。击败赫菲斯一系掉 3–6 片「赫菲角片」（航行日志每天还能领 12–15 片），60 片在冶炼坊合成「奇声号角」。
    * 在坎伯兰星 · 水面的「冥岛」场景吹响号角，场景里会来一只可以捕捉的塞米；和它进入战斗时号角用掉（没打就离开，号角还在）。 */
-  var HORN = { sid: 'siren', lv: 12, rate: 0.4, bg: 'kb_isle', drop: [3, 6], day: [12, 15], need: 60 };
+  var HORN = PVE.HORN;
   function hornMonIn(F, si) { return F.scenes[si] && F.scenes[si].slots.some(function (sl) { return sl.mon && sl.mon.horn && !sl.mon.out; }); }
   function hornHTML(R, F, si) {
     var sc = F.scenes[si]; if (!sc || sc.bgKey !== HORN.bg || !(acc.items.m_horn > 0) || hornMonIn(F, si)) return '';
@@ -2343,11 +2343,17 @@
     var R = regionById(ex.region), F = R && fields[R.id]; if (!F) return;
     var sc = F.scenes[F.scene]; if (!sc || sc.bgKey !== HORN.bg || !(acc.items.m_horn > 0) || hornMonIn(F, F.scene)) return;
     var sl = sc.slots.filter(function (x) { return !x.mon; })[0] || sc.slots[0];
-    var w = { sid: HORN.sid, lv: [HORN.lv, HORN.lv], rate: HORN.rate, tag: '中等', rare: true, w: 0 };
-    var m = spawnFieldMon(R, sl, { w: w, lv: HORN.lv }); m.id = ++F.seq; m.horn = true; m.die = Date.now() + 10 * 60000;   // 来了就待 10 分钟
-    sl.mon = m; sl.next = 0;
-    toast('呜——奇怪的号角声在冥岛上空回荡……水面下传来细细的歌声，一只塞米游了过来！');
-    renderField();
+    var put = function (force) {
+      var m = spawnFieldMon(R, sl, force); m.id = ++F.seq; m.horn = true; m.die = Date.now() + 10 * 60000;   // 来了就待 10 分钟
+      sl.mon = m; sl.next = 0;
+      toast('呜——奇怪的号角声在冥岛上空回荡……水面下传来细细的歌声，一只塞米游了过来！');
+      renderField();
+    };
+    if (srvMode()) {   // 塞米也由服务器刷
+      CLOUD.api('POST', '/api/pve', { op: 'wild', kind: 'horn', rid: R.id, si: F.scene, bg: sc.bgKey }).then(function (r) { if (r && r.ok && r.list.length) put({ srv: r.list[0] }); else toast((r && r.error) || '号角没有吹响，稍后再试。'); }).catch(function () { toast('连不上服务器，号角没有吹响。'); });
+      return;
+    }
+    put({ w: { sid: HORN.sid, lv: [HORN.lv, HORN.lv], rate: HORN.rate, tag: '中等', rare: true, w: 0 }, lv: HORN.lv });
   }
   function hornDrop() { return HORN.drop[0] + Math.floor(Math.random() * (HORN.drop[1] - HORN.drop[0] + 1)); }
   function hornDayGot() { return acc.hornDay === dayNum(Date.now()); }
@@ -2373,8 +2379,7 @@
    * 全服共享的时间表（按北京时间每个整点算，所有人算出来都一样，不需要服务器）：每小时在某个区域的某个场景停留连续 20 分钟。
    * 每次出现（按小时编号 h 区分）每人只能挑战 1 次（开战就算，acc.travel = { h }），LV30，不能捕捉。
    * 击败：累积经验 ×3000，50% 掉落叶子喵的叶片（5 片在冶炼坊合成精元，精元在神农架 · 精灵保育仓孵化）。 */
-  var TRAVEL = { sid: 'leafcat', lv: 30, exp: 3000, leaf: 0.5, dur: 20, regions: ['forest', 'grass', 'kb_surf', 'kb_sea', 'kb_deep', 'pp_lava', 'pp_city', 'lt_belt', 'wh_snow'],
-    spots: [{ x: 50, y: 64 }, { x: 32, y: 62 }, { x: 70, y: 66 }] };
+  var TRAVEL = PVE.TRAVEL;
   function thash(h) { var x = (h * 2654435761) >>> 0; x ^= x >>> 13; x = Math.imul(x, 0x5bd1e995) >>> 0; x ^= x >>> 15; return x >>> 0; }
   function sceneCount(R) { return Math.max(R.pool ? 2 : 1, (R.bgs || []).filter(function (k) { return BG[k]; }).length); }
   function travelAt(now) {
@@ -2409,8 +2414,9 @@
     travelDlg(pickOne(TRAVEL_TALK.hello).map(function (x) { return x.replace('{where}', R.name).replace('{planet}', P.name); }), [['下次再说', null], ['开始切磋', function () {
       var t2 = travelAt(Date.now());
       if (t2.h !== h || !t2.active || travelDone(h) || ex.fighting) { toast('叶子喵已经背起行囊，去别的地方旅行了。'); renderField(); return; }
-      acc.travel = { h: h }; save();
       var sc = F.scenes[F.scene];
+      if (srvMode()) { stopField(); startWildRemote({ travel: h }, { sid: TRAVEL.sid, lv: TRAVEL.lv, bg: sc.bg || null, back: R.name, where: P.name + ' · ' + R.name, travel: true }); return; }
+      acc.travel = { h: h }; save();
       stopField();
       startWildBattle({ sid: TRAVEL.sid, lv: TRAVEL.lv, rate: 0, noCatch: true, foe: '旅行精灵', bg: sc.bg || null, back: R.name, where: P.name + ' · ' + R.name + ' · 旅行精灵', travel: true });
     }]]);
@@ -2542,21 +2548,39 @@
     if (m.x > prev + 0.02) m.face = 1; else if (m.x < prev - 0.02) m.face = -1;
   }
   function spawnFieldMon(R, slot, force) {
-    var hit = force || riceSpawn(R, slot) || rollWild(R.pool, (typeof WILD_SCENE !== 'undefined' && WILD_SCENE[slot.bgKey]) || null), shiny = rollShiny(hit.w);
-    var corrupt = regionFallen(R);
-    if (corrupt) hit = { w: hit.w, lv: 40 + Math.floor(Math.random() * 11) };   // 瘴气化后：强制 LV40–50
-    var f = form({ sid: hit.w.sid, lv: hit.lv, shiny: shiny });
+    var sp;
+    if (force && force.srv) sp = force.srv;   // 服务器刷出来的（号角引来的塞米）
+    else if (srvMode() && !force) { sp = wqTake(R, slot); if (!sp) return null; }   // 用服务器网址玩时：种类、等级、异色都由服务器掷
+    else {
+      var hit = force || riceSpawn(R, slot) || rollWild(R.pool, (typeof WILD_SCENE !== 'undefined' && WILD_SCENE[slot.bgKey]) || null), shiny0 = rollShiny(hit.w);
+      var corrupt0 = regionFallen(R);
+      if (corrupt0) hit = { w: hit.w, lv: 40 + Math.floor(Math.random() * 11), bait: hit.bait };   // 瘴气化后：强制 LV40–50
+      sp = { sid: hit.w.sid, lv: hit.lv, rate: hit.w.rate, shiny: shiny0, corrupt: corrupt0, bait: !!hit.bait };
+    }
+    var shiny = sp.shiny, corrupt = !!sp.corrupt;
+    var f = form({ sid: sp.sid, lv: sp.lv, shiny: shiny });
     var img = f.img, name = f.name;
     if (corrupt) {   // 不论实际等级，一律显示最高阶段的立绘（本作里形态只影响显示，不影响能力值，见 assets.js 的说明）
-      var s = SPMAP[hit.w.sid];
-      img = shiny === 2 ? (SHINY_SPRITES[hit.w.sid + '_2'] || SHINY_SPRITES[hit.w.sid] || SPRITES[hit.w.sid]) : shiny ? (SHINY_SPRITES[hit.w.sid] || SPRITES[hit.w.sid]) : SPRITES[hit.w.sid];
-      var fxs = FORM_FX_SPRITES[hit.w.sid]; if (fxs) img = (shiny === 2 ? fxs.miasmaShiny2 : shiny ? fxs.miasmaShiny : fxs.miasma) || fxs.miasma || img;   // 有瘴气侵染立绘的（玛西露姆）直接用
+      var s = SPMAP[sp.sid];
+      img = shiny === 2 ? (SHINY_SPRITES[sp.sid + '_2'] || SHINY_SPRITES[sp.sid] || SPRITES[sp.sid]) : shiny ? (SHINY_SPRITES[sp.sid] || SPRITES[sp.sid]) : SPRITES[sp.sid];
+      var fxs = FORM_FX_SPRITES[sp.sid]; if (fxs) img = (shiny === 2 ? fxs.miasmaShiny2 : shiny ? fxs.miasmaShiny : fxs.miasma) || fxs.miasma || img;   // 有瘴气侵染立绘的（玛西露姆）直接用
       name = '瘴气' + s.name;
     }
-    var m = { id: 0, sid: hit.w.sid, lv: hit.lv, rate: hit.w.rate, shiny: shiny, img: img, name: (shiny && !corrupt ? '异色' : '') + name, bait: !!hit.bait, corrupt: corrupt,
+    var m = { id: 0, srvId: sp.id || null, sid: sp.sid, lv: sp.lv, rate: sp.rate, shiny: shiny, img: img, name: (shiny && !corrupt ? '异色' : '') + name, bait: !!sp.bait, corrupt: corrupt,
       hx: slot.hx, hy: slot.hy, r: slot.r, t: Math.random() * Math.PI * 2, spd: 0.55 + Math.random() * 0.5, x: slot.hx, y: slot.hy, face: 1 };
     stepFieldMon(m, 0);
     return m;
+  }
+  // 服务器刷出来的野生精灵：每个场景一个队列，快用完时再要一批
+  var WQ = {}, WQB = {};
+  function wqFill(R, si, bg) {
+    var k = R.id + ':' + si; if (WQB[k]) return; WQB[k] = 1;
+    CLOUD.api('POST', '/api/pve', { op: 'wild', rid: R.id, si: si, bg: bg || '', n: 6 }).then(function (r) { WQB[k] = 0; if (r && r.ok) WQ[k] = (WQ[k] || []).concat(r.list); }).catch(function () { WQB[k] = 0; });
+  }
+  function wqTake(R, slot) {
+    var k = R.id + ':' + slot.si, q = WQ[k], sp = q && q.length ? q.shift() : null;
+    if (!q || q.length < 3) wqFill(R, slot.si, slot.bgKey);
+    return sp;
   }
   /* 一个区域有好几个场景（有几张背景就有几个，至少 2 个），左右箭头切换；每个场景各有 4 个精灵位置。
    * 每只精灵各自计时：待一会儿（FIELD_LIFE）就淡出离开，隔一小段时间（FIELD_GAP）再在同一片范围里出现一只新的，互不影响。
@@ -2564,7 +2588,8 @@
   var FIELD_LIFE = [14000, 32000], FIELD_GAP = [1500, 6000], FIELD_FADE = 600;
   function between(r) { return r[0] + Math.random() * (r[1] - r[0]); }
   function fillSlot(R, F, slot, now, first) {
-    var m = spawnFieldMon(R, slot); m.id = ++F.seq;
+    var m = spawnFieldMon(R, slot); if (!m) { slot.mon = null; slot.next = now + 1200; return null; }   // 服务器那批还没到：过一会儿再试
+    m.id = ++F.seq;
     m.die = now + (first ? Math.random() * FIELD_LIFE[1] + 4000 : between(FIELD_LIFE));   // 刚进来时错开，不会一起走
     slot.mon = m; slot.next = 0; return m;
   }
@@ -2632,7 +2657,7 @@
       sc.slots.forEach(function (sl) {
         var m = sl.mon;
         if (!m) {   // 空位：时间到了就出现一只新的（淡入）
-          if (R.pool && now >= sl.next) { var nm_ = fillSlot(R, F, sl, now); scene.insertAdjacentHTML('beforeend', fieldMonHTML(nm_, 'wf-in')); }
+          if (R.pool && now >= sl.next) { var nm_ = fillSlot(R, F, sl, now); if (nm_) scene.insertAdjacentHTML('beforeend', fieldMonHTML(nm_, 'wf-in')); }
           return;
         }
         var el = scene.querySelector('[data-wfid="' + m.id + '"]');
@@ -2659,6 +2684,7 @@
     var sc = F.scenes[F.scene], m = null; sc.slots.forEach(function (sl) { if (sl.mon && sl.mon.id === id) m = sl.mon; }); if (!m || m.out) return;
     var P = planetOf(R.planet);
     var o = { sid: m.sid, lv: m.lv, rate: m.rate, shiny: shinyV(m.shiny), bg: sc.bg || null, back: R.name, where: P.name + ' · ' + R.name, fieldId: m.id, fieldRid: R.id, bait: !!m.bait, flora: R.planet === 'flora' };
+    if (srvMode()) { if (!m.srvId) return; stopField(); return startWildRemote({ id: m.srvId }, o); }   // 由服务器开打：瘴气、手下留情、号角都由服务器判断
     if (m.horn && acc.items.m_horn > 0) { acc.items.m_horn--; save(); o.where += ' · 号角引来的塞米'; }   // 进入战斗：号角用掉
     if (m.corrupt) { o.corrupt = true; o.miasma = 10; o.noCatch = true; o.foe = '瘴气侵蚀的狂暴精灵'; o.where += ' · 瘴气异变'; }
     else if (R.planet === 'flora' && purgeActive() && Math.random() < PURGE.chance) { o.taint = true; o.miasma = 5; o.noCatch = true; o.foe = '被瘴气污染的野生精灵'; o.where += ' · 瘴气精灵'; }
@@ -2683,6 +2709,48 @@
   // 对战背景：传入背景键。F.bg 可以写成 'fl_salt' 这样的键，统一在这里换成图片地址
   function fightBg(k) { return BG[k] || null; }
   function regionOpen(R) { if (R.record) return prog('flora7').done; return R.planet === 'flora' ? prog('flora1').done : planetOpen(planetOf(R.planet)); }
+  // 服务器结算的野外对战。args：{ id } 服务器刷出来的那只 / { travel } 旅行精灵；o：显示用的资料
+  function startWildRemote(args, o) {
+    var ui = { bg: o.bg, back: o.back, where: o.where,
+      fail: function () {   // 没开成（比如服务器刚更新过，刷出来的精灵都作废了）：换一批，回到场景
+        WQ = {}; if (o.fieldRid) replaceFieldMon(o.fieldRid, o.fieldId);
+        if (page === 'explore' && ex.view === 'field') renderField();
+      },
+      adjust: function (r, u) { var op = r.opt || {}; u.where = o.where + (op.tag || ''); u.corrupt = !!op.corrupt && !/_mia\.|_corrupt\./.test(o.bg || ''); } };
+    pveRemote('wild', args, ui, function (e, res) {
+      var msg = [], r = e && e.rep, n = r ? r.downs : 0;
+      if (o.fieldRid) replaceFieldMon(o.fieldRid, o.fieldId);
+      if (r) {
+        if (r.spare != null) msg.push('主线任务「引出猎杀者」：已经「假装击败」' + r.spare + ' / ' + r.spareN + ' 只野生精灵。' + (r.spare >= r.spareN ? '天色渐渐暗了下来……去芙罗拉星的「剧情」页，继续主线「猎杀者」。' : ''));
+        if (r.caught) { var m = mon(r.caught.u); if (m) msg.push('捕捉到了 ' + (m.shiny ? '异色的' : '') + form(m).name + '（LV' + m.lv + '，' + m.nat + '）！' + (r.caught.added ? '已加入' + TEAM_NAME[acc.active] + '。' : '已收入精灵仓库。')); dailyHit('catch'); }
+        if (n) dailyHit('wildWin', n);
+        if (r.purge) {
+          msg.push('祛除了一只瘴气精灵（' + r.purge.n + ' / ' + r.purge.goal + '）。');
+          r.purge.steps.forEach(function (st) {
+            msg.push('星球任务「祛除瘴气」：累计击败 ' + st.n + ' 只，经验背包 +' + fmt(st.exp) + '。');
+            if (st.title) { msg.push('任务完成！获得称号「' + titleName(st.title) + '」，芙罗拉星的瘴气被彻底祛除了。'); renderTitle(); }
+          });
+        }
+        if (r.pw) {
+          if (r.pw.full) msg.push('瘴气驱逐战：今天已经击破 ' + r.pw.cap + ' 次，达到每日上限，明天再来吧。');
+          else { msg.push('瘴气驱逐战：击破 +1（今天 ' + r.pw.n + ' / ' + r.pw.cap + '），经验背包 +' + fmt(r.pw.exp) + '。'); if (r.pw.data && !r.pw.data.capped && !r.pw.data.skipped) pwApply(r.pw.data); }
+        }
+        if (r.trav) msg.push('击败了旅行精灵叶子喵！获得累积经验 ×' + fmt(r.trav.exp) + (r.trav.leaf ? '，她留下了一片「叶子喵的叶片」' : '') + '。');
+        if (r.horn) msg.push('它掉下了赫菲角片 ×' + r.horn + '，已放入储存箱（60 片可以合成奇声号角）。');
+        if (r.disk) msg.push('它掉下了星盘 ×' + r.disk + '，已放入储存箱（100 个可以让一只幽灵鱼一系领悟隐藏技能）。');
+        if (r.bowl) msg.push('放在熔岩原的那碗米饭被吃得一粒不剩。');
+        if (r.seeds) msg.push('它掉下了水稻种子 ×' + r.seeds + '，已放入储存箱。');
+        dailyHit('pve');
+        msg = msg.concat(xpMsg(r.xp));
+        save();
+      } else if (res === 'void') msg.push('这场对战作废了。');
+      if (o.travel) setTimeout(function () { travelDlg(pickOne(n ? TRAVEL_TALK.win : r && r.res === 'lose' ? TRAVEL_TALK.lose : TRAVEL_TALK.quit), [['知道了', null]]); }, 700);   // 打完夸一句；她会留在原地，满 20 分钟才走
+      ex.fighting = false; document.body.classList.remove('story-fight');
+      $('pg-arena').hidden = page !== 'arena'; $('pg-explore').hidden = page !== 'explore';
+      renderTop(); syncBattle(); window.scrollTo(0, $('pg-explore').offsetTop - 8);
+      if (msg.length) toast(msg.join(''));
+    });
+  }
   function startWildBattle(o) {
     var team = (acc.teams[acc.active] || []).map(mon).filter(Boolean);
     if (!team.length) team = acc.mons.slice(0, 1);
@@ -3379,7 +3447,7 @@
 
   /* ---------- 星球任务：每颗星球的专属任务 ---------- */
   // 芙罗拉星 · 祛除瘴气：任务完成前，在芙罗拉星作战有 10% 概率遇到瘴气精灵（自带 5 层瘴气，无法捕捉），击败它们累计计数
-  var PURGE = { chance: 0.1, goal: 30, steps: [{ n: 1, exp: 3000 }, { n: 5, exp: 10000 }, { n: 10, exp: 20000 }, { n: 20, exp: 40000 }, { n: 30, exp: 120000, title: 'purifier' }] };   // 2026-10-18 晚：经验 ×10
+  var PURGE = PVE.PURGE;
   var PURGE_OLD = { 1: 300, 5: 1000, 10: 2000, 20: 4000, 30: 12000 };   // ×10 之前（补差额用）
   function purgeRec() { if (!acc.purge) acc.purge = { n: 0, got: {} }; return acc.purge; }
   function purgeActive() { return prog('flora1').done && purgeRec().n < PURGE.goal; }
@@ -4388,13 +4456,15 @@
     if (pveBusy) return; pveBusy = true;
     CLOUD.pve({ op: 'start', kind: kind, args: args }).then(function (r) {
       pveBusy = false;
-      if (!r || !r.ok) { if (r && r.err) toast(r.err); return; }
+      if (!r || !r.ok) { if (r && r.err) toast(r.err); if (ui.fail) ui.fail(r); return; }
       if (r.acc) adoptAcc(r.acc);
       var o = r.opt || {}, endE = null;
+      if (ui.adjust) ui.adjust(r, ui);
+      if (r.S.wild) { r.S.wild.where = ui.where || ''; r.S.wild.back = ui.back || ''; }
       stopTimers(); ex.fighting = true; document.body.classList.add('story-fight'); syncBattle();
       if (ui.pre) ui.pre(); else $('pg-explore').hidden = true;
       $('pg-arena').hidden = false;
-      window.HSBATTLE.start({ S: r.S, remote: CLOUD.pve, foe: o.foe, diff: o.diff, bgm: o.bgm || null, bgmAt: o.bgmAt || null, back: ui.back || null, bg: ui.bg || null, corrupt: !!ui.corrupt, cuts: ui.cuts || null, stars: ui.stars || null, preEvs: r.pre || null, env: ui.env || null, onItem: useInv,
+      window.HSBATTLE.start({ S: r.S, remote: CLOUD.pve, foe: o.foe, diff: o.diff, bgm: o.bgm || null, bgmAt: o.bgmAt || null, back: ui.back || null, bg: ui.bg || null, corrupt: !!ui.corrupt, cuts: ui.cuts || null, stars: ui.stars || null, preEvs: r.pre || null, env: ui.env || null, wild: r.S.wild || null, onItem: useInv,
         onSrvEnd: function (e) { endE = e; if (e && e.acc) adoptAcc(e.acc); },
         onEnd: function (res, seen, downs, quit, endS) {
           var e = endE || (endS && endS.srvEnd) || null;

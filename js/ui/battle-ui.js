@@ -1087,6 +1087,7 @@
     var b = this;
     if (busy || !app.S || app.S.over) return;
     if (app.S.training) { app.S.over = 'train'; showEnd(); return; }
+    if (remote && app.S.wild) { addLog('你带着精灵们逃走了。', 'dmg'); rApply({ op: 'quit' }); return; }
     if (app.S.wild) { app.S.over = 'flee'; addLog('你带着精灵们逃走了。', 'dmg'); showEnd(); return; }
     if (pvp && Date.now() - quitArmed < 3000) { b.textContent = '认输'; quitArmed = 0; pvp.onQuit(); return; }
     if (remote && Date.now() - quitArmed < 3000) { quitArmed = 0; b.textContent = '认输'; addLog('你认输了。', 'bad'); rApply({ op: 'quit' }); return; }

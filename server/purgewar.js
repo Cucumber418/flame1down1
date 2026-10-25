@@ -41,16 +41,21 @@ A.use(function (req, res, url) {
   if (url === '/api/purgewar' && req.method === 'GET') { A.reply(res, 200, out(load(), who.user)); return true; }
   if (req.method !== 'POST') { A.reply(res, 405, { error: '不支持' }); return true; }
   A.readBody(req, function () {
-    var now = Date.now(), d = load();
-    if (lastHit[who.user] && now - lastHit[who.user] < GAP_MS) return A.reply(res, 200, Object.assign(out(d, who.user), { skipped: true }));
-    if (todayN(d, who.user) >= DAY_CAP) return A.reply(res, 200, Object.assign(out(d, who.user), { capped: true }));
-    lastHit[who.user] = now;
-    d.total = (d.total | 0) + 1; d.users[who.user] = (d.users[who.user] | 0) + 1; if (!d.start) d.start = now;
-    if (!d.day) d.day = {}; d.day[who.user] = { d: bjDay(), n: todayN(d, who.user) + 1 };
-    store(d);
-    A.reply(res, 200, out(d, who.user));
+    // 2026-10-25 起野外对战由服务器结算，击破由 server/pve.js 直接记（hit）；这个接口只给还开着旧页面的人用
+    A.reply(res, 200, hit(who.user));
   });
   return true;
 });
+// 记一次击破：全服 +1、自己 +1；返回全服进度（超过每天上限时带 capped）
+function hit(user) {
+  var now = Date.now(), d = load();
+  if (lastHit[user] && now - lastHit[user] < GAP_MS) return Object.assign(out(d, user), { skipped: true });
+  if (todayN(d, user) >= DAY_CAP) return Object.assign(out(d, user), { capped: true });
+  lastHit[user] = now;
+  d.total = (d.total | 0) + 1; d.users[user] = (d.users[user] | 0) + 1; if (!d.start) d.start = now;
+  if (!d.day) d.day = {}; d.day[user] = { d: bjDay(), n: todayN(d, user) + 1 };
+  store(d);
+  return out(d, user);
+}
 
-module.exports = { load: load, store: store, FILE: FILE };
+module.exports = { load: load, store: store, FILE: FILE, hit: hit };
