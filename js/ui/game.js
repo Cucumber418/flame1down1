@@ -868,6 +868,77 @@
   var SEED_ORDER = ['s_herb', 's_flower', 's_rice'];
   var CROP_ORDER = ['c_herb', 'c_flower', 'c_rice', 'c_bowl'];
   var BAG_ORDER = MON_ORDER.concat(GEN_ORDER);
+  /* 储存箱里每个道具的说明，分三栏：简介（是什么）、用途（怎么用、能做什么）、获得方式（2026-10-25 整理） */
+  var SPEC_OF = { floraJade: ['芙罗拉星', '玛西露姆、六尾风王、卡莱奥丹', '草', '芙罗拉星的丛林、草甸'], kbDrop: ['坎伯兰星', '坎克托斯、戈耳贡、塞壬', '水', '坎伯兰星的水面、浅水区、深海区'], ppAsh: ['庞贝星', '赫菲斯托斯、费尔茅斯、冲锋火鸡', '火', '庞贝星的熔岩原、饮火城'], ltOrb: ['莱汀陨石带', '雷公、法拉第', '电', '莱汀陨石带'], whFrost: ['白之星', '霜冻之冠', '冰', '白之星'] };
+  var SPEC_EWK = { floraJade: '草', kbDrop: '水', ppAsh: '火', ltOrb: '电', whFrost: '冰' };
+  var ITEM_INFO = {
+    // 战斗道具
+    cap1: ['最普通的精灵捕捉装置。', '野外对战时在「道具」页投向野生精灵。对方体力越低、身上有异常状态时越容易成功（占用一回合）。', '荆门 · 物资仓储的商城（200 能量）；世界任务「草甸上的奔跑者」、支线「物资仓储」、排位赛季段位奖励也会送。'],
+    cap2: ['加强版的捕捉装置。', '野外对战时使用，捕捉成功率是普通装置的 1.5 倍（占用一回合）。', '黄石 · 冶炼坊用星砂 ×2 合成。'],
+    cap3: ['华为出品的捕捉装置，从不失手。', '野外对战时使用，必定捕捉成功（占用一回合）。', '黄石 · 冶炼坊用星核 ×4 合成；先驱之塔的代币商店（80 先驱代币）。'],
+    pot1: ['一小瓶补药。', '对战中为出战精灵恢复 30% 最大体力（占用一回合）。', '荆门 · 物资仓储的商城（100 能量）；世界任务「林下的蘑菇」。'],
+    pot2: ['浓缩过的补药。', '对战中为出战精灵恢复 50% 最大体力（占用一回合）。', '荆门 · 物资仓储的商城（250 能量）。'],
+    pot200: ['用药草熬成的血药。', '对战中为出战精灵恢复 200 点体力（占用一回合）。', '黄石 · 冶炼坊用药草 ×2 合成。'],
+    pp5: ['用活力花卉炼成的蓝色药水。', '对战中为出战精灵的每个技能各恢复 5 点 PP（占用一回合）。', '黄石 · 冶炼坊用活力花卉 ×2 合成。'],
+    pp10: ['用活力花卉炼成的蓝色药水，比 5PP 药水更浓。', '对战中为出战精灵的每个技能各恢复 10 点 PP（占用一回合）。', '黄石 · 冶炼坊用活力花卉 ×3 合成。'],
+    pp15: ['用活力花卉炼成的蓝色药水，三种里最浓的一种。', '对战中为出战精灵的每个技能各恢复 15 点 PP（占用一回合）。', '黄石 · 冶炼坊用活力花卉 ×4 合成。'],
+    // 精灵培养
+    ivReroll: ['一管调配精灵天赋的合剂。', '用在任意一只精灵身上：六项天赋（0~31）全部重新随机，可能更高也可能更低。', '竞技代币商店（200 竞技代币）；先驱之塔的代币商店（400 先驱代币）。'],
+    ivMoon: ['小月亮专用的天赋药剂。', '只能用在小月亮一系：六项天赋重新随机，每项掷两次取较高的一次。', '竞技代币商店（100 竞技代币）。'],
+    ivBone: ['凶骨专用的天赋药剂。', '只能用在骨刃一系：六项天赋重新随机，每项掷两次取较高的一次。', '竞技代币商店（100 竞技代币）。'],
+    natAny: ['一粒能改变精灵脾气的胶囊。', '用在任意一只精灵身上，把性格改成你指定的性格。', '先驱之塔的代币商店（2,000 先驱代币）。'],
+    natTagore: ['泰戈尔专用的性格药剂。', '用在泰戈尔一系（小胖虎、胖虎也可以），把性格改成你指定的性格。', '首次击败困难难度的泰戈尔得 3 个；泰戈尔每周挑战（普通、困难）有机会掉落。'],
+    evAny: ['一管通用的学习力合剂。', '用在任意一只精灵身上，增加 100 点可分配学习力，再在精灵资料里自己分配（学习力总量有上限）。', '竞技代币商店（100 竞技代币）；先驱之塔的代币商店（150 先驱代币）；BOSS 每周挑战、明明代币抽奖、排位赛季段位奖励。'],
+    evTagore: ['泰戈尔专用的学习力合剂。', '用在泰戈尔一系，增加 100 点可分配学习力。', '泰戈尔每周挑战有机会掉落。'],
+    evReset: ['把学习力退回去的胶囊。', '用在一只精灵身上，已经分配的学习力全部退回「可分配学习力」，可以重新分配。', '竞技代币商店（80 竞技代币）；先驱之塔的代币商店（200 先驱代币）。'],
+    fruit1: ['一颗饱满的果子。', '用在一只精灵身上，直接增加经验（每颗 = 精灵等级 × 100）。到了等级上限就不能用。', '竞技代币商店（30 竞技代币）。'],
+    fruit2: ['长得特别快的果子。', '用在一只精灵身上，直接增加经验（每颗 = 精灵等级 × 250）。到了等级上限就不能用。', '竞技代币商店（60 竞技代币）；先驱之塔的代币商店（60 先驱代币）；明明代币抽奖。'],
+    formDev: ['用星核和星砂做成的小装置。', '用在一只精灵身上，永久解锁一个它长到过的更小形态的外观；之后在精灵资料的「外观形态」里随时免费切换。只改外观。', '黄石 · 冶炼坊用星核 ×6、星砂 ×300 合成。'],
+    earthShard: ['出发前从地球上带来的元素结晶，带着家乡的气息。', '每 100 个让三只初始精灵（叶粒之果、水臂领主、涅槃方头一系）领悟一个还没领悟的隐藏技能；它们到 LV70 后，也用它解锁 LV75（500 个）、LV80（1,000 个）的等级上限。', '读完黄冈 · 学院部的支线「隐藏技能」得 1,000 个。'],
+    moonStone: ['一块映着新月微光的石头。', '每 100 个让小月亮一系领悟一个隐藏技能；到 LV70 后也用它解锁更高的等级上限。', '竞技代币商店（2 竞技代币）。'],
+    boneDust: ['泛着幽光的骨粉，摸上去凉凉的。', '每 100 个让骨刃一系领悟一个隐藏技能；到 LV70 后也用它解锁更高的等级上限。', '竞技代币商店（2 竞技代币）。'],
+    tgPearl: ['泰戈尔一声虎啸凝成的珠子。', '每 100 个让泰戈尔一系领悟一个隐藏技能；到 LV70 后也用它解锁 LV75（500 个）、LV80（1,000 个）的等级上限。', '首次击败困难难度的泰戈尔得 80 个；泰戈尔每周挑战每次 15 / 30 / 50 个（简单 / 普通 / 困难）。'],
+    brTwig: ['从荒芜体内的古代除草程序里提取出的一小瓶药剂。', '每 100 个让荒芜一系领悟一个隐藏技能；到 LV70 后也用它解锁 LV75（500 个）、LV80（1,000 个）的等级上限。', '首次击败普通难度的荒芜得 40 个、困难难度得 80 个；荒芜每周挑战每次 15 / 30 / 50 个（简单 / 普通 / 困难）。'],
+    odoFin: ['从深海的奥多亚克身上脱落的古老鳍甲。', '每 100 个让奥多亚克一系领悟一个隐藏技能；到 LV70 后也用它解锁 LV75（500 个）、LV80（1,000 个）的等级上限。', '首次击败普通难度的奥多亚克得 40 个、困难难度得 80 个；奥多亚克每周挑战每次 15 / 30 / 50 个（简单 / 普通 / 困难）。'],
+    hrDisk: ['盘面上的星点会自己转动的小星盘。', '每 100 个让幽灵鱼一系（幽灵鱼、哈蒙德、哈尔达蒙）领悟一个隐藏技能。', '击败野外随机出现的幽灵鱼，每只掉落 50–70 个。'],
+    deathTok: ['先驱之塔死神留下的代币。', '1 颗让帕努托尔一系领悟一个隐藏技能；在先驱之塔的代币商店兑换「帕努托尔的精元」也要 1 颗。', '击败先驱之塔第 60 层的死神「帕努托尔」获得，一个账号最多 3 颗。'],
+    mmEye: ['雷明灯一系的专属结晶。', '每 100 个让雷明灯一系领悟一个隐藏技能。', '明明代币抽奖：从第 5 个奖池起，每逢 5 的倍数的奖池里有 50 个。'],
+    // 材料
+    g_sand: ['从星球表面收来的矿砂。', '黄石 · 冶炼坊用来合成加强捕捉装置（2 个一个）和形态切换装置。', '各星球野外的采集点，每个点每天 1 次、每次 12 个；瘴气驱逐战的全服里程碑奖励。'],
+    g_core: ['雷暴和永冻里凝出来的核。', '黄石 · 冶炼坊用来合成华为捕捉装置（4 个一个）和形态切换装置。', '活动「明明教官的试炼」每关每个难度首次通过；芙罗拉星挑战路线累计星数奖励；瘴气驱逐战的全服里程碑奖励；明明代币抽奖。'],
+    s_herb: ['绿色的药草籽。', '在恩施 · 太空种植园种下，8 小时后收获药草 ×50；收获时有 20% 的概率掉落 1 颗药草种子。', '恩施 · 生态舱的种子商店（100 能量）；第一次在芙罗拉星的丛林或草甸采集送 4 颗；支线「伟大的种植园」。'],
+    s_flower: ['蓝色的花籽。', '在恩施 · 太空种植园种下，8 小时后收获活力花卉 ×50；收获时有 20% 的概率掉落 1 颗活力花种子。', '恩施 · 生态舱的种子商店（100 能量）。'],
+    s_rice: ['芙罗拉星野外的稻种。', '在恩施 · 太空种植园种下，12 小时后收获米饭 ×250，种子会退回来。', '在芙罗拉星击败野生精灵时有 10% 的概率掉落。'],
+    c_herb: ['太空种植园收获的药草。', '黄石 · 冶炼坊用 2 份合成一瓶 200血药。', '在太空种植园种药草种子收获。'],
+    c_flower: ['太空种植园收获的蓝色小花，闻一闻就精神了。', '黄石 · 冶炼坊炼成 PP 药水：2 朵一瓶 5PP、3 朵一瓶 10PP、4 朵一瓶 15PP，越大的越划算。', '在太空种植园种活力花种子收获。'],
+    c_rice: ['水稻收获后煮好的米饭，一粒一粒数得清。', '黄石 · 冶炼坊用 500 粒盛成一碗饭。', '在太空种植园种水稻种子收获。'],
+    c_bowl: ['满满一碗香喷喷的米饭。', '进入庞贝星 · 熔岩原，在想放的场景里点「放下一碗饭」。之后这个场景刷新精灵时有 2% 的概率是稀有的米饭火鸡；捕捉或击败它之后，这碗饭就被吃掉了。', '黄石 · 冶炼坊用米饭 ×500 合成。'],
+    m_lcleaf: ['旅行精灵叶子喵身上掉下来的叶片，还带着一点光。', '每 2 片让叶子喵一系领悟一个隐藏技能；5 片可以在黄石 · 冶炼坊合成叶子喵的精元。', '击败旅行精灵叶子喵时有 50% 的概率掉落。'],
+    e_leafcat: ['用叶子喵的叶片凝成的精元。', '放进神农架 · 精灵保育仓，孵化 8 小时后诞生一只叶子小小喵。', '黄石 · 冶炼坊用叶子喵的叶片 ×5 合成。'],
+    e_pluto: ['帕努托尔的精元。', '放进神农架 · 精灵保育仓，孵化 12 小时后诞生一只帕努。', '先驱之塔的代币商店（3,000 先驱代币 + 1 颗死神代币）。'],
+    e_odo: ['从深海里带回来的一团精元。', '放进神农架 · 精灵保育仓，孵化 8 小时后诞生一只奥多。', '首次击败简单难度的BOSS「奥多亚克」获得。'],
+    e_leiming: ['雷明灯的精元。', '放进神农架 · 精灵保育仓，孵化 8 小时后诞生一只雷明灯，有 10% 的概率是异色。', '明明代币抽奖：第 10、30、50、70……个奖池里各有 1 个。'],
+    m_hfhorn: ['赫菲斯一系身上掉下来的角片，还带着一点余温。', '60 片在黄石 · 冶炼坊合成「奇声号角」。', '在庞贝星击败野生的赫菲斯一系，每只掉落 3–6 片；航行日志的「冥岛的歌声」每天可以领 12–15 片。'],
+    m_horn: ['用赫菲角片做成的号角，吹起来声音很奇怪。', '在坎伯兰星 · 水面的「冥岛」吹响，会引来一只可以捕捉的塞米；和它进入战斗时号角就会用掉。', '黄石 · 冶炼坊用赫菲角片 ×60 合成。'],
+    m_mcry: ['凝着马亚尔星系各处能量的晶体。', '在黄石 · 冶炼坊的「特产互换」里，每 10 个换成 10 个任意一种星球特产（芙罗拉玉、不化水滴、火山灰烬、闪电球体、永久冻土）。', '每个BOSS每档难度首次击败（简单 100、普通 200、困难 400）；BOSS 每周挑战每次掉落；深渊潜底。'],
+    m_cu: ['在野外挖到的马亚尔煤炭。', '在荆楚号 · 宜昌的三峡能源核心换成能量（每块 150 能量，每天有上限）。', '芙罗拉星、坎伯兰星野外的矿点，每处每天挖 1 次（要挖矿钻头）。'],
+    m_fe: ['在野外挖到的马亚尔铁矿石，比煤炭更值钱。', '在荆楚号 · 宜昌的三峡能源核心换成能量（每块 250 能量，每天有上限）。', '芙罗拉星、坎伯兰星野外的矿点，每处每天挖 1 次（要挖矿钻头）。'],
+    mmTok: ['活动「明明教官的试炼」的代币。', '在全息作战场地或航行日志里抽奖：10 个抽一次，100 个十连。', '通过活动「明明教官的试炼」的关卡（首次通过另有奖励）；明明代币抽奖里也能抽到；读完活动任务「明明教官的试炼」送 500 个。'],
+    ctTicket: ['做题大王争霸赛的参赛奖励。', '能兑换什么精灵，之后揭晓。先好好收着。', '参加做题大王争霸赛，比赛结束后按名次发放。'],
+    // 其他
+    rename: ['一张可以重写名字的卡片。', '点右上角的名字，在菜单里使用，修改做题家名字（最多 ' + NAME_MAX + ' 个字）。', '荆门 · 物资仓储的商城（1,000 能量）。'],
+    auto: ['装在茶室精灵身上的小装置。', '装在茶室里展示中的一只精灵身上：它每训练满 1 天就自动结算经验，再开始下一天，一共 7 天，不用每天回来收。', '天门 · 陆羽茶室大厅的茶室商店（1,500 能量）。'],
+    permit: ['挑战BOSS每周挑战用的许可。', '进行「每周挑战」时消耗 1 枚。', '每 12 小时自动恢复 1 枚，最多同时持有 ' + PVE.PERMIT.max + ' 枚。'],
+    trans: ['汉街总部国际A座的情报显示，这个翻译器能凭一己之力考到雅思 6.5 分。', '剧情道具：戴上后能听懂精灵说的话。不能使用，也不会消耗。', '主线剧情里获得。'],
+    helmet: ['Bttp 用无人机空投下来的头盔，很容易摔坏。', '剧情道具：戴上后在浓密的瘴气里也能呼吸、看清路。不能使用，也不会消耗。', '主线剧情里获得。']
+  };
+  Object.keys(SPEC_OF).forEach(function (k) {
+    var P = SPEC_OF[k];
+    ITEM_INFO[k] = [P[0] + '的特产。',
+      '每 100 个让' + P[1] + '一系（进化前的形态也可以）领悟一个还没领悟的隐藏技能；' + P[2] + '系精灵到 LV70 后，也可以用它解锁更高的等级上限。',
+      P[3] + '的野外场景里每天有机会捡到 1~3 个；' + P[2] + '系每周挑战；先驱之塔的代币商店（10 先驱代币）；明明代币抽奖' + (k === 'floraJade' ? '；荒芜每周挑战、瘴气驱逐战的全服里程碑奖励、芙罗拉星挑战路线累计星数奖励' : k === 'kbDrop' ? '；奥多亚克每周挑战' : '') + '；也可以在黄石 · 冶炼坊用别的特产互换。'];
+  });
+  function itemInfo(k) { var x = ITEM_INFO[k]; return x ? { intro: x[0], use: x[1], get: x[2] } : null; }
   // 形态切换装置还能解锁的形态：已经长到过、比原本形态小、还没解锁过的
   function formOpts(m) { return GROW.formOpts(m); }
   // 精灵资料里的「形态」：解锁过形态的精灵，在原本形态和解锁的形态之间免费切换
@@ -949,22 +1020,17 @@
     html += '</div>';
     var k = ui.itSel;
     if (k) {
-      var it = USE_ITEMS[k], body = '';
-      if (k === 'permit') body = '<p>进行「每周挑战」时消耗 1 枚。每 12 小时恢复 1 枚，最多同时持有 ' + PERMIT.max + ' 枚。</p><p class="hint">当前 ' + pn + ' 枚 · ' + permitNext() + '</p><button type="button" class="btn" data-itgo="weekly">去每周挑战</button>';
-      else if (k === 'rename') body = '<p>' + esc(SHOP_X.rename.d) + '</p><button type="button" class="btn primary" data-ituse="rename">使用改名卡</button>';
-      else if (k === 'auto') body = '<p>' + esc(TEA_SHOP.auto.d) + '</p><button type="button" class="btn" data-itgo="home">去我的茶室装上</button>';
-      else if (ITEMS[k]) body = '<p>' + esc(ITEMS[k].d) + '</p><p class="hint">在剧情、野外和BOSS对战的「道具」页使用，会占用一回合。</p>';
-      else if (KEY_ITEMS[k]) body = (KEY_ITEMS[k].img && ITEM_IMG[KEY_ITEMS[k].img] ? '<img class="ib-big" src="' + ITEM_IMG[KEY_ITEMS[k].img] + '" alt="">' : '') + '<p>' + esc(KEY_ITEMS[k].d) + '</p><p class="hint">剧情道具，在主线剧情里获得。不能使用，也不会消耗。</p>';
-      else if (GATHER_ITEMS[k]) body = '<p>' + esc(GATHER_ITEMS[k].d) + '</p><p class="hint">在' + esc(GATHER_ITEMS[k].from) + '的采集点获得，已放入储存箱。拿到荆楚号 · 黄石 · 冶炼坊可以合成道具。</p>';
-      else if (SEEDS[k]) body = '<p>' + esc(SEEDS[k].d) + '</p><p class="hint">在太空种植园种下，' + growText(SEEDS[k].min) + '后收获「' + itemName(SEEDS[k].crop) + '」×' + SEEDS[k].yield + (SEEDS[k].back >= 1 ? '，并把这颗种子退回来。' : '，有 ' + Math.round(SEEDS[k].back * 100) + '% 的概率掉落 1 颗种子。') + '</p>' + (GROW.SEED_SHOP.indexOf(k) >= 0 ? '<button type="button" class="btn" data-itgo="seedshop">去种子商店</button>' : '');
-      else if (MATS[k]) body = '<p>' + esc(MATS[k].d) + '</p>' + (MATS[k].hatch ? '<button type="button" class="btn" data-itgo="nursery">去精灵保育仓</button>' : '<p class="hint">击败旅行精灵叶子喵时有 50% 的概率掉落。</p>');
-      else if (k === 'c_bowl') body = '<p>' + esc(CROPS[k].d) + '</p><p class="hint">在黄石 · 冶炼坊用 500 粒米饭合成。进入庞贝星 · 熔岩原，在想放的场景里点「放下一碗饭」。之后这个场景里有 2% 的概率出现稀有的米饭火鸡；捕捉或击败它之后，这碗饭就被吃掉了。</p>';
-      else if (CROPS[k]) body = '<p>' + esc(CROPS[k].d) + '</p><p class="hint">在太空种植园收获，已放入储存箱。可以在冶炼坊当合成材料。</p>';
+      var it = USE_ITEMS[k] && USE_ITEMS[k].kind ? USE_ITEMS[k] : null, inf = itemInfo(k), act = '', body = '';
+      if (k === 'permit') act = '<p class="hint">当前 ' + pn + ' 枚 · ' + permitNext() + '</p><button type="button" class="btn" data-itgo="weekly">去每周挑战</button>';
+      else if (k === 'rename') act = '<button type="button" class="btn primary" data-ituse="rename">使用改名卡</button>';
+      else if (k === 'auto') act = '<button type="button" class="btn" data-itgo="home">去我的茶室装上</button>';
+      else if (KEY_ITEMS[k] && KEY_ITEMS[k].img && ITEM_IMG[KEY_ITEMS[k].img]) act = '<img class="ib-big" src="' + ITEM_IMG[KEY_ITEMS[k].img] + '" alt="">';
+      else if (SEEDS[k]) act = GROW.SEED_SHOP.indexOf(k) >= 0 ? '<button type="button" class="btn" data-itgo="seedshop">去种子商店</button>' : '';
       else if (it) {
         var mons = acc.mons.filter(function (m) { return itemFits(k, m); }).sort(function (a, b) { return b.lv - a.lv; });
         if (!mons.some(function (m) { return m.u === ui.itTarget; })) ui.itTarget = mons.length ? mons[0].u : null;
         var tm = mon(ui.itTarget);
-        body = '<p>' + esc(it.d) + '</p>' + (mons.length ? '<div class="it-step"><b>1. 选择精灵</b><div class="it-mons">' + mons.map(function (m) {
+        act = (mons.length ? '<h5 class="ib-act-h">使用</h5>' + '<div class="it-step"><b>1. 选择精灵</b><div class="it-mons">' + mons.map(function (m) {
           var f = form(m), sub = it.kind === 'jade' ? (jadeMoves(m).length ? '还有 ' + jadeMoves(m).length + ' 个隐藏技能可领悟' : '隐藏技能已全部领悟') : it.kind === 'form' ? (formOpts(m).length ? '还能解锁 ' + formOpts(m).length + ' 个形态' : '没有可以解锁的形态') : it.kind === 'nat' ? '性格 ' + m.nat : it.kind === 'exp' ? (atCap(m) ? '已到等级上限' : '可得 ' + fmt(m.lv * it.rate) + ' 经验') : it.kind === 'evreset' ? '已分配 ' + evSum(m) + ' 点' : it.kind === 'iv' || it.kind === 'iv2' ? '天赋合计 ' + (ivOf(m) ? STAT_KEYS.reduce(function (a, x) { return a + m.iv[x]; }, 0) : '？') : '可再加 ' + evRoom(m) + ' 点';
           return '<label class="it-mon' + (m.u === ui.itTarget ? ' on' : '') + '"><input type="radio" name="it-t" value="' + m.u + '"' + (m.u === ui.itTarget ? ' checked' : '') + '><img src="' + f.img + '" alt=""><span><b>' + esc(f.name) + '</b><small>LV' + m.lv + ' · ' + sub + '</small></span></label>';
         }).join('') + '</div></div>' +
@@ -975,8 +1041,12 @@
             : it.kind === 'exp' ? '<p class="hint">' + (tm ? esc(form(tm).name) + ' 现在 LV' + tm.lv + '，吃一颗得到 ' + fmt(tm.lv * it.rate) + ' 点经验。' : '') + '</p>'
             : '<p class="hint">' + (tm ? esc(form(tm).name) + ' 学习力：已分配 ' + evSum(tm) + '，可分配 ' + (tm.evFree || 0) + '，还能再加 ' + evRoom(tm) + ' 点。' : '') + '</p>') +
           '<button type="button" class="btn primary" data-ituse="' + k + '"' + ((it.kind === 'jade' && (!tm || !jadeMoves(tm).length || acc.items[k] < it.cost)) || (it.kind === 'form' && (!tm || !formOpts(tm).length)) || (it.kind === 'ev' && tm && !evRoom(tm)) || (it.kind === 'exp' && tm && atCap(tm)) || (it.kind === 'evreset' && tm && !evSum(tm)) ? ' disabled' : '') + '>使用 ' + (it.cost || 1) + ' 个' + itemName(k) + '</button>'
-          : '<p class="hint red">' + esc(it.none || '你还没有' + SPMAP[it.sid].name + '（小胖虎、胖虎也算）。击败简单难度的BOSS「泰戈尔」可以领养一只小胖虎。') + '</p>');
+          : '<p class="hint red">' + esc(it.none || '你还没有能用这个道具的精灵（' + (it.sids || [it.sid]).filter(function (x) { return SPMAP[x]; }).map(function (x) { return SPMAP[x].name; }).join('、') + '一系）。') + '</p>');
       }
+      else if (MATS[k] && MATS[k].hatch) act = '<button type="button" class="btn" data-itgo="nursery">去精灵保育仓</button>';
+      var dsc = (ITEMS[k] && ITEMS[k].d) || (USE_ITEMS[k] && USE_ITEMS[k].d) || (KEY_ITEMS[k] && KEY_ITEMS[k].d) || (GATHER_ITEMS[k] && GATHER_ITEMS[k].d) || (SEEDS[k] && SEEDS[k].d) || (CROPS[k] && CROPS[k].d) || (MATS[k] && MATS[k].d) || '';
+      body = (inf ? '<dl class="ib-info"><div><dt>简介</dt><dd>' + esc(inf.intro) + '</dd></div><div><dt>用途</dt><dd>' + esc(inf.use) + '</dd></div><div><dt>获得方式</dt><dd>' + esc(inf.get) + '</dd></div></dl>' : '<p>' + esc(dsc) + '</p>') +
+        (act ? '<div class="ib-act">' + act + '</div>' : '');
       html += '<div class="ib-detail"><h4><span class="ib-ic">' + (KEY_ITEMS[k] && KEY_ITEMS[k].img && ITEM_IMG[KEY_ITEMS[k].img] ? '' : H.itemIcon(k)) + '</span>' + (k === 'permit' ? '挑战许可' : itemName(k)) + (k !== 'permit' ? ' <small class="cnt">×' + fmt(acc.items[k] || 0) + '</small>' : '') + '</h4>' + body + (ui.itMsg ? '<p class="exp-msg">' + esc(ui.itMsg) + '</p>' : '') + '</div>';
     }
     else if (ui.itMsg) html += '<div class="ib-detail"><p class="exp-msg">' + esc(ui.itMsg) + '</p></div>';   // 道具刚好用完：提示留着
@@ -4571,7 +4641,7 @@
     leafcat: '击败旅行精灵叶子喵掉落叶片，5 片在冶炼坊合成精元，再到精灵保育仓孵化', moon: '平衡排位首次达到铂金段位的奖励', bone: '平衡排位首次达到王者段位的奖励',
     aegis: '支线「明明教官的礼物」（古城防卫部）', phantom: '每天 16:00–24:00 切换探索场景时偶尔出现的神秘精灵', hauris: '每天 16:00–24:00 切换探索场景时偶尔出现的神秘精灵',
     turkey: '在庞贝星熔岩原放下一碗米饭后有机会出现', siren: '在坎伯兰星水面的冥岛吹响奇声号角', pluto: '先驱之塔商店用死神代币等兑换精元后孵化',
-    firemouse: '庞贝星饮火城 · 炙热核心的野生精灵；炙热核心的火月鼠（一次性）', leiming: '活动「明明教官的试炼」：明明代币抽奖第 10 个奖池的「雷明灯的精元」，在精灵保育仓孵化', odo: '坎伯兰星深海区的BOSS「奥多亚克」：首次击败简单难度得到「奥多的精元」，在精灵保育仓孵化'
+    firemouse: '庞贝星饮火城 · 炙热核心的野生精灵；炙热核心的火月鼠（一次性）', leiming: '活动「明明教官的试炼」：明明代币抽奖第 10、30、50、70……个奖池的「雷明灯的精元」，在精灵保育仓孵化（10% 是异色）', odo: '坎伯兰星深海区的BOSS「奥多亚克」：首次击败简单难度得到「奥多的精元」，在精灵保育仓孵化'
   };
   function wikiNo(s) { var n = (s.evo || []).map(function (e) { return e.no; }).filter(Boolean); return n.length ? +n[0] : 9999; }   // 没有编号的排在最后
   function wikiGet(sid) {
@@ -4674,7 +4744,7 @@
   // 活动的时间、关卡、奖励在 js/engine/pve.js（服务器和浏览器共用，2026-10-25）
   var MM = PVE.MM, MM_NICK = PVE.MM_NICK, MM_TEAM = PVE.MM_TEAM, MM_TEAM_HARD = PVE.MM_TEAM_HARD, MM_DIFF = PVE.MM_DIFF, MM_FINAL = PVE.MM_FINAL;
   MATS.mmTok = { name: '明明代币', d: '活动「明明教官的试炼」里通过关卡获得，可以在全息作战场地或航行日志里抽奖：10 个抽一次，100 个十连。' };
-  MATS.e_leiming = { name: '雷明灯的精元', d: '明明代币抽奖第 10 个奖池里的奖励。放进神农架 · 精灵保育仓，孵化 8 小时后会诞生一只雷明灯。', hatch: { sid: 'leiming', lv: 1, min: 480 } };
+  MATS.e_leiming = { name: '雷明灯的精元', d: '明明代币抽奖第 10、30、50、70……个奖池里的奖励。放进神农架 · 精灵保育仓，孵化 8 小时后会诞生一只雷明灯，有 10% 的概率是异色。', hatch: { sid: 'leiming', lv: 1, min: 480 } };
   if (MON_ORDER.indexOf('mmEye') < 0) MON_ORDER.splice(MON_ORDER.indexOf('boneDust') + 1, 0, 'mmEye');
   ['mmTok', 'e_leiming'].forEach(function (k) { if (MAT_ORDER.indexOf(k) < 0) MAT_ORDER.push(k); });
   function mmRec() { if (!acc.mm) acc.mm = { clr: {}, wins: 0 }; if (!acc.mm.clr) acc.mm.clr = {}; return acc.mm; }
@@ -4789,7 +4859,7 @@
   }
   function renderMmGacha() {
     var G = mmG(), P = mmPool(G.n), tok = acc.items.mmTok || 0;
-    $('pg-explore').innerHTML = exHead('用明明代币抽奖：每个奖池有 20 个固定奖励，抽完一个奖池就会进入下一个。第 10 个奖池有「雷明灯的精元」，第 20、30 个奖池有 100 个「雷明之眼」。') +
+    $('pg-explore').innerHTML = exHead('用明明代币抽奖：每个奖池有 20 个固定奖励，抽完一个奖池就会进入下一个。从第 5 个奖池起，每逢 5 的倍数的奖池都有 50 个「雷明之眼」；第 10、30、50、70……个奖池还有「雷明灯的精元」（孵出的雷明灯 10% 是异色）。') +
       '<div class="crumb"><button type="button" class="btn ghost" id="mmg-back">‹ 返回' + (ex.mmFrom === 'log' ? '航行日志' : '全息作战场地') + '</button><b>明明代币抽奖 · 第 ' + G.n + ' 个奖池</b></div>' +
       '<div class="mm-bar"><span>明明代币 <b>' + fmt(tok) + '</b></span><span>剩余 <b>' + G.left.length + '</b> / 20</span><span class="hint">今天已解锁 ' + G.opened + ' / ' + MM_POOL_DAY + ' 个新奖池</span>' +
       '<button type="button" class="btn" data-mmdraw="1"' + (tok >= 10 ? '' : ' disabled') + '>抽一次（10）</button><button type="button" class="btn primary" data-mmdraw="10"' + (tok >= 100 ? '' : ' disabled') + '>十连抽（100）</button></div>' +
@@ -5096,7 +5166,7 @@
     var N = nursery(), x = N.slots[i]; if (!x || hatchLeft(x)) return;
     txRun('hatch', { a: 'hatch', i: i }, function (res) {   // 走交易（grow.js）：孵出的精灵由服务器生成
       var m = mon(res.u);
-      toast('精元裂开了——诞生了一只' + form(m).name + '（LV' + m.lv + '，' + m.nat + '）！' + (res.added ? '已加入' + TEAM_NAME[acc.active] + '。' : '已收入精灵仓库。'));
+      toast('精元裂开了——诞生了一只' + (res.shiny ? '异色的' : '') + form(m).name + '（LV' + m.lv + '，' + m.nat + '）！' + (res.added ? '已加入' + TEAM_NAME[acc.active] + '。' : '已收入精灵仓库。'));
       renderNursery(); renderRes && renderRes();
     });
   }

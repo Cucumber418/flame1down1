@@ -37,7 +37,7 @@ var GROW = (function () {
     formDev: { name: '形态切换装置', sid: null, kind: 'form', sd: '给一只精灵永久解锁一个可以切换的外观形态。', d: '黄石 · 冶炼坊用星核和星砂合成的装置。用在一只精灵身上，给这只精灵永久解锁一个它已经长到过的更小形态的样子（比如让最终形态变回第一形态的样子）。解锁之后，在精灵资料的「外观形态」里，原本的形态和解锁过的形态之间随时免费切换。只改变外观，数值、技能都不变；每只精灵分开解锁。' },
     floraJade: { name: '芙罗拉玉', gem: '草', sd: '芙罗拉星的特产。可以让芙罗拉星的普通野生精灵领悟隐藏技能，也能提高草系精灵的等级上限。', sid: null, sids: ['mush', 'wind', 'kaleo'], kind: 'jade', cost: 100, d: '芙罗拉星深处凝成的绿色玉石。100 个可以让一只玛西露姆、六尾风王、卡莱奥丹一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能，不用再满足战斗里的领悟条件。隐藏技能要到 LV' + HIDDEN_MIN_LV + ' 才能装备。瘴气驱逐战的全服奖励会发放；芙罗拉星的丛林、草甸里，每天也有机会捡到少量。', none: '你还没有玛西露姆、六尾风王或卡莱奥丹（进化前的形态也算）。去芙罗拉星的丛林、草甸捕捉吧。' }
   };
-  USE_ITEMS.mmEye = { name: '雷明之眼', sid: null, sids: ['leiming'], kind: 'jade', cost: 100, sd: '雷明灯一系的专属道具。100 个可以让一只雷明灯一系领悟一个隐藏技能。', d: '明明代币抽奖第 20、30 个奖池里的奖励，每次 100 个。100 个可以让一只雷明灯一系（进化前的形态也可以）领悟一个还没领悟的隐藏技能。' };
+  USE_ITEMS.mmEye = { name: '雷明之眼', sid: null, sids: ['leiming'], kind: 'jade', cost: 100, sd: '雷明灯一系的专属道具。100 个可以让一只雷明灯一系领悟一个隐藏技能。', d: '明明代币抽奖从第 5 个奖池起，每逢 5 的倍数的奖池里有 50 个。100 个可以让一只雷明灯一系（进化前的形态也可以）领悟一个还没领悟的隐藏技能。' };
   // 等级上限：喂经验最高到 LV70；用星球特产 / BOSS专属道具解锁到 75、80
   var CAP_STEPS = [{ lv: 75, jade: 500 }, { lv: 80, jade: 1000 }];
   var GEM_OF = { 草: 'floraJade', 水: 'kbDrop', 火: 'ppAsh', 电: 'ltOrb', 冰: 'whFrost' };
@@ -245,7 +245,7 @@ var GROW = (function () {
 
   /* ---------- 精灵保育仓：精元放进孵化槽，过一段时间孵化出精灵 ---------- */
   var NURSERY_N = 3;
-  var HATCH = { e_odo: { sid: 'odo', lv: 1, min: 480 }, e_leafcat: { sid: 'leafcat', lv: 1, min: 480 }, e_pluto: { sid: 'pluto', lv: 1, min: 720 }, e_leiming: { sid: 'leiming', lv: 1, min: 480 } };
+  var HATCH = { e_odo: { sid: 'odo', lv: 1, min: 480 }, e_leafcat: { sid: 'leafcat', lv: 1, min: 480 }, e_pluto: { sid: 'pluto', lv: 1, min: 720 }, e_leiming: { sid: 'leiming', lv: 1, min: 480, shiny: 0.1 } };   // shiny：孵出异色的概率
   function nurseryRec(a) { if (!a.nursery || !Array.isArray(a.nursery.slots)) a.nursery = { slots: [] }; while (a.nursery.slots.length < NURSERY_N) a.nursery.slots.push(null); return a.nursery; }
   // { a: 'put', i, k } / { a: 'hatch', i }
   TX.add('hatch', function (a, args, env) {
@@ -261,8 +261,9 @@ var GROW = (function () {
     if (act === 'hatch') {
       var x = N.slots[i], H = x && HATCH[x.k]; if (!H) return no('孵化槽是空的');
       if (env.now - x.t < H.min * 60000) return no('还没到孵化的时候');
-      var gm = ACC.giveMon(a, H.sid, H.lv, env); N.slots[i] = null;
-      return { ok: true, u: gm.m.u, added: gm.added };
+      var sh = H.shiny && env.rand() < H.shiny ? 1 : 0;
+      var gm = ACC.giveMon(a, H.sid, H.lv, env, sh); N.slots[i] = null;
+      return { ok: true, u: gm.m.u, added: gm.added, shiny: !!sh };
     }
     return no('不支持的操作');
   });

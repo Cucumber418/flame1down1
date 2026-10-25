@@ -499,8 +499,8 @@ var PVE = (function () {
   var MM_TEAM = { 水: ['pede', 'squid', 'gorgon'], 火: ['firemouse', 'shroom', 'hephaestus'], 草: ['mush', 'leaf', 'kaleo'], 电: ['faraday', 'leigong', 'faraday'], 冰: ['frost', 'wild', 'frost'] };
   var MM_TEAM_HARD = { 草: ['mush', 'leaf', 'wind'] };
   var MM_DIFF = [
-    { n: '通常', lv: [40, 45, 55], tok: [10, 15], first: { tok: 30, exp: 20000 }, hp3: 1500, fx3: { dr: 0.15, focus: 1, pp: 99 } },   // 2026-10-24：第三只显著加强（hp3 体力、fx3 特性）
-    { n: '高难', lv: [75, 75, 75], tok: [30, 40], first: { tok: 80, exp: 50000 }, fx: [{ mmGift: 1, pp: 99 }, { mmGift: 1, pp: 99 }, { mmGift: 1, dr: 0.25, focus: 1, pp: 99 }], lv3: 80, hp3: 3500 }
+    { n: '通常', lv: [40, 45, 55], tok: [20, 30], first: { tok: 30, exp: 20000 }, hp3: 1500, fx3: { dr: 0.15, focus: 1, pp: 99 } },   // 2026-10-24：第三只显著加强（hp3 体力、fx3 特性）
+    { n: '高难', lv: [75, 75, 75], tok: [60, 80], first: { tok: 80, exp: 50000 }, fx: [{ mmGift: 1, pp: 99 }, { mmGift: 1, pp: 99 }, { mmGift: 1, dr: 0.25, focus: 1, pp: 99 }], lv3: 80, hp3: 3500 }
   ];
   var MM_FINAL = { tok: [50, 60], first: { tok: 120, exp: 80000 } };
   function mmDay(t) { return Math.floor((t - MM.start) / BJ_DAY); }

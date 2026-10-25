@@ -46,10 +46,10 @@ var TX = (function () {
   // 明明代币抽奖的第 n 个奖池：20 个固定奖励
   function mmPool(n) {
     var P = [];
-    [1000, 1000, 1000, 1000, 3000, 3000, 3000, 10000].forEach(function (e) { P.push({ exp: e }); });
+    [2000, 2000, 2000, 2000, 6000, 6000, 6000, 20000].forEach(function (e) { P.push({ exp: e }); });
     [['floraJade', 10], ['floraJade', 10], ['ltOrb', 10], ['kbDrop', 10], ['ppAsh', 10], ['whFrost', 10], ['mmTok', 5], ['mmTok', 5], ['mmTok', 20], ['fruit2', 2], ['evAny', 1], ['g_core', 1]].forEach(function (x) { var it = {}; it[x[0]] = x[1]; P.push({ items: it }); });
-    if (n === 10) P[0] = { items: { e_leiming: 1 }, big: 1 };
-    if (n === 20 || n === 30) P[0] = { items: { mmEye: 100 }, big: 1 };
+    if (n >= 5 && n % 5 === 0) P[0] = { items: { mmEye: 50 }, big: 1 };   // 第 5 个奖池起，每逢 5 的倍数：雷明之眼 ×50
+    if (n >= 10 && n % 20 === 10) P[1] = { items: { e_leiming: 1 }, big: 1 };   // 第 10、30、50、70……个奖池：雷明灯的精元
     return P;
   }
 
