@@ -10,9 +10,9 @@ var TM_NAME = { odoAtk: '全弹搭载', odoDef: '强效外壳', brandCd: '烙印
   noSwitch: '无法切换', prio: '先制+1', rain: '祈雨', tri: '三相归元', soul: '收魂',
   voidPhys: '虚空化', induct: '电磁感应', vortex: '闪电漩涡', darkside: '月之暗面', hail: '冰雹', noBoost: '禁止强化',
   seal: '万灵封印', liuhuo: '流火', calm: '静谧水域', halfPhys: '物伤减半', tide: '黑雾潮汐', vuln: '易伤', weak: '伤害-30%',
-  swamp: '孢子沼泽', mist: '白雾', jungle: '丛林法则', siren: '海妖之歌', dr40: '减伤40%', crit2: '必定暴击', retal: '寂灭幽映',
+  swamp: '孢子沼泽', mist: '白雾', jungle: '丛林法则', siren: '海妖之歌', sirenOn: '海妖之歌', dr40: '减伤40%', crit2: '必定暴击', retal: '寂灭幽映',
   block: '坚不可摧', recoil: '磁暴反冲', sure3: '谛听', ear: '灵耳谛听', noHeal: '禁疗' };
-var FOE_TM = { brandCd: 1, etchCd: 1, noSwitch: 1, soul: 1, noBoost: 1, seal: 1, vuln: 1, weak: 1, noHeal: 1 };
+var FOE_TM = { sirenOn: 1, brandCd: 1, etchCd: 1, noSwitch: 1, soul: 1, noBoost: 1, seal: 1, vuln: 1, weak: 1, noHeal: 1 };
 /* 进化链长度不固定（三阶或两阶），最后一阶是最终形态 */
 function evoLast(s) { return s && s.evo ? s.evo.length - 1 : 0; }
 function isFin(s, i) { return !s || !s.evo || i === s.evo.length - 1; }
@@ -183,7 +183,7 @@ var TM_DESC = {
   seal: '无法提升能力等级；强行提升会损失1/4当前体力', liuhuo: '火系技能威力+5', calm: '每回合恢复1/5最大体力',
   halfPhys: '受到的物理伤害减半', tide: '从使用的下回合起，每回合结束额外发动一次黑雾潮汐（共4次）', vuln: '受到的伤害提升30%',
   weak: '造成的伤害降低30%', swamp: '施加异常状态的成功率×1.5', mist: '免疫能力下降',
-  jungle: '对体力比例低于自己的敌人伤害提升70%', siren: '倒计时结束时，若自己还在场，对方失去全部体力',
+  jungle: '对体力比例低于自己的敌人伤害提升70%', siren: '倒计时结束时，若自己还在场，对方失去全部体力', sirenOn: '海妖之歌：倒计时结束时，若唱歌的精灵还在场，失去全部体力；换下场就会解除',
   dr40: '受到的伤害减免40%', crit2: '攻击必定致命一击', retal: '受到攻击时降低对方1级物攻、特攻、命中',
   block: '每回合获得100点护盾，抵挡伤害', recoil: '受到攻击时对对方造成75点固定伤害',
   sure3: '攻击必定命中', ear: '攻击必定命中；对方若试图主动闪避，其下一次受到的攻击威力翻倍', noHeal: '无法恢复体力'
@@ -1127,7 +1127,10 @@ function doStatus(S, evs, i, mv) {
       break;
     case 'mist': timer('mist', 5, nm(me) + '被白雾笼罩：5回合内免疫能力下降'); break;
     case 'jungle': timer('jungle', 3, nm(me) + '遵循丛林法则：3回合内对比自己更虚弱的敌人伤害+70%'); break;
-    case 'siren': me.tm.siren = 5; me.fx.sirenFoe = S.sides[j].active; flag(nm(me) + '唱起海妖之歌……5回合后若它还站着，对方将失去全部体力'); break;
+    case 'siren':   // 2026-10-24：效果挂在对方身上，只对唱歌时在场的那只生效；对方换下场就会消失。【不朽】免疫
+      if (foe.boss && foe.boss.immortal) { RV(foe, 'immortal'); flag(nm(foe) + '的「不朽」让它对海妖之歌充耳不闻'); break; }
+      if (foe.tm.sirenOn > 0) { flag('海妖之歌已经在唱了，' + nm(foe) + '还剩 ' + foe.tm.sirenOn + ' 回合'); break; }
+      foe.tm.sirenOn = 5; foe.fx.sirenBy = S.sides[i].active; E(S, evs, 'stage', { side: j }); flag(nm(me) + '唱起海妖之歌……5回合后若它还站着，' + nm(foe) + '将失去全部体力（换下场可以躲开）'); break;
     case 'silentSea': foe.tm = {}; E(S, evs, 'stage', { side: j }); log(S, evs, '寂静之海消除了' + nm(foe) + '身上所有回合类效果', 'fxl'); break;
     case 'dr40': timer('dr40', 3, nm(me) + '受到潮汐庇佑：3回合内受伤减免40%'); break;
     case 'weak2': foeTimer('weak', 2, nm(foe) + '的魂魄被封住，2回合内伤害降低30%'); break;
@@ -1465,9 +1468,9 @@ function endOfTurn(S, evs) {
     if (!m.fainted && m.tm.tide > 0 && m.fx.tideWait) delete m.fx.tideWait;   // 使用当回合不触发，从下回合末开始
     else if (!m.fainted && m.tm.tide > 0 && !o.fainted && !S.over) useMove(S, evs, i, M['黑雾潮汐'], -1, true);
     if (!m.fainted && m.tm.block > 0) m.fx.shield = Math.max(m.fx.shield || 0, 100);
-    if (!m.fainted && m.tm.siren === 1) {
-      if (!o.fainted && S.sides[1 - i].active === m.fx.sirenFoe) { log(S, evs, '海妖之歌唱完了，' + nm(o) + '失去了全部体力！', 'crit'); S.dotSrc = '海妖之歌'; applyDamage(S, evs, 1 - i, o.hp + (o.fx.shield || 0), null, {}); S.dotSrc = null; }
-      else log(S, evs, '海妖之歌唱完了，但听歌的对手已经不在场上');
+    if (!m.fainted && m.tm.sirenOn === 1) {   // m 身上的海妖之歌唱完了；唱歌的 o 还在场才生效
+      if (!o.fainted && S.sides[1 - i].active === m.fx.sirenBy) { log(S, evs, '海妖之歌唱完了，' + nm(m) + '失去了全部体力！', 'crit'); S.dotSrc = '海妖之歌'; applyDamage(S, evs, i, m.hp + (m.fx.shield || 0), null, {}); S.dotSrc = null; }
+      else log(S, evs, '海妖之歌唱完了，但唱歌的精灵已经不在场上');
     }
     if (!m.fainted && m.tm.tcloud > 0 && !o.fainted && !S.over) { log(S, evs, '闪电云劈向' + nm(o), 'fxl'); S.dotSrc = '闪电云'; applyDamage(S, evs, 1 - i, 100, null, {}); S.dotSrc = null; }
     if (!m.fainted && m.tm.lmE > 0 && !o.fainted && !S.over) { var lmk = m.boss && m.boss.lmBoost ? 4 : 1; RV(m, 'lmBoost'); log(S, evs, nm(m) + '的「雷明」：电光对' + nm(o) + '造成 ' + 25 * lmk + ' 点固定伤害', 'fxl'); S.dotSrc = '雷明'; applyDamage(S, evs, 1 - i, 25 * lmk, null, {}); S.dotSrc = null; }

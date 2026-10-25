@@ -78,7 +78,7 @@ function scoreMove(S, me, foe, mv) {
     case 'wither': s += witherN(foe) >= WITHER_MAX ? -40 : CUSTOM_SCORE.wither * Math.max(0.35, 1 - 0.15 * witherN(foe)); break;   // 可以叠加，叠得越多收益越低
     case 'silentSea': s += Object.keys(foe.tm).length * 12; break;
     case 'purge': s += negCount(me) * 15 - (hpR < 0.4 ? 40 : 10); break;
-    case 'siren': s += me.tm.siren ? -40 : (hpR > 0.5 ? 36 : 10); break;
+    case 'siren': s += foe.tm.sirenOn || (foe.boss && foe.boss.immortal) ? -40 : (hpR > 0.5 ? 36 : 10); break;
     case 'chaosWater': s += foe.hp / foe.maxhp * 30; break;
     case 'nextCrit': s += me.fx.sureCrit ? -20 : 18; break;
     case 'darkside': if (me.tm.darkside > 0) { var lt = effT('光', typesOf(foe)), dk = effT('暗影', typesOf(foe)); s += lt > dk ? 30 : -30; } else s += CUSTOM_SCORE.darkside; break;

@@ -294,7 +294,7 @@ var M = {
   浪花: { type: '水', cat: '变化', tgtStage: { acc: -1 }, d: '降低对方1级命中' },
   水射线: { type: '水', cat: '特攻', power: 70, d: '威力70' },
   海浪: { type: '水', cat: '特攻', power: 55, tgtStage: { acc: -1 }, d: '威力55，降低对方1级命中' },
-  海妖之歌: { type: '超能', cat: '变化', custom: 'siren', pp: 5, d: '5回合后，若对方未击败自己，则对方损失全部体力值' },
+  海妖之歌: { type: '超能', cat: '变化', custom: 'siren', pp: 5, d: '5回合后，若对方未击败自己，则对方损失全部体力值（只对唱歌时在场的对手生效，对手换下场就会消失；对「不朽」无效）' },
   寂静之海: { type: '水', cat: '变化', hidden: true, custom: 'silentSea', pp: 10, d: '消除对方所有回合类效果' },
   唤潮之佑: { type: '水', cat: '变化', hidden: true, custom: 'dr40', pp: 10, d: '3回合内受伤减免40%' },
 
