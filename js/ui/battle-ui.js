@@ -165,7 +165,8 @@
   }
   function itemIcon(k) {
     // 2026-10-25：活力花卉、药草、hp 药水、pp 药水换成像素小图；药水右下角的小标写着回复多少
-    var PX = { c_flower: 'flower', c_herb: 'herb', pot100: ['hp_potion', '100'], pot200: ['hp_potion', '200'], pp5: ['pp_potion', '5'], pp10: ['pp_potion', '10'], pp15: ['pp_potion', '15'], pp20: ['pp_potion', '20'] }[k];
+    var PX = { exp: 'exp', energy: 'energy', c_flower: 'flower', c_herb: 'herb', pot100: ['hp_potion', '100'], pot200: ['hp_potion', '200'], pp5: ['pp_potion', '5'], pp10: ['pp_potion', '10'], pp15: ['pp_potion', '15'], pp20: ['pp_potion', '20'] }[k];
+    if (k === 'g_core') return '<img class="it-ic" src="images/items/saint_quartz.webp" alt="">';   // 圣晶石（原星核）
     if (PX) { var f = typeof PX === 'string' ? PX : PX[0], tag = typeof PX === 'string' ? '' : PX[1]; return tag ? '<span class="it-ic it-tagged"><img class="it-px" src="images/items/' + f + '.png" alt=""><b class="it-tag' + (f === 'pp_potion' ? ' pp' : '') + '">' + tag + '</b></span>' : '<img class="it-ic it-px" src="images/items/' + f + '.png" alt="">'; }
     if (k === 'c_bowl') return '<svg class="it-ic" viewBox="0 0 64 64" aria-hidden="true"><g stroke="#23222b" stroke-width="2.5" stroke-linejoin="round">' +
       '<path d="M12 30c0-9 9-15 20-15s20 6 20 15z" fill="#fffaf0"/><circle cx="24" cy="23" r="1.6" fill="#e9dcc0" stroke-width="1"/><circle cx="35" cy="20" r="1.6" fill="#e9dcc0" stroke-width="1"/><circle cx="41" cy="26" r="1.6" fill="#e9dcc0" stroke-width="1"/>' +

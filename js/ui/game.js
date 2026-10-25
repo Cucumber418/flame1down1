@@ -100,7 +100,7 @@
     acc.introDone = true;
     if (!(acc.energy >= 20000)) acc.energy = 20000;
     if (!acc.items) acc.items = {};
-    // 只补一次。星砂够做约 50 个加强装置，星核够做 1 个华为装置，药草够做 100 瓶 200hp药水。
+    // 只补一次。星砂够做约 50 个加强装置，圣晶石够做 1 个华为装置，药草够做 100 瓶 200hp药水。
     if (acc.testKit !== 2) {
       var testStock = {
         cap1: 10, cap2: 10, cap3: 1, pot100: 10, pot200: 10,
@@ -116,9 +116,9 @@
     if (!teaWas) page = 'explore';
     save(); savePage();
   }
-  // 旧的六种采集物、三种种子并进星砂、星核和药草。已经种下的旧种子在打开种植园时清掉。
+  // 旧的六种采集物、三种种子并进星砂、圣晶石和药草。已经种下的旧种子在打开种植园时清掉。
   var matsBusy = false;
-  function migrateMats() {   // 旧的六种采集物、三种种子并进星砂、星核和药草（交易 fix，js/engine/award.js）
+  function migrateMats() {   // 旧的六种采集物、三种种子并进星砂、圣晶石和药草（交易 fix，js/engine/award.js）
     if (!acc || !acc.items || acc.matsV === 1 || matsBusy || !ready()) return;
     matsBusy = true; setTimeout(function () { txRun('fix', { k: 'mats' }, function () { matsBusy = false; }, function () { matsBusy = false; }); }, 0);
   }
@@ -309,7 +309,7 @@
     else if (page === 'explore') renderExplore();
     if (typeof bgmScene === 'function') bgmScene();
   }
-  function renderRes() { $('res').innerHTML = '<span class="res-chip" title="经验背包里的累积经验，可分配给精灵">经验 <b>' + fmt(acc.exp) + '</b></span><span class="res-chip en" title="能量（货币）">能量 <b>' + fmt(acc.energy) + '</b></span>'; setTimeout(renderQBadge, 0); }
+  function renderRes() { $('res').innerHTML = '<span class="res-chip" title="经验背包里的累积经验，可分配给精灵"><img class="res-ic" src="images/items/exp.png" alt="">经验 <b>' + fmt(acc.exp) + '</b></span><span class="res-chip en" title="能量（货币）"><img class="res-ic" src="images/items/energy.png" alt="">能量 <b>' + fmt(acc.energy) + '</b></span>'; setTimeout(renderQBadge, 0); }
   function go(p) { if (typeof SPA !== 'undefined' && SPA.on && page === 'explore' && ex.view === 'spa' && p !== 'explore') { spaLeaveAsk(function () { go(p); }); return; }
     if (ex.mode === 'replay' && p !== 'explore') { stopTimers(); ex.mode = null; ex.view = 'sites'; } page = p; ui.pick = -1; savePage(); renderTop(); window.scrollTo(0, 0); }
   $('mainnav').addEventListener('click', function (e) {
@@ -837,10 +837,10 @@
     trans: { name: '精灵翻译器', d: '汉街总部国际A座的情报显示，这个翻译器能凭一己之力考到雅思 6.5 分。这样一来，翻译精灵的语言也一定能行吧……', img: 'translator' },
     helmet: { name: '烟雾保护头盔', d: 'Bttp 用无人机空投下来的头盔，戴上后在浓密的瘴气里也能呼吸、看清路。很容易摔坏。', img: 'helmet' }
   };
-  // 野外采集物：每个区域 2 个采集点，每个点每天 1 次。星砂做加强装置，星核做华为装置。
+  // 野外采集物：每个区域 2 个采集点，每个点每天 1 次。星砂做加强装置，圣晶石做华为装置。
   var GATHER_ITEMS = {
     g_sand: { name: '星砂', d: '从星球表面收来的矿砂，冶炼坊用来装配加强捕捉装置。', from: '芙罗拉星的丛林和草甸、坎伯兰星的水面、浅水区和深海区、庞贝星的熔岩原', n: 12 },
-    g_core: { name: '星核', d: '雷暴和永冻里凝出来的核，四颗可以合成一个华为捕捉装置。', from: '活动「明明教官的试炼」每关每个难度首次通过', n: 1 }
+    g_core: { name: '圣晶石', d: '雷暴和永冻里凝出来的七彩晶石，四颗可以合成一个华为捕捉装置。', from: '活动「明明教官的试炼」每关每个难度首次通过', n: 1 }
   };
   var GATHER_ORDER = ['g_sand', 'g_core'];
   // 精灵素材：旅行精灵掉落的叶片，以及合成出来的精元（精元放进神农架 · 精灵保育仓孵化，见 NURSERY）
@@ -875,7 +875,7 @@
     // 战斗道具
     cap1: ['最普通的精灵捕捉装置。', '野外对战时在「道具」页投向野生精灵。对方体力越低、身上有异常状态时越容易成功（占用一回合）。', '荆门 · 物资仓储的商城（200 能量）；世界任务「草甸上的奔跑者」、支线「物资仓储」、排位赛季段位奖励也会送。'],
     cap2: ['加强版的捕捉装置。', '野外对战时使用，捕捉成功率是普通装置的 1.5 倍（占用一回合）。', '黄石 · 冶炼坊用星砂 ×2 合成。'],
-    cap3: ['华为出品的捕捉装置，从不失手。', '野外对战时使用，必定捕捉成功（占用一回合）。', '黄石 · 冶炼坊用星核 ×4 合成；先驱之塔的代币商店（80 先驱代币）。'],
+    cap3: ['华为出品的捕捉装置，从不失手。', '野外对战时使用，必定捕捉成功（占用一回合）。', '黄石 · 冶炼坊用圣晶石 ×4 合成；先驱之塔的代币商店（80 先驱代币）。'],
     pot1: ['一小瓶补药。', '对战中为出战精灵恢复 30% 最大体力（占用一回合）。', '荆门 · 物资仓储的商城（100 能量）；世界任务「林下的蘑菇」。'],
     pot2: ['浓缩过的补药。', '对战中为出战精灵恢复 50% 最大体力（占用一回合）。', '荆门 · 物资仓储的商城（250 能量）。'],
     pot100: ['用药草熬成的 hp 药水。', '对战中为出战精灵恢复 100 点体力（占用一回合）。', '黄石 · 冶炼坊用药草 ×1 合成。'],
@@ -895,7 +895,7 @@
     evReset: ['把学习力退回去的胶囊。', '用在一只精灵身上，已经分配的学习力全部退回「可分配学习力」，可以重新分配。', '竞技代币商店（80 竞技代币）；先驱之塔的代币商店（200 先驱代币）。'],
     fruit1: ['一颗饱满的果子。', '用在一只精灵身上，直接增加经验（每颗 = 精灵等级 × 100）。到了等级上限就不能用。', '竞技代币商店（30 竞技代币）。'],
     fruit2: ['长得特别快的果子。', '用在一只精灵身上，直接增加经验（每颗 = 精灵等级 × 250）。到了等级上限就不能用。', '竞技代币商店（60 竞技代币）；先驱之塔的代币商店（60 先驱代币）；明明代币抽奖。'],
-    formDev: ['用星核和星砂做成的小装置。', '用在一只精灵身上，永久解锁一个它长到过的更小形态的外观；之后在精灵资料的「外观形态」里随时免费切换。只改外观。', '黄石 · 冶炼坊用星核 ×6、星砂 ×300 合成。'],
+    formDev: ['用圣晶石和星砂做成的小装置。', '用在一只精灵身上，永久解锁一个它长到过的更小形态的外观；之后在精灵资料的「外观形态」里随时免费切换。只改外观。', '黄石 · 冶炼坊用圣晶石 ×6、星砂 ×300 合成。'],
     earthShard: ['出发前从地球上带来的元素结晶，带着家乡的气息。', '每 100 个让三只初始精灵（叶粒之果、水臂领主、涅槃方头一系）领悟一个还没领悟的隐藏技能；它们到 LV70 后，也用它解锁 LV75（500 个）、LV80（1,000 个）的等级上限。', '读完黄冈 · 学院部的支线「隐藏技能」得 1,000 个。'],
     moonStone: ['一块映着新月微光的石头。', '每 100 个让小月亮一系领悟一个隐藏技能；到 LV70 后也用它解锁更高的等级上限。', '竞技代币商店（2 竞技代币）。'],
     boneDust: ['泛着幽光的骨粉，摸上去凉凉的。', '每 100 个让骨刃一系领悟一个隐藏技能；到 LV70 后也用它解锁更高的等级上限。', '竞技代币商店（2 竞技代币）。'],
@@ -2624,7 +2624,7 @@
     $('pg-explore').innerHTML = exHead(R.pool ? '点击场景里走动的精灵，就会和它开战。' : '这里没有野生精灵。点击场景里的BOSS就能挑战它。') +
       '<div class="crumb"><button type="button" class="btn ghost" id="field-back">‹ 返回' + esc(P.name) + '</button><b>' + esc(P.name) + ' · ' + esc(R.name) + '</b>' + (n > 1 ? '<span class="hint">场景 ' + (F.scene + 1) + ' / ' + n + (BG_NAME[sc.bgKey] ? ' · ' + BG_NAME[sc.bgKey] : '') + '</span>' : '') + '</div>' +
       invLine() + spareTip + '<div class="wf-scene' + (sc.corrupt ? ' miasma-bg' : '') + '" id="wf-scene">' + bg + mons + gatherNodesHTML(R.id, F.scene, n) + jadeHTML(R.id, F.scene) + riceBowlHTML(R, F.scene) + oreHTML(R, F, F.scene) + hornHTML(R, F, F.scene) + travelHTML(R, F.scene) + fmNpcHTML(F, F.scene) + fieldBossHTML(R) + nav + '</div>' +
-      (R.pool ? '<p class="hint">点左右两边的箭头可以切换场景。每只精灵在自己的一小片范围里走动，待一会儿就会离开，过一阵又会有新的精灵出现，各走各的。点中哪只，就和哪只对战；打完、抓到或逃走之后，这只离开，过一会儿会有新的一只补上。采集点固定在场景里，每个每天可以采集 1 次：芙罗拉、坎伯兰、庞贝采到星砂 ×12，莱汀和白之星采到星核 ×1。' + (RICE.regions.indexOf(R.id) >= 0 ? '带着「一碗饭」来的话，可以在任意一个场景里放下它。' : '') + '</p>' : '');
+      (R.pool ? '<p class="hint">点左右两边的箭头可以切换场景。每只精灵在自己的一小片范围里走动，待一会儿就会离开，过一阵又会有新的精灵出现，各走各的。点中哪只，就和哪只对战；打完、抓到或逃走之后，这只离开，过一会儿会有新的一只补上。采集点固定在场景里，每个每天可以采集 1 次：芙罗拉、坎伯兰、庞贝采到星砂 ×12，莱汀和白之星采到圣晶石 ×1。' + (RICE.regions.indexOf(R.id) >= 0 ? '带着「一碗饭」来的话，可以在任意一个场景里放下它。' : '') + '</p>' : '');
     startFieldMove();
   }
   function startFieldMove() {
@@ -3184,8 +3184,8 @@
     if (igBusy() || !gain.length) { IG.snap = cur; return; }   // 战斗里得到的东西由战斗结算面板列出
     IG.snap = cur;
     var rows = gain.map(function (g) { return '<li class="ig-row"><span class="ig-ic">' + H.itemIcon(g[0]) + '</span><b>' + esc(itemName(g[0])) + '</b><em>×' + fmt(g[1]) + '</em><small>持有 ' + fmt(cur.it[g[0]]) + '</small></li>'; });
-    if (cur.en > old.en) rows.push('<li class="ig-row"><span class="ig-ic ig-t">能</span><b>能量</b><em>×' + fmt(cur.en - old.en) + '</em></li>');
-    if (cur.ex > old.ex) rows.push('<li class="ig-row"><span class="ig-ic ig-t">经</span><b>经验背包</b><em>×' + fmt(cur.ex - old.ex) + '</em></li>');
+    if (cur.en > old.en) rows.push('<li class="ig-row"><span class="ig-ic">' + H.itemIcon('energy') + '</span><b>能量</b><em>×' + fmt(cur.en - old.en) + '</em></li>');
+    if (cur.ex > old.ex) rows.push('<li class="ig-row"><span class="ig-ic">' + H.itemIcon('exp') + '</span><b>经验背包</b><em>×' + fmt(cur.ex - old.ex) + '</em></li>');
     var d = document.createElement('div'); d.className = 'soc-dlg rew-dlg ig-dlg'; d.id = 'ig-dlg';
     d.innerHTML = '<div class="soc-box rew-box" role="dialog" aria-modal="true" aria-label="获得物品"><span class="tape l"></span><span class="tape r"></span><h2>获得物品</h2>' +
       '<ul class="rw-rows ig-rows">' + rows.map(function (r, i) { return r.replace('<li class="ig-row">', '<li class="ig-row" style="animation-delay:' + (i * 70) + 'ms">'); }).join('') + '</ul>' +
@@ -3437,7 +3437,7 @@
   /* ---------- 瘴气驱逐战（芙罗拉星 · 全服共享进度的星球任务，2026-10-17） ----------
    * 完成目前主线的最后一段（第十段 · 瘴气之源）后开放。服务器见 server/purgewar.js。
    * 在芙罗拉星野外击败腐化精灵：自己经验背包 +1000，全服击破 +1。
-   * 全服击破 10 / 50 / 100、之后每 50 只：贡献过（击破 ≥ 1）的船员各收到一封奖励邮件（经验、能量、芙罗拉玉、星砂、星核，数额暂定） */
+   * 全服击破 10 / 50 / 100、之后每 50 只：贡献过（击破 ≥ 1）的船员各收到一封奖励邮件（经验、能量、芙罗拉玉、星砂、圣晶石，数额暂定） */
   var PW = { exp: 1000, cap: 50, data: null, at: 0, busy: false, err: '' };   // cap：每人每天最多计入 50 次击破（服务器同样限制）
   function pwDay() { var d = bjDay(); if (!acc.pwd || acc.pwd.d !== d) acc.pwd = { d: d, n: 0 }; return acc.pwd; }
   // 全服击破满 1000 后，每只的经验降到 1/4；每个账号的前 5 次仍按原来的给（不对玩家公布）
@@ -4776,7 +4776,7 @@
         dailyHit('pve');
         if (r.res === 'win') {
           msg.push('通过了' + (fin ? '「明明的最终试炼」' : key + '系关卡（' + MM_DIFF[d].n + '）') + '！获得明明代币 ×' + r.tok + '。');
-          if (r.first) msg.push('首次通过奖励：明明代币 ×' + r.first.tok + '、累积经验 ×' + fmt(r.first.exp) + '、星核 ×1。');
+          if (r.first) msg.push('首次通过奖励：明明代币 ×' + r.first.tok + '、累积经验 ×' + fmt(r.first.exp) + '、圣晶石 ×1。');
         }
         msg = msg.concat(xpMsg(r.xp));
         save();
@@ -4805,7 +4805,7 @@
           if (!R.clr[ck]) {
             R.clr[ck] = Date.now(); var F = fin ? MM_FINAL.first : MM_DIFF[d].first;
             earn('mmFirst', ck, { exp: F.exp, items: { mmTok: F.tok, g_core: 1 } });
-            msg.push('首次通过奖励：明明代币 ×' + F.tok + '、累积经验 ×' + fmt(F.exp) + '、星核 ×1。');
+            msg.push('首次通过奖励：明明代币 ×' + F.tok + '、累积经验 ×' + fmt(F.exp) + '、圣晶石 ×1。');
           }
           earn('mm', '', { items: it });
         }
@@ -5174,7 +5174,7 @@
   }
 
   /* ---------- 冶炼坊：黄石 · 冶炼工坊 ----------
-   * 加强装置吃星砂，华为装置吃星核，200hp药水吃药草。商城不卖这三样。 */
+   * 加强装置吃星砂，华为装置吃圣晶石，200hp药水吃药草。商城不卖这三样。 */
   var FORGE = GROW.FORGE;   // 配方在 js/engine/grow.js
   var FORGE_Q = GROW.FORGE_Q;
   /* 特产互换（2026-10-19）：芙罗拉玉、不化水滴、火山灰烬、闪电球体、永久冻土之间互换，每 GX_IN 个换 GX_OUT 个
@@ -5240,7 +5240,7 @@
         '<div class="qty"><button type="button" class="btn ghost" data-fq="' + r.id + '|-1" aria-label="减少"' + (q <= 1 ? ' disabled' : '') + '>−</button><span aria-live="polite">' + q + '</span><button type="button" class="btn ghost" data-fq="' + r.id + '|1" aria-label="增加"' + (q >= Math.min(FORGE_Q, Math.max(1, max)) ? ' disabled' : '') + '>+</button></div>' +
         '<button type="button" class="btn primary" data-smelt="' + r.id + '"' + (ok ? '' : ' disabled') + '>' + (ok ? '合成' : '材料不足') + '</button></div></article>';
     }).join('') + gxHTML();
-    $('pg-explore').innerHTML = exHead('星砂合成加强捕捉装置，星核合成华为捕捉装置，药草合成 hp药水，活力花卉炼成 pp药水，米饭盛成一碗饭，叶子喵的叶片凝成精元，星核和星砂还能做形态切换装置，赫菲角片做奇声号角；各星球特产也能在这里互相转换。这些都不在商城出售。') +
+    $('pg-explore').innerHTML = exHead('星砂合成加强捕捉装置，圣晶石合成华为捕捉装置，药草合成 hp药水，活力花卉炼成 pp药水，米饭盛成一碗饭，叶子喵的叶片凝成精元，圣晶石和星砂还能做形态切换装置，赫菲角片做奇声号角；各星球特产也能在这里互相转换。这些都不在商城出售。') +
       '<div class="crumb"><button type="button" class="btn ghost" id="forge-back">‹ 返回冶炼工坊</button><b>黄石 · 冶炼坊</b></div>' +
       stock + '<div class="shop-grid">' + cards + '</div>';
   }

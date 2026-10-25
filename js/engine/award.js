@@ -127,7 +127,7 @@ var AWD = (function () {
 
   /* ---------- 旧存档的道具换算 ---------- */
   TX.add('fix', function (a, args) {
-    if (args.k === 'mats') {   // 旧的六种采集物、三种种子并进星砂、星核和药草
+    if (args.k === 'mats') {   // 旧的六种采集物、三种种子并进星砂、圣晶石和药草
       if (a.matsV === 1) return { ok: true, none: true };
       var I = items(a), sand = 0, core = 0;
       ['g_fungus', 'g_fiber', 'g_shell', 'g_rock'].forEach(function (k) { sand += I[k] || 0; delete I[k]; });
