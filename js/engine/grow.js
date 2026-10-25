@@ -212,7 +212,8 @@ var GROW = (function () {
       if (i < 0) return no('它不在茶室里');
       var x = H.mons[i], mo = ACC.mon(a, x.u), min = homeMins(x, env.now), amt = Math.floor(min * homeRate(mo) / 60);
       H.mons.splice(i, 1);
-      return { ok: true, min: min, g: amt > 0 ? ACC.gainExp(a, mo, amt) : null };
+      var dh = min >= 60 && typeof QST !== 'undefined' ? QST.hit(a, 'home', 1, env.now) : [];   // 每日任务（js/engine/quest.js）
+      return { ok: true, min: min, g: amt > 0 ? ACC.gainExp(a, mo, amt) : null, daily: dh };
     }
     if (act === 'auto') {
       if (i < 0) return no('它不在茶室里');
@@ -236,7 +237,8 @@ var GROW = (function () {
         var left = x.auto.left; if (x.auto.left <= 0) delete x.auto;
         out.push({ u: x.u, days: days, got: got, left: left, g: last });
       });
-      return { ok: true, list: out };
+      var dh2 = []; if (typeof QST !== 'undefined') out.forEach(function () { dh2 = dh2.concat(QST.hit(a, 'home', 1, env.now)); });
+      return { ok: true, list: out, daily: dh2 };
     }
     return no('不支持的操作');
   });
@@ -374,9 +376,10 @@ var GROW = (function () {
     if (!a.stats) a.stats = {};
     var d = TX.bjDay(env.now), had = a.brawlExp && a.brawlExp.d === d ? a.brawlExp.n || 0 : 0;
     var want = rec.none ? 0 : rec.r === 'win' ? BRAWL_WIN : BRAWL_LOSE, give = Math.max(0, Math.min(want, BRAWL_CAP - had));
-    if (!rec.none) a.stats.brawls = (a.stats.brawls || 0) + 1;
+    var dh = [];
+    if (!rec.none) { a.stats.brawls = (a.stats.brawls || 0) + 1; if (typeof QST !== 'undefined') { dh = QST.hit(a, 'brawl', 1, env.now); if (rec.r === 'win') dh = dh.concat(QST.hit(a, 'brawlWin', 1, env.now)); } }
     if (give > 0) { a.brawlExp = { d: d, n: had + give }; a.exp = (a.exp || 0) + give; }
-    return { ok: true, want: want, give: give, today: had + give, cap: BRAWL_CAP, none: !!rec.none, r: rec.r };
+    return { ok: true, want: want, give: give, today: had + give, cap: BRAWL_CAP, none: !!rec.none, r: rec.r, daily: dh };
   });
 
   return { FORGE: FORGE, FORGE_Q: FORGE_Q, GX_KEYS: GX_KEYS, GX_IN: GX_IN, GX_OUT: GX_OUT, GX_SRC: GX_SRC, gxOut: gxOut, FARM_N: FARM_N, SEEDS: SEEDS, HELP_RW: HELP_RW, BRAWL_WIN: BRAWL_WIN, BRAWL_LOSE: BRAWL_LOSE, BRAWL_CAP: BRAWL_CAP, SPA_GAP: SPA_GAP, spaMons: spaMons, HOME_CAP_H: HOME_CAP_H, AUTO_DAYS: AUTO_DAYS, DAY_MS: DAY_MS, HATCH: HATCH, STORY_GIFT: STORY_GIFT, RANK_GIFT: RANK_GIFT, USE_ITEMS: USE_ITEMS, CAP_STEPS: CAP_STEPS, GEM_OF: GEM_OF, CAP_SID: CAP_SID, capGem: capGem, capNext: capNext, formLabel: formLabel, natText: natText,

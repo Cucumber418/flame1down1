@@ -84,6 +84,7 @@ function finish(name, sess) {
     var env = { now: now, rand: Math.random, data: u.save.data, pw: function () { return require('./purgewar').hit(name); } };
     var rep = E.PVE.MODES[sess.kind].end(acc, sess.ctx, { res: S.over, quit: !!S.quit, seen: seen, downs: downs, S: S }, env);
     end = { kind: sess.kind, res: S.over, quit: !!S.quit, rep: rep };
+    if (E.QST) { var rr = {}; for (var kk in rep || {}) rr[kk] = rep[kk]; if (rr.res == null) rr.res = S.over; var dh = E.QST.pveHits(acc, sess.kind, rr, now); if (rep && dh.length) rep.daily = dh; }   // 每日任务的进度（js/engine/quest.js）
   }
   // 战斗中领悟的隐藏技能：记到这只精灵身上（以前由浏览器记）
   S.sides[0].team.forEach(function (t) {

@@ -2662,6 +2662,7 @@
         if (r.spare != null) msg.push('主线任务「引出猎杀者」：已经「假装击败」' + r.spare + ' / ' + r.spareN + ' 只野生精灵。' + (r.spare >= r.spareN ? '天色渐渐暗了下来……去芙罗拉星的「剧情」页，继续主线「猎杀者」。' : ''));
         if (r.caught) { var m = mon(r.caught.u); if (m) msg.push('捕捉到了 ' + (m.shiny ? '异色的' : '') + form(m).name + '（LV' + m.lv + '，' + m.nat + '）！' + (r.caught.added ? '已加入' + TEAM_NAME[acc.active] + '。' : '已收入精灵仓库。')); dailyHit('catch'); }
         if (n) dailyHit('wildWin', n);
+        if (r.caught) dailyNote('catch');
         if (r.purge) {
           msg.push('祛除了一只瘴气精灵（' + r.purge.n + ' / ' + r.purge.goal + '）。');
           r.purge.steps.forEach(function (st) {
@@ -3770,67 +3771,36 @@
 
   /* ---------- 每日任务：每天 0:00 刷新，一共 7 个：3 个竞技对战任务，开放了精灵大乱斗的话大概率有 1 个大乱斗任务，其余从探索类里抽 ----------
    * 2026-10-12 起奖励翻倍（rw 里已经是翻倍后的数），当天已经领过的按差额补发到邮箱 */
-  var DAILY_N = 7, DAILY_BRAWL = 0.7;
-  var DAILY = {
-    ar_play3: { t: '完成 3 场竞技对战（沙盒或平衡排位都算）', kind: 'arena', n: 3, arena: 1 },
-    ar_rank2: { t: '完成 2 场平衡排位', kind: 'rankPlay', n: 2, arena: 1 },
-    ar_win1: { t: '在平衡排位中获胜 1 场', kind: 'rankWin', n: 1, arena: 1 },
-    ar_sand1: { t: '在沙盒模式完成 1 场对战', kind: 'sandbox', n: 1, arena: 1 },
-    bw_1: { t: '完成 1 场精灵大乱斗', kind: 'brawl', n: 1, brawl: 1 },
-    bw_win1: { t: '在精灵大乱斗中获胜 1 场', kind: 'brawlWin', n: 1, brawl: 1 },
-    wd_win5: { t: '击败 5 只野生精灵', kind: 'wildWin', n: 5, need: function () { return prog('flora1').done; } },
-    wd_catch1: { t: '捕捉 1 只野生精灵', kind: 'catch', n: 1, need: function () { return prog('flora1').done; } },
-    bs_1: { t: '挑战 1 次BOSS（胜负都算）', kind: 'boss', n: 1, need: function () { return bossOpen('tiger') || bossOpen('barren'); } },
-    hm_1: { t: '从茶室收回 1 只展示满 1 小时的精灵', kind: 'home', n: 1, need: function () { return homeOpen(); } },
-    pve_2: { t: '完成 2 场剧情、野外或BOSS对战', kind: 'pve', n: 2 }
-  };
-  Object.keys(RW.DAILY).forEach(function (k) { if (DAILY[k]) DAILY[k].rw = RW.DAILY[k]; });   // 奖励数额在 js/engine/rewards.js（服务器按它核对）
+  var DAILY_N = QST.DAILY_N, DAILY = QST.DAILY;   // 任务表和抽取规则在 js/engine/quest.js（服务器和浏览器共用）
   var DAILY_X10_OLD = { ar_play3: 600, ar_rank2: 800, ar_win1: 1000, ar_sand1: 400, bw_1: 1000, bw_win1: 1200, wd_win5: 800, wd_catch1: 600, bs_1: 600, hm_1: 600, pve_2: 600 };   // 2026-10-18 晚：每日任务经验提高（×5）之前的经验（补差额用）
   var DAILY_OLD = { ar_play3: [300, 100], ar_rank2: [400, 120], ar_win1: [500, 150], ar_sand1: [200, 80], wd_win5: [400, 120], wd_catch1: [300, 150], bs_1: [300, 100], hm_1: [300, 100], pve_2: [300, 100] };   // 翻倍前的奖励（补差额用）
   function todayKey() { return PVE.bjDay(Date.now()); }   // 北京时间（2026-10-25 起和服务器一致）
-  function seededRng(str) { var x = 7; for (var i = 0; i < str.length; i++) x = (x * 31 + str.charCodeAt(i)) % 2147483647; return function () { x = (x * 48271) % 2147483647; return x / 2147483647; }; }
-  function pickN(list, n, rnd) { var a = list.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(rnd() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; } return a.slice(0, n); }
+  var dailyTold = {};
   function daily() {
     if (!ready()) return null;
-    var k = todayKey();
-    if (!acc.daily || acc.daily.date !== k) {
-      acc.daily = { date: k, list: dailyPick(k, []).map(function (id) { return { id: id, p: 0, c: 0, x2: 1, x10: 1 }; }) };
-      save();
-    }
-    // 旧版（5 个任务）的今天：补到 7 个，进度保留
-    if (acc.daily.list.length < DAILY_N) {
-      var have = acc.daily.list.map(function (t) { return t.id; });
-      dailyPick(k, have).filter(function (id) { return have.indexOf(id) < 0; }).slice(0, DAILY_N - have.length).forEach(function (id) { acc.daily.list.push({ id: id, p: 0, c: 0, x2: 1 }); });
-      save();
-    }
-    return acc.daily;
+    var before = acc.daily ? JSON.stringify(acc.daily) : '';
+    var D = QST.daily(acc, Date.now());
+    if (JSON.stringify(D) !== before) save();
+    return D;
   }
-  function dailyPick(k, keep) {
-    var rnd = seededRng(k + acc.name), ids = Object.keys(DAILY), pick = keep.slice();
-    var add = function (list, n) { pickN(list.filter(function (id) { return pick.indexOf(id) < 0; }), n, rnd).forEach(function (id) { pick.push(id); }); };
-    var ok = function (id) { return !DAILY[id].need || DAILY[id].need(); };
-    var ar = ids.filter(function (id) { return DAILY[id].arena; });
-    var bw = brawlOpen() ? ids.filter(function (id) { return DAILY[id].brawl; }) : [];
-    var other = ids.filter(function (id) { return !DAILY[id].arena && !DAILY[id].brawl && ok(id); });
-    var arN = pick.filter(function (id) { return DAILY[id] && DAILY[id].arena; }).length;
-    add(ar, Math.max(0, 3 - arN));
-    if (bw.length && !pick.some(function (id) { return DAILY[id] && DAILY[id].brawl; }) && rnd() < DAILY_BRAWL) add(bw, 1);
-    add(other, DAILY_N - pick.length);
-    add(ar, DAILY_N - pick.length);   // 探索类不够时，用剩下的竞技任务补
-    add(bw, DAILY_N - pick.length);
-    return pick.slice(0, DAILY_N);
-  }
+  // 每日任务的进度：用服务器网址玩时由服务器加（对战结算、交易），这里只提示刚完成的；本地双击打开时在本机加
   function dailyHit(kind, n) {
-    var D = daily(); if (!D) return; var done = [];
-    D.list.forEach(function (t) { var d = DAILY[t.id]; if (d && d.kind === kind && t.p < d.n) { t.p = Math.min(d.n, t.p + (n || 1)); if (t.p >= d.n) done.push(d.t); } });
-    save();
-    if (done.length) setTimeout(function () { toast('每日任务完成：' + done.join('、') + '。到航行日志或任务面板领取奖励。'); }, 1200);
+    if (!ready()) return;
+    if (!srvMode()) { QST.hit(acc, kind, n, Date.now()); save(); }
+    dailyNote(kind);
+  }
+  function dailyNote(kind) {
+    var D = daily(); if (!D) return; var out = [];
+    D.list.forEach(function (t) { var d = DAILY[t.id], k = D.date + ':' + t.id; if (d && (!kind || d.kind === kind) && t.p >= d.n && !t.c && !dailyTold[k]) { dailyTold[k] = 1; out.push(d.t); } });
+    if (out.length) setTimeout(function () { toast('每日任务完成：' + out.join('、') + '。到航行日志或任务面板领取奖励。'); }, 1200);
   }
   function dailyClaimable() { var D = daily(); return D ? D.list.filter(function (t) { return !t.c && t.p >= DAILY[t.id].n; }).length : 0; }
-  function claimDaily(i) {
+  function claimDaily(i, after) {
     var D = daily(), t = D && D.list[i]; if (!t || t.c || t.p < DAILY[t.id].n) return;
-    var R = DAILY[t.id].rw; t.c = 1; earn('daily', D.date + ':' + t.id, { exp: R.exp, energy: R.energy }); save(); renderRes();
-    toast('领取了每日任务奖励：累积经验 +' + fmt(R.exp) + '，能量 +' + fmt(R.energy) + '。');
+    txRun('daily', { i: i }, function (r) {   // 服务器结算（js/engine/quest.js）
+      renderRes(); if (after) after();
+      toast('领取了每日任务奖励：累积经验 +' + fmt(r.exp) + '，能量 +' + fmt(r.energy) + '。');
+    });
   }
   window.HSEV = function (type, d) {
     if (!ready()) return;
@@ -4116,7 +4086,7 @@
       '<table class="rank-rw"><thead><tr><th>段位</th><th>奖励</th><th>状态</th></tr></thead><tbody>' + rows + '</tbody></table></details>';
   }
   $('pg-log').addEventListener('click', function (e) {
-    var c = e.target.closest('[data-dclaim]'); if (c) { claimDaily(+c.dataset.dclaim); renderLog(); return; }
+    var c = e.target.closest('[data-dclaim]'); if (c) { claimDaily(+c.dataset.dclaim, renderLog); return; }
     if (e.target.closest('[data-gocore]')) { ex.planet = 'jingchu'; go('explore'); teleport('宜昌'); return; }
     var ml = e.target.closest('[data-mmlog]'); if (ml) { var mk = ml.dataset.mmlog; if (mk === 'task') { ex.planet = 'jingchu'; go('explore'); teleport('襄阳'); return; } ex.mmFrom = mk === 'gacha' ? 'log' : 'arena'; ex.view = mk === 'gacha' ? 'mmGacha' : 'mmArena'; go('explore'); renderExplore(); return; }
     if (e.target.closest('[data-gosarena]')) { ex.planet = 'sarena'; ex.view = 'sites'; go('explore'); return; }
@@ -5461,7 +5431,7 @@
       (res.list || []).forEach(function (x) {
         var m = mon(x.u); if (!m) return;
         out.push(form(m).name + ' 自律训练了 ' + x.days + ' 天，获得 ' + fmt(x.got) + ' 经验' + (x.left > 0 ? '（装置还剩 ' + x.left + ' 天）' : '（7 天训练完成，装置用完了）') + '。');
-        dailyHit('home');
+        dailyNote('home');   // 进度由交易加（grow.js）
       });
       if (out.length && !quiet) setTimeout(function () { toast('茶室：' + out.join('')); }, 2500);   // 晚一点弹，免得被每日任务的提示盖掉
     });
@@ -5713,7 +5683,7 @@
       ex.hmArm = null;
       txRun('home', { a: 'out', u: u }, function (res) {   // 走交易（grow.js）：经验由服务器按展示时间算
         var m = mon(u), msg = res.g ? gainMsg(res.g) : null;
-        if (res.min >= 60) dailyHit('home');
+        if (res.min >= 60) dailyNote('home');   // 进度由交易加（grow.js）
         renderHome(); renderRes();
         toast(form(m).name + ' 回来了（展示了 ' + durText(res.min) + '）。' + (msg || '展示时间太短，还没有获得经验。'));
       });
@@ -5858,9 +5828,11 @@
   }
   function claimQuest(id) {
     var W = wq(id); if (!W || qState(id) !== 'claim') return;
-    var R = W.reward; earn('quest', id, { energy: R.energy, exp: R.exp, items: R.items });
-    if (!acc.quests) acc.quests = {}; acc.quests[id] = Date.now(); save(); renderRes(); renderQuests();
-    toast('完成世界任务「' + W.n + '」！获得 ' + rwList(R).join('、') + '。');
+    var R = W.reward;
+    txRun('quest', { id: id }, function () {   // 服务器按它的存档判断（js/engine/quest.js）
+      renderRes(); renderQuests();
+      toast('完成世界任务「' + W.n + '」！获得 ' + rwList(R).join('、') + '。');
+    });
   }
 
   /* ---------- 顶栏「任务」：在名字旁边。鼠标移上去看进行中任务的进度，点开是完整的任务面板 ---------- */
@@ -5889,7 +5861,7 @@
     if (b.dataset.qtab) { ex.qtab = b.dataset.qtab; ex.qsel = null; renderQuests(); return; }
     if (b.dataset.q) { ex.qsel = b.dataset.q; renderQuests(); var q = $('q-detail'); if (q && window.innerWidth < 760) q.scrollIntoView({ block: 'start', behavior: 'smooth' }); return; }
     if (b.dataset.qgo) { questGo(b.dataset.qgo); return; }
-    if (b.dataset.dclaim) { claimDaily(+b.dataset.dclaim); renderQuests(); if (page === 'log') renderLog(); return; }
+    if (b.dataset.dclaim) { claimDaily(+b.dataset.dclaim, function () { renderQuests(); if (page === 'log') renderLog(); }); return; }
     if (b.dataset.qclaim) { claimQuest(b.dataset.qclaim); return; }
   }
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && $('quest-dlg')) closeQuests(); });
@@ -6395,8 +6367,8 @@
   function brawlToday() { return acc.brawlExp && acc.brawlExp.d === bjDay() ? acc.brawlExp.n || 0 : 0; }
   function brawlReward(result, noReward, id, cb) {   // 奖励由服务器按它记下的对局结果发（交易 brawlRw，见 grow.js）
     var first = !brawlPlayed();
-    if (!noReward) { dailyHit('brawl'); if (result === 'win') dailyHit('brawlWin'); }
     var fin = function (r) {
+      if (!noReward) { dailyNote('brawl'); dailyNote('brawlWin'); }   // 进度由交易加（grow.js）
       if (!noReward && first && brawlPlayed()) setTimeout(function () { toast('支线「精灵大乱斗」完成！随时可以再来和其他船员打大乱斗。'); }, 4200);
       renderRes(); if (cb) cb(r);
     };

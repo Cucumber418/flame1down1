@@ -56,7 +56,7 @@ function addTo(sum, d) { FIELDS.forEach(function (f) { if (d[f]) sum[f] += d[f];
 
 /* ---------- 检查一条申报，返回整理好的数值；不合格返回 null ---------- */
 // 2026-10-24 起由服务器直接发的奖励：浏览器不该再申报，宽限期过后这些来源的申报一律不认
-var SERVER_ONLY = { tower: 1, towerDeath: 1, bossFirst: 1, weekly: 1, ewk: 1, chalFirst: 1, mmFirst: 1, mm: 1, cumber: 1, npc: 1, tea: 1, purge: 1, pw: 1, travel: 1, drop: 1, rankExp: 1, battle: 1, forge: 1, gx: 1, farm: 1, help: 1, brawl: 1, gather: 1, mine: 1, jade: 1, hornDay: 1 };   // 这些奖励已经改由服务器直接发（server/pve.js），浏览器申报的不认
+var SERVER_ONLY = { tower: 1, towerDeath: 1, bossFirst: 1, weekly: 1, ewk: 1, chalFirst: 1, mmFirst: 1, mm: 1, cumber: 1, npc: 1, tea: 1, purge: 1, pw: 1, travel: 1, drop: 1, rankExp: 1, battle: 1, forge: 1, gx: 1, farm: 1, help: 1, brawl: 1, gather: 1, mine: 1, jade: 1, hornDay: 1, daily: 1, quest: 1 };   // 这些奖励已经改由服务器直接发（server/pve.js），浏览器申报的不认
 function clean(c) {
   if (!c || typeof c !== 'object' || typeof c.c !== 'string' || c.c.length > 40 || !SRC.hasOwnProperty(c.s)) return null;
   if (SERVER_ONLY[c.s] && Date.now() >= GRACE_UNTIL) return null;
@@ -82,14 +82,20 @@ function clean(c) {
 // 把塔的进度改回服务器上的（服务器那份没有的字段就删掉）
 // 只由服务器改的字段（「对象.字段」或整个顶层字段）：上传的存档里改了，悄悄改回服务器的
 var OWNED = ['tower.f', 'tower.cp', 'tower.best', 'tower.clears', 'tower.death', 'tower.day', 'bosses', 'permit', 'chal', 'mm.clr', 'mm.wins', 'cumberFt', 'npcWin', 'teaFight', 'purge', 'pwd', 'travel', 'rankExp', 'farm', 'nursery', 'home.mons', 'brawlExp', 'giftGot',
-  'gather', 'mine', 'drill', 'jade', 'hornDay', 'herbSeed', 'xcq'];   // 野外每日产出（js/engine/world.js，2026-10-25）
+  'gather', 'mine', 'drill', 'jade', 'hornDay', 'herbSeed', 'xcq',   // 野外每日产出（js/engine/world.js，2026-10-25）
+  'daily', 'quests', 'stats.wildWins'];   // 每日任务、世界任务（js/engine/quest.js）
 var OWNED_KEYS = ['hs-rank-v1', 'hs-draft-v1'];   // 整个存档项只由服务器改：段位、平衡排位本局阵容（server/pve.js）
 function getP(o, p) { var k = p.split('.'); return k.length === 1 ? o[k[0]] : o[k[0]] && typeof o[k[0]] === 'object' ? o[k[0]][k[1]] : undefined; }
-function ownDiff(A, B) { return OWNED.filter(function (p) { var k = p.split('.'); if (k.length > 1 && (!A[k[0]] || !B[k[0]])) return false; var a = getP(A, p), b = getP(B, p); return JSON.stringify(a) !== JSON.stringify(b) && !fresh(p, a, b); }); }
+function ownDiff(A, B) { return OWNED.filter(function (p) { var k = p.split('.'); if (k.length > 1 && (!A[k[0]] || !B[k[0]])) return false; var a = getP(A, p), b = getP(B, p); return JSON.stringify(a) !== JSON.stringify(b) && !fresh(p, a, b, A); }); }
 // 按天记的记录：浏览器跨天后自己清空成「今天、什么都没领」是正常的（服务器那份还是昨天的），不算改动
 var FRESH = { gather: 'day', mine: 'day', jade: 'd', 'tower.day': 'd', rankExp: 'd', npcWin: 'd', pwd: 'd', brawlExp: 'd' };
-function fresh(p, a, b) {
-  var f = FRESH[p], E = require('./tx').engine(); if (!f || !E || !b || typeof b !== 'object') return false;
+function fresh(p, a, b, A) {
+  var E = require('./tx').engine();
+  if (p === 'daily' && E && E.QST && b && (!a || a.date !== b.date)) {   // 每日任务：浏览器跨天后按同样的规则抽了今天的一套（进度都是 0）
+    var C = JSON.parse(JSON.stringify(A)); delete C.daily;
+    return b.date === E.PVE.bjDay(Date.now()) && JSON.stringify(E.QST.daily(C, Date.now())) === JSON.stringify(b);
+  }
+  var f = FRESH[p]; if (!f || !E || !b || typeof b !== 'object') return false;
   var now = Date.now(), today = typeof b[f] === 'number' ? E.TX.dayNum(now) : E.TX.bjDay(now);
   if (b[f] !== today || (a && a[f] === today)) return false;
   return Object.keys(b).every(function (k) { var v = b[k]; return k === f || !v || (typeof v === 'object' && !Object.keys(v).length); });
