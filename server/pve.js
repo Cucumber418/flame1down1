@@ -54,7 +54,7 @@ function finish(name, sess) {
   var end;
   if (sess.kind === 'tower') end = E.PVE.towerEnd(acc, sess.f, sess.F, S.over, !!S.quit, sess.team, seen, downs, now);
   else {   // 其他模式：规则在 js/engine/pve.js 的 MODES；结算完把整份存档发回去，浏览器直接换上
-    var rep = E.PVE.MODES[sess.kind].end(acc, sess.ctx, { res: S.over, quit: !!S.quit, seen: seen, downs: downs }, { now: now, rand: Math.random });
+    var rep = E.PVE.MODES[sess.kind].end(acc, sess.ctx, { res: S.over, quit: !!S.quit, seen: seen, downs: downs, S: S }, { now: now, rand: Math.random });
     end = { kind: sess.kind, res: S.over, quit: !!S.quit, rep: rep };
   }
   // 战斗里用掉的道具：存档里的数量不超过「开打时 − 用掉的」
@@ -77,6 +77,12 @@ function saveAcc(u, acc) {
 
 // 开一场其他模式的对战
 function startMode(E, res, name, kind, u, acc, args) {
+  delete args._helper;
+  if (kind === 'chal' && args.helper) {   // 助战：明明教官的，或好友名片上的（服务器自己查，不信浏览器给的资料）
+    if (args.helper === 'mm') { if (E.ACC.done(acc, 'fl_chal2')) args._helper = E.PVE.MM_HELPER; }
+    else if (typeof args.helper === 'object') args._helper = require('./social').friendHelper(u, String(args.helper.user || ''), args.helper.u | 0);
+    if (!args._helper) return A.reply(res, 400, { error: '借不到这只助战精灵（可能已经不是好友，或对方换了助战）' });
+  }
   var now = Date.now(), st = E.PVE.MODES[kind].start(acc, args, { now: now, rand: Math.random });
   if (!st || st.err) return A.reply(res, 400, { error: (st && st.err) || '开不了这场对战' });
   var S = E.newBattle(st.p, st.a), o = st.opt || {};

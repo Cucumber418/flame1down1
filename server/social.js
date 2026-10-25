@@ -773,4 +773,11 @@ A.use(function (req, res, url) {
   return true;
 });
 
-module.exports = { toAll: function (obj) { allSockets.forEach(function (w) { if (w.user) out(w, obj); }); }, castLabel: function (name) { var c = castOf(name); return c ? c.cast.head.label : null; }, isBusy: isBusy, toUser: toUser, gameName: gameName, isOnline: isOnline, avatarOf: function (name) { var u = A.loadUser(name), acc = u && parseSave(u).acc; return acc ? avatarOf(acc) : null; }, onMessage: onMessage, onOpen: onOpen, onClose: onClose, onlineCount: function () { return Object.keys(online).length; } };
+// 星球挑战借好友的助战精灵（server/pve.js 用）：me 加了 owner 好友、owner 名片上放了编号 unit 的精灵时，返回 { owner, mon }
+function friendHelper(me, owner, unit) {
+  if (!me || !Array.isArray(me.friends) || me.friends.indexOf(owner) < 0) return null;
+  var fu = A.loadUser(owner), fa = fu && parseSave(fu).acc; if (!fa || !fa.introDone) return null;
+  var hm = helpersOf(fa).filter(function (m) { return m.u === unit; })[0];
+  return hm ? { owner: str(fa.name, 20) || fu.name, mon: monOut(hm, fa) } : null;
+}
+module.exports = { friendHelper: friendHelper, toAll: function (obj) { allSockets.forEach(function (w) { if (w.user) out(w, obj); }); }, castLabel: function (name) { var c = castOf(name); return c ? c.cast.head.label : null; }, isBusy: isBusy, toUser: toUser, gameName: gameName, isOnline: isOnline, avatarOf: function (name) { var u = A.loadUser(name), acc = u && parseSave(u).acc; return acc ? avatarOf(acc) : null; }, onMessage: onMessage, onOpen: onOpen, onClose: onClose, onlineCount: function () { return Object.keys(online).length; } };
