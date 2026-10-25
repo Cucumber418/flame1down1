@@ -47,7 +47,7 @@ try {
   var html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
   var files = [];
   html.replace(/'(js\/(?:data|engine)\/[^']+\.js)'/g, function (m, f) { files.push(f); return m; });
-  var ctx = vm.createContext({ console: console, window: {} });
+  var ctx = vm.createContext({ console: console, window: {}, atob: function (b) { return Buffer.from(String(b), 'base64').toString('binary'); }, TextDecoder: typeof TextDecoder !== 'undefined' ? TextDecoder : require('util').TextDecoder });   // atob、TextDecoder：钻头考核的题库要解码（world.js）
   files.forEach(function (f) { vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx, { filename: f }); });
   TX = vm.runInContext('TX', ctx);
   if (!TX || typeof TX.run !== 'function') throw new Error('js/engine/tx.js 里没有 TX');

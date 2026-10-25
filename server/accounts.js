@@ -238,7 +238,11 @@ function handle(req, res) {
       me.save = { data: W.data, rev: cur + 1, savedAt: Date.now(), guard: G && Date.now() < G.until ? G : undefined };
       saveUser(me);
       if (W.fixed) return reply(res, 200, { rev: me.save.rev, savedAt: me.save.savedAt, fixed: W.fixed, save: saveOut(me) });
-      if (W.sync) return reply(res, 200, { rev: me.save.rev, savedAt: me.save.savedAt, acc: W.data['hs-account-v1'] });   // 服务器悄悄改回了自己管的数值：把改后的账号发回去
+      if (W.sync && W.sync.length) {   // 服务器悄悄改回了自己管的数值：把改过的这几项发回去
+        var fx = {}, A2 = null; try { A2 = JSON.parse(W.data['hs-account-v1']); } catch (e) {}
+        if (A2) W.sync.forEach(function (k) { fx[k] = A2[k] === undefined ? null : A2[k]; });
+        return reply(res, 200, { rev: me.save.rev, savedAt: me.save.savedAt, fix: fx });
+      }
       return reply(res, 200, { rev: me.save.rev, savedAt: me.save.savedAt });
     }
 

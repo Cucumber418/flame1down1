@@ -100,7 +100,7 @@
         if (r._code === 200) {
           st.rev = r.rev; lsSet(REV, String(r.rev)); st.retry = 0; claimsDrop(sent);
           if (r.fixed && r.save) { takeCloud(r.save, '有些数值和服务器的记录对不上（' + (r.fixed || '') + '），已按服务器的记录修正。'); return; }
-          if (r.acc && st.changeNo === no && window.HSACC && HSACC.adopt) { st.applying = true; try { HSACC.adopt(r.acc); } finally { st.applying = false; } }   // 服务器悄悄改回了它管的数值（精灵、塔进度等）：直接换上，不弹窗
+          if (r.fix && st.changeNo === no && window.HSACC && HSACC.patch) { st.applying = true; try { HSACC.patch(r.fix); } finally { st.applying = false; } }   // 服务器悄悄改回了它管的数值（精灵、塔进度、每日记录等）：只换这几项，不弹窗
           if (st.changeNo === no) { lsDel(DIRTY); setStatus('ok'); } else schedule(1000);
         } else if (r._code === 409) { setStatus('conflict'); takeCloud(r.save, r.cheat ? r.error : '这个账号在别的设备上保存过新的进度，已切换成服务器上的进度。'); }
         else if (r._code === 401) { setStatus('expired'); }

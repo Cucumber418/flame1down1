@@ -1988,22 +1988,17 @@
     if (ex.fighting) return;
     var R = regionById(ex.region), g = R && GATHER[R.id];
     if (!g || i < 0 || i >= GATHER_SPOTS.length) return;
-    var rec = gatherRec(), key = gatherKey(R.id, i), name = GATHER_ITEMS[g.item].name;
-    if (rec.got[key]) { toast('这个采集点今天已经采过了，明天再来。'); return; }
-    rec.got[key] = 1;
-    var gain = {}, extra = '';
-    gain[g.item] = g.n;
-    if ((R.id === 'forest' || R.id === 'grass') && !acc.herbSeed) {
-      acc.herbSeed = 1; gain.s_herb = 4; extra = '，另外找到了药草种子 ×4';
-    }
-    earn('gather', bjDay() + ':' + key, { items: gain }); save();
-    toast('采集到了「' + name + '」×' + g.n + extra + '，已放入储存箱。');
-    var el = document.querySelector('#wf-scene [data-gather="' + i + '"]');
-    if (!el) return;
-    el.classList.add('done');
-    el.title = '今天已采集';
-    el.setAttribute('aria-label', name + '，今天已经采集过');
-    var sp = el.querySelector('span'); if (sp) sp.textContent = '已采集';
+    var key = gatherKey(R.id, i), name = GATHER_ITEMS[g.item].name;
+    if (gatherRec().got[key]) { toast('这个采集点今天已经采过了，明天再来。'); return; }
+    txRun('gather', { rid: R.id, i: i }, function (r) {   // 规则在 js/engine/world.js（服务器结算）
+      toast('采集到了「' + name + '」×' + r.n + (r.herb ? '，另外找到了药草种子 ×4' : '') + '，已放入储存箱。');
+      var el = document.querySelector('#wf-scene [data-gather="' + i + '"]');
+      if (!el) return;
+      el.classList.add('done');
+      el.title = '今天已采集';
+      el.setAttribute('aria-label', name + '，今天已经采集过');
+      var sp = el.querySelector('span'); if (sp) sp.textContent = '已采集';
+    });
   }
   /* ---------- 一碗饭和米饭火鸡 ----------
    * 芙罗拉星的野外战斗：每击败一只野生精灵，10% 掉落水稻种子。种植园 12 小时收获米饭 ×250，冶炼坊 500 粒米饭 = 一碗饭。
@@ -2043,6 +2038,9 @@
     if (!drill()) { toast(!coreOpen() ? '这是一处矿点。读完荆楚号 · 宜昌的支线「三峡能源核心」，就能领钻头来挖了。' : '需要挖矿钻头才能采矿。去荆楚号 · 宜昌的「三峡能源核心」找日透骨消领一个吧。'); return; }
     if (drill().dur <= 0) { toast('挖矿钻头的耐久度用完了，去荆楚号 · 宜昌的「三峡能源核心」找日透骨消修一下吧。'); return; }
     if ($('mine-dlg')) return;
+    txRun('mine', { a: 'start', rid: R.id, si: si }, function () { mineDlg(si); });   // 开挖、挖完都由服务器结算（js/engine/world.js）
+  }
+  function mineDlg(si) {
     var k = oreKind(si), d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'mine-dlg';
     d.innerHTML = '<div class="soc-box mine-box" role="dialog" aria-modal="true" aria-label="采矿"><span class="tape l"></span><span class="tape r"></span><h2>正在采集' + MATS[k].name + '</h2>' +
       '<div class="mine-drill ' + (k === 'm_fe' ? 'fe' : 'cu') + '" aria-hidden="true"><span class="ore-ic"></span><i class="drill-bit"></i></div>' +
@@ -2053,14 +2051,23 @@
       var f = Math.min(1, (Date.now() - t0) / (MINE.sec * 1000)), el = $('mine-fill'); if (!el) { clearInterval(tm); return; }
       el.style.width = (f * 100) + '%'; $('mine-left').textContent = f < 1 ? '钻头转起来了……还要 ' + Math.ceil(MINE.sec * (1 - f)) + ' 秒' : '挖到了！';
       if (f >= 1) {
-        clearInterval(tm); var n = MINE.n[0] + Math.floor(Math.random() * (MINE.n[1] - MINE.n[0] + 1));
-        mineRec().got[key] = 1; earn('mine', mineRec().day + ':' + key, { items: (function () { var o = {}; o[k] = n; return o; })() }); acc.drill.dur = Math.max(0, acc.drill.dur - 1); save();
-        var du = acc.drill.dur;
-        var dd = d.querySelector('.drill-dur'); if (dd) dd.textContent = '钻头耐久度 ' + du + ' / ' + DRILL_MAX;
-        if (du < DRILL_MAX * DRILL_LOW) {   // 耐久不足：在采矿弹窗里提醒，点了才关
-          $('mine-left').innerHTML = '挖到了！<br><b class="red">' + (du <= 0 ? '钻头的耐久度用完了！' : '钻头耐久度即将不足（' + du + ' / ' + DRILL_MAX + '）') + '</b>去荆楚号 · 宜昌的三峡能源核心找日透骨消修复吧。';
-          var ft = d.querySelector('.soc-foot'); ft.innerHTML = '<button type="button" class="btn primary" data-mineok="1">知道了</button>';
-        } else setTimeout(function () { d.remove(); renderField(); igCheck(); }, 500);
+        clearInterval(tm);
+        var fin = function (tries) {
+          txRun('mine', { a: 'end' }, function (r) {
+            var du = r.dur;
+            $('mine-left').textContent = '挖到了！' + MATS[r.k].name + ' ×' + r.n;
+            var dd = d.querySelector('.drill-dur'); if (dd) dd.textContent = '钻头耐久度 ' + du + ' / ' + DRILL_MAX;
+            if (du < DRILL_MAX * DRILL_LOW) {   // 耐久不足：在采矿弹窗里提醒，点了才关
+              $('mine-left').innerHTML = '挖到了！' + MATS[r.k].name + ' ×' + r.n + '<br><b class="red">' + (du <= 0 ? '钻头的耐久度用完了！' : '钻头耐久度即将不足（' + du + ' / ' + DRILL_MAX + '）') + '</b>去荆楚号 · 宜昌的三峡能源核心找日透骨消修复吧。';
+              var ft = d.querySelector('.soc-foot'); ft.innerHTML = '<button type="button" class="btn primary" data-mineok="1">知道了</button>';
+            } else setTimeout(function () { d.remove(); renderField(); igCheck(); }, 800);
+          }, function (err) {
+            if (err === '还没挖完' && tries < 3) { setTimeout(function () { fin(tries + 1); }, 600); return; }
+            if (err === '' && tries < 10) { setTimeout(function () { fin(tries + 1); }, 300); return; }   // 上一笔交易还没结束
+            $('mine-left').textContent = err || '没挖到，稍后再试试。';
+          });
+        };
+        fin(0);
       }
     }, 100);
     d.addEventListener('click', function (e) {
@@ -2207,17 +2214,28 @@
     });
   }
   var REPAIR = { n: 5, pass: 3, hard: 1 };
-  function startQuiz(rp) {   // rp：修复钻头（5 题对 3 题）；否则是领钻头的考核（10 题对 7 题）
+  function startQuiz(rp) {   // rp：修复钻头（5 题对 3 题）；否则是领钻头的考核（10 题对 7 题）。抽题、判定都由服务器做（js/engine/world.js）
+    var B = xcqBank(); if (!B.length) { toast('题库加载失败，刷新一下再试试。'); return; }
+    if ($('quiz-dlg')) return;
+    txRun('xcq', { a: 'start', rp: !!rp }, function (r) { runQuiz(rp, r.qs.map(function (k) { return B[k]; })); });
+  }
+  function runQuiz(rp, Qs) {
     var C = rp ? REPAIR : { n: MINE.quiz, pass: MINE.pass, hard: MINE.hard };
-    var B = xcqBank(); if (B.length < C.n) { toast('题库加载失败，刷新一下再试试。'); return; }
-    var hard = shuffle(B.filter(function (q) { return q.h; })).slice(0, C.hard), easy = shuffle(B.filter(function (q) { return !q.h; })).slice(0, C.n - hard.length);
-    var Qs = shuffle(hard.concat(easy)), i = 0, right = 0, wrong = 0, ans = null, showE = false, WRONG_MAX = 3;
+    var i = 0, right = 0, wrong = 0, ans = null, showE = false, WRONG_MAX = 3, answers = [], result = null;
     var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'quiz-dlg'; document.body.appendChild(d);
     var title = rp ? '钻头修复' : '钻头考核';
+    function submit(tries) {
+      txRun('xcq', { a: 'end', ans: answers }, function (r) { result = r; if (r.pass) checkTitles(); draw(); },
+        function (err) { if (err === '' && tries < 10) { setTimeout(function () { submit(tries + 1); }, 300); return; } result = { pass: false, err: err || '没能提交答案' }; draw(); });
+    }
     function draw() {
       if (i >= Qs.length || (wrong >= WRONG_MAX && ans === null)) {   // 答完，或者错满 3 道直接结束（先让玩家看完第 3 道错题的答案）
-        var ok = wrong < WRONG_MAX && right >= C.pass;
-        if (ok) { acc.drill = { dur: DRILL_MAX }; save(); checkTitles(); }
+        if (!result) {
+          if (result === null) { result = false; submit(0); }
+          d.innerHTML = '<div class="soc-box quiz-box" role="dialog" aria-modal="true" aria-label="考核结果"><span class="tape l"></span><span class="tape r"></span><h2>正在核对答案……</h2></div>';
+          return;
+        }
+        var ok = !!result.pass;
         d.innerHTML = '<div class="soc-box quiz-box" role="dialog" aria-modal="true" aria-label="考核结果"><span class="tape l"></span><span class="tape r"></span><h2>' + (ok ? (rp ? '修好了！' : '考核通过！') : '没有通过') + '</h2>' +
           '<p class="quiz-score">答对 <b>' + right + '</b> / ' + Qs.length + (wrong >= WRONG_MAX ? '<small>（错满 ' + WRONG_MAX + ' 道，提前结束）</small>' : '') + '</p><p>' + (ok ? (rp ? '日透骨消：「交给我吧……好了，耐久度修满了。」' : '日透骨消：「不错嘛。这把挖矿钻头以后就归你了，拿好。」') + '<br>去芙罗拉星、坎伯兰星的野外找矿点吧，每处矿点每天能挖一次。' : '日透骨消：「' + (wrong >= WRONG_MAX ? '错了 ' + WRONG_MAX + ' 道，这次就到这儿吧。' : '差一点。') + '要答对 ' + C.pass + ' 道、错不超过 ' + (WRONG_MAX - 1) + ' 道才行，再来一次？」') + '</p>' +
           '<div class="soc-foot">' + (ok ? '<button type="button" class="btn primary" data-qx="1">好的</button>' : '<button type="button" class="btn ghost" data-qx="1">下次再来</button><button type="button" class="btn primary" data-qagain="1">重新答题</button>') + '</div></div>';
@@ -2238,7 +2256,7 @@
       if (e.target.closest('[data-qexp]')) { showE = true; draw(); return; }
       if (e.target.closest('[data-qnext]')) { i++; ans = null; showE = false; draw(); return; }
       var o = e.target.closest('[data-qo]'); if (!o || ans !== null || i >= Qs.length) return;
-      ans = +o.dataset.qo; if (ans === Qs[i].a) right++; else wrong++; draw();   // 每答一题立刻显示对错
+      ans = +o.dataset.qo; answers[i] = ans; if (ans === Qs[i].a) right++; else wrong++; draw();   // 每答一题立刻显示对错
     });
   }
   function coreLogHTML() {
@@ -3453,9 +3471,10 @@
   function jadeAt(scene) {
     var R = regionById(ex.region), J = R && jadeSpot(R.id, scene); if (!J) return;
     var rec = jadeRec(), key = R.id + ':' + scene; if (rec.got[key]) return;
-    var o = {}; o[J.k] = J.n; rec.got[key] = 1; earn('jade', rec.d + ':' + key, { items: o }); save();   // 编号带上日期：每天都能捡（2026-10-25 修）
-    toast('捡到了「' + itemName(J.k) + '」×' + J.n + '，已放入储存箱。' + (USE_ITEMS[J.k].sd || ''));
-    var el = document.querySelector('#wf-scene [data-jade]'); if (el) el.remove();
+    txRun('jade', { rid: R.id, scene: scene }, function (r) {   // 服务器结算（js/engine/world.js）
+      toast('捡到了「' + itemName(r.k) + '」×' + r.n + '，已放入储存箱。' + (USE_ITEMS[r.k].sd || ''));
+      var el = document.querySelector('#wf-scene [data-jade]'); if (el) el.remove();
+    });
   }
 
   /* ---------- 神秘精灵：每天 16:00–24:00，切换场景时有 3% 概率出现（真身是 LV10 幽灵鱼） ---------- */
@@ -4101,7 +4120,7 @@
     if (e.target.closest('[data-gocore]')) { ex.planet = 'jingchu'; go('explore'); teleport('宜昌'); return; }
     var ml = e.target.closest('[data-mmlog]'); if (ml) { var mk = ml.dataset.mmlog; if (mk === 'task') { ex.planet = 'jingchu'; go('explore'); teleport('襄阳'); return; } ex.mmFrom = mk === 'gacha' ? 'log' : 'arena'; ex.view = mk === 'gacha' ? 'mmGacha' : 'mmArena'; go('explore'); renderExplore(); return; }
     if (e.target.closest('[data-gosarena]')) { ex.planet = 'sarena'; ex.view = 'sites'; go('explore'); return; }
-    var hd = e.target.closest('[data-hornday]'); if (hd && !hd.disabled && ready() && !hornDayGot()) { var hk = HORN.day[0] + Math.floor(Math.random() * (HORN.day[1] - HORN.day[0] + 1)); acc.hornDay = dayNum(Date.now()); earn('hornDay', acc.hornDay, { items: { m_hfhorn: hk } }); save(); toast('领取了赫菲角片 ×' + hk + '，已放入储存箱。'); renderLog(); return; }
+    var hd = e.target.closest('[data-hornday]'); if (hd && !hd.disabled && ready() && !hornDayGot()) { txRun('hornDay', {}, function (r) { toast('领取了赫菲角片 ×' + r.n + '，已放入储存箱。'); renderLog(); }); return; }
     var ap = e.target.closest('[data-avpick]');
     if (ap && !ap.disabled && AV.data) {
       var k = ap.dataset.avpick, P = AV.picks || (AV.picks = []), i = P.indexOf(k);
@@ -4348,6 +4367,11 @@
    * 规则在 js/engine/pve.js 的 MODES。服务器改完存档后把整份存档发回来，这里直接换上（adoptAcc），再照服务器给的结果写提示。
    * 本地双击打开（没有服务器）时仍走原来的本机结算。 */
   function srvMode() { return !!(window.CLOUD && CLOUD.user()); }
+  function patchAcc(fx) {   // 服务器改回的几项（cloud.js 上传后）：只换这几项
+    if (!acc || !fx || typeof fx !== 'object') return;
+    for (var k in fx) { if (fx[k] === null) delete acc[k]; else acc[k] = fx[k]; }
+    save(); try { renderTop(); renderRes(); } catch (e) {}
+  }
   function adoptAcc(js) {
     try { var a = typeof js === 'string' ? JSON.parse(js) : js; if (!valid(a)) return false; acc = a; save(); return true; } catch (e) { return false; }
   }
@@ -6385,7 +6409,7 @@
     titleName: titleName, mon: mon, fmt: fmt, milRank: milRank, avatarInner: avatarInner, avatarSpec: function () { return avatarCur(); },
     npcPlan: npcPlan, npcHome: npcHome,
     sendMail: sendMail, openMailbox: openMailbox,
-    rankToday: rankToday, adopt: adoptAcc, RANK_EXP: { exp: RANK_EXP, n: RANK_EXP_N, token: RANK_TOKEN }, tokenBarHTML: tokenBarHTML, openTokenShop: openTokenShop, rankRwHTML: rankRwHTML, openQuests: openQuests, gender: gender,
+    rankToday: rankToday, adopt: adoptAcc, patch: patchAcc, RANK_EXP: { exp: RANK_EXP, n: RANK_EXP_N, token: RANK_TOKEN }, tokenBarHTML: tokenBarHTML, openTokenShop: openTokenShop, rankRwHTML: rankRwHTML, openQuests: openQuests, gender: gender,
     brawlOpen: brawlOpen, brawlSpec: brawlSpec, brawlReward: brawlReward, brawlToday: brawlToday, BRAWL: { win: BRAWL_WIN, lose: BRAWL_LOSE, cap: BRAWL_CAP, lv: BRAWL_LV },
     // 平衡模式切磋：LV60、性格无修正、没有学习力和纹章，技能可以从全部技能里选（没选就用竞技对战里记住的配招）
     balSpec: function (raw) {

@@ -56,7 +56,7 @@ function addTo(sum, d) { FIELDS.forEach(function (f) { if (d[f]) sum[f] += d[f];
 
 /* ---------- 检查一条申报，返回整理好的数值；不合格返回 null ---------- */
 // 2026-10-24 起由服务器直接发的奖励：浏览器不该再申报，宽限期过后这些来源的申报一律不认
-var SERVER_ONLY = { tower: 1, towerDeath: 1, bossFirst: 1, weekly: 1, ewk: 1, chalFirst: 1, mmFirst: 1, mm: 1, cumber: 1, npc: 1, tea: 1, purge: 1, pw: 1, travel: 1, drop: 1, rankExp: 1, battle: 1, forge: 1, gx: 1, farm: 1, help: 1, brawl: 1 };   // 这些奖励已经改由服务器直接发（server/pve.js），浏览器申报的不认
+var SERVER_ONLY = { tower: 1, towerDeath: 1, bossFirst: 1, weekly: 1, ewk: 1, chalFirst: 1, mmFirst: 1, mm: 1, cumber: 1, npc: 1, tea: 1, purge: 1, pw: 1, travel: 1, drop: 1, rankExp: 1, battle: 1, forge: 1, gx: 1, farm: 1, help: 1, brawl: 1, gather: 1, mine: 1, jade: 1, hornDay: 1 };   // 这些奖励已经改由服务器直接发（server/pve.js），浏览器申报的不认
 function clean(c) {
   if (!c || typeof c !== 'object' || typeof c.c !== 'string' || c.c.length > 40 || !SRC.hasOwnProperty(c.s)) return null;
   if (SERVER_ONLY[c.s] && Date.now() >= GRACE_UNTIL) return null;
@@ -81,10 +81,20 @@ function clean(c) {
  * 返回 { data: 要保存的存档（enforce 模式下可能改过）, fixed: 修正说明（没改就是空） } */
 // 把塔的进度改回服务器上的（服务器那份没有的字段就删掉）
 // 只由服务器改的字段（「对象.字段」或整个顶层字段）：上传的存档里改了，悄悄改回服务器的
-var OWNED = ['tower.f', 'tower.cp', 'tower.best', 'tower.clears', 'tower.death', 'tower.day', 'bosses', 'permit', 'chal', 'mm.clr', 'mm.wins', 'cumberFt', 'npcWin', 'teaFight', 'purge', 'pwd', 'travel', 'rankExp', 'farm', 'nursery', 'home.mons', 'brawlExp', 'giftGot'];
+var OWNED = ['tower.f', 'tower.cp', 'tower.best', 'tower.clears', 'tower.death', 'tower.day', 'bosses', 'permit', 'chal', 'mm.clr', 'mm.wins', 'cumberFt', 'npcWin', 'teaFight', 'purge', 'pwd', 'travel', 'rankExp', 'farm', 'nursery', 'home.mons', 'brawlExp', 'giftGot',
+  'gather', 'mine', 'drill', 'jade', 'hornDay', 'herbSeed', 'xcq'];   // 野外每日产出（js/engine/world.js，2026-10-25）
 var OWNED_KEYS = ['hs-rank-v1', 'hs-draft-v1'];   // 整个存档项只由服务器改：段位、平衡排位本局阵容（server/pve.js）
 function getP(o, p) { var k = p.split('.'); return k.length === 1 ? o[k[0]] : o[k[0]] && typeof o[k[0]] === 'object' ? o[k[0]][k[1]] : undefined; }
-function ownDiff(A, B) { return OWNED.filter(function (p) { var k = p.split('.'); if (k.length > 1 && (!A[k[0]] || !B[k[0]])) return false; return JSON.stringify(getP(A, p)) !== JSON.stringify(getP(B, p)); }); }
+function ownDiff(A, B) { return OWNED.filter(function (p) { var k = p.split('.'); if (k.length > 1 && (!A[k[0]] || !B[k[0]])) return false; var a = getP(A, p), b = getP(B, p); return JSON.stringify(a) !== JSON.stringify(b) && !fresh(p, a, b); }); }
+// 按天记的记录：浏览器跨天后自己清空成「今天、什么都没领」是正常的（服务器那份还是昨天的），不算改动
+var FRESH = { gather: 'day', mine: 'day', jade: 'd', 'tower.day': 'd', rankExp: 'd', npcWin: 'd', pwd: 'd', brawlExp: 'd' };
+function fresh(p, a, b) {
+  var f = FRESH[p], E = require('./tx').engine(); if (!f || !E || !b || typeof b !== 'object') return false;
+  var now = Date.now(), today = typeof b[f] === 'number' ? E.TX.dayNum(now) : E.TX.bjDay(now);
+  if (b[f] !== today || (a && a[f] === today)) return false;
+  return Object.keys(b).every(function (k) { var v = b[k]; return k === f || !v || (typeof v === 'object' && !Object.keys(v).length); });
+}
+function topKeys(paths) { var o = {}; paths.forEach(function (p) { o[p.split('.')[0]] = 1; }); return Object.keys(o); }
 function twBack(A, B, keys) {
   keys.forEach(function (p) {
     var k = p.split('.'), src = k.length === 1 ? A : A[k[0]], dst = k.length === 1 ? B : B[k[0]], f = k[k.length - 1];
@@ -186,7 +196,7 @@ function monStep(u, oldData, newData, info, now) {
   mstat.fixed++;
   monApply(A, B, r);
   var o2 = {}; for (var k in newData) o2[k] = newData[k]; o2['hs-account-v1'] = JSON.stringify(B);
-  info.sync = true;   // 改过了：把服务器的版本发回浏览器（悄悄换上，免得下次上传又对不上）
+  info.sync = ['mons', 'teams', 'next'];   // 改过了：把服务器的版本发回浏览器（悄悄换上，免得下次上传又对不上）
   return o2;
 }
 function onUpload(u, list, oldData, newData, info) {
@@ -219,7 +229,7 @@ function onUpload(u, list, oldData, newData, info) {
 
   // 核对钱包
   var A = accOf(oldData), B = accOf(newData);
-  if (!A || !B) return { data: newData, fixed: '', sync: !!info.sync };
+  if (!A || !B) return { data: newData, fixed: '', sync: info.sync || null };
   var a = wallet(A), b = wallet(B), over = [];
   // 上限 lim = 上一份 + 认可的申报；超过上限时，改成 min(上传值 − 不认可的申报, 上限)：既去掉没申报的部分，也扣回被拒的申报
   function chk(f, av, bv, okv, badv) { var lim = av + okv; if (bv > lim) { var to = Math.max(0, Math.min(bv - badv, lim)); over.push({ f: f, by: bv - to, to: to }); } }
@@ -229,15 +239,15 @@ function onUpload(u, list, oldData, newData, info) {
   var enforce = MODE === 'enforce' && (info.claims || now >= GRACE_UNTIL);
   // 先驱之塔的进度（层数、存档点、通关次数、死神代币次数、今天的塔内奖励）只由服务器推进（server/pve.js）：上传的存档改不了
   var twFix = enforce ? ownDiff(A, B) : [];
-  if (!over.length && !notes.length && !twFix.length) return { data: newData, fixed: '', sync: !!info.sync };
+  if (!over.length && !notes.length && !twFix.length) return { data: newData, fixed: '', sync: info.sync || null };
   if (over.length) { stat.over++; stat.last.unshift({ t: new Date(now).toISOString(), old: !info.claims, over: over.map(function (x) { return x.f + ' +' + x.by; }) }); stat.last = stat.last.slice(0, 15); }
   if (over.length || notes.length) log({ t: new Date(now).toISOString(), u: u.name, mode: enforce ? 'enforce' : 'observe', oldClient: !info.claims, over: over, notes: notes });
   if (twFix.length && !over.length) {   // 只有服务器管的字段对不上：悄悄改回服务器的（正常情况下是本机跨天重置了今天的计数，不弹窗）
     twBack(A, B, twFix);
     var o2 = {}; for (var kk in newData) o2[kk] = newData[kk]; o2['hs-account-v1'] = JSON.stringify(B);
-    return { data: o2, fixed: '', sync: true };
+    return { data: o2, fixed: '', sync: (info.sync || []).concat(topKeys(twFix)) };
   }
-  if (!enforce || !over.length) return { data: newData, fixed: '', sync: !!info.sync };
+  if (!enforce || !over.length) return { data: newData, fixed: '', sync: info.sync || null };
   stat.fixed++;
   twBack(A, B, twFix);
   // 正式模式：把多出来的改回去
