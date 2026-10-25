@@ -299,8 +299,8 @@ var GROW = (function () {
 
   /* ---------- 冶炼坊：合成、特产互换（2026-10-25 起走交易） ---------- */
   var FORGE = [
-    { id: 'cap2', out: { cap2: 1 }, need: { g_sand: 2 } },
-    { id: 'cap3', out: { cap3: 1 }, need: { g_core: 4 } },
+    { id: 'cap2', out: { cap2: 1 }, need: { g_sand: 50 } },   // 2026-10-25：星砂 2 → 50
+    { id: 'cap3', out: { cap3: 1 }, need: { g_core: 10 } },   // 2026-10-25：圣晶石 4 → 10
     { id: 'pot100', out: { pot100: 1 }, need: { c_herb: 1 } },   // 2026-10-25：hp药水分 100、200 两种
     { id: 'pot200', out: { pot200: 1 }, need: { c_herb: 2 } },
     { id: 'pp10', out: { pp10: 1 }, need: { c_flower: 3 } },   // PP 药水：只合成 10PP、20PP（大的更划算）
