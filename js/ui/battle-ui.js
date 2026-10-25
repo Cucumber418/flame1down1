@@ -48,10 +48,11 @@
   }
   function srvOn() { return !!(window.CLOUD && CLOUD.user && CLOUD.user() && CLOUD.pve); }
   function fetchDraft() {
+    var L = LOADER.show('正在抽取本局阵容～'); L.to(0.9);
     CLOUD.pve({ op: 'draft' }).then(function (r) {
       if (r && r.ok && r.keys) applyKeys(r.keys); else app.draft = null;
-      if (app.screen !== 'battle') renderBuilder();
-    });
+      L.done(function () { if (app.screen !== 'battle') renderBuilder(); });
+    }, function () { L.close(); });
   }
   // 服务器改过的存档项（段位、本局阵容）：换上
   function applyKeys(keys) {
@@ -595,11 +596,16 @@
     var mv = {}; ids.forEach(function (id) { mv[id] = app.loadout[id].slice(); });
     var body = rank ? { op: 'start', kind: 'rank', args: { pick: app.draft.pick, order: ids, moves: mv } } : { op: 'start', kind: 'sandbox', args: { team: ids.map(function (id) { return { id: id, moves: mv[id] }; }) } };
     $('btn-start').disabled = true;
+    var L = LOADER.show('正在进入对战系统～'); L.to(0.7);   // 加载面板（js/ui/loader.js）
     CLOUD.pve(body).then(function (r) {
-      $('btn-start').disabled = false;
-      if (!r || !r.ok) { $('bag-msg').textContent = (r && r.err) || '没能开始，请稍后再试。'; $('bag-msg').className = 'hint red'; if (r && r.draft) { app.draft = null; ensureDraft(); renderBuilder(); } return; }
+      if (!r || !r.ok) { $('btn-start').disabled = false; L.close(); $('bag-msg').textContent = (r && r.err) || '没能开始，请稍后再试。'; $('bag-msg').className = 'hint red'; if (r && r.draft) { app.draft = null; ensureDraft(); renderBuilder(); } return; }
       if (r.acc && window.HSACC && HSACC.adopt) HSACC.adopt(r.acc);
       if (r.keys) applyKeys(r.keys);
+      L.set(0.72).text('正在布置战场～');
+      var imgs = []; r.S.sides.forEach(function (sd) { sd.team.forEach(function (t) { var sp = SPMAP[t.id]; if (sp) imgs.push(t.img || formImg(sp, ACC.stageOf(sp, t.lv || 100))); }); });
+      LOADER.images(imgs, function (n, t) { L.set(0.72 + 0.27 * n / t); }, function () { L.done(function () { $('btn-start').disabled = false; go(r); }); });
+    }, function () { $('btn-start').disabled = false; L.close(); });
+    function go(r) {
       bgm('pvp');
       remote = CLOUD.pve; rSeq = 0;
       srvEnd = function (e) { if (e.acc && window.HSACC && HSACC.adopt) HSACC.adopt(e.acc); if (e.keys) applyKeys(e.keys); if (app.S) { app.S.srvRep = e.rep || {}; if (e.rep && e.rep.x) app.S.rankApplied = e.rep.x; } };
@@ -615,7 +621,7 @@
       renderSnap(snap(app.S), true);
       showTab('moves'); refreshCmd();
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
+    }
   }
   function startBattle() {
     setFieldBg(null);

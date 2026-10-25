@@ -296,12 +296,14 @@
 
   /* ---------- 加载游戏脚本（按顺序） ---------- */
   function loadGame() {
-    var list = st.scripts.slice();
+    var list = st.scripts.slice(), total = list.length || 1;
+    var L = window.LOADER ? LOADER.show('正在登船～', { delay: 250 }) : null;   // 加载面板（js/ui/loader.js）：按已经加载的脚本数走进度条
     (function next() {
-      if (!list.length) { if (st.user) renderBar(); return; }
+      if (L) L.set((total - list.length) / total);
+      if (!list.length) { if (L) L.done(); if (st.user) renderBar(); return; }
       var s = document.createElement('script'); s.src = list.shift();
       s.onload = next;
-      s.onerror = function () { alert('加载 ' + s.src + ' 失败，请刷新页面重试'); };
+      s.onerror = function () { if (L) L.close(); alert('加载 ' + s.src + ' 失败，请刷新页面重试'); };
       document.body.appendChild(s);
     })();
   }

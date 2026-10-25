@@ -4206,12 +4206,23 @@
   }
   var pveBusy = false;
   // kind、args：服务器上的模式和参数；ui = { bg, back, pre() }；done(e, res)：e 是服务器的结算结果（作废时为 null）
+  // 对战用到的图（双方精灵、背景）：进对战前先下载好，加载面板的进度条跟着走
+  function battleImgs(S, bg) {
+    var out = [];
+    (S && S.sides || []).forEach(function (sd) { (sd.team || []).forEach(function (t) { var sp = t && SPMAP[t.id]; out.push(t && t.img ? t.img : sp ? formImg(sp, stageOf(sp, t.lv || 1)) : null); }); });
+    if (typeof bg === 'string' && /[\/.]/.test(bg)) out.push(bg);
+    return out;
+  }
   function pveRemote(kind, args, ui, done) {
     if (pveBusy) return; pveBusy = true;
+    var L = LOADER.show(ui.loadText || '正在进入对战系统～'); L.to(0.7);   // 加载面板（js/ui/loader.js）：很快就进去时不会出现
     CLOUD.pve({ op: 'start', kind: kind, args: args }).then(function (r) {
-      pveBusy = false;
-      if (!r || !r.ok) { if (r && r.err) toast(r.err); if (ui.fail) ui.fail(r); return; }
+      if (!r || !r.ok) { pveBusy = false; L.close(); if (r && r.err) toast(r.err); if (ui.fail) ui.fail(r); return; }
       if (r.acc) adoptAcc(r.acc);
+      L.set(0.72).text(ui.loadText2 || '正在布置战场～');
+      LOADER.images(battleImgs(r.S, ui.bg), function (n, t) { L.set(0.72 + 0.27 * n / t); }, function () { L.done(function () { pveBusy = false; go(r); }); });
+    }, function () { pveBusy = false; L.close(); });
+    function go(r) {
       var o = r.opt || {}, endE = null;
       if (ui.adjust) ui.adjust(r, ui);
       if (r.S.wild) { r.S.wild.where = ui.where || ''; r.S.wild.back = ui.back || ''; }
@@ -4225,7 +4236,7 @@
           if (e && !endE && e.acc) adoptAcc(e.acc);
           done(e && !e.err ? e : null, res);
         } });
-    });
+    }
   }
   // 服务器结算的战斗经验（ACC.battleXp 的结果）写成提示
   function xpMsg(x) {
