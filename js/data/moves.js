@@ -176,7 +176,7 @@ var M = {
   神秘灵核: { type: '远古', cat: '变化', hidden: true, selfStage: { spa: 2, spe: 1 }, pp: 10, d: '提升2级特攻、1级速度' },
   起源巨刃: { type: '远古', cat: '物攻', power: 70, hidden: true, custom: 'originBlade', d: '威力70，必杀速度降低6级的敌人' },
 
-  // —— 赫菲斯托斯（火）
+  // —— 赫菲斯托（火）
   火之刃: { type: '火', cat: '物攻', power: 50, d: '威力50' },
   火焰漩涡: { type: '火', cat: '特攻', power: 15, status: { k: '烧伤', min: 2, max: 5, chance: 1 }, d: '威力15，使对方烧伤2-5回合' },
   焚烧: { type: '火', cat: '变化', tgtStage: { def: -2 }, d: '降低对方2级物防' },

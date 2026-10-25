@@ -850,7 +850,7 @@
     e_leafcat: { name: '叶子喵的精元', d: '用 5 片叶子喵的叶片凝成的精元。放进神农架 · 精灵保育仓，孵化 8 小时后会诞生一只叶子小小喵。', hatch: { sid: 'leafcat', lv: 1, min: 480 } }
   };
   MATS.e_pluto = { name: '帕努托尔的精元', d: '在先驱之塔的代币商店兑换的精元。放进神农架 · 精灵保育仓，孵化 12 小时后会诞生一只帕努。', hatch: { sid: 'pluto', lv: 1, min: 720 } };
-  MATS.m_hfhorn = { name: '赫菲角片', d: '赫菲斯一系身上掉下来的角片，还带着一点余温。60 片可以在黄石 · 冶炼坊合成「奇声号角」。' };
+  MATS.m_hfhorn = { name: '赫菲角片', d: '赫菲一系身上掉下来的角片，还带着一点余温。60 片可以在黄石 · 冶炼坊合成「奇声号角」。' };
   MATS.m_horn = { name: '奇声号角', d: '用 60 片赫菲角片做成的号角，吹起来声音很奇怪。在坎伯兰星 · 水面的「冥岛」吹响，会引来一只可以捕捉的塞米；和它进入战斗时，号角就会用掉。' };
   MATS.m_mcry = { name: '马亚尔晶体', d: '泰戈尔每周挑战必掉的晶体，凝着马亚尔星系各处的能量。在黄石 · 冶炼坊每 10 个可以换成 10 个任意一种星球特产（芙罗拉玉、不化水滴、火山灰烬、闪电球体、永久冻土）。' };
   MATS.m_cu = { name: '马亚尔煤炭', d: '在芙罗拉星、坎伯兰星的野外挖到的煤炭。可以在荆楚号 · 宜昌的三峡能源核心换成能量。' };
@@ -869,7 +869,7 @@
   var CROP_ORDER = ['c_herb', 'c_flower', 'c_rice', 'c_bowl'];
   var BAG_ORDER = MON_ORDER.concat(GEN_ORDER);
   /* 储存箱里每个道具的说明，分三栏：简介（是什么）、用途（怎么用、能做什么）、获得方式（2026-10-25 整理） */
-  var SPEC_OF = { floraJade: ['芙罗拉星', '玛西露姆、六尾风王、卡莱奥丹', '草', '芙罗拉星的丛林、草甸'], kbDrop: ['坎伯兰星', '坎克托斯、戈耳贡、塞壬', '水', '坎伯兰星的水面、浅水区、深海区'], ppAsh: ['庞贝星', '赫菲斯托斯、费尔茅斯、冲锋火鸡', '火', '庞贝星的熔岩原、饮火城'], ltOrb: ['莱汀陨石带', '雷公、法拉第', '电', '莱汀陨石带'], whFrost: ['白之星', '霜冻之冠', '冰', '白之星'] };
+  var SPEC_OF = { floraJade: ['芙罗拉星', '玛西露姆、六尾风王、卡莱奥丹', '草', '芙罗拉星的丛林、草甸'], kbDrop: ['坎伯兰星', '坎克托斯、戈耳贡、塞壬', '水', '坎伯兰星的水面、浅水区、深海区'], ppAsh: ['庞贝星', '赫菲斯托、费尔茅斯、冲锋火鸡', '火', '庞贝星的熔岩原、饮火城'], ltOrb: ['莱汀陨石带', '雷公、法拉第', '电', '莱汀陨石带'], whFrost: ['白之星', '霜冻之冠', '冰', '白之星'] };
   var SPEC_EWK = { floraJade: '草', kbDrop: '水', ppAsh: '火', ltOrb: '电', whFrost: '冰' };
   var ITEM_INFO = {
     // 战斗道具
@@ -918,7 +918,7 @@
     e_pluto: ['帕努托尔的精元。', '放进神农架 · 精灵保育仓，孵化 12 小时后诞生一只帕努。', '先驱之塔的代币商店（3,000 先驱代币 + 1 颗死神代币）。'],
     e_odo: ['从深海里带回来的一团精元。', '放进神农架 · 精灵保育仓，孵化 8 小时后诞生一只奥多。', '首次击败简单难度的BOSS「奥多亚克」获得。'],
     e_leiming: ['雷明灯的精元。', '放进神农架 · 精灵保育仓，孵化 8 小时后诞生一只雷明灯，有 10% 的概率是异色。', '明明代币抽奖：第 10、30、50、70……个奖池里各有 1 个。'],
-    m_hfhorn: ['赫菲斯一系身上掉下来的角片，还带着一点余温。', '60 片在黄石 · 冶炼坊合成「奇声号角」。', '在庞贝星击败野生的赫菲斯一系，每只掉落 3–6 片；航行日志的「冥岛的歌声」每天可以领 12–15 片。'],
+    m_hfhorn: ['赫菲一系身上掉下来的角片，还带着一点余温。', '60 片在黄石 · 冶炼坊合成「奇声号角」。', '在庞贝星击败野生的赫菲一系，每只掉落 3–6 片；航行日志的「冥岛的歌声」每天可以领 12–15 片。'],
     m_horn: ['用赫菲角片做成的号角，吹起来声音很奇怪。', '在坎伯兰星 · 水面的「冥岛」吹响，会引来一只可以捕捉的塞米；和它进入战斗时号角就会用掉。', '黄石 · 冶炼坊用赫菲角片 ×60 合成。'],
     m_mcry: ['凝着马亚尔星系各处能量的晶体。', '在黄石 · 冶炼坊的「特产互换」里，每 10 个换成 10 个任意一种星球特产（芙罗拉玉、不化水滴、火山灰烬、闪电球体、永久冻土）。', '每个BOSS每档难度首次击败（简单 100、普通 200、困难 400）；BOSS 每周挑战每次掉落；深渊潜底。'],
     m_cu: ['在野外挖到的马亚尔煤炭。', '在荆楚号 · 宜昌的三峡能源核心换成能量（每块 150 能量，每天有上限）。', '芙罗拉星、坎伯兰星野外的矿点，每处每天挖 1 次（要挖矿钻头）。'],
@@ -1360,7 +1360,7 @@
     tiger: { name: '古城防卫部', planet: 'jingchu', dept: '襄阳', chapter: '支线 · 东北来的泰戈尔', side: true, bg: 'bridge_p', d: '古城防卫部来了一只从东北招募的特殊虎系精灵，专门辅助船员训练。读完后开放BOSS「泰戈尔」的挑战。', after: 'board', pos: [30, 70] },
     tiger2: { name: '古城防卫部', planet: 'jingchu', dept: '襄阳', chapter: '支线 · 来东北试试', side: true, bg: 'bridge_p', d: '被你打败的泰戈尔一屁股坐在地上，好像有话要说……读完后开放BOSS「泰戈尔」的普通难度。', after: 'tiger', pos: [84, 72], need: function () { return bossWon('tiger'); }, needText: '击败简单难度的泰戈尔后开放' },
     fl_chal: { name: '古城防卫部', planet: 'jingchu', dept: '襄阳', chapter: '支线 · 芙罗拉星挑战', side: true, bg: 'bridge_p', d: '明明教官在芙罗拉星上划出了一条「挑战路线」，一关接一关，每关最多评三颗星。读完后开放芙罗拉星的「挑战」。', after: 'flora1', pos: [66, 56], endText: '「芙罗拉星 · 挑战」已开放：去星际探索 · 芙罗拉星的「挑战」页，从第一关开始。' },
-    fl_chal2: { name: '挑战路线 · 第二关', planet: 'flora', chapter: '支线 · 借来的力量', side: true, bg: 'fl_lake', d: '第二关的入口前，明明教官打来了通讯。', after: 'fl_chal', need: function () { return chalStars('fl1') > 0; }, needText: '通过芙罗拉星挑战第一关', fpart: 'challenge', endText: '现在可以带助战精灵出战了。回到第二关，挑 4 只自己的精灵，再带上明明教官的赫菲托斯试试吧。' },
+    fl_chal2: { name: '挑战路线 · 第二关', planet: 'flora', chapter: '支线 · 借来的力量', side: true, bg: 'fl_lake', d: '第二关的入口前，明明教官打来了通讯。', after: 'fl_chal', need: function () { return chalStars('fl1') > 0; }, needText: '通过芙罗拉星挑战第一关', fpart: 'challenge', endText: '现在可以带助战精灵出战了。回到第二关，挑 4 只自己的精灵，再带上明明教官的赫菲斯试试吧。' },
     medal: { name: '学院部', planet: 'jingchu', dept: '黄冈', chapter: '支线 · 授勋馆', side: true, bg: 'pod_p', d: '听说你从明明教官那里领到了董之马，Bttp 想带你去学院部新布置好的一间展厅看看。读完后开放「授勋馆」。', after: 'mingming', pos: [50, 40] },
     rare: { name: '学院部', planet: 'jingchu', dept: '黄冈', chapter: '支线 · 稀有精灵', side: true, bg: 'pod_p', d: 'Bttp 在黄冈秘鉴里发现了几页几乎空白的记录，想请你帮学院部找一只稀有精灵。', after: 'flora1', pos: [26, 58] },
     hiddenSk: { name: '学院部', planet: 'jingchu', dept: '黄冈', chapter: '支线 · 隐藏技能', side: true, bg: 'pod_p', d: '你的精灵越来越强了。Bttp 说，是时候告诉你「隐藏技能」的事了。', after: 'board', need: function () { return acc.mons.some(function (m) { return m.lv >= 40; }); }, needText: '有一只精灵达到 LV40', pos: [40, 66], endText: '获得了「地球元素」×1000，已放入储存箱。在储存箱或精灵资料里，对你的初始精灵一系使用，就能解锁隐藏技能。' },
@@ -2309,7 +2309,7 @@
       (prog('board').done ? '<button type="button" class="btn primary" data-gocore="1">去三峡能源核心</button>' : '') + '</article>';
   }
   /* ---------- 奇声号角 → 塞米 ----------
-   * 塞壬一系不会自然出现。击败赫菲斯一系掉 3–6 片「赫菲角片」（航行日志每天还能领 12–15 片），60 片在冶炼坊合成「奇声号角」。
+   * 塞壬一系不会自然出现。击败赫菲一系掉 3–6 片「赫菲角片」（航行日志每天还能领 12–15 片），60 片在冶炼坊合成「奇声号角」。
    * 在坎伯兰星 · 水面的「冥岛」场景吹响号角，场景里会来一只可以捕捉的塞米；和它进入战斗时号角用掉（没打就离开，号角还在）。 */
   var HORN = PVE.HORN;
   function hornMonIn(F, si) { return F.scenes[si] && F.scenes[si].slots.some(function (sl) { return sl.mon && sl.mon.horn && !sl.mon.out; }); }
@@ -2340,7 +2340,7 @@
     return '<article class="log-card rice"><span class="tape l"></span><span class="chip log-tag">新活动</span><h3>冥岛的歌声</h3>' +
       '<div class="pick-row"><div class="pick-art rice-art"><img src="' + f.img + '" alt="' + esc(f.name) + '"></div><div class="pick-txt">' +
       '<p>塞米小得像一颗米粒，平时不会出现在野外。不过听到奇怪的号角声，它就会好奇地游过来……</p>' +
-      '<ol class="rice-steps"><li>在<b>庞贝星</b>击败野生的<b>赫菲斯</b>一系，每只掉落 <b>3–6 片赫菲角片</b>；这里每天还能领 <b>12–15 片</b>。</li>' +
+      '<ol class="rice-steps"><li>在<b>庞贝星</b>击败野生的<b>赫菲</b>一系，每只掉落 <b>3–6 片赫菲角片</b>；这里每天还能领 <b>12–15 片</b>。</li>' +
       '<li>到黄石 · <b>冶炼坊</b>，用 <b>60 片赫菲角片</b>合成<b>奇声号角</b>。</li>' +
       '<li>在<b>坎伯兰星 · 水面</b>的「<b>冥岛</b>」吹响号角，会来一只可以捕捉的<b>塞米</b>。和它进入战斗时，号角就会用掉。</li></ol>' +
       '</div></div><p class="hint">你现在有赫菲角片 ' + have + ' 片' + (acc.items.m_horn ? '、奇声号角 ' + acc.items.m_horn + ' 个' : '') + '。塞壬一系的隐藏技能用「不化水滴」解锁。</p>' +
@@ -2796,7 +2796,7 @@
   }
   /* ---------- 星球挑战：从左到右一条链，每个节点是一关，按顺序开放；每关三颗星 ----------
    * 在古城防卫部读完支线「芙罗拉星挑战」后开放。第一次点开第二关时插播支线「借来的力量」，之后可以带助战精灵：
-   *   自己的配队里挑 4 只 + 1 只助战（明明教官的 LV30 赫菲托斯，或好友名片里的助战精灵，服务器接口 /api/helpers）
+   *   自己的配队里挑 4 只 + 1 只助战（明明教官的 LV30 赫菲斯，或好友名片里的助战精灵，服务器接口 /api/helpers）
    * 星级：1 星 = 击败所有敌人；2、3 星看每关的 s2 / s3（nofaint 无精灵倒下、half 结束时全员体力高于一半、super 用过克制对方属性的技能、nostatus 结束时没有异常状态）
    * 存档：acc.chal[关卡 id] = { s: [星1, 星2, 星3], got: 首通时间 } */
   var CHAL = PVE.CHAL;   // 关卡数据和星级判定在 js/engine/pve.js（服务器和浏览器共用，2026-10-25）
@@ -3061,7 +3061,7 @@
     if (b.dataset.tpgo) { ex.planet = 'jingchu'; teleport(b.dataset.tpgo); return true; }
     if (b.dataset.chal != null && b.dataset.chal !== undefined && !b.disabled) {
       var i = +b.dataset.chal; ex.chal = i;
-      // 第一次点开第二关：插播支线「借来的力量」，读完自动选上明明教官的赫菲托斯
+      // 第一次点开第二关：插播支线「借来的力量」，读完自动选上明明教官的赫菲斯
       if (i === 1 && unlocked('fl_chal2') && !prog('fl_chal2').done) { ex.chalHelper = 'mm'; startVN('fl_chal2', 'replay', $('pg-explore'), true); window.scrollTo(0, $('pg-explore').offsetTop - 8); return true; }
       renderExplore(); return true;
     }
@@ -3876,9 +3876,9 @@
   }
   /* 航行日志 · 立绘更新投票（服务器 server/artvote.js 计票；每人最多 5 只，截止前可以改）
    * ART_VOTE：还没有完全换上新立绘的精灵（某一阶还是旧图或占位图）。新立绘换上后从这里删掉即可 */
-  var ART_VOTE = ['dragon', 'squid', 'wind', 'pluto', 'pede', 'tagore', 'faraday', 'frost', 'wild', 'hephaestus', 'inkarm', 'barren', 'mush', 'kaleo', 'siren', 'bone', 'aegis', 'phantom', 'shroom', 'turkey', 'firemouse'];
+  var ART_VOTE = ['dragon', 'squid', 'wind', 'pluto', 'pede', 'tagore', 'faraday', 'frost', 'wild', 'inkarm', 'barren', 'mush', 'kaleo', 'siren', 'bone', 'aegis', 'phantom', 'shroom', 'turkey', 'firemouse'];
   // 已经换上新立绘的形态（其余形态待更新）
-  var ART_NEW = { barren: [1], wind: [0], tagore: [1, 2], faraday: [0], mush: [0], kaleo: [0], shroom: [0], turkey: [0, 1, 2], squid: [0, 1, 2] };
+  var ART_NEW = { hephaestus: [0, 1, 2], barren: [1], wind: [0], tagore: [1, 2], faraday: [0], mush: [0], kaleo: [0], shroom: [0], turkey: [0, 1, 2], squid: [0, 1, 2] };
   var AV_END = Date.UTC(2026, 9, 16, 16, 0, 0);   // 北京时间 10 月 16 日 24:00 截止（服务器也按这个时间）
   var AV = { data: null, picks: null, busy: false, err: '', t: 0 };
   function avOnline() { return !!(window.CLOUD && CLOUD.user && CLOUD.user()); }
@@ -4534,7 +4534,7 @@
     { k: 'b', facts: [['board', '省实验的学生，比你们早一批登上荆楚号，在鄂州港迎接新船员。自称「神」，说到得意处眼镜会发光。'], ['academy', '在学院部管着记录所有精灵的「黄冈秘鉴」。'], ['flora3', '派无人机给地面小队空投了烟雾保护头盔。'], ['flora5', '交给 Vanber 一颗炸弹，结果「困了睡觉就忘了」说。']] },
     { k: 'h', facts: [['xiaogan', '省实验的学生，常驻孝感大厅，介绍模拟对战系统。'], ['flora2', '把精灵翻译器交给了地面小队，只说「以前在别的地方用过差不多的」。'], ['brawl', '说自己以前在很远很远的地方玩过差不多的东西，打了很久很久……被追问时慌忙岔开了话题。']] },
     { k: 'ai', facts: [['board', '荆楚号的舰内系统语音。']] },
-    { k: 'mm', facts: [['mingming', '古城防卫部的教官，给队员们配备机械精灵董之盾。'], ['fl_chal2', '按防卫部「出任务可以向队友借精灵」的老规矩，把自己的 LV30 赫菲托斯借给你助战。']] },
+    { k: 'mm', facts: [['mingming', '古城防卫部的教官，给队员们配备机械精灵董之盾。'], ['fl_chal2', '按防卫部「出任务可以向队友借精灵」的老规矩，把自己的 LV30 赫菲斯借给你助战。']] },
     { k: 'tg', facts: [['tiger', '从东北招募的特殊虎系精灵，常驻古城防卫部，辅助船员们训练。'], ['tiger2', '在东北受过语言训练，一开口就是东北话。']] },
     { k: 'kr', facts: [['flora2', '芙罗拉星草甸上的原住民。被瘴气污染时袭击过小队，瘴气散去后带你们逃到了草甸。戴上翻译器就能听懂它说话。'], ['flora5', '说盐碱地几千年来一直静静地在那里，一次小地震之后才开始冒瘴气。']] },
     { k: 'kl', facts: [['flora3', '在丛林里专门猎杀瘴气精灵的「猎杀者」，不回应翻译器。'], ['flora5', '原本是住在林子最深处的森林守护者。'], ['flora6', '猎杀瘴气精灵的卡莱，是被辰爷用瘴气驯化的。']] },
