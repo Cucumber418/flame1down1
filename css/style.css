@@ -2649,7 +2649,7 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 
 /* 普通命中的轻微抖动（2026-10-25） */
 .field.bshake-s, .bshake-s { animation: bshakeS .22s ease-in-out; }
-@keyframes bshakeS { 0%, 100% { transform: translate(0, 0); } 30% { transform: translate(-3px, 2px); } 60% { transform: translate(3px, -2px); } }
+@keyframes bshakeS { 0%, 100% { transform: translate(0, 0); } 30% { transform: translate(-2px, 1px); } 60% { transform: translate(2px, -1px); } }
 
 /* 物理攻击：用身体撞向对方（2026-10-25） */
 .mon.ram0 img, .mon.ram1 img { animation: bfxRam .42s cubic-bezier(.5,0,.5,1); position: relative; z-index: 5; }

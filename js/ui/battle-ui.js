@@ -838,7 +838,8 @@
   function V(i) { return i ^ PV; }
   /* ---------- 技能特效（2026-10-25）：用简单的 emoji 增强打击感，可以在顶栏「设置」里关掉（只存本设备） ---------- */
   var FX_KEY = 'hs-fx-v1';
-  window.HSFX = { on: function () { try { return localStorage.getItem(FX_KEY) !== '0'; } catch (e) { return true; } }, set: function (v) { try { localStorage.setItem(FX_KEY, v ? '1' : '0'); } catch (e) {} } };
+  window.HSFX = { on: function () { try { return localStorage.getItem(FX_KEY) !== '0'; } catch (e) { return true; } }, set: function (v) { try { localStorage.setItem(FX_KEY, v ? '1' : '0'); } catch (e) {} },
+    shake: function () { try { return localStorage.getItem('hs-shake-v1') !== '0'; } catch (e) { return true; } }, setShake: function (v) { try { localStorage.setItem('hs-shake-v1', v ? '1' : '0'); } catch (e) {} } };   // 普通命中的抖动开关
   var FX_EMO = { 火: '🔥', 水: '💧', 草: '🍃', 电: '⚡', 冰: '❄️', 普通: '👊', 机械: '⚙️', 超能: '🔮', 暗影: '🌑', 光: '✨', 龙: '🐉', 飞行: '🌪️', 远古: '🗿', 地面: '🪨' };
   var fxLastType = null;
   function fxPos(i) { var f = $('field'), m = $('mon' + i); if (!f || !m) return null; var a = f.getBoundingClientRect(), b = (m.querySelector('.face') || m).getBoundingClientRect(); return { x: b.left - a.left + b.width / 2, y: b.top - a.top + b.height / 2 }; }
@@ -924,6 +925,7 @@
   function hitLabel(e) { var s = e.eff > 1 ? '克制' : e.eff > 0 && e.eff < 1 ? '抵抗' : ''; return e.crit ? '暴击' + (s === '克制' ? '且克制' : s === '抵抗' ? '但抵抗' : '') : s; }
   // 2026-10-25：攻击技能命中画面就抖一下，暴击更剧烈（不使用手机震动）
   function shakeField(light) {
+    if (light && !HSFX.shake()) return;   // 设置里关掉了普通命中的抖动（暴击照样抖）
     var f = $('field'); if (f) { f.classList.remove('bshake', 'bshake-s'); restartAnim(f, light ? 'bshake-s' : 'bshake'); }
   }
   function banner(text, type) {

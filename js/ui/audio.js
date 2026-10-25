@@ -164,7 +164,8 @@
       '<label class="snd-row"><input type="checkbox" id="snd-ui"' + (cfg.ui ? ' checked' : '') + '> 界面音乐</label>' +
       '<label class="snd-row snd-vol' + (any ? '' : ' off') + '">音量 <input type="range" id="snd-vol" min="0" max="100" step="5" value="' + cfg.vol + '"' + (any ? '' : ' disabled') + '><output id="snd-out">' + cfg.vol + '</output></label>' +
       '<label class="snd-row">主界面 <select id="snd-uitrack"><option value="new"' + (cfg.uiOld ? '' : ' selected') + '>HMS_JC</option><option value="old"' + (cfg.uiOld ? ' selected' : '') + '>旧版</option></select></label>' +
-      '<b class="set-h">对战</b><label class="snd-row"><input type="checkbox" id="set-fx"' + (fxOn ? ' checked' : '') + '> 技能特效</label>';
+      '<b class="set-h">对战</b><label class="snd-row"><input type="checkbox" id="set-fx"' + (fxOn ? ' checked' : '') + '> 技能特效</label>' +
+      '<label class="snd-row"><input type="checkbox" id="set-shake"' + (window.HSFX && !HSFX.shake() ? '' : ' checked') + '> 普通命中抖动</label>';
   }
   if (btn && menu) {
     drawBtn();
@@ -180,6 +181,7 @@
         return;
       }
       if (e.target.id === 'set-fx') { if (window.HSFX) HSFX.set(e.target.checked); return; }
+      if (e.target.id === 'set-shake') { if (window.HSFX) HSFX.setShake(e.target.checked); return; }
       if (e.target.id !== 'snd-music' && e.target.id !== 'snd-ui') return;
       cfg[e.target.id === 'snd-music' ? 'music' : 'ui'] = e.target.checked; saveCfg(); drawBtn(); drawMenu();
       sync(false, 300);
