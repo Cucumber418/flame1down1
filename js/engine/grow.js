@@ -301,10 +301,10 @@ var GROW = (function () {
   var FORGE = [
     { id: 'cap2', out: { cap2: 1 }, need: { g_sand: 2 } },
     { id: 'cap3', out: { cap3: 1 }, need: { g_core: 4 } },
+    { id: 'pot100', out: { pot100: 1 }, need: { c_herb: 1 } },   // 2026-10-25：hp药水分 100、200 两种
     { id: 'pot200', out: { pot200: 1 }, need: { c_herb: 2 } },
-    { id: 'pp5', out: { pp5: 1 }, need: { c_flower: 2 } },   // PP 药水：越大的越划算（每点 PP 用的花越少）
-    { id: 'pp10', out: { pp10: 1 }, need: { c_flower: 3 } },
-    { id: 'pp15', out: { pp15: 1 }, need: { c_flower: 4 } },
+    { id: 'pp10', out: { pp10: 1 }, need: { c_flower: 3 } },   // PP 药水：只合成 10PP、20PP（大的更划算）
+    { id: 'pp20', out: { pp20: 1 }, need: { c_flower: 5 } },
     { id: 'bowl', out: { c_bowl: 1 }, need: { c_rice: 500 } },
     { id: 'lcEssence', out: { e_leafcat: 1 }, need: { m_lcleaf: 5 } },
     { id: 'formDev', out: { formDev: 1 }, need: { g_core: 6, g_sand: 300 } },

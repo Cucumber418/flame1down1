@@ -100,7 +100,7 @@
     acc.introDone = true;
     if (!(acc.energy >= 20000)) acc.energy = 20000;
     if (!acc.items) acc.items = {};
-    // 只补一次。星砂够做约 50 个加强装置，星核够做 1 个华为装置，药草够做 100 瓶 200血药。
+    // 只补一次。星砂够做约 50 个加强装置，星核够做 1 个华为装置，药草够做 100 瓶 200hp药水。
     if (acc.testKit !== 2) {
       var testStock = {
         cap1: 10, cap2: 10, cap3: 1, pot1: 10, pot2: 10, pot200: 10,
@@ -860,9 +860,9 @@
   var SEEDS = GROW.SEEDS;   // 在 js/engine/grow.js
 
   var CROPS = {
-    c_herb: { name: '药草', d: '太空种植园收获的药草。两份可以在冶炼坊合成一瓶 200血药。' },
+    c_herb: { name: '药草', d: '太空种植园收获的药草。1 份可以在冶炼坊合成一瓶 100hp药水，2 份合成一瓶 200hp药水。' },
     c_rice: { name: '米饭', d: '水稻收获后煮好的米饭，一粒一粒数得清。500 粒可以在冶炼坊盛成一碗饭。' },
-    c_flower: { name: '活力花卉', d: '太空种植园收获的蓝色小花，闻一闻就精神了。可以在冶炼坊炼成 PP 药水：2 朵一瓶 5PP、3 朵一瓶 10PP、4 朵一瓶 15PP。' },
+    c_flower: { name: '活力花卉', d: '太空种植园收获的蓝色小花，闻一闻就精神了。可以在冶炼坊炼成 pp 药水：3 朵一瓶 10PP、5 朵一瓶 20PP。' },
     c_bowl: { name: '一碗饭', d: '满满一碗香喷喷的米饭。拿到庞贝星的熔岩原，放在一个场景里，说不定会引来爱吃米饭的精灵。' }
   };
   var SEED_ORDER = ['s_herb', 's_flower', 's_rice'];
@@ -878,10 +878,12 @@
     cap3: ['华为出品的捕捉装置，从不失手。', '野外对战时使用，必定捕捉成功（占用一回合）。', '黄石 · 冶炼坊用星核 ×4 合成；先驱之塔的代币商店（80 先驱代币）。'],
     pot1: ['一小瓶补药。', '对战中为出战精灵恢复 30% 最大体力（占用一回合）。', '荆门 · 物资仓储的商城（100 能量）；世界任务「林下的蘑菇」。'],
     pot2: ['浓缩过的补药。', '对战中为出战精灵恢复 50% 最大体力（占用一回合）。', '荆门 · 物资仓储的商城（250 能量）。'],
-    pot200: ['用药草熬成的血药。', '对战中为出战精灵恢复 200 点体力（占用一回合）。', '黄石 · 冶炼坊用药草 ×2 合成。'],
-    pp5: ['用活力花卉炼成的蓝色药水。', '对战中为出战精灵的每个技能各恢复 5 点 PP（占用一回合）。', '黄石 · 冶炼坊用活力花卉 ×2 合成。'],
-    pp10: ['用活力花卉炼成的蓝色药水，比 5PP 药水更浓。', '对战中为出战精灵的每个技能各恢复 10 点 PP（占用一回合）。', '黄石 · 冶炼坊用活力花卉 ×3 合成。'],
-    pp15: ['用活力花卉炼成的蓝色药水，三种里最浓的一种。', '对战中为出战精灵的每个技能各恢复 15 点 PP（占用一回合）。', '黄石 · 冶炼坊用活力花卉 ×4 合成。'],
+    pot100: ['用药草熬成的 hp 药水。', '对战中为出战精灵恢复 100 点体力（占用一回合）。', '黄石 · 冶炼坊用药草 ×1 合成。'],
+    pot200: ['用药草熬成的 hp 药水，比 100hp 药水更浓。', '对战中为出战精灵恢复 200 点体力（占用一回合）。', '黄石 · 冶炼坊用药草 ×2 合成。'],
+    pp5: ['用活力花卉炼成的蓝色药水。', '对战中为出战精灵的每个技能各恢复 5 点 PP（占用一回合）。', '已停止合成，手里有的照样能用。'],
+    pp10: ['用活力花卉炼成的 pp 药水。', '对战中为出战精灵的每个技能各恢复 10 点 PP（占用一回合）。', '黄石 · 冶炼坊用活力花卉 ×3 合成。'],
+    pp20: ['用活力花卉炼成的 pp 药水，比 10PP 药水更浓。', '对战中为出战精灵的每个技能各恢复 20 点 PP（占用一回合）。', '黄石 · 冶炼坊用活力花卉 ×5 合成。'],
+    pp15: ['用活力花卉炼成的蓝色药水。', '对战中为出战精灵的每个技能各恢复 15 点 PP（占用一回合）。', '已停止合成，手里有的照样能用。'],
     // 精灵培养
     ivReroll: ['一管调配精灵天赋的合剂。', '用在任意一只精灵身上：六项天赋（0~31）全部重新随机，可能更高也可能更低。', '竞技代币商店（200 竞技代币）；先驱之塔的代币商店（400 先驱代币）。'],
     ivMoon: ['小月亮专用的天赋药剂。', '只能用在小月亮一系：六项天赋重新随机，每项掷两次取较高的一次。', '竞技代币商店（100 竞技代币）。'],
@@ -909,8 +911,8 @@
     s_herb: ['绿色的药草籽。', '在恩施 · 太空种植园种下，8 小时后收获药草 ×50；收获时有 20% 的概率掉落 1 颗药草种子。', '恩施 · 生态舱的种子商店（100 能量）；第一次在芙罗拉星的丛林或草甸采集送 4 颗；支线「伟大的种植园」。'],
     s_flower: ['蓝色的花籽。', '在恩施 · 太空种植园种下，8 小时后收获活力花卉 ×50；收获时有 20% 的概率掉落 1 颗活力花种子。', '恩施 · 生态舱的种子商店（100 能量）。'],
     s_rice: ['芙罗拉星野外的稻种。', '在恩施 · 太空种植园种下，12 小时后收获米饭 ×250，种子会退回来。', '在芙罗拉星击败野生精灵时有 10% 的概率掉落。'],
-    c_herb: ['太空种植园收获的药草。', '黄石 · 冶炼坊用 2 份合成一瓶 200血药。', '在太空种植园种药草种子收获。'],
-    c_flower: ['太空种植园收获的蓝色小花，闻一闻就精神了。', '黄石 · 冶炼坊炼成 PP 药水：2 朵一瓶 5PP、3 朵一瓶 10PP、4 朵一瓶 15PP，越大的越划算。', '在太空种植园种活力花种子收获。'],
+    c_herb: ['太空种植园收获的药草。', '黄石 · 冶炼坊用 1 份合成 100hp药水、2 份合成 200hp药水。', '在太空种植园种药草种子收获。'],
+    c_flower: ['太空种植园收获的蓝色小花，闻一闻就精神了。', '黄石 · 冶炼坊炼成 pp 药水：3 朵一瓶 10PP、5 朵一瓶 20PP，大的更划算。', '在太空种植园种活力花种子收获。'],
     c_rice: ['水稻收获后煮好的米饭，一粒一粒数得清。', '黄石 · 冶炼坊用 500 粒盛成一碗饭。', '在太空种植园种水稻种子收获。'],
     c_bowl: ['满满一碗香喷喷的米饭。', '进入庞贝星 · 熔岩原，在想放的场景里点「放下一碗饭」。之后这个场景刷新精灵时有 2% 的概率是稀有的米饭火鸡；捕捉或击败它之后，这碗饭就被吃掉了。', '黄石 · 冶炼坊用米饭 ×500 合成。'],
     m_lcleaf: ['旅行精灵叶子喵身上掉下来的叶片，还带着一点光。', '每 2 片让叶子喵一系领悟一个隐藏技能；5 片可以在黄石 · 冶炼坊合成叶子喵的精元。', '击败旅行精灵叶子喵时有 50% 的概率掉落。'],
@@ -987,7 +989,7 @@
     var evt = MAT_ORDER.filter(function (k) { return listed.indexOf(k) < 0; });
     return [
       { id: 'mon', n: '精灵培养', hint: '直接用在精灵身上。也可以在精灵背包、仓库里点开精灵，在资料里使用。', subs: [['特产 · 隐藏技能与等级上限', byKind(['jade'])], ['性格 · 天赋 · 学习力', byKind(['nat', 'iv', 'iv2', 'ev', 'evreset'])], ['经验', byKind(['exp'])], ['形态', byKind(['form'])]] },
-      { id: 'battle', n: '战斗道具', hint: '在剧情、野外、BOSS对战的「道具」页使用。', subs: [['捕捉装置', ['cap1', 'cap2', 'cap3']], ['补药', ['pot1', 'pot2', 'pot200']], ['PP 药水', ['pp5', 'pp10', 'pp15']]] },
+      { id: 'battle', n: '战斗道具', hint: '在剧情、野外、BOSS对战的「道具」页使用。', subs: [['捕捉装置', ['cap1', 'cap2', 'cap3']], ['补药', ['pot1', 'pot2', 'pot100', 'pot200']], ['PP 药水', ['pp10', 'pp20', 'pp5', 'pp15']]] },
       { id: 'mat', n: '材料', hint: '拿到黄石 · 冶炼坊合成，或者用在种植园、保育仓。', subs: [['采集物', GATHER_ORDER], ['种子', SEED_ORDER], ['作物', CROP_ORDER], ['精灵素材与精元', listed], ['活动道具', evt]] },
       { id: 'other', n: '其他', hint: '功能道具点开后使用；剧情道具不会消耗。', subs: [['功能道具', ['rename', 'auto'].concat(wk ? ['permit'] : [])], ['剧情道具', Object.keys(KEY_ITEMS)]] }
     ];
@@ -1659,7 +1661,7 @@
       (bg ? '<img src="' + BG[bg] + '" alt="' + d[0] + '">' : '<div class="area-ph"><img src="' + CHARS.ship_icon + '" alt=""><b>' + d[0] + '</b><span>这片区域的具体样子还在建造中</span></div>') +
       mk + (n === '天门' ? hallSpots() : '') + bossSpots(n) +
       (n === '荆门' ? '<button type="button" class="mk shop' + (shopOpen() ? '' : ' locked') + '"' + (shopOpen() ? ' data-shop="1"' : ' disabled') + ' style="left:74%;top:40%"><span class="mk-dot">' + (shopOpen() ? '商' : '锁') + '</span><span class="mk-lab"><b>商城 · 物资兑换</b><small>' + (shopOpen() ? '普通捕捉装置和补药' : '读完「物资仓储」支线后开放') + '</small></span></button>' : '') +
-      (n === '黄石' ? '<button type="button" class="mk shop" data-forge="1" style="left:50%;top:58%"><span class="mk-dot">炼</span><span class="mk-lab"><b>冶炼坊</b><small>合成捕捉装置、200血药等</small></span></button>' : '') +
+      (n === '黄石' ? '<button type="button" class="mk shop" data-forge="1" style="left:50%;top:58%"><span class="mk-dot">炼</span><span class="mk-lab"><b>冶炼坊</b><small>合成捕捉装置、hp药水等</small></span></button>' : '') +
       (n === '咸宁' ? '<button type="button" class="mk shop' + (spaOpen() ? '' : ' locked') + '"' + (spaOpen() ? ' data-spa="1"' : ' disabled') + ' style="left:66%;top:52%"><span class="mk-dot">' + (spaOpen() ? '泉' : '锁') + '</span><span class="mk-lab"><b>温泉疗养</b><small>' + (spaOpen() ? spaSummary() : '读完支线「温泉疗养」后开放') + '</small></span></button>' : '') +
       (n === '恩施' ? '<button type="button" class="mk shop' + (farmOpen() ? '' : ' locked') + '"' + (farmOpen() ? ' data-farm="1"' : ' disabled') + ' style="left:62%;top:58%"><span class="mk-dot">' + (farmOpen() ? '种' : '锁') + '</span><span class="mk-lab"><b>太空种植园</b><small>' + (farmOpen() ? '种药草和活力花，做血药和 PP 药水' : '读完支线「伟大的种植园」后开放') + '</small></span></button>' +
         '<button type="button" class="mk shop' + (farmOpen() ? '' : ' locked') + '"' + (farmOpen() ? ' data-seedshop="1"' : ' disabled') + ' style="left:30%;top:44%"><span class="mk-dot">' + (farmOpen() ? '籽' : '锁') + '</span><span class="mk-lab"><b>种子商店</b><small>' + (farmOpen() ? '药草种子、活力花种子、额外的田' : '读完支线「伟大的种植园」后开放') + '</small></span></button>' : '') +
@@ -1912,7 +1914,7 @@
   function wildKnown(sid) { return owned(sid) ? 'own' : acc.seen && acc.seen[sid] !== undefined ? 'seen' : ''; }
   function invLine() {
     var cap = ['cap1', 'cap2', 'cap3'].map(function (k) { return ITEMS[k].name.replace('精灵捕捉装置', '') + ' ×' + (acc.items[k] || 0); }).join('　');
-    var pot = ['pot1', 'pot2', 'pot200'].map(function (k) { return ITEMS[k].name + ' ×' + (acc.items[k] || 0); }).join('　');
+    var pot = ['pot1', 'pot2', 'pot100', 'pot200'].map(function (k) { return ITEMS[k].name + ' ×' + (acc.items[k] || 0); }).join('　');
     return '<div class="inv"><span><b>捕捉装置</b>　' + cap + '</span><span><b>补药</b>　' + pot + '</span>' +
       (shopOpen() ? '<button type="button" class="btn" data-goshop="1">去物资仓储兑换</button>' : '<span class="hint">在荆楚号 · 荆门 · 物资仓储读完支线后开放商城</span>') + '</div>';
   }
@@ -4891,7 +4893,7 @@
   function goods(k) { return ITEMS[k] || SHOP_X[k]; }
   function renderShop() {
     var grp = [['捕捉装置', ['cap1']], ['体力补药', ['pot1', 'pot2']], ['其他', ['rename']]];
-    $('pg-explore').innerHTML = exHead('荆楚号 · 荆门物资仓储的商城。这里用能量兑换普通捕捉装置、体力补药和强能体力补药。加强捕捉装置、华为捕捉装置和 200血药在黄石 · 冶炼坊合成。') +
+    $('pg-explore').innerHTML = exHead('荆楚号 · 荆门物资仓储的商城。这里用能量兑换普通捕捉装置、体力补药和强能体力补药。加强捕捉装置、华为捕捉装置和 200hp药水在黄石 · 冶炼坊合成。') +
       '<div class="crumb"><button type="button" class="btn ghost" id="ex-area">‹ 返回物资仓储</button><b>物资仓储 · 商城</b></div>' +
       '<div class="shop-bal"><span class="tape l"></span>当前能量 <b>' + fmt(acc.energy) + '</b></div>' +
       grp.map(function (g) {
@@ -5172,7 +5174,7 @@
   }
 
   /* ---------- 冶炼坊：黄石 · 冶炼工坊 ----------
-   * 加强装置吃星砂，华为装置吃星核，200血药吃药草。商城不卖这三样。 */
+   * 加强装置吃星砂，华为装置吃星核，200hp药水吃药草。商城不卖这三样。 */
   var FORGE = GROW.FORGE;   // 配方在 js/engine/grow.js
   var FORGE_Q = GROW.FORGE_Q;
   /* 特产互换（2026-10-19）：芙罗拉玉、不化水滴、火山灰烬、闪电球体、永久冻土之间互换，每 GX_IN 个换 GX_OUT 个
@@ -5238,7 +5240,7 @@
         '<div class="qty"><button type="button" class="btn ghost" data-fq="' + r.id + '|-1" aria-label="减少"' + (q <= 1 ? ' disabled' : '') + '>−</button><span aria-live="polite">' + q + '</span><button type="button" class="btn ghost" data-fq="' + r.id + '|1" aria-label="增加"' + (q >= Math.min(FORGE_Q, Math.max(1, max)) ? ' disabled' : '') + '>+</button></div>' +
         '<button type="button" class="btn primary" data-smelt="' + r.id + '"' + (ok ? '' : ' disabled') + '>' + (ok ? '合成' : '材料不足') + '</button></div></article>';
     }).join('') + gxHTML();
-    $('pg-explore').innerHTML = exHead('星砂合成加强捕捉装置，星核合成华为捕捉装置，药草合成 200血药，活力花卉炼成 PP 药水，米饭盛成一碗饭，叶子喵的叶片凝成精元，星核和星砂还能做形态切换装置，赫菲角片做奇声号角；各星球特产也能在这里互相转换。这些都不在商城出售。') +
+    $('pg-explore').innerHTML = exHead('星砂合成加强捕捉装置，星核合成华为捕捉装置，药草合成 hp药水，活力花卉炼成 pp药水，米饭盛成一碗饭，叶子喵的叶片凝成精元，星核和星砂还能做形态切换装置，赫菲角片做奇声号角；各星球特产也能在这里互相转换。这些都不在商城出售。') +
       '<div class="crumb"><button type="button" class="btn ghost" id="forge-back">‹ 返回冶炼工坊</button><b>黄石 · 冶炼坊</b></div>' +
       stock + '<div class="shop-grid">' + cards + '</div>';
   }
@@ -5283,7 +5285,7 @@
         (ready ? '<p class="hint">成熟了，可以收获「' + itemName(S.crop) + '」×' + S.yield + '，' + seedTxt + '。</p><div class="farm-acts"><button type="button" class="btn primary" data-reap="' + i + '">收获</button></div>'
           : '<p class="hint">还要 <span data-farmleft="' + i + '">' + farmLeftText(p) + '</span>，收获「' + itemName(S.crop) + '」×' + S.yield + '。</p>') + '</article>';
     }).join('');
-    $('pg-explore').innerHTML = exHead('药草种子、活力花种子在生态舱的种子商店用能量买，8 小时成熟：药草 ×50（两份在冶炼坊合成一瓶 200血药），活力花卉 ×50（在冶炼坊炼成 PP 药水）；收获时有 20% 的概率掉落 1 颗种子。水稻种子 12 小时成熟，收获米饭 ×250（500 粒在冶炼坊盛成一碗饭），种子会退回，在芙罗拉星击败野生精灵时偶尔掉落。') +
+    $('pg-explore').innerHTML = exHead('药草种子、活力花种子在生态舱的种子商店用能量买，8 小时成熟：药草 ×50（两份在冶炼坊合成一瓶 200hp药水），活力花卉 ×50（在冶炼坊炼成 PP 药水）；收获时有 20% 的概率掉落 1 颗种子。水稻种子 12 小时成熟，收获米饭 ×250（500 粒在冶炼坊盛成一碗饭），种子会退回，在芙罗拉星击败野生精灵时偶尔掉落。') +
       '<div class="crumb"><button type="button" class="btn ghost" id="farm-back">‹ 返回生态舱</button><b>恩施 · 太空种植园</b><button type="button" class="btn" data-seedshop="1">种子商店</button></div>' +
       stockBar('种子', SEED_ORDER) + stockBar('作物', CROP_ORDER) +
       '<div class="farm-plots">' + plots + '</div>';

@@ -673,13 +673,15 @@ var ITEMS = {
   cap3: { name: '华为精灵捕捉装置', cap: 'sure', d: '必定捕捉成功。在黄石 · 冶炼坊用星核合成。' },
   pot1: { name: '体力补药', price: 100, heal: 0.3, d: '为出战中的精灵恢复 30% 最大体力。' },
   pot2: { name: '强能体力补药', price: 250, heal: 0.5, d: '为出战中的精灵恢复 50% 最大体力。' },
-  pot200: { name: '200血药', heal: 200, flat: true, d: '为出战中的精灵恢复 200 点体力。在黄石 · 冶炼坊用药草合成。' },
+  pot100: { name: '100hp药水', heal: 100, flat: true, d: '为出战中的精灵恢复 100 点体力。在黄石 · 冶炼坊用药草合成。' },   // 2026-10-25
+  pot200: { name: '200hp药水', heal: 200, flat: true, d: '为出战中的精灵恢复 200 点体力。在黄石 · 冶炼坊用药草合成。' },   // 原名 200血药
   // PP 药水（2026-10-25）：出战中的精灵每个技能各恢复几点 PP（不超过上限）。在黄石 · 冶炼坊用活力花卉合成
-  pp5: { name: '5PP药水', pp: 5, d: '为出战中的精灵的每个技能各恢复 5 点 PP。在黄石 · 冶炼坊用活力花卉合成。' },
+  pp5: { name: '5PP药水', pp: 5, d: '为出战中的精灵的每个技能各恢复 5 点 PP。（已停止合成，手里有的照样能用）' },
   pp10: { name: '10PP药水', pp: 10, d: '为出战中的精灵的每个技能各恢复 10 点 PP。在黄石 · 冶炼坊用活力花卉合成。' },
-  pp15: { name: '15PP药水', pp: 15, d: '为出战中的精灵的每个技能各恢复 15 点 PP。在黄石 · 冶炼坊用活力花卉合成。' }
+  pp20: { name: '20PP药水', pp: 20, d: '为出战中的精灵的每个技能各恢复 20 点 PP。在黄石 · 冶炼坊用活力花卉合成。' },   // 2026-10-25：PP 药水只合成 10PP、20PP
+  pp15: { name: '15PP药水', pp: 15, d: '为出战中的精灵的每个技能各恢复 15 点 PP。（已停止合成，手里有的照样能用）' }
 };
-var ITEM_ORDER = ['cap1', 'cap2', 'cap3', 'pot1', 'pot2', 'pot200', 'pp5', 'pp10', 'pp15'];
+var ITEM_ORDER = ['cap1', 'cap2', 'cap3', 'pot1', 'pot2', 'pot100', 'pot200', 'pp10', 'pp20', 'pp5', 'pp15'];
 function ppFull(m) { return !m || m.moves.every(function (x) { return x.pp >= x.max; }); }
 function hasStatus(m) { for (var k in m.st) if (m.st[k] > 0 && ST_DESC[k]) return true; return false; }
 // 捕捉成功率 = 精灵捕捉率 × 装置倍率 × (1 − 剩余体力比例 × 0.5) × (有异常状态 ×1.25)
