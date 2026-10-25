@@ -32,7 +32,7 @@ var SRC = {
   battle: 0, help: 0, cumber: 0, pw: 0, travel: 0, drop: 0, tower: 0, weekly: 0, ewk: 0, mm: 0, gx: 0, forge: 0, farm: 0, brawl: 0, fix: 0, misc: 0
 };
 // 编号里带日期的来源：记录保留 120 天后清掉，账号文件不会越来越大
-var DATED = { daily: 1, rankExp: 1, hornDay: 1, npc: 1, tea: 1, gather: 1, mine: 1 };
+var DATED = { daily: 1, rankExp: 1, hornDay: 1, npc: 1, tea: 1, gather: 1, mine: 1, jade: 1 };
 var KEEP_MS = 120 * 864e5;
 // 单条申报的上限（远高于游戏里任何一次正常奖励，只拦明显造假的）
 var MAX = { exp: 20e6, energy: 3e6, tokens: 2e5, twTok: 1e5, merit: 1e6, meritXp: 1e6, item: 1e5 };
@@ -56,7 +56,7 @@ function addTo(sum, d) { FIELDS.forEach(function (f) { if (d[f]) sum[f] += d[f];
 
 /* ---------- 检查一条申报，返回整理好的数值；不合格返回 null ---------- */
 // 2026-10-24 起由服务器直接发的奖励：浏览器不该再申报，宽限期过后这些来源的申报一律不认
-var SERVER_ONLY = { tower: 1, towerDeath: 1, bossFirst: 1, weekly: 1, ewk: 1, chalFirst: 1, mmFirst: 1, mm: 1, cumber: 1, npc: 1, tea: 1, purge: 1, pw: 1, travel: 1, drop: 1, rankExp: 1, battle: 1 };   // 这些奖励已经改由服务器直接发（server/pve.js），浏览器申报的不认
+var SERVER_ONLY = { tower: 1, towerDeath: 1, bossFirst: 1, weekly: 1, ewk: 1, chalFirst: 1, mmFirst: 1, mm: 1, cumber: 1, npc: 1, tea: 1, purge: 1, pw: 1, travel: 1, drop: 1, rankExp: 1, battle: 1, forge: 1, gx: 1, farm: 1, help: 1, brawl: 1 };   // 这些奖励已经改由服务器直接发（server/pve.js），浏览器申报的不认
 function clean(c) {
   if (!c || typeof c !== 'object' || typeof c.c !== 'string' || c.c.length > 40 || !SRC.hasOwnProperty(c.s)) return null;
   if (SERVER_ONLY[c.s] && Date.now() >= GRACE_UNTIL) return null;
@@ -81,7 +81,7 @@ function clean(c) {
  * 返回 { data: 要保存的存档（enforce 模式下可能改过）, fixed: 修正说明（没改就是空） } */
 // 把塔的进度改回服务器上的（服务器那份没有的字段就删掉）
 // 只由服务器改的字段（「对象.字段」或整个顶层字段）：上传的存档里改了，悄悄改回服务器的
-var OWNED = ['tower.f', 'tower.cp', 'tower.best', 'tower.clears', 'tower.death', 'tower.day', 'bosses', 'permit', 'chal', 'mm.clr', 'mm.wins', 'cumberFt', 'npcWin', 'teaFight', 'purge', 'pwd', 'travel', 'rankExp'];
+var OWNED = ['tower.f', 'tower.cp', 'tower.best', 'tower.clears', 'tower.death', 'tower.day', 'bosses', 'permit', 'chal', 'mm.clr', 'mm.wins', 'cumberFt', 'npcWin', 'teaFight', 'purge', 'pwd', 'travel', 'rankExp', 'farm', 'nursery', 'home.mons', 'brawlExp', 'giftGot'];
 var OWNED_KEYS = ['hs-rank-v1', 'hs-draft-v1'];   // 整个存档项只由服务器改：段位、平衡排位本局阵容（server/pve.js）
 function getP(o, p) { var k = p.split('.'); return k.length === 1 ? o[k[0]] : o[k[0]] && typeof o[k[0]] === 'object' ? o[k[0]][k[1]] : undefined; }
 function ownDiff(A, B) { return OWNED.filter(function (p) { var k = p.split('.'); if (k.length > 1 && (!A[k[0]] || !B[k[0]])) return false; return JSON.stringify(getP(A, p)) !== JSON.stringify(getP(B, p)); }); }
@@ -90,6 +90,15 @@ function twBack(A, B, keys) {
     var k = p.split('.'), src = k.length === 1 ? A : A[k[0]], dst = k.length === 1 ? B : B[k[0]], f = k[k.length - 1];
     if (src[f] === undefined) delete dst[f]; else dst[f] = JSON.parse(JSON.stringify(src[f]));
   });
+}
+function expectOf(src, id) { var E = require('./tx').engine(); return E && E.RW ? E.RW.expect(src, id) : null; }
+// 申报的数额超过表里的：超出的部分算作不认的
+function clip(d, X, bad) {
+  var o = { items: {} }, ex = { items: {} };
+  FIELDS.forEach(function (f) { if (!d[f]) return; var lim = X[f] || 0; o[f] = Math.min(d[f], lim); if (d[f] > lim) ex[f] = d[f] - lim; });
+  for (var k in d.items || {}) { var lim2 = (X.items && X.items[k]) || 0; o.items[k] = Math.min(d.items[k], lim2); if (d.items[k] > lim2) ex.items[k] = d.items[k] - lim2; }
+  addTo(bad, ex);
+  return o;
 }
 function rankOk(oldData, id) {
   var r = +String(id).split(':').pop(), R = null;
@@ -119,7 +128,7 @@ function keyFix(oldData, newData) {
 /* ---------- 精灵数值核对（2026-10-25，第三批） ----------
  * 精灵的等级、经验、天赋、学习力、性格、隐藏技能、异色、等级上限、形态解锁只能由服务器改（对战结算、交易）。
  * 上传的存档里这些变了、或者凭空多了精灵，就是浏览器自己改的。MON_MODE：'observe' 只记录（/status 的 mons），'enforce' 改回服务器的。 */
-var MON_MODE = 'observe';
+var MON_MODE = 'enforce';
 var MON_KEYS = ['sid', 'lv', 'exp', 'iv', 'ev', 'evFree', 'nat', 'hl', 'shiny', 'lvCap', 'fu', 'got'];
 var mstat = { checked: 0, bad: 0, fixed: 0, last: [] };
 function same(x, y) { return JSON.stringify(x === undefined ? null : x) === JSON.stringify(y === undefined ? null : y); }
@@ -135,8 +144,8 @@ function monCheck(A, B) {
     var fix = null;
     MON_KEYS.forEach(function (k) {
       if (same(o[k], m[k])) return;
-      if (k === 'iv' && !E.ACC.ivOk(o.iv) && E.ACC.ivOk(m.iv)) return;   // 天赋系统上线前的精灵：浏览器补的一套
-      if (k === 'nat' && !(o.nat in NATURES()) && (m.nat in NATURES())) return;
+      if (k === 'iv' && !E.ACC.ivOk(o.iv)) { if (E.ACC.ivOk(m.iv) && MON_MODE !== 'enforce') return; o.iv = E.ACC.randIv(Math.random); }   // 天赋系统上线前的精灵：由服务器补一套（不认浏览器补的）
+      if (k === 'nat' && !(o.nat in NATURES())) { if ((m.nat in NATURES()) && MON_MODE !== 'enforce') return; o.nat = E.ACC.randNat(Math.random); }
       if ((k === 'ev' && o.ev == null) || (k === 'evFree' && o.evFree == null)) return;
       if ((k === 'lv' || k === 'exp') && A.expV !== B.expV) return;   // 经验曲线换版时的换算
       if (k === 'hl' && A.hlFix !== 1 && B.hlFix === 1) return;   // 小月亮、骨刃隐藏技能恢复（一次性）
@@ -177,6 +186,7 @@ function monStep(u, oldData, newData, info, now) {
   mstat.fixed++;
   monApply(A, B, r);
   var o2 = {}; for (var k in newData) o2[k] = newData[k]; o2['hs-account-v1'] = JSON.stringify(B);
+  info.sync = true;   // 改过了：把服务器的版本发回浏览器（悄悄换上，免得下次上传又对不上）
   return o2;
 }
 function onUpload(u, list, oldData, newData, info) {
@@ -192,6 +202,9 @@ function onUpload(u, list, oldData, newData, info) {
     if (c && typeof c.c === 'string') { seen[c.c] = 1; u.cids.push(c.c); }
     if (!d) { if (c && c.d) addTo(bad, c.d && typeof c.d === 'object' ? sane(c.d) : {}); notes.push('无效申报 ' + (c && c.s)); return; }
     var id = String(c.i == null ? '' : c.i).slice(0, 80);
+    var X = expectOf(c.s, id);   // 一次性奖励：按 js/engine/rewards.js 的表核对编号和数额（2026-10-25）
+    if (X === false) { addTo(bad, d); notes.push('不认识的编号 ' + c.s + ':' + id); return; }
+    if (X) d = clip(d, X, bad);
     if (c.s === 'rankRw' && !rankOk(oldData, id)) { addTo(bad, d); notes.push('段位不够 ' + id); return; }   // 赛季段位奖励：按服务器记的最高段位核对
     if (c.s === 'chalStar' && !starsOk(oldData, +id)) { addTo(bad, d); notes.push('星数不够 ' + id); return; }   // 挑战累计星数奖励：按服务器记的星数核对
     if (SRC[c.s] === 1) {
@@ -206,7 +219,7 @@ function onUpload(u, list, oldData, newData, info) {
 
   // 核对钱包
   var A = accOf(oldData), B = accOf(newData);
-  if (!A || !B) return { data: newData, fixed: '' };
+  if (!A || !B) return { data: newData, fixed: '', sync: !!info.sync };
   var a = wallet(A), b = wallet(B), over = [];
   // 上限 lim = 上一份 + 认可的申报；超过上限时，改成 min(上传值 − 不认可的申报, 上限)：既去掉没申报的部分，也扣回被拒的申报
   function chk(f, av, bv, okv, badv) { var lim = av + okv; if (bv > lim) { var to = Math.max(0, Math.min(bv - badv, lim)); over.push({ f: f, by: bv - to, to: to }); } }
@@ -216,15 +229,15 @@ function onUpload(u, list, oldData, newData, info) {
   var enforce = MODE === 'enforce' && (info.claims || now >= GRACE_UNTIL);
   // 先驱之塔的进度（层数、存档点、通关次数、死神代币次数、今天的塔内奖励）只由服务器推进（server/pve.js）：上传的存档改不了
   var twFix = enforce ? ownDiff(A, B) : [];
-  if (!over.length && !notes.length && !twFix.length) return { data: newData, fixed: '' };
+  if (!over.length && !notes.length && !twFix.length) return { data: newData, fixed: '', sync: !!info.sync };
   if (over.length) { stat.over++; stat.last.unshift({ t: new Date(now).toISOString(), old: !info.claims, over: over.map(function (x) { return x.f + ' +' + x.by; }) }); stat.last = stat.last.slice(0, 15); }
   if (over.length || notes.length) log({ t: new Date(now).toISOString(), u: u.name, mode: enforce ? 'enforce' : 'observe', oldClient: !info.claims, over: over, notes: notes });
   if (twFix.length && !over.length) {   // 只有服务器管的字段对不上：悄悄改回服务器的（正常情况下是本机跨天重置了今天的计数，不弹窗）
     twBack(A, B, twFix);
     var o2 = {}; for (var kk in newData) o2[kk] = newData[kk]; o2['hs-account-v1'] = JSON.stringify(B);
-    return { data: o2, fixed: '' };
+    return { data: o2, fixed: '', sync: true };
   }
-  if (!enforce || !over.length) return { data: newData, fixed: '' };
+  if (!enforce || !over.length) return { data: newData, fixed: '', sync: !!info.sync };
   stat.fixed++;
   twBack(A, B, twFix);
   // 正式模式：把多出来的改回去

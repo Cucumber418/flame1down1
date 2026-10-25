@@ -121,7 +121,28 @@ function finish(m) {
   var r = m.S.over;
   m.result = r === 'win' ? 0 : r === 'lose' ? 1 : -1;   // 赢的一方；-1 是平局
   if (m.ct) m.ct.res = m.result >= 0 ? m.result : null;   // 平局不计，重打这一局
+  if (m.S.pvp && m.S.pvp.brawl) [0, 1].forEach(function (i) { brawlNote(m.users[i], m.id, m.result < 0 ? 'draw' : m.result === i ? 'win' : 'lose', m.quitSide === i); });
 }
+/* 大乱斗的结果：记下来，等双方浏览器来领奖励（交易 brawlRw，见 js/engine/grow.js）。只放内存，6 小时后作废 */
+var brawlRes = {};
+function brawlNote(user, id, r, none) {
+  if (!user) return;
+  var L = brawlRes[user] || (brawlRes[user] = []), now = Date.now();
+  L.push({ id: String(id), r: r, none: !!none, t: now });
+  brawlRes[user] = L.filter(function (x) { return now - x.t < 6 * 3600e3; }).slice(-20);
+}
+// 中途有人离开：没离开的一方算赢，离开的一方没有奖励
+function leave(m, leaverName) {
+  if (!m.S || !m.S.pvp || !m.S.pvp.brawl || m.phase === 'over') return;
+  m.phase = 'over';
+  [0, 1].forEach(function (i) { var me = m.users[i] === leaverName; brawlNote(m.users[i], m.id, me ? 'lose' : 'win', me); });
+}
+require('./tx').hook('brawl', function (u, id) {
+  var L = brawlRes[u.name] || [], i = -1;
+  L.forEach(function (x, k) { if (x.id === id && !x.claimed) i = k; });
+  if (i < 0) return null;
+  L[i].claimed = true; return { r: L[i].r, none: L[i].none };
+});
 function over(m) { return !m.S || m.phase === 'over'; }
 
-module.exports = { mode: mode, start: start, onMsg: onMsg, stop: stop, over: over, PV: PV, TURN_SEC: TURN_SEC };
+module.exports = { leave: leave, mode: mode, start: start, onMsg: onMsg, stop: stop, over: over, PV: PV, TURN_SEC: TURN_SEC };

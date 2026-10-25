@@ -157,14 +157,15 @@
    * 本地双击打开（没有服务器）时直接在本机结算。 */
   var txBusy = false;
   function txRun(op, args, done, fail) {
-    if (txBusy) return; txBusy = true;
+    if (txBusy) { if (fail) fail(''); return; } txBusy = true;
     var C = window.CLOUD, p = C && C.tx ? C.tx(op, args) : Promise.resolve({ local: true });
     p.then(function (r) {
       txBusy = false;
       if (!r.local && !r.ok) { if (fail) fail(r.err || '没能完成'); else if (r.err) toast(r.err); return; }
       var data = {}; try { data['hs-rank-v1'] = localStorage.getItem('hs-rank-v1'); } catch (e) {}
       var user = C && C.user ? C.user() : null;
-      var res = TX.run(acc, op, args, r.local ? { now: Date.now(), rand: Math.random, data: data, user: user } : { now: r.now, rand: TX.replay(r.rolls), data: data, user: user });
+      var ext = r.ext || {}, fetch = function (k) { return r.local ? null : ext[k] === undefined ? null : ext[k]; };   // 服务器查到的资料（助战次数、大乱斗结果等）
+      var res = TX.run(acc, op, args, r.local ? { now: Date.now(), rand: Math.random, data: data, user: user, fetch: fetch } : { now: r.now, rand: TX.replay(r.rolls), data: data, user: user, fetch: fetch });
       if (!res.ok) {
         if (r.local) { if (fail) fail(res.err); else toast(res.err); return; }
         // 服务器结算成功、本机却算不出来：本机存档和服务器对不上，以服务器为准
@@ -407,20 +408,9 @@
   });
   /* 称号奖励：每获得一个称号，得累积经验（进经验背包）、能量和功勋点（数额暂定）
    * 功勋点：存档 acc.merit（余额，暂时还没有用途）；每得 1 功勋点同时得 1 功勋经验 acc.meritXp，攒够了在授勋馆晋升军衔 */
-  var TITLE_RW = {
-    trainee: [1000, 200, 10], senior: [3000, 500, 30], elite: [8000, 1000, 60], master: [15000, 2000, 100], scholar: [30000, 5000, 200],
-    collector: [2000, 300, 20], rare5: [8000, 1000, 60], rare15: [30000, 5000, 200], purifier: [5000, 800, 50], force: [10000, 1500, 80], guardian: [10000, 1500, 80],
-    one25: [1000, 200, 10], one50: [3000, 400, 20], one75: [6000, 800, 40], one100: [10000, 1500, 80],
-    all25: [3000, 400, 20], all50: [8000, 1000, 50], all75: [15000, 2000, 100], all100: [30000, 4000, 200]
-  };
-  var TYPE_RW = { 1: [1000, 200, 10], 3: [1000, 200, 10], 5: [8000, 1000, 50], 6: [3000, 500, 25], 10: [8000, 1000, 50], 15: [20000, 3000, 100] };
-  function titleRw(T) {
-    var r = TITLE_RW[T.id];
-    if (!r && T.season) { var k = +T.id.split('-')[1]; r = [500 * k, 100 * k, 5 * k]; }
-    if (!r && T.grp === 'type') r = T.tier === 'x' ? [15000, 2000, 80] : T.tier === 't' && T.need === 3 ? [3000, 500, 25] : T.tier === 't' && T.need === 5 ? [8000, 1000, 50] : T.tier === 't' && T.need === 10 ? [20000, 3000, 100] : TYPE_RW[T.need];
-    r = r || [1000, 200, 10];
-    return { exp: r[0], energy: r[1], merit: r[2] };
-  }
+  var TITLE_RW = RW.TITLE_RW;
+  var TYPE_RW = RW.TYPE_RW;
+  function titleRw(T) { return RW.titleRw(T); }   // 规则在 js/engine/rewards.js
   function rwText(r) { return '累积经验 ×' + fmt(r.exp) + '、能量 ×' + fmt(r.energy) + '、功勋点 ×' + fmt(r.merit); }
   function giveMerit(n) { earn('misc', 'merit', { merit: n, meritXp: n }); }   // 旧写法：新代码请直接用 earn，写明来源
   // 军衔：功勋经验攒够当前军衔的晋升所需，就能在授勋馆晋升（消耗功勋经验）。数额暂定
@@ -885,10 +875,8 @@
   MATS.m_fe = { name: '马亚尔铁矿', d: '在芙罗拉星、坎伯兰星的野外挖到的铁矿石，比煤炭更值钱。可以在荆楚号 · 宜昌的三峡能源核心换成能量。' };
   var MAT_ORDER = ['m_lcleaf', 'e_leafcat', 'e_pluto', 'e_odo', 'm_hfhorn', 'm_horn', 'm_mcry', 'm_cu', 'm_fe', 'ctTicket'];
   // 太空种植园只种药草。min 是成熟分钟，yield 是收获数量。收获时退回种子。
-  var SEEDS = {
-    s_herb: { name: '药草种子', d: '生态舱里种的药草籽。种下去要 8 小时，收获时这颗种子会退回来。', crop: 'c_herb', min: 480, yield: 50 },
-    s_rice: { name: '水稻种子', d: '在芙罗拉星击败野生精灵时偶尔掉落的稻种。种下去要 12 小时，收获一大把米饭，种子会退回来。', crop: 'c_rice', min: 720, yield: 250 }
-  };
+  var SEEDS = GROW.SEEDS;   // 在 js/engine/grow.js
+
   var CROPS = {
     c_herb: { name: '药草', d: '太空种植园收获的药草。两份可以在冶炼坊合成一瓶 200血药。' },
     c_rice: { name: '米饭', d: '水稻收获后煮好的米饭，一粒一粒数得清。500 粒可以在冶炼坊盛成一碗饭。' },
@@ -1298,40 +1286,41 @@
     潜江: ['食堂', '餐饮补给'], 仙桃: ['体能馆', '体能与失重训练']
   };
   var SITES = {
-    school: { name: '省实验中学', planet: 'earth', chapter: '第一段 · 月考之后', bg: 'gate', d: '月考成绩公布后的第二天，张老师有一件「天大的好事」要宣布，还要为你们挑选伙伴精灵。', reward: { exp: 1000, energy: 500 } },
-    river: { name: '武昌江边', planet: 'earth', chapter: '第二段 · 江边出发', bg: 'qiyi', d: '出发的日子到了。从起义门到彭刘杨路，再坐大巴驶过长江大桥，一路向西。', after: 'school', reward: { exp: 1000, energy: 500 } },
-    jiuquan: { name: '酒泉卫星发射中心', planet: 'earth', chapter: '第三段 · 准备发射', bg: 'jslc', d: '穿过戈壁和沙丘，大巴终于抵达发射中心。在这里，你们遇见了要去太空寻找奶弟的女孩 Threego。', after: 'river', reward: { exp: 1000, energy: 500 } },
-    board: { name: '鄂州港', planet: 'jingchu', dept: '鄂州', chapter: '第四段 · 登上荆楚号', bg: 'orbit', d: '火箭升空，进入轨道。等在那里的，是一艘和湖北省地图一模一样的飞船。', after: 'jiuquan', pos: [22, 70], reward: { exp: 1000, energy: 500 } },
-    academy: { name: '学院部', planet: 'jingchu', dept: '黄冈', chapter: '支线 · 黄冈秘鉴', side: true, bg: 'pod_p', d: '学院部里收着一本记录所有精灵的「黄冈秘鉴」。读完后开放「黄冈秘鉴」。', after: 'board', pos: [50, 72], reward: { exp: 0, energy: 100 } },
-    flora1: { name: '盐碱地', planet: 'flora', chapter: '第五段 · 降临芙罗拉', bg: 'fl_salt', d: '第一支地面探索小队降落在了芙罗拉星。可着陆舱偏离了坐标，落进了弥漫着瘴气的盐碱地……', after: 'board', reward: { exp: 1000, energy: 500 } },
-    flora2: { name: '卡罗聚集地', planet: 'flora', chapter: '第六段 · 卡罗的不安', bg: 'fl_meadow', d: '小队回到草甸上的卡罗聚集地，却听说有不知名的生物在猎杀被瘴气侵染的精灵。', after: 'flora1', reward: { exp: 1500, energy: 600, items: { trans: 1 } } },
-    flora3: { name: '丛林边缘', planet: 'flora', chapter: '第七段 · 猎杀者', bg: 'fl_maple', d: '野外的精灵们「败下阵来」的消息传开了。傍晚，丛林边缘的草丛里，三人和卡罗屏住了呼吸……', after: 'flora2', need: function () { return spareN() >= SPARE_N; }, needText: '在芙罗拉星的丛林或草甸「假装击败」' + 5 + ' 只野生精灵，引出猎杀者', reward: { exp: 2000, energy: 800, items: { helmet: 1 } } },
-    flora4: { name: '丛林深处', planet: 'flora', chapter: '第八段 · 深入丛林', bg: 'fl_maple', d: 'Threego 循着点点的气味独自闯进了丛林，Vanber 又被头盔砸晕了。天快黑了，只能一个人进去找她……', after: 'flora3', need: function () { return prog('travelcat').done; }, needText: '完成世界任务「旅行猫」', reward: { exp: 2000, energy: 800 } },
-    flora5: { name: '山毛榉林', planet: 'flora', chapter: '第九段 · 林中的猎手', bg: 'fl_beech', d: 'Vanber 也追进了丛林。大家会合之后，那些训练有素的卡莱，又出现了……', after: 'flora4', reward: { exp: 2000, energy: 800 } },
-    flora6: { name: '盐碱地边缘', planet: 'flora', chapter: '第十段 · 瘴气之源', bg: 'fl_salt', d: '一行人决定前往盐碱地，去看看瘴气真正的源头。注意：读完这一段后，芙罗拉星的野外环境会永久改变，野生精灵将无法捕捉。', after: 'flora5', reward: { exp: 3000, energy: 1200 } },
+    school: { name: '省实验中学', planet: 'earth', chapter: '第一段 · 月考之后', bg: 'gate', d: '月考成绩公布后的第二天，张老师有一件「天大的好事」要宣布，还要为你们挑选伙伴精灵。' },
+    river: { name: '武昌江边', planet: 'earth', chapter: '第二段 · 江边出发', bg: 'qiyi', d: '出发的日子到了。从起义门到彭刘杨路，再坐大巴驶过长江大桥，一路向西。', after: 'school' },
+    jiuquan: { name: '酒泉卫星发射中心', planet: 'earth', chapter: '第三段 · 准备发射', bg: 'jslc', d: '穿过戈壁和沙丘，大巴终于抵达发射中心。在这里，你们遇见了要去太空寻找奶弟的女孩 Threego。', after: 'river' },
+    board: { name: '鄂州港', planet: 'jingchu', dept: '鄂州', chapter: '第四段 · 登上荆楚号', bg: 'orbit', d: '火箭升空，进入轨道。等在那里的，是一艘和湖北省地图一模一样的飞船。', after: 'jiuquan', pos: [22, 70] },
+    academy: { name: '学院部', planet: 'jingchu', dept: '黄冈', chapter: '支线 · 黄冈秘鉴', side: true, bg: 'pod_p', d: '学院部里收着一本记录所有精灵的「黄冈秘鉴」。读完后开放「黄冈秘鉴」。', after: 'board', pos: [50, 72] },
+    flora1: { name: '盐碱地', planet: 'flora', chapter: '第五段 · 降临芙罗拉', bg: 'fl_salt', d: '第一支地面探索小队降落在了芙罗拉星。可着陆舱偏离了坐标，落进了弥漫着瘴气的盐碱地……', after: 'board' },
+    flora2: { name: '卡罗聚集地', planet: 'flora', chapter: '第六段 · 卡罗的不安', bg: 'fl_meadow', d: '小队回到草甸上的卡罗聚集地，却听说有不知名的生物在猎杀被瘴气侵染的精灵。', after: 'flora1' },
+    flora3: { name: '丛林边缘', planet: 'flora', chapter: '第七段 · 猎杀者', bg: 'fl_maple', d: '野外的精灵们「败下阵来」的消息传开了。傍晚，丛林边缘的草丛里，三人和卡罗屏住了呼吸……', after: 'flora2', need: function () { return spareN() >= SPARE_N; }, needText: '在芙罗拉星的丛林或草甸「假装击败」' + 5 + ' 只野生精灵，引出猎杀者' },
+    flora4: { name: '丛林深处', planet: 'flora', chapter: '第八段 · 深入丛林', bg: 'fl_maple', d: 'Threego 循着点点的气味独自闯进了丛林，Vanber 又被头盔砸晕了。天快黑了，只能一个人进去找她……', after: 'flora3', need: function () { return prog('travelcat').done; }, needText: '完成世界任务「旅行猫」' },
+    flora5: { name: '山毛榉林', planet: 'flora', chapter: '第九段 · 林中的猎手', bg: 'fl_beech', d: 'Vanber 也追进了丛林。大家会合之后，那些训练有素的卡莱，又出现了……', after: 'flora4' },
+    flora6: { name: '盐碱地边缘', planet: 'flora', chapter: '第十段 · 瘴气之源', bg: 'fl_salt', d: '一行人决定前往盐碱地，去看看瘴气真正的源头。注意：读完这一段后，芙罗拉星的野外环境会永久改变，野生精灵将无法捕捉。', after: 'flora5' },
     // 2026-10-24：全服瘴气驱逐战击破 500 只后开放；读完后芙罗拉星恢复（瘴气精灵移到「瘴气污染的记录」里），第一章完结
-    flora7: { name: '盐碱地之下', planet: 'flora', chapter: '第十一段 · 盐碱地之下', bg: 'fl_salt', d: '芙罗拉星上的大多数精灵依然被瘴气缠着。必须从根源上解决问题——这一次，一行人决定真正踏上盐碱地。', after: 'flora6', reward: { exp: 5000, energy: 2000 },
+    flora7: { name: '盐碱地之下', planet: 'flora', chapter: '第十一段 · 盐碱地之下', bg: 'fl_salt', d: '芙罗拉星上的大多数精灵依然被瘴气缠着。必须从根源上解决问题——这一次，一行人决定真正踏上盐碱地。', after: 'flora6',
       need: function () { pwFetch(); return !!(PW.data && PW.data.total >= 500); }, get needText() { return '全服「瘴气驱逐战」击破数达到 500（目前 ' + (PW.data ? PW.data.total : '?') + ' 只）'; } },
-    mmTrial: { name: '古城防卫部', planet: 'jingchu', dept: '襄阳', chapter: '活动任务 · 明明教官的试炼', side: true, event: true, bg: 'bridge_p', d: '明明教官说，要带大家去一个「好地方」。读完后开放活动「明明教官的试炼」。', after: 'flora7', pos: [42, 60], reward: { items: { mmTok: 500 } } },   // 2026-10-24：读完即完成任务，送 500 明明代币
+    mmTrial: { name: '古城防卫部', planet: 'jingchu', dept: '襄阳', chapter: '活动任务 · 明明教官的试炼', side: true, event: true, bg: 'bridge_p', d: '明明教官说，要带大家去一个「好地方」。读完后开放活动「明明教官的试炼」。', after: 'flora7', pos: [42, 60] },   // 2026-10-24：读完即完成任务，送 500 明明代币
     tea: { name: '陆羽茶室', planet: 'jingchu', dept: '天门', chapter: '支线 · 陆羽茶室', side: true, bg: 'tea_p', d: '从芙罗拉星回来后，舰上要给第一支地面小队分配休息舱。读完后开放你自己的「茶室」（家园）。', after: 'flora1', pos: [50, 84] },
-    mingming: { name: '古城防卫部', planet: 'jingchu', dept: '襄阳', chapter: '支线 · 明明教官的礼物', side: true, bg: 'bridge_p', d: '古城防卫部的明明教官听说你在黄冈秘鉴里点亮了十类精灵，想见见你。', after: 'board', pos: [48, 82], need: function () { return litCount() >= 10; }, needText: '在黄冈秘鉴中点亮 10 类精灵后开放', reward: { gift: [{ sid: 'aegis', lv: 10 }] } },
+    mingming: { name: '古城防卫部', planet: 'jingchu', dept: '襄阳', chapter: '支线 · 明明教官的礼物', side: true, bg: 'bridge_p', d: '古城防卫部的明明教官听说你在黄冈秘鉴里点亮了十类精灵，想见见你。', after: 'board', pos: [48, 82], need: function () { return litCount() >= 10; }, needText: '在黄冈秘鉴中点亮 10 类精灵后开放' },
     tiger: { name: '古城防卫部', planet: 'jingchu', dept: '襄阳', chapter: '支线 · 东北来的泰戈尔', side: true, bg: 'bridge_p', d: '古城防卫部来了一只从东北招募的特殊虎系精灵，专门辅助船员训练。读完后开放BOSS「泰戈尔」的挑战。', after: 'board', pos: [30, 70] },
     tiger2: { name: '古城防卫部', planet: 'jingchu', dept: '襄阳', chapter: '支线 · 来东北试试', side: true, bg: 'bridge_p', d: '被你打败的泰戈尔一屁股坐在地上，好像有话要说……读完后开放BOSS「泰戈尔」的普通难度。', after: 'tiger', pos: [84, 72], need: function () { return bossWon('tiger'); }, needText: '击败简单难度的泰戈尔后开放' },
-    fl_chal: { name: '古城防卫部', planet: 'jingchu', dept: '襄阳', chapter: '支线 · 芙罗拉星挑战', side: true, bg: 'bridge_p', d: '明明教官在芙罗拉星上划出了一条「挑战路线」，一关接一关，每关最多评三颗星。读完后开放芙罗拉星的「挑战」。', after: 'flora1', pos: [66, 56], reward: { energy: 300 }, endText: '「芙罗拉星 · 挑战」已开放：去星际探索 · 芙罗拉星的「挑战」页，从第一关开始。' },
+    fl_chal: { name: '古城防卫部', planet: 'jingchu', dept: '襄阳', chapter: '支线 · 芙罗拉星挑战', side: true, bg: 'bridge_p', d: '明明教官在芙罗拉星上划出了一条「挑战路线」，一关接一关，每关最多评三颗星。读完后开放芙罗拉星的「挑战」。', after: 'flora1', pos: [66, 56], endText: '「芙罗拉星 · 挑战」已开放：去星际探索 · 芙罗拉星的「挑战」页，从第一关开始。' },
     fl_chal2: { name: '挑战路线 · 第二关', planet: 'flora', chapter: '支线 · 借来的力量', side: true, bg: 'fl_lake', d: '第二关的入口前，明明教官打来了通讯。', after: 'fl_chal', need: function () { return chalStars('fl1') > 0; }, needText: '通过芙罗拉星挑战第一关', fpart: 'challenge', endText: '现在可以带助战精灵出战了。回到第二关，挑 4 只自己的精灵，再带上明明教官的赫菲托斯试试吧。' },
     medal: { name: '学院部', planet: 'jingchu', dept: '黄冈', chapter: '支线 · 授勋馆', side: true, bg: 'pod_p', d: '听说你从明明教官那里领到了董之马，Bttp 想带你去学院部新布置好的一间展厅看看。读完后开放「授勋馆」。', after: 'mingming', pos: [50, 40] },
     rare: { name: '学院部', planet: 'jingchu', dept: '黄冈', chapter: '支线 · 稀有精灵', side: true, bg: 'pod_p', d: 'Bttp 在黄冈秘鉴里发现了几页几乎空白的记录，想请你帮学院部找一只稀有精灵。', after: 'flora1', pos: [26, 58] },
-    hiddenSk: { name: '学院部', planet: 'jingchu', dept: '黄冈', chapter: '支线 · 隐藏技能', side: true, bg: 'pod_p', d: '你的精灵越来越强了。Bttp 说，是时候告诉你「隐藏技能」的事了。', after: 'board', need: function () { return acc.mons.some(function (m) { return m.lv >= 40; }); }, needText: '有一只精灵达到 LV40', pos: [40, 66], reward: { items: { earthShard: 1000 } }, endText: '获得了「地球元素」×1000，已放入储存箱。在储存箱或精灵资料里，对你的初始精灵一系使用，就能解锁隐藏技能。' },
-    rare_r: { name: '学院部', planet: 'jingchu', dept: '黄冈', chapter: '支线 · 稀有精灵（汇报）', side: true, bg: 'pod_p', d: '把捕捉到的稀有精灵带回学院部，向 Bttp 汇报。', after: 'rare', pos: [74, 58], need: function () { return !!rareOwned(); }, needText: '捕捉一种稀有精灵后来汇报', reward: { title: 'collector' } },
-    storage: { name: '物资仓储', planet: 'jingchu', dept: '荆门', chapter: '支线 · 物资仓储', side: true, bg: 'storage_p', d: '荆楚号即将抵达芙罗拉星，新船员要去物资仓储领取探索物资。读完后，物资仓储里的「商城」开放。', after: 'board', pos: [50, 62], reward: { exp: 0, energy: 300, items: { cap1: 10 } } },
+    hiddenSk: { name: '学院部', planet: 'jingchu', dept: '黄冈', chapter: '支线 · 隐藏技能', side: true, bg: 'pod_p', d: '你的精灵越来越强了。Bttp 说，是时候告诉你「隐藏技能」的事了。', after: 'board', need: function () { return acc.mons.some(function (m) { return m.lv >= 40; }); }, needText: '有一只精灵达到 LV40', pos: [40, 66], endText: '获得了「地球元素」×1000，已放入储存箱。在储存箱或精灵资料里，对你的初始精灵一系使用，就能解锁隐藏技能。' },
+    rare_r: { name: '学院部', planet: 'jingchu', dept: '黄冈', chapter: '支线 · 稀有精灵（汇报）', side: true, bg: 'pod_p', d: '把捕捉到的稀有精灵带回学院部，向 Bttp 汇报。', after: 'rare', pos: [74, 58], need: function () { return !!rareOwned(); }, needText: '捕捉一种稀有精灵后来汇报' },
+    storage: { name: '物资仓储', planet: 'jingchu', dept: '荆门', chapter: '支线 · 物资仓储', side: true, bg: 'storage_p', d: '荆楚号即将抵达芙罗拉星，新船员要去物资仓储领取探索物资。读完后，物资仓储里的「商城」开放。', after: 'board', pos: [50, 62] },
     brawl: { name: '孝感大厅', planet: 'jingchu', dept: '孝感', chapter: '支线 · 精灵大乱斗', side: true, bg: 'xiaogan', d: 'Dr.黄 在孝感大厅里鼓捣着一台新搬来的机器，听说你身边已经有 3 只精灵了，想让你试试。读完后开放「精灵大乱斗」。', after: 'xiaogan', pos: [76, 56], need: function () { return acc.mons.length >= 3; }, needText: '持有 3 只精灵后开放' },
     draft: { name: '孝感大厅', planet: 'jingchu', dept: '孝感', chapter: '支线 · 竞技征召', side: true, bg: 'xiaogan', d: 'Dr.黄 听说你已经收集了 10 种精灵，神神秘秘地说要教你一种「真正的切磋」。', after: 'xiaogan', pos: [24, 50], need: function () { return speciesN() >= 10; }, needText: '收集 10 种精灵后开放' },
-    core: { name: '三峡能源核心', planet: 'jingchu', dept: '宜昌', chapter: '支线 · 三峡能源核心', side: true, bg: 'energy_core', spot: '三峡能源核心', d: '宜昌的能源核心主人日透骨消，好像有事要拜托新船员。读完后开放「星球采矿」：领挖矿钻头、挖矿、换能量。', after: 'board', pos: [32, 62], reward: { energy: 300 } },
+    core: { name: '三峡能源核心', planet: 'jingchu', dept: '宜昌', chapter: '支线 · 三峡能源核心', side: true, bg: 'energy_core', spot: '三峡能源核心', d: '宜昌的能源核心主人日透骨消，好像有事要拜托新船员。读完后开放「星球采矿」：领挖矿钻头、挖矿、换能量。', after: 'board', pos: [32, 62] },
     spa: { name: '温泉生活区', planet: 'jingchu', dept: '咸宁', chapter: '支线 · 温泉疗养', side: true, bg: 'cabin_p', d: 'Vanber 发现荆楚号的咸宁居然藏着一片温泉疗养区，非要拉你去泡一泡。读完后开放「温泉疗养」。', after: 'flora1', pos: [30, 62] },
-    plant: { name: '生态舱', planet: 'jingchu', dept: '恩施', chapter: '支线 · 伟大的种植园', side: true, bg: 'greenhouse_p', d: 'Threego 在地球上最爱种菜，被大家叫作「叶伯伯」。她把荆楚号生态舱的种植业研究了个遍，迫不及待地想带你参观。读完后开放「太空种植园」。', after: 'flora1', pos: [26, 62], reward: { energy: 200, items: { s_herb: 2 } } },
+    plant: { name: '生态舱', planet: 'jingchu', dept: '恩施', chapter: '支线 · 伟大的种植园', side: true, bg: 'greenhouse_p', d: 'Threego 在地球上最爱种菜，被大家叫作「叶伯伯」。她把荆楚号生态舱的种植业研究了个遍，迫不及待地想带你参观。读完后开放「太空种植园」。', after: 'flora1', pos: [26, 62] },
     travelcat: { name: '山毛榉林', planet: 'flora', chapter: '世界任务 · 旅行猫', side: true, bg: 'fl_beech', spot: '林子深处', d: '独自在芙罗拉星做调研的你，听见山毛榉林深处传来一阵打斗声……读完后，旅行精灵叶子喵会开始在各个星球出现。', after: 'flora2' },
-    xiaogan: { name: '孝感大厅', planet: 'jingchu', dept: '孝感', chapter: '支线 · 孝感大厅', side: true, bg: 'xiaogan', d: '舰上切磋对战的地方。听说那里有个奇怪的家伙在等着新船员。读完后开放「竞技对战」。', after: 'board', pos: [50, 66], reward: { exp: 0, energy: 200 } }
+    xiaogan: { name: '孝感大厅', planet: 'jingchu', dept: '孝感', chapter: '支线 · 孝感大厅', side: true, bg: 'xiaogan', d: '舰上切磋对战的地方。听说那里有个奇怪的家伙在等着新船员。读完后开放「竞技对战」。', after: 'board', pos: [50, 66] }
   };
+  Object.keys(RW.STORY).forEach(function (k) { if (SITES[k]) SITES[k].reward = RW.STORY[k]; });   // 奖励数额在 js/engine/rewards.js（服务器按它核对）
   // 已有画面的舰内区域；其余区域先用占位画面
   var AREA_BG = { 宜昌: 'energy_core', 黄冈: 'pod_p', 鄂州: 'hangar_p', 孝感: 'xiaogan', 武汉: 'cockpit_p', 咸宁: 'cabin_p', 仙桃: 'gym_p', 荆门: 'storage_p', 恩施: 'greenhouse_p', 天门: 'teahall', 随州: 'bridge2_p', 襄阳: 'bridge_p' };
   var BG_POS = { qiyi: '50% 42%', desert: '50% 40%', jslc: '50% 38%', street: '50% 55%', bridge: '45% 55%', tower: '50% 55%' };
@@ -1399,9 +1388,10 @@
   /* 主线章节：一个章节的剧情全部读完后，额外发一份章节大奖（每个存档一次，记在 acc.chapters）
    * wip 表示这一章还没写完（未完待续），写完之前不算通关 */
   var CHAPTERS = [
-    { id: 'prologue', n: '序章', d: '从省实验中学出发，一路到登上荆楚号。', sites: ['school', 'river', 'jiuquan', 'board'], reward: { exp: 5000 } },
-    { id: 'ch1', n: '第一章 · 芙罗拉星', d: '降落芙罗拉星，追查瘴气和猎杀者的真相。', sites: ['flora1', 'flora2', 'flora3', 'flora4', 'flora5', 'flora6', 'flora7'], reward: { exp: 20000, energy: 3000 } }   // 2026-10-17：茶室音乐「芙罗拉星」移除，章节大奖改为经验和能量
+    { id: 'prologue', n: '序章', d: '从省实验中学出发，一路到登上荆楚号。', sites: ['school', 'river', 'jiuquan', 'board'] },
+    { id: 'ch1', n: '第一章 · 芙罗拉星', d: '降落芙罗拉星，追查瘴气和猎杀者的真相。', sites: ['flora1', 'flora2', 'flora3', 'flora4', 'flora5', 'flora6', 'flora7'] }   // 2026-10-17：茶室音乐「芙罗拉星」移除，章节大奖改为经验和能量
   ];
+  CHAPTERS.forEach(function (x) { x.reward = RW.CHAPTER[x.id] || x.reward; });   // 奖励数额在 js/engine/rewards.js（服务器按它核对）
   function chapterOf(site) { return CHAPTERS.filter(function (C) { return C.sites.indexOf(site) >= 0; })[0] || null; }
   function chapterDone(C) { return !C.wip && C.sites.every(function (id) { return prog(id).done; }); }
   function chapterGot(id) { return !!(acc && acc.chapters && acc.chapters[id]); }
@@ -1978,11 +1968,7 @@
     { x: 18, y: 86 },
     { x: 78, y: 46 }
   ];
-  var GATHER = {
-    forest: { item: 'g_sand', n: 12 }, grass: { item: 'g_sand', n: 12 },
-    kb_surf: { item: 'g_sand', n: 12 }, kb_sea: { item: 'g_sand', n: 12 }, kb_deep: { item: 'g_sand', n: 12 }, pp_lava: { item: 'g_sand', n: 12 }, pp_city: { item: 'g_sand', n: 12 },
-    lt_belt: { item: 'g_sand', n: 12 }, wh_snow: { item: 'g_sand', n: 12 }   // 2026-10-24：星核不再在野外采集到（改为明明教官的试炼首通奖励）
-  };
+  var GATHER = RW.GATHER;
   function gatherRec() {
     var day = dayNum(Date.now());
     if (!acc.gather || acc.gather.day !== day || !acc.gather.got) acc.gather = { day: day, got: {} };
@@ -2186,15 +2172,14 @@
   }
   setInterval(ctPopCheck, 3000);
   /* ---------- 助战回报（2026-10-20）：上线时领取离线期间好友借用自己助战的记录，每次 1000 能量 + 1000 经验 ---------- */
-  var HELP_RW = { energy: 1000, exp: 1000 }, helpClaimed = false, helpBusy = false;
+  var HELP_RW = GROW.HELP_RW, helpClaimed = false, helpBusy = false;
   function helpClaimCheck() {
     if (helpClaimed || helpBusy || !ready() || !bsOnline() || ex.fighting || ex.view === 'vn' || ($('battle') && !$('battle').hidden) || document.querySelector('.soc-dlg')) return;
     helpBusy = true;
-    CLOUD.api('POST', '/api/helper-claim', {}).then(function (r) {
-      helpBusy = false; if (r._code !== 200) return; helpClaimed = true;
+    txRun('help', {}, function (r) {   // 走交易（grow.js）：借用次数由服务器记，奖励由服务器发
+      helpBusy = false; helpClaimed = true;
       var U = (r.uses || []).filter(function (x) { return x.n > 0; }); if (!U.length) return;
-      var n = U.reduce(function (t, x) { return t + x.n; }, 0);
-      earn('help', '', { energy: HELP_RW.energy * n, exp: HELP_RW.exp * n }); save(); renderRes();
+      var n = r.n; renderRes();
       var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'help-dlg';
       d.innerHTML = '<div class="soc-box side-new" role="dialog" aria-modal="true" aria-label="助战回报"><span class="tape l"></span><span class="tape r"></span><span class="step">助战回报</span><h2>你不在的时候，有好友借用了你的助战精灵！</h2><ul>' +
         U.map(function (x) { return '<li><b>' + esc(x.name || x.user) + '</b><small>借用了 ' + x.n + ' 次</small></li>'; }).join('') +
@@ -2202,7 +2187,7 @@
         '<div class="soc-foot"><button type="button" class="btn primary" data-helpx="1">收下</button></div></div>';
       document.body.appendChild(d);
       d.addEventListener('click', function (e) { if (e.target === d || e.target.closest('[data-helpx]')) d.remove(); });
-    }).catch(function () { helpBusy = false; });
+    }, function () { helpBusy = false; });
   }
   setInterval(helpClaimCheck, 3000);
   function coreOpen() { return prog('core').done; }
@@ -2507,13 +2492,13 @@
     return m;
   }
   // 服务器刷出来的野生精灵：每个场景一个队列，快用完时再要一批
-  var WQ = {}, WQB = {};
+  var WSQ = {}, WSQB = {};   // 注意：WQ 是世界任务，别重名
   function wqFill(R, si, bg) {
-    var k = R.id + ':' + si; if (WQB[k]) return; WQB[k] = 1;
-    CLOUD.api('POST', '/api/pve', { op: 'wild', rid: R.id, si: si, bg: bg || '', n: 6 }).then(function (r) { WQB[k] = 0; if (r && r.ok) WQ[k] = (WQ[k] || []).concat(r.list); }).catch(function () { WQB[k] = 0; });
+    var k = R.id + ':' + si; if (WSQB[k]) return; WSQB[k] = 1;
+    CLOUD.api('POST', '/api/pve', { op: 'wild', rid: R.id, si: si, bg: bg || '', n: 6 }).then(function (r) { WSQB[k] = 0; if (r && r.ok) WSQ[k] = (WSQ[k] || []).concat(r.list); }).catch(function () { WSQB[k] = 0; });
   }
   function wqTake(R, slot) {
-    var k = R.id + ':' + slot.si, q = WQ[k], sp = q && q.length ? q.shift() : null;
+    var k = R.id + ':' + slot.si, q = WSQ[k], sp = q && q.length ? q.shift() : null;
     if (!q || q.length < 3) wqFill(R, slot.si, slot.bgKey);
     return sp;
   }
@@ -2648,7 +2633,7 @@
   function startWildRemote(args, o) {
     var ui = { bg: o.bg, back: o.back, where: o.where,
       fail: function () {   // 没开成（比如服务器刚更新过，刷出来的精灵都作废了）：换一批，回到场景
-        WQ = {}; if (o.fieldRid) replaceFieldMon(o.fieldRid, o.fieldId);
+        WSQ = {}; if (o.fieldRid) replaceFieldMon(o.fieldRid, o.fieldId);
         if (page === 'explore' && ex.view === 'field') renderField();
       },
       adjust: function (r, u) { var op = r.opt || {}; u.where = o.where + (op.tag || ''); u.corrupt = !!op.corrupt && !/_mia\.|_corrupt\./.test(o.bg || ''); } };
@@ -3453,7 +3438,7 @@
 
   /* 芙罗拉玉：瘴气驱逐战开放后，芙罗拉星丛林、草甸的场景里每天有一定概率冒出来（每个场景每天最多一块，捡到 1~3 个） */
   // 每个星球的野外场景里每天刷新的特产（芙罗拉玉要等瘴气驱逐战开放）
-  var GEM_SPOT = { forest: 'floraJade', grass: 'floraJade', kb_surf: 'kbDrop', kb_sea: 'kbDrop', kb_deep: 'kbDrop', pp_lava: 'ppAsh', pp_city: 'ppAsh', lt_belt: 'ltOrb', wh_snow: 'whFrost' };
+  var GEM_SPOT = RW.GEM_SPOT;   // 每个星球的野外场景里每天刷新的特产（rewards.js）
   function jadeSpot(rid, scene) {
     var k = GEM_SPOT[rid]; if (!k || (k === 'floraJade' && !pwOpen())) return null;
     var g = seeded(bjDay() + ':jade:' + rid + ':' + scene + ':' + (acc.created || 0));
@@ -3468,7 +3453,7 @@
   function jadeAt(scene) {
     var R = regionById(ex.region), J = R && jadeSpot(R.id, scene); if (!J) return;
     var rec = jadeRec(), key = R.id + ':' + scene; if (rec.got[key]) return;
-    var o = {}; o[J.k] = J.n; rec.got[key] = 1; earn('jade', key, { items: o }); save();
+    var o = {}; o[J.k] = J.n; rec.got[key] = 1; earn('jade', rec.d + ':' + key, { items: o }); save();   // 编号带上日期：每天都能捡（2026-10-25 修）
     toast('捡到了「' + itemName(J.k) + '」×' + J.n + '，已放入储存箱。' + (USE_ITEMS[J.k].sd || ''));
     var el = document.querySelector('#wf-scene [data-jade]'); if (el) el.remove();
   }
@@ -3504,12 +3489,11 @@
   /* ---------- 排位赛季奖励：首次达到每个段位各奖励一次，达到铂金送 LV10 小月亮 ---------- */
   var SEASON = 'S1';
   // 2026-10-11 起段位奖励翻倍（RANK_RW_OLD 是翻倍前的标准，用来给之前领过的玩家算补发差额）
-  var RANK_RW_OLD = [null, { exp: 500, energy: 200 }, { exp: 1000, energy: 300 }, { exp: 1500, energy: 400 }, { exp: 2000, energy: 500 },
-    { exp: 2500, energy: 600 }, { exp: 3000, energy: 700 }, { exp: 3500, energy: 800 }, { exp: 4000, energy: 900 }, { exp: 4500, energy: 1000 }, { exp: 5000, energy: 1200 }];
+  var RANK_RW_OLD = RW.RANK_RW_OLD;   // 数额在 js/engine/rewards.js
   var RANK_GIFT = { 4: [{ sid: 'moon', lv: 10 }], 10: [{ sid: 'bone', lv: 10 }] };   // 铂金送小月亮，王者送凶骨（骨刃一阶）
   // 2026-10-11 起各段位额外送道具（之前已经领过的段位，差的道具用邮箱补发）
   // 段位不再发放加强装置和华为装置，这两种只能在冶炼坊合成。翡翠、钻石、星耀改为普通捕捉装置。
-  var RANK_ITEMS = { 2: { cap1: 5 }, 3: { cap1: 5 }, 5: { cap1: 5 }, 6: { cap1: 5 }, 7: { cap1: 5, evAny: 1 }, 8: { evAny: 1 }, 9: { evAny: 2 }, 10: { evAny: 3 } };
+  var RANK_ITEMS = RW.RANK_ITEMS;
   var RANK_RW = RANK_RW_OLD.map(function (R, r) { return R && { exp: R.exp * 2, energy: R.energy * 2, gift: RANK_GIFT[r], title: 'S1-' + r, items: RANK_ITEMS[r] }; });
   function itemsText(o) { return o ? Object.keys(o).map(function (k) { return itemName(k) + ' ×' + o[k]; }).join('、') : ''; }
   function rankBest() { try { var r = JSON.parse(localStorage.getItem('hs-rank-v1') || 'null'); return r ? Math.max(r.best || 0, r.r || 0) : 0; } catch (e) { return 0; } }
@@ -3769,18 +3753,19 @@
    * 2026-10-12 起奖励翻倍（rw 里已经是翻倍后的数），当天已经领过的按差额补发到邮箱 */
   var DAILY_N = 7, DAILY_BRAWL = 0.7;
   var DAILY = {
-    ar_play3: { t: '完成 3 场竞技对战（沙盒或平衡排位都算）', kind: 'arena', n: 3, rw: { exp: 3000, energy: 200 }, arena: 1 },
-    ar_rank2: { t: '完成 2 场平衡排位', kind: 'rankPlay', n: 2, rw: { exp: 4000, energy: 240 }, arena: 1 },
-    ar_win1: { t: '在平衡排位中获胜 1 场', kind: 'rankWin', n: 1, rw: { exp: 5000, energy: 300 }, arena: 1 },
-    ar_sand1: { t: '在沙盒模式完成 1 场对战', kind: 'sandbox', n: 1, rw: { exp: 2000, energy: 160 }, arena: 1 },
-    bw_1: { t: '完成 1 场精灵大乱斗', kind: 'brawl', n: 1, rw: { exp: 5000, energy: 300 }, brawl: 1 },
-    bw_win1: { t: '在精灵大乱斗中获胜 1 场', kind: 'brawlWin', n: 1, rw: { exp: 6000, energy: 360 }, brawl: 1 },
-    wd_win5: { t: '击败 5 只野生精灵', kind: 'wildWin', n: 5, rw: { exp: 4000, energy: 240 }, need: function () { return prog('flora1').done; } },
-    wd_catch1: { t: '捕捉 1 只野生精灵', kind: 'catch', n: 1, rw: { exp: 3000, energy: 300 }, need: function () { return prog('flora1').done; } },
-    bs_1: { t: '挑战 1 次BOSS（胜负都算）', kind: 'boss', n: 1, rw: { exp: 3000, energy: 200 }, need: function () { return bossOpen('tiger') || bossOpen('barren'); } },
-    hm_1: { t: '从茶室收回 1 只展示满 1 小时的精灵', kind: 'home', n: 1, rw: { exp: 3000, energy: 200 }, need: function () { return homeOpen(); } },
-    pve_2: { t: '完成 2 场剧情、野外或BOSS对战', kind: 'pve', n: 2, rw: { exp: 3000, energy: 200 } }
+    ar_play3: { t: '完成 3 场竞技对战（沙盒或平衡排位都算）', kind: 'arena', n: 3, arena: 1 },
+    ar_rank2: { t: '完成 2 场平衡排位', kind: 'rankPlay', n: 2, arena: 1 },
+    ar_win1: { t: '在平衡排位中获胜 1 场', kind: 'rankWin', n: 1, arena: 1 },
+    ar_sand1: { t: '在沙盒模式完成 1 场对战', kind: 'sandbox', n: 1, arena: 1 },
+    bw_1: { t: '完成 1 场精灵大乱斗', kind: 'brawl', n: 1, brawl: 1 },
+    bw_win1: { t: '在精灵大乱斗中获胜 1 场', kind: 'brawlWin', n: 1, brawl: 1 },
+    wd_win5: { t: '击败 5 只野生精灵', kind: 'wildWin', n: 5, need: function () { return prog('flora1').done; } },
+    wd_catch1: { t: '捕捉 1 只野生精灵', kind: 'catch', n: 1, need: function () { return prog('flora1').done; } },
+    bs_1: { t: '挑战 1 次BOSS（胜负都算）', kind: 'boss', n: 1, need: function () { return bossOpen('tiger') || bossOpen('barren'); } },
+    hm_1: { t: '从茶室收回 1 只展示满 1 小时的精灵', kind: 'home', n: 1, need: function () { return homeOpen(); } },
+    pve_2: { t: '完成 2 场剧情、野外或BOSS对战', kind: 'pve', n: 2 }
   };
+  Object.keys(RW.DAILY).forEach(function (k) { if (DAILY[k]) DAILY[k].rw = RW.DAILY[k]; });   // 奖励数额在 js/engine/rewards.js（服务器按它核对）
   var DAILY_X10_OLD = { ar_play3: 600, ar_rank2: 800, ar_win1: 1000, ar_sand1: 400, bw_1: 1000, bw_win1: 1200, wd_win5: 800, wd_catch1: 600, bs_1: 600, hm_1: 600, pve_2: 600 };   // 2026-10-18 晚：每日任务经验提高（×5）之前的经验（补差额用）
   var DAILY_OLD = { ar_play3: [300, 100], ar_rank2: [400, 120], ar_win1: [500, 150], ar_sand1: [200, 80], wd_win5: [400, 120], wd_catch1: [300, 150], bs_1: [300, 100], hm_1: [300, 100], pve_2: [300, 100] };   // 翻倍前的奖励（补差额用）
   function todayKey() { return PVE.bjDay(Date.now()); }   // 北京时间（2026-10-25 起和服务器一致）
@@ -5250,19 +5235,11 @@
 
   /* ---------- 冶炼坊：黄石 · 冶炼工坊 ----------
    * 加强装置吃星砂，华为装置吃星核，200血药吃药草。商城不卖这三样。 */
-  var FORGE = [
-    { id: 'cap2', out: { cap2: 1 }, need: { g_sand: 2 } },
-    { id: 'cap3', out: { cap3: 1 }, need: { g_core: 4 } },
-    { id: 'pot200', out: { pot200: 1 }, need: { c_herb: 2 } },
-    { id: 'bowl', out: { c_bowl: 1 }, need: { c_rice: 500 } },
-    { id: 'lcEssence', out: { e_leafcat: 1 }, need: { m_lcleaf: 5 } },
-    { id: 'formDev', out: { formDev: 1 }, need: { g_core: 6, g_sand: 300 } },
-    { id: 'horn', out: { m_horn: 1 }, need: { m_hfhorn: 60 } }
-  ];
-  var FORGE_Q = 120;
+  var FORGE = GROW.FORGE;   // 配方在 js/engine/grow.js
+  var FORGE_Q = GROW.FORGE_Q;
   /* 特产互换（2026-10-19）：芙罗拉玉、不化水滴、火山灰烬、闪电球体、永久冻土之间互换，每 GX_IN 个换 GX_OUT 个
    * （换出比换入少，避免来回换刷数量） */
-  var GX_KEYS = ['floraJade', 'kbDrop', 'ppAsh', 'ltOrb', 'whFrost'], GX_IN = 10, GX_OUT = 8;
+  var GX_KEYS = GROW.GX_KEYS, GX_IN = GROW.GX_IN, GX_OUT = GROW.GX_OUT;
   var GX_SRC = ['m_mcry'].concat(GX_KEYS);   // 马亚尔晶体（2026-10-19）：只能换出去，每 10 个换 10 个
   function gxOut(k) { return k === 'm_mcry' ? 10 : GX_OUT; }
   function gxState() {
@@ -5284,10 +5261,11 @@
   function gxGo() {
     var g = gxState(); if (g.max < 1 || g.from === g.to) return;
     var n = Math.min(g.q, g.max);
-    acc.items[g.from] = (acc.items[g.from] || 0) - GX_IN * n;
-    var gain = {}; gain[g.to] = gxOut(g.from) * n; earn('gx', '', { items: gain }); shopQty.gx = 1; save();
-    toast('转换成功：' + itemName(g.from) + ' ×' + GX_IN * n + ' → ' + itemName(g.to) + ' ×' + gxOut(g.from) * n + '，已放入储存箱。');
-    renderForge();
+    txRun('gx', { from: g.from, to: g.to, n: n }, function () {   // 走交易（grow.js）
+      shopQty.gx = 1;
+      toast('转换成功：' + itemName(g.from) + ' ×' + GX_IN * n + ' → ' + itemName(g.to) + ' ×' + gxOut(g.from) * n + '，已放入储存箱。');
+      renderForge();
+    });
   }
   function forgeOf(id) { for (var i = 0; i < FORGE.length; i++) if (FORGE[i].id === id) return FORGE[i]; return null; }
   function forgeMax(r) {
@@ -5330,16 +5308,16 @@
     var r = forgeOf(id); if (!r) return;
     var max = forgeMax(r), n = Math.max(1, Math.min(max, shopQty['fg-' + id] || 1));
     if (!max || n < 1) return;
-    for (var k in r.need) acc.items[k] = (acc.items[k] || 0) - r.need[k] * n;
-    var gain = {}; for (var ok in r.out) gain[ok] = r.out[ok] * n;
-    earn('forge', id, { items: gain }); shopQty['fg-' + id] = 1; save();
-    toast('合成成功：' + forgeOutText(r, n) + '，已放入储存箱。');
-    renderForge();
+    txRun('forge', { id: id, n: n }, function () {   // 走交易（grow.js）
+      shopQty['fg-' + id] = 1;
+      toast('合成成功：' + forgeOutText(r, n) + '，已放入储存箱。');
+      renderForge();
+    });
   }
 
   /* ---------- 太空种植园：恩施 · 生态舱 ----------
    * 四块田。种下 1 颗药草种子，8 小时后收获药草 ×50，种子退回。离开游戏也照常计时。 */
-  var FARM_N = 4;
+  var FARM_N = GROW.FARM_N;
   function farm() {
     if (!acc.farm || !Array.isArray(acc.farm.plots)) acc.farm = { plots: [] };
     while (acc.farm.plots.length < FARM_N) acc.farm.plots.push(null);
@@ -5388,22 +5366,18 @@
   function farmPlant(i, seed) {
     var F = farm();
     if (i < 0 || i >= FARM_N || F.plots[i] || !SEEDS[seed] || !(acc.items[seed] > 0)) return;
-    acc.items[seed]--;
-    F.plots[i] = { seed: seed, t: Date.now() };
-    save();
-    toast('在田 ' + (i + 1) + ' 种下了「' + itemName(seed) + '」，' + growText(SEEDS[seed].min) + '后可以收获。');
-    renderFarm();
+    txRun('farm', { a: 'plant', i: i, seed: seed }, function () {   // 走交易（grow.js）：种下的时间由服务器记
+      toast('在田 ' + (i + 1) + ' 种下了「' + itemName(seed) + '」，' + growText(SEEDS[seed].min) + '后可以收获。');
+      renderFarm();
+    });
   }
   function farmHarvest(i) {
     var F = farm(), p = F.plots[i];
     if (!p || !farmReady(p)) return;
-    var S = SEEDS[p.seed], gain = {};
-    gain[S.crop] = S.yield;
-    gain[p.seed] = 1;
-    F.plots[i] = null;
-    earn('farm', '', { items: gain }); save();
-    toast('收获了「' + itemName(S.crop) + '」×' + S.yield + '，种子已退回。');
-    renderFarm();
+    txRun('farm', { a: 'harvest', i: i }, function (res) {   // 走交易（grow.js）
+      toast('收获了「' + itemName(res.crop) + '」×' + res.n + '，种子已退回。');
+      renderFarm();
+    });
   }
 
   /* ---------- 茶室（家园）：自定义名字，安排精灵在舱里休息 ---------- */
@@ -5730,14 +5704,15 @@
   var MAIN_Q = ['school', 'river', 'jiuquan', 'board', 'flora1', 'flora2', 'flora3', 'flora4', 'flora5', 'flora6', 'flora7'], EVENT_Q = ['mmTrial'], SIDE_Q = ['academy', 'xiaogan', 'brawl', 'draft', 'storage', 'tiger', 'tiger2', 'tea', 'rare', 'mingming', 'medal', 'spa', 'fl_chal', 'hiddenSk'];
   // 世界任务（奖励暂定）
   var WQ = [
-    { id: 'w_first', n: '初到芙罗拉', d: '荆楚号已经抵达芙罗拉星。去丛林或草甸，和那里的野生精灵过过招吧。', where: '芙罗拉星 · 丛林 / 草甸', steps: [{ t: '在芙罗拉星击败 1 只野生精灵', k: 'wins', n: 1 }], reward: { energy: 100 }, after: 'flora1', go: 'flora' },
-    { id: 'w_karo', n: '草甸上的奔跑者', d: '卡罗成群地在草甸上奔跑，捕捉率很高，很适合用来练习捕捉。', where: '芙罗拉星 · 草甸', steps: [{ t: '捕捉 1 只卡罗', k: 'own:wind', n: 1 }], reward: { items: { cap1: 3 } }, after: 'flora1', go: 'flora' },
-    { id: 'w_mush', n: '林下的蘑菇', d: '丛林的树荫下，常能看到玛西的身影。', where: '芙罗拉星 · 丛林', steps: [{ t: '捕捉 1 只玛西', k: 'own:mush', n: 1 }], reward: { items: { pot1: 2 } }, after: 'flora1', go: 'flora' },
-    { id: 'w_hunt', n: '荒野试炼', d: '多和野生精灵交手，伙伴们才会变强。', where: '芙罗拉星 · 丛林 / 草甸', steps: [{ t: '在芙罗拉星击败 10 只野生精灵', k: 'wins', n: 10 }], reward: { energy: 300 }, after: 'flora1', go: 'flora' },
-    { id: 'w_kaleo', n: '丛林里的掠食者', d: '有人在丛林深处见过一只卡莱。它只在丛林出现，而且很少露面。', where: '芙罗拉星 · 丛林', steps: [{ t: '捕捉 1 只卡莱', k: 'own:kaleo', n: 1 }], reward: { energy: 500 }, after: 'flora1', go: 'flora' },
-    { id: 'w_travel', n: '旅行猫', d: '叶子喵是芙罗拉星上很少见的精灵。听说最近有人在山毛榉林里见过一只……', where: '芙罗拉星 · 剧情', steps: [{ t: '读完芙罗拉星的剧情「旅行猫」', k: 'story:travelcat', n: 1 }], reward: { exp: 3000, energy: 500 }, after: 'flora2', go: 'flora', fpart: 'story' },
-    { id: 'w_dex', n: '见习做题家', d: '黄冈秘鉴里亮起的页数越多，做题家就越受人尊敬。', where: '黄冈秘鉴', steps: [{ t: '在黄冈秘鉴中点亮 3 类精灵', k: 'lit', n: 3 }], reward: { energy: 200 }, after: 'academy', go: 'dex' }
+    { id: 'w_first', n: '初到芙罗拉', d: '荆楚号已经抵达芙罗拉星。去丛林或草甸，和那里的野生精灵过过招吧。', where: '芙罗拉星 · 丛林 / 草甸', steps: [{ t: '在芙罗拉星击败 1 只野生精灵', k: 'wins', n: 1 }], after: 'flora1', go: 'flora' },
+    { id: 'w_karo', n: '草甸上的奔跑者', d: '卡罗成群地在草甸上奔跑，捕捉率很高，很适合用来练习捕捉。', where: '芙罗拉星 · 草甸', steps: [{ t: '捕捉 1 只卡罗', k: 'own:wind', n: 1 }], after: 'flora1', go: 'flora' },
+    { id: 'w_mush', n: '林下的蘑菇', d: '丛林的树荫下，常能看到玛西的身影。', where: '芙罗拉星 · 丛林', steps: [{ t: '捕捉 1 只玛西', k: 'own:mush', n: 1 }], after: 'flora1', go: 'flora' },
+    { id: 'w_hunt', n: '荒野试炼', d: '多和野生精灵交手，伙伴们才会变强。', where: '芙罗拉星 · 丛林 / 草甸', steps: [{ t: '在芙罗拉星击败 10 只野生精灵', k: 'wins', n: 10 }], after: 'flora1', go: 'flora' },
+    { id: 'w_kaleo', n: '丛林里的掠食者', d: '有人在丛林深处见过一只卡莱。它只在丛林出现，而且很少露面。', where: '芙罗拉星 · 丛林', steps: [{ t: '捕捉 1 只卡莱', k: 'own:kaleo', n: 1 }], after: 'flora1', go: 'flora' },
+    { id: 'w_travel', n: '旅行猫', d: '叶子喵是芙罗拉星上很少见的精灵。听说最近有人在山毛榉林里见过一只……', where: '芙罗拉星 · 剧情', steps: [{ t: '读完芙罗拉星的剧情「旅行猫」', k: 'story:travelcat', n: 1 }], after: 'flora2', go: 'flora', fpart: 'story' },
+    { id: 'w_dex', n: '见习做题家', d: '黄冈秘鉴里亮起的页数越多，做题家就越受人尊敬。', where: '黄冈秘鉴', steps: [{ t: '在黄冈秘鉴中点亮 3 类精灵', k: 'lit', n: 3 }], after: 'academy', go: 'dex' }
   ];
+  WQ.forEach(function (x) { x.reward = RW.QUEST[x.id] || x.reward; });   // 奖励数额在 js/engine/rewards.js（服务器按它核对）
   function qStat(k) {
     if (!acc.stats) acc.stats = {};
     if (k === 'wins') return acc.stats.wildWins || 0;
@@ -6394,15 +6369,14 @@
     return { id: raw.sid, lv: BRAWL_LV, moves: all.slice(-4), nick: f.name, img: f.img, ev: {}, nat: raw.nat && NATURES[raw.nat] ? raw.nat : null };
   }
   function brawlToday() { return acc.brawlExp && acc.brawlExp.d === bjDay() ? acc.brawlExp.n || 0 : 0; }
-  function brawlReward(result, noReward) {
-    if (!acc.stats) acc.stats = {};
+  function brawlReward(result, noReward, id, cb) {   // 奖励由服务器按它记下的对局结果发（交易 brawlRw，见 grow.js）
     var first = !brawlPlayed();
     if (!noReward) { dailyHit('brawl'); if (result === 'win') dailyHit('brawlWin'); }
-    if (!noReward) { acc.stats.brawls = (acc.stats.brawls || 0) + 1; if (first) setTimeout(function () { toast('支线「精灵大乱斗」完成！随时可以再来和其他船员打大乱斗。'); }, 4200); }
-    var want = noReward ? 0 : result === 'win' ? BRAWL_WIN : BRAWL_LOSE, had = brawlToday(), give = Math.max(0, Math.min(want, BRAWL_CAP - had));
-    if (give > 0) { acc.brawlExp = { d: bjDay(), n: had + give }; earn('brawl', '', { exp: give }); renderRes(); }
-    save();
-    return { want: want, give: give, today: brawlToday(), cap: BRAWL_CAP };
+    var fin = function (r) {
+      if (!noReward && first && brawlPlayed()) setTimeout(function () { toast('支线「精灵大乱斗」完成！随时可以再来和其他船员打大乱斗。'); }, 4200);
+      renderRes(); if (cb) cb(r);
+    };
+    txRun('brawlRw', { id: String(id || '') }, function (r) { fin({ want: r.want, give: r.give, today: r.today, cap: r.cap }); }, function () { fin({ want: 0, give: 0, today: brawlToday(), cap: BRAWL_CAP }); });
   }
 
   /* ---------- 给社交页（social.js）用的接口 ---------- */

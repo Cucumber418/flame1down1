@@ -27,17 +27,23 @@ function dispName(u) {
   return u.name;
 }
 
+// 取走（并清空）这个人的助战借用记录
+function take(name) {
+  var d = load(), p = d.pend[name] || {};
+  var uses = Object.keys(p).map(function (k) { return { user: k, name: p[k].name, n: p[k].n }; }).filter(function (x) { return x.n > 0; });
+  if (d.pend[name]) { delete d.pend[name]; store(d); }
+  return uses;
+}
+require('./tx').hook('help', function (u) { return take(u.name); });
+
 A.use(function (req, res, url) {
   if (url !== '/api/helper-use' && url !== '/api/helper-claim') return false;
   if (req.method !== 'POST') { A.reply(res, 405, { error: '请求方式不对' }); return true; }
   var who = A.whoIs(req), me = who && A.loadUser(who.user);
   if (!me) { A.reply(res, 401, { error: '登录已失效，请重新登录' }); return true; }
 
-  if (url === '/api/helper-claim') {
-    var d = load(), p = d.pend[me.name] || {};
-    var uses = Object.keys(p).map(function (k) { return { user: k, name: p[k].name, n: p[k].n }; }).filter(function (x) { return x.n > 0; });
-    if (d.pend[me.name]) { delete d.pend[me.name]; store(d); }
-    A.reply(res, 200, { uses: uses });
+  if (url === '/api/helper-claim') {   // 旧页面用的；新页面走交易 help（奖励由服务器直接发）
+    A.reply(res, 200, { uses: take(me.name) });
     return true;
   }
   A.readBody(req, function (err, body) {

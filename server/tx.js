@@ -84,16 +84,19 @@ A.use(function (req, res, url) {
     var acc = null; try { acc = JSON.parse(raw || 'null'); } catch (e) {}
     if (!acc || typeof acc !== 'object') return A.reply(res, 409, { error: '存档还没同步到服务器，请稍后再试。' });
     var op = String(body.op || ''), args = body.args && typeof body.args === 'object' && !Array.isArray(body.args) ? body.args : {};
-    var before = wallet(acc), now = Date.now(), rand = TX.recorder(), r;
-    try { r = TX.run(acc, op, args, { now: now, rand: rand, data: u.save.data, user: u.name }); } catch (e) { console.error('交易出错', op, e); return A.reply(res, 500, { error: '服务器出错了，这次没有扣费。' }); }
+    var before = wallet(acc), now = Date.now(), rand = TX.recorder(), r, ext = {};
+    // fetch：交易要用的、只有服务器知道的资料（比如助战被借用了几次、大乱斗的结果）；结果一起发给浏览器重放用
+    var fetch = function (k, arg) { var v = HOOKS[k] ? HOOKS[k](u, arg) : null; ext[k] = v === undefined ? null : v; return ext[k]; };
+    try { r = TX.run(acc, op, args, { now: now, rand: rand, data: u.save.data, user: u.name, fetch: fetch }); } catch (e) { console.error('交易出错', op, e); return A.reply(res, 500, { error: '服务器出错了，这次没有扣费。' }); }
     if (!r || !r.ok) return A.reply(res, 400, { error: (r && r.err) || '没能完成' });
     u.save.data['hs-account-v1'] = JSON.stringify(acc);
     u.save.rev = (u.save.rev || 0) + 1; u.save.savedAt = now;
     A.saveUser(u);
     ledger(u.name, op, args, diff(before, wallet(acc)));
-    A.reply(res, 200, { ok: true, rev: u.save.rev, now: now, rolls: rand.rolls.slice() });
+    A.reply(res, 200, { ok: true, rev: u.save.rev, now: now, rolls: rand.rolls.slice(), ext: ext });
   });
   return true;
 });
 
-module.exports = { VERSION: VERSION, TX: TX, engine: function () { return ENGINE; }, status: function () { return { v: VERSION, ok: !!TX, err: LOAD_ERR || undefined }; } };
+var HOOKS = {};
+module.exports = { hook: function (k, fn) { HOOKS[k] = fn; }, VERSION: VERSION, TX: TX, engine: function () { return ENGINE; }, status: function () { return { v: VERSION, ok: !!TX, err: LOAD_ERR || undefined }; } };

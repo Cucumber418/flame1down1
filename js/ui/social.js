@@ -531,9 +531,10 @@
         if (M0.pick === 'draft') A.noteDraft();   // 支线任务「竞技征召」：打完一场就算（胜负都算）
         if (M0.brawl) {
           var none = M0.quitSide === M0.side || M0.aborted === 'self';
-          var r = A.brawlReward(mine, none);
+          A.brawlReward(mine, none, M0.id, function (r) {
           var txt = none ? '认输或自己掉线的大乱斗没有奖励。' : r.give > 0 ? '大乱斗奖励：累积经验 +' + A.fmt(r.give) + (r.give < r.want ? '（已达今日上限）' : '') + '，今天累计 ' + A.fmt(r.today) + ' / ' + A.fmt(r.cap) + '。' : '今天的大乱斗经验已经达到上限 ' + A.fmt(r.cap) + '，明天再来。';
           setTimeout(function () { A.toast(txt); }, 600);
+          });
         }
       },
       onEnd: function () { var bw = M0.brawl; st.match = null; if (bw) { A.leaveBattle(); A.go('arena'); } else A.leaveBattle(); load(); }

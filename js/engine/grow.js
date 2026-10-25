@@ -294,7 +294,92 @@ var GROW = (function () {
     return { ok: true, mons: got };
   });
 
-  return { SPA_GAP: SPA_GAP, spaMons: spaMons, HOME_CAP_H: HOME_CAP_H, AUTO_DAYS: AUTO_DAYS, DAY_MS: DAY_MS, HATCH: HATCH, STORY_GIFT: STORY_GIFT, RANK_GIFT: RANK_GIFT, USE_ITEMS: USE_ITEMS, CAP_STEPS: CAP_STEPS, GEM_OF: GEM_OF, CAP_SID: CAP_SID, capGem: capGem, capNext: capNext, formLabel: formLabel, natText: natText,
+  /* ---------- 冶炼坊：合成、特产互换（2026-10-25 起走交易） ---------- */
+  var FORGE = [
+    { id: 'cap2', out: { cap2: 1 }, need: { g_sand: 2 } },
+    { id: 'cap3', out: { cap3: 1 }, need: { g_core: 4 } },
+    { id: 'pot200', out: { pot200: 1 }, need: { c_herb: 2 } },
+    { id: 'bowl', out: { c_bowl: 1 }, need: { c_rice: 500 } },
+    { id: 'lcEssence', out: { e_leafcat: 1 }, need: { m_lcleaf: 5 } },
+    { id: 'formDev', out: { formDev: 1 }, need: { g_core: 6, g_sand: 300 } },
+    { id: 'horn', out: { m_horn: 1 }, need: { m_hfhorn: 60 } }
+  ];
+  var FORGE_Q = 120;
+  // 特产互换：每 GX_IN 个换 GX_OUT 个；马亚尔晶体只能换出去，每 10 个换 10 个
+  var GX_KEYS = ['floraJade', 'kbDrop', 'ppAsh', 'ltOrb', 'whFrost'], GX_IN = 10, GX_OUT = 8;
+  var GX_SRC = ['m_mcry'].concat(GX_KEYS);
+  function gxOut(k) { return k === 'm_mcry' ? 10 : GX_OUT; }
+  // { id, n }
+  TX.add('forge', function (a, args, env) {
+    var r = FORGE.filter(function (x) { return x.id === args.id; })[0], n = int(args.n), I = items(a);
+    if (!r) return no('没有这个配方');
+    if (!(n >= 1 && n <= FORGE_Q)) return no('数量不对');
+    for (var k in r.need) if ((I[k] || 0) < r.need[k] * n) return no('材料不够');
+    for (var k2 in r.need) I[k2] -= r.need[k2] * n;
+    var gain = {}; for (var o in r.out) { gain[o] = r.out[o] * n; I[o] = (I[o] || 0) + gain[o]; }
+    return { ok: true, gain: gain };
+  });
+  // { from, to, n }
+  TX.add('gx', function (a, args, env) {
+    var f = String(args.from || ''), t = String(args.to || ''), n = int(args.n), I = items(a);
+    if (GX_SRC.indexOf(f) < 0 || GX_KEYS.indexOf(t) < 0 || f === t) return no('换不了');
+    if (!(n >= 1 && n <= FORGE_Q) || (I[f] || 0) < GX_IN * n) return no('数量不够');
+    I[f] -= GX_IN * n; I[t] = (I[t] || 0) + gxOut(f) * n;
+    return { ok: true, out: gxOut(f) * n };
+  });
+
+  /* ---------- 太空种植园：种下种子，到时间收获（种子退回） ---------- */
+  var FARM_N = 4;
+  var SEEDS = {
+    s_herb: { name: '药草种子', d: '生态舱里种的药草籽。种下去要 8 小时，收获时这颗种子会退回来。', crop: 'c_herb', min: 480, yield: 50 },
+    s_rice: { name: '水稻种子', d: '在芙罗拉星击败野生精灵时偶尔掉落的稻种。种下去要 12 小时，收获一大把米饭，种子会退回来。', crop: 'c_rice', min: 720, yield: 250 }
+  };
+  function farmRec(a) { if (!a.farm || !Array.isArray(a.farm.plots)) a.farm = { plots: [] }; while (a.farm.plots.length < FARM_N) a.farm.plots.push(null); return a.farm; }
+  // { a: 'plant', i, seed } / { a: 'harvest', i }
+  TX.add('farm', function (a, args, env) {
+    var F = farmRec(a), i = int(args.i), I = items(a);
+    if (!(i >= 0 && i < FARM_N)) return no('没有这块田');
+    if (args.a === 'plant') {
+      var sd = String(args.seed || '');
+      if (F.plots[i]) return no('这块田已经种上了');
+      if (!SEEDS[sd] || !(I[sd] > 0)) return no('没有这种种子了');
+      I[sd]--; F.plots[i] = { seed: sd, t: env.now };
+      return { ok: true };
+    }
+    if (args.a === 'harvest') {
+      var p = F.plots[i], S = p && SEEDS[p.seed]; if (!S) return no('这块田是空的');
+      if (env.now - p.t < S.min * 60000) return no('还没成熟');
+      I[S.crop] = (I[S.crop] || 0) + S.yield; I[p.seed] = (I[p.seed] || 0) + 1; F.plots[i] = null;
+      return { ok: true, crop: S.crop, n: S.yield };
+    }
+    return no('不支持的操作');
+  });
+
+  /* ---------- 助战回报：好友借用了你名片上的助战精灵，每次 1000 能量 + 1000 累积经验（借用次数由服务器记） ---------- */
+  var HELP_RW = { energy: 1000, exp: 1000 };
+  TX.add('help', function (a, args, env) {
+    var uses = (env.fetch && env.fetch('help')) || [], n = 0;
+    uses.forEach(function (x) { n += Math.max(0, x.n | 0); });
+    if (!n) return { ok: true, uses: [], n: 0 };
+    a.energy = (a.energy || 0) + HELP_RW.energy * n; a.exp = (a.exp || 0) + HELP_RW.exp * n;
+    return { ok: true, uses: uses, n: n };
+  });
+
+  /* ---------- 精灵大乱斗的奖励：胜者 2000、败者 1000 累积经验（平局各 1000；自己认输或掉线没有），每天最多 20000 ----------
+   * 对战结果由服务器裁判记下（server/pvp.js），{ id: 对局编号 } */
+  var BRAWL_WIN = 2000, BRAWL_LOSE = 1000, BRAWL_CAP = 20000;
+  TX.add('brawlRw', function (a, args, env) {
+    var rec = env.fetch && env.fetch('brawl', String(args.id || ''));
+    if (!rec) return no('没有找到这场大乱斗的结果');
+    if (!a.stats) a.stats = {};
+    var d = TX.bjDay(env.now), had = a.brawlExp && a.brawlExp.d === d ? a.brawlExp.n || 0 : 0;
+    var want = rec.none ? 0 : rec.r === 'win' ? BRAWL_WIN : BRAWL_LOSE, give = Math.max(0, Math.min(want, BRAWL_CAP - had));
+    if (!rec.none) a.stats.brawls = (a.stats.brawls || 0) + 1;
+    if (give > 0) { a.brawlExp = { d: d, n: had + give }; a.exp = (a.exp || 0) + give; }
+    return { ok: true, want: want, give: give, today: had + give, cap: BRAWL_CAP, none: !!rec.none, r: rec.r };
+  });
+
+  return { FORGE: FORGE, FORGE_Q: FORGE_Q, GX_KEYS: GX_KEYS, GX_IN: GX_IN, GX_OUT: GX_OUT, GX_SRC: GX_SRC, gxOut: gxOut, FARM_N: FARM_N, SEEDS: SEEDS, HELP_RW: HELP_RW, BRAWL_WIN: BRAWL_WIN, BRAWL_LOSE: BRAWL_LOSE, BRAWL_CAP: BRAWL_CAP, SPA_GAP: SPA_GAP, spaMons: spaMons, HOME_CAP_H: HOME_CAP_H, AUTO_DAYS: AUTO_DAYS, DAY_MS: DAY_MS, HATCH: HATCH, STORY_GIFT: STORY_GIFT, RANK_GIFT: RANK_GIFT, USE_ITEMS: USE_ITEMS, CAP_STEPS: CAP_STEPS, GEM_OF: GEM_OF, CAP_SID: CAP_SID, capGem: capGem, capNext: capNext, formLabel: formLabel, natText: natText,
     itemFits: itemFits, jadeMoves: jadeMoves, formOpts: formOpts, evRoom: evRoom, applyMonItem: applyMonItem };
 })();
 if (typeof module !== 'undefined') module.exports = GROW;

@@ -246,6 +246,7 @@ function endMatch(id, leaver, reason) {
   var m = matches[id]; if (!m) return;
   delete matches[id];
   if (m.prep) clearTimeout(m.prep.timer);
+  if (leaver && m.srv) pvp.leave(m, leaver.user);   // 大乱斗中途有人离开：记下结果（没离开的一方能领奖励）
   pvp.stop(m);
   if (m.ct) setTimeout(function () { ctAfter(m, leaver, reason); }, 0);
   m.socks.forEach(function (w) {

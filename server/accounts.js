@@ -238,6 +238,7 @@ function handle(req, res) {
       me.save = { data: W.data, rev: cur + 1, savedAt: Date.now(), guard: G && Date.now() < G.until ? G : undefined };
       saveUser(me);
       if (W.fixed) return reply(res, 200, { rev: me.save.rev, savedAt: me.save.savedAt, fixed: W.fixed, save: saveOut(me) });
+      if (W.sync) return reply(res, 200, { rev: me.save.rev, savedAt: me.save.savedAt, acc: W.data['hs-account-v1'] });   // 服务器悄悄改回了自己管的数值：把改后的账号发回去
       return reply(res, 200, { rev: me.save.rev, savedAt: me.save.savedAt });
     }
 
