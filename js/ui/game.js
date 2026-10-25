@@ -162,7 +162,9 @@
     p.then(function (r) {
       txBusy = false;
       if (!r.local && !r.ok) { if (fail) fail(r.err || '没能完成'); else if (r.err) toast(r.err); return; }
-      var res = TX.run(acc, op, args, r.local ? { now: Date.now(), rand: Math.random } : { now: r.now, rand: TX.replay(r.rolls) });
+      var data = {}; try { data['hs-rank-v1'] = localStorage.getItem('hs-rank-v1'); } catch (e) {}
+      var user = C && C.user ? C.user() : null;
+      var res = TX.run(acc, op, args, r.local ? { now: Date.now(), rand: Math.random, data: data, user: user } : { now: r.now, rand: TX.replay(r.rolls), data: data, user: user });
       if (!res.ok) {
         if (r.local) { if (fail) fail(res.err); else toast(res.err); return; }
         // 服务器结算成功、本机却算不出来：本机存档和服务器对不上，以服务器为准
@@ -1391,7 +1393,7 @@
   function grant(id) {
     var R = SITES[id].reward, pr = prog(id); if (!R || pr.rewarded) return null;
     earn('story', id, { exp: R.exp, energy: R.energy, items: R.items }); if (R.title && acc.titles.indexOf(R.title) < 0) acc.titles.push(R.title);
-    (R.gift || []).forEach(function (g) { var m = newMon(g.sid, g.lv), T = acc.teams[acc.active]; if (T.length < TEAM_SIZE) T.push(m.u); });
+    if (R.gift && R.gift.length) setTimeout(function () { txRun('gift', { k: 'story', id: id }, function () { renderTop(); }); }, 0);   // 送的精灵走交易（grow.js）
     pr.rewarded = true; pr.itemsGiven = true; pr.got = { exp: R.exp || 0, energy: R.energy || 0 }; save(); return R;
   }
   /* 主线章节：一个章节的剧情全部读完后，额外发一份章节大奖（每个存档一次，记在 acc.chapters）
@@ -2455,10 +2457,10 @@
     if (acc.fmAsk && n >= FMNPC.need) {
       fmSay(['哇……好暖和！' + FMNPC.need + ' 团火围着我，尾巴都不抖了！', '火月鼠在你脚边转了好几圈，把一块亮晶晶的金属碎片塞到你手里。'], [['要不要跟我走？', function () {
         fmSay(['嗯！跟着你，就再也不会冷了吧？我要跟你走！'], [['欢迎加入！', function () {
-          var m = newMon('firemouse', FMNPC.lv), T = acc.teams[acc.active], added = T.length < TEAM_SIZE;
-          if (added) T.push(m.u);
-          seeMon('firemouse', FMNPC.lv); acc.fmNpc = 1; save(); renderField();
-          toast('火月鼠（LV' + FMNPC.lv + '，' + m.nat + '）加入了你！' + (added ? '已加入' + TEAM_NAME[acc.active] + '。' : '已收入精灵仓库。'));
+          txRun('gift', { k: 'fm', id: '1' }, function (res) {   // 走交易（grow.js）
+            var g = res.mons[0], m = mon(g.u); renderField();
+            toast('火月鼠（LV' + m.lv + '，' + m.nat + '）加入了你！' + (g.added ? '已加入' + TEAM_NAME[acc.active] + '。' : '已收入精灵仓库。'));
+          });
         }]]);
       }]]);
       return;
@@ -3519,7 +3521,8 @@
       var R = RANK_RW[r]; rec.got[r] = Date.now();
       earn('rankRw', SEASON + ':' + r, { exp: R.exp, energy: R.energy, items: R.items });
       var line = '首次达到' + RANKS[r] + '段位：累积经验 +' + fmt(R.exp) + '，能量 +' + fmt(R.energy) + (R.items ? '，' + itemsText(R.items) : '');
-      (R.gift || []).forEach(function (g) { var m = newMon(g.sid, g.lv), T = acc.teams[acc.active]; if (T.length < TEAM_SIZE) T.push(m.u); line += '，并获得了 ' + form(m).name + ' LV' + g.lv + '！'; });
+      (R.gift || []).forEach(function (g) { line += '，并获得了 ' + form({ sid: g.sid, lv: g.lv }).name + ' LV' + g.lv + '！'; });
+      if (R.gift && R.gift.length) (function (rr) { setTimeout(function () { txRun('gift', { k: 'rank', id: SEASON + ':' + rr }, function () { renderTop(); }); }, 300 * rr); })(r);   // 送的精灵走交易（grow.js）
       msg.push(line + '。');
     }
     if (msg.length) { save(); renderRes(); setTimeout(function () { toast('排位赛季奖励 · ' + msg.join('')); }, 500); }
@@ -3715,7 +3718,7 @@
     if (!m || m.got) return [];
     var a = m.att || {}, got = attList(a);
     earn('mail', m.id, { exp: a.exp, energy: a.energy, merit: a.merit, meritXp: a.merit, tokens: a.tokens, twTok: a.twTok, items: a.items });
-    (a.mons || []).forEach(function (g) { if (!SPMAP[g.sid]) return; var nm = newMon(g.sid, g.lv), T = acc.teams[acc.active]; if (g.shiny) nm.shiny = g.shiny; if (T.length < TEAM_SIZE) T.push(nm.u); });
+    if (a.mons && a.mons.length) setTimeout(function () { txRun('gift', { k: 'mail', id: m.id }, function () { renderTop(); }); }, 0);   // 附件里的精灵走交易（grow.js）
     m.got = true; m.read = true;
     return got;
   }
@@ -5038,14 +5041,26 @@
   }
   function spaStart() {
     if (!spaMons().length) { toast('先放一只精灵进温泉吧。'); return; }
-    SPA.on = true; SPA.t0 = Date.now(); SPA.last = Date.now(); SPA.carry = {}; SPA.sess = {}; SPA.total = 0;
-    renderSpa(); toast('开始泡温泉了！留在这个页面，精灵们就会一直涨经验。');
+    txRun('spaRun', { a: 'start' }, function () {   // 走交易（grow.js）：经验由服务器按时间算
+      SPA.on = true; SPA.t0 = Date.now(); SPA.last = Date.now(); SPA.carry = {}; SPA.sess = {}; SPA.total = 0; SPA.sent = Date.now();
+      renderSpa(); toast('开始泡温泉了！留在这个页面，精灵们就会一直涨经验。');
+    });
   }
   function spaEnd(quiet) {
     if (!SPA.on) return;
-    spaTick(); var min = Math.floor((Date.now() - SPA.t0) / 60000), tot = SPA.total;
-    SPA.on = false; save();
-    if (!quiet) toast('这次泡了 ' + durText(min) + '，精灵们一共获得了 ' + fmt(tot) + ' 点经验。');
+    var min = Math.floor((Date.now() - SPA.t0) / 60000);
+    SPA.on = false;
+    var fin = function (r) { if (r) spaGot(r); if (!quiet) toast('这次泡了 ' + durText(min) + '，精灵们一共获得了 ' + fmt(SPA.total) + ' 点经验。'); };
+    txRun('spaRun', { a: 'end' }, fin, function () { fin(null); });
+  }
+  // 服务器结算的温泉经验：记到这次的统计里，升级的提示一下
+  function spaGot(r) {
+    var msgs = [];
+    (r.gains || []).forEach(function (g) { SPA.sess[g.u] = (SPA.sess[g.u] || 0) + g.amt; if (g.lv1 > g.lv0) msgs.push(g.name1 + ' 升到了 LV' + g.lv1 + '！'); });
+    SPA.total += r.total || 0;
+    if (r.ms) { var m1 = spaMinTotal(), m0 = Math.floor((((acc.spa && acc.spa.ms) || 0) - r.ms) / 60000); if (m1 !== m0 && [120, 600, 3000].some(function (x) { return m0 < x && m1 >= x; })) checkTitles(); }
+    if (msgs.length) { toast('温泉疗养：' + msgs.join(' ')); if (page === 'explore' && ex.view === 'spa') renderSpa(); return; }
+    spaHud();
   }
   // 离开温泉的确认弹窗：留下就什么都不变；离开就结束这次泡温泉，再执行原本要做的事
   function spaLeaveAsk(go_) {
@@ -5062,25 +5077,12 @@
   }
   window.addEventListener('beforeunload', function (e) { if (SPA.on) { e.preventDefault(); e.returnValue = ''; } });
   // 每 2 秒结算一次；只有在温泉页面里、并且已经「开始泡温泉」才算。两次结算间隔太久（电脑睡眠）就不算这段
-  function spaTick() {
+  function spaTick() {   // 每 15 秒让服务器结算一次（只有在温泉页面里、并且已经「开始泡温泉」才报）
     if (!SPA.on || !ready() || !spaOpen()) return;
     if (!(page === 'explore' && ex.view === 'spa')) return;
-    var now = Date.now(), dt = now - SPA.last; SPA.last = now;
-    if (dt <= 0 || dt > SPA_GAP) return;
-    var m0 = spaMinTotal(); spa().ms = (spa().ms || 0) + dt;   // 累计泡温泉时长（成就用）
-    if (spaMinTotal() !== m0 && [120, 600, 3000].indexOf(spaMinTotal()) >= 0) { save(); checkTitles(); }
-    var msgs = [], any = false;
-    spaMons().forEach(function (m) {
-      if (atCap(m)) return;
-      var c = (SPA.carry[m.u] || 0) + spaRate(m) * dt / 3600000, n = Math.floor(c); SPA.carry[m.u] = c - n;
-      if (n <= 0) return;
-      var lv0 = m.lv, r = gainExp(m, n, false); if (!r) return;
-      any = true; spa().got[m.u] = (spa().got[m.u] || 0) + n; SPA.sess[m.u] = (SPA.sess[m.u] || 0) + n; SPA.total += n;
-      if (m.lv > lv0) msgs.push(form(m).name + ' 升到了 LV' + m.lv + '！');
-    });
-    if (any) { if (!SPA.saveAt || now - SPA.saveAt > 20000) { SPA.saveAt = now; save(); } }
-    if (msgs.length) { save(); toast('温泉疗养：' + msgs.join(' ')); renderSpa(); return; }
-    spaHud();
+    if (Date.now() - (SPA.sent || 0) < 15000) return;
+    SPA.sent = Date.now();
+    txRun('spaRun', { a: 'tick' }, function (r) { spaGot(r); }, function () {});
   }
   setInterval(spaTick, SPA_TICK);
   setInterval(function () { if (SPA.on && page === 'explore' && ex.view === 'spa') spaHud(); }, 1000);
@@ -5232,17 +5234,18 @@
   }
   function nurseryPut(i, k) {
     var N = nursery(); if (i < 0 || i >= NURSERY_N || N.slots[i] || !MATS[k] || !MATS[k].hatch || !(acc.items[k] > 0)) return;
-    acc.items[k]--; N.slots[i] = { k: k, t: Date.now() }; save();
-    toast('把「' + itemName(k) + '」放进了孵化槽 ' + (i + 1) + '，' + growText(MATS[k].hatch.min) + '后可以孵化。');
-    renderNursery();
+    txRun('hatch', { a: 'put', i: i, k: k }, function () {   // 走交易（grow.js）：放入的时间由服务器记
+      toast('把「' + itemName(k) + '」放进了孵化槽 ' + (i + 1) + '，' + growText(MATS[k].hatch.min) + '后可以孵化。');
+      renderNursery();
+    });
   }
   function nurseryHatch(i) {
     var N = nursery(), x = N.slots[i]; if (!x || hatchLeft(x)) return;
-    var H_ = MATS[x.k].hatch, m = newMon(H_.sid, H_.lv), T = acc.teams[acc.active], added = T.length < TEAM_SIZE;
-    if (added) T.push(m.u);
-    N.slots[i] = null; save();
-    toast('精元裂开了——诞生了一只' + form(m).name + '（LV' + H_.lv + '，' + m.nat + '）！' + (added ? '已加入' + TEAM_NAME[acc.active] + '。' : '已收入精灵仓库。'));
-    renderNursery(); renderRes && renderRes();
+    txRun('hatch', { a: 'hatch', i: i }, function (res) {   // 走交易（grow.js）：孵出的精灵由服务器生成
+      var m = mon(res.u);
+      toast('精元裂开了——诞生了一只' + form(m).name + '（LV' + m.lv + '，' + m.nat + '）！' + (res.added ? '已加入' + TEAM_NAME[acc.active] + '。' : '已收入精灵仓库。'));
+      renderNursery(); renderRes && renderRes();
+    });
   }
 
   /* ---------- 冶炼坊：黄石 · 冶炼工坊 ----------
@@ -5454,23 +5457,16 @@
   // 自律训练装置：每满 1 天自动结算一次（离线也算，下次打开游戏时补上）
   function homeSettle(quiet) {
     if (!acc || !acc.home || !Array.isArray(acc.home.mons)) return;
-    var out = [];
-    acc.home.mons.forEach(function (x) {
-      if (!x || !x.auto || !(x.auto.left > 0)) return;
-      var m = mon(x.u); if (!m) return;
-      var days = 0, got = 0, lvMsg = null;
-      while (x.auto.left > 0 && Date.now() - x.t >= DAY_MS) {
-        var amt = homeRate(m) * HOME_CAP_H, r = gainExp(m, amt);
-        if (r) lvMsg = r;
-        got += amt; x.t += DAY_MS; x.auto.left--; days++;
-      }
-      if (!days) return;
-      x.auto.got = (x.auto.got || 0) + got;
-      if (x.auto.left <= 0) delete x.auto;
-      out.push(form(m).name + ' 自律训练了 ' + days + ' 天，获得 ' + fmt(got) + ' 经验' + (x.auto ? '（装置还剩 ' + x.auto.left + ' 天）' : '（7 天训练完成，装置用完了）') + '。');
-      dailyHit('home');
+    var due = acc.home.mons.some(function (x) { return x && x.auto && x.auto.left > 0 && Date.now() - x.t >= DAY_MS; }); if (!due) return;
+    txRun('home', { a: 'settle' }, function (res) {   // 走交易（grow.js）：服务器按时间结算
+      var out = [];
+      (res.list || []).forEach(function (x) {
+        var m = mon(x.u); if (!m) return;
+        out.push(form(m).name + ' 自律训练了 ' + x.days + ' 天，获得 ' + fmt(x.got) + ' 经验' + (x.left > 0 ? '（装置还剩 ' + x.left + ' 天）' : '（7 天训练完成，装置用完了）') + '。');
+        dailyHit('home');
+      });
+      if (out.length && !quiet) setTimeout(function () { toast('茶室：' + out.join('')); }, 2500);   // 晚一点弹，免得被每日任务的提示盖掉
     });
-    if (out.length) { save(); if (!quiet) setTimeout(function () { toast('茶室：' + out.join('')); }, 2500); }   // 晚一点弹，免得被每日任务的提示盖掉
   }
   /* 家园里的精灵走来走去（自己的茶室、拜访别人的茶室、朋友的房间都用 .home-room .hm-fig）：
    * 和野外一样，每只围着自己的位置慢慢绕小圈，往左走时转身；离得近的排在前面 */
@@ -5717,16 +5713,16 @@
     if (i >= 0) {
       if (H.mons[i].auto && ex.hmArm !== u) { ex.hmArm = u; renderHome(); setTimeout(function () { if (ex.hmArm === u) { ex.hmArm = null; if (ex.view === 'home') renderHome(); } }, 4000); return; }
       ex.hmArm = null;
-      var x = H.mons[i], m = mon(u), amt = homeExp(x), min = homeMins(x);
-      H.mons.splice(i, 1);
-      var msg = amt > 0 ? gainExp(m, amt) : null;
-      if (min >= 60) dailyHit('home');
-      save(); renderHome(); renderRes();
-      toast(form(m).name + ' 回来了（展示了 ' + durText(min) + '）。' + (msg || '展示时间太短，还没有获得经验。'));
+      txRun('home', { a: 'out', u: u }, function (res) {   // 走交易（grow.js）：经验由服务器按展示时间算
+        var m = mon(u), msg = res.g ? gainMsg(res.g) : null;
+        if (res.min >= 60) dailyHit('home');
+        renderHome(); renderRes();
+        toast(form(m).name + ' 回来了（展示了 ' + durText(res.min) + '）。' + (msg || '展示时间太短，还没有获得经验。'));
+      });
       return;
     }
     if (H.mons.length >= homeMax()) return;
-    H.mons.push({ u: u, t: Date.now() }); save(); renderHome();
+    txRun('home', { a: 'in', u: u }, function () { renderHome(); });
   }
   $('pg-explore').addEventListener('keydown', function (e) { if (e.target.id === 'home-name') { if (e.key === 'Enter') { e.preventDefault(); saveHomeName(); } else if (e.key === 'Escape') { ex.homeEdit = false; renderHome(); } } });
 
@@ -5995,7 +5991,7 @@
     if (b.dataset.hauto) {
       var hx = home().mons.filter(function (x) { return x.u === +b.dataset.hauto; })[0];
       if (!hx || hx.auto || !(acc.items.auto > 0)) return;
-      acc.items.auto--; hx.auto = { left: AUTO_DAYS, got: 0 }; save(); renderHome();
+      txRun('home', { a: 'auto', u: hx.u }, function () { renderHome(); });
       toast('给 ' + form(mon(hx.u)).name + ' 装上了 7日自律训练装置：每满 1 天自动结算经验，一共 7 天。'); return;
     }
     if (b.dataset.teashop) { ex.view = 'teashop'; ex.area = '天门'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }

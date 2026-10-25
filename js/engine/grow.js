@@ -146,7 +146,155 @@ var GROW = (function () {
     return applyMonItem(a, String(args.k || ''), m, args.nat == null ? null : String(args.nat), env.rand);
   });
 
-  return { USE_ITEMS: USE_ITEMS, CAP_STEPS: CAP_STEPS, GEM_OF: GEM_OF, CAP_SID: CAP_SID, capGem: capGem, capNext: capNext, formLabel: formLabel, natText: natText,
+  /* ---------- 温泉：在温泉页面里「开始泡温泉」之后，浏览器每 20 秒报一次，服务器按经过的时间给精灵加经验 ----------
+   * a.spa.run = { t0 开始时间, last 上次结算, c: { 编号: 不满 1 点的零头 } }。两次结算隔太久（超过 SPA_GAP：电脑睡眠、断网）这一段不算 */
+  var SPA_BASE = 2, SPA_GAP = 45000;
+  function spaRec(a) { if (!a.spa || !Array.isArray(a.spa.u)) a.spa = { u: [], got: {} }; if (!a.spa.got) a.spa.got = {}; return a.spa; }
+  function spaN(a) { return SPA_BASE + Math.min(TX.D.SPA_EXTRA_MAX, (a.spa && a.spa.extra) || 0); }
+  function inHome(a, u) { return !!(a.home && Array.isArray(a.home.mons) && a.home.mons.some(function (x) { return (typeof x === 'number' ? x : x && x.u) === u; })); }
+  function spaMons(a) { var S = spaRec(a), seen = {}; return S.u.slice(0, spaN(a)).map(function (u) { if (u == null || seen[u] || inHome(a, u)) return null; seen[u] = 1; return ACC.mon(a, u); }).filter(Boolean); }
+  function spaRate(a, m, now) { return (120 + m.lv * 24) * 4 * (a.spa && a.spa.juice > now ? 2 : 1); }
+  function spaSettle(a, now) {
+    var S = spaRec(a), R = S.run, out = { gains: [], total: 0, ms: 0 };
+    if (!R) return out;
+    var dt = now - R.last; R.last = now;
+    if (dt <= 0 || dt > SPA_GAP) return out;
+    S.ms = (S.ms || 0) + dt; out.ms = dt;
+    if (!R.c) R.c = {};
+    spaMons(a).forEach(function (m) {
+      if (m.lv >= ACC.capLv(m)) return;
+      var c = (R.c[m.u] || 0) + spaRate(a, m, now) * dt / 3600000, n = Math.floor(c); R.c[m.u] = c - n;
+      if (n <= 0) return;
+      var g = ACC.gainExp(a, m, n); if (!g) return;
+      S.got[m.u] = (S.got[m.u] || 0) + g.amt; out.total += g.amt; out.gains.push(g);
+    });
+    return out;
+  }
+  // { a: 'start' | 'tick' | 'end' }
+  TX.add('spaRun', function (a, args, env) {
+    var S = spaRec(a), act = String(args.a || '');
+    if (act === 'start') {
+      if (!spaMons(a).length) return no('先放一只精灵进温泉吧。');
+      S.run = { t0: env.now, last: env.now, c: {} };
+      return { ok: true };
+    }
+    if (!S.run) return act === 'end' ? { ok: true, gains: [], total: 0 } : no('还没开始泡温泉');
+    var r = spaSettle(a, env.now); r.ok = true;
+    if (act === 'end') delete S.run;
+    return r;
+  });
+
+  /* ---------- 茶室展示：展示中的精灵按时间涨经验（每只每小时 30 + 等级 × 6，最多算 24 小时），收回时结算 ----------
+   * 自律训练装置：装在展示中的精灵身上，每满 1 天自动结算一次，再开始下一天，共 7 天 */
+  var HOME_BASE = 3, HOME_CAP_H = 24, AUTO_DAYS = 7, DAY_MS = 24 * 3600 * 1000;
+  function homeRec(a) {
+    if (!a.home) a.home = { name: '陆羽茶室', mons: [] };
+    if (!Array.isArray(a.home.mons)) a.home.mons = [];
+    return a.home;
+  }
+  function homeMax(a) { return HOME_BASE + Math.min(4, (a.home && a.home.cap) || 0); }
+  function homeRate(m) { return 30 + m.lv * 6; }
+  function homeMins(x, now) { return Math.max(0, Math.min(HOME_CAP_H * 60, Math.floor((now - x.t) / 60000))); }
+  // { a: 'in' | 'out' | 'auto' | 'settle', u }
+  TX.add('home', function (a, args, env) {
+    var H = homeRec(a), act = String(args.a || ''), u = int(args.u);
+    H.mons = H.mons.map(function (x) { return typeof x === 'number' ? { u: x, t: env.now } : x; }).filter(function (x) { return x && ACC.mon(a, x.u); });
+    var i = -1; H.mons.forEach(function (x, k) { if (x.u === u) i = k; });
+    if (act === 'in') {
+      var m = ACC.mon(a, u); if (!m) return no('找不到这只精灵');
+      if (i >= 0) return no('它已经在茶室里了');
+      if (H.mons.length >= homeMax(a)) return no('茶室已经满了');
+      if (a.spa && Array.isArray(a.spa.u) && a.spa.u.indexOf(u) >= 0) return no('它正在泡温泉，先从温泉里带出来吧。');
+      H.mons.push({ u: u, t: env.now });
+      return { ok: true };
+    }
+    if (act === 'out') {
+      if (i < 0) return no('它不在茶室里');
+      var x = H.mons[i], mo = ACC.mon(a, x.u), min = homeMins(x, env.now), amt = Math.floor(min * homeRate(mo) / 60);
+      H.mons.splice(i, 1);
+      return { ok: true, min: min, g: amt > 0 ? ACC.gainExp(a, mo, amt) : null };
+    }
+    if (act === 'auto') {
+      if (i < 0) return no('它不在茶室里');
+      var hx = H.mons[i]; if (hx.auto) return no('已经装上了');
+      var I = items(a); if (!(I.auto > 0)) return no('没有自律训练装置了');
+      I.auto--; hx.auto = { left: AUTO_DAYS, got: 0 };
+      return { ok: true };
+    }
+    if (act === 'settle') {   // 自律训练装置：每满 1 天结算一次
+      var out = [];
+      H.mons.forEach(function (x) {
+        if (!x.auto || !(x.auto.left > 0)) return;
+        var m2 = ACC.mon(a, x.u), days = 0, got = 0, last = null;
+        while (x.auto.left > 0 && env.now - x.t >= DAY_MS) {
+          var amt2 = homeRate(m2) * HOME_CAP_H, g = ACC.gainExp(a, m2, amt2);
+          if (g) last = g;
+          got += amt2; x.t += DAY_MS; x.auto.left--; days++;
+        }
+        if (!days) return;
+        x.auto.got = (x.auto.got || 0) + got;
+        var left = x.auto.left; if (x.auto.left <= 0) delete x.auto;
+        out.push({ u: x.u, days: days, got: got, left: left, g: last });
+      });
+      return { ok: true, list: out };
+    }
+    return no('不支持的操作');
+  });
+
+  /* ---------- 精灵保育仓：精元放进孵化槽，过一段时间孵化出精灵 ---------- */
+  var NURSERY_N = 3;
+  var HATCH = { e_odo: { sid: 'odo', lv: 1, min: 480 }, e_leafcat: { sid: 'leafcat', lv: 1, min: 480 }, e_pluto: { sid: 'pluto', lv: 1, min: 720 }, e_leiming: { sid: 'leiming', lv: 1, min: 480 } };
+  function nurseryRec(a) { if (!a.nursery || !Array.isArray(a.nursery.slots)) a.nursery = { slots: [] }; while (a.nursery.slots.length < NURSERY_N) a.nursery.slots.push(null); return a.nursery; }
+  // { a: 'put', i, k } / { a: 'hatch', i }
+  TX.add('hatch', function (a, args, env) {
+    var N = nurseryRec(a), i = int(args.i), act = String(args.a || '');
+    if (!(i >= 0 && i < NURSERY_N)) return no('没有这个孵化槽');
+    if (act === 'put') {
+      var k = String(args.k || ''), I = items(a);
+      if (N.slots[i]) return no('这个孵化槽里已经有精元了');
+      if (!HATCH[k] || !(I[k] > 0)) return no('没有这种精元了');
+      I[k]--; N.slots[i] = { k: k, t: env.now };
+      return { ok: true };
+    }
+    if (act === 'hatch') {
+      var x = N.slots[i], H = x && HATCH[x.k]; if (!H) return no('孵化槽是空的');
+      if (env.now - x.t < H.min * 60000) return no('还没到孵化的时候');
+      var gm = ACC.giveMon(a, H.sid, H.lv, env); N.slots[i] = null;
+      return { ok: true, u: gm.m.u, added: gm.added };
+    }
+    return no('不支持的操作');
+  });
+
+  /* ---------- 送精灵：剧情、邮件、排位奖励、炙热核心的火月鼠 ----------
+   * 每份只送一次，记在 a.giftGot。{ k: 'story' | 'mail' | 'rank' | 'fm', id } */
+  var STORY_GIFT = { mingming: [{ sid: 'aegis', lv: 10 }] };
+  var RANK_GIFT = { 4: [{ sid: 'moon', lv: 10 }], 10: [{ sid: 'bone', lv: 10 }] };
+  var FM = { need: 3, lv: 18 };
+  function rankBest(data) { try { var R = JSON.parse((data && data['hs-rank-v1']) || 'null'); return R ? Math.max(R.best || 0, R.r || 0) : 0; } catch (e) { return 0; } }
+  TX.add('gift', function (a, args, env) {
+    var k = String(args.k || ''), id = String(args.id || ''), key = k + ':' + id, list = null, extra = {};
+    if (!a.giftGot) a.giftGot = {};
+    if (a.giftGot[key]) return no('已经领过了');
+    if (k === 'story') { if (!ACC.done(a, id)) return no('还没读完这段剧情'); list = STORY_GIFT[id]; }
+    else if (k === 'mail') {
+      var M0 = (typeof MAILS !== 'undefined' ? MAILS : []).filter(function (x) { return x.id === id; })[0];
+      if (M0) { if (M0.to && M0.to.indexOf(a.name) < 0 && M0.to.indexOf(env.user) < 0) return no('这封邮件不是给你的'); list = M0.att && M0.att.mons; }   // to 里写登录账号名或做题家名字都行
+      else if (/-king-gift$/.test(id)) { if (rankBest(env.data) < 10) return no('还没达到王者段位'); list = RANK_GIFT[10]; }
+    }
+    else if (k === 'rank') { var r = int(+id.split(':').pop()); if (!(rankBest(env.data) >= r)) return no('还没达到这个段位'); list = RANK_GIFT[r]; }
+    else if (k === 'fm') {
+      if (a.fmNpc) return no('火月鼠已经跟你走了');
+      var fire = ACC.team(a).filter(function (m) { return SPMAP[m.sid] && SPMAP[m.sid].types.indexOf('火') >= 0; }).length;
+      if (fire < FM.need) return no('配队里还要带 ' + FM.need + ' 只火系精灵');
+      list = [{ sid: 'firemouse', lv: FM.lv }]; a.fmNpc = 1; extra.fm = true;
+    }
+    if (!list || !list.length) return no('没有可以领的精灵');
+    a.giftGot[key] = env.now;
+    var got = list.filter(function (g) { return SPMAP[g.sid]; }).map(function (g) { var gm = ACC.giveMon(a, g.sid, g.lv, env, g.shiny); ACC.seeMon(a, g.sid, g.lv); return { u: gm.m.u, added: gm.added }; });
+    return { ok: true, mons: got };
+  });
+
+  return { SPA_GAP: SPA_GAP, spaMons: spaMons, HOME_CAP_H: HOME_CAP_H, AUTO_DAYS: AUTO_DAYS, DAY_MS: DAY_MS, HATCH: HATCH, STORY_GIFT: STORY_GIFT, RANK_GIFT: RANK_GIFT, USE_ITEMS: USE_ITEMS, CAP_STEPS: CAP_STEPS, GEM_OF: GEM_OF, CAP_SID: CAP_SID, capGem: capGem, capNext: capNext, formLabel: formLabel, natText: natText,
     itemFits: itemFits, jadeMoves: jadeMoves, formOpts: formOpts, evRoom: evRoom, applyMonItem: applyMonItem };
 })();
 if (typeof module !== 'undefined') module.exports = GROW;

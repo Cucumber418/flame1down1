@@ -85,7 +85,7 @@ A.use(function (req, res, url) {
     if (!acc || typeof acc !== 'object') return A.reply(res, 409, { error: '存档还没同步到服务器，请稍后再试。' });
     var op = String(body.op || ''), args = body.args && typeof body.args === 'object' && !Array.isArray(body.args) ? body.args : {};
     var before = wallet(acc), now = Date.now(), rand = TX.recorder(), r;
-    try { r = TX.run(acc, op, args, { now: now, rand: rand }); } catch (e) { console.error('交易出错', op, e); return A.reply(res, 500, { error: '服务器出错了，这次没有扣费。' }); }
+    try { r = TX.run(acc, op, args, { now: now, rand: rand, data: u.save.data, user: u.name }); } catch (e) { console.error('交易出错', op, e); return A.reply(res, 500, { error: '服务器出错了，这次没有扣费。' }); }
     if (!r || !r.ok) return A.reply(res, 400, { error: (r && r.err) || '没能完成' });
     u.save.data['hs-account-v1'] = JSON.stringify(acc);
     u.save.rev = (u.save.rev || 0) + 1; u.save.savedAt = now;
