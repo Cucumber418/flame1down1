@@ -915,10 +915,9 @@
   }
   // 伤害数字前缀（2026-10-20）：克制 / 抵抗 / 暴击、暴击且克制、暴击但抵抗
   function hitLabel(e) { var s = e.eff > 1 ? '克制' : e.eff > 0 && e.eff < 1 ? '抵抗' : ''; return e.crit ? '暴击' + (s === '克制' ? '且克制' : s === '抵抗' ? '但抵抗' : '') : s; }
-  // 2026-10-25：攻击技能命中就振动一下（画面抖动，手机上再短震一下），暴击更剧烈。手机震动跟着「技能特效」开关
+  // 2026-10-25：攻击技能命中画面就抖一下，暴击更剧烈（不使用手机震动）
   function shakeField(light) {
     var f = $('field'); if (f) { f.classList.remove('bshake', 'bshake-s'); restartAnim(f, light ? 'bshake-s' : 'bshake'); }
-    try { if (navigator.vibrate && window.HSFX && HSFX.on()) navigator.vibrate(light ? 25 : [60, 30, 90]); } catch (e) {}
   }
   function banner(text, type) {
     var b = $('banner'); b.textContent = text; b.style.color = TYPE_COLOR[type] || 'var(--ink)';
