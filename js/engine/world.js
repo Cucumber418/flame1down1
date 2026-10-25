@@ -113,6 +113,16 @@ var WORLD = (function () {
     return { ok: true, k: J.k, n: J.n };
   });
 
+  /* ---------- 一碗饭：放在庞贝星熔岩原的一个场景里，之后这个场景有机会刷出米饭火鸡（被吃掉前只能放一碗） ---------- */
+  TX.add('bowl', function (a, args, env) {
+    var rid = String(args.rid || ''), si = int(args.si), R = regionOk(a, rid), RC = PVE.RICE;
+    if (!R || RC.regions.indexOf(rid) < 0 || !(si >= 0 && si < PVE.sceneCount(R))) return no('这里放不了');
+    if (a.riceBowl) return no('已经放了一碗饭了');
+    var I = items(a); if (!(I.c_bowl > 0)) return no('没有一碗饭了');
+    I.c_bowl--; a.riceBowl = { rid: rid, si: si, t: env.now };
+    return { ok: true };
+  });
+
   /* ---------- 赫菲角片：每天领 12~15 片 ---------- */
   TX.add('hornDay', function (a, args, env) {
     var d = TX.dayNum(env.now); if (a.hornDay === d) return no('今天的赫菲角片已经领过了');

@@ -56,7 +56,7 @@ function addTo(sum, d) { FIELDS.forEach(function (f) { if (d[f]) sum[f] += d[f];
 
 /* ---------- 检查一条申报，返回整理好的数值；不合格返回 null ---------- */
 // 2026-10-24 起由服务器直接发的奖励：浏览器不该再申报，宽限期过后这些来源的申报一律不认
-var SERVER_ONLY = { tower: 1, towerDeath: 1, bossFirst: 1, weekly: 1, ewk: 1, chalFirst: 1, mmFirst: 1, mm: 1, cumber: 1, npc: 1, tea: 1, purge: 1, pw: 1, travel: 1, drop: 1, rankExp: 1, battle: 1, forge: 1, gx: 1, farm: 1, help: 1, brawl: 1, gather: 1, mine: 1, jade: 1, hornDay: 1, daily: 1, quest: 1, story: 1, chapter: 1, sgive: 1 };   // 这些奖励已经改由服务器直接发（server/pve.js），浏览器申报的不认
+var SERVER_ONLY = { tower: 1, towerDeath: 1, bossFirst: 1, weekly: 1, ewk: 1, chalFirst: 1, mmFirst: 1, mm: 1, cumber: 1, npc: 1, tea: 1, purge: 1, pw: 1, travel: 1, drop: 1, rankExp: 1, battle: 1, forge: 1, gx: 1, farm: 1, help: 1, brawl: 1, gather: 1, mine: 1, jade: 1, hornDay: 1, daily: 1, quest: 1, story: 1, chapter: 1, sgive: 1, title: 1, mail: 1, chalStar: 1, rankRw: 1, fix: 1, misc: 1 };   // 这些奖励已经改由服务器直接发（server/pve.js），浏览器申报的不认
 function clean(c) {
   if (!c || typeof c !== 'object' || typeof c.c !== 'string' || c.c.length > 40 || !SRC.hasOwnProperty(c.s)) return null;
   if (SERVER_ONLY[c.s] && Date.now() >= GRACE_UNTIL) return null;
@@ -84,12 +84,15 @@ function clean(c) {
 var OWNED = ['tower.f', 'tower.cp', 'tower.best', 'tower.clears', 'tower.death', 'tower.day', 'bosses', 'permit', 'chal', 'mm.clr', 'mm.wins', 'cumberFt', 'npcWin', 'teaFight', 'purge', 'pwd', 'travel', 'rankExp', 'farm', 'nursery', 'home.mons', 'brawlExp', 'giftGot',
   'gather', 'mine', 'drill', 'jade', 'hornDay', 'herbSeed', 'xcq',   // 野外每日产出（js/engine/world.js，2026-10-25）
   'daily', 'quests', 'stats.wildWins',   // 每日任务、世界任务（js/engine/quest.js）
-  'chapters', 'starter', 'rival', 'split8'];   // 剧情（js/engine/story.js）；a.story 另外处理（storyFix）
+  'chapters', 'starter', 'rival', 'split8',   // 剧情（js/engine/story.js）；a.story 另外处理（storyFix）
+  'titles', 'titleRw', 'milRank', 'milV', 'chalGot', 'rankRw', 'matsV', 'ctPlace', 'loginDay', 'created', 'pw', 'tokenBack', 'purgeX10',   // 称号、军衔、星数和段位奖励、邮箱投递记录（js/engine/award.js）
+  'spa.run', 'spa.got', 'spa.ms', 'spa.extra', 'spa.bgmOwn', 'spa.juice', 'home.cap', 'mm.g', 'pveXp', 'emblems', 'fmNpc', 'riceBowl'];   // 其他由交易、对战结算改的记录
 var OWNED_KEYS = ['hs-rank-v1', 'hs-draft-v1'];   // 整个存档项只由服务器改：段位、平衡排位本局阵容（server/pve.js）
 function getP(o, p) { var k = p.split('.'); return k.length === 1 ? o[k[0]] : o[k[0]] && typeof o[k[0]] === 'object' ? o[k[0]][k[1]] : undefined; }
-function ownDiff(A, B) { return OWNED.filter(function (p) { var k = p.split('.'); if (k.length > 1 && (!A[k[0]] || !B[k[0]])) return false; var a = getP(A, p), b = getP(B, p); return JSON.stringify(a) !== JSON.stringify(b) && !fresh(p, a, b, A); }); }
+function ownDiff(A, B) { return OWNED.filter(function (p) { var k = p.split('.'); if (k.length > 1 && (!A[k[0]] || !B[k[0]])) return false; var a = getP(A, p), b = getP(B, p); return JSON.stringify(a) !== JSON.stringify(b) && !(blankV(a) && blankV(b)) && !fresh(p, a, b, A); }); }
+function blankV(v) { return v == null || (typeof v === 'object' && !Object.keys(v).length); }   // 没有和空的 [] / {} 算一样（浏览器读的时候顺手建了个空记录）
 // 按天记的记录：浏览器跨天后自己清空成「今天、什么都没领」是正常的（服务器那份还是昨天的），不算改动
-var FRESH = { gather: 'day', mine: 'day', jade: 'd', 'tower.day': 'd', rankExp: 'd', npcWin: 'd', pwd: 'd', brawlExp: 'd' };
+var FRESH = { gather: 'day', mine: 'day', jade: 'd', 'tower.day': 'd', rankExp: 'd', npcWin: 'd', pwd: 'd', brawlExp: 'd', pveXp: 'd' };
 function fresh(p, a, b, A) {
   var E = require('./tx').engine();
   if (p === 'daily' && E && E.QST && b && (!a || a.date !== b.date)) {   // 每日任务：浏览器跨天后按同样的规则抽了今天的一套（进度都是 0）
@@ -118,10 +121,32 @@ function storyFix(A, B) {
   if (JSON.stringify(canon(out)) === JSON.stringify(canon(SB))) return false;
   B.story = out; return true;
 }
+// 邮箱：邮件只由服务器投递、领取（js/engine/award.js）。浏览器可以：标成已读、删掉已领的（或没有附件的）、自己加没有附件的通知；投递记录 mailSeen 只增不减
+function hasAtt(x) { return !!(x && (x.exp || x.energy || x.merit || x.tokens || x.twTok || (x.items && Object.keys(x.items).length) || (x.mons && x.mons.length))); }
+function mailFix(A, B) {
+  var LA = Array.isArray(A.mail) ? A.mail : [], LB = Array.isArray(B.mail) ? B.mail : [], byA = {}, byB = {}, out = [];
+  LA.forEach(function (m) { if (m && m.id) byA[m.id] = m; }); LB.forEach(function (m) { if (m && m.id) byB[m.id] = m; });
+  LB.forEach(function (m) {
+    if (!m || !m.id || typeof m.id !== 'string') return;
+    var o = byA[m.id];
+    if (o) { o = JSON.parse(JSON.stringify(o)); if (m.read) o.read = true; out.push(o); }
+    else if (!hasAtt(m.att) && m.id.length < 60) out.push({ id: m.id, t: +m.t || 0, date: String(m.date || '').slice(0, 20), from: String(m.from || '').slice(0, 40), title: String(m.title || '').slice(0, 100), body: String(m.body || '').slice(0, 2000), att: null, read: !!m.read, got: true });
+  });
+  LA.forEach(function (m) { if (m && m.id && !byB[m.id] && hasAtt(m.att) && !m.got) out.push(JSON.parse(JSON.stringify(m))); });   // 还没领的附件邮件不能删
+  out.sort(function (x, y) { return (y.t || 0) - (x.t || 0); });
+  var seen = {}, SA = A.mailSeen && typeof A.mailSeen === 'object' ? A.mailSeen : {}, SB = B.mailSeen && typeof B.mailSeen === 'object' ? B.mailSeen : {};
+  for (var k in SB) if (k.length < 80) seen[k] = SB[k]; for (var k2 in SA) seen[k2] = SA[k2];
+  var ch = JSON.stringify(canon(out)) !== JSON.stringify(canon(LB)) || JSON.stringify(canon(seen)) !== JSON.stringify(canon(SB));
+  if (ch) { B.mail = out; B.mailSeen = seen; }
+  // 上次在线时间（离线经验按它算）：只能往前走，不能超过现在
+  var la = +A.lastActive || 0, lb = Math.min(+B.lastActive || 0, Date.now()), lt = Math.max(la, lb);
+  if (lt && B.lastActive !== lt) { B.lastActive = lt; ch = true; }
+  return ch;
+}
 function topKeys(paths) { var o = {}; paths.forEach(function (p) { o[p.split('.')[0]] = 1; }); return Object.keys(o); }
 function twBack(A, B, keys) {
   keys.forEach(function (p) {
-    if (p === 'story') return;
+    if (p === 'story' || p === 'mail' || p === 'mailSeen' || p === 'lastActive') return;
     var k = p.split('.'), src = k.length === 1 ? A : A[k[0]], dst = k.length === 1 ? B : B[k[0]], f = k[k.length - 1];
     if (src[f] === undefined) delete dst[f]; else dst[f] = JSON.parse(JSON.stringify(src[f]));
   });
@@ -265,6 +290,7 @@ function onUpload(u, list, oldData, newData, info) {
   // 先驱之塔的进度（层数、存档点、通关次数、死神代币次数、今天的塔内奖励）只由服务器推进（server/pve.js）：上传的存档改不了
   var twFix = enforce ? ownDiff(A, B) : [];
   if (enforce && storyFix(A, B)) twFix.push('story');   // storyFix 已经把 B.story 改好了（twBack 遇到 story 跳过）
+  if (enforce && mailFix(A, B)) twFix.push('mail', 'mailSeen', 'lastActive');   // 同上（mailFix 已经改好）
   if (!over.length && !notes.length && !twFix.length) return { data: newData, fixed: '', sync: info.sync || null };
   if (over.length) { stat.over++; stat.last.unshift({ t: new Date(now).toISOString(), old: !info.claims, over: over.map(function (x) { return x.f + ' +' + x.by; }) }); stat.last = stat.last.slice(0, 15); }
   if (over.length || notes.length) log({ t: new Date(now).toISOString(), u: u.name, mode: enforce ? 'enforce' : 'observe', oldClient: !info.claims, over: over, notes: notes });

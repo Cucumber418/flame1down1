@@ -271,3 +271,5 @@ A.use(function (req, res, url) {
 });
 
 module.exports = { pairOf: pairOf, report: report, saveReplay: saveReplay, tick: tick, standings: standings, FILE: FILE, NAME: NAME, _test: { pairRound: pairRound, bjAt: bjAt, roundDeadline: roundDeadline, swissRounds: swissRounds, closeRound: closeRound, doDraw: doDraw } };
+// 交易里查争霸赛名次（js/engine/award.js 的邮箱投递、称号）：结束了返回名次（0 是冠军），没参赛或没结束返回 null
+require('./tx').hook('ctPlace', function (u) { var c = loadAll().quiz1; if (!c || c.status !== 'done' || !Array.isArray(c.ranks)) return null; var k = c.ranks.indexOf(u.name); return k >= 0 ? k : null; });

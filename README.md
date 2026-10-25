@@ -202,6 +202,10 @@ sudo git clone --depth 1 https://github.com/Cucumber418/flame1down1 /opt/flame1d
 
 **剧情进度（2026-10-25 起）**：`js/engine/story.js`（`STY`）注册交易 `story`：`done`（读完一段：服务器核对开放条件 `SITES`（前一段 + 额外条件，「盐碱地之下」用 `env.fetch('pwTotal')` 查全服击破数）、一定会打到的剧情对战打过没有（`bt`，由 `MODES.story` 打完时记），再记进度、发奖励和章节大奖）、`give`（剧本里的 give）、`pick`（选初始精灵）、`fix`（旧存档的补发：主线奖励差额、物资仓储道具、读完没发的奖励、章节大奖、第八段拆分）。`a.story[段]` 里只有 `at`、`ch` 由浏览器记，其余由 claims.js 的 `storyFix` 改回服务器的；`chapters`、`starter`、`rival` 只由服务器改。`HSACC.patch` 换上服务器改回的字段时只刷新顶栏数值，不重画整页（剧情、对战画面开着时不会被打断）。
 
+**称号、军衔、星数和段位奖励、邮箱（2026-10-25 起）**：`js/engine/award.js`（`AWD`）注册交易 `title`（检查新称号、发称号奖励）、`promote`（军衔晋升；`migrate` 换算旧军衔）、`chalStar`（挑战累计星数奖励）、`rankRw`（排位段位奖励，送的精灵一起发）、`fix`（旧采集物换算）、`mail`（`sync` 投递：全服邮件、每日登录、离线经验、旧存档补发、瘴气驱逐战里程碑 `env.fetch('pw')`、争霸赛名次 `env.fetch('ctPlace')`；`get` / `all` 领附件）。浏览器先在本机试算（`titleCheck(…, true)`、`rankPending`），有要结算的才发交易。
+- claims.js：这些记录只由服务器改；邮箱由 `mailFix` 合并（浏览器只能标已读、删已领的、加没有附件的通知；`mailSeen` 只增不减；`lastActive` 只能往前走、不超过现在）。所有进账来源都在 `SERVER_ONLY` 里：宽限期过后，浏览器的进账申报一律不认，经验背包、能量、代币、道具只由服务器增加（交易、对战结算）。
+- game.js 的 `txRun` 改成排队：上一笔没结束时，后面的按顺序等着结算（最多 20 笔）。
+
 **版本检查**：服务器启动时按网页、样式、脚本的内容算一个版本号（`GET /api/version`）。开着的页面每 3 分钟、以及切回页面时检查一次，发现服务器上的版本变了就弹窗提示刷新；用旧页面兑换东西时服务器会拒绝（不扣费）并提示刷新。
 
 ## 小段位

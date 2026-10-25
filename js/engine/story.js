@@ -21,7 +21,7 @@ var STY = (function () {
     var t = SPMAP[sid].types[0];
     return STARTERS.filter(function (x) { return x !== sid && eff(SPMAP[x].types[0], t) > 1; })[0] || STARTERS.filter(function (x) { return x !== sid; })[0];
   }
-  function rareList(a) { var R = []; for (var k in WILD) WILD[k].forEach(function (w) { if (w.rare && w.sid !== a.starter && R.indexOf(w.sid) < 0) R.push(w.sid); }); return R; }
+  function rareList(a) { var R = []; for (var k in WILD_POOLS) WILD_POOLS[k].forEach(function (w) { if (w.rare && w.sid !== a.starter && R.indexOf(w.sid) < 0) R.push(w.sid); }); return R; }
   function species(a) { var o = {}; (a.mons || []).forEach(function (m) { if (m) o[m.sid] = 1; }); return Object.keys(o).length; }
 
   /* ---------- 每段剧情的开放条件（和 game.js 的 SITES 一致：after 是前一段，need 是额外条件） ---------- */

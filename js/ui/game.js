@@ -117,16 +117,11 @@
     save(); savePage();
   }
   // 旧的六种采集物、三种种子并进星砂、星核和药草。已经种下的旧种子在打开种植园时清掉。
-  function migrateMats() {
-    if (!acc || !acc.items || acc.matsV === 1) return;
-    var sand = 0, core = 0;
-    ['g_fungus', 'g_fiber', 'g_shell', 'g_rock'].forEach(function (k) { sand += acc.items[k] || 0; delete acc.items[k]; });
-    ['g_spark', 'g_ice'].forEach(function (k) { core += acc.items[k] || 0; delete acc.items[k]; });
-    earn('fix', 'mats1', { items: { g_sand: sand, g_core: core } });
-    ['s_moss', 's_bean', 'c_moss', 'c_bean'].forEach(function (k) { delete acc.items[k]; });
-    acc.matsV = 1; save();
+  var matsBusy = false;
+  function migrateMats() {   // 旧的六种采集物、三种种子并进星砂、星核和药草（交易 fix，js/engine/award.js）
+    if (!acc || !acc.items || acc.matsV === 1 || matsBusy || !ready()) return;
+    matsBusy = true; setTimeout(function () { txRun('fix', { k: 'mats' }, function () { matsBusy = false; }, function () { matsBusy = false; }); }, 0);
   }
-  migrateMats();
   function ready() { return !!(acc && acc.introDone); }
   function save() {
     if (claimBuf.length) { if (window.CLOUD && CLOUD.claim) CLOUD.claim(claimBuf); claimBuf = []; }   // 进账申报和存档一起交给 cloud.js 上传
@@ -156,11 +151,14 @@
    * 规则和价格在 js/engine/tx.js。服务器结算成功后，本机用服务器给的随机数和时间再算一遍（结果和服务器一样），然后 done(结果)。
    * 本地双击打开（没有服务器）时直接在本机结算。 */
   var txBusy = false;
+  // 一次只结算一笔；上一笔还没结束时排队（最多 20 笔），结束后依次结算
+  var txQ = [];
+  function txNext() { if (!txBusy && txQ.length) { var q = txQ.shift(); txRun(q[0], q[1], q[2], q[3]); } }
   function txRun(op, args, done, fail) {
-    if (txBusy) { if (fail) fail(''); return; } txBusy = true;
+    if (txBusy) { if (txQ.length < 20) txQ.push([op, args, done, fail]); else if (fail) fail(''); return; } txBusy = true;
     var C = window.CLOUD, p = C && C.tx ? C.tx(op, args) : Promise.resolve({ local: true });
     p.then(function (r) {
-      txBusy = false;
+      txBusy = false; setTimeout(txNext, 0);
       if (!r.local && !r.ok) { if (fail) fail(r.err || '没能完成'); else if (r.err) toast(r.err); return; }
       var data = {}; try { data['hs-rank-v1'] = localStorage.getItem('hs-rank-v1'); } catch (e) {}
       var user = C && C.user ? C.user() : null;
@@ -173,7 +171,7 @@
         return;
       }
       save(); done(res);
-    }, function () { txBusy = false; toast('连不上服务器，这次没有兑换，请稍后再试。'); });
+    }, function () { txBusy = false; setTimeout(txNext, 0); toast('连不上服务器，这次没有兑换，请稍后再试。'); });
   }
   function savePage() { try { localStorage.setItem(PKEY, page); } catch (e) {} }
 
@@ -284,7 +282,7 @@
     document.body.classList.toggle('no-acc', !ready());
     $('onboard').hidden = ready();
     if (!ready()) { renderOnboard(); return; }
-    storyFix();   // 旧存档的剧情补发（服务器结算，js/engine/story.js 的 legacy）
+    migrateMats(); storyFix();   // 旧存档的剧情补发（服务器结算，js/engine/story.js 的 legacy）
     $('who-name').textContent = acc.name;
     renderRes();
     renderAvatar(); renderGender();
@@ -419,57 +417,44 @@
   // 每一阶晋升要的功勋经验：从 80 起，每阶多 10%（数额暂定）。比旧军衔贵得多：旧的中尉大约只够到新的下士2
   for (var mi = 0; mi < RANKS_MIL.length - 1; mi++) MIL_COST.push(Math.round(80 * Math.pow(1.1, mi)));
   var MIL_COST_V1 = [20, 40, 60, 100, 150, 200, 300, 400, 500, 700, 900, 1200], MIL_V2_IDX = [0, 3, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34];
-  // 换算：把旧军衔一路晋升花掉的功勋经验加上手里剩的，按新的阶级重新晋升，剩下的留作功勋经验
-  function milMigrate() {
-    var old = acc.milRank | 0;
-    if (acc.milV === 2) { var o2 = 0; MIL_V2_IDX.forEach(function (x, i) { if (x <= old) o2 = i; }); old = o2; }   // 上一版（只改名、按位置换算）的存档先换回旧军衔
-    old = Math.max(0, Math.min(12, old));
-    var pool = (acc.meritXp || 0); for (var i = 0; i < old; i++) pool += MIL_COST_V1[i];
-    var r = 0; while (r < RANKS_MIL.length - 1 && pool >= MIL_COST[r]) { pool -= MIL_COST[r]; r++; }
-    var dx = pool - (acc.meritXp || 0); if (dx > 0) earn('fix', 'mil3', { meritXp: dx }); else acc.meritXp = pool;
-    acc.milRank = r; acc.milV = 3;
-  }
+  // 旧军衔换算、晋升：交易 promote（js/engine/award.js）
+  var milBusy = false;
   function milRank() {
-    if (acc.milV !== 3) milMigrate();
+    if (acc.milV !== 3) {
+      var C = { milRank: acc.milRank, milV: acc.milV, meritXp: acc.meritXp }; AWD.milMigrate(C);
+      if (!milBusy) { milBusy = true; setTimeout(function () { txRun('promote', { a: 'migrate' }, function () { milBusy = false; renderTop(); }, function () { milBusy = false; }); }, 0); }
+      return C.milRank;
+    }
     return Math.max(0, Math.min(RANKS_MIL.length - 1, acc.milRank | 0));
   }
   function milName() { return RANKS_MIL[milRank()]; }
   function promote() {
     var r = milRank(), c = MIL_COST[r];
     if (r >= RANKS_MIL.length - 1 || !((acc.meritXp || 0) >= c)) return;
-    acc.meritXp -= c; acc.milRank = r + 1; save();
-    toast('晋升成功！你的军衔现在是「' + milName() + '」。'); renderTop(); if (ex.view === 'medal') renderMedal();
+    txRun('promote', { a: 'up' }, function () { toast('晋升成功！你的军衔现在是「' + milName() + '」。'); renderTop(); if (ex.view === 'medal') renderMedal(); });
   }
+  // 称号：服务器判断、发奖励（交易 title，js/engine/award.js）；这里先在本机试算，有新的才去结算
+  var titleBusy = false;
+  function titleEnv() { var d = {}; try { d['hs-rank-v1'] = localStorage.getItem('hs-rank-v1'); } catch (e) {} return { now: Date.now(), data: d }; }
   function checkTitles() {
-    if (!acc.titles) acc.titles = [];
-    var got = [];
-    TITLES.forEach(function (T) { if (acc.titles.indexOf(T.id) < 0 && T.ok()) { acc.titles.push(T.id); got.push(T.n); } });
-    // 称号奖励：acc.titleRw 记已经发过奖励的称号。奖励上线前已经有的称号，第一次用邮件一起补发
-    var back = !acc.titleRw;
-    if (back) acc.titleRw = [];
-    var sum = { exp: 0, energy: 0, merit: 0 }, n = 0;
-    TITLES.forEach(function (T) {
-      if (acc.titles.indexOf(T.id) < 0 || acc.titleRw.indexOf(T.id) >= 0) return;
-      acc.titleRw.push(T.id); var r = titleRw(T); sum.exp += r.exp; sum.energy += r.energy; sum.merit += r.merit; n++;
-      if (!back) earn('title', T.id, { exp: r.exp, energy: r.energy, merit: r.merit, meritXp: r.merit });   // 补发的那次走邮件
-    });
-    if (n && back) {
-      sendMail({ id: 'title-rw-back', title: '称号奖励补发', body: '{name}，你好！\n从现在起，每获得一个称号都会得到累积经验、能量和功勋点奖励。功勋点同时会变成等额的功勋经验，可以在荆楚号 · 黄冈 · 学院部的授勋馆里晋升军衔。\n你之前已经获得了 ' + n + ' 个称号，奖励一起补发，请领取附件。', att: sum });
-      renderMailBadge(); save();
-    } else if (n) {
-      save(); renderRes();
-    }
-    // 一次拿到好几个（比如老玩家第一次看到赛季称号）时合成一条提示
-    if (got.length) { save(); var rt = !back && n ? '奖励：' + rwText(sum) + '。' : ''; var tmsg = '获得称号「' + got.join('」「') + '」！' + rt + '点右上角的名字即可佩戴。'; if (typeof REW !== 'undefined' && REW.capture) toast(tmsg); else setTimeout(function () { toast(tmsg); }, 400); }
-    else if (n && !back) setTimeout(function () { toast('称号奖励到账：' + rwText(sum) + '。'); }, 600);
+    if (!ready() || titleBusy) return;
+    var dry = AWD.titleCheck(acc, titleEnv(), true);
+    if (!dry.got.length && !dry.paid.length) return;
+    titleBusy = true;
+    txRun('title', {}, function (r) {
+      titleBusy = false; renderRes(); renderTitle();
+      var names = (r.got || []).map(titleName).filter(Boolean), sum = r.sum || { exp: 0, energy: 0, merit: 0 }, any = (r.paid || []).length;
+      if (names.length) { var tmsg = '获得称号「' + names.join('」「') + '」！' + (any ? '奖励：' + rwText(sum) + '。' : '') + '点右上角的名字即可佩戴。'; toast(tmsg); }
+      else if (any) setTimeout(function () { toast('称号奖励到账：' + rwText(sum) + '。'); }, 600);
+    }, function () { titleBusy = false; });
   }
   function titleName(id) { var T = TITLES.filter(function (x) { return x.id === id; })[0]; return T ? T.n : ''; }
   function renderTitle() {
-    var cur = acc.title && acc.titles.indexOf(acc.title) >= 0 ? acc.title : '';
+    var cur = acc.title && (acc.titles || []).indexOf(acc.title) >= 0 ? acc.title : '';
     $('who-title').textContent = cur ? titleName(cur) : '做题家';
     $('who-title').classList.toggle('has', !!cur);
     // 名字菜单里只列出已经获得的称号；全部称号和获得方式在学院部的授勋馆
-    var own = TITLES.filter(function (T) { return acc.titles.indexOf(T.id) >= 0; });
+    var own = TITLES.filter(function (T) { return (acc.titles || []).indexOf(T.id) >= 0; });
     $('title-box').innerHTML = '<b>称号 <small class="tt-n">' + own.length + '</small></b><div class="tt-list">' + own.map(function (T) {
       return '<label class="tt-opt"><input type="radio" name="title" value="' + T.id + '"' + (cur === T.id ? ' checked' : '') + '><span><b>' + T.n + '</b><small>' + T.d + '</small></span></label>';
     }).join('') + '<label class="tt-opt"><input type="radio" name="title" value=""' + (cur ? '' : ' checked') + '><span><b>不佩戴</b></span></label></div>' +
@@ -677,7 +662,7 @@
   }
   $('onboard').addEventListener('click', function (e) { if (ex.mode === 'intro' && $('vn')) vnClick(e); });
   function createAccount(name) {
-    acc = { v: 1, name: name, gender: ui.ob.gender === 'f' ? 'f' : 'm', created: Date.now(), starter: null, rival: null, next: 1, mons: [], teams: [[], []], active: 0, introDone: false, story: {}, exp: 0, energy: 0, items: {}, expV: expV() };
+    acc = { v: 1, name: name, gender: ui.ob.gender === 'f' ? 'f' : 'm', created: Date.now(), starter: null, rival: null, next: 1, mons: [], teams: [[], []], active: 0, introDone: false, story: {}, exp: 0, energy: 0, items: {}, expV: expV(), matsV: 1, milV: 3, split8: 1, titles: [] };
     save(); renderTop(); window.scrollTo(0, 0);
   }
   // 序章里选定初始精灵；Vanber 选克制主角的那只
@@ -1209,7 +1194,7 @@
     if (dexSel && !owned(dexSel)) dexSel = null;
     var html = '<div class="page-head"><h2 class="sec">黄冈秘鉴</h2><p class="hint">荆楚号学院部收藏的精灵图鉴。带回某一类精灵后，它那一页就会点亮；在剧情里见过或交过手的精灵，会先记下名字。</p></div>' +
       '<div class="dex-prog"><span class="tape l"></span><div><b>' + n + '</b> / ' + DEX_ALL.length + ' 类已点亮' + (ns ? '<small class="seen-n">　另有 ' + ns + ' 类见过</small>' : '') + '</div><div class="pbar2"><i style="width:' + (n / DEX_ALL.length * 100) + '%"></i></div>' +
-      '<span class="hint">' + (acc.titles.indexOf(T.id) >= 0 ? '已获得称号「' + T.n + '」' : '再点亮 ' + Math.max(0, 3 - n) + ' 类，可获得称号「' + T.n + '」') + '</span></div>' +
+      '<span class="hint">' + ((acc.titles || []).indexOf(T.id) >= 0 ? '已获得称号「' + T.n + '」' : '再点亮 ' + Math.max(0, 3 - n) + ' 类，可获得称号「' + T.n + '」') + '</span></div>' +
       '<div class="build"><div class="dex-grid hg-grid">' + DEX_ALL.map(function (s) {
         var on = owned(s.id), best = 0;
         acc.mons.forEach(function (m) { if (m.sid === s.id) best = Math.max(best, stageOf(s, m.lv)); });
@@ -1658,14 +1643,10 @@
     }).catch(function () { CT.busy = false; toast('暂时连不上服务器，请稍后再试。'); });
   }
   // 冠军打完：按名次发奖（每个账号一次，邮箱里领）
-  function ctReward() {
+  function ctReward() {   // 争霸赛结束：名次奖励邮件和称号由服务器发
     var D = CT.data; if (!D || D.status !== 'done' || !D.ranks || !acc) return;
-    var k = D.ranks.indexOf(D.me); if (k < 0) return;
-    var R = CT_RW[k] || CT_RW0, place = k === 0 ? '冠军' : k === 1 ? '亚军' : '第 ' + (k + 1) + ' 名';
-    if (!acc.ctPlace) acc.ctPlace = {};
-    if (acc.ctPlace[CONTEST.id] == null) { acc.ctPlace[CONTEST.id] = k; save(); if (typeof checkTitles === 'function') checkTitles(); }
-    var ttl = k === 0 ? 'S1做题大王' : k === 1 ? 'S1做题小王' : 'S1做题区';
-    if (sendMail({ id: 'contest-' + CONTEST.id + '-rw', title: CONTEST.name + ' · ' + place + '奖励', body: '{name}，你好！\n' + CONTEST.name + '圆满结束，你获得了' + place + '，并获得称号「' + ttl + '」（点右上角的名字即可佩戴）！感谢参赛，请领取附件里的奖励。\n神秘精灵兑换券能兑换什么，之后揭晓。', att: { exp: R.exp, items: { ctTicket: R.t } } })) save();
+    if (D.ranks.indexOf(D.me) < 0 || (acc.mailSeen && acc.mailSeen['contest-' + CONTEST.id + '-rw'])) return;
+    deliverMail(true);
   }
   function ctStatusText(D) {
     if (!D) return CT.err ? '（' + CT.err + '）' : '正在读取……';
@@ -2294,9 +2275,10 @@
   function putBowl() {
     var R = regionById(ex.region), F = R && fields[R.id];
     if (!F || RICE.regions.indexOf(R.id) < 0 || acc.riceBowl || !(acc.items.c_bowl > 0)) return;
-    acc.items.c_bowl--; acc.riceBowl = { rid: R.id, si: F.scene, t: Date.now() }; save();
-    toast('你在这里放下了一碗香喷喷的米饭。等一等，说不定会有爱吃米饭的精灵闻着味道过来……');
-    renderField();
+    txRun('bowl', { rid: R.id, si: F.scene }, function () {   // 服务器结算（js/engine/world.js）
+      toast('你在这里放下了一碗香喷喷的米饭。等一等，说不定会有爱吃米饭的精灵闻着味道过来……');
+      renderField();
+    });
   }
   /* ---------- 旅行精灵叶子喵 ----------
    * 全服共享的时间表（按北京时间每个整点算，所有人算出来都一样，不需要服务器）：每小时在某个区域的某个场景停留连续 20 分钟。
@@ -2775,9 +2757,11 @@
   }
   function claimChalStar(n) {
     var x = CHAL_STAR.filter(function (y) { return y.n === n; })[0]; if (!x || chalGot(n) || chalTotal() < n) return;
-    if (!acc.chalGot) acc.chalGot = {}; acc.chalGot[n] = Date.now();
-    var R = x.rw; earn('chalStar', n, { exp: R.exp, energy: R.energy, items: R.items });
-    save(); renderTop(); toast('挑战路线累计 ' + n + ' 颗星奖励：' + rwList(R).join('、') + (R.bgm ? '。茶室音乐可以在「我的茶室」里切换。' : '。'));
+    var R = x.rw;
+    txRun('chalStar', { n: n }, function () {   // 服务器按它记的星数结算（js/engine/award.js）
+      renderTop(); toast('挑战路线累计 ' + n + ' 颗星奖励：' + rwList(R).join('、') + (R.bgm ? '。茶室音乐可以在「我的茶室」里切换。' : '。'));
+      if (page === 'explore') renderExplore();
+    });
   }
   var STAR_TXT = { win: '击败所有敌人', nofaint: '无精灵倒下', half: '战斗结束时，所有出战精灵的体力都高于一半', super: '使用一次克制对方属性的技能（效果拔群）', nostatus: '战斗结束时，所有精灵都不处于异常状态',
     noitem: '整场战斗不使用任何道具', nosw: '整场战斗不主动更换出战精灵', lead: '首发精灵在战斗结束时没有倒下',
@@ -3405,15 +3389,10 @@
   }
   function pwHit() { if (!pwOnline()) return; CLOUD.api('POST', '/api/purgewar-hit', {}).then(function (r) { if (r._code === 200) pwApply(r); }).catch(function () {}); }
   // 全服达到里程碑：给贡献过的自己发奖励邮件（每个里程碑只发一次）
-  function pwClaim() {
+  function pwClaim() {   // 全服达到里程碑：奖励邮件由服务器投递
     var d = PW.data; if (!d || !(d.me > 0)) return;
-    var R = pwRec(), any = false;
-    pwMilestones(d.total).forEach(function (m) {
-      if (R.got[m]) return; R.got[m] = 1; any = true;
-      var w = pwReward(m);
-      sendMail({ id: 'pw-' + m, title: '瘴气驱逐战 · 全服击破 ' + m + ' 只', body: '{name}，你好！\n全服船员在瘴气驱逐战中，已经一起击破了 ' + m + ' 只腐化精灵！\n你目前一共击破了 ' + d.me + ' 只，感谢你的贡献。奖励请领取附件。', att: { exp: w.exp, energy: w.energy, items: w.items } });
-    });
-    if (any) { save(); if (typeof renderTop === 'function') setTimeout(renderTop, 0); }
+    var got = (acc.pw && acc.pw.got) || {};
+    if (pwMilestones(d.total).some(function (m) { return !got[m]; })) deliverMail(true);
   }
   function pwInner() {
     var d = PW.data, head = '<span class="tape l"></span><span class="tape r"></span><span class="chip log-tag pw-tag">全服任务</span><h3>瘴气驱逐战</h3>' +
@@ -3502,19 +3481,21 @@
   var RANK_RW = RANK_RW_OLD.map(function (R, r) { return R && { exp: R.exp * 2, energy: R.energy * 2, gift: RANK_GIFT[r], title: 'S1-' + r, items: RANK_ITEMS[r] }; });
   function itemsText(o) { return o ? Object.keys(o).map(function (k) { return itemName(k) + ' ×' + o[k]; }).join('、') : ''; }
   function rankBest() { try { var r = JSON.parse(localStorage.getItem('hs-rank-v1') || 'null'); return r ? Math.max(r.best || 0, r.r || 0) : 0; } catch (e) { return 0; } }
-  function rankRec() { if (!acc.rankRw || acc.rankRw.season !== SEASON) acc.rankRw = { season: SEASON, got: {} }; return acc.rankRw; }
-  function checkRankRewards() {
-    if (!ready()) return;
-    var rec = rankRec(), best = rankBest(), msg = [];
-    for (var r = 1; r <= best && r < RANK_RW.length; r++) if (!rec.got[r]) {
-      var R = RANK_RW[r]; rec.got[r] = Date.now();
-      earn('rankRw', SEASON + ':' + r, { exp: R.exp, energy: R.energy, items: R.items });
-      var line = '首次达到' + RANKS[r] + '段位：累积经验 +' + fmt(R.exp) + '，能量 +' + fmt(R.energy) + (R.items ? '，' + itemsText(R.items) : '');
-      (R.gift || []).forEach(function (g) { line += '，并获得了 ' + form({ sid: g.sid, lv: g.lv }).name + ' LV' + g.lv + '！'; });
-      if (R.gift && R.gift.length) (function (rr) { setTimeout(function () { txRun('gift', { k: 'rank', id: SEASON + ':' + rr }, function () { renderTop(); }); }, 300 * rr); })(r);   // 送的精灵走交易（grow.js）
-      msg.push(line + '。');
-    }
-    if (msg.length) { save(); renderRes(); setTimeout(function () { toast('排位赛季奖励 · ' + msg.join('')); }, 500); }
+  function rankRec() { return acc.rankRw && acc.rankRw.season === SEASON && acc.rankRw.got ? acc.rankRw : { season: SEASON, got: {} }; }   // 只读：记录由服务器写（js/engine/award.js）
+  var rankRwBusy = false;
+  function checkRankRewards() {   // 服务器按它记的最高段位结算（交易 rankRw，js/engine/award.js）
+    if (!ready() || rankRwBusy || !AWD.rankPending(acc, titleEnv().data).length) return;
+    rankRwBusy = true;
+    txRun('rankRw', {}, function (r) {
+      rankRwBusy = false; var msg = [];
+      (r.list || []).forEach(function (x) {
+        var R = x.rw, line = '首次达到' + RANKS[x.r] + '段位：累积经验 +' + fmt(R.exp) + '，能量 +' + fmt(R.energy) + (R.items ? '，' + itemsText(R.items) : '');
+        (x.gift || []).forEach(function (g) { var m = mon(g.u); if (m) line += '，并获得了 ' + form(m).name + ' LV' + m.lv + '！'; });
+        msg.push(line + '。');
+      });
+      renderTop();
+      if (msg.length) setTimeout(function () { toast('排位赛季奖励 · ' + msg.join('')); }, 500);
+    }, function () { rankRwBusy = false; });
   }
 
   /* ---------- 邮箱 ----------
@@ -3546,23 +3527,10 @@
    * 每日登录：每天（北京时间）3000 累积经验；没登录的日子，下次登录时一起补发（从创建账号那天算起） */
   var OFFLINE_GAP = 20 * 60000, OFFLINE_RATE = 6, OFFLINE_MAX_MIN = 3 * 24 * 60, LOGIN_EXP = 3000, onlineSeen = false;   // 离线经验最多算 3 天
   function dayNum(t) { return Math.floor((t + 8 * 3600e3) / 86400000); }
-  function loginRewards() {
+  function loginRewards() {   // 离线经验、每日登录奖励由服务器投递（deliverMail → 交易 mail sync）
     if (!ready()) return;
-    var now = Date.now(), last = acc.lastActive, dirty = false;
     onlineSeen = true;
-    if (last && now - last > OFFLINE_GAP) {
-      var mins = Math.floor((now - last) / 60000), paid = Math.min(mins, OFFLINE_MAX_MIN), xp = paid * OFFLINE_RATE;
-      sendMail({ title: '离线经验', body: '{name}，欢迎回来！\n你离开了 ' + (mins >= 1440 ? Math.floor(mins / 1440) + ' 天 ' : '') + durText(mins % 1440) + '。这段时间里，精灵们也在自己训练' + (mins > OFFLINE_MAX_MIN ? '（最多算 3 天）' : '') + '，一共攒下了 ' + fmt(xp) + ' 点，请领取附件。', att: { exp: xp } });
-    }
-    if (!last || now - last > 60000) { acc.lastActive = now; dirty = true; }
-    var today = dayNum(now), from = acc.loginDay != null ? acc.loginDay + 1 : dayNum(acc.created || now);
-    if (from <= today) {
-      var miss = today - from;
-      if (miss > 0) sendMail({ id: 'login-back-' + today, title: '每日登录奖励补发（' + miss + ' 天）', body: '{name}，你好！\n每天登录都能领取 ' + fmt(LOGIN_EXP) + ' 累积经验。之前没有领到的 ' + miss + ' 天，现在一起补发，请领取附件。', att: { exp: miss * LOGIN_EXP } });
-      sendMail({ id: 'login-' + today, title: '每日登录奖励', body: '{name}，今天也欢迎登船！\n每天登录都能领取累积经验 ×' + fmt(LOGIN_EXP) + '，请领取附件。', att: { exp: LOGIN_EXP } });
-      acc.loginDay = today; dirty = true;
-    }
-    if (dirty) save();
+    deliverMail(true);
   }
   // 关页面时 visibilitychange 和 pagehide 会连着触发：几秒内已经记过就不再改，免得存档在上传之后又变了（下次打开会误报存档冲突）
   function markOnline() { if (ready() && !(Date.now() - (acc.lastActive || 0) < 5000)) { acc.lastActive = Date.now(); save(); } }
@@ -3595,110 +3563,28 @@
       save(); renderTop();
     }, function () { hlFixBusy = false; });
   }
-  function deliverMail() {
+  // 投递邮件（全服邮件、登录奖励、离线经验、里程碑、名次、旧存档补发）：服务器结算（交易 mail，js/engine/award.js）；隔 30 秒以上才去一次，force 立刻去
+  var mailSyncAt = 0, mailBusy = false;
+  function deliverMail(force) {
     if (!ready()) return;
     hlFix();
-    var me = window.CLOUD && window.CLOUD.user ? window.CLOUD.user() : null, today = dayStr(), changed = false;
     mails();
-    // 2026-10-21：先驱之塔奖励提高（经验 ×10、代币 ×5），给之前爬过塔的船员补差额：按通关次数 + 当前这一轮爬到的层数算
-    if (!acc.tower && !acc.mailSeen['tower-x10']) acc.mailSeen['tower-x10'] = Date.now();   // 没爬过塔的：以后按新奖励算，不补
-    if (acc.tower && !acc.mailSeen['tower-x10']) {
-      var TW0 = acc.tower, nf = (TW0.clears || 0) * TOWER.top + Math.max(0, (TW0.f || 1) - 1), ce = 0, ct = 0;
-      for (var tf = 0; tf < nf; tf++) { var fl = tf % TOWER.top + 1; ce += twExp0(fl) * 9; ct += twTok0(fl) * 4; }
-      if (nf > 0 && sendMail({ id: 'tower-x10', title: '先驱之塔奖励提高 · 补发', body: '先驱之塔每层的经验提高到 10 倍、先驱代币提高到 5 倍，每天的经验上限提高到 3 倍。\n按你之前通过的 ' + nf + ' 层（' + (TW0.clears || 0) + ' 次通关 + 当前这一轮的 ' + Math.max(0, (TW0.f || 1) - 1) + ' 层），补发差额。', att: { exp: ce, twTok: ct } })) changed = true;
-      else acc.mailSeen['tower-x10'] = Date.now();
-    }
-    (typeof MAILS !== 'undefined' ? MAILS : []).forEach(function (M0) {
-      if (!M0 || !M0.id || acc.mailSeen[M0.id]) return;
-      if (M0.to && !((me && M0.to.indexOf(me) >= 0) || M0.to.indexOf(acc.name) >= 0)) return;   // to 里写登录账号名或做题家名字都行
-      if (M0.until && today > M0.until) return;
-      if (sendMail(M0)) changed = true;
-    });
-    // 2026-10-18：部分精灵的隐藏技能改成只能用道具解锁，以前在战斗里领悟的需要重新学习，发封邮件说明
-    if (acc.hlReset > 0 && sendMail({ id: 'hl-reset', title: '隐藏技能的学习方式调整', body: '{name}，你好！\n部分精灵的隐藏技能，现在改成用道具解锁：芙罗拉星、坎伯兰星、庞贝星、莱汀陨石带、白之星的普通野生精灵用各自星球的特产，泰戈尔、荒芜、帕努托尔用BOSS专属道具，三只初始精灵用「地球元素」。\n解锁一次，你持有的同一种族的精灵就都能使用（LV40 以上才能装备）。\n你之前在战斗中领悟的这些精灵的隐藏技能需要重新学习。学院部的 Bttp 也有话要跟你说，记得去黄冈 · 学院部看看。' })) changed = true;
-    // 2026-10-18：困难难度BOSS新增的首次击败奖励（虎啸凝珠 / 生长枯枝 ×80），之前已经打过的船员通过邮箱补发
-    [['tiger', 'tgPearl', '泰戈尔'], ['barren', 'brTwig', '荒芜']].forEach(function (x) {
-      if (!bossWon(x[0], 2)) return; var it = {}; it[x[1]] = 80;
-      if (sendMail({ id: 'boss-item-' + x[0], title: '困难难度「' + x[2] + '」首次击败奖励补发', body: '{name}，你好！\n困难难度的BOSS「' + x[2] + '」新增了首次击败奖励「' + itemName(x[1]) + '」×80。你之前已经击败过它了，这份奖励给你补上。\n' + itemName(x[1]) + '可以让' + x[2] + '领悟隐藏技能，也能提高' + x[2] + '的等级上限。另外，' + x[2] + '的每周挑战也已经开放。', att: { items: it } })) changed = true;
-    });
-    // 2026-10-24：普通难度荒芜新增首次击败奖励「莠去津」×40（原来写着「之后添加」），已经打过的补发
-    if (bossWon('barren', 1) && sendMail({ id: 'boss-n-barren', title: '普通难度「荒芜」首次击败奖励补发', body: '{name}，你好！\n普通难度的BOSS「荒芜」的首次击败奖励定下来了：荒芜的专属道具「莠去津」×40（原来的「生长枯枝」也改名为「莠去津」，作用不变）。你之前已经击败过它了，这份奖励给你补上。', att: { items: { brTwig: 40 } } })) changed = true;
-    // 2026-10-19：BOSS 各难度首次击败新增马亚尔晶体，之前已经击败过的通过邮箱补发（每个BOSS一封，合计已击败的各档）
-    ['tiger', 'barren'].forEach(function (k) {   // 只补发 2026-10-19 之前就有的BOSS；之后新增的BOSS首次击败时直接发
-      var B = BOSSES[k], n = 0, got = [];
-      B.lv.forEach(function (L, i) { if (bossWon(k, i)) { n += BOSS_CRY[i] || BOSS_CRY[BOSS_CRY.length - 1]; got.push(L.diff); } });
-      if (!n) return;
-      if (sendMail({ id: 'boss-cry-' + k, title: 'BOSS「' + B.name + '」首次击败奖励补发', body: '{name}，你好！\n每个BOSS每档难度的首次击败，现在都会额外奖励马亚尔晶体（简单 100、普通 200、困难 400）。你之前已经击败过' + B.name + '的' + got.join('、') + '难度，这份奖励给你补上。\n马亚尔晶体可以在黄石 · 冶炼坊的「特产互换」里，每 10 个换成 10 个任意一种星球特产。', att: { items: { m_mcry: n } } })) changed = true;
-    });
-    // 排位赛季段位奖励翻倍：之前按旧标准领过的段位，补发差额（每个账号只算一次）
-    var rec = rankRec();
-    if (!rec.x2) {
-      rec.x2 = true; changed = true;
-      var tiers = Object.keys(rec.got).map(Number).filter(function (r) { return RANK_RW[r]; }).sort(function (a, b) { return a - b; });
-      if (tiers.length) {
-        var e = 0, g = 0; tiers.forEach(function (r) { e += RANK_RW[r].exp - RANK_RW_OLD[r].exp; g += RANK_RW[r].energy - RANK_RW_OLD[r].energy; });
-        sendMail({ id: SEASON + '-rank-x2', title: '排位赛季 ' + SEASON + ' 段位奖励翻倍补发',
-          body: '{name}，你好！\n排位赛季 ' + SEASON + ' 的段位奖励已经翻倍。你之前已经达到过' + tiers.map(function (r) { return RANKS[r]; }).join('、') + '，当时按旧标准发放了奖励。\n现在按新标准补发差额，请领取附件。',
-          att: { exp: e, energy: g } });
-      }
-    }
-    // 段位奖励新增道具：之前已经领过的段位，补发道具（每个账号只算一次）
-    if (!rec.items) {
-      rec.items = true; changed = true;
-      var add = {}, which = [];
-      Object.keys(rec.got).map(Number).sort(function (a, b) { return a - b; }).forEach(function (r) { var o = RANK_ITEMS[r]; if (!o) return; which.push(RANKS[r]); for (var k in o) add[k] = (add[k] || 0) + o[k]; });
-      if (which.length) sendMail({ id: SEASON + '-rank-items', title: '排位赛季 ' + SEASON + ' 段位奖励新增道具补发', body: '{name}，你好！\n排位赛季 ' + SEASON + ' 的段位奖励新增了捕捉装置和通用学习力合剂。你之前已经达到过' + which.join('、') + '，现在补发这些段位新增的道具，请领取附件。', att: { items: add } });
-    }
-    // 王者奖励新增 LV10 凶骨：在加这份奖励之前就领过王者奖励的，用邮箱补发
-    if (!rec.kingGift) {
-      rec.kingGift = true; changed = true;
-      if (rec.got[10]) sendMail({ id: SEASON + '-king-gift', title: '王者段位奖励补发：凶骨', body: '{name}，你好！\n排位赛季 ' + SEASON + ' 的王者段位奖励新增了 LV10 的凶骨。你之前已经达到王者，现在补发给你，请领取附件。', att: { mons: [{ sid: 'bone', lv: 10 }] } });
-    }
-    // 竞技代币上线（2026-10-14）：领过排位奖励的局每局补 20 代币；今天已经按 600 经验领过的局，补经验差额
-    if (!acc.tokenBack) {
-      acc.tokenBack = Date.now(); changed = true;
-      var RK = null; try { RK = JSON.parse(localStorage.getItem('hs-rank-v1') || 'null'); } catch (e) {}
-      // 只补「当时本来就有奖励」的局：排位经验从 2026-10-12 开始发，每天前 10 局有奖。
-      // 以前每天打了几局没有逐日记录，所以按「战绩里的总局数」和「10-12 起到昨天每天 10 局」取较小的一个，再加上今天已经领过奖的局
-      var total = RK ? (RK.w || 0) + (RK.l || 0) : 0, tdy = rankToday();
-      var past = Math.max(0, Math.round((Date.parse(bjDay().replace(/-(\d)(?=-|$)/g, '-0$1') + 'T00:00:00Z') - Date.parse('2026-10-12T00:00:00Z')) / 864e5)) * RANK_EXP_N;
-      var games = tdy + Math.min(Math.max(0, total - tdy), past || 0);
-      if (games) sendMail({ id: 'arena-token-back', title: '平衡排位奖励提升 · 竞技代币补发',
-        body: '{name}，你好！\n从今天起，平衡排位每天前 ' + RANK_EXP_N + ' 局每局奖励 ' + fmt(RANK_EXP) + ' 累积经验（每天共 ' + fmt(RANK_EXP * RANK_EXP_N) + '），并额外掉落 ' + RANK_TOKEN + ' 竞技代币。竞技代币可以在竞技对战 · 平衡排位的「竞技代币商店」兑换道具。\n' +
-          '平衡排位奖励上线以来，你有 ' + games + ' 局领过排位奖励（每天前 ' + RANK_EXP_N + ' 局），每局补发 ' + RANK_TOKEN + ' 竞技代币。' + (tdy ? '其中今天的 ' + tdy + ' 局按新标准补发经验差额。' : '') + '请领取附件。',
-        att: { tokens: games * RANK_TOKEN, exp: tdy * (RANK_EXP - RANK_EXP_OLD) } });
-    }
-    // 每日任务奖励翻倍：今天已经按旧标准领过的任务，补发差额（之前的日子没有逐日记录，补不了）
-    var DL = daily();
-    if (DL) {
-      var de = 0, dn = 0;
-      DL.list.forEach(function (t) { if (t.x2) return; t.x2 = 1; changed = true; if (t.c && DAILY_OLD[t.id]) { de += DAILY[t.id].rw.exp - DAILY_OLD[t.id][0]; dn += DAILY[t.id].rw.energy - DAILY_OLD[t.id][1]; } });
-      if (de || dn) sendMail({ id: 'daily-x2-' + DL.date, title: '每日任务奖励翻倍补发', body: '{name}，你好！\n每日任务的奖励已经翻倍，而且每天变成了 7 个任务。今天你已经按旧标准领过的任务，现在补发差额，请领取附件。', att: { exp: de, energy: dn } });
-    }
-    // 每日任务经验 ×5（一开始是 ×10，后来改成 ×5）：今天已经按旧标准领过的任务补发差额
-    if (DL) {
-      var de2 = 0;
-      DL.list.forEach(function (t) { if (t.x10) return; t.x10 = 1; changed = true; if (t.c && DAILY_X10_OLD[t.id] != null) de2 += DAILY[t.id].rw.exp - DAILY_X10_OLD[t.id]; });
-      if (de2 > 0) sendMail({ id: 'daily-x10-' + DL.date, title: '每日任务经验提升 · 补发', body: '{name}，你好！\n每日任务的经验奖励提高到了原来的 5 倍。今天你已经领过的任务，现在补发经验差额，请领取附件。', att: { exp: de2 } });
-    }
-    // 星球任务「祛除瘴气」经验 ×10：已经领过的阶段补发差额
-    var PR = acc.purge;
-    if (PR && PR.got && !acc.purgeX10) {
-      acc.purgeX10 = 1; changed = true;
-      var pe = 0; PURGE.steps.forEach(function (st) { if (PR.got[st.n] && PURGE_OLD[st.n]) pe += st.exp - PURGE_OLD[st.n]; });
-      if (pe > 0) sendMail({ id: 'purge-x10', title: '星球任务「祛除瘴气」经验提升 · 补发', body: '{name}，你好！\n芙罗拉星的星球任务「祛除瘴气」各阶段的经验奖励提高到了原来的 10 倍。你已经领过的阶段，现在补发经验差额，请领取附件。', att: { exp: pe } });
-    }
-    loginRewards();
-    if (changed) save();
-    renderMailBadge();
+    // 2026-10-18：部分精灵的隐藏技能改成只能用道具解锁，发封说明邮件（没有附件）
+    if (acc.hlReset > 0 && sendMail({ id: 'hl-reset', title: '隐藏技能的学习方式调整', body: '{name}，你好！\n部分精灵的隐藏技能，现在改成用道具解锁：芙罗拉星、坎伯兰星、庞贝星、莱汀陨石带、白之星的普通野生精灵用各自星球的特产，泰戈尔、荒芜、帕努托尔用BOSS专属道具，三只初始精灵用「地球元素」。\n解锁一次，你持有的同一种族的精灵就都能使用（LV40 以上才能装备）。\n你之前在战斗中领悟的这些精灵的隐藏技能需要重新学习。学院部的 Bttp 也有话要跟你说，记得去黄冈 · 学院部看看。' })) save();
+    if (mailBusy || (!force && Date.now() - mailSyncAt < 30000)) { renderMailBadge(); return; }
+    mailBusy = true; mailSyncAt = Date.now();
+    txRun('mail', { a: 'sync' }, function (r) { mailBusy = false; renderMailBadge(); if (r.n && $('mailbox')) { var bx = $('mailbox').querySelector('.mailbox'); if (bx) bx.innerHTML = mailHTML(); } },
+      function (err) { mailBusy = false; if (err === '') mailSyncAt = 0; renderMailBadge(); });
   }
-  function claimMail(m) {
-    if (!m || m.got) return [];
-    var a = m.att || {}, got = attList(a);
-    earn('mail', m.id, { exp: a.exp, energy: a.energy, merit: a.merit, meritXp: a.merit, tokens: a.tokens, twTok: a.twTok, items: a.items });
-    if (a.mons && a.mons.length) setTimeout(function () { txRun('gift', { k: 'mail', id: m.id }, function () { renderTop(); }); }, 0);   // 附件里的精灵走交易（grow.js）
-    m.got = true; m.read = true;
-    return got;
+  // 领附件：服务器结算（交易 mail get / all）。done(领到的东西的文字列表)
+  function claimMail(m, done) {
+    if (!m || m.got) return;
+    txRun('mail', { a: 'get', id: m.id }, function (r) { renderTop(); done(attList(m.att)); });
+  }
+  function claimAll(done) {
+    var got = []; mails().forEach(function (m) { if (!m.got) got = got.concat(attList(m.att)); });
+    if (!got.length) return;
+    txRun('mail', { a: 'all' }, function () { renderTop(); done(got); });
   }
   var mailOpen = null;
   function mailHTML() {
@@ -3720,7 +3606,7 @@
       '<div class="soc-foot"><button type="button" class="btn ghost" data-mbx="1">关闭</button></div>';
   }
   function openMailbox() {
-    deliverMail();
+    deliverMail(true);
     var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'mailbox';
     var box = document.createElement('div'); box.className = 'soc-box mailbox'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', '邮箱');
     d.appendChild(box); document.body.appendChild(d);
@@ -3732,10 +3618,9 @@
       if (e.target === d || e.target.closest('[data-mbx]')) { d.remove(); return; }
       var t;
       if ((t = e.target.closest('[data-mbopen]'))) { var m = mails()[+t.dataset.mbopen]; mailOpen = mailOpen === m.id ? null : m.id; if (!m.read) { m.read = true; save(); } draw(); return; }
-      if ((t = e.target.closest('[data-mbget]'))) { var got = claimMail(mails()[+t.dataset.mbget]); save(); renderRes(); renderTop(); draw(); if (got.length) toast('领取了：' + got.join('、') + '。'); return; }
+      if ((t = e.target.closest('[data-mbget]'))) { claimMail(mails()[+t.dataset.mbget], function (got) { renderRes(); draw(); if (got.length) toast('领取了：' + got.join('、') + '。'); }); return; }
       if (e.target.closest('[data-mball]')) {
-        var all = []; mails().forEach(function (m) { all = all.concat(claimMail(m)); }); save(); renderRes(); renderTop(); draw();
-        if (all.length) toast('一键领取了 ' + all.length + ' 项附件：' + all.join('、') + '。'); return;
+        claimAll(function (all) { renderRes(); draw(); if (all.length) toast('一键领取了 ' + all.length + ' 项附件：' + all.join('、') + '。'); }); return;
       }
       if (e.target.closest('[data-mbclean]')) { acc.mail = mails().filter(function (m) { return !(m.read && m.got); }); save(); draw(); return; }
     });
@@ -5133,7 +5018,7 @@
   function medalOpen() { return !!(acc && prog('medal').done); }
   function renderMedal() {
     if (!acc.titles) acc.titles = [];
-    var has = function (T) { return acc.titles.indexOf(T.id) >= 0; };
+    var has = function (T) { return (acc.titles || []).indexOf(T.id) >= 0; };
     var card = function (T, sub) {
       var own = has(T);
       var rw = titleRw(T);
@@ -6274,7 +6159,7 @@
     if (b && b.dataset.vn) {
       var a = b.dataset.vn;
       if (a === 'fight') { startFight(b.dataset.fk); return; }
-      if (a === 'pickok' && ex.pickSel) { if (acc.starter) { ex.i++; show(); return; } pickStarter(ex.pickSel, function () { ex.i++; show(); }); return; }
+      if (a === 'pickok' && ex.pickSel) { if (acc.starter) { ex.i++; show(); return; } if (ex.picking) return; ex.picking = true; pickStarter(ex.pickSel, function () { ex.picking = false; ex.i++; show(); }); setTimeout(function () { ex.picking = false; }, 8000); return; }
       if (a === 'exit' && ex.arc) { stopTimers(); ex.mode = null; ex.arc = false; ex.arcQ = []; ex.view = 'archive'; renderExplore(); return; }
       if (a === 'exit') { stopTimers(); ex.mode = null; ex.planet = SITES[ex.site].planet; if (SITES[ex.site].fpart) ex.fpart = SITES[ex.site].fpart; if (SITES[ex.site].dept) { ex.view = 'area'; ex.area = SITES[ex.site].dept; } else ex.view = 'sites'; renderExplore(); return; }
       if (a === 'replay') { startVN(ex.site, 'replay', ex.host, true); return; }
