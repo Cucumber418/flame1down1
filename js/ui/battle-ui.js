@@ -836,6 +836,35 @@
   /* ---------- 联网切磋：PV 是「我」在对战里的位置（0 发起方 / 1 应战方），画面始终把自己放在下方 ---------- */
   var PV = 0, pvp = null;
   function V(i) { return i ^ PV; }
+  /* ---------- 技能特效（2026-10-25）：用简单的 emoji 增强打击感，可以在顶栏「设置」里关掉（只存本设备） ---------- */
+  var FX_KEY = 'hs-fx-v1';
+  window.HSFX = { on: function () { try { return localStorage.getItem(FX_KEY) !== '0'; } catch (e) { return true; } }, set: function (v) { try { localStorage.setItem(FX_KEY, v ? '1' : '0'); } catch (e) {} } };
+  var FX_EMO = { 火: '🔥', 水: '💧', 草: '🍃', 电: '⚡', 冰: '❄️', 普通: '👊', 机械: '⚙️', 超能: '🔮', 暗影: '🌑', 光: '✨', 龙: '🐉', 飞行: '🌪️', 远古: '🗿', 地面: '🪨' };
+  var fxLastType = null;
+  function fxPos(i) { var f = $('field'), m = $('mon' + i); if (!f || !m) return null; var a = f.getBoundingClientRect(), b = (m.querySelector('.face') || m).getBoundingClientRect(); return { x: b.left - a.left + b.width / 2, y: b.top - a.top + b.height / 2 }; }
+  function fxSpawn(cls, emo, x, y, vars, ms) {
+    var f = $('field'); if (!f) return; var el = document.createElement('span'); el.className = 'bfx ' + cls; el.textContent = emo;
+    el.style.left = x + 'px'; el.style.top = y + 'px'; for (var k in vars || {}) el.style.setProperty(k, vars[k]);
+    f.appendChild(el); setTimeout(function () { el.remove(); }, ms || 700);
+  }
+  // 出招：攻击技能从自己飞向对方；变化技能里作用在对方身上的飞过去，作用在自己身上的在自己身边冒出来
+  function fxUse(e) {
+    if (!HSFX.on()) return; var mv = M[e.move] || {}, emo = FX_EMO[e.type || mv.type] || '✦', me = V(e.side), foe = 1 - me;
+    fxLastType = e.type || mv.type;
+    var a = fxPos(me), b = fxPos(foe); if (!a || !b) return;
+    var toFoe = mv.cat !== '变化' || mv.status || mv.tgtStage || mv.clearTgtUp;
+    if (toFoe) { for (var n = 0; n < 3; n++) (function (n) { setTimeout(function () { fxSpawn('fly', emo, a.x, a.y, { '--dx': (b.x - a.x) + 'px', '--dy': (b.y - a.y + (n - 1) * 18) + 'px' }, 520); }, n * 70); })(n); }
+    else { for (var k = 0; k < 4; k++) fxSpawn('aura', mv.heal || mv.healLost ? '💚' : mv.selfStage ? '💪' : emo, a.x + (k - 1.5) * 26, a.y + 20, { '--d': (k * 80) + 'ms' }, 900); }
+  }
+  // 命中：在对方身上炸开；暴击更大
+  function fxHit(e) {
+    if (!HSFX.on() || !(e.amount > 0)) return; var p = fxPos(V(e.side)); if (!p) return;
+    var emo = e.kind && e.kind !== 'fixed' ? ({ 寄生: '🌱', 溺水: '🫧', 流血: '🩸', 中毒: '☠️', 烧伤: '🔥', 冻伤: '🧊', 凋零之蚀: '🥀' })[e.kind] || '💥' : e.kind === 'fixed' ? '💢' : '💥';
+    fxSpawn('boom' + (e.crit ? ' crit' : ''), emo, p.x, p.y, null, 600);
+    if (!e.kind && fxLastType && FX_EMO[fxLastType]) for (var k = 0; k < (e.crit ? 5 : 3); k++) fxSpawn('spark', FX_EMO[fxLastType], p.x, p.y, { '--dx': (Math.cos(k * 2.1) * 60) + 'px', '--dy': (Math.sin(k * 2.1) * 50) + 'px' }, 650);
+  }
+  function fxHeal(e) { if (!HSFX.on()) return; var p = fxPos(V(e.side)); if (!p) return; for (var k = 0; k < 3; k++) fxSpawn('aura', '💚', p.x + (k - 1) * 28, p.y + 20, { '--d': (k * 90) + 'ms' }, 900); }
+  function fxMiss(e) { if (!HSFX.on()) return; var p = fxPos(V(e.side)); if (p) fxSpawn('aura', '💨', p.x + 30, p.y, null, 700); }
   function flipSnap(sn) { return PV && sn ? { turn: sn.turn, sides: [sn.sides[1], sn.sides[0]] } : sn; }
   function hpClass(h, m) { var r = h / m; return r > 0.5 ? '' : r > 0.2 ? 'mid' : 'low'; }
   function renderSnap(sn, instant) {
@@ -926,12 +955,12 @@
       var e = evs[k];
       switch (e.t) {
         case 'text': addLog(e.text, e.cls); renderSnap(e.snap); flashAbility(e.text, flipSnap(e.snap)); await wait(e.cls === 'turn' ? 120 : 300); break;
-        case 'use': renderSnap(e.snap); castFx({ a: 'use', i: V(e.side), m: e.move, ty: e.type }); restartAnim($('mon' + V(e.side)), 'lunge' + V(e.side)); banner(e.move, e.type); await wait(450); break;
-        case 'hit': renderSnap(e.snap); if (e.amount > 0) castFx({ a: 'hit', i: V(e.side), n: e.amount, c: !!e.crit, lb: e.kind ? (e.kind === 'fixed' ? '固伤' : e.kind) : hitLabel(e) }); if (app.S && app.S.training && e.side === 1) renderStats(); if (e.amount > 0) { restartAnim($('mon' + V(e.side)), 'hit'); if (e.kind) floatNum(V(e.side), (e.kind === 'fixed' ? '固伤' : e.kind) + '-' + e.amount, e.kind === 'fixed' ? 'fixed' : 'dot', DOT_COLOR[e.kind]); else floatNum(V(e.side), hitLabel(e) + '-' + e.amount, e.crit ? 'crit' : e.eff > 1 ? 'super' : e.eff > 0 && e.eff < 1 ? 'resist' : ''); if (e.crit) shakeField(); } await wait(480); break;
+        case 'use': renderSnap(e.snap); fxUse(e); castFx({ a: 'use', i: V(e.side), m: e.move, ty: e.type }); restartAnim($('mon' + V(e.side)), 'lunge' + V(e.side)); banner(e.move, e.type); await wait(450); break;
+        case 'hit': renderSnap(e.snap); fxHit(e); if (e.amount > 0) castFx({ a: 'hit', i: V(e.side), n: e.amount, c: !!e.crit, lb: e.kind ? (e.kind === 'fixed' ? '固伤' : e.kind) : hitLabel(e) }); if (app.S && app.S.training && e.side === 1) renderStats(); if (e.amount > 0) { restartAnim($('mon' + V(e.side)), 'hit'); if (e.kind) floatNum(V(e.side), (e.kind === 'fixed' ? '固伤' : e.kind) + '-' + e.amount, e.kind === 'fixed' ? 'fixed' : 'dot', DOT_COLOR[e.kind]); else floatNum(V(e.side), hitLabel(e) + '-' + e.amount, e.crit ? 'crit' : e.eff > 1 ? 'super' : e.eff > 0 && e.eff < 1 ? 'resist' : ''); if (e.crit) shakeField(); } await wait(480); break;
         case 'cant': renderSnap(e.snap); floatNum(V(e.side), e.st + '无法行动', 'cant', CANT_COLOR[e.st]); await wait(420); break;
         case 'bossfx': renderSnap(e.snap); if (window.HSEV) window.HSEV('bossfx', { k: e.k }); await wait(120); break;   // BOSS特性第一次发动：揭晓
-        case 'miss': renderSnap(e.snap); castFx({ a: 'miss', i: V(e.side) }); floatNum(V(e.side), '未命中', 'miss'); await wait(380); break;
-        case 'heal': renderSnap(e.snap); castFx({ a: 'heal', i: V(e.side), n: e.amount }); restartAnim($('mon' + V(e.side)), 'heal'); floatNum(V(e.side), '+' + e.amount, 'heal'); await wait(380); break;
+        case 'miss': renderSnap(e.snap); fxMiss(e); castFx({ a: 'miss', i: V(e.side) }); floatNum(V(e.side), '未命中', 'miss'); await wait(380); break;
+        case 'heal': renderSnap(e.snap); fxHeal(e); castFx({ a: 'heal', i: V(e.side), n: e.amount }); restartAnim($('mon' + V(e.side)), 'heal'); floatNum(V(e.side), '+' + e.amount, 'heal'); await wait(380); break;
         case 'switch': renderSnap(e.snap); if (app.S && app.S.bgmAt && e.side === 1 && e.snap) { var swi = e.snap.sides[1].team.findIndex(function (x) { return x.active; }); if (app.S.bgmAt[swi]) bgm(app.S.bgmAt[swi]); } await wait(520); break;
         case 'throw': renderSnap(e.snap); castFx({ a: 'throw', i: 1 }); restartAnim($('mon1'), 'throw'); await wait(900); break;
         case 'faint': renderSnap(e.snap); await wait(650); break;

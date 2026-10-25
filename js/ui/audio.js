@@ -151,18 +151,20 @@
     else if (cur && unlocked && allowed(cur)) { var p = el.play(); if (p) p.catch(function () {}); fadeTo(target(), 600); }
   });
 
-  /* ---------- 顶栏的「声音」设置 ---------- */
+  /* ---------- 顶栏的「设置」（2026-10-25：原来的「声音」按钮改为设置，里面有声音和技能特效开关） ---------- */
   var btn = document.getElementById('snd-btn'), menu = document.getElementById('snd-menu');
   function on() { return (cfg.music || cfg.ui) && cfg.vol > 0; }
-  function drawBtn() { if (btn) { btn.querySelector('span').textContent = on() ? '🔊' : '🔇'; btn.setAttribute('aria-label', '声音：战斗音乐' + (cfg.music ? '开' : '关') + '，界面音乐' + (cfg.ui ? '开' : '关') + '，音量 ' + cfg.vol); } }
+  function drawBtn() { if (btn) { btn.setAttribute('aria-label', '设置。声音：战斗音乐' + (cfg.music ? '开' : '关') + '，界面音乐' + (cfg.ui ? '开' : '关') + '，音量 ' + cfg.vol); } }
   function drawMenu() {
     if (!menu) return;
     var any = cfg.music || cfg.ui;
+    var fxOn = window.HSFX ? HSFX.on() : true;
     menu.innerHTML = '<b>声音</b>' +
       '<label class="snd-row"><input type="checkbox" id="snd-music"' + (cfg.music ? ' checked' : '') + '> 战斗音乐</label>' +
       '<label class="snd-row"><input type="checkbox" id="snd-ui"' + (cfg.ui ? ' checked' : '') + '> 界面音乐</label>' +
       '<label class="snd-row snd-vol' + (any ? '' : ' off') + '">音量 <input type="range" id="snd-vol" min="0" max="100" step="5" value="' + cfg.vol + '"' + (any ? '' : ' disabled') + '><output id="snd-out">' + cfg.vol + '</output></label>' +
-      '<label class="snd-row">主界面 <select id="snd-uitrack"><option value="new"' + (cfg.uiOld ? '' : ' selected') + '>HMS_JC</option><option value="old"' + (cfg.uiOld ? ' selected' : '') + '>旧版</option></select></label>';
+      '<label class="snd-row">主界面 <select id="snd-uitrack"><option value="new"' + (cfg.uiOld ? '' : ' selected') + '>HMS_JC</option><option value="old"' + (cfg.uiOld ? ' selected' : '') + '>旧版</option></select></label>' +
+      '<b class="set-h">对战</b><label class="snd-row"><input type="checkbox" id="set-fx"' + (fxOn ? ' checked' : '') + '> 技能特效</label>';
   }
   if (btn && menu) {
     drawBtn();
@@ -177,6 +179,7 @@
         if (el.dataset.k === 'ui') { el.dataset.k = ''; if (cur === 'ui') sync(true, 300); }
         return;
       }
+      if (e.target.id === 'set-fx') { if (window.HSFX) HSFX.set(e.target.checked); return; }
       if (e.target.id !== 'snd-music' && e.target.id !== 'snd-ui') return;
       cfg[e.target.id === 'snd-music' ? 'music' : 'ui'] = e.target.checked; saveCfg(); drawBtn(); drawMenu();
       sync(false, 300);

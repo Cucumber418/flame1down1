@@ -2631,3 +2631,18 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 
 /* 经验、能量小图标（2026-10-25） */
 .res-chip .res-ic { width: 14px; height: 14px; image-rendering: pixelated; vertical-align: -2px; margin-right: 3px; }
+
+/* 技能特效（2026-10-25）：emoji 飞行 / 命中爆开 / 身边冒出，可在设置里关闭 */
+.bfx { position: absolute; z-index: 60; pointer-events: none; font-size: 34px; line-height: 1; transform: translate(-50%, -50%); filter: drop-shadow(0 2px 2px rgba(0,0,0,.35)); }
+.bfx.fly { animation: bfxFly .52s cubic-bezier(.4,.1,.6,1) forwards; }
+@keyframes bfxFly { 0% { transform: translate(-50%, -50%) scale(.6); opacity: 0; } 15% { opacity: 1; } 100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.2) rotate(25deg); opacity: .9; } }
+.bfx.boom { font-size: 58px; animation: bfxBoom .6s ease-out forwards; }
+.bfx.boom.crit { font-size: 86px; }
+@keyframes bfxBoom { 0% { transform: translate(-50%, -50%) scale(.3); opacity: 0; } 25% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; } }
+.bfx.spark { font-size: 24px; animation: bfxSpark .65s ease-out forwards; }
+@keyframes bfxSpark { 0% { transform: translate(-50%, -50%) scale(.5); opacity: 1; } 100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1); opacity: 0; } }
+.bfx.aura { font-size: 28px; opacity: 0; animation: bfxAura .9s ease-out var(--d, 0ms) forwards; }
+@keyframes bfxAura { 0% { transform: translate(-50%, -20%) scale(.6); opacity: 0; } 30% { opacity: 1; } 100% { transform: translate(-50%, -160%) scale(1.1); opacity: 0; } }
+@media (max-width: 560px) { .bfx { font-size: 24px; } .bfx.boom { font-size: 40px; } .bfx.boom.crit { font-size: 58px; } .bfx.spark, .bfx.aura { font-size: 20px; } }
+.snd-menu .set-h { display: block; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--rule); }
+@media (prefers-reduced-motion: reduce) { .bfx { display: none; } }
