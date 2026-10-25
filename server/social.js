@@ -355,7 +355,7 @@ function prepNext(m) {
 }
 
 /* ---------- 做题大王争霸赛（rule = 'contest'，见 contest.js） ----------
- * 选人：各从自己的精灵里带 6 只（ct6）→ 各禁对方 1 只（ctban）→ 剩下的按带的顺序取前 5 只，按背包里的练度打 5v5。
+ * 选人：各从自己的精灵里带 6 只（ct6）→ 各禁对方 1 只（ctban）→ 剩下的按带的顺序取前 5 只，按背包里的练度打 5v5。每局都重新选（2026-10-25）。
  * 一个系列 bo3：每局打完双方各报一次结果（ct-res），先赢 2 局的胜；中途有人离开或在选人时退出，对方直接赢下整个系列。
  * 每局都向全服开放观战（决赛还会给全服在线玩家发观战邀请），发起方的转播画面会存成回放。 */
 var CT_PICK = 6, CT_BAN = 1, CT_GAP = 6000;
@@ -397,7 +397,7 @@ function ctSendMatch(m) {
 function ctAfter(m, leaver, reason) {
   var ct = m.ct, C = contest();
   if (ct.done) return;
-  if (m.prep) { m.socks.forEach(function (w) { if (w !== leaver) out(w, { type: 'ct-series', cancel: true }); }); return; }   // 还在选人就退出 / 掉线：这次不算，之后可以再约
+  if (m.prep && ct.game <= 1) { m.socks.forEach(function (w) { if (w !== leaver) out(w, { type: 'ct-series', cancel: true }); }); return; }   // 第 1 局还在选人就退出 / 掉线：这次不算，之后可以再约（第 2 局起选人时退出算弃权）
   var finish = function (wSide, how) {
     ct.done = true;
     var sc = {}; sc[m.users[0]] = ct.wins[0]; sc[m.users[1]] = ct.wins[1];
@@ -426,7 +426,7 @@ function ctAfter(m, leaver, reason) {
     ct.game++;
     var nm2 = { id: nid, socks: m.socks, users: m.users, names: m.names, ct: ct, open: true, srvOk: m.srvOk };
     matches[nid] = nm2; m.socks.forEach(function (w) { w.match = nid; });
-    ctSendMatch(nm2);
+    ct.teams = null; ct.banInfo = null; ctPrepStart(nm2);   // 2026-10-25：每局都重新选出战精灵（带 6 只、禁 1 只）和出战顺序
   }, CT_GAP);
 }
 
