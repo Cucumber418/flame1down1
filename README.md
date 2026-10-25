@@ -185,6 +185,11 @@ sudo git clone --depth 1 https://github.com/Cucumber418/flame1down1 /opt/flame1d
 - 已经接入：BOSS（`boss`）、每周挑战（`weekly`）、属性每周挑战（`ewk`）、星球挑战（`chal`，助战由服务器查好友名片：`social.js` 的 `friendHelper`；星级判定 `PVE.starOk` 用服务器上打完的对战状态）。另外还有明明教官的试炼（`mm`）、深渊潜底的？？？（`cumber`，每天一次，以服务器记的 `cumberFt` 为准）、朋友房间的对战（`npc`）、拜访茶室（`tea`，对手由 `social.js` 的 `homeFoes` 按主人茶室查）。野外（`wild`：刷出哪只精灵由服务器掷骰子——浏览器进场景时用 `op: 'wild'` 要一批，开战时只报编号；号角的塞米同样由服务器刷；旅行精灵按时间表由服务器核对；捕捉、掉落、祛除瘴气、瘴气驱逐战的计数都在服务器上算，全服击破直接调 `purgewar.js` 的 `hit`）、平衡排位（`rank`）和沙盒对战（`sandbox`）：段位 `hs-rank-v1` 和本局阵容 `hs-draft-v1` 只由服务器改（模式通过 `env.data` 读写整份存档，`op: 'draft'` 抽阵容，claims.js 的 `OWNED_KEYS` 挡住上传的修改），赛季段位奖励 `rankRw` 的申报按服务器的最高段位核对；神秘精灵用 `op: 'wild', kind: 'mystery'` 由服务器掷；剧情对战（`story`，`FIGHTS` 搬进了 pve.js；偷袭 `preStrike` 由服务器在开打时先算一招，战斗中的插播对话仍在浏览器判断）。它们的数据（`BOSSES`、`WEEKLIES`、`EWK`、挑战许可）也搬到了 pve.js，开放条件写成 `open(a, now)`。
 - 只由服务器改的字段：`claims.js` 的 `OWNED`（塔的进度、`bosses` 战绩、`permit` 挑战许可、`chal` 挑战关卡记录、`mm.clr` / `mm.wins`、`cumberFt`、`npcWin`、`teaFight`、`purge`、`pwd`、`travel`；累计星数奖励 `chalStar` 的申报按服务器的星数核对），上传的存档里改了会悄悄改回去；由服务器直接发的奖励来源在 `SERVER_ONLY` 里，宽限期后浏览器申报的不认。
 
+**第三批：精灵培养（2026-10-25 起）**：
+- `js/engine/grow.js`（`GROW`）：精灵道具 `USE_ITEMS` 和用法、等级上限，用 `TX.add` 注册交易 `feed`（喂经验）、`ev`（分配学习力）、`lvcap`（等级上限）、`mitem`（精灵道具）。game.js 里这些操作都走 `txRun`：服务器先算、浏览器按同样的随机数重放。
+- 先驱之塔也改用通用框架（`MODES.tower`），精灵经验、学习力由服务器加；战斗中领悟的隐藏技能由 `server/pve.js` 记到精灵身上。
+- `claims.js` 的精灵核对（`monCheck`）：精灵的等级、经验、天赋、学习力、性格、隐藏技能、异色、等级上限、形态解锁和新增的精灵只能由服务器改。现在是 `MON_MODE = 'observe'`（只记录，/status 的 `wallet.mons`），其余会改精灵的功能（温泉、茶室展示、自律训练装置、孵化、邮件和剧情送的精灵等）都改成交易之后再切到 `'enforce'`。
+
 **版本检查**：服务器启动时按网页、样式、脚本的内容算一个版本号（`GET /api/version`）。开着的页面每 3 分钟、以及切回页面时检查一次，发现服务器上的版本变了就弹窗提示刷新；用旧页面兑换东西时服务器会拒绝（不扣费）并提示刷新。
 
 ## 小段位

@@ -142,6 +142,28 @@ var PVE = (function () {
    * B = { res, quit, seen, downs }。env = { now, rand }。服务器改完存档后把整份存档发回浏览器，浏览器直接换上（game.js 的 adoptAcc）。
    * ========================================================== */
   var MODES = {};
+  MODES.tower = {
+    start: function (a, args, env) {
+      var st = towerStart(a, args.pick, env.now, env.rand); if (st.err) return { err: st.err };
+      return { p: st.p, a: st.a, ctx: { f: st.f, F: st.F, team: st.team }, opt: st.opt };
+    },
+    end: function (a, c, B, env) {
+      var T = twRec(a, env.now), f = c.f, F = c.F, rep = { res: B.res, quit: B.quit, f: f, boss: !!F.boss, ge: 0, gt: 0, death: false, cp: false };
+      if (B.res === 'win') {
+        var ge = Math.min(twExp(f), Math.max(0, TOWER.dayExp - T.day.exp)), gt = Math.min(twTok(f), Math.max(0, TOWER.dayTok - T.day.tok));
+        T.day.exp += ge; T.day.tok += gt; a.exp = (a.exp || 0) + ge; T.tok = (T.tok || 0) + gt; T.best = Math.max(T.best, f);
+        rep.ge = ge; rep.gt = gt;
+        if (F.boss) {
+          T.clears++;
+          if (T.death < TOWER.deathMax) { T.death++; if (!a.items) a.items = {}; a.items.deathTok = (a.items.deathTok || 0) + 1; rep.death = true; }
+          T.f = 1; T.cp = 1;
+        } else { T.f = f + 1; if (TOWER.cps.indexOf(T.f) >= 0) { T.cp = T.f; rep.cp = true; } }
+      } else T.f = T.cp;
+      rep.xp = ACC.battleXp(a, c.team, B.seen, B.downs, env);
+      rep.T = JSON.parse(JSON.stringify(T));
+      return rep;
+    }
+  };
   function done(a, id) { return ACC.done(a, id); }
   function chalStars(a, id) { var r = a && a.chal && a.chal[id]; return r && Array.isArray(r.s) ? r.s.filter(Boolean).length : 0; }
   function myTeam(a) { var t = ACC.team(a); return { us: t.map(function (m) { return m.u; }), p: t.map(function (m) { return ACC.battleMon(a, m); }) }; }

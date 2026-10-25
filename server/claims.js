@@ -116,9 +116,73 @@ function keyFix(oldData, newData) {
   });
   return out;
 }
+/* ---------- 精灵数值核对（2026-10-25，第三批） ----------
+ * 精灵的等级、经验、天赋、学习力、性格、隐藏技能、异色、等级上限、形态解锁只能由服务器改（对战结算、交易）。
+ * 上传的存档里这些变了、或者凭空多了精灵，就是浏览器自己改的。MON_MODE：'observe' 只记录（/status 的 mons），'enforce' 改回服务器的。 */
+var MON_MODE = 'observe';
+var MON_KEYS = ['sid', 'lv', 'exp', 'iv', 'ev', 'evFree', 'nat', 'hl', 'shiny', 'lvCap', 'fu', 'got'];
+var mstat = { checked: 0, bad: 0, fixed: 0, last: [] };
+function same(x, y) { return JSON.stringify(x === undefined ? null : x) === JSON.stringify(y === undefined ? null : y); }
+function monCheck(A, B) {
+  var E = require('./tx').engine(); if (!E || !E.ACC || !Array.isArray(A.mons) || !Array.isArray(B.mons)) return null;
+  var byU = {}; A.mons.forEach(function (m) { if (m && m.u != null) byU[m.u] = m; });
+  var issues = [], keep = [];
+  var starter = !A.mons.length && B.mons.length <= 2 && B.mons.every(function (m) { return m && m.lv <= 20; });   // 新账号选初始精灵
+  B.mons.forEach(function (m) {
+    if (!m || m.u == null) return;
+    var o = byU[m.u];
+    if (!o) { if (starter) { keep.push(m); return; } issues.push({ u: m.u, f: 'new:' + m.sid + ':LV' + m.lv }); return; }
+    var fix = null;
+    MON_KEYS.forEach(function (k) {
+      if (same(o[k], m[k])) return;
+      if (k === 'iv' && !E.ACC.ivOk(o.iv) && E.ACC.ivOk(m.iv)) return;   // 天赋系统上线前的精灵：浏览器补的一套
+      if (k === 'nat' && !(o.nat in NATURES()) && (m.nat in NATURES())) return;
+      if ((k === 'ev' && o.ev == null) || (k === 'evFree' && o.evFree == null)) return;
+      if ((k === 'lv' || k === 'exp') && A.expV !== B.expV) return;   // 经验曲线换版时的换算
+      if (k === 'hl' && A.hlFix !== 1 && B.hlFix === 1) return;   // 小月亮、骨刃隐藏技能恢复（一次性）
+      issues.push({ u: m.u, f: k }); (fix || (fix = {}))[k] = 1;
+    });
+    // 出战技能：只能是这只精灵现在会的
+    var av = E.ACC.avail(o.sid, o.lv, Array.isArray(o.hl) ? o.hl : []);
+    if (Array.isArray(m.moves) && (m.moves.length > 4 || m.moves.some(function (n, i, a) { return av.indexOf(n) < 0 || a.indexOf(n) !== i; }))) { issues.push({ u: m.u, f: 'moves' }); (fix || (fix = {})).moves = 1; }
+    keep.push({ m: m, o: o, fix: fix });
+  });
+  if (!(B.next >= A.next)) issues.push({ u: null, f: 'next' });
+  return { issues: issues, keep: keep };
+}
+function monApply(A, B, r) {   // 正式模式：改回服务器的
+  B.mons = r.keep.map(function (x) {
+    if (!x.o) return x;   // 初始精灵
+    if (!x.fix) return x.m;
+    var m = JSON.parse(JSON.stringify(x.m));
+    Object.keys(x.fix).forEach(function (k) { if (x.o[k] === undefined) delete m[k]; else m[k] = JSON.parse(JSON.stringify(x.o[k])); });
+    return m;
+  });
+  var us = {}; B.mons.forEach(function (m) { us[m.u] = 1; });
+  (B.teams || []).forEach(function (t, i) { if (Array.isArray(t)) B.teams[i] = t.filter(function (u) { return us[u]; }); });
+  if (!(B.next >= A.next)) B.next = A.next;
+}
+function NATURES() { var E = require('./tx').engine(); return (E && E.NATURES) || {}; }
+function monStep(u, oldData, newData, info, now) {
+  var A = accOf(oldData), B = accOf(newData); if (!A || !B) return newData;
+  var r = null; try { r = monCheck(A, B); } catch (e) { console.error('精灵核对出错', e && e.stack); }
+  if (!r) return newData;
+  mstat.checked++;
+  if (!r.issues.length) return newData;
+  mstat.bad++;
+  mstat.last.unshift({ t: new Date(now).toISOString(), u: u.name, old: !info.claims, mode: MON_MODE, issues: r.issues.slice(0, 8).map(function (x) { return (x.u != null ? '#' + x.u + ' ' : '') + x.f; }) });
+  mstat.last = mstat.last.slice(0, 20);
+  log({ t: new Date(now).toISOString(), u: u.name, kind: 'mons', mode: MON_MODE, oldClient: !info.claims, issues: r.issues.slice(0, 40) });
+  if (MON_MODE !== 'enforce' || !(info.claims || now >= GRACE_UNTIL)) return newData;
+  mstat.fixed++;
+  monApply(A, B, r);
+  var o2 = {}; for (var k in newData) o2[k] = newData[k]; o2['hs-account-v1'] = JSON.stringify(B);
+  return o2;
+}
 function onUpload(u, list, oldData, newData, info) {
   var now = Date.now(), ok = blank(), bad = blank(), notes = [];
   if (MODE === 'enforce' && (info.claims || now >= GRACE_UNTIL)) newData = keyFix(oldData, newData);
+  newData = monStep(u, oldData, newData, info, now);
   if (!u.claimed || typeof u.claimed !== 'object') u.claimed = {};
   if (!Array.isArray(u.cids)) u.cids = [];
   var seen = {}; u.cids.forEach(function (x) { seen[x] = 1; });
@@ -178,6 +242,7 @@ function sane(d) { var o = { items: {} }; FIELDS.forEach(function (f) { var v = 
 
 // /status 里显示的统计（不含账号名）：从服务器启动起有多少次上传、多少次对不上
 var stat = { since: new Date().toISOString(), uploads: 0, oldClient: 0, over: 0, fixed: 0, last: [] };
-function status() { return { mode: MODE, graceUntil: new Date(GRACE_UNTIL).toISOString(), since: stat.since, uploads: stat.uploads, oldClient: stat.oldClient, mismatch: stat.over, fixed: stat.fixed, recent: stat.last }; }
+function status() { return { mode: MODE, graceUntil: new Date(GRACE_UNTIL).toISOString(), since: stat.since, uploads: stat.uploads, oldClient: stat.oldClient, mismatch: stat.over, fixed: stat.fixed, recent: stat.last,
+  mons: { mode: MON_MODE, checked: mstat.checked, mismatch: mstat.bad, fixed: mstat.fixed, recent: mstat.last } }; }
 
 module.exports = { init: init, onUpload: onUpload, status: status, SRC: SRC, MODE: MODE };

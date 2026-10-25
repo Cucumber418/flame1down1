@@ -79,12 +79,19 @@ function finish(name, sess) {
   var seen = S.sides[0].team.map(function (x) { return !!x.seen; });
   var downs = S.sides[1].team.filter(function (x) { return x.fainted; }).map(function (x) { return { id: x.id, lv: x.lv }; });
   var end;
-  if (sess.kind === 'tower') end = E.PVE.towerEnd(acc, sess.f, sess.F, S.over, !!S.quit, sess.team, seen, downs, now);
+  if (sess.legacy) end = E.PVE.towerEnd(acc, sess.f, sess.F, S.over, !!S.quit, sess.team, seen, downs, now);
   else {   // 其他模式：规则在 js/engine/pve.js 的 MODES；结算完把整份存档发回去，浏览器直接换上
     var env = { now: now, rand: Math.random, data: u.save.data, pw: function () { return require('./purgewar').hit(name); } };
     var rep = E.PVE.MODES[sess.kind].end(acc, sess.ctx, { res: S.over, quit: !!S.quit, seen: seen, downs: downs, S: S }, env);
     end = { kind: sess.kind, res: S.over, quit: !!S.quit, rep: rep };
   }
+  // 战斗中领悟的隐藏技能：记到这只精灵身上（以前由浏览器记）
+  S.sides[0].team.forEach(function (t) {
+    if (t.u == null || !Array.isArray(t.hqGot) || !t.hqGot.length) return;
+    var m = E.ACC.mon(acc, t.u); if (!m) return;
+    if (!Array.isArray(m.hl)) m.hl = [];
+    t.hqGot.forEach(function (n) { if (typeof n === 'string' && m.hl.indexOf(n) < 0) m.hl.push(n); });
+  });
   // 战斗里用掉的道具：存档里的数量不超过「开打时 − 用掉的」
   if (!acc.items) acc.items = {};
   Object.keys(sess.used).forEach(function (k) { var cap = Math.max(0, (sess.items0[k] || 0) - sess.used[k]); if ((acc.items[k] || 0) > cap) acc.items[k] = cap; });
@@ -92,7 +99,7 @@ function finish(name, sess) {
   u.save.rev = (u.save.rev || 0) + 1; u.save.savedAt = now;
   A.saveUser(u);
   end.rev = u.save.rev; end.seen = seen; end.downs = downs;
-  if (sess.kind !== 'tower') end.acc = u.save.data['hs-account-v1'];
+  if (!sess.legacy) end.acc = u.save.data['hs-account-v1'];
   if (end.rep && end.rep.keys) { end.keys = {}; end.rep.keys.forEach(function (k) { end.keys[k] = u.save.data[k]; }); }
   return end;
 }
@@ -158,17 +165,17 @@ A.use(function (req, res, url) {
     try {
       if (op === 'start') {
         var kind = String(body.kind || '');
-        if (kind !== 'tower' && !E.PVE.MODES[kind]) return A.reply(res, 400, { error: '不支持的对战' });
+        if (!E.PVE.MODES[kind]) return A.reply(res, 400, { error: '不支持的对战' });
         var u = A.loadUser(name), acc = u && accOf(u);
         if (!acc) return A.reply(res, 409, { error: '存档还没同步到服务器，请稍后再试' });
-        if (kind !== 'tower') return startMode(E, res, name, kind, u, acc, body.args && typeof body.args === 'object' ? body.args : {});
+        if (kind !== 'tower' || body.args) return startMode(E, res, name, kind, u, acc, body.args && typeof body.args === 'object' ? body.args : {});   // 新页面的先驱之塔带 args，走通用框架
         var st = E.PVE.towerStart(acc, body.pick, Date.now(), Math.random);
         if (st.err) return A.reply(res, 400, { error: st.err });
         var S = E.newBattle(st.p, st.a);
         S.story = { foe: st.opt.foe, back: st.opt.back, diff: st.opt.diff }; S.noLimit = true; S.remote = true;
         var items0 = {}; E.ITEM_ORDER.forEach(function (k) { items0[k] = (acc.items && acc.items[k]) || 0; });
         S.items = JSON.parse(JSON.stringify(items0));
-        sessions[name] = { kind: 'tower', S: S, team: st.team, f: st.f, F: st.F, items0: items0, used: {}, t: Date.now(), seq: 0, last: null, done: false };
+        sessions[name] = { kind: 'tower', legacy: true, S: S, team: st.team, f: st.f, F: st.F, items0: items0, used: {}, t: Date.now(), seq: 0, last: null, done: false };
         return A.reply(res, 200, JSON.parse(E.battleJSON(S, { ok: true, S: S, opt: st.opt })));
       }
       var sess = sessions[name];

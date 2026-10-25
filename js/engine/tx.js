@@ -190,6 +190,8 @@ var TX = (function () {
   // 浏览器用：按服务器给的随机数重放
   function replay(rolls) { var i = 0; rolls = Array.isArray(rolls) ? rolls : []; return function () { return i < rolls.length ? +rolls[i++] : 0; }; }
 
-  return { D: D, run: run, recorder: recorder, replay: replay, mmPool: mmPool, spaSlotPrice: spaSlotPrice, bjDay: bjDay, dayNum: dayNum, twRec: twRec, mineRec: mineRec, mmG: mmG, ops: Object.keys(OPS) };
+  // 别的规则文件（如 grow.js）加交易用
+  function add(name, fn) { OPS[name] = fn; }
+  return { D: D, run: run, add: add, recorder: recorder, replay: replay, mmPool: mmPool, spaSlotPrice: spaSlotPrice, bjDay: bjDay, dayNum: dayNum, twRec: twRec, mineRec: mineRec, mmG: mmG, ops: Object.keys(OPS) };
 })();
 if (typeof module !== 'undefined') module.exports = TX;
