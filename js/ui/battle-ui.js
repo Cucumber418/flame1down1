@@ -852,6 +852,13 @@
     if (!HSFX.on()) return; var mv = M[e.move] || {}, emo = FX_EMO[e.type || mv.type] || '✦', me = V(e.side), foe = 1 - me;
     fxLastType = e.type || mv.type;
     var a = fxPos(me), b = fxPos(foe); if (!a || !b) return;
+    // 2026-10-25：物理攻击用身体撞过去；特殊攻击是远程特效（从自己飞向对方）
+    if (mv.cat === '物攻') {
+      var mon = $('mon' + me), img = mon && mon.querySelector('.face img');
+      if (img) { img.style.setProperty('--rx', ((b.x - a.x) * 0.62 * (me === 1 ? -1 : 1)) + 'px');   /* 右边的立绘是镜像的，横向要反过来 */ img.style.setProperty('--ry', ((b.y - a.y) * 0.62) + 'px'); mon.classList.remove('lunge0', 'lunge1'); restartAnim(mon, 'ram' + me); }
+      setTimeout(function () { fxSpawn('aura', emo, b.x - (b.x - a.x) * 0.2, b.y, null, 500); }, 170);
+      return true;
+    }
     var toFoe = mv.cat !== '变化' || mv.status || mv.tgtStage || mv.clearTgtUp;
     if (toFoe) { for (var n = 0; n < 3; n++) (function (n) { setTimeout(function () { fxSpawn('fly', emo, a.x, a.y, { '--dx': (b.x - a.x) + 'px', '--dy': (b.y - a.y + (n - 1) * 18) + 'px' }, 520); }, n * 70); })(n); }
     else { for (var k = 0; k < 4; k++) fxSpawn('aura', mv.heal || mv.healLost ? '💚' : mv.selfStage ? '💪' : emo, a.x + (k - 1.5) * 26, a.y + 20, { '--d': (k * 80) + 'ms' }, 900); }
@@ -958,7 +965,7 @@
       var e = evs[k];
       switch (e.t) {
         case 'text': addLog(e.text, e.cls); renderSnap(e.snap); flashAbility(e.text, flipSnap(e.snap)); await wait(e.cls === 'turn' ? 120 : 300); break;
-        case 'use': renderSnap(e.snap); fxUse(e); castFx({ a: 'use', i: V(e.side), m: e.move, ty: e.type }); restartAnim($('mon' + V(e.side)), 'lunge' + V(e.side)); banner(e.move, e.type); await wait(450); break;
+        case 'use': renderSnap(e.snap); var rammed = fxUse(e); castFx({ a: 'use', i: V(e.side), m: e.move, ty: e.type }); if (!rammed) restartAnim($('mon' + V(e.side)), 'lunge' + V(e.side)); banner(e.move, e.type); await wait(450); break;
         case 'hit': renderSnap(e.snap); fxHit(e); if (e.amount > 0) castFx({ a: 'hit', i: V(e.side), n: e.amount, c: !!e.crit, lb: e.kind ? (e.kind === 'fixed' ? '固伤' : e.kind) : hitLabel(e) }); if (app.S && app.S.training && e.side === 1) renderStats(); if (e.amount > 0) { restartAnim($('mon' + V(e.side)), 'hit'); if (e.kind) floatNum(V(e.side), (e.kind === 'fixed' ? '固伤' : e.kind) + '-' + e.amount, e.kind === 'fixed' ? 'fixed' : 'dot', DOT_COLOR[e.kind]); else floatNum(V(e.side), hitLabel(e) + '-' + e.amount, e.crit ? 'crit' : e.eff > 1 ? 'super' : e.eff > 0 && e.eff < 1 ? 'resist' : ''); if (!e.kind) shakeField(!e.crit); } await wait(480); break;
         case 'cant': renderSnap(e.snap); floatNum(V(e.side), e.st + '无法行动', 'cant', CANT_COLOR[e.st]); await wait(420); break;
         case 'bossfx': renderSnap(e.snap); if (window.HSEV) window.HSEV('bossfx', { k: e.k }); await wait(120); break;   // BOSS特性第一次发动：揭晓
