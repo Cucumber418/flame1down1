@@ -59,3 +59,5 @@ function hit(user) {
 }
 
 module.exports = { load: load, store: store, FILE: FILE, hit: hit };
+// 交易里要查全服击破数（剧情「盐碱地之下」的开放条件，js/engine/story.js）
+require('./tx').hook('pwTotal', function () { return load().total || 0; });

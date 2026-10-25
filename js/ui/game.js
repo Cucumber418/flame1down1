@@ -284,9 +284,7 @@
     document.body.classList.toggle('no-acc', !ready());
     $('onboard').hidden = ready();
     if (!ready()) { renderOnboard(); return; }
-    if (prog('school').done && !prog('school').rewarded) grant('school');   // 旧存档补发序章奖励
-    backfillMain();
-    if (acc.story && acc.story.storage && acc.story.storage.rewarded && !acc.story.storage.itemsGiven) { earn('fix', 'storage-items', { items: SITES.storage.reward.items }); acc.story.storage.itemsGiven = true; save(); }
+    storyFix();   // 旧存档的剧情补发（服务器结算，js/engine/story.js 的 legacy）
     $('who-name').textContent = acc.name;
     renderRes();
     renderAvatar(); renderGender();
@@ -687,9 +685,8 @@
     var t = SPMAP[sid].types[0];
     return STARTERS.filter(function (x) { return x !== sid && eff(SPMAP[x].types[0], t) > 1; })[0] || STARTERS.filter(function (x) { return x !== sid; })[0];
   }
-  function pickStarter(sid) {
-    acc.starter = sid; acc.rival = rivalOf(sid);
-    var m = newMon(sid, START_LV); acc.teams[0] = [m.u]; acc.active = 0; ui.sel = m.u; save();
+  function pickStarter(sid, then) {   // 走交易（js/engine/story.js）
+    txRun('story', { a: 'pick', sid: sid }, function (r) { ui.sel = r.u; if (then) then(); });
   }
   var INTRO_SITES = ['school', 'river', 'jiuquan'];
   function finishIntro() {
@@ -1378,13 +1375,6 @@
   function shopOpen() { return !!(acc && acc.story && acc.story.storage && acc.story.storage.done); }
   function dexOpen() { return !!(acc && acc.story && acc.story.academy && acc.story.academy.done); }
   function arenaOpen() { return !!(acc && acc.story && acc.story.xiaogan && acc.story.xiaogan.done); }
-  // 首次读完某段剧情时发放奖励（只发一次）
-  function grant(id) {
-    var R = SITES[id].reward, pr = prog(id); if (!R || pr.rewarded) return null;
-    earn('story', id, { exp: R.exp, energy: R.energy, items: R.items }); if (R.title && acc.titles.indexOf(R.title) < 0) acc.titles.push(R.title);
-    if (R.gift && R.gift.length) setTimeout(function () { txRun('gift', { k: 'story', id: id }, function () { renderTop(); }); }, 0);   // 送的精灵走交易（grow.js）
-    pr.rewarded = true; pr.itemsGiven = true; pr.got = { exp: R.exp || 0, energy: R.energy || 0 }; save(); return R;
-  }
   /* 主线章节：一个章节的剧情全部读完后，额外发一份章节大奖（每个存档一次，记在 acc.chapters）
    * wip 表示这一章还没写完（未完待续），写完之前不算通关 */
   var CHAPTERS = [
@@ -1395,29 +1385,24 @@
   function chapterOf(site) { return CHAPTERS.filter(function (C) { return C.sites.indexOf(site) >= 0; })[0] || null; }
   function chapterDone(C) { return !C.wip && C.sites.every(function (id) { return prog(id).done; }); }
   function chapterGot(id) { return !!(acc && acc.chapters && acc.chapters[id]); }
-  function chapterPay(C) {   // 发章节奖励（调用前先确认 chapterDone 且还没领过）
-    var R = C.reward; if (!acc.chapters) acc.chapters = {}; acc.chapters[C.id] = Date.now();
-    earn('chapter', C.id, { exp: R.exp, energy: R.energy, items: R.items }); save();
-  }
   // 剧情里拿到的东西（如 Threego 的封口费），每个存档只给一次
-  function storyGive(site, g) {
-    var pr = prog(site); if (!pr.gave) pr.gave = {}; if (pr.gave[g.id]) return false;
-    pr.gave[g.id] = 1; earn('sgive', site + ':' + g.id, { energy: g.energy, exp: g.exp, items: g.items }); save(); if (ready()) renderRes(); return true;
+  function storyGive(site, g, tries) {   // 走交易（js/engine/story.js）：每个存档只给一次
+    var pr = prog(site); if (pr.gave && pr.gave[g.id]) return false;
+    txRun('story', { a: 'give', site: site, id: g.id }, function () { if (ready()) renderRes(); }, function (err) { if (err === '' && (tries || 0) < 20) setTimeout(function () { storyGive(site, g, (tries || 0) + 1); }, 300); });
+    return true;
   }
-  // 主线奖励调整后，给已读完的旧存档补齐差额（只补一次）
-  var OLD_MAIN = { school: { exp: 1000, energy: 500 }, river: { exp: 0, energy: 0 }, jiuquan: { exp: 0, energy: 0 }, board: { exp: 1000, energy: 300 } };
-  function backfillMain() {
-    var add = { exp: 0, energy: 0 };
-    // 2026-10-17 第八段拆成第八、九、十段：拆分前就读完第八段的存档（读的是完整旧版），第九、十段直接记为已读（不另发奖励），瘴气化状态不变
-    if (!acc.split8) { acc.split8 = 1; var p8 = acc.story && acc.story.flora4; if (p8 && p8.done) ['flora5', 'flora6'].forEach(function (id) { var q = prog(id); q.done = true; q.rewarded = true; q.at = 0; }); save(); }
-    ['school', 'river', 'jiuquan', 'board'].forEach(function (id) {
-      var pr = acc.story && acc.story[id], R = SITES[id].reward; if (!pr || !pr.done || !R) return;
-      var had = pr.got || (pr.rewarded ? OLD_MAIN[id] : { exp: 0, energy: 0 });
-      var de = Math.max(0, (R.exp || 0) - had.exp), dn = Math.max(0, (R.energy || 0) - had.energy);
-      if (!pr.got || de || dn) { earn('fix', 'main:' + id, { exp: de, energy: dn }); add.exp += de; add.energy += dn; pr.got = { exp: R.exp || 0, energy: R.energy || 0 }; pr.rewarded = true; }
-    });
-    if (acc.story && acc.story.jiuquan && acc.story.jiuquan.done && storyGive('jiuquan', { id: 'bribe', energy: 1000 })) add.energy += 1000;
-    if (add.exp || add.energy) { save(); setTimeout(function () { toast('主线奖励调整：已为读完的主线补发累积经验 ×' + fmt(add.exp) + '、能量 ×' + fmt(add.energy) + '。'); }, 600); }
+  // 旧存档的补发：主线奖励调整的差额、物资仓储新增的道具、读完却没发过的奖励、章节大奖等（规则在 js/engine/story.js，先在本机试算，有要补的才去服务器结算）
+  var storyFixBusy = false;
+  function storyFix() {
+    if (storyFixBusy || !ready() || !acc.introDone) return;
+    var C = JSON.parse(JSON.stringify(acc)); STY.legacy(C, Date.now());
+    if (JSON.stringify(C) === JSON.stringify(acc)) return;
+    storyFixBusy = true;
+    txRun('story', { a: 'fix' }, function (r) {
+      storyFixBusy = false; var f = r.fix || {}; renderRes();
+      var bits = []; if (f.exp) bits.push('累积经验 ×' + fmt(f.exp)); if (f.energy) bits.push('能量 ×' + fmt(f.energy)); for (var k in f.items || {}) bits.push(itemName(k) + ' ×' + f.items[k]);
+      if (bits.length) setTimeout(function () { toast('剧情奖励补发：' + bits.join('、') + '。'); }, 600);
+    }, function () { storyFixBusy = false; });
   }
   function giveItems(o) { if (o) earn('misc', '', { items: o }); }   // 旧写法：新代码请直接用 earn，写明来源
   function rwList(R) { var a = [R.exp ? '累积经验 ×' + fmt(R.exp) : '', R.energy ? '能量 ×' + fmt(R.energy) : '', R.bgm ? '茶室音乐「' + bgmName(R.bgm) + '」' : '']; if (R.items) for (var k in R.items) a.push(itemName(k) + ' ×' + R.items[k]); if (R.title) a.push('称号「' + TITLES.filter(function (x) { return x.id === R.title; })[0].n + '」'); if (R.mon) a.push(R.mon); (R.gift || []).forEach(function (g) { a.push(form(g).name + ' LV' + g.lv); }); return a.filter(Boolean); }
@@ -1469,7 +1454,7 @@
     var F = FIGHTS[key], team, realN, allyFirst = false;
     if (srvMode()) {
       var host0 = ex.host, cuts0 = (F.cuts || []).map(function (c) { return { hp: c.hp, lines: c.lines.map(function (L) { return { n: L.s === 'n' ? '' : CAST[L.s].name(), t: fill(L.t) }; }) }; });
-      return pveRemote('story', { key: key, allyOff: !!ex.allyOff }, { bg: F.bg ? fightBg(F.bg) : null, corrupt: !!F.corrupt, cuts: cuts0, env: F.env || null,
+      return pveRemote('story', { key: key, allyOff: !!ex.allyOff, site: ex.site }, { bg: F.bg ? fightBg(F.bg) : null, corrupt: !!F.corrupt, cuts: cuts0, env: F.env || null,
         pre: function () { host0.hidden = true; if (ex.mode === 'replay') $('pg-explore').hidden = true; } }, function (e, res) {
         var r = e && e.rep, bt = r ? r.res : res;
         if (r && r.own) { var got = xpMsg(r.xp); dailyHit('pve'); if (got.length) toast(got.join('')); }
@@ -3636,8 +3621,6 @@
       if (!bossWon(x[0], 2)) return; var it = {}; it[x[1]] = 80;
       if (sendMail({ id: 'boss-item-' + x[0], title: '困难难度「' + x[2] + '」首次击败奖励补发', body: '{name}，你好！\n困难难度的BOSS「' + x[2] + '」新增了首次击败奖励「' + itemName(x[1]) + '」×80。你之前已经击败过它了，这份奖励给你补上。\n' + itemName(x[1]) + '可以让' + x[2] + '领悟隐藏技能，也能提高' + x[2] + '的等级上限。另外，' + x[2] + '的每周挑战也已经开放。', att: { items: it } })) changed = true;
     });
-    // 2026-10-24：活动任务「明明教官的试炼」读完送 500 明明代币，之前已经读完的补发
-    if (prog('mmTrial').done && !prog('mmTrial').rewarded) { prog('mmTrial').rewarded = true; if (sendMail({ id: 'mm-task-tok', title: '活动任务「明明教官的试炼」奖励补发', body: '{name}，你好！\n活动任务「明明教官的试炼」现在读完即算完成，奖励明明代币 ×500。你之前已经读完了，这份奖励给你补上，可以去全息作战场地抽奖。', att: { items: { mmTok: 500 } } })) changed = true; }
     // 2026-10-24：普通难度荒芜新增首次击败奖励「莠去津」×40（原来写着「之后添加」），已经打过的补发
     if (bossWon('barren', 1) && sendMail({ id: 'boss-n-barren', title: '普通难度「荒芜」首次击败奖励补发', body: '{name}，你好！\n普通难度的BOSS「荒芜」的首次击败奖励定下来了：荒芜的专属道具「莠去津」×40（原来的「生长枯枝」也改名为「莠去津」，作用不变）。你之前已经击败过它了，这份奖励给你补上。', att: { items: { brTwig: 40 } } })) changed = true;
     // 2026-10-19：BOSS 各难度首次击败新增马亚尔晶体，之前已经击败过的通过邮箱补发（每个BOSS一封，合计已击败的各档）
@@ -3646,15 +3629,6 @@
       B.lv.forEach(function (L, i) { if (bossWon(k, i)) { n += BOSS_CRY[i] || BOSS_CRY[BOSS_CRY.length - 1]; got.push(L.diff); } });
       if (!n) return;
       if (sendMail({ id: 'boss-cry-' + k, title: 'BOSS「' + B.name + '」首次击败奖励补发', body: '{name}，你好！\n每个BOSS每档难度的首次击败，现在都会额外奖励马亚尔晶体（简单 100、普通 200、困难 400）。你之前已经击败过' + B.name + '的' + got.join('、') + '难度，这份奖励给你补上。\n马亚尔晶体可以在黄石 · 冶炼坊的「特产互换」里，每 10 个换成 10 个任意一种星球特产。', att: { items: { m_mcry: n } } })) changed = true;
-    });
-    // 主线章节大奖：章节推出之前就已经读完的船员，通过邮箱补发（每个章节一次）
-    CHAPTERS.forEach(function (C) {
-      if (!chapterDone(C) || chapterGot(C.id)) return;
-      if (!acc.chapters) acc.chapters = {}; acc.chapters[C.id] = Date.now(); changed = true;
-      var R = C.reward;
-      sendMail({ id: 'chapter-' + C.id, title: '主线「' + C.n + '」完成奖励',
-        body: '{name}，你好！\n主线剧情现在分成了若干章节，每读完一个章节，都会额外发一份章节大奖。\n你已经读完了「' + C.n + '」（' + C.d + '），请领取附件。' + (R.bgm ? '\n另外，茶室音乐「' + bgmName(R.bgm) + '」已经解锁，去陆羽茶室 · 我的房间就能换上。' : ''),
-        att: { exp: R.exp || 0, energy: R.energy || 0, items: R.items } });
     });
     // 排位赛季段位奖励翻倍：之前按旧标准领过的段位，补发差额（每个账号只算一次）
     var rec = rankRec();
@@ -4340,7 +4314,7 @@
   function patchAcc(fx) {   // 服务器改回的几项（cloud.js 上传后）：只换这几项
     if (!acc || !fx || typeof fx !== 'object') return;
     for (var k in fx) { if (fx[k] === null) delete acc[k]; else acc[k] = fx[k]; }
-    save(); try { renderTop(); renderRes(); } catch (e) {}
+    save(); try { renderRes(); } catch (e) {}   // 不重画整页（剧情、对战画面开着时会被打断）
   }
   function adoptAcc(js) {
     try { var a = typeof js === 'string' ? JSON.parse(js) : js; if (!valid(a)) return false; acc = a; save(); return true; } catch (e) { return false; }
@@ -6044,6 +6018,7 @@
     setTimeout(function () { preloadVN(site); }, 0);
     if (mode !== 'intro') $('onboard').innerHTML = '';
     if (fromStart) { pr.at = 0; pr.ch = null; }
+    ex.finPending = null;
     ex.mode = mode; ex.host = host; ex.view = mode === 'replay' ? 'vn' : ex.view;
     ex.i = stepAt(pr.at); ex.log = []; ex.auto = false; ex.skip = false; ex.pickSel = null; ex.curBg = null; ex.curCg = null;
     renderVN(); bgmScene();
@@ -6239,13 +6214,34 @@
     d.addEventListener('click', function (e) { if (e.target.closest('[data-fallenlog]')) { d.remove(); go('log'); } });
     d.addEventListener('click', function (e) { if (e.target === d || e.target.closest('[data-fallenx]')) d.remove(); });
   }
-  function finish() {
+  // 读完一段：进度、奖励、章节大奖由服务器结算（交易 story，js/engine/story.js）
+  function finish(tries, site0) {
     stopTimers();
-    var pr = prog(ex.site), firstDone = !pr.done; pr.done = true; pr.at = 0; save();
-    var R = grant(ex.site), intro = ex.mode === 'intro';
+    var site = site0 || ex.site; if (ex.site !== site) return;
+    if (!site0 && $('vn-end') && !$('vn-end').hidden) return;   // 结束画面已经在了（点背景不再重画，免得奖励那一栏消失）
+    var pr = prog(site);
+    if (pr.done) { if (!site0 && ex.finPending === site) return; pr.at = 0; save(); finishShow(null, null, false); return; }
+    if (!site0 && ex.finPending === site) return;   // 已经在结算这一段了（连点）
+    ex.finPending = site;
+    txRun('story', { a: 'done', site: site }, function (r) {
+      ex.finPending = null;
+      if (ex.site !== site) return;
+      var R = r.reward || null, chPaid = r.chapters && r.chapters.length ? CHAPTERS.filter(function (C) { return C.id === r.chapters[r.chapters.length - 1]; })[0] : null;
+      if (R && R.gift && R.gift.length) setTimeout(function () { txRun('gift', { k: 'story', id: site }, function () { renderTop(); }); }, 0);   // 送的精灵走交易（grow.js）
+      finishShow(R, chPaid, !r.again);
+    }, function (err) {
+      if (err === '' && (tries || 0) < 20) { setTimeout(function () { finish((tries || 0) + 1, site); }, 300); return; }   // 上一笔交易还没结束
+      ex.finPending = null;
+      if (ex.site !== site) return;
+      toast('这段剧情的进度没能保存：' + (err || '请稍后再试') + '。');
+      finishShow(null, null, false, err || '进度没能保存');
+    });
+  }
+  function finishShow(R, chPaid, firstDone, failMsg) {
+    var intro = ex.mode === 'intro';
+    if (!$('vn-end')) { if (R || chPaid) renderRes(); return; }   // 已经离开剧情画面了
     if (ex.site === 'flora6' && firstDone) setTimeout(floraFallenNotice, 600);
     if (ex.site === 'flora7' && firstDone) { fields = {}; if (mmLive()) setTimeout(mmEventPop, 900); }   // 芙罗拉星恢复：野外场景重建；弹出新活动   // 第一次读完第十段：芙罗拉星被腐化的提示
-    var CH = chapterOf(ex.site), chPaid = CH && chapterDone(CH) && !chapterGot(CH.id) && !intro ? (chapterPay(CH), CH) : null;
     if (chPaid) renderRes();
     if (R && ready()) renderRes();
     var nxt = Object.keys(SITES).filter(function (id) { return SITES[id].after === ex.site && !SITES[id].side; })[0] || Object.keys(SITES).filter(function (id) { return SITES[id].after === ex.site && unlocked(id); })[0];
@@ -6255,7 +6251,7 @@
     ex.auto = false; ex.skip = false;
     $('vn-chars').innerHTML = ''; $('vn-mons').innerHTML = ''; $('vn-box').hidden = true; $('vn-choices').hidden = true;
     $('vn-end').hidden = false;
-    $('vn-end').innerHTML = '<div class="vn-endbox"><span class="sc-tag">' + SITES[ex.site].chapter + '</span><b>完</b>' +
+    $('vn-end').innerHTML = '<div class="vn-endbox"><span class="sc-tag">' + SITES[ex.site].chapter + '</span><b>完</b>' + (failMsg ? '<p><b class="red">' + esc(failMsg) + '</b></p>' : '') +
       (R ? '<p>获得奖励</p><div class="vn-reward">' + rwList(R).map(function (x) { return '<span>' + x + '</span>'; }).join('') + '</div>' : '') +
       (ex.site === 'rare' && !nxt ? '<p><b class="red">任务：捕捉一种稀有精灵，然后回学院部汇报。</b></p>' : '') + (R && R.title ? '<p><b class="red">获得称号「' + TITLES.filter(function (x) { return x.id === R.title; })[0].n + '」！</b><br><span class="hint">点击右上角的名字即可佩戴</span></p>' : '') +
       (chPaid ? '<div class="vn-chap"><b>「' + chPaid.n + '」完成！</b><p>章节大奖</p><div class="vn-reward">' + rwList(chPaid.reward).map(function (x) { return '<span>' + x + '</span>'; }).join('') + '</div></div>' : '') +
@@ -6278,7 +6274,7 @@
     if (b && b.dataset.vn) {
       var a = b.dataset.vn;
       if (a === 'fight') { startFight(b.dataset.fk); return; }
-      if (a === 'pickok' && ex.pickSel) { pickStarter(ex.pickSel); ex.i++; show(); return; }
+      if (a === 'pickok' && ex.pickSel) { if (acc.starter) { ex.i++; show(); return; } pickStarter(ex.pickSel, function () { ex.i++; show(); }); return; }
       if (a === 'exit' && ex.arc) { stopTimers(); ex.mode = null; ex.arc = false; ex.arcQ = []; ex.view = 'archive'; renderExplore(); return; }
       if (a === 'exit') { stopTimers(); ex.mode = null; ex.planet = SITES[ex.site].planet; if (SITES[ex.site].fpart) ex.fpart = SITES[ex.site].fpart; if (SITES[ex.site].dept) { ex.view = 'area'; ex.area = SITES[ex.site].dept; } else ex.view = 'sites'; renderExplore(); return; }
       if (a === 'replay') { startVN(ex.site, 'replay', ex.host, true); return; }

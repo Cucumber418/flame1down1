@@ -736,10 +736,12 @@ var PVE = (function () {
       }
       var foes = fightTeam(F, a).map(function (x) { return resolveFoeEntry(x, env.rand); });
       fightTeam(F, a).forEach(function (x) { if (SPMAP[x.sid]) ACC.seeMon(a, x.sid, x.lv); });
-      return { p: p, a: foes, ctx: { key: args.key, slots: slots }, dirty: true, preStrike: !!F.preStrike, S: { env: F.env || null }, opt: { foe: F.foe, bgm: F.bgm || null } };
+      var site = String(args.site || ''); if (typeof STY !== 'undefined' && !(STY.FIGHT_OF[site] && STY.FIGHT_OF[site].indexOf(String(args.key)) >= 0)) site = STY.SITE_OF[String(args.key)] || '';   // 这场对战属于哪段剧情（打完记 bt）
+      return { p: p, a: foes, ctx: { key: args.key, slots: slots, site: site }, dirty: true, preStrike: !!F.preStrike, S: { env: F.env || null }, opt: { foe: F.foe, bgm: F.bgm || null } };
     },
     end: function (a, c, B, env) {
       var rep = { key: c.key, res: B.res, own: c.slots.some(function (u) { return u != null; }) };
+      if (c.site) { if (!a.story) a.story = {}; if (!a.story[c.site]) a.story[c.site] = { at: 0, done: false, ch: null }; a.story[c.site].bt = B.res; }   // 剧情对战打过了（胜负决定后面的剧情分支）
       var us = c.slots.filter(function (u) { return u != null; }), seen = c.slots.map(function (u, k) { return u != null ? !!(B.seen && B.seen[k]) : null; }).filter(function (v) { return v !== null; });
       if (rep.own) rep.xp = ACC.battleXp(a, us, seen, B.downs, env);
       return rep;
