@@ -208,6 +208,8 @@ sudo git clone --depth 1 https://github.com/Cucumber418/flame1down1 /opt/flame1d
 
 **加载面板（2026-10-25）**：`js/ui/loader.js`（`LOADER`，在 cloud.js 之前加载）。`LOADER.show(文字)` 返回一个句柄：`to(上限)` 让进度条慢慢走向上限（等服务器时用）、`set(进度)` 直接到某个进度、`text()` 换文字、`done(cb)` 走满再关、`close()` 立刻关；350 毫秒内就结束的不显示。`LOADER.images(地址, step, done)` 预加载图片并报告进度。现在用在：登船（cloud.js 的 `loadGame`，按脚本数走）、进入单人对战（game.js 的 `pveRemote`：等服务器开局，再预加载双方精灵和背景图）、竞技对战开局和抽阵容（battle-ui.js）。面板上的精灵：一半机会是三只初始精灵，其余从自己拥有、见过的精灵里挑最小形态。
 
+**种子商店、活力花、PP 药水（2026-10-25）**：grow.js 的 `SEEDS` 多了 `s_flower`（活力花种子 → `c_flower` 活力花卉，8 小时 ×50），每种种子有 `back`（收获时掉落 1 颗种子的概率：药草、活力花 0.2，水稻 1）。交易 `seedShop`：`{ k: 种子, n }` 买种子（`SEED_PRICE` 100 能量），`{ k: 'plot' }` 买一块额外的田（`a.farm.extra`，`PLOT_PRICE` 2000/4000/8000/16000，最多 4 块；`farmN(a)` 是现在的田数）。冶炼坊新配方 `pp5` / `pp10` / `pp15`（活力花卉 2 / 3 / 4）。battle.js 的 `ITEMS` 多了 PP 药水（`pp` 字段：每个技能各恢复几点，`ppFull` 判断是否都满了）。种植园空田用下拉框（`data-sowsel`）选种子。
+
 **版本检查**：服务器启动时按网页、样式、脚本的内容算一个版本号（`GET /api/version`）。开着的页面每 3 分钟、以及切回页面时检查一次，发现服务器上的版本变了就弹窗提示刷新；用旧页面兑换东西时服务器会拒绝（不扣费）并提示刷新。
 
 ## 小段位

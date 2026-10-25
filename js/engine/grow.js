@@ -301,6 +301,9 @@ var GROW = (function () {
     { id: 'cap2', out: { cap2: 1 }, need: { g_sand: 2 } },
     { id: 'cap3', out: { cap3: 1 }, need: { g_core: 4 } },
     { id: 'pot200', out: { pot200: 1 }, need: { c_herb: 2 } },
+    { id: 'pp5', out: { pp5: 1 }, need: { c_flower: 2 } },   // PP 药水：越大的越划算（每点 PP 用的花越少）
+    { id: 'pp10', out: { pp10: 1 }, need: { c_flower: 3 } },
+    { id: 'pp15', out: { pp15: 1 }, need: { c_flower: 4 } },
     { id: 'bowl', out: { c_bowl: 1 }, need: { c_rice: 500 } },
     { id: 'lcEssence', out: { e_leafcat: 1 }, need: { m_lcleaf: 5 } },
     { id: 'formDev', out: { formDev: 1 }, need: { g_core: 6, g_sand: 300 } },
@@ -330,17 +333,21 @@ var GROW = (function () {
     return { ok: true, out: gxOut(f) * n };
   });
 
-  /* ---------- 太空种植园：种下种子，到时间收获（种子退回） ---------- */
-  var FARM_N = 4;
+  /* ---------- 太空种植园：种下种子，到时间收获 ----------
+   * 药草、活力花卉收获时有 20% 的概率掉 1 颗种子（back），水稻种子一定退回。种子在生态舱的种子商店用能量买（seedShop），
+   * 商店还卖额外的种植栏位：基础 4 块田，最多再加 4 块（a.farm.extra） */
+  var FARM_N = 4, FARM_EXTRA_MAX = 4, PLOT_PRICE = [2000, 4000, 8000, 16000], SEED_PRICE = 100, SEED_SHOP = ['s_herb', 's_flower'], SEED_SHOP_MAX = 99;
   var SEEDS = {
-    s_herb: { name: '药草种子', d: '生态舱里种的药草籽。种下去要 8 小时，收获时这颗种子会退回来。', crop: 'c_herb', min: 480, yield: 50 },
-    s_rice: { name: '水稻种子', d: '在芙罗拉星击败野生精灵时偶尔掉落的稻种。种下去要 12 小时，收获一大把米饭，种子会退回来。', crop: 'c_rice', min: 720, yield: 250 }
+    s_herb: { name: '药草种子', d: '绿色的药草籽，在恩施 · 生态舱的种子商店出售。种下去要 8 小时，收获药草；收获时有 20% 的概率掉落 1 颗药草种子。', crop: 'c_herb', min: 480, yield: 50, back: 0.2 },
+    s_flower: { name: '活力花种子', d: '蓝色的花籽，在恩施 · 生态舱的种子商店出售。种下去要 8 小时，收获活力花卉；收获时有 20% 的概率掉落 1 颗活力花种子。', crop: 'c_flower', min: 480, yield: 50, back: 0.2 },
+    s_rice: { name: '水稻种子', d: '在芙罗拉星击败野生精灵时偶尔掉落的稻种。种下去要 12 小时，收获一大把米饭，种子会退回来。', crop: 'c_rice', min: 720, yield: 250, back: 1 }
   };
-  function farmRec(a) { if (!a.farm || !Array.isArray(a.farm.plots)) a.farm = { plots: [] }; while (a.farm.plots.length < FARM_N) a.farm.plots.push(null); return a.farm; }
+  function farmN(a) { return FARM_N + Math.max(0, Math.min(FARM_EXTRA_MAX, (a && a.farm && a.farm.extra) | 0)); }
+  function farmRec(a) { if (!a.farm || !Array.isArray(a.farm.plots)) a.farm = { plots: [], extra: (a.farm && a.farm.extra) | 0 }; var n = farmN(a); while (a.farm.plots.length < n) a.farm.plots.push(null); return a.farm; }
   // { a: 'plant', i, seed } / { a: 'harvest', i }
   TX.add('farm', function (a, args, env) {
     var F = farmRec(a), i = int(args.i), I = items(a);
-    if (!(i >= 0 && i < FARM_N)) return no('没有这块田');
+    if (!(i >= 0 && i < farmN(a))) return no('没有这块田');
     if (args.a === 'plant') {
       var sd = String(args.seed || '');
       if (F.plots[i]) return no('这块田已经种上了');
@@ -351,10 +358,28 @@ var GROW = (function () {
     if (args.a === 'harvest') {
       var p = F.plots[i], S = p && SEEDS[p.seed]; if (!S) return no('这块田是空的');
       if (env.now - p.t < S.min * 60000) return no('还没成熟');
-      I[S.crop] = (I[S.crop] || 0) + S.yield; I[p.seed] = (I[p.seed] || 0) + 1; F.plots[i] = null;
-      return { ok: true, crop: S.crop, n: S.yield };
+      var back = S.back >= 1 || env.rand() < S.back ? 1 : 0;
+      I[S.crop] = (I[S.crop] || 0) + S.yield; if (back) I[p.seed] = (I[p.seed] || 0) + back; F.plots[i] = null;
+      return { ok: true, crop: S.crop, n: S.yield, seed: p.seed, back: back };
     }
     return no('不支持的操作');
+  });
+  // 种子商店：{ k: 种子, n } 买种子；{ k: 'plot' } 买一块额外的田
+  TX.add('seedShop', function (a, args) {
+    var F = farmRec(a), I = items(a);
+    if (args.k === 'plot') {
+      var e = (F.extra | 0), price = PLOT_PRICE[e];
+      if (!(e < FARM_EXTRA_MAX) || !price) return no('田已经扩到最多了');
+      if ((a.energy || 0) < price) return no('能量不足');
+      a.energy -= price; F.extra = e + 1; farmRec(a);
+      return { ok: true, k: 'plot', cost: price, n: farmN(a) };
+    }
+    var k = String(args.k || ''), n = int(args.n);
+    if (SEED_SHOP.indexOf(k) < 0) return no('没有这种种子');
+    if (!(n >= 1 && n <= SEED_SHOP_MAX)) return no('数量不对');
+    var cost = SEED_PRICE * n; if ((a.energy || 0) < cost) return no('能量不足');
+    a.energy -= cost; I[k] = (I[k] || 0) + n;
+    return { ok: true, k: k, n: n, cost: cost };
   });
 
   /* ---------- 助战回报：好友借用了你名片上的助战精灵，每次 1000 能量 + 1000 累积经验（借用次数由服务器记） ---------- */
@@ -382,7 +407,7 @@ var GROW = (function () {
     return { ok: true, want: want, give: give, today: had + give, cap: BRAWL_CAP, none: !!rec.none, r: rec.r, daily: dh };
   });
 
-  return { FORGE: FORGE, FORGE_Q: FORGE_Q, GX_KEYS: GX_KEYS, GX_IN: GX_IN, GX_OUT: GX_OUT, GX_SRC: GX_SRC, gxOut: gxOut, FARM_N: FARM_N, SEEDS: SEEDS, HELP_RW: HELP_RW, BRAWL_WIN: BRAWL_WIN, BRAWL_LOSE: BRAWL_LOSE, BRAWL_CAP: BRAWL_CAP, SPA_GAP: SPA_GAP, spaMons: spaMons, HOME_CAP_H: HOME_CAP_H, AUTO_DAYS: AUTO_DAYS, DAY_MS: DAY_MS, HATCH: HATCH, STORY_GIFT: STORY_GIFT, RANK_GIFT: RANK_GIFT, USE_ITEMS: USE_ITEMS, CAP_STEPS: CAP_STEPS, GEM_OF: GEM_OF, CAP_SID: CAP_SID, capGem: capGem, capNext: capNext, formLabel: formLabel, natText: natText,
+  return { FORGE: FORGE, FORGE_Q: FORGE_Q, GX_KEYS: GX_KEYS, GX_IN: GX_IN, GX_OUT: GX_OUT, GX_SRC: GX_SRC, gxOut: gxOut, FARM_N: FARM_N, FARM_EXTRA_MAX: FARM_EXTRA_MAX, PLOT_PRICE: PLOT_PRICE, SEED_PRICE: SEED_PRICE, SEED_SHOP: SEED_SHOP, SEED_SHOP_MAX: SEED_SHOP_MAX, farmN: farmN, SEEDS: SEEDS, HELP_RW: HELP_RW, BRAWL_WIN: BRAWL_WIN, BRAWL_LOSE: BRAWL_LOSE, BRAWL_CAP: BRAWL_CAP, SPA_GAP: SPA_GAP, spaMons: spaMons, HOME_CAP_H: HOME_CAP_H, AUTO_DAYS: AUTO_DAYS, DAY_MS: DAY_MS, HATCH: HATCH, STORY_GIFT: STORY_GIFT, RANK_GIFT: RANK_GIFT, USE_ITEMS: USE_ITEMS, CAP_STEPS: CAP_STEPS, GEM_OF: GEM_OF, CAP_SID: CAP_SID, capGem: capGem, capNext: capNext, formLabel: formLabel, natText: natText,
     itemFits: itemFits, jadeMoves: jadeMoves, formOpts: formOpts, evRoom: evRoom, applyMonItem: applyMonItem };
 })();
 if (typeof module !== 'undefined') module.exports = GROW;

@@ -159,6 +159,7 @@
     else if (shape === 'leaf') t = '<path d="M10 54C10 26 28 10 54 10c0 26-16 44-44 44z" fill="' + c + '"/><path d="M12 52L44 20" fill="none" stroke-width="2"/>';
     else if (shape === 'grain') t = '<ellipse cx="22" cy="36" rx="7" ry="11" fill="' + c + '"/><ellipse cx="36" cy="30" rx="7" ry="11" fill="' + c + '"/><ellipse cx="44" cy="42" rx="7" ry="11" fill="' + c + '"/>';
     else if (shape === 'ticket') t = '<path d="M8 18h48v8a6 6 0 0 0 0 12v8H8v-8a6 6 0 0 0 0-12z" fill="' + c + '"/><path d="M22 18v28" stroke-dasharray="3 3" stroke-width="2"/>' + txt(38, 15);
+    else if (shape === 'flower') t = [0, 72, 144, 216, 288].map(function (d) { return '<ellipse cx="32" cy="17" rx="8" ry="11" fill="' + c + '" transform="rotate(' + d + ' 32 32)"/>'; }).join('') + '<circle cx="32" cy="32" r="7" fill="#f3d36b"/>';
     else if (shape === 'box') t = '<rect x="10" y="14" width="44" height="38" rx="6" fill="' + c + '"/><rect x="18" y="22" width="28" height="14" rx="3" fill="#e6f1ff"/>' + txt(48, 11, '#fff');
     return o + t + '</g></svg>';
   }
@@ -183,12 +184,17 @@
       moonStone: ['moon', '#9b87e6'], boneDust: ['pile', '#d9d4c7', '#fff'], tgPearl: ['orb', '#f0a43a'], brTwig: ['twig', '#8b6b3f'], deathTok: ['coin', '#2b2a33', '死'],
       ivMoon: ['flask', '#e86fb2', '天'], ivBone: ['flask', '#b07ad9', '天'], ivReroll: ['flask', '#e86fb2', '重'], evAny: ['flask', '#d9534f', '学'], evTagore: ['flask', '#e08a2e', '学'],
       natAny: ['pill', '#8e6fd6', '性'], natTagore: ['flask', '#8e6fd6', '性'], evReset: ['pill', '#9aa0a6', '退'], fruit1: ['fruit', '#e74c3c'], fruit2: ['fruit', '#f39c12', '✦'],
-      g_sand: ['pile', '#f2d58a', '#fff6c8'], g_core: ['orb', '#ff8a3d', '✦'], s_herb: ['seed', '#8bc34a'], s_rice: ['seed', '#e8d9a8'], c_herb: ['leaf', '#4caf50'], c_rice: ['grain', '#f5f0dc'],
+      g_sand: ['pile', '#f2d58a', '#fff6c8'], g_core: ['orb', '#ff8a3d', '✦'], s_herb: ['seed', '#8bc34a'], s_flower: ['seed', '#4a90e2'], s_rice: ['seed', '#e8d9a8'], c_herb: ['leaf', '#4caf50'], c_flower: ['flower', '#5aa2f0'], c_rice: ['grain', '#f5f0dc'],
       mmTok: ['coin', '#4a6a8a', '明'], mmEye: ['orb', '#f2c94c', '眼'], e_leiming: ['orb', '#e8b830', '精'], e_odo: ['orb', '#5a7aa8', '精'], odoFin: ['gem', '#6a86b8'], hrDisk: ['coin', '#7b5ac8', '✦'], exp: ['orb', '#3b8fd9', '经'], energy: ['orb', '#e0a020', '能'],
       e_pluto: ['orb', '#5b4a8a', '精'], ctTicket: ['ticket', '#f2c94c', '券'], permit: ['ticket', '#c42f3a', '许'], auto: ['box', '#5b8fd0', '自']
     }[k];
     if (G) return genIcon(G[0], G[1], G[2]);
-    var C = { cap1: ['#7c97b8', '#e8eef6'], cap2: ['#c42f3a', '#f6e4e2'], cap3: ['#2b2a33', '#f3d36b'], pot1: ['#5aa469', '#e4f2e2'], pot2: ['#e08a2e', '#fbead4'], pot200: ['#2f8f86', '#d7f3ef'] }[k] || ['#999', '#eee'];
+    var C = { cap1: ['#7c97b8', '#e8eef6'], cap2: ['#c42f3a', '#f6e4e2'], cap3: ['#2b2a33', '#f3d36b'], pot1: ['#5aa469', '#e4f2e2'], pot2: ['#e08a2e', '#fbead4'], pot200: ['#2f8f86', '#d7f3ef'], pp5: ['#7fb6f2', '#e3effc'], pp10: ['#3f86dc', '#dbe8fa'], pp15: ['#2a4ca0', '#d6def5'] }[k] || ['#999', '#eee'];
+    if (/^pp\d+$/.test(k)) return '<svg class="it-ic" viewBox="0 0 64 64" aria-hidden="true"><g stroke="#23222b" stroke-width="2.5" stroke-linejoin="round">' +   // PP 药水：蓝色的瓶子，瓶身上写恢复几点
+      '<path d="M26 6h12v10c8 3 13 10 13 19 0 12-9 22-19 22S13 47 13 35c0-9 5-16 13-19z" fill="#fff"/>' +
+      '<path d="M15 36h34c0 11-8 19-17 19S15 47 15 36z" fill="' + C[0] + '" stroke-width="0"/><path d="M26 6h12v10c8 3 13 10 13 19 0 12-9 22-19 22S13 47 13 35c0-9 5-16 13-19z" fill="none"/>' +
+      '<rect x="24" y="3" width="16" height="6" rx="2" fill="' + C[1] + '"/></g><text x="32" y="50" text-anchor="middle" font-size="13" font-weight="800" fill="#fff" stroke="#23222b" stroke-width="0.6">' + k.slice(2) + '</text>' +
+      '<text x="32" y="30" text-anchor="middle" font-size="9" font-weight="800" fill="' + C[0] + '">PP</text></svg>';
     if (k.indexOf('cap') === 0) return '<svg class="it-ic" viewBox="0 0 64 64" aria-hidden="true"><g stroke="#23222b" stroke-width="2.5" stroke-linejoin="round">' +
       '<rect x="18" y="6" width="28" height="52" rx="12" fill="' + C[1] + '"/><path d="M18 26h28v12H18z" fill="' + C[0] + '"/>' +
       '<circle cx="32" cy="32" r="7" fill="#fff"/><circle cx="32" cy="32" r="3" fill="' + (k === 'cap3' ? '#f3d36b' : '#8fd3ff') + '" stroke-width="1.5"/>' +
@@ -983,7 +989,7 @@
     $('tab-items').hidden = !its;
     if (!its && tab === 'items') showTab('moves');
     if (its) $('igrid').innerHTML = ITEM_ORDER.map(function (k) {
-      var it = ITEMS[k], n = its[k] || 0, cap = !!it.cap, dis = lock || needMe || n <= 0 || (cap && (!S.wild || S.wild.noCatch)) || (!cap && me.hp >= me.maxhp);
+      var it = ITEMS[k], n = its[k] || 0, cap = !!it.cap, dis = lock || needMe || n <= 0 || (cap && (!S.wild || S.wild.noCatch)) || (it.heal && me.hp >= me.maxhp) || (it.pp && ppFull(me));
       var rate = cap && S.wild && S.wild.noCatch ? '<span class="rate">被瘴气污染，无法捕捉</span>' : cap && S.wild && n > 0 ? '<span class="rate">当前成功率约 ' + Math.round(catchChance(S, k) * 100) + '%</span>' : cap && !S.wild ? '<span class="rate">只能对野生精灵使用</span>' : '';
       return '<button type="button" class="tm it" data-it="' + k + '"' + (dis ? ' disabled' : '') + ' title="' + esc(it.d) + '">' + itemIcon(k) +
         '<span class="it-t"><b>' + it.name + '</b><span class="cnt">持有 ' + n + '</span>' + rate + '</span></button>';

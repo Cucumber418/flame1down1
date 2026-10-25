@@ -2603,3 +2603,9 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 @keyframes ld-stripe { to { background-position: 22.6px 0; } }
 @media (max-width: 420px) { .ld-box { gap: 10px; padding: 20px 14px 14px; } .ld-mon { width: 64px; height: 64px; } .ld-mon img { width: 54px; height: 54px; } .ld-text { font-size: 21px; } }
 @media (prefers-reduced-motion: reduce) { .ld-wrap.in, .ld-wrap.out, .ld-wrap.in .ld-box, .ld-mon img, .ld-bar i { animation: none; } }
+
+/* 太空种植园：空田用下拉框选种子再种下；种子商店（2026-10-25） */
+.farm-sow { align-items: center; }
+.farm-sel { flex: 1 1 140px; min-width: 0; height: 38px; padding: 0 34px 0 12px; font: inherit; color: var(--ink); background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%2323222b' stroke-width='2'/%3E%3C/svg%3E") no-repeat right 12px center / 12px 8px; border: 1.5px solid var(--ink); border-radius: 10px; appearance: none; -webkit-appearance: none; cursor: pointer; }
+.farm-sel:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.crumb [data-seedshop], .crumb [data-farm] { margin-left: auto; }

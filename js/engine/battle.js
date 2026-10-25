@@ -673,9 +673,14 @@ var ITEMS = {
   cap3: { name: '华为精灵捕捉装置', cap: 'sure', d: '必定捕捉成功。在黄石 · 冶炼坊用星核合成。' },
   pot1: { name: '体力补药', price: 100, heal: 0.3, d: '为出战中的精灵恢复 30% 最大体力。' },
   pot2: { name: '强能体力补药', price: 250, heal: 0.5, d: '为出战中的精灵恢复 50% 最大体力。' },
-  pot200: { name: '200血药', heal: 200, flat: true, d: '为出战中的精灵恢复 200 点体力。在黄石 · 冶炼坊用药草合成。' }
+  pot200: { name: '200血药', heal: 200, flat: true, d: '为出战中的精灵恢复 200 点体力。在黄石 · 冶炼坊用药草合成。' },
+  // PP 药水（2026-10-25）：出战中的精灵每个技能各恢复几点 PP（不超过上限）。在黄石 · 冶炼坊用活力花卉合成
+  pp5: { name: '5PP药水', pp: 5, d: '为出战中的精灵的每个技能各恢复 5 点 PP。在黄石 · 冶炼坊用活力花卉合成。' },
+  pp10: { name: '10PP药水', pp: 10, d: '为出战中的精灵的每个技能各恢复 10 点 PP。在黄石 · 冶炼坊用活力花卉合成。' },
+  pp15: { name: '15PP药水', pp: 15, d: '为出战中的精灵的每个技能各恢复 15 点 PP。在黄石 · 冶炼坊用活力花卉合成。' }
 };
-var ITEM_ORDER = ['cap1', 'cap2', 'cap3', 'pot1', 'pot2', 'pot200'];
+var ITEM_ORDER = ['cap1', 'cap2', 'cap3', 'pot1', 'pot2', 'pot200', 'pp5', 'pp10', 'pp15'];
+function ppFull(m) { return !m || m.moves.every(function (x) { return x.pp >= x.max; }); }
 function hasStatus(m) { for (var k in m.st) if (m.st[k] > 0 && ST_DESC[k]) return true; return false; }
 // 捕捉成功率 = 精灵捕捉率 × 装置倍率 × (1 − 剩余体力比例 × 0.5) × (有异常状态 ×1.25)
 function catchChance(S, key) {
@@ -686,6 +691,12 @@ function catchChance(S, key) {
 function useItem(S, evs, i, key) {
   var it = ITEMS[key], m = act(S, i); if (!it) return;
   if (i === 0) CS(S).items++;
+  if (it.pp) {
+    log(S, evs, '你使用了「' + it.name + '」', 'fxl');
+    var got = 0; m.moves.forEach(function (x) { var add = Math.min(it.pp, x.max - x.pp); if (add > 0) { x.pp += add; got += add; } });
+    if (got) log(S, evs, nm(m) + '的技能一共恢复了 ' + got + ' 点 PP', 'good'); else log(S, evs, nm(m) + '的 PP 已经是满的了', 'dmg');
+    return;
+  }
   if (it.heal) {
     log(S, evs, '你使用了「' + it.name + '」', 'fxl');
     if (!heal(S, evs, i, it.flat ? it.heal : m.maxhp * it.heal)) log(S, evs, nm(m) + '的体力已经是满的了', 'dmg');
