@@ -242,7 +242,7 @@ function pairOf(a, b) {
   var c = cur(loadAll());
   if (c.status !== 'swiss' && c.status !== 'final') return null;
   var R = c.rounds[c.rounds.length - 1]; if (!R || Date.now() >= R.deadline) return null;
-  for (var i = 0; i < R.pairs.length; i++) { var p = R.pairs[i]; if (!p.w && ((p.a === a && p.b === b) || (p.a === b && p.b === a))) return { round: R.n, idx: i, final: !!R.final, key: R.n + ':' + i }; }
+  for (var i = 0; i < R.pairs.length; i++) { var p = R.pairs[i]; if (!p.w && ((p.a === a && p.b === b) || (p.a === b && p.b === a))) return { round: R.n, idx: i, final: !!R.final, key: R.n + ':' + i, part: p.part || null, a: p.a, b: p.b }; }
   return null;
 }
 // 一个 bo3 打完：winner 是账号名，score 是 { 账号名: 赢的局数 }，how = play / forfeit
@@ -266,6 +266,37 @@ function saveReplay(key, game, rec) {
   } catch (e) { console.log('[contest] 回放保存失败', e.message); return null; }
 }
 
+// 2026-10-26：bo3 打到一半中断（有人掉线 / 刷新 / 在两局之间退出）时记下进度，下次再约直接接着打。wins 是 { 账号名: 赢的局数 }
+function savePart(key, wins, game) {
+  var all = loadAll(), c = cur(all), k = String(key).split(':'), R = c.rounds[(+k[0]) - 1], p = R && R.pairs[+k[1]];
+  if (!p || p.w) return false;
+  p.part = { wins: wins, game: game, t: Date.now() }; storeAll(all); return true;
+}
+// 重赛：双方都在线、都同意、还在这一轮的期限内，可以把已经打完的结果作废重打。
+// 这一轮打完后已经开了下一轮、但下一轮还一场都没打时，撤回下一轮
+function rematchOf(c, me, now) {
+  var n = c.rounds.length, R = c.rounds[n - 1]; if (!R || (c.status !== 'swiss' && c.status !== 'final' && c.status !== 'done')) return null;
+  var find = function (RR) { for (var i = 0; i < RR.pairs.length; i++) { var p = RR.pairs[i]; if (p.a === me || p.b === me) return { R: RR, p: p, i: i }; } return null; };
+  var x = find(R);
+  if (x && x.p.w && !R.closed && now < R.deadline) return x;
+  if (n >= 2 && !R.pairs.some(function (q) { return q.w; })) { var P0 = c.rounds[n - 2], y = find(P0); if (y && y.p.w && now < P0.deadline) return y; }
+  if (c.status === 'done' && R.final && x && x.p.w && now < R.deadline) return x;
+  return null;
+}
+function rematchable(me) { var c = cur(loadAll()), x = rematchOf(c, me, Date.now()); return x ? { opp: x.p.a === me ? x.p.b : x.p.a, round: x.R.n, final: !!x.R.final } : null; }
+function voidPair(me, opp) {
+  var now = Date.now(), all = loadAll(), c = cur(all), x = rematchOf(c, me, now);
+  if (!x || (x.p.a !== opp && x.p.b !== opp)) return { ok: false, err: '现在不能重赛' };
+  var R = x.R, p = x.p, last = c.rounds[c.rounds.length - 1];
+  if (last !== R) { c.rounds.pop(); delete R.closed; c.seen = {}; if (c.status === 'final' && !R.final) c.status = 'swiss'; c.notices = c.notices.filter(function (n) { return !(n && n.round === last.n); }); }
+  if (R.final && c.status === 'done') { c.status = 'final'; c.ranks = null; }
+  p.voided = (p.voided || []).concat([{ t: now, w: p.w, score: p.score, replays: p.replays || [] }]);
+  p.w = null; p.score = null; p.how = null; delete p.at; delete p.part; p.replays = [];
+  notice(c, NAME + ' · 对局重赛', gname(p.a) + ' 和 ' + gname(p.b) + ' 都同意重赛，' + (R.final ? '决赛' : '第 ' + R.n + ' 轮') + '的结果作废，重新打一场 bo3。', { round: R.n });
+  storeAll(all);
+  return { ok: true };
+}
+
 /* ---------- HTTP ---------- */
 function view(c, me) {
   var names = {}; function nm(u) { if (!names[u]) names[u] = gname(u); return names[u]; }
@@ -279,8 +310,9 @@ function view(c, me) {
   // 我这一轮的对局
   var R = c.rounds[c.rounds.length - 1];
   if (R && (c.status === 'swiss' || c.status === 'final')) R.pairs.forEach(function (p) {
-    if (p.a === me || p.b === me) { var opp = p.a === me ? p.b : p.a; o.myMatch = { round: R.n, final: !!R.final, opp: opp, oppName: nm(opp), oppOnline: online(opp), done: !!p.w, w: p.w, deadline: R.deadline }; }
+    if (p.a === me || p.b === me) { var opp = p.a === me ? p.b : p.a; o.myMatch = { round: R.n, final: !!R.final, opp: opp, oppName: nm(opp), oppOnline: online(opp), done: !!p.w, w: p.w, deadline: R.deadline, part: p.part ? p.part.wins : null }; }
   });
+  var rm = rematchOf(c, me, Date.now()); if (rm) { var ro = rm.p.a === me ? rm.p.b : rm.p.a; o.rematch = { opp: ro, oppName: nm(ro), oppOnline: online(ro), round: rm.R.n, final: !!rm.R.final, w: rm.p.w, deadline: rm.R.deadline }; }
   o.live = []; try { var soc = S(); (R ? R.pairs : []).forEach(function (p) { if (!p.w && soc.castLabel && (soc.castLabel(p.a) || soc.castLabel(p.b))) o.live.push({ a: p.a, b: p.b, host: soc.castLabel(p.a) ? p.a : p.b }); }); } catch (e) {}
   return o;
 }
@@ -307,6 +339,6 @@ A.use(function (req, res, url) {
   return true;
 });
 
-module.exports = { pairOf: pairOf, report: report, saveReplay: saveReplay, tick: tick, standings: standings, FILE: FILE, NAME: NAME, _test: { pairRound: pairRound, bjAt: bjAt, roundDeadline: roundDeadline, swissRounds: swissRounds, closeRound: closeRound, doDraw: doDraw } };
+module.exports = { savePart: savePart, rematchable: rematchable, voidPair: voidPair, pairOf: pairOf, report: report, saveReplay: saveReplay, tick: tick, standings: standings, FILE: FILE, NAME: NAME, _test: { pairRound: pairRound, bjAt: bjAt, roundDeadline: roundDeadline, swissRounds: swissRounds, closeRound: closeRound, doDraw: doDraw } };
 // 交易里查争霸赛名次（js/engine/award.js 的邮箱投递、称号）：结束了返回名次（0 是冠军），没参赛或没结束返回 null
 require('./tx').hook('ctPlace', function (u) { var c = loadAll().quiz1; if (!c || c.status !== 'done' || !Array.isArray(c.ranks)) return null; var k = c.ranks.indexOf(u.name); return k >= 0 ? k : null; });

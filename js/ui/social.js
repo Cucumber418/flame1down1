@@ -374,6 +374,8 @@
       case 'prep': onPrep(m); break;
       case 'prep-err': A.toast(m.msg || '选择不符合要求'); break;
       case 'ct-series': ctSeries(m); break;
+      case 'ct-rematch-ask': ctRematchAsk(m); break;
+      case 'ct-rematch-res': if (m.msg) A.toast(m.msg); if (m.done && window.HSCT && HSCT.reload) HSCT.reload(); break;
       case 'ct-notice': if (window.HSCT) window.HSCT.notice(m.notice); break;
       case 'ct-draw': if (window.HSCT) window.HSCT.draw(); break;
       case 'ct-ready': if (window.HSCT) window.HSCT.ready(m); break;
@@ -630,10 +632,21 @@
   }
   function ctSeries(m) {
     if (m.cancel) { A.toast('对手退出了选人，这次对局不算，之后可以再约。'); load(); return; }
+    if (m.paused) { A.toast('对手离开了，比分 ' + m.wins[0] + ' : ' + m.wins[1] + ' 已经记下。下次再约，从第 ' + m.next + ' 局接着打。'); closePrep(); load(); return; }
     var me = C.user && C.user();
     if (m.done) { setTimeout(function () { A.toast(m.how === 'forfeit' ? (m.win === me ? '对手中途离开，你赢下了这个系列！' : '你中途离开，这个系列判负。') : (m.win === me ? '恭喜，你以 ' + Math.max(m.wins[0], m.wins[1]) + ':' + Math.min(m.wins[0], m.wins[1]) + ' 赢下了这个系列！' : '很遗憾，这个系列输掉了。')); if (window.HSCT) window.HSCT.refresh(); }, 1500); return; }
     setTimeout(function () { A.toast('比分 ' + m.wins[0] + ' : ' + m.wins[1] + '，第 ' + m.next + ' 局 ' + m.seconds + ' 秒后开始……'); }, 1200);
   }
+  // 争霸赛重赛（2026-10-26）：对方申请把这一轮已经打完的结果作废重打
+  function ctRematchAsk(m) {
+    dialog('incoming', '<span class="step">🏆 争霸赛 · 重赛申请</span><h2>' + esc(m.fromName) + ' 申请重赛</h2><p class="hint">同意后，你们' + (m.final ? '决赛' : '第 ' + m.round + ' 轮') + '已经打完的结果会作废，需要重新打一场 bo3。</p>' +
+      '<div class="soc-foot"><button type="button" class="btn" id="rm-no">不同意</button><button type="button" class="btn primary" id="rm-yes">同意重赛</button></div>', function (el, close) {
+        el.dataset.sticky = '1';
+        el.querySelector('#rm-no').addEventListener('click', function () { send({ type: 'ct-rematch-reply', id: m.id, ok: false }); close(); });
+        el.querySelector('#rm-yes').addEventListener('click', function () { send({ type: 'ct-rematch-reply', id: m.id, ok: true }); close(); });
+      });
+  }
+  function ctRematch(user) { if (!st.wsOk) { A.toast('还没连上服务器，请稍后再试'); return; } if (!send({ type: 'ct-rematch', to: user })) A.toast('连接断开了'); }
   function ctAsk(user, name, label) {
     if (!st.wsOk) { A.toast('还没连上服务器，请稍后再试'); return; }
     if (st.pend) { A.toast('你已经在等待别人回应了'); return; }
@@ -647,7 +660,7 @@
   function ctChallenged(m) {
     var deadline = Date.now() + m.seconds * 1000, iv;
     var d = dialog('incoming', '<span class="step">🏆 ' + esc(m.label || '做题大王争霸赛') + '</span><h2>' + esc(m.fromName) + ' 邀请你进行争霸赛对战！</h2>' +
-      '<p class="hint">bo3，先赢 2 局获胜。双方各从自己的精灵里带 6 只、禁用对方 1 只，剩下的取前 5 只打 5v5，按背包里的练度对战。</p><p class="hint" id="in-left"></p>' +
+      '<p class="hint">bo3，先赢 2 局获胜。每局双方各从自己的精灵里带 6 只、禁用对方 1 只，再调整出场顺序和技能，打 5v5，按背包里的练度对战。</p><p class="hint" id="in-left"></p>' +
       '<div class="soc-foot"><button type="button" class="btn" id="in-no">稍后再打</button><button type="button" class="btn primary" id="in-yes">开始对战</button></div>',
       function (el, close) {
         el.dataset.sticky = '1';
@@ -810,7 +823,7 @@
     var b = e.target.closest('button'); if (!b || b.disabled) return;
     if (b.id === 'pp-quit') {
       if (!P.quitArmed || Date.now() - P.quitArmed > 3000) { P.quitArmed = Date.now(); b.textContent = '再点一次确认退出'; return; }
-      send({ type: 'prep-quit', id: P.id }); closePrep(); A.toast(P.v.kind === 'ct' ? '你退出了选人，这次对局不算，之后可以再约对手。' : '你退出了这场切磋。'); load(); return;
+      send({ type: 'prep-quit', id: P.id }); closePrep(); A.toast(P.v.kind === 'ct' ? (P.v.ct && /第 [23] 局/.test(P.v.ct.label || '') ? '你退出了选人，比分已经记下，下次再约接着打。' : '你退出了选人，这次对局不算，之后可以再约对手。') : '你退出了这场切磋。'); load(); return;
     }
     if (P.sent) return;
     if (b.dataset.pp) {
@@ -1416,7 +1429,7 @@
     // 茶室信息栏与留言板（game.js 的「我的茶室」页面调用，不传参数就是自己的茶室）
     homeBoard: function (owner) { return hbSlot(owner || meUser()); },
     // 做题大王争霸赛：约对手对战、观看直播、看回放
-    ctAsk: ctAsk, watch: function (user) { watchStart(user); }, replay: replayStart, wsOk: function () { return !!st.wsOk; } };
+    ctAsk: ctAsk, ctRematch: ctRematch, watch: function (user) { watchStart(user); }, replay: replayStart, wsOk: function () { return !!st.wsOk; } };
   if (A.homeRefresh) A.homeRefresh();   // 如果已经停在自己的茶室页面，补上信息栏
   connect();
   if (A.page() === 'social') window.HSSOCIAL.render();

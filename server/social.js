@@ -366,7 +366,7 @@ function prepNext(m) {
  * 选人：各从自己的精灵里带 6 只（ct6）→ 各禁对方 1 只（ctban）→ 剩下的按带的顺序取前 5 只，按背包里的练度打 5v5。每局都重新选（2026-10-25）。
  * 一个系列 bo3：每局打完双方各报一次结果（ct-res），先赢 2 局的胜；中途有人离开或在选人时退出，对方直接赢下整个系列。
  * 每局都向全服开放观战（决赛还会给全服在线玩家发观战邀请），发起方的转播画面会存成回放。 */
-var CT_PICK = 6, CT_BAN = 1, CT_GAP = 6000;
+var CT_PICK = 6, CT_BAN = 1, CT_GAP = 6000, rematches = {};
 function contest() { return require('./contest'); }
 function ctMons(name) {
   var u = A.loadUser(name), acc = u && parseSave(u).acc;
@@ -422,7 +422,24 @@ function ctSendMatch(m) {
 function ctAfter(m, leaver, reason) {
   var ct = m.ct, C = contest();
   if (ct.done) return;
-  if (m.prep && ct.game <= 1) { m.socks.forEach(function (w) { if (w !== leaver) out(w, { type: 'ct-series', cancel: true }); }); return; }   // 第 1 局还在选人就退出 / 掉线：这次不算，之后可以再约（第 2 局起选人时退出算弃权）
+  var started = ct.game > 1 || ct.wins[0] || ct.wins[1];
+  if (m.prep && !started) { m.socks.forEach(function (w) { if (w !== leaver) out(w, { type: 'ct-series', cancel: true }); }); return; }   // 第 1 局还在选人就退出 / 掉线：这次不算，之后可以再约
+  // 2026-10-26：系列打到一半中断——不再直接判整个系列负。两局之间（选人时）退出：比分照旧；对战中离开：这一局算离开的一方输。
+  // 没决出胜负就记下进度（contest.savePart），下次再约接着打
+  if (reason === 'left' || reason === 'quit') {
+    var ls0 = leaver === m.socks[0] ? 0 : leaver === m.socks[1] ? 1 : -1;
+    if (!m.prep && ls0 >= 0) { ct.wins[1 - ls0]++; ct.game++; }
+    if (ct.wins[0] >= 2 || ct.wins[1] >= 2) {
+      ct.done = true; var sc0 = {}; sc0[m.users[0]] = ct.wins[0]; sc0[m.users[1]] = ct.wins[1];
+      C.report(ct.key, m.users[ct.wins[0] >= 2 ? 0 : 1], sc0, 'play');
+      m.socks.forEach(function (w) { out(w, { type: 'ct-series', done: true, win: m.users[ct.wins[0] >= 2 ? 0 : 1], wins: ct.wins, how: 'play' }); });
+      return;
+    }
+    var pw = {}; pw[m.users[0]] = ct.wins[0]; pw[m.users[1]] = ct.wins[1];
+    C.savePart(ct.key, pw, ct.game);
+    m.socks.forEach(function (w) { if (w !== leaver) out(w, { type: 'ct-series', paused: true, wins: ct.wins, next: ct.game }); });
+    return;
+  }
   var finish = function (wSide, how) {
     ct.done = true;
     var sc = {}; sc[m.users[0]] = ct.wins[0]; sc[m.users[1]] = ct.wins[1];
@@ -443,8 +460,9 @@ function ctAfter(m, leaver, reason) {
   setTimeout(function () {
     var ok = m.socks.every(function (w) { return w.readyState === 1 && !w.match; });
     if (!ok) {   // 下一局开始时有一方不在了
-      var gone = m.socks.map(function (w) { return w.readyState !== 1; });
-      if (gone[0] !== gone[1]) finish(gone[0] ? 1 : 0, 'forfeit');
+      var pw2 = {}; pw2[m.users[0]] = ct.wins[0]; pw2[m.users[1]] = ct.wins[1];
+      C.savePart(ct.key, pw2, ct.game + 1);   // 2026-10-26：记下进度，下次再约接着打
+      m.socks.forEach(function (w) { if (w.readyState === 1) out(w, { type: 'ct-series', paused: true, wins: ct.wins, next: ct.game + 1 }); });
       return;
     }
     var nid = newId();
@@ -584,7 +602,7 @@ function onMessage(ws, msg) {
         var cp2 = contest().pairOf(c2.fromUser, c2.to);
         if (!cp2) { out(host, { type: 'ch-end', id: id, reason: 'error', msg: '这场对局已经结束了', side: 'from' }); out(ws, { type: 'ch-end', id: id, reason: 'error', msg: '这场对局已经结束了', side: 'to' }); return true; }
         matches[id] = { id: id, socks: [host, ws], users: [c2.fromUser, c2.to], names: [gameName(c2.fromUser), gameName(c2.to)], open: true,
-          ct: { key: cp2.key, round: cp2.round, final: cp2.final, game: 1, wins: [0, 0], res: null }, srvOk: md0.srv };
+          ct: { key: cp2.key, round: cp2.round, final: cp2.final, game: cp2.part ? cp2.part.game || 1 : 1, wins: cp2.part ? [cp2.part.wins[c2.fromUser] | 0, cp2.part.wins[c2.to] | 0] : [0, 0], res: null }, srvOk: md0.srv };   // part：上次打到一半的进度，接着打
         host.match = id; ws.match = id;
         ctPrepStart(matches[id]);
         presence(c2.fromUser); presence(c2.to);
@@ -667,6 +685,24 @@ function onMessage(ws, msg) {
       return true;
     }
     case 'cast': onCast(ws, msg); return true;
+    case 'ct-rematch': {   // 争霸赛重赛：向对手申请（双方都在线、还在期限内）
+      var rto = String(msg.to || ''), rmx = contest().rematchable(ws.user);
+      if (!rmx || rmx.opp !== rto) { out(ws, { type: 'ct-rematch-res', ok: false, msg: '现在不能重赛（已经过了期限，或者下一轮已经开打）' }); return true; }
+      if (!isOnline(rto)) { out(ws, { type: 'ct-rematch-res', ok: false, msg: '对手不在线' }); return true; }
+      var rid = newId(); rematches[rid] = { from: ws.user, to: rto, t: Date.now() };
+      setTimeout(function () { if (rematches[rid]) { delete rematches[rid]; toUser(ws.user, { type: 'ct-rematch-res', ok: false, msg: gameName(rto) + ' 没有回应' }); } }, 30000);
+      toUser(rto, { type: 'ct-rematch-ask', id: rid, from: ws.user, fromName: gameName(ws.user), round: rmx.round, final: rmx.final });
+      out(ws, { type: 'ct-rematch-res', ok: true, sent: true, msg: '已经向 ' + gameName(rto) + ' 申请重赛，等待对方同意……' });
+      return true;
+    }
+    case 'ct-rematch-reply': {
+      var rq = rematches[msg.id]; if (!rq || rq.to !== ws.user) return true;
+      delete rematches[msg.id];
+      if (!msg.ok) { toUser(rq.from, { type: 'ct-rematch-res', ok: false, msg: gameName(rq.to) + ' 不同意重赛' }); return true; }
+      var vr = contest().voidPair(rq.from, rq.to);
+      [rq.from, rq.to].forEach(function (u) { toUser(u, { type: 'ct-rematch-res', ok: !!vr.ok, done: !!vr.ok, msg: vr.ok ? '双方同意重赛，上一场的结果已经作废，可以重新对战了' : vr.err }); });
+      return true;
+    }
     case 'ct-res': {   // 争霸赛：一局打完，双方各报一次结果（以先收到的为准）
       var mr = matches[msg.id];
       if (!mr || !mr.ct || ws.match !== msg.id || mr.ct.res != null || mr.srv) return true;   // 服务器裁判的对局：结果由服务器记，不听浏览器报的

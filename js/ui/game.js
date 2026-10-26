@@ -1753,9 +1753,15 @@
     if (M0 && !M0.done) {
       var wsOk = window.HSSOCIAL && window.HSSOCIAL.wsOk && window.HSSOCIAL.wsOk(), can = M0.oppOnline && wsOk;
       h += '<div class="ct-my"><span class="tape l"></span><b>你的' + (M0.final ? '决赛' : '第 ' + M0.round + ' 轮') + '对手：' + esc(M0.oppName) + '</b> <span class="dot' + (M0.oppOnline ? ' on' : '') + '"></span><small>' + (M0.oppOnline ? '在线' : '不在线') + '</small>' +
-        '<p class="hint">bo3，各带 6 只、禁对方 1 只，5v5。请在 ' + bjText(M0.deadline) + ' 之前和对手同时上线完成对战；到时还没打，在线时间更长的一方获胜。</p>' +
+        (M0.part ? '<p class="hint"><b>上次打到一半：比分 ' + ((M0.part[D.me] | 0) + ' : ' + (M0.part[M0.opp] | 0)) + '，再约会接着打。</b></p>' : '') +
+        '<p class="hint">bo3（先赢 2 局），每局各带 6 只、禁对方 1 只，再调整出场顺序和技能，5v5。请在 ' + bjText(M0.deadline) + ' 之前和对手同时上线完成对战；到时还没打，在线时间更长的一方获胜。</p>' +
         '<div class="soc-foot"><button type="button" class="btn primary" data-ctfight="' + esc(M0.opp) + '"' + (can ? '' : ' disabled') + '>' + (can ? '⚔ 对战' : M0.oppOnline ? '正在连接服务器……' : '对手上线后才能对战') + '</button></div></div>';
     } else if (M0 && M0.done) h += '<p class="ct-my done">你这一轮的对局已经结束（' + (M0.w === D.me ? '胜' : '负') + '），等待其他对局。</p>';
+    // 重赛（2026-10-26）：双方都在线、都同意、还在这一轮的期限内，可以把已经打完的结果作废重打
+    var RM = D.rematch;
+    if (RM) { var wsOk2 = window.HSSOCIAL && window.HSSOCIAL.wsOk && window.HSSOCIAL.wsOk(), can2 = RM.oppOnline && wsOk2;
+      h += '<div class="ct-my"><b>' + (RM.final ? '决赛' : '第 ' + RM.round + ' 轮') + ' vs ' + esc(RM.oppName) + '（' + (RM.w === D.me ? '胜' : '负') + '）</b><p class="hint">如果这场打得有问题，双方都同意时可以申请重赛：结果作废，重新打一场 bo3。期限：' + bjText(RM.deadline) + '。</p>' +
+        '<div class="soc-foot"><button type="button" class="btn" data-ctrematch="' + esc(RM.opp) + '"' + (can2 ? '' : ' disabled') + '>' + (can2 ? '申请重赛' : '对手在线时才能申请') + '</button></div></div>'; }
     // 直播
     if (D.live && D.live.length) h += '<div class="ct-live"><b>🔴 正在直播</b>' + D.live.map(function (L) { return '<button type="button" class="btn ghost" data-ctwatch="' + esc(L.host) + '">' + esc(ctName(L.a)) + ' vs ' + esc(ctName(L.b)) + ' · 观看</button>'; }).join('') + '</div>';
     // 冠军
@@ -1828,6 +1834,7 @@
     });
   }
   window.HSCT = {
+    reload: function () { contestLoad(); },
     notice: function (n) { if (CT.data) { CT.data.notices = (CT.data.notices || []).concat([n]); } contestLoad(); ctNoticePop(n); },
     draw: function () { contestLoad(function () { if (!ex.fighting && !($('battle') && !$('battle').hidden)) ctDrawShow(); }); },
     ready: function (m) {
@@ -5995,6 +6002,7 @@
     if (b.id === 'ex-ship') { ex.view = 'sites'; ex.planet = 'jingchu'; renderExplore(); return; }
     if (b.dataset.ctsign) { contestSign(); return; }
     if (b.dataset.ctdraw) { ctDrawShow(); return; }
+    if (b.dataset.ctrematch) { if (window.HSSOCIAL && window.HSSOCIAL.ctRematch) window.HSSOCIAL.ctRematch(b.dataset.ctrematch); return; }
     if (b.dataset.ctfight) { if (window.HSSOCIAL && window.HSSOCIAL.ctAsk) { var M1 = CT.data && CT.data.myMatch; window.HSSOCIAL.ctAsk(b.dataset.ctfight, M1 ? M1.oppName : '', CONTEST.name + (M1 ? ' · ' + (M1.final ? '决赛' : '第 ' + M1.round + ' 轮') : '')); } return; }
     if (b.dataset.ctwatch) { if (window.HSSOCIAL && window.HSSOCIAL.watch) window.HSSOCIAL.watch(b.dataset.ctwatch); return; }
     if (b.dataset.ctrep) { if (window.HSSOCIAL && window.HSSOCIAL.replay) window.HSSOCIAL.replay(b.dataset.ctrep); return; }
