@@ -2188,6 +2188,7 @@
     if (!ready() || ex.fighting || ex.view === 'vn' || ex.mode || document.querySelector('.soc-dlg') || ($('battle') && !$('battle').hidden)) return;
     if (!acc.guide) acc.guide = {};
     var G = acc.guide, id = mainNext();
+    if (G.coach) return;   // 正在一步一步指引捕捉
     if (id) {
       var S = SITES[id], ok = unlocked(id), key = id + (ok ? ':open' : ':need');
       if (G.main !== key && (ok || S.needText)) {
@@ -2200,10 +2201,51 @@
     }
     if (!G.caught && prog('flora1').done && acc.mons.length < 3) {
       G.caught = 1; save();
-      guidePop('新手指引', '去野外捕捉精灵吧', '<p>芙罗拉星的丛林和草甸里有很多野生精灵。点场景里走动的精灵就能和它对战，在对战的「道具」页使用捕捉装置就能把它收进队伍。</p><p class="hint">打到对方体力越低、对方身上有异常状态，越容易捕捉成功。捕捉装置可以在荆楚号 · 荆门 · 物资仓储的商城兑换。</p>', '去捕捉', function () { ex.planet = 'flora'; ex.view = 'sites'; ex.fpart = 'catch'; go('explore'); renderExplore(); });
+      guidePop('新手指引', '去野外捕捉精灵吧', '<p>芙罗拉星的丛林和草甸里有很多野生精灵。点场景里走动的精灵就能和它对战，在对战的「道具」页使用捕捉装置就能把它收进队伍。</p><p class="hint">打到对方体力越低、对方身上有异常状态，越容易捕捉成功。捕捉装置可以在荆楚号 · 荆门 · 物资仓储的商城兑换。</p>', '跟着指引去捕捉', coachStart);
     }
   }
   setInterval(guideCheck, 4000);
+  /* 捕捉指引（2026-10-27）：一步一步高亮要点的按钮：星际探索 → 芙罗拉星 → 探索 → 进入丛林 → 点走动的精灵。按当前所在的页面决定提示哪一步 */
+  function coachStart() { if (!acc.guide) acc.guide = {}; acc.guide.coach = 1; save(); coachTick(); }
+  function coachEnd(msg) { if (acc.guide) { acc.guide.coach = 0; save(); } coachClear(); if (msg) toast(msg); }
+  function coachClear() { var b = $('coach'); if (b) b.remove(); document.querySelectorAll('.coach-hl').forEach(function (x) { x.classList.remove('coach-hl'); }); }
+  function coachVis(sel) { var L = document.querySelectorAll(sel); for (var i = 0; i < L.length; i++) if (L[i].offsetParent !== null && !L[i].disabled) return L[i]; return null; }
+  var coachKey = '';
+  function coachTick() {
+    if (!acc || !acc.guide || !acc.guide.coach) { if ($('coach')) coachClear(); return; }
+    var battleOn = $('battle') && !$('battle').hidden;
+    if (!ready() || ex.mode || ex.view === 'vn' || document.querySelector('.soc-dlg') || battleOn) {
+      if (battleOn && page === 'explore' && ex.view === 'field') { coachEnd(); return; }   // 已经在野外打起来了：指引结束
+      coachClear(); return;
+    }
+    var t = null, step = '', txt = '', btn = '';
+    if (page !== 'explore') { t = coachVis('#mainnav [data-page="explore"]'); step = '第 1 步'; txt = '打开「星际探索」'; }
+    else if (ex.view === 'planets') { t = coachVis('#pg-explore [data-planet="flora"]'); step = '第 2 步'; txt = '选择芙罗拉星'; }
+    else if (ex.view === 'sites' && ex.planet === 'flora' && (ex.fpart || 'catch') !== 'catch') { t = coachVis('#pg-explore .flora-hero [data-fpart="catch"]'); step = '第 3 步'; txt = '切换到「探索」'; }
+    else if (ex.view === 'sites' && ex.planet === 'flora') { t = coachVis('#pg-explore [data-field]'); step = '第 4 步'; txt = '进入丛林（或草甸）'; }
+    else if (ex.view === 'field') { step = '最后一步'; txt = '点场景里走动的精灵和它对战。对战时打开「道具」页，投出捕捉装置就能收服它（把它打虚弱更容易成功）。'; }
+    else { step = '第 1 步'; txt = '先回到星际探索的星球列表'; btn = '<button type="button" class="btn primary" data-coachback="1">回到星球列表</button>'; }
+    var key = page + '|' + ex.view + '|' + ex.planet + '|' + ex.fpart + '|' + step;
+    document.querySelectorAll('.coach-hl').forEach(function (x) { if (x !== t) x.classList.remove('coach-hl'); });
+    if (t) t.classList.add('coach-hl');
+    var b = $('coach');
+    if (!b) {
+      b = document.createElement('div'); b.id = 'coach'; b.className = 'coach'; document.body.appendChild(b);
+      b.addEventListener('click', function (e) {
+        if (e.target.closest('[data-coachx]')) { coachEnd('捕捉指引已关闭。'); return; }
+        if (e.target.closest('[data-coachback]')) { ex.view = 'planets'; renderExplore(); coachTick(); }
+      });
+    }
+    var html = '<span class="co-step">捕捉指引 · ' + step + '</span><b>' + txt + '</b>' + btn + '<button type="button" class="co-x" data-coachx="1" aria-label="关闭指引">跳过</button>';
+    if (b._h !== html) { b.innerHTML = html; b._h = html; }
+    if (key !== coachKey) { coachKey = key; if (t) try { t.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' }); } catch (er) {} }
+    if (t) {
+      var r = t.getBoundingClientRect(), bw = b.offsetWidth, bh = b.offsetHeight, vw = window.innerWidth, vh = window.innerHeight;
+      var top = r.bottom + 10 + bh < vh ? r.bottom + 10 : Math.max(8, r.top - bh - 10);
+      b.style.left = Math.min(vw - bw - 8, Math.max(8, r.left + r.width / 2 - bw / 2)) + 'px'; b.style.top = top + 'px'; b.style.bottom = 'auto'; b.classList.remove('free');
+    } else { b.style.left = ''; b.style.top = ''; b.style.bottom = ''; b.classList.add('free'); }
+  }
+  setInterval(coachTick, 250);
   /* 做题大王争霸赛（2026-10-19）：进游戏后先读一次赛事状态。报名期间还没报名的弹报名窗（每次打开游戏一次）；没看过的全服公告补弹最新一条 */
   var ctPopped = false;
   function ctPopCheck() {

@@ -121,6 +121,8 @@ var STY = (function () {
       var m = ACC.newMon(a, sid, START_LV, env);
       if (!Array.isArray(a.teams)) a.teams = [[], []];
       a.teams[0] = [m.u]; a.active = 0;
+      if (!a.items || typeof a.items !== 'object') a.items = {};
+      a.items.cap1 = (a.items.cap1 || 0) + 10;   // 2026-10-27：新玩家自带 10 个普通精灵捕捉装置
       return { ok: true, u: m.u };
     }
     if (args.a === 'fix') return { ok: true, fix: legacy(a, env.now) };
