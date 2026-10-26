@@ -39,7 +39,7 @@
     if (p.me) return '<span class="dot on"></span>在线（我）';
     if (p.busy) return '<span class="dot busy"></span>对战中' + (p.battle ? ' · ' + esc(p.battle) : '');
     if (p.online) return '<span class="dot on"></span>在线';
-    return '<span class="dot"></span>离线' + (p.lastSeen ? ' · ' + ago(p.lastSeen) : '');
+    return '<span class="dot"></span>离线';   // 2026-10-26：不再显示上次在线时间
   }
   function monThumb(m) {
     var s = SPMAP[m.sid]; if (!s) return '';

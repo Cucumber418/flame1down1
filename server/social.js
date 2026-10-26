@@ -169,6 +169,7 @@ function summary(u, me) {
 }
 function card(u, me) {
   var o = summary(u, me);
+  delete o.lastSeen;
   if (o.noChar) return o;
   var acc = parseSave(u).acc, species = {};
   acc.mons.forEach(function (m) { if (m && m.sid) species[m.sid] = 1; });
@@ -786,6 +787,7 @@ A.use(function (req, res, url) {
   if (url === '/api/players' && req.method === 'GET') {
     var list = A.allUsers().map(function (u) { return summary(u, me); });
     list.sort(function (a, b) { return (b.me - a.me) || (b.online - a.online) || (b.friend - a.friend) || ((b.lastSeen || 0) - (a.lastSeen || 0)); });
+    list.forEach(function (p) { delete p.lastSeen; });   // 2026-10-26：不再对外显示上次在线时间（只用来排序）
     A.reply(res, 200, { me: me.name, players: list });
     return true;
   }
