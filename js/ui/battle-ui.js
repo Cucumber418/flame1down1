@@ -217,13 +217,12 @@
     list.addEventListener('pointerdown', function (e) {
       var it = e.target.closest('[data-k]'); if (!it || it.parentNode !== list && !list.contains(it)) return;
       while (it.parentNode !== list) it = it.parentNode;
-      drag = it; sx = e.clientX; sy = e.clientY; moved = false;
-      try { list.setPointerCapture(e.pointerId); } catch (er) {}
+      drag = it; sx = e.clientX; sy = e.clientY; moved = false; drag._pid = e.pointerId;   // 真正拖起来之后才捕获指针，免得普通点击被吞掉
     });
     list.addEventListener('pointermove', function (e) {
       if (!drag) return;
       if (!moved && Math.abs(e.clientX - sx) + Math.abs(e.clientY - sy) < 6) return;
-      if (!moved) { moved = true; drag.classList.add('sort-drag'); }
+      if (!moved) { moved = true; drag.classList.add('sort-drag'); try { list.setPointerCapture(drag._pid); } catch (er) {} }
       e.preventDefault();
       var best = null, bd = Infinity;
       Array.prototype.forEach.call(list.children, function (c) { if (!c.dataset.k) return; var r = c.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2, dd = (cx - e.clientX) * (cx - e.clientX) + (cy - e.clientY) * (cy - e.clientY); if (dd < bd) { bd = dd; best = c; } });

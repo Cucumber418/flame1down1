@@ -773,9 +773,9 @@
     }
     var foot = '<div class="soc-foot"><button type="button" class="btn ghost" id="pp-quit">退出</button>' +
       (P.sent ? '<button type="button" class="btn" disabled>已提交，等待对方……</button>' : '<button type="button" class="btn primary" id="pp-go"' + (okN ? '' : ' disabled') + '>' + (v.phase === 'ctban' ? '确认禁用' : v.phase === 'ctset' ? '确定出战' : '确认携带') + '</button>') + '</div>';
-    var y = body.parentNode ? body.parentNode.scrollTop : 0;
+    var box0 = body.parentNode, dlg0 = box0 && box0.parentNode, y = box0 ? box0.scrollTop : 0, y2 = dlg0 ? dlg0.scrollTop : 0;   // 重画时保持滚动位置（框和遮罩层都可能在滚）
     body.innerHTML = head + main + foot;
-    if (body.parentNode) body.parentNode.scrollTop = y;
+    if (box0) box0.scrollTop = y; if (dlg0) dlg0.scrollTop = y2;
     bindSort(body);
     prepTick();
   }
@@ -812,9 +812,9 @@
     var badMv = v.phase === 'pick' && P.sel.some(function (sid) { return !movesOf(sid).length; });
     var foot = '<div class="soc-foot"><button type="button" class="btn ghost" id="pp-quit">退出</button>' +
       (P.sent ? '<button type="button" class="btn" disabled>已提交，等待对方……</button>' : '<button type="button" class="btn primary" id="pp-go"' + (okN && !badMv ? '' : ' disabled') + '>' + (v.phase === 'ban' ? '确认禁用' : v.phase === 'pool' ? '确认携带' : '确定出战') + '</button>') + '</div>';
-    var y = body.parentNode ? body.parentNode.scrollTop : 0;
+    var box0 = body.parentNode, dlg0 = box0 && box0.parentNode, y = box0 ? box0.scrollTop : 0, y2 = dlg0 ? dlg0.scrollTop : 0;   // 重画时保持滚动位置（框和遮罩层都可能在滚）
     body.innerHTML = head + main + side + foot;
-    if (body.parentNode) body.parentNode.scrollTop = y;
+    if (box0) box0.scrollTop = y; if (dlg0) dlg0.scrollTop = y2;
     bindSort(body);
     prepTick();
   }

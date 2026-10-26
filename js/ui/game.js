@@ -3696,7 +3696,7 @@
     d.appendChild(box); document.body.appendChild(d);
     var L = mails();
     if (!mailOpen && L[0]) { mailOpen = L[0].id; if (!L[0].read) { L[0].read = true; save(); } }
-    function draw() { box.innerHTML = mailHTML(); renderMailBadge(); }
+    function draw() { var y = box.scrollTop, y2 = box.parentNode ? box.parentNode.scrollTop : 0; box.innerHTML = mailHTML(); box.scrollTop = y; if (box.parentNode) box.parentNode.scrollTop = y2; renderMailBadge(); }
     draw();
     d.addEventListener('click', function (e) {
       if (e.target === d || e.target.closest('[data-mbx]')) { d.remove(); return; }
@@ -3995,7 +3995,7 @@
     var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'tkshop';
     var box = document.createElement('div'); box.className = 'soc-box mailbox tkshop'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', '竞技代币商店');
     d.appendChild(box); document.body.appendChild(d);
-    function draw() { box.innerHTML = tokenShopHTML(); }
+    function draw() { var y = box.scrollTop, y2 = d.scrollTop; box.innerHTML = tokenShopHTML(); box.scrollTop = y; d.scrollTop = y2; }   // 点 +1 等重画时保持滚动位置
     function close() { d.remove(); if (window.HSBATTLE && HSBATTLE.renderMode && $('battle').hidden) HSBATTLE.renderMode(); }
     draw();
     d.addEventListener('click', function (e) {
