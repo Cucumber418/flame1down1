@@ -147,6 +147,8 @@ var BG = {
   "kb_temple": "images/backgrounds/kb_temple.jpg?v=2",
   "kb_floor": "images/backgrounds/kb_floor.jpg",
   "kb_abyss": "images/backgrounds/kb_abyss.jpg",
+  "lt_field": "images/backgrounds/lt_field.jpg",   // 2026-10-26 莱汀陨石带
+  "lt_jupiter": "images/backgrounds/lt_jupiter.jpg",
   "mayar": "images/backgrounds/mayar.jpg?v=2",
   "pp_slag": "images/backgrounds/pp_slag.jpg",
   "pp_fort": "images/backgrounds/pp_fort.jpg",
