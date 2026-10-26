@@ -44,11 +44,12 @@ var TX = (function () {
     MM_COST: 10, MM_POOL_DAY: 100
   };
   function spaSlotPrice(extra) { var e = extra || 0; return e >= D.SPA_EXTRA_MAX ? 0 : 3000 * Math.pow(3, e); }
-  // 明明代币抽奖的第 n 个奖池：22 个固定奖励（学习力合剂一般是 50 的，每逢 4 的倍数的奖池是 100 的）
+  // 明明代币抽奖的第 n 个奖池：20 个固定奖励（学习力合剂一般是 50 的，每逢 4 的倍数的奖池是 100 的）
   function mmPool(n) {
     var P = [];
     [2000, 2000, 2000, 2000, 6000, 6000, 6000, 20000].forEach(function (e) { P.push({ exp: e }); });
-    [['floraJade', 10], ['floraJade', 10], ['ltOrb', 10], ['kbDrop', 10], ['ppAsh', 10], ['whFrost', 10], ['mmTok', 5], ['mmTok', 5], ['mmTok', 20], ['fruit2', 2], [n % 4 === 0 ? 'evAny' : 'ev50', 1], ['g_core', 1], ['pot100', 5], ['pp10', 5]].forEach(function (x) { var it = {}; it[x[0]] = x[1]; P.push({ items: it }); });
+    P[2] = { items: { pot100: 1 } }; P[3] = { items: { pp10: 1 } };   // 2026-10-27：两份 2000 经验换成 1 瓶 100hp药水、1 瓶 10PP药水
+    [['floraJade', 10], ['floraJade', 10], ['ltOrb', 10], ['kbDrop', 10], ['ppAsh', 10], ['whFrost', 10], ['mmTok', 5], ['mmTok', 5], ['mmTok', 20], ['fruit2', 2], [n % 4 === 0 ? 'evAny' : 'ev50', 1], ['g_core', 1]].forEach(function (x) { var it = {}; it[x[0]] = x[1]; P.push({ items: it }); });
     if (n >= 5 && n % 5 === 0) P[0] = { items: { mmEye: 50 }, big: 1 };   // 第 5 个奖池起，每逢 5 的倍数：雷明之眼 ×50
     if (n >= 10 && n % 20 === 10) P[1] = { items: { e_leiming: 1 }, big: 1 };   // 第 10、30、50、70……个奖池：雷明灯的精元
     return P;
@@ -75,6 +76,7 @@ var TX = (function () {
     var R = mmRec(acc), d = bjDay(now);
     if (!R.g) R.g = { n: 1, left: mmPool(1).map(function (x, i) { return i; }), d: d, opened: 0 };
     if (R.g.d !== d) { R.g.d = d; R.g.opened = 0; }
+    if (Array.isArray(R.g.left)) R.g.left = R.g.left.filter(function (i) { return i >= 0 && i < 20; });   // 奖池短暂改成过 22 个，多出来的格子去掉
     return R.g;
   }
   function spaRec(acc) { if (!acc.spa || !Array.isArray(acc.spa.u)) acc.spa = { u: [], got: {} }; if (!acc.spa.got) acc.spa.got = {}; return acc.spa; }
