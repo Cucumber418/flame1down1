@@ -715,8 +715,10 @@
     app.S = r.S;
     // 打完了：马上把结算结果记进本机存档（在播放动画之前），免得这期间自动上传的还是旧存档
     if (r.end) { app.S.srvEnd = r.end; if (srvEnd) { var f0 = srvEnd; srvEnd = null; try { f0(r.end); } catch (e) { console.error(e); } } }
-    await play(r.evs || []);
-    for (var cut = cutDue(); cut; cut = cutDue()) { renderSnap(snap(app.S)); await playCut(cut); }
+    try {
+      await play(r.evs || []);
+      for (var cut = cutDue(); cut; cut = cutDue()) { renderSnap(snap(app.S)); await playCut(cut); }
+    } catch (err) { try { console.error('[battle] 回合出错', err); } catch (e2) {} }
     busy = false; afterTurn();
   }
   // 星球挑战：对战界面顶部可以拉下来的「星级要求」面板（opt.stars = { title, list(S) → [{ t, st, s, had }] }）
@@ -965,6 +967,7 @@
   async function play(evs) {
     for (var k = 0; k < evs.length; k++) {
       var e = evs[k];
+      try {   // 2026-10-26：某个事件播放出错时跳过它继续播，免得整场对战卡住
       switch (e.t) {
         case 'text': addLog(e.text, e.cls); renderSnap(e.snap); flashAbility(e.text, flipSnap(e.snap)); await wait(e.cls === 'turn' ? 120 : 300); break;
         case 'use': renderSnap(e.snap); var rammed = fxUse(e); castFx({ a: 'use', i: V(e.side), m: e.move, ty: e.type }); if (!rammed) restartAnim($('mon' + V(e.side)), 'lunge' + V(e.side)); banner(e.move, e.type); await wait(450); break;
@@ -979,6 +982,7 @@
         case 'scene': renderSnap(e.snap); if (e.fx && window.HSEV) window.HSEV('bossfx', { k: e.fx }); await showScene(e.lines); if (e.fx === 'past') bgm('tigerFinal'); else if (e.fx === 'rebirth') bgm('beforeEnd'); break;
         default: renderSnap(e.snap); await wait(60);
       }
+      } catch (err) { try { console.error('[battle] 播放出错', e && e.t, err); } catch (e2) {} }
     }
   }
 
@@ -1059,9 +1063,11 @@
     if (pvp) { if (pvp.waiting) return; pvp.waiting = true; refreshCmd(); pvp.onAct(pAct); return; }
     if (remote) return rApply({ op: 'act', a: pAct });
     busy = true; refreshCmd();
-    var evs = resolveTurn(S, [pAct, S.training ? { kind: 'pass' } : aiChoose(S)]);
-    await play(evs);
-    for (var cut = cutDue(); cut; cut = cutDue()) { renderSnap(snap(S)); await playCut(cut); }
+    try {
+      var evs = resolveTurn(S, [pAct, S.training ? { kind: 'pass' } : aiChoose(S)]);
+      await play(evs);
+      for (var cut = cutDue(); cut; cut = cutDue()) { renderSnap(snap(S)); await playCut(cut); }
+    } catch (err) { try { console.error('[battle] 回合出错', err); } catch (e2) {} }
     busy = false; afterTurn();
   }
   function afterTurn() {
@@ -1157,7 +1163,7 @@
     if (S.needSwitch && remote) { showTab('moves'); rApply({ op: 'repl', k: k }); return; }
     if (S.needSwitch) {
       busy = true; refreshCmd();
-      await play(playerReplace(S, k));
+      try { await play(playerReplace(S, k)); } catch (err) { try { console.error('[battle] 换人出错', err); } catch (e2) {} }
       busy = false; showTab('moves'); afterTurn();
     } else { showTab('moves'); doTurn({ kind: 'switch', to: k }); }
   });

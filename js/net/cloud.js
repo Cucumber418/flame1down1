@@ -34,7 +34,10 @@
   function api(method, url, body, opts) {
     var h = { 'Content-Type': 'application/json' };
     if (st.token) h.Authorization = 'Bearer ' + st.token;
-    return fetch(url, { method: method, headers: h, body: body ? JSON.stringify(body) : undefined, keepalive: !!(opts && opts.keepalive), cache: 'no-store' })
+    // 2026-10-26：请求超过 25 秒没有回应就放弃（按网络不通处理，调用方会提示重试），免得对战一直卡在「等服务器」
+    var ac = typeof AbortController !== 'undefined' && !(opts && opts.keepalive) ? new AbortController() : null, tm = ac ? setTimeout(function () { try { ac.abort(); } catch (e) {} }, 25000) : 0;
+    return fetch(url, { method: method, headers: h, body: body ? JSON.stringify(body) : undefined, keepalive: !!(opts && opts.keepalive), cache: 'no-store', signal: ac ? ac.signal : undefined })
+      .then(function (r) { clearTimeout(tm); return r; }, function (e) { clearTimeout(tm); throw e; })
       .then(function (r) {
         var ct = r.headers.get('Content-Type') || '';
         if (ct.indexOf('application/json') < 0) { var e = new Error('noapi'); e.noapi = true; throw e; }

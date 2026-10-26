@@ -2655,3 +2655,7 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .mon.ram0 img, .mon.ram1 img { animation: bfxRam .42s cubic-bezier(.5,0,.5,1); position: relative; z-index: 5; }
 .mon.ram0, .mon.ram1 { z-index: 50; }
 @keyframes bfxRam { 0% { transform: translate(0, 0); } 15% { transform: translate(calc(var(--rx) * -0.08), calc(var(--ry) * -0.08)) rotate(-4deg); } 45% { transform: translate(var(--rx), var(--ry)) rotate(6deg) scale(1.06); } 60% { transform: translate(calc(var(--rx) * .9), calc(var(--ry) * .9)) rotate(3deg); } 100% { transform: translate(0, 0); } }
+
+/* 争霸赛 · 调整出战顺序（2026-10-26） */
+.pp-ch-w { display: inline-flex; align-items: center; gap: 2px; }
+.pp-up { padding: 2px 6px; font-size: 12px; min-height: 0; }

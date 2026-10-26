@@ -65,7 +65,7 @@ var BRAWL_SECONDS = 60;       // 大乱斗等待别人接受的时间
 var BRAWL_LV = 60;
 var MODES = [1, 3, 5];
 var BAL_LV = 60;
-var PREP_SEC = { pool: 90, ban: 60, pick: 150, ct6: 120, ctban: 60 };   // 平衡模式各选人阶段的时间
+var PREP_SEC = { pool: 90, ban: 60, pick: 150, ct6: 120, ctban: 60, ctset: 120 };   // ctset：争霸赛禁用之后，调整出战顺序和技能（2026-10-26）   // 平衡模式各选人阶段的时间
 var DRAFT_MIN = 8, DRAFT_MAX = 10, DRAFT_BAN = 3;
 
 /* ---------- 从存档里读出名片 ---------- */
@@ -271,6 +271,7 @@ function prepPhase(m, ph) {
 function prepAllowed(P, side) {
   if (P.phase === 'ct6') return P.owned[side];
   if (P.phase === 'ctban') return P.pools[1 - side];
+  if (P.phase === 'ctset') return ctLeft(P, side);
   if (P.phase === 'pool') return P.owned[side];
   if (P.phase === 'ban') return P.pools[1 - side];
   if (P.kind === 'draft') return P.pools[side].filter(function (s) { return P.bans[1 - side].indexOf(s) < 0; });
@@ -281,6 +282,7 @@ function prepNeed(P, side) {
   var n = prepAllowed(P, side).length;
   if (P.phase === 'ct6') return [Math.min(CT_PICK, n), Math.min(CT_PICK, n)];
   if (P.phase === 'ctban') return [Math.min(CT_BAN, Math.max(0, n - 1)), Math.min(CT_BAN, Math.max(0, n - 1))];
+  if (P.phase === 'ctset') { var cl = Math.min(5, ctLeft(P, side).length); return [cl, cl]; }
   if (P.phase === 'pool') return [Math.min(DRAFT_MIN, n), Math.min(DRAFT_MAX, n)];
   if (P.phase === 'ban') return [Math.min(DRAFT_BAN, n), Math.min(DRAFT_BAN, n)];
   var k = Math.min(P.mode, n); return [k, k];
@@ -296,6 +298,11 @@ function prepSend(m) {
     if (P.kind === 'ct') {
       v.ct = { label: ctLabel(Object.assign({ game: 1 }, m.ct)), cards: P.cm[side].list.map(ctCard) };
       if (P.pools) v.ct.foe = P.pools[1 - side].map(function (u) { var x = P.cm[1 - side].list.filter(function (y) { return String(y.u) === u; })[0]; return x ? ctCard(x) : null; }).filter(Boolean);
+      if (P.phase === 'ctset') {   // 调整阶段：自己剩下的每只能用哪些技能、现在带着哪些
+        v.ct.avail = {}; v.ct.cur = {};
+        ctLeft(P, side).forEach(function (u) { var x = P.cm[side].list.filter(function (y) { return String(y.u) === u; })[0]; if (!x) return; v.ct.avail[u] = ctAvail(x); v.ct.cur[u] = Array.isArray(x.moves) ? x.moves.slice(0, 4) : []; });
+        if (P.sub[side]) v.ct.sent = P.sub[side].moves || {};
+      }
     }
     out(m.socks[side], v);
   });
@@ -314,7 +321,7 @@ function prepSubmit(m, side, msg) {
   var ok = prepAllowed(P, side), need = prepNeed(P, side), picks = Array.isArray(msg.picks) ? msg.picks.map(function (x) { return String(x).slice(0, 32); }) : [];
   var bad = picks.some(function (x, i) { return ok.indexOf(x) < 0 || picks.indexOf(x) !== i; });
   if (bad || picks.length < need[0] || picks.length > need[1]) { out(m.socks[side], { type: 'prep-err', id: m.id, msg: '选择不符合要求，请重新选' }); prepSend(m); return; }
-  P.sub[side] = { picks: picks, moves: P.phase === 'pick' ? cleanMoves(msg.moves, picks) : {} };
+  P.sub[side] = { picks: picks, moves: P.phase === 'pick' ? cleanMoves(msg.moves, picks) : P.phase === 'ctset' ? ctCleanMoves(P, side, msg.moves, picks) : {} };
   if (P.sub[0] && P.sub[1]) prepNext(m); else prepSend(m);
 }
 // 超时：没交的一方由服务器代选（带前几种、随机禁用、选前几只并用默认技能）
@@ -331,9 +338,10 @@ function prepAuto(m) {
 function prepNext(m) {
   var P = m.prep;
   if (P.phase === 'ct6') { P.pools = [P.sub[0].picks, P.sub[1].picks]; prepPhase(m, 'ctban'); return; }
-  if (P.phase === 'ctban') {
+  if (P.phase === 'ctban') { P.bans = [P.sub[0].picks, P.sub[1].picks]; prepPhase(m, 'ctset'); return; }   // 2026-10-26：禁用之后各自调整出战顺序、换技能
+  if (P.phase === 'ctset') {
     clearTimeout(P.timer);
-    P.bans = [P.sub[0].picks, P.sub[1].picks];
+    P.order = [P.sub[0].picks, P.sub[1].picks]; P.ctMoves = [P.sub[0].moves || {}, P.sub[1].moves || {}];
     var nameOf = function (side, u) { var x = P.cm[side].list.filter(function (y) { return String(y.u) === u; })[0]; return x ? str(x.sid, 32) : ''; };
     m.ct.teams = ctTeams(m);
     m.ct.banInfo = [P.bans[0].map(function (u) { return nameOf(1, u); }), P.bans[1].map(function (u) { return nameOf(0, u); })];   // [发起方禁掉的（应战方的）种类, 应战方禁掉的（发起方的）种类]
@@ -372,12 +380,29 @@ function ctPrepStart(m) {
   m.prep = { kind: 'ct', mode: 5, cm: [A0, B0], owned: [A0.list.map(function (x) { return String(x.u); }), B0.list.map(function (x) { return String(x.u); })], pools: null, bans: null, sub: [null, null] };
   prepPhase(m, 'ct6');
 }
+// 禁用之后剩下的（按带的顺序）
+function ctLeft(P, side) { var ban = (P.bans && P.bans[1 - side]) || []; return (P.pools[side] || []).filter(function (u) { return ban.indexOf(u) < 0; }); }
+// 这只精灵现在能用的技能（按等级和已解锁的隐藏技能，规则在 js/engine/acc.js）
+function ctAvail(mm) {
+  try { var E = require('./tx').engine(); if (E && E.ACC) return E.ACC.avail(mm.sid, mm.lv, Array.isArray(mm.hl) ? mm.hl : []); } catch (e) {}
+  return Array.isArray(mm.moves) ? mm.moves.slice() : [];
+}
+function ctCleanMoves(P, side, o, picks) {
+  var r = {};
+  if (o && typeof o === 'object') picks.forEach(function (u) {
+    var a = o[u], mm = P.cm[side].list.filter(function (x) { return String(x.u) === u; })[0]; if (!Array.isArray(a) || !mm) return;
+    var ok = ctAvail(mm), got = a.filter(function (x, i) { return typeof x === 'string' && ok.indexOf(x) >= 0 && a.indexOf(x) === i; }).slice(0, 4);
+    if (got.length) r[u] = got;
+  });
+  return r;
+}
 function ctTeams(m) {
   var P = m.prep;
   return [0, 1].map(function (side) {
-    var C0 = P.cm[side], ban = P.bans[1 - side] || [];
-    return P.pools[side].filter(function (u) { return ban.indexOf(u) < 0; }).slice(0, 5).map(function (u) {
-      var mm = C0.list.filter(function (x) { return String(x.u) === u; })[0]; return mm ? monOut(mm, C0.acc) : null;
+    var C0 = P.cm[side], list = P.order && P.order[side] && P.order[side].length ? P.order[side] : ctLeft(P, side).slice(0, 5), mv = (P.ctMoves && P.ctMoves[side]) || {};
+    return list.map(function (u) {
+      var mm = C0.list.filter(function (x) { return String(x.u) === u; })[0]; if (!mm) return null;
+      var o = monOut(mm, C0.acc); if (mv[u] && mv[u].length) o.moves = mv[u].slice(); return o;
     }).filter(Boolean);
   });
 }

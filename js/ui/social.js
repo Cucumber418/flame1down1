@@ -673,7 +673,7 @@
     if (m.auto && m.auto[1 - m.side]) out.push('对方选人超时，由系统代选。');
     return out;
   }
-  var PHASE_T = { pool: '带精灵', ban: '禁用对方精灵', pick: '选出战精灵、配技能', ct6: '带 6 只精灵', ctban: '禁用对方 1 只' };
+  var PHASE_T = { pool: '带精灵', ban: '禁用对方精灵', pick: '选出战精灵、配技能', ct6: '带 6 只精灵', ctban: '禁用对方 1 只', ctset: '调整出战顺序和技能' };
   function spName(sid) { return SPMAP[sid] ? SPMAP[sid].name : sid; }
   function spImg(sid) { return A.view({ sid: sid, lv: A.BAL_LV }).img; }
   function onPrep(v) {
@@ -685,7 +685,7 @@
       P.dlg = dialog('prep', '<div class="pp-body"></div>', function (el) { el.dataset.sticky = '1'; el.addEventListener('click', prepClick); });
       P.iv = setInterval(prepTick, 500);
     }
-    if (P.phase !== v.phase) { P.sel = []; P.focus = null; P.phase = v.phase; P.sent = false; }
+    if (P.phase !== v.phase) { P.sel = v.phase === 'ctset' ? (v.allowed || []).slice(0, v.need ? v.need[1] : 5) : []; P.focus = null; P.phase = v.phase; P.sent = false; P.ctMv = {}; }
     if (v.mine) { P.sel = v.mine.slice(); P.sent = true; }
     P.v = v; P.deadline = Date.now() + v.left * 1000;
     // 选不了的（比如被禁用的）从已选里去掉
@@ -728,20 +728,38 @@
         (k >= 0 && !ro ? '<span class="me-no">' + (opt.ban ? '禁' : k + 1) + '</span>' : '') + '<img src="' + vw.img + '" alt=""><b>' + esc(c.nick || vw.name) + '</b><small>LV' + c.lv + ' · ' + s.types.join(' / ') + '</small></button>';
     }).join('') + '</div>';
   }
+  // 争霸赛 · 调整（2026-10-26）：禁用之后，剩下的精灵自己排出战顺序（第 1 只首发），也可以换技能（只能选这只精灵已经会的）
+  function ctMoves(u) { var P = st.prep, c = P.v.ct; if (!P.ctMv[u]) P.ctMv[u] = ((c.sent && c.sent[u]) || (c.cur && c.cur[u]) || []).slice(); return P.ctMv[u]; }
+  function ctSetHTML() {
+    var P = st.prep, v = P.v, c = v.ct, card = function (u) { return c.cards.filter(function (x) { return x.u === u; })[0]; };
+    if (!P.focus || P.sel.indexOf(P.focus) < 0) P.focus = P.sel[0];
+    var strip = '<div class="pp-chosen">' + P.sel.map(function (u, i) {
+      var x = card(u), vw = x ? A.view({ sid: x.sid, lv: x.lv, shiny: x.shiny, fs: x.fs }) : { name: u };
+      return '<span class="pp-ch-w"><button type="button" class="pp-ch' + (u === P.focus ? ' on' : '') + '" data-pf="' + esc(u) + '"><span>' + (i + 1) + '</span>' + esc((x && x.nick) || vw.name) + '<small>' + ctMoves(u).length + '/4</small></button>' +
+        (i > 0 && !P.sent ? '<button type="button" class="btn ghost pp-up" data-up="' + i + '" title="往前挪一位">◀</button>' : '') + '</span>';
+    }).join('') + '</div>';
+    var u = P.focus, x = card(u), list = (c.avail && c.avail[u]) || [], cur = ctMoves(u);
+    var ed = x ? '<div class="pp-moves"><p class="pp-mh"><b>' + esc(x.nick || A.view({ sid: x.sid, lv: x.lv }).name) + ' 的技能</b><span class="' + (cur.length === 4 ? 'blue' : 'red') + '">' + cur.length + ' / 4</span><span class="hint">只能选它现在会的技能</span></p><div class="pp-mlist">' +
+      list.map(function (n) { var m = M[n]; if (!m) return ''; var on = cur.indexOf(n) >= 0;
+        return '<button type="button" class="pp-mv' + (on ? ' on' : '') + '" data-cmv="' + esc(n) + '"' + (P.sent || (!on && cur.length >= 4) ? ' disabled' : '') + ' title="' + esc(m.d) + '" style="--tc:' + (TYPE_COLOR[m.type] || '#888') + '"><b>' + esc(m.name) + (m.hidden ? '<i>隐藏</i>' : '') + '</b><small>' + m.type + ' · ' + m.cat + (m.power ? ' · ' + m.power : '') + '</small></button>'; }).join('') + '</div></div>' : '';
+    return '<p class="pp-bans">对方禁掉了你的：<b class="red">' + ((v.bans && v.bans[1]) || []).map(function (bu) { var y = card(bu); return y ? esc(y.nick || A.view({ sid: y.sid, lv: y.lv }).name) : ''; }).join('、') + '</b></p>' +
+      '<p>按顺序出场，第 1 只首发；点 ◀ 往前挪。点一只精灵可以换它的技能。对方看不到你的顺序和技能。</p>' + strip + ed;
+  }
   function renderCtPrep() {
     var P = st.prep, v = P.v, body = P.dlg.el.querySelector('.pp-body'), need = v.need, n = P.sel.length, okN = n >= need[0] && n <= need[1];
-    var steps = '<ol class="pp-steps">' + ['ct6', 'ctban'].map(function (k, i) { var at = ['ct6', 'ctban'].indexOf(v.phase); return '<li class="' + (i < at ? 'done' : i === at ? 'cur' : '') + '">' + (i + 1) + '. ' + PHASE_T[k] + '</li>'; }).join('') + '<li>3. bo3 开打</li></ol>';
+    var steps = '<ol class="pp-steps">' + ['ct6', 'ctban', 'ctset'].map(function (k, i) { var at = ['ct6', 'ctban', 'ctset'].indexOf(v.phase); return '<li class="' + (i < at ? 'done' : i === at ? 'cur' : '') + '">' + (i + 1) + '. ' + PHASE_T[k] + '</li>'; }).join('') + '<li>4. 开打</li></ol>';
     var head = '<span class="step">' + esc(v.ct.label) + ' · 对手 ' + esc(v.peerName || '') + '</span><h2>' + PHASE_T[v.phase] + '</h2>' + steps +
       '<p class="pp-st"><span>剩余 <b id="pp-left"></b></span><span>' + (v.done[1] ? '<b class="blue">对方已选好</b>' : '对方还在选……') + '</span></p>';
     var main;
     if (v.phase === 'ct6') main = '<p>从你的精灵里带 <b>' + need[1] + '</b> 只（已选 ' + n + '），按背包里的等级、性格、学习力和技能对战。对方会禁掉其中 1 只，剩下的按你选的顺序取前 5 只出场（第 1 只首发）。</p>' + ctGrid(v.ct.cards, {});
+    else if (v.phase === 'ctset') main = ctSetHTML();
     else {
       var mine = v.ct.cards.filter(function (c) { return (v.pools[0] || []).indexOf(c.u) >= 0; });
-      main = '<p>对方带来了这 ' + (v.ct.foe || []).length + ' 只，选 <b>' + need[1] + '</b> 只禁用（已选 ' + n + '），它这三局都不能上场。</p>' + ctGrid(v.ct.foe || [], { ban: true }) +
+      main = '<p>对方带来了这 ' + (v.ct.foe || []).length + ' 只，选 <b>' + need[1] + '</b> 只禁用（已选 ' + n + '），它这一局不能上场。</p>' + ctGrid(v.ct.foe || [], { ban: true }) +
         '<h4 class="pp-h">你带的 ' + mine.length + ' 只（对方正在从里面禁 1 只）</h4>' + ctGrid(mine, { ro: true });
     }
     var foot = '<div class="soc-foot"><button type="button" class="btn ghost" id="pp-quit">退出</button>' +
-      (P.sent ? '<button type="button" class="btn" disabled>已提交，等待对方……</button>' : '<button type="button" class="btn primary" id="pp-go"' + (okN ? '' : ' disabled') + '>' + (v.phase === 'ctban' ? '确认禁用' : '确认携带') + '</button>') + '</div>';
+      (P.sent ? '<button type="button" class="btn" disabled>已提交，等待对方……</button>' : '<button type="button" class="btn primary" id="pp-go"' + (okN ? '' : ' disabled') + '>' + (v.phase === 'ctban' ? '确认禁用' : v.phase === 'ctset' ? '确定出战' : '确认携带') + '</button>') + '</div>';
     var y = body.parentNode ? body.parentNode.scrollTop : 0;
     body.innerHTML = head + main + foot;
     if (body.parentNode) body.parentNode.scrollTop = y;
@@ -794,6 +812,8 @@
       renderPrep(); return;
     }
     if (b.dataset.pf) { P.focus = b.dataset.pf; renderPrep(); return; }
+    if (b.dataset.up) { var ui = +b.dataset.up; if (ui > 0) { var tmp = P.sel[ui - 1]; P.sel[ui - 1] = P.sel[ui]; P.sel[ui] = tmp; } renderPrep(); return; }
+    if (b.dataset.cmv && P.focus) { var cm = ctMoves(P.focus), cn = b.dataset.cmv, ci = cm.indexOf(cn); if (ci >= 0) cm.splice(ci, 1); else if (cm.length < 4) cm.push(cn); renderPrep(); return; }
     if (b.dataset.mv && P.focus) {
       var cur = movesOf(P.focus), n = b.dataset.mv, i = cur.indexOf(n);
       if (i >= 0) cur.splice(i, 1); else if (cur.length < 4) cur.push(n);
@@ -801,6 +821,10 @@
     }
     if (b.id === 'pp-go') {
       var msg = { type: 'prep', id: P.id, phase: P.v.phase, picks: P.sel.slice() };
+      if (P.v.phase === 'ctset') {
+        if (P.sel.some(function (u) { return !ctMoves(u).length; })) { A.toast('每只精灵至少要带 1 个技能'); return; }
+        msg.moves = {}; P.sel.forEach(function (u) { msg.moves[u] = ctMoves(u).slice(); });
+      }
       if (P.v.phase === 'pick') {
         msg.moves = {};
         P.sel.forEach(function (sid) { msg.moves[sid] = movesOf(sid).slice(); if (HB.setLoadout) HB.setLoadout(sid, msg.moves[sid]); });
