@@ -2659,3 +2659,7 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 /* 争霸赛 · 调整出战顺序（2026-10-26） */
 .pp-ch-w { display: inline-flex; align-items: center; gap: 2px; }
 .pp-up { padding: 2px 6px; font-size: 12px; min-height: 0; }
+/* 拖动排序（2026-10-26）：选人面板里已选的那一排 */
+.pp-chosen .pp-ch-w { touch-action: none; cursor: grab; }
+.pp-chosen .pp-ch img { width: 26px; height: 26px; object-fit: contain; vertical-align: middle; margin: 0 3px; pointer-events: none; }
+.pp-chosen .sort-drag { opacity: .6; transform: scale(1.06); cursor: grabbing; }

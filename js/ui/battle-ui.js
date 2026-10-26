@@ -209,7 +209,36 @@
       '<rect x="24" y="3" width="16" height="6" rx="2" fill="' + C[1] + '"/><path d="M28 40h8M32 36v8" stroke="#fff" stroke-width="3" stroke-linecap="round"/></g>' +
       (k === 'pot2' ? '<path d="M50 8l2 5 5 2-5 2-2 5-2-5-5-2 5-2z" fill="#f3d36b" stroke="#23222b" stroke-width="1.5"/>' : '') + '</svg>';
   }
-  window.HSUI = { itemIcon: itemIcon, big: function (sid, i) { openLightbox(SPMAP[sid], i); }, esc: esc, tchip: tchip, tchips: tchips, atkTip: function (t) { return atkTip(t); } };
+  /* 通用拖动排序（2026-10-26）：list 里的子元素（带 data-k）按住拖动换位置，鼠标、触屏都可以；放手后 done(新顺序的 data-k 数组)。
+   * 移动超过 6 像素才算拖动，否则当成普通点击 */
+  function makeSortable(list, done) {
+    if (!list || list._sortable) return; list._sortable = true;
+    var drag = null, sx = 0, sy = 0, moved = false;
+    list.addEventListener('pointerdown', function (e) {
+      var it = e.target.closest('[data-k]'); if (!it || it.parentNode !== list && !list.contains(it)) return;
+      while (it.parentNode !== list) it = it.parentNode;
+      drag = it; sx = e.clientX; sy = e.clientY; moved = false;
+      try { list.setPointerCapture(e.pointerId); } catch (er) {}
+    });
+    list.addEventListener('pointermove', function (e) {
+      if (!drag) return;
+      if (!moved && Math.abs(e.clientX - sx) + Math.abs(e.clientY - sy) < 6) return;
+      if (!moved) { moved = true; drag.classList.add('sort-drag'); }
+      e.preventDefault();
+      var best = null, bd = Infinity;
+      Array.prototype.forEach.call(list.children, function (c) { if (!c.dataset.k) return; var r = c.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2, dd = (cx - e.clientX) * (cx - e.clientX) + (cy - e.clientY) * (cy - e.clientY); if (dd < bd) { bd = dd; best = c; } });
+      if (!best || best === drag) return;
+      var kids = Array.prototype.slice.call(list.children);
+      if (kids.indexOf(best) > kids.indexOf(drag)) list.insertBefore(drag, best.nextSibling); else list.insertBefore(drag, best);
+    });
+    var end = function () {
+      if (!drag) return; var was = moved; drag.classList.remove('sort-drag'); drag = null;
+      if (was) { list._justSorted = Date.now(); done(Array.prototype.filter.call(list.children, function (c) { return c.dataset.k; }).map(function (c) { return c.dataset.k; })); }
+    };
+    list.addEventListener('pointerup', end); list.addEventListener('pointercancel', end);
+    list.addEventListener('click', function (e) { if (list._justSorted && Date.now() - list._justSorted < 300) { e.stopPropagation(); e.preventDefault(); } }, true);   // 拖完松手不触发点击
+  }
+  window.HSUI = { sortable: makeSortable, itemIcon: itemIcon, big: function (sid, i) { openLightbox(SPMAP[sid], i); }, esc: esc, tchip: tchip, tchips: tchips, atkTip: function (t) { return atkTip(t); } };
   // 技能属性标签：显示这个属性打别人时克制谁、被谁抵抗
   function atkTip(t) {
     var all = Object.keys(TYPE_COLOR), up = [], dn = [];

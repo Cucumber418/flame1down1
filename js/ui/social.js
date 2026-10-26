@@ -735,15 +735,14 @@
     if (!P.focus || P.sel.indexOf(P.focus) < 0) P.focus = P.sel[0];
     var strip = '<div class="pp-chosen">' + P.sel.map(function (u, i) {
       var x = card(u), vw = x ? A.view({ sid: x.sid, lv: x.lv, shiny: x.shiny, fs: x.fs }) : { name: u };
-      return '<span class="pp-ch-w"><button type="button" class="pp-ch' + (u === P.focus ? ' on' : '') + '" data-pf="' + esc(u) + '"><span>' + (i + 1) + '</span>' + esc((x && x.nick) || vw.name) + '<small>' + ctMoves(u).length + '/4</small></button>' +
-        (i > 0 && !P.sent ? '<button type="button" class="btn ghost pp-up" data-up="' + i + '" title="往前挪一位">◀</button>' : '') + '</span>';
+      return '<span class="pp-ch-w" data-k="' + esc(u) + '"><button type="button" class="pp-ch' + (u === P.focus ? ' on' : '') + '" data-pf="' + esc(u) + '"><span>' + (i + 1) + '</span>' + (x ? '<img src="' + vw.img + '" alt="" draggable="false">' : '') + esc((x && x.nick) || vw.name) + '<small>' + ctMoves(u).length + '/4</small></button></span>';
     }).join('') + '</div>';
     var u = P.focus, x = card(u), list = (c.avail && c.avail[u]) || [], cur = ctMoves(u);
     var ed = x ? '<div class="pp-moves"><p class="pp-mh"><b>' + esc(x.nick || A.view({ sid: x.sid, lv: x.lv }).name) + ' 的技能</b><span class="' + (cur.length === 4 ? 'blue' : 'red') + '">' + cur.length + ' / 4</span><span class="hint">只能选它现在会的技能</span></p><div class="pp-mlist">' +
       list.map(function (n) { var m = M[n]; if (!m) return ''; var on = cur.indexOf(n) >= 0;
         return '<button type="button" class="pp-mv' + (on ? ' on' : '') + '" data-cmv="' + esc(n) + '"' + (P.sent || (!on && cur.length >= 4) ? ' disabled' : '') + ' title="' + esc(m.d) + '" style="--tc:' + (TYPE_COLOR[m.type] || '#888') + '"><b>' + esc(m.name) + (m.hidden ? '<i>隐藏</i>' : '') + '</b><small>' + m.type + ' · ' + m.cat + (m.power ? ' · ' + m.power : '') + '</small></button>'; }).join('') + '</div></div>' : '';
     return '<p class="pp-bans">对方禁掉了你的：<b class="red">' + ((v.bans && v.bans[1]) || []).map(function (bu) { var y = card(bu); return y ? esc(y.nick || A.view({ sid: y.sid, lv: y.lv }).name) : ''; }).join('、') + '</b></p>' +
-      '<p>按顺序出场，第 1 只首发；点 ◀ 往前挪。点一只精灵可以换它的技能。对方看不到你的顺序和技能。</p>' + strip + ed;
+      '<p>按顺序出场，第 1 只首发；按住精灵拖动可以调整顺序。点一只精灵可以换它的技能。对方看不到你的顺序和技能。</p>' + strip + ed;
   }
   function renderCtPrep() {
     var P = st.prep, v = P.v, body = P.dlg.el.querySelector('.pp-body'), need = v.need, n = P.sel.length, okN = n >= need[0] && n <= need[1];
@@ -751,7 +750,8 @@
     var head = '<span class="step">' + esc(v.ct.label) + ' · 对手 ' + esc(v.peerName || '') + '</span><h2>' + PHASE_T[v.phase] + '</h2>' + steps +
       '<p class="pp-st"><span>剩余 <b id="pp-left"></b></span><span>' + (v.done[1] ? '<b class="blue">对方已选好</b>' : '对方还在选……') + '</span></p>';
     var main;
-    if (v.phase === 'ct6') main = '<p>从你的精灵里带 <b>' + need[1] + '</b> 只（已选 ' + n + '），按背包里的等级、性格、学习力和技能对战。对方会禁掉其中 1 只，剩下的按你选的顺序取前 5 只出场（第 1 只首发）。</p>' + ctGrid(v.ct.cards, {});
+    if (v.phase === 'ct6') main = '<p>从你的精灵里带 <b>' + need[1] + '</b> 只（已选 ' + n + '），按背包里的等级、性格、学习力和技能对战。对方会禁掉其中 1 只，之后还可以调整出场顺序和技能。</p>' + ctGrid(v.ct.cards, {}) +
+      (P.sel.length ? '<h4 class="pp-h">已选（按住拖动调整顺序）</h4><div class="pp-chosen">' + P.sel.map(function (u, i) { var x = v.ct.cards.filter(function (c) { return c.u === u; })[0]; if (!x) return ''; var vw = A.view({ sid: x.sid, lv: x.lv, shiny: x.shiny, fs: x.fs }); return '<span class="pp-ch-w" data-k="' + esc(u) + '"><span class="pp-ch"><span>' + (i + 1) + '</span><img src="' + vw.img + '" alt="" draggable="false">' + esc(x.nick || vw.name) + '</span></span>'; }).join('') + '</div>' : '');
     else if (v.phase === 'ctset') main = ctSetHTML();
     else {
       var mine = v.ct.cards.filter(function (c) { return (v.pools[0] || []).indexOf(c.u) >= 0; });
@@ -763,7 +763,13 @@
     var y = body.parentNode ? body.parentNode.scrollTop : 0;
     body.innerHTML = head + main + foot;
     if (body.parentNode) body.parentNode.scrollTop = y;
+    bindSort(body);
     prepTick();
+  }
+  // 已选精灵的那一排：拖动调整顺序（没提交之前）
+  function bindSort(body) {
+    var P = st.prep, strip = body.querySelector('.pp-chosen'); if (!strip || P.sent || !H || !H.sortable) return;
+    H.sortable(strip, function (keys) { P.sel = keys.filter(function (k) { return P.sel.indexOf(k) >= 0; }); renderPrep(); });
   }
   function renderPrep() {
     if (st.prep.v.kind === 'ct') return renderCtPrep();
@@ -787,7 +793,7 @@
       }
       if (P.sel.length) {
         if (!P.focus || P.sel.indexOf(P.focus) < 0) P.focus = P.sel[0];
-        main += '<div class="pp-chosen">' + P.sel.map(function (sid, i) { return '<button type="button" class="pp-ch' + (sid === P.focus ? ' on' : '') + '" data-pf="' + sid + '"><span>' + (i + 1) + '</span>' + esc(spName(sid)) + '<small>' + movesOf(sid).length + '/4</small></button>'; }).join('') + '</div>' + moveEditor(P.focus);
+        main += '<div class="pp-chosen">' + P.sel.map(function (sid, i) { return '<span class="pp-ch-w" data-k="' + sid + '"><button type="button" class="pp-ch' + (sid === P.focus ? ' on' : '') + '" data-pf="' + sid + '"><span>' + (i + 1) + '</span><img src="' + spImg(sid) + '" alt="" draggable="false">' + esc(spName(sid)) + '<small>' + movesOf(sid).length + '/4</small></button></span>'; }).join('') + '</div><p class="hint">按住已选的精灵拖动可以调整出场顺序。</p>' + moveEditor(P.focus);
       }
     }
     var badMv = v.phase === 'pick' && P.sel.some(function (sid) { return !movesOf(sid).length; });
@@ -796,6 +802,7 @@
     var y = body.parentNode ? body.parentNode.scrollTop : 0;
     body.innerHTML = head + main + side + foot;
     if (body.parentNode) body.parentNode.scrollTop = y;
+    bindSort(body);
     prepTick();
   }
   function prepClick(e) {
@@ -812,7 +819,6 @@
       renderPrep(); return;
     }
     if (b.dataset.pf) { P.focus = b.dataset.pf; renderPrep(); return; }
-    if (b.dataset.up) { var ui = +b.dataset.up; if (ui > 0) { var tmp = P.sel[ui - 1]; P.sel[ui - 1] = P.sel[ui]; P.sel[ui] = tmp; } renderPrep(); return; }
     if (b.dataset.cmv && P.focus) { var cm = ctMoves(P.focus), cn = b.dataset.cmv, ci = cm.indexOf(cn); if (ci >= 0) cm.splice(ci, 1); else if (cm.length < 4) cm.push(cn); renderPrep(); return; }
     if (b.dataset.mv && P.focus) {
       var cur = movesOf(P.focus), n = b.dataset.mv, i = cur.indexOf(n);
