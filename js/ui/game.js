@@ -831,7 +831,7 @@
    * 一般道具：捕捉装置、补药（对战中用）、改名卡、自律训练装置、挑战许可
    * 储存箱（主菜单，黄冈秘鉴和社交中间）列出所有道具 */
   var USE_ITEMS = GROW.USE_ITEMS;   // 精灵道具的数据和用法在 js/engine/grow.js（服务器和浏览器共用，2026-10-25）
-  var MON_ORDER = ['formDev', 'earthShard', 'floraJade', 'kbDrop', 'ppAsh', 'ltOrb', 'whFrost', 'moonStone', 'boneDust', 'tgPearl', 'brTwig', 'odoFin', 'hrDisk', 'deathTok', 'ivMoon', 'ivBone', 'ivReroll', 'evAny', 'evTagore', 'natAny', 'natTagore', 'evReset', 'fruit1', 'fruit2'], GEN_ORDER = ['trans', 'helmet', 'auto', 'rename', 'cap1', 'cap2', 'cap3', 'pot1', 'pot2', 'pot200'];
+  var MON_ORDER = ['formDev', 'earthShard', 'floraJade', 'kbDrop', 'ppAsh', 'ltOrb', 'whFrost', 'moonStone', 'boneDust', 'tgPearl', 'brTwig', 'odoFin', 'hrDisk', 'deathTok', 'ivMoon', 'ivBone', 'ivReroll', 'ev50', 'evAny', 'evTagore', 'natAny', 'natTagore', 'evReset', 'fruit1', 'fruit2'], GEN_ORDER = ['trans', 'helmet', 'auto', 'rename', 'cap1', 'cap2', 'cap3', 'pot1', 'pot2', 'pot200'];
   // 剧情道具：主线里拿到的，不能使用也不会消耗
   var KEY_ITEMS = {
     trans: { name: '精灵翻译器', d: '汉街总部国际A座的情报显示，这个翻译器能凭一己之力考到雅思 6.5 分。这样一来，翻译精灵的语言也一定能行吧……', img: 'translator' },
@@ -890,7 +890,8 @@
     ivBone: ['凶骨专用的天赋药剂。', '只能用在骨刃一系：六项天赋重新随机，每项掷两次取较高的一次。', '竞技代币商店（100 竞技代币）。'],
     natAny: ['一粒能改变精灵脾气的胶囊。', '用在任意一只精灵身上，把性格改成你指定的性格。', '先驱之塔的代币商店（2,000 先驱代币）。'],
     natTagore: ['泰戈尔专用的性格药剂。', '用在泰戈尔一系（小胖虎、胖虎也可以），把性格改成你指定的性格。', '首次击败困难难度的泰戈尔得 3 个；泰戈尔每周挑战（普通、困难）有机会掉落。'],
-    evAny: ['一管通用的学习力合剂。', '用在任意一只精灵身上，增加 100 点可分配学习力，再在精灵资料里自己分配（学习力总量有上限）。', '竞技代币商店（100 竞技代币）；先驱之塔的代币商店（150 先驱代币）；BOSS 每周挑战、明明代币抽奖、排位赛季段位奖励。'],
+    ev50: ['一管小份的学习力合剂。', '用在任意一只精灵身上，增加 50 点可分配学习力，再在精灵资料里自己分配（学习力总量有上限）。', '明明代币抽奖。'],
+    evAny: ['一管学习力合剂。', '用在任意一只精灵身上，增加 100 点可分配学习力，再在精灵资料里自己分配（学习力总量有上限）。', '竞技代币商店（100 竞技代币）；先驱之塔的代币商店（150 先驱代币）；BOSS 每周挑战、明明代币抽奖（每逢 4 的倍数的奖池）、排位赛季段位奖励。'],
     evTagore: ['泰戈尔专用的学习力合剂。', '用在泰戈尔一系，增加 100 点可分配学习力。', '泰戈尔每周挑战有机会掉落。'],
     evReset: ['把学习力退回去的胶囊。', '用在一只精灵身上，已经分配的学习力全部退回「可分配学习力」，可以重新分配。', '竞技代币商店（80 竞技代币）；先驱之塔的代币商店（200 先驱代币）。'],
     fruit1: ['一颗饱满的果子。', '用在一只精灵身上，直接增加经验（每颗 = 精灵等级 × 100）。到了等级上限就不能用。', '竞技代币商店（30 竞技代币）。'],
@@ -4869,7 +4870,7 @@
   }
   function renderMmGacha() {
     var G = mmG(), P = mmPool(G.n), tok = acc.items.mmTok || 0;
-    $('pg-explore').innerHTML = exHead('用明明代币抽奖：每个奖池有 20 个固定奖励，抽完一个奖池就会进入下一个。从第 5 个奖池起，每逢 5 的倍数的奖池都有 50 个「雷明之眼」；第 10、30、50、70……个奖池还有「雷明灯的精元」（孵出的雷明灯 10% 是异色）。') +
+    $('pg-explore').innerHTML = exHead('用明明代币抽奖：每个奖池有 22 个固定奖励，抽完一个奖池就会进入下一个。每逢 4 的倍数的奖池，50学习力合剂换成 100学习力合剂。从第 5 个奖池起，每逢 5 的倍数的奖池都有 50 个「雷明之眼」；第 10、30、50、70……个奖池还有「雷明灯的精元」（孵出的雷明灯 10% 是异色）。') +
       '<div class="crumb"><button type="button" class="btn ghost" id="mmg-back">‹ 返回' + (ex.mmFrom === 'log' ? '航行日志' : '全息作战场地') + '</button><b>明明代币抽奖 · 第 ' + G.n + ' 个奖池</b></div>' +
       '<div class="mm-bar"><span>明明代币 <b>' + fmt(tok) + '</b></span><span>剩余 <b>' + G.left.length + '</b> / 20</span><span class="hint">今天已解锁 ' + G.opened + ' / ' + MM_POOL_DAY + ' 个新奖池</span>' +
       '<button type="button" class="btn" data-mmdraw="1"' + (tok >= 10 ? '' : ' disabled') + '>抽一次（10）</button><button type="button" class="btn primary" data-mmdraw="10"' + (tok >= 100 ? '' : ' disabled') + '>十连抽（100）</button></div>' +

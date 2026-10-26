@@ -10,7 +10,8 @@ var GROW = (function () {
   var USE_ITEMS = {
     ivReroll: { name: '天赋重组合剂', sid: null, kind: 'iv', d: '把你的任意一只精灵的六项天赋（0~31）全部重新随机。新的天赋可能更高，也可能更低。' },
     natTagore: { name: '泰戈尔性格药剂', sid: 'tagore', kind: 'nat', d: '把你的一只泰戈尔（小胖虎、胖虎也可以）的性格改成你指定的性格。' },
-    evAny: { name: '通用学习力合剂', sid: null, kind: 'ev', d: '为你的任意一只精灵直接增加 100 点学习力。加进「可分配学习力」，再在精灵资料里自己分配；学习力总量最多 ' + EV_TOTAL0 + '。' },
+    ev50: { name: '50学习力合剂', sid: null, kind: 'ev', amt: 50, d: '为你的任意一只精灵直接增加 50 点学习力。加进「可分配学习力」，再在精灵资料里自己分配；学习力总量最多 ' + EV_TOTAL0 + '。' },   // 2026-10-27：通用学习力合剂拆成 50、100 两种
+    evAny: { name: '100学习力合剂', sid: null, kind: 'ev', amt: 100, d: '为你的任意一只精灵直接增加 100 点学习力。加进「可分配学习力」，再在精灵资料里自己分配；学习力总量最多 ' + EV_TOTAL0 + '。' },
     evTagore: { name: '泰戈尔学习力合剂', sid: 'tagore', kind: 'ev', d: '为你的一只泰戈尔（小胖虎、胖虎也可以）直接增加 100 点学习力。加进「可分配学习力」，再在精灵资料里自己分配；学习力总量最多 ' + EV_TOTAL0 + '。' },
     // 竞技代币商店（2026-10-14）
     ivMoon: { name: '小月亮专属天赋重置药剂', sid: 'moon', kind: 'iv2', d: '只能用在小月亮（朔望月灵也可以）身上。把六项天赋全部重新随机，每一项都会掷两次、取较高的一次，比普通的天赋重组合剂更容易出高天赋。', none: '你还没有小月亮。平衡排位第一次达到铂金时会送一只。' },
@@ -104,10 +105,10 @@ var GROW = (function () {
       m.evFree = (m.evFree || 0) + back; m.ev = {}; I[k]--;
       return { ok: true, msg: name + ' 已分配的 ' + back + ' 点学习力全部退回，现在有 ' + m.evFree + ' 点可分配学习力，在精灵资料的「学习力」一栏重新分配。' };
     }
-    var add = Math.min(100, evRoom(m));
+    var amt = it.amt || 100, add = Math.min(amt, evRoom(m));
     if (!add) return no('这只的学习力已经到上限了。');
     m.evFree = (m.evFree || 0) + add; I[k]--;
-    return { ok: true, msg: name + ' 获得了 ' + add + ' 点可分配学习力' + (add < 100 ? '（已到 ' + EV_TOTAL + ' 上限）' : '') + '，在精灵资料的「学习力」一栏分配。' };
+    return { ok: true, msg: name + ' 获得了 ' + add + ' 点可分配学习力' + (add < amt ? '（已到 ' + EV_TOTAL + ' 上限）' : '') + '，在精灵资料的「学习力」一栏分配。' };
   }
 
   /* ---------- 交易：改精灵数值的操作 ---------- */

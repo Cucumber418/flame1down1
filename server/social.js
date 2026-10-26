@@ -785,7 +785,7 @@ A.use(function (req, res, url) {
   if (!me) { A.reply(res, 401, { error: '登录已失效，请重新登录' }); return true; }
 
   if (url === '/api/players' && req.method === 'GET') {
-    var list = A.allUsers().map(function (u) { return summary(u, me); });
+    var list = A.allUsers().map(function (u) { return summary(u, me); }).filter(function (p) { return p.me || !p.noChar; });   // 2026-10-27：还没创建角色的不进玩家列表
     list.sort(function (a, b) { return (b.me - a.me) || (b.online - a.online) || (b.friend - a.friend) || ((b.lastSeen || 0) - (a.lastSeen || 0)); });
     list.forEach(function (p) { delete p.lastSeen; });   // 2026-10-26：不再对外显示上次在线时间（只用来排序）
     A.reply(res, 200, { me: me.name, players: list });
