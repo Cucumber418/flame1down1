@@ -6067,9 +6067,41 @@
       if (st.bg && BG[st.bg]) preloadImg(BG[st.bg]);
     });
   }
+  // 这一段剧情要用到的全部图片（背景、CG、人物立绘和表情、出场的精灵和道具）：开始前先全部下载好（2026-10-27）
+  function vnAssets(site) {
+    var arr = SCRIPT[site] || [], out = [], on = [], rx = /src="([^"]+)"/g, m;
+    var grab = function (html) { if (!html) return; rx.lastIndex = 0; while ((m = rx.exec(html))) out.push(m[1]); };
+    if (SITES[site] && BG[SITES[site].bg]) out.push(BG[SITES[site].bg]);
+    var siteBak = ex.site; ex.site = site;
+    try {
+      arr.forEach(function (st, i) {
+        if (st.bg && BG[st.bg]) out.push(BG[st.bg]);
+        if (st.cg && CG[st.cg]) { out.push(CG[st.cg][gender()] || CG[st.cg].m); if (CG[st.cg].land) out.push(CG[st.cg].land[gender()] || CG[st.cg].land.m); }
+        if (st.on !== undefined) on = st.on || [];
+        try { if (st.mons) grab(monsHTML(st.mons)); } catch (e1) {}
+        on.forEach(function (o) { try { if (CAST[o[0]]) grab(standee(o[0], o[0] === 'p' ? pFace(arr, i) : st.f && st.f[o[0]])); } catch (e2) {} });
+        if (st.s === 'b' && CAST.b) try { grab(standee('b', st.f && st.f.b)); } catch (e3) {}
+      });
+    } catch (e) {}
+    ex.site = siteBak;
+    return out.filter(function (x, i, a) { return x && a.indexOf(x) === i; });
+  }
+  var vnLoading = null;
   function startVN(site, mode, host, fromStart) {
+    if (vnLoading === site) return;
+    var list = vnAssets(site), left = list.filter(function (src) { var im = PRELOAD[src]; return !(im && im.complete); });
+    if (!left.length) { startVN0(site, mode, host, fromStart); return; }
+    vnLoading = site; if (mode === 'intro' && host) host.innerHTML = '';
+    var L = LOADER.show('正在载入剧情「' + (SITES[site] ? SITES[site].name : '') + '」～', { delay: 150 }), n = 0, fin = false;
+    var end = function () { if (fin) return; fin = true; clearTimeout(guard); L.done(function () { if (vnLoading !== site) return; vnLoading = null; startVN0(site, mode, host, fromStart); }); };
+    var guard = setTimeout(end, 20000);   // 最多等 20 秒：网络很慢时不卡住
+    left.forEach(function (src) {
+      var im = preloadImg(src), one = function () { n++; L.set(n / left.length); if (n >= left.length) end(); };
+      if (im.complete) one(); else { im.addEventListener('load', one, { once: true }); im.addEventListener('error', one, { once: true }); }
+    });
+  }
+  function startVN0(site, mode, host, fromStart) {
     var pr; ex.site = site; pr = prog(site);
-    setTimeout(function () { preloadVN(site); }, 0);
     if (mode !== 'intro') $('onboard').innerHTML = '';
     if (fromStart) { pr.at = 0; pr.ch = null; }
     ex.finPending = null;
