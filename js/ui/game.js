@@ -1925,7 +1925,18 @@
     }).join('') + MAYAR_UNK.map(function (m) { return '<span class="mp unk" style="left:' + m[0] + '%;top:' + m[1] + '%" title="未知星球：更多星球敬请期待">?</span>'; }).join('');
     return '<section class="mayar"><h3>马亚尔星系 <small>点击星球前往</small></h3><div class="mayar-map"><img class="mayar-bg" src="' + BG.mayar + '" alt="马亚尔星系">' + pts + '</div></section>';
   }
-  function teleport(n) { ex.view = 'area'; ex.area = n; ex.tp = true; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); mysteryRoll('荆楚号 · ' + DEPTS[n][0]); }
+  // 进入星球 / 场景时：这一页的图片还没下载完，就先盖上加载面板，全部到了再显示（2026-10-27）
+  function loadGate(el, msg) {
+    if (!el || typeof LOADER === 'undefined') return;
+    var imgs = Array.prototype.filter.call(el.querySelectorAll('img'), function (im) { return im.getAttribute('src') && !im.complete && im.loading !== 'lazy'; });
+    if (!imgs.length) return;
+    var L = LOADER.show(msg || '加载中～', { delay: 120 }), n = 0, fin = false, tot = imgs.length;
+    el.classList.add('gating');
+    var end = function () { if (fin) return; fin = true; clearTimeout(g); L.done(function () { el.classList.remove('gating'); }); };
+    var g = setTimeout(end, 12000);   // 最多等 12 秒：网络很慢时不卡住
+    imgs.forEach(function (im) { var one = function () { n++; L.set(n / tot); if (n >= tot) end(); }; im.addEventListener('load', one, { once: true }); im.addEventListener('error', one, { once: true }); });
+  }
+  function teleport(n) { ex.view = 'area'; ex.area = n; ex.tp = true; renderExplore(); loadGate($('pg-explore'), '正在传送到' + DEPTS[n][0] + '～'); window.scrollTo(0, $('pg-explore').offsetTop - 8); mysteryRoll('荆楚号 · ' + DEPTS[n][0]); }
   function planetSvg(id) {
     var P = planetOf(id); if (P && P.ivy) return ivySvg(); if (P && P.img) return planetImg(P, 120); if (P && P.color) return planetSvgC(P, 120);
     return '<svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="36" fill="#cfe0f2" stroke="#23222b" stroke-width="3"/>' +
@@ -2714,7 +2725,7 @@
     var R = regionById(rid); if (!R || !regionOpen(R)) return;
     loadField(rid);
     ex.view = 'field'; ex.region = rid; ex.planet = R.planet;
-    renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8);
+    renderExplore(); loadGate($('pg-explore'), '正在进入' + R.name + '～'); window.scrollTo(0, $('pg-explore').offsetTop - 8);
     setTimeout(cumberCheck, 400);
   }
   function fieldMonHTML(m, cls) {
@@ -6223,7 +6234,7 @@
     if (b.dataset.ctfight) { if (window.HSSOCIAL && window.HSSOCIAL.ctAsk) { var M1 = CT.data && CT.data.myMatch; window.HSSOCIAL.ctAsk(b.dataset.ctfight, M1 ? M1.oppName : '', CONTEST.name + (M1 ? ' · ' + (M1.final ? '决赛' : '第 ' + M1.round + ' 轮') : '')); } return; }
     if (b.dataset.ctwatch) { if (window.HSSOCIAL && window.HSSOCIAL.watch) window.HSSOCIAL.watch(b.dataset.ctwatch); return; }
     if (b.dataset.ctrep) { if (window.HSSOCIAL && window.HSSOCIAL.replay) window.HSSOCIAL.replay(b.dataset.ctrep); return; }
-    if (b.dataset.planet && !b.disabled) { ex.planet = b.dataset.planet; ex.view = 'sites'; renderExplore(); mysteryRoll(planetOf(b.dataset.planet).name); return; }
+    if (b.dataset.planet && !b.disabled) { ex.planet = b.dataset.planet; ex.view = 'sites'; renderExplore(); loadGate($('pg-explore'), '正在前往' + planetOf(b.dataset.planet).name + '～'); mysteryRoll(planetOf(b.dataset.planet).name); return; }
     if (b.id === 'ex-back') { var P_ = ex.view === 'sites' && planetOf(ex.planet); if (P_ && P_.inStation) { ex.planet = 'station'; renderExplore(); return; } ex.view = 'planets'; renderExplore(); return; }
     if (b.dataset.go && unlocked(b.dataset.go)) { ex.arc = false; startVN(b.dataset.go, 'replay', $('pg-explore'), b.dataset.from === '0'); window.scrollTo(0, $('pg-explore').offsetTop - 8); }
   });
