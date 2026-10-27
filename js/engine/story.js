@@ -7,6 +7,7 @@
  * ========================================================== */
 var STY = (function () {
   'use strict';
+  var MIA_NEED = 10;   // 第十一段：本账号累计击败的瘴气污染精灵数
   function no(err) { return { ok: false, err: err }; }
   function done(a, site) { return !!(a.story && a.story[site] && a.story[site].done); }
   function items(a) { if (!a.items || typeof a.items !== 'object') a.items = {}; return a.items; }
@@ -31,7 +32,7 @@ var STY = (function () {
     flora3: { after: 'flora2', need: function (a) { return ((a.story && a.story.flora2 && a.story.flora2.spare) || 0) >= PVE.SPARE_N; } },
     flora4: { after: 'flora3', need: function (a) { return done(a, 'travelcat'); } },
     flora5: { after: 'flora4' }, flora6: { after: 'flora5' },
-    flora7: { after: 'flora6', need: function (a, env) { var t = env.fetch ? env.fetch('pwTotal') : null; return t != null && t >= 500; } },   // 全服瘴气驱逐战击破 500 只（服务器上的数）
+    flora7: { after: 'flora6', need: function (a, env) { var t = env.fetch ? env.fetch('pwTotal') : null; if (!(t != null && t >= 500)) return false; if (a.story && a.story.flora7 && a.story.flora7.at > 0) return true; var me = env.fetch ? env.fetch('pwMe') : null; return Math.max(a.miaK | 0, me | 0) >= MIA_NEED; } },   // 全服瘴气驱逐战击破 500 只（服务器上的数）；2026-10-27 起本账号还要累计击败 10 只瘴气污染精灵（驱逐战里的个人贡献也算）
     mmTrial: { after: 'flora7' }, tea: { after: 'flora1' },
     mingming: { after: 'board', need: function (a) { return QST.litCount(a) >= 10; } },
     tiger: { after: 'board' }, tiger2: { after: 'tiger', need: function (a) { return PVE.bossWon(a, 'tiger', 0); } },

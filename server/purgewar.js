@@ -61,4 +61,5 @@ function hit(user) {
 module.exports = { load: load, store: store, FILE: FILE, hit: hit };
 // 交易里要查全服击破数（剧情「盐碱地之下」的开放条件，js/engine/story.js）
 require('./tx').hook('pwTotal', function () { return load().total || 0; });
+require('./tx').hook('pwMe', function (u) { return (u && load().users[u.name]) | 0; });   // 自己在驱逐战里的击破数（第十一段的个人条件也算这个）
 require('./tx').hook('pw', function (u) { var d = load(); return { total: d.total || 0, me: (d.users && d.users[u.name]) | 0 }; });   // 邮箱投递里程碑奖励（js/engine/award.js）

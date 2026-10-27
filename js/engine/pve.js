@@ -867,6 +867,7 @@ var PVE = (function () {
           }
         });
       }
+      if (o.corrupt && n) a.miaK = (a.miaK || 0) + n;   // 2026-10-27：本账号累计击败的瘴气污染精灵（第十一段要 10 只）
       if (o.corrupt && pwOpen(a) && n) {   // 瘴气驱逐战
         var d = bjDay(env.now); if (!a.pwd || a.pwd.d !== d) a.pwd = { d: d, n: 0 };
         if (a.pwd.n < PW.cap) {

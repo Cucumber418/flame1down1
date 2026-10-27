@@ -1356,7 +1356,8 @@
     flora6: { name: '盐碱地边缘', planet: 'flora', chapter: '第十段 · 瘴气之源', bg: 'fl_salt', d: '一行人决定前往盐碱地，去看看瘴气真正的源头。注意：读完这一段后，芙罗拉星的野外环境会永久改变，野生精灵将无法捕捉。', after: 'flora5' },
     // 2026-10-24：全服瘴气驱逐战击破 500 只后开放；读完后芙罗拉星恢复（瘴气精灵移到「瘴气污染的记录」里），第一章完结
     flora7: { name: '盐碱地之下', planet: 'flora', chapter: '第十一段 · 盐碱地之下', bg: 'fl_salt', d: '芙罗拉星上的大多数精灵依然被瘴气缠着。必须从根源上解决问题——这一次，一行人决定真正踏上盐碱地。', after: 'flora6',
-      need: function () { pwFetch(); return !!(PW.data && PW.data.total >= 500); }, get needText() { return '全服「瘴气驱逐战」击破数达到 500（目前 ' + (PW.data ? PW.data.total : '?') + ' 只）'; } },
+      need: function () { pwFetch(); return !!(PW.data && PW.data.total >= 500) && (miaK() >= 10 || prog('flora7').at > 0); },
+      get needText() { return PW.data && PW.data.total >= 500 ? '在芙罗拉星的丛林或草甸累计击败 10 只被瘴气污染的野生精灵（' + Math.min(10, miaK()) + ' / 10）' : '全服「瘴气驱逐战」击破数达到 500（目前 ' + (PW.data ? PW.data.total : '?') + ' 只）'; } },   // 2026-10-27：加上本账号累计击败 10 只瘴气污染精灵
     mmTrial: { name: '古城防卫部', planet: 'jingchu', dept: '襄阳', chapter: '活动任务 · 明明教官的试炼', side: true, event: true, bg: 'bridge_p', d: '明明教官说，要带大家去一个「好地方」。读完后开放活动「明明教官的试炼」。', after: 'flora7', pos: [42, 60] },   // 2026-10-24：读完即完成任务，送 500 明明代币
     tea: { name: '陆羽茶室', planet: 'jingchu', dept: '天门', chapter: '支线 · 陆羽茶室', side: true, bg: 'tea_p', d: '从芙罗拉星回来后，舰上要给第一支地面小队分配休息舱。读完后开放你自己的「茶室」（家园）。', after: 'flora1', pos: [50, 84] },
     mingming: { name: '古城防卫部', planet: 'jingchu', dept: '襄阳', chapter: '支线 · 明明教官的礼物', side: true, bg: 'bridge_p', d: '古城防卫部的明明教官听说你在黄冈秘鉴里点亮了十类精灵，想见见你。', after: 'board', pos: [48, 82], need: function () { return litCount() >= 10; }, needText: '在黄冈秘鉴中点亮 10 类精灵后开放' },
@@ -3493,7 +3494,8 @@
   function pwDay() { var d = bjDay(); if (!acc.pwd || acc.pwd.d !== d) acc.pwd = { d: d, n: 0 }; return acc.pwd; }
   // 全服击破满 1000 后，每只的经验降到 1/4；每个账号的前 5 次仍按原来的给（不对玩家公布）
   function pwExpNow() { var d = PW.data; return d && d.total >= 1000 && (d.me || 0) >= 5 ? Math.floor(PW.exp / 4) : PW.exp; }
-  function pwOpen() { return prog('flora6').done; }   // 芙罗拉星恢复以后，驱逐战在「瘴气污染的记录」里继续
+  function pwOpen() { return prog('flora6').done; }
+  function miaK() { return Math.max(acc.miaK | 0, (PW.data && PW.data.me) | 0); }   // 本账号累计击败的瘴气污染精灵（驱逐战个人贡献也算）   // 芙罗拉星恢复以后，驱逐战在「瘴气污染的记录」里继续
   function pwOnline() { return !!(window.CLOUD && CLOUD.user && CLOUD.user()); }
   function pwMilestones(upTo) { var L = [10, 50, 100]; for (var m = 150; m <= upTo; m += 50) L.push(m); return L.filter(function (x) { return x <= upTo; }); }
   function pwNext(t) { if (t < 10) return 10; if (t < 50) return 50; if (t < 100) return 100; return (Math.floor(t / 50) + 1) * 50; }
