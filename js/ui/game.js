@@ -3015,25 +3015,8 @@
     var mark = function () { Array.prototype.forEach.call(list.children, function (li, k) { li.querySelector('.lu-no').textContent = k ? '第 ' + (k + 1) + ' 位' : '首发'; li.classList.toggle('lead', !k); }); };
     var order = function () { return Array.prototype.map.call(list.children, function (li) { return li.dataset.k; }); };
     mark();
-    // 拖动排序：按住一张卡，移到哪张卡的位置就插到哪里（鼠标、触屏都可以）
-    var drag = null;
-    list.addEventListener('pointerdown', function (e) {
-      var li = e.target.closest('.lu-card'); if (!li || e.target.closest('button')) return;
-      drag = li; li.classList.add('drag'); try { list.setPointerCapture(e.pointerId); } catch (er) {}
-      e.preventDefault();
-    });
-    list.addEventListener('pointermove', function (e) {
-      if (!drag) return;
-      var best = null, bd = Infinity;
-      Array.prototype.forEach.call(list.children, function (li) { var r = li.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2, dd = (cx - e.clientX) * (cx - e.clientX) + (cy - e.clientY) * (cy - e.clientY); if (dd < bd) { bd = dd; best = li; } });
-      if (!best || best === drag) return;
-      var kids = Array.prototype.slice.call(list.children);
-      if (kids.indexOf(best) > kids.indexOf(drag)) list.insertBefore(drag, best.nextSibling); else list.insertBefore(drag, best);
-      mark();
-    });
-    var end = function () { if (drag) { drag.classList.remove('drag'); drag = null; mark(); } };
-    list.addEventListener('pointerup', end); list.addEventListener('pointercancel', end);
-    list.addEventListener('touchmove', function (e) { if (drag && e.cancelable) e.preventDefault(); }, { passive: false });   // iOS：拖动时不让页面跟着滚
+    // 拖动排序（和精灵背包统一，见 battle-ui.js 的 HSUI.sortable）
+    HSUI.sortable(list, function () { mark(); });
     d.addEventListener('click', function (e) {
       var t = e.target;
       if (t === d || t.closest('[data-lux]')) { ex.chalOrder = order(); d.remove(); return; }

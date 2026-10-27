@@ -211,34 +211,63 @@
   }
   /* 通用拖动排序（2026-10-26）：list 里的子元素（带 data-k）按住拖动换位置，鼠标、触屏都可以；放手后 done(新顺序的 data-k 数组)。
    * 移动超过 6 像素才算拖动，否则当成普通点击 */
+  // 2026-10-27：和精灵背包的拖动统一：拿起的卡片变淡，一张复制的卡片跟着手指/鼠标走，目标位置显示「放到这里」，松手才换位置。
+  // 鼠标按住移动就拖；触屏长按 0.28 秒后拖（没长按就移动 = 正常滚动）；拖到面板上下边缘时自动滚动。同一时间只有一个拖动（SD）
+  var SD = null, sdAuto = 0;
+  function sdItem(list, t) { var it = t && t.closest && t.closest('[data-k]'); if (!it || !list.contains(it)) return null; while (it.parentNode !== list) it = it.parentNode; return it.dataset.k ? it : null; }
+  function sdKids(list) { return Array.prototype.filter.call(list.children, function (c) { return c.dataset.k; }); }
+  function sdScroller(list) { for (var e = list.parentNode; e && e !== document.body; e = e.parentNode) { var oy = getComputedStyle(e).overflowY; if ((oy === 'auto' || oy === 'scroll') && e.scrollHeight > e.clientHeight + 2) return e; } return null; }
+  function sdStart() {
+    var D = SD, r = D.el.getBoundingClientRect(), g = D.el.cloneNode(true);
+    g.classList.add('sort-ghost'); g.classList.remove('lead'); g.style.width = r.width + 'px'; g.style.height = r.height + 'px';
+    D.dx = D.x0 - r.left; D.dy = D.y0 - r.top; D.ghost = g; document.body.appendChild(g);
+    D.el.classList.add('sort-lifted'); D.list.classList.add('sorting'); D.on = true;
+    clearInterval(sdAuto);
+    sdAuto = setInterval(function () {
+      if (!SD || !SD.on) return;
+      var sc = sdScroller(SD.list), top = sc ? sc.getBoundingClientRect().top : 0, bot = sc ? sc.getBoundingClientRect().bottom : window.innerHeight, v = SD.y < top + 60 ? -14 : SD.y > bot - 60 ? 14 : 0;
+      if (v) { if (sc) sc.scrollTop += v; else window.scrollBy(0, v); sdMove(SD.x, SD.y); }
+    }, 30);
+  }
+  function sdMove(x, y) {
+    var D = SD; D.x = x; D.y = y;
+    D.ghost.style.left = (x - D.dx) + 'px'; D.ghost.style.top = (y - D.dy) + 'px';
+    var el = document.elementFromPoint(x, y), t = el && sdItem(D.list, el), L = sdKids(D.list);
+    D.to = t ? L.indexOf(t) : -1;
+    L.forEach(function (c, k) { c.classList.toggle('sort-to', k === D.to && D.to !== D.from); });
+  }
+  function sdEnd(commit) {
+    if (!SD) return; var d = SD; SD = null; clearTimeout(d.timer); clearInterval(sdAuto); if (!d.on) return;
+    d.ghost.remove(); d.el.classList.remove('sort-lifted'); d.list.classList.remove('sorting');
+    var L = sdKids(d.list); L.forEach(function (c) { c.classList.remove('sort-to'); });
+    d.list._justSorted = Date.now();
+    if (commit && d.to >= 0 && d.to !== d.from && L[d.to]) {
+      var keys = L.map(function (c) { return c.dataset.k; }), k = keys.splice(d.from, 1)[0]; keys.splice(d.to, 0, k);
+      var ref = L[d.to]; if (d.to > d.from) d.list.insertBefore(d.el, ref.nextSibling); else d.list.insertBefore(d.el, ref);
+      d.done(keys);
+    }
+  }
+  window.addEventListener('pointermove', function (e) {
+    if (!SD) return;
+    if (!SD.on) {
+      if (Math.abs(e.clientX - SD.x0) + Math.abs(e.clientY - SD.y0) <= 6) return;
+      if (SD.touch) { clearTimeout(SD.timer); SD = null; return; }   // 触屏没长按就移动：当成滚动
+      sdStart();
+    }
+    e.preventDefault(); sdMove(e.clientX, e.clientY);
+  });
+  window.addEventListener('pointerup', function () { sdEnd(true); });
+  window.addEventListener('pointercancel', function () { sdEnd(false); });
+  document.addEventListener('touchmove', function (e) { if (SD && SD.on && e.cancelable) e.preventDefault(); }, { passive: false });
   function makeSortable(list, done) {
     if (!list || list._sortable) return; list._sortable = true;
-    var drag = null, sx = 0, sy = 0, moved = false, ly = 0, auto = 0;
-    // 拖到面板上下边缘时自动滚动（手机上列表比屏幕长，拖不到下面去）（2026-10-27）
-    var scroller = function () { for (var e = list.parentNode; e && e !== document.body; e = e.parentNode) { var oy = getComputedStyle(e).overflowY; if ((oy === 'auto' || oy === 'scroll') && e.scrollHeight > e.clientHeight + 2) return e; } return null; };
-    var edge = function () { if (!drag || !moved) return; var sc = scroller(), top = sc ? sc.getBoundingClientRect().top : 0, bot = sc ? sc.getBoundingClientRect().bottom : window.innerHeight, v = ly < top + 60 ? -14 : ly > bot - 60 ? 14 : 0; if (v) { if (sc) sc.scrollTop += v; else window.scrollBy(0, v); } };
-    list.addEventListener('touchmove', function (e) { if (drag && e.cancelable) e.preventDefault(); }, { passive: false });   // iOS：拖动时不让页面跟着滚
     list.addEventListener('pointerdown', function (e) {
-      var it = e.target.closest('[data-k]'); if (!it || it.parentNode !== list && !list.contains(it)) return;
-      while (it.parentNode !== list) it = it.parentNode;
-      drag = it; sx = e.clientX; sy = e.clientY; moved = false; drag._pid = e.pointerId;   // 真正拖起来之后才捕获指针，免得普通点击被吞掉
+      if (e.button > 0 || SD) return;
+      var it = sdItem(list, e.target); if (!it) return;
+      SD = { list: list, done: done, el: it, from: sdKids(list).indexOf(it), to: -1, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, touch: e.pointerType !== 'mouse', on: false };
+      if (SD.touch) SD.timer = setTimeout(function () { if (SD && !SD.on) { sdStart(); sdMove(SD.x0, SD.y0); } }, 280);
     });
-    list.addEventListener('pointermove', function (e) {
-      if (!drag) return;
-      if (!moved && Math.abs(e.clientX - sx) + Math.abs(e.clientY - sy) < 6) return;
-      if (!moved) { moved = true; drag.classList.add('sort-drag'); try { list.setPointerCapture(drag._pid); } catch (er) {} clearInterval(auto); auto = setInterval(edge, 30); }
-      e.preventDefault(); ly = e.clientY;
-      var best = null, bd = Infinity;
-      Array.prototype.forEach.call(list.children, function (c) { if (!c.dataset.k) return; var r = c.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2, dd = (cx - e.clientX) * (cx - e.clientX) + (cy - e.clientY) * (cy - e.clientY); if (dd < bd) { bd = dd; best = c; } });
-      if (!best || best === drag) return;
-      var kids = Array.prototype.slice.call(list.children);
-      if (kids.indexOf(best) > kids.indexOf(drag)) list.insertBefore(drag, best.nextSibling); else list.insertBefore(drag, best);
-    });
-    var end = function () {
-      clearInterval(auto); if (!drag) return; var was = moved; drag.classList.remove('sort-drag'); drag = null;
-      if (was) { list._justSorted = Date.now(); done(Array.prototype.filter.call(list.children, function (c) { return c.dataset.k; }).map(function (c) { return c.dataset.k; })); }
-    };
-    list.addEventListener('pointerup', end); list.addEventListener('pointercancel', end);
+    list.addEventListener('contextmenu', function (e) { if (SD) e.preventDefault(); });   // 长按不弹系统菜单
     list.addEventListener('click', function (e) { if (list._justSorted && Date.now() - list._justSorted < 300) { e.stopPropagation(); e.preventDefault(); } }, true);   // 拖完松手不触发点击
   }
   window.HSUI = { sortable: makeSortable, itemIcon: itemIcon, big: function (sid, i) { openLightbox(SPMAP[sid], i); }, esc: esc, tchip: tchip, tchips: tchips, atkTip: function (t) { return atkTip(t); } };
