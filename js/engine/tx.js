@@ -41,7 +41,9 @@ var TX = (function () {
     // 三峡能源核心：矿石换能量
     MINE_PRICE: { m_cu: 150, m_fe: 250 }, MINE_CAP: 3000, DRILL_MAX: 80,
     // 明明代币抽奖：10 个抽一次；每天最多解锁 100 个新奖池
-    MM_COST: 10, MM_POOL_DAY: 100
+    MM_COST: 10, MM_POOL_DAY: 100,
+    // 配队（2026-10-27）：最多 10 个，前 3 个免费，第 4 个起用能量解锁（下面是第 4 ~ 10 个的价格）
+    TEAM_FREE: 3, TEAM_MAX: 10, TEAM_PRICE: [5000, 10000, 20000, 30000, 50000, 80000, 120000]
   };
   function spaSlotPrice(extra) { var e = extra || 0; return e >= D.SPA_EXTRA_MAX ? 0 : 3000 * Math.pow(3, e); }
   // 明明代币抽奖的第 n 个奖池：20 个固定奖励（学习力合剂一般是 50 的，每逢 4 的倍数的奖池是 100 的）
@@ -132,6 +134,16 @@ var TX = (function () {
       return no('没有这件商品');
     },
     // 温泉休息室：{ k: 'juice' } 橘子汁；{ k: 'slot' } 栏位 +1；{ k: 'bgm', m: 曲子 } 解锁音乐
+    // 解锁一个新配队（第 4 个起）：acc.teamX = 已经买了几个
+    teamSlot: function (acc) {
+      var x = acc.teamX | 0, p = D.TEAM_PRICE[x];
+      if (!p || D.TEAM_FREE + x >= D.TEAM_MAX) return no('配队已经是最多的了');
+      if (num(acc.energy) < p) return no('能量不足');
+      acc.energy = num(acc.energy) - p; acc.teamX = x + 1;
+      if (!Array.isArray(acc.teams)) acc.teams = [];
+      while (acc.teams.length < D.TEAM_FREE + acc.teamX) acc.teams.push([]);
+      return { ok: true, cost: p, n: D.TEAM_FREE + acc.teamX };
+    },
     spa: function (acc, a, env) {
       var S = spaRec(acc);
       if (a.k === 'juice') {

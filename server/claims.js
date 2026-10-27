@@ -249,10 +249,23 @@ function monStep(u, oldData, newData, info, now) {
   info.sync = ['mons', 'teams', 'next'];   // 改过了：把服务器的版本发回浏览器（悄悄换上，免得下次上传又对不上）
   return o2;
 }
+// 配队数量（2026-10-27）：teamX（用能量买的配队数）只由交易改；配队数不能超过 3 + teamX
+function teamStep(oldData, newData, info) {
+  var A = accOf(oldData), B = accOf(newData); if (!A || !B || !Array.isArray(B.teams)) return newData;
+  var x = A.teamX | 0, cap = Math.max(2, Math.min(10, 3 + x)), ch = false;
+  if ((B.teamX | 0) !== x) { if (x) B.teamX = x; else delete B.teamX; ch = true; }
+  if (B.teams.length > cap) { B.teams = B.teams.slice(0, cap); ch = true; }
+  if (!(B.active >= 0 && B.active < B.teams.length)) { B.active = 0; ch = true; }
+  if (!ch) return newData;
+  var o2 = {}; for (var k in newData) o2[k] = newData[k]; o2['hs-account-v1'] = JSON.stringify(B);
+  info.sync = (info.sync || []).concat(['teams', 'teamX', 'active']);
+  return o2;
+}
 function onUpload(u, list, oldData, newData, info) {
   var now = Date.now(), ok = blank(), bad = blank(), notes = [];
   if (MODE === 'enforce' && (info.claims || now >= GRACE_UNTIL)) newData = keyFix(oldData, newData);
   newData = monStep(u, oldData, newData, info, now);
+  try { newData = teamStep(oldData, newData, info); } catch (e) { console.error('配队核对出错', e && e.stack); }
   if (!u.claimed || typeof u.claimed !== 'object') u.claimed = {};
   if (!Array.isArray(u.cids)) u.cids = [];
   var seen = {}; u.cids.forEach(function (x) { seen[x] = 1; });
