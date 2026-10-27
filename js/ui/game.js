@@ -291,10 +291,8 @@
     if (page === 'arena' && !arenaOpen()) page = 'bag';
     if (page === 'dex' && !dexOpen()) page = 'bag';
     if (page === 'shop') page = 'explore';
-    [].forEach.call(document.querySelectorAll('#mainnav .nav'), function (b) {
-      var on = b.dataset.page === page || (page === 'arena' && b.dataset.page === 'explore');   // 竞技对战在太空竞技场里
-      b.classList.toggle('on', on); b.setAttribute('aria-selected', on);
-    });
+    if (page === 'holo' && typeof ex !== 'undefined' && ex && mmOpen()) { page = 'explore'; ex.view = 'mmArena'; ex.mmFrom = null; }   // 2026-10-27：全息作战 = 直接进明明教官的试炼（全息作战场地）
+    navSync();
     syncBattle();
     deliverMail(); checkRankRewards(); daily(); homeSettle();
     setTimeout(newsCheck, 1500);
@@ -312,6 +310,14 @@
     if (typeof bgmScene === 'function') bgmScene();
   }
   function renderRes() { $('res').innerHTML = '<span class="res-chip" title="经验背包里的累积经验，可分配给精灵"><img class="res-ic" src="images/items/exp.png" alt="">经验 <b>' + fmt(acc.exp) + '</b></span><span class="res-chip en" title="能量（货币）"><img class="res-ic" src="images/items/energy.png" alt="">能量 <b>' + fmt(acc.energy) + '</b></span>'; setTimeout(renderQBadge, 0); }
+  // 导航高亮：明明教官的试炼（全息作战场地、代币抽奖）不管从哪里进，都亮「全息作战」；竞技对战（在太空竞技场里）亮「星际探索」
+  function navSync() {
+    var holo = page === 'explore' && typeof ex !== 'undefined' && (ex.view === 'mmArena' || ex.view === 'mmGacha');
+    [].forEach.call(document.querySelectorAll('#mainnav .nav'), function (b) {
+      var pg = b.dataset.page, on = holo ? pg === 'holo' : pg === page || (page === 'arena' && pg === 'explore');
+      b.classList.toggle('on', on); b.setAttribute('aria-selected', on);
+    });
+  }
   function go(p) { if (typeof SPA !== 'undefined' && SPA.on && page === 'explore' && ex.view === 'spa' && p !== 'explore') { spaLeaveAsk(function () { go(p); }); return; }
     if (ex.mode === 'replay' && p !== 'explore') { stopTimers(); ex.mode = null; ex.view = 'sites'; } page = p; ui.pick = -1; savePage(); renderTop(); window.scrollTo(0, 0); }
   $('mainnav').addEventListener('click', function (e) {
@@ -321,6 +327,7 @@
       else toast('读完星际探索 · 荆楚号 · 孝感大厅的剧情后，「竞技对战」才会开放。', prog('board').done ? '前往孝感大厅' : '', '孝感');
       return;
     }
+    if (b.dataset.page === 'explore' && (ex.view === 'mmArena' || ex.view === 'mmGacha')) { ex.view = 'sites'; ex.planet = 'station'; }   // 在全息作战里点「星际探索」：回到空间站
     go(b.dataset.page);
   });
   function toast(msg, act, area) {
@@ -1565,6 +1572,7 @@
   function carry(i, key, def) { var arr = SCRIPT[ex.site], p = prog(ex.site), v = def; for (var k = 0; k <= i && k < arr.length; k++) if (arr[k][key] !== undefined && !(arr[k].only && arr[k].only !== p.ch)) v = arr[k][key]; return v; }
 
   function renderExplore() {
+    navSync();
     if (ex.mode === 'intro') return;
     if (typeof SPA !== 'undefined' && SPA.on && ex.view !== 'spa') { var pend = Object.assign({}, ex); ex.view = 'spa'; ex.area = '咸宁'; renderSpa(); spaLeaveAsk(function () { Object.assign(ex, pend); renderExplore(); }); return; }   // 正在泡温泉：离开前先确认
     stopTimers(); setTimeout(bgmScene, 0);
@@ -4977,7 +4985,7 @@
           : '<p class="hint">' + mmOpenText(i) + '</p>') + '</div></article>';
     };
     var finOpen = mmStageOpen(5);
-    $('pg-explore').innerHTML = exHead('明明教官在空间站安置的全息作战场地。每天开放一个属性的关卡，打败对方的 3 只精灵就能获得明明代币。') +
+    $('pg-explore').innerHTML = holoHead('明明教官在空间站安置的全息作战场地。每天开放一个属性的关卡，打败对方的 3 只精灵就能获得明明代币。') +
       '<div class="crumb"><button type="button" class="btn ghost" id="mm-back">‹ 返回' + (ex.mmFrom === 'holo' ? '全息作战' : '空间站') + '</button><b>空间站 · 全息作战场地</b><span class="hint">限时活动 · ' + mmLeftText() + '</span></div>' +
       '<div class="mm-bar"><span>明明代币 <b>' + fmt(tok) + '</b></span><button type="button" class="btn primary" data-mmgacha="1">去抽奖</button></div>' +
       '<div class="mm-grid">' + MM.order.map(stage).join('') +
@@ -5010,7 +5018,7 @@
   }
   function renderMmGacha() {
     var G = mmG(), P = mmPool(G.n), tok = acc.items.mmTok || 0;
-    $('pg-explore').innerHTML = exHead('用明明代币抽奖：每个奖池有 20 个固定奖励，抽完一个奖池就会进入下一个。每逢 4 的倍数的奖池，50学习力合剂换成 100学习力合剂。从第 5 个奖池起，每逢 5 的倍数的奖池都有 50 个「雷明之眼」；第 10、30、50、70……个奖池还有「雷明灯的精元」（孵出的雷明灯 10% 是异色）。') +
+    $('pg-explore').innerHTML = holoHead('用明明代币抽奖：每个奖池有 20 个固定奖励，抽完一个奖池就会进入下一个。每逢 4 的倍数的奖池，50学习力合剂换成 100学习力合剂。从第 5 个奖池起，每逢 5 的倍数的奖池都有 50 个「雷明之眼」；第 10、30、50、70……个奖池还有「雷明灯的精元」（孵出的雷明灯 10% 是异色）。') +
       '<div class="crumb"><button type="button" class="btn ghost" id="mmg-back">‹ 返回' + (ex.mmFrom === 'log' ? '航行日志' : ex.mmFrom === 'holo' ? '全息作战' : '全息作战场地') + '</button><b>明明代币抽奖 · 第 ' + G.n + ' 个奖池</b></div>' +
       '<div class="mm-bar"><span>明明代币 <b>' + fmt(tok) + '</b></span><span>剩余 <b>' + G.left.length + '</b> / 20</span><span class="hint">今天已解锁 ' + G.opened + ' / ' + MM_POOL_DAY + ' 个新奖池</span>' +
       '<button type="button" class="btn" data-mmdraw="1"' + (tok >= 10 ? '' : ' disabled') + '>抽一次（10）</button><button type="button" class="btn primary" data-mmdraw="10"' + (tok >= 100 ? '' : ' disabled') + '>十连抽（100）</button></div>' +
@@ -5028,17 +5036,15 @@
     });
   }
   /* ---------- 全息作战（2026-10-27）：原来「竞技对战」那一栏，改成大型活动展厅。竞技对战搬到星际探索 · 太空竞技场 ---------- */
-  function renderHolo() {
+  function renderHolo() {   // 活动没开放（还没解锁 / 已结束）时才会停在这一页；开放时直接进全息作战场地
     var el = $('pg-holo'); if (!el || !acc) return;
-    var live = mmLive(), f7 = prog('flora7').done, open = f7 && prog('mmTrial').done;
-    var mm = '<article class="holo-card' + (live ? ' live' : ' ended') + '"><span class="tape l"></span><span class="tape r"></span><span class="chip log-tag">' + (live ? '进行中' : Date.now() < MM.start ? '即将开始' : '已结束') + '</span>' +
+    var live = mmLive(), f7 = prog('flora7').done;
+    el.innerHTML = '<div class="page-head holo-head"><h2 class="sec">全息作战 · 明明教官的试炼</h2></div>' +
+      '<article class="holo-card' + (live ? ' live' : ' ended') + '"><span class="tape l"></span><span class="tape r"></span><span class="chip log-tag">' + (live ? '进行中' : Date.now() < MM.start ? '即将开始' : '已结束') + '</span>' +
       '<div class="holo-art"><img src="' + (CHARS.mm || '') + '" alt=""></div><div class="holo-txt"><h3>明明教官的试炼</h3>' +
       '<p>明明教官在空间站安置了全息作战场地。每天开放一个属性的关卡（水 → 火 → 草 → 电 → 冰），最后还有「明明的最终试炼」。赢取明明代币，参加抽奖！</p>' +
-      (live ? '<p class="hint">活动' + mmLeftText() + (open ? ' · 明明代币 ' + fmt(acc.items.mmTok || 0) : f7 ? ' · 先完成古城防卫部的活动任务「明明教官的试炼」' : ' · 读完主线第十一段后参加') + '</p>' : '<p class="hint">活动已经结束了，下一次大型活动敬请期待。</p>') +
-      '<div class="soc-foot">' + (live && open ? '<button type="button" class="btn" data-mmlog="gacha">代币抽奖</button><button type="button" class="btn primary" data-mmlog="arena">进入全息作战场地</button>' : live && f7 ? '<button type="button" class="btn primary" data-mmlog="task">去古城防卫部</button>' : (acc.mm ? '<button type="button" class="btn" data-mmlog="gacha">代币抽奖</button>' : '')) + '</div></div></article>';
-    el.innerHTML = '<div class="page-head holo-head"><h2 class="sec">全息作战 · 大型活动展厅</h2><p class="hint">全服大型活动都在这里。竞技对战（沙盒调试、平衡排位、精灵大乱斗）搬到了星际探索 · 太空竞技场。</p></div>' +
-      '<div class="holo-list">' + mm + '<article class="holo-card soon"><span class="tape r"></span><div class="holo-txt"><h3>更多大型活动</h3><p class="hint">敬请期待。</p></div></article></div>' +
-      '<p class="holo-foot"><button type="button" class="btn" data-gosarena="1">去太空竞技场（争霸赛 · 竞技对战）</button></p>';
+      (live ? '<p class="hint">活动' + mmLeftText() + ' · ' + (f7 ? '先完成古城防卫部的活动任务「明明教官的试炼」' : '读完主线第十一段后参加') + '</p>' : '<p class="hint">活动已经结束了，下一次大型活动敬请期待。</p>') +
+      '<div class="soc-foot">' + (live && f7 ? '<button type="button" class="btn primary" data-mmlog="task">去古城防卫部</button>' : (acc.mm ? '<button type="button" class="btn" data-mmlog="gacha">代币抽奖</button>' : '')) + '</div></div></article>';
   }
   $('pg-holo').addEventListener('click', function (e) {
     var ml = e.target.closest('[data-mmlog]'); if (ml) { var mk = ml.dataset.mmlog; if (mk === 'task') { ex.planet = 'jingchu'; go('explore'); teleport('襄阳'); return; } ex.mmFrom = 'holo'; ex.view = mk === 'gacha' ? 'mmGacha' : 'mmArena'; go('explore'); renderExplore(); return; }
@@ -5879,6 +5885,7 @@
   var QLAB = { lock: '未解锁', todo: '可进行', doing: '进行中', claim: '可领取', done: '已完成' };
   function qList(tab) { return tab === 'main' ? MAIN_Q : tab === 'side' ? SIDE_Q : tab === 'event' ? EVENT_Q.filter(function (id) { return id !== 'mmTrial' || mmLive() || prog(id).done; }) : tab === 'daily' ? [] : WQ.map(function (w) { return w.id; }); }
   function qTodo(tab) { if (tab === 'daily') { var D = daily(); return D ? D.list.filter(function (t) { return !t.c; }).length : 0; } return qList(tab).filter(function (id) { var st = qState(id); return st === 'todo' || st === 'doing' || st === 'claim'; }).length; }
+  function holoHead(hint) { return '<div class="page-head ex-head holo-head"><h2 class="sec">全息作战 · 明明教官的试炼</h2><p class="hint">' + hint + '</p></div>'; }   // 明明教官的试炼不管从哪里进，标题都是「全息作战」
   function exHead(hint) {
     return '<div class="page-head ex-head"><h2 class="sec">星际探索</h2><p class="hint">' + hint + '</p></div>';
   }
