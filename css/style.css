@@ -2796,3 +2796,4 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .rw-mon { background: #f2f8ff; box-shadow: 2px 2px 0 var(--blue); }
 .rw-num { display: block; font-size: 20px; color: var(--blue); font-variant-numeric: tabular-nums; margin-top: 2px; }
 .rw-pool-n.rw-num { font-size: 24px; }
+.gx-rows + .boss-row { margin-top: 14px; }

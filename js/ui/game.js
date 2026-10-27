@@ -1628,17 +1628,16 @@
     var html = exHead(ex.view === 'planets' ? '选择要前往的星球。' : Pp && Pp.ship ? '点击舰上的区域，即可传送过去。' : '选择要前往的地点。');
     if (ex.view === 'planets') {
       var nOpen = Object.keys(BOSSES).filter(bossOpen).length;
-      html += arcBarHTML();
-      html += '<div class="boss-row"><button type="button" class="weekly-card hub-card" data-bosshub="1"><span class="tape l"></span><span class="hub-ic">' + Object.keys(BOSSES).map(function (k) { return '<img src="' + SPRITES[BOSSES[k].sid] + '" alt="">'; }).join('') + '</span><span class="wk-txt"><span class="chip boss-diff">BOSS挑战</span><b>BOSS一览</b>' +
+      var bossRow = '<div class="boss-row"><button type="button" class="weekly-card hub-card" data-bosshub="1"><span class="tape l"></span><span class="hub-ic">' + Object.keys(BOSSES).map(function (k) { return '<img src="' + SPRITES[BOSSES[k].sid] + '" alt="">'; }).join('') + '</span><span class="wk-txt"><span class="chip boss-diff">BOSS挑战</span><b>BOSS一览</b>' +
         '<small>' + Object.keys(BOSSES).map(function (k) { return BOSSES[k].name; }).join('、') + ' · 已开放 ' + nOpen + ' / ' + Object.keys(BOSSES).length + '</small></span><span class="wk-pm">›</span></button>';
       var wkIcons = WEEKLIES.filter(wkOpen).map(function (W) { return BOSSES[W.boss].sid; }).filter(function (x, i, a) { return a.indexOf(x) === i; }).concat(EWK.types.map(function (T) { return ewkSid(T.t); }).filter(Boolean));
-      html += weeklyOpen() ? '<button type="button" class="weekly-card hub-card wk-hub" data-wkhub="1"><span class="tape l"></span><span class="hub-ic">' + wkIcons.slice(0, 3).map(function (sid) { return '<img src="' + SPRITES[sid] + '" alt="">'; }).join('') + '</span><span class="wk-txt"><span class="chip boss-diff d2">每周挑战</span><b>每周挑战</b>' +
+      bossRow += weeklyOpen() ? '<button type="button" class="weekly-card hub-card wk-hub" data-wkhub="1"><span class="tape l"></span><span class="hub-ic">' + wkIcons.slice(0, 3).map(function (sid) { return '<img src="' + SPRITES[sid] + '" alt="">'; }).join('') + '</span><span class="wk-txt"><span class="chip boss-diff d2">每周挑战</span><b>每周挑战</b>' +
         '<small>' + wkIcons.length + ' 个BOSS · 获胜消耗 1 枚挑战许可</small></span><span class="wk-pm"><b>' + permits() + '</b> / ' + PERMIT.max + '<small>挑战许可</small></span></button>'
         : '<div class="weekly-card hub-card wk-hub locked"><span class="tape l"></span><span class="hub-ic">🔒</span><span class="wk-txt"><span class="chip boss-diff">每周挑战</span><b>每周挑战</b><small>击败困难难度的泰戈尔或荒芜后开放</small></span></div>';
-      html += '</div>';
-      // 第一排：荆楚号、空间站；第二排：马亚尔星系（星系图上点星球进入）；第三排：地球
-      html += '<div class="gx-rows"><div class="gx-row three">' + planetCard(planetOf('jingchu')) + planetCard(planetOf('station')) + planetCard(planetOf('sarena')) + '</div>' + mayarMap() +
-        '<div class="gx-row">' + planetCard(planetOf('earth')) + '</div></div>';
+      bossRow += '</div>';
+      // 2026-10-27 排列：马亚尔星系 → 荆楚号 / 空间站 / 太空竞技场 → BOSS挑战 / 每周挑战 → 剧情回顾 → 地球
+      html += '<div class="gx-rows">' + mayarMap() + '<div class="gx-row three">' + planetCard(planetOf('jingchu')) + planetCard(planetOf('station')) + planetCard(planetOf('sarena')) + '</div></div>' +
+        bossRow + arcBarHTML() + '<div class="gx-rows"><div class="gx-row">' + planetCard(planetOf('earth')) + '</div></div>';
     } else {
       var P = PLANETS.filter(function (p) { return p.id === ex.planet; })[0];
       html += '<div class="crumb"><button type="button" class="btn ghost" id="ex-back">‹ ' + (P.inStation ? '返回空间站' : '返回星图') + '</button><b>' + (P.inStation ? '空间站 · ' : MAYAR[P.id] ? '马亚尔星系 · ' : '') + P.name + '</b></div>';
