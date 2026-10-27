@@ -2791,3 +2791,8 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .rw-pool img { width: 48px; height: 48px; object-fit: contain; image-rendering: pixelated; justify-self: center; }
 .rw-pool-n { display: block; font-size: 24px; color: var(--blue); font-variant-numeric: tabular-nums; }
 .rw-pool small { color: var(--pencil); font-size: 12px; }
+
+/* 出战精灵的经验也用同样的样式（2026-10-27） */
+.rw-mon { background: #f2f8ff; box-shadow: 2px 2px 0 var(--blue); }
+.rw-num { display: block; font-size: 20px; color: var(--blue); font-variant-numeric: tabular-nums; margin-top: 2px; }
+.rw-pool-n.rw-num { font-size: 24px; }

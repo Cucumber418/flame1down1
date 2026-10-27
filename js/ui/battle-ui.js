@@ -165,7 +165,7 @@
   }
   function itemIcon(k) {
     // 2026-10-25：活力花卉、药草、hp 药水、pp 药水换成像素小图；药水右下角的小标写着回复多少
-    var PX = { exp: 'exp', energy: 'energy', c_flower: 'flower', c_herb: 'herb', pot100: ['hp_potion', '100'], pot200: ['hp_potion', '200'], pp5: ['pp_potion', '5'], pp10: ['pp_potion', '10'], pp15: ['pp_potion', '15'], pp20: ['pp_potion', '20'], ev50: ['ev_potion', '50'], evAny: ['ev_potion', '100'] }[k];
+    var PX = { exp: 'exp', energy: 'energy', c_flower: 'flower', c_herb: 'herb', pot100: ['hp_potion', '100'], pot200: ['hp_potion', '200'], pp5: ['pp_potion', '5'], pp10: ['pp_potion', '10'], pp15: ['pp_potion', '15'], pp20: ['pp_potion', '20'], m_psac: 'poison_sac', antidote: 'antidote', ev50: ['ev_potion', '50'], evAny: ['ev_potion', '100'] }[k];
     if (k === 'g_core') return '<img class="it-ic" src="images/items/saint_quartz.webp" alt="">';   // 圣晶石（原星核）
     if (PX) { var f = typeof PX === 'string' ? PX : PX[0], tag = typeof PX === 'string' ? '' : PX[1]; return tag ? '<span class="it-ic it-tagged"><img class="it-px" src="images/items/' + f + '.png" alt=""><b class="it-tag' + (f === 'pp_potion' ? ' pp' : f === 'ev_potion' ? ' ev' : '') + '">' + tag + '</b></span>' : '<img class="it-ic it-px" src="images/items/' + f + '.png" alt="">'; }
     if (k === 'c_bowl') return '<svg class="it-ic" viewBox="0 0 64 64" aria-hidden="true"><g stroke="#23222b" stroke-width="2.5" stroke-linejoin="round">' +
@@ -1099,7 +1099,7 @@
     $('tab-items').hidden = !its;
     if (!its && tab === 'items') showTab('moves');
     if (its) $('igrid').innerHTML = ITEM_ORDER.map(function (k) {
-      var it = ITEMS[k], n = its[k] || 0, cap = !!it.cap, dis = lock || needMe || n <= 0 || (cap && (!S.wild || S.wild.noCatch)) || (it.heal && me.hp >= me.maxhp) || (it.pp && ppFull(me));
+      var it = ITEMS[k], n = its[k] || 0, cap = !!it.cap, dis = lock || needMe || n <= 0 || (cap && (!S.wild || S.wild.noCatch)) || (it.heal && me.hp >= me.maxhp) || (it.cure && !(me.st[it.cure] > 0)) || (it.pp && ppFull(me));
       var rate = cap && S.wild && S.wild.noCatch ? '<span class="rate">被瘴气污染，无法捕捉</span>' : cap && S.wild && n > 0 ? '<span class="rate">当前成功率约 ' + Math.round(catchChance(S, k) * 100) + '%</span>' : cap && !S.wild ? '<span class="rate">只能对野生精灵使用</span>' : '';
       return '<button type="button" class="tm it" data-it="' + k + '"' + (dis ? ' disabled' : '') + ' title="' + esc(it.d) + '">' + itemIcon(k) +
         '<span class="it-t"><b>' + it.name + '</b><span class="cnt">持有 ' + n + '</span>' + rate + '</span></button>';

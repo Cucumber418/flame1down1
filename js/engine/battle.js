@@ -164,10 +164,10 @@ function aliveIdx(S, i) { var r = []; S.sides[i].team.forEach(function (m, k) { 
 
 /* ---------- 快照：给界面逐帧播放 ---------- */
 var ST_DESC = {
-  害怕: '无法行动', 石化: '无法行动', 睡眠: '无法行动，受到攻击伤害时会醒来', 麻痹: '无法行动', 冰冻: '无法行动',
-  疲惫: '无法行动', 寄生: '每回合结束损失1/10最大体力，被对方吸走（草系精灵免疫）', 溺水: '每回合结束损失1/8最大体力；攻击造成的伤害变为30%',
-  流血: '每回合结束损失60点体力（机械系免疫）', 中毒: '每回合结束损失1/16最大体力×层数；可无限叠加，叠加时回合数取较长的一方', 烧伤: '每回合结束损失1/8最大体力',
-  失明: '攻击时有50%概率落空', 冻伤: '每回合结束损失1/8最大体力'
+  害怕: '无法行动', 石化: '无法行动；被暴击时这次暴击伤害翻倍，并解除石化', 睡眠: '无法行动，受到攻击伤害时会醒来', 麻痹: '无法行动', 冰冻: '无法行动（冰系精灵免疫）',
+  疲惫: '无法行动', 寄生: '每回合结束损失1/10最大体力，被对方吸走（草系精灵免疫）', 溺水: '每回合结束损失1/10最大体力；攻击造成的伤害变为30%（水系精灵免疫）',
+  流血: '每回合结束损失60点体力（机械系免疫）', 中毒: '每回合结束损失1/16最大体力×层数；可无限叠加，叠加时回合数取较长的一方', 烧伤: '每回合结束损失1/8最大体力（火系精灵免疫）',
+  失明: '攻击时有50%概率落空', 冻伤: '每回合结束损失1/8最大体力（冰系精灵免疫）'
 };
 var TM_DESC = {
   odoAtk: '全弹搭载：造成的伤害提升25%', odoDef: '强效外壳：受到的伤害减少20%',
@@ -470,10 +470,14 @@ function changeStages(S, evs, i, obj, src) {
 }
 var CONTROL = { 害怕: 1, 石化: 1, 睡眠: 1, 麻痹: 1, 冰冻: 1, 疲惫: 1 };
 var CANT_ACT = { 害怕: '害怕得无法行动', 石化: '被石化了，无法行动', 睡眠: '正在睡觉', 麻痹: '身体麻痹，无法行动', 冰冻: '被冻住了，无法行动', 疲惫: '疲惫得无法行动' };
+// 石化被暴击打碎（2026-10-27）
+function petriBreak(S, evs, j) { var t = act(S, j); if (t.st['石化'] > 0) { t.st['石化'] = 0; E(S, evs, 'stage', { side: j }); log(S, evs, nm(t) + '身上的石化被打碎了', 'fxl'); } }
+// 属性免疫的异常状态（2026-10-27）：草系免疫寄生，火系免疫烧伤，水系免疫溺水，冰系免疫冻伤和冰冻
+var ST_IMMUNE = { 寄生: '草', 烧伤: '火', 溺水: '水', 冻伤: '冰', 冰冻: '冰' };
 function addStatus(S, evs, j, k, turns, src, noReflect, refresh) {
   var t = act(S, j); if (t.fainted) return;
   if (t.boss && (t.boss.noStatus || t.boss.immortal)) { RV(t, 'noStatus'); RV(t, 'immortal'); log(S, evs, nm(t) + '免疫异常状态，「' + k + '」没有效果'); return; }
-  if (k === '寄生' && typesOf(t).indexOf('草') >= 0) { log(S, evs, nm(t) + '是草系精灵，不会被寄生'); return; }
+  if (ST_IMMUNE[k] && typesOf(t).indexOf(ST_IMMUNE[k]) >= 0) { log(S, evs, nm(t) + '是' + ST_IMMUNE[k] + '系精灵，不会' + (k === '寄生' ? '被寄生' : k === '冰冻' ? '被冰冻' : '陷入' + k)); return; }
   if (t.tm.reflect > 0) {
     if (!noReflect && src != null && !act(S, src).fainted) {
       log(S, evs, nm(t) + '的风王结界把「' + k + '」反弹了回去！', 'fxl');
@@ -553,6 +557,7 @@ function calcDamage(me, foe, mv, firstMover, est) {
     else if (me.tm.crit2 > 0) crit = true;
     else crit = RNG() < cr;
     if (crit) mod *= 1.5;
+    if (crit && foe.st['石化'] > 0) mod *= 2;   // 2026-10-27：石化中被暴击，这次暴击伤害翻倍（之后解除石化）
     mod *= (217 + Math.floor(RNG() * 39)) / 255;
   }
   if (ab === '龙啸' && foe.hp < me.hp) mod *= 1.15;
@@ -601,7 +606,7 @@ function calcDamage(me, foe, mv, firstMover, est) {
   if (foe.boss && foe.boss.armor) { mod *= 0.8; if (!est) RV(foe, 'armor'); }   // 先驱之塔「厚甲」   // 先驱之塔「狂暴」
   if (me.boss && me.boss.reaper && !est) RV(me, 'reaper');
   if (me.boss && me.boss.reaper) mod *= 1.25 + 0.02 * Math.max(0, Math.floor((1 - foe.hp / foe.maxhp) * 100));   // 「死神」   // 叶子喵剧情限定特性「净化光芒」：对沾染瘴气的目标伤害 +100%
-  return { dmg: Math.max(1, Math.floor(base * mod)), crit: crit, eff: e };
+  return { dmg: Math.max(1, Math.floor(base * mod)), crit: crit, eff: e, petri: crit && !est && foe.st['石化'] > 0 };
 }
 function hitChance(me, foe, mv) {
   if (mv.always) return 1;
@@ -679,9 +684,10 @@ var ITEMS = {
   pp5: { name: '5PP药水', pp: 5, d: '为出战中的精灵的每个技能各恢复 5 点 PP。（已停止合成，手里有的照样能用）' },
   pp10: { name: '10PP药水', pp: 10, d: '为出战中的精灵的每个技能各恢复 10 点 PP。在黄石 · 冶炼坊用活力花卉合成。' },
   pp20: { name: '20PP药水', pp: 20, d: '为出战中的精灵的每个技能各恢复 20 点 PP。在黄石 · 冶炼坊用活力花卉合成。' },   // 2026-10-25：PP 药水只合成 10PP、20PP
-  pp15: { name: '15PP药水', pp: 15, d: '为出战中的精灵的每个技能各恢复 15 点 PP。（已停止合成，手里有的照样能用）' }
+  pp15: { name: '15PP药水', pp: 15, d: '为出战中的精灵的每个技能各恢复 15 点 PP。（已停止合成，手里有的照样能用）' },
+  antidote: { name: '解毒药剂', cure: '中毒', d: '解除出战中的精灵身上全部的中毒状态（不管叠了几层）。在黄石 · 冶炼坊用 1 个蘑菇毒囊和 5 个药草合成。' }   // 2026-10-27
 };
-var ITEM_ORDER = ['cap1', 'cap2', 'cap3', 'pot100', 'pot200', 'pp10', 'pp20', 'pp5', 'pp15'];
+var ITEM_ORDER = ['cap1', 'cap2', 'cap3', 'pot100', 'pot200', 'pp10', 'pp20', 'pp5', 'pp15', 'antidote'];
 function ppFull(m) { return !m || m.moves.every(function (x) { return x.pp >= x.max; }); }
 function hasStatus(m) { for (var k in m.st) if (m.st[k] > 0 && ST_DESC[k]) return true; return false; }
 // 捕捉成功率 = 精灵捕捉率 × 装置倍率 × (1 − 剩余体力比例 × 0.5) × (有异常状态 ×1.25)
@@ -697,6 +703,12 @@ function useItem(S, evs, i, key) {
     log(S, evs, '你使用了「' + it.name + '」', 'fxl');
     var got = 0; m.moves.forEach(function (x) { var add = Math.min(it.pp, x.max - x.pp); if (add > 0) { x.pp += add; got += add; } });
     if (got) log(S, evs, nm(m) + '的技能一共恢复了 ' + got + ' 点 PP', 'good'); else log(S, evs, nm(m) + '的 PP 已经是满的了', 'dmg');
+    return;
+  }
+  if (it.cure) {   // 解毒药剂：解除全部中毒
+    log(S, evs, '你使用了「' + it.name + '」', 'fxl');
+    if (m.st[it.cure] > 0) { m.st[it.cure] = 0; if (it.cure === '中毒') m.fx.poison = 0; E(S, evs, 'stage', { side: i }); log(S, evs, nm(m) + '的' + it.cure + '状态解除了', 'good'); }
+    else log(S, evs, nm(m) + '没有' + it.cure + '，药剂没起作用', 'dmg');
     return;
   }
   if (it.heal) {
@@ -833,7 +845,9 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
       lastEff = res.eff; n++; raw += res.dmg;
       if (mv.custom === 'burnExtend' && foe.st['烧伤'] > 0 && foe.hp > res.dmg) { foe.st['烧伤']++; burnX = (burnX || 0) + 1; }   // 烈焰风暴：每次命中延长 1 回合烧伤
       if (res.crit) log(S, evs, '致命一击！', 'crit');
+      if (res.petri) log(S, evs, '石化中被暴击，伤害翻倍！', 'crit');
       S.lastShown = null; dmgAdd(applyDamage(S, evs, j, res.dmg, i, { crit: res.crit, eff: res.eff, noFaint: true }));
+      if (res.petri) petriBreak(S, evs, j);
       if (res.crit && foe.hp > 0 && !foe.fainted) changeStages(S, evs, j, mv.cat === '物攻' ? { def: -1 } : { spd: -1 }, i);   // 2026-10-20：暴击降低对应防御 1 级
       if (me.fainted) break;
     }
@@ -1179,7 +1193,9 @@ function bombTick(S, evs) {
     if (hitBlocked(t, b.mv.type)) { log(S, evs, nm(t) + '毫发无伤！', 'bad'); return; }
     var res = calcDamage(b.mon, t, b.mv, false, false);
     if (res.crit) log(S, evs, '致命一击！', 'crit');
+    if (res.petri) log(S, evs, '石化中被暴击，伤害翻倍！', 'crit');
     S.lastShown = null; var dmg = applyDamage(S, evs, j, res.dmg, b.from, { crit: res.crit, eff: res.eff, noFaint: true });
+    if (res.petri) petriBreak(S, evs, j);
     if (res.crit && t.hp > 0 && !t.fainted) changeStages(S, evs, j, b.mv.cat === '物攻' ? { def: -1 } : { spd: -1 }, b.from);
     log(S, evs, '对' + nm(t) + '造成 ' + (S.lastShown != null ? S.lastShown : dmg) + ' 点伤害', 'dmg'); S.lastShown = null;
     if (b.mv.bombClear && t.hp > 0) {
@@ -1467,7 +1483,7 @@ function endOfTurn(S, evs) {
     var o = act(S, 1 - i);
     var e8 = Math.max(1, Math.floor(m.maxhp / 8)), e10 = Math.max(1, Math.floor(m.maxhp / 10));
     if (m.st['寄生'] > 0) { var got = loseHp(S, evs, i, e10, nm(m) + '被寄生之种吸取了体力'); if (!o.fainted) heal(S, evs, 1 - i, got); }
-    if (!m.fainted && m.st['溺水'] > 0) loseHp(S, evs, i, e8, nm(m) + '因溺水受到伤害');
+    if (!m.fainted && m.st['溺水'] > 0) loseHp(S, evs, i, e10, nm(m) + '因溺水受到伤害');   // 2026-10-27：1/8 → 1/10
     if (!m.fainted && ability(m) === '脚伤') m.st['流血'] = 99;   // 第十一段 · 叶子喵的脚伤：永久流血，解不掉
     if (!m.fainted && m.st['流血'] > 0) loseHp(S, evs, i, 60, nm(m) + '因流血受到伤害');
     if (!m.fainted && m.st['中毒'] > 0) { var pz = m.fx.poison || 1; loseHp(S, evs, i, Math.max(1, Math.floor(m.maxhp * pz / 16)), nm(m) + '因中毒受到伤害' + (pz > 1 ? '（' + pz + ' 层）' : '')); }

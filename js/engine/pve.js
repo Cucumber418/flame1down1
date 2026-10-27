@@ -900,6 +900,7 @@ var PVE = (function () {
       }
       if (o.travel && n) { var lf = env.rand() < TRAVEL.leaf; a.exp = (a.exp || 0) + TRAVEL.exp; if (lf) ACC.addItems(a, { m_lcleaf: 1 }); rep.trav = { exp: TRAVEL.exp, leaf: lf }; }
       if (o.sid === 'hephaestus' && n) { var hn = 0; downs.forEach(function () { hn += hornDrop(env.rand); }); ACC.addItems(a, { m_hfhorn: hn }); rep.horn = hn; }
+      if (o.sid === 'mush' && n) { var ps = 0; downs.forEach(function () { if (env.rand() < 0.1) ps++; }); if (ps) { ACC.addItems(a, { m_psac: ps }); rep.psac = ps; } }   // 2026-10-27：玛西一族 10% 掉落蘑菇毒囊
       if (o.sid === 'hauris' && n) { var hd = 0; downs.forEach(function () { hd += 50 + Math.floor(env.rand() * 21); }); ACC.addItems(a, { hrDisk: hd }); rep.disk = hd; }
       if (o.bait && (B.res === 'caught' || n)) { a.riceBowl = null; rep.bowl = true; }
       if (o.flora && n) { var seeds = 0; downs.forEach(function () { if (env.rand() < RICE.seedDrop) seeds++; }); if (seeds) { ACC.addItems(a, { s_rice: seeds }); rep.seeds = seeds; } }

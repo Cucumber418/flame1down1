@@ -860,12 +860,13 @@
     e_leafcat: { name: '叶子喵的精元', d: '用 5 片叶子喵的叶片凝成的精元。放进神农架 · 精灵保育仓，孵化 8 小时后会诞生一只叶子小小喵。', hatch: { sid: 'leafcat', lv: 1, min: 480 } }
   };
   MATS.e_pluto = { name: '帕努托尔的精元', d: '在先驱之塔的代币商店兑换的精元。放进神农架 · 精灵保育仓，孵化 12 小时后会诞生一只帕努。', hatch: { sid: 'pluto', lv: 1, min: 720 } };
+  MATS.m_psac = { name: '蘑菇毒囊', d: '玛西一族身上的毒囊，鼓鼓的，别捏破。1 个加 5 个药草，可以在黄石 · 冶炼坊合成「解毒药剂」。' };   // 2026-10-27
   MATS.m_hfhorn = { name: '赫菲角片', d: '赫菲一系身上掉下来的角片，还带着一点余温。60 片可以在黄石 · 冶炼坊合成「奇声号角」。' };
   MATS.m_horn = { name: '奇声号角', d: '用 60 片赫菲角片做成的号角，吹起来声音很奇怪。在坎伯兰星 · 水面的「冥岛」吹响，会引来一只可以捕捉的塞米；和它进入战斗时，号角就会用掉。' };
   MATS.m_mcry = { name: '马亚尔晶体', d: '泰戈尔每周挑战必掉的晶体，凝着马亚尔星系各处的能量。在黄石 · 冶炼坊每 10 个可以换成 10 个任意一种星球特产（芙罗拉玉、不化水滴、火山灰烬、闪电球体、永久冻土）。' };
   MATS.m_cu = { name: '马亚尔煤炭', d: '在芙罗拉星、坎伯兰星的野外挖到的煤炭。可以在荆楚号 · 宜昌的三峡能源核心换成能量。' };
   MATS.m_fe = { name: '马亚尔铁矿', d: '在芙罗拉星、坎伯兰星的野外挖到的铁矿石，比煤炭更值钱。可以在荆楚号 · 宜昌的三峡能源核心换成能量。' };
-  var MAT_ORDER = ['m_lcleaf', 'e_leafcat', 'e_pluto', 'e_odo', 'm_hfhorn', 'm_horn', 'm_mcry', 'm_cu', 'm_fe', 'ctTicket'];
+  var MAT_ORDER = ['m_lcleaf', 'e_leafcat', 'e_pluto', 'e_odo', 'm_psac', 'm_hfhorn', 'm_horn', 'm_mcry', 'm_cu', 'm_fe', 'ctTicket'];
   // 太空种植园只种药草。min 是成熟分钟，yield 是收获数量。收获时退回种子。
   var SEEDS = GROW.SEEDS;   // 在 js/engine/grow.js
 
@@ -888,6 +889,8 @@
     cap3: ['华为出品的捕捉装置，从不失手。', '野外对战时使用，必定捕捉成功（占用一回合）。', '黄石 · 冶炼坊用圣晶石 ×10 合成；先驱之塔的代币商店（80 先驱代币）。'],
     pot1: ['一小瓶补药。', '对战中为出战精灵恢复 30% 最大体力（占用一回合）。', '荆门 · 物资仓储的商城（100 能量）；世界任务「林下的蘑菇」。'],
     pot2: ['浓缩过的补药。', '对战中为出战精灵恢复 50% 最大体力（占用一回合）。', '荆门 · 物资仓储的商城（250 能量）。'],
+    antidote: ['用蘑菇毒囊和药草调成的解毒药。', '对战中解除出战精灵身上全部的中毒状态，不管叠了几层（占用一回合）。', '黄石 · 冶炼坊用蘑菇毒囊 ×1、药草 ×5 合成。'],
+    m_psac: ['玛西一族身上的毒囊，鼓鼓的，别捏破。', '1 个加 5 个药草，在黄石 · 冶炼坊合成「解毒药剂」。', '在野外击败玛西一族，每只有 10% 的概率掉落。'],
     pot100: ['用药草熬成的 hp 药水。', '对战中为出战精灵恢复 100 点体力（占用一回合）。', '黄石 · 冶炼坊用药草 ×1 合成。'],
     pot200: ['用药草熬成的 hp 药水，比 100hp 药水更浓。', '对战中为出战精灵恢复 200 点体力（占用一回合）。', '黄石 · 冶炼坊用药草 ×2 合成。'],
     pp5: ['用活力花卉炼成的蓝色药水。', '对战中为出战精灵的每个技能各恢复 5 点 PP（占用一回合）。', '已停止合成，手里有的照样能用。'],
@@ -1000,7 +1003,7 @@
     var evt = MAT_ORDER.filter(function (k) { return listed.indexOf(k) < 0; });
     return [
       { id: 'mon', n: '精灵培养', hint: '直接用在精灵身上。也可以在精灵背包、仓库里点开精灵，在资料里使用。', subs: [['特产 · 隐藏技能与等级上限', byKind(['jade'])], ['性格 · 天赋 · 学习力', byKind(['nat', 'iv', 'iv2', 'ev', 'evreset'])], ['经验', byKind(['exp'])], ['形态', byKind(['form'])]] },
-      { id: 'battle', n: '战斗道具', hint: '在剧情、野外、BOSS对战的「道具」页使用。', subs: [['捕捉装置', ['cap1', 'cap2', 'cap3']], ['hp药水', ['pot100', 'pot200']], ['PP 药水', ['pp10', 'pp20', 'pp5', 'pp15']]] },
+      { id: 'battle', n: '战斗道具', hint: '在剧情、野外、BOSS对战的「道具」页使用。', subs: [['捕捉装置', ['cap1', 'cap2', 'cap3']], ['hp药水', ['pot100', 'pot200']], ['PP 药水', ['pp10', 'pp20', 'pp5', 'pp15']], ['解毒药剂', ['antidote']]] },
       { id: 'mat', n: '材料', hint: '拿到黄石 · 冶炼坊合成，或者用在种植园、保育仓。', subs: [['采集物', GATHER_ORDER], ['种子', SEED_ORDER], ['作物', CROP_ORDER], ['精灵素材与精元', listed], ['活动道具', evt]] },
       { id: 'other', n: '其他', hint: '功能道具点开后使用；剧情道具不会消耗。', subs: [['功能道具', ['rename', 'auto'].concat(wk ? ['permit'] : [])], ['剧情道具', Object.keys(KEY_ITEMS)]] }
     ];
@@ -2810,6 +2813,7 @@
           else { msg.push('瘴气驱逐战：击破 +1（今天 ' + r.pw.n + ' / ' + r.pw.cap + '），经验背包 +' + fmt(r.pw.exp) + '。'); if (r.pw.data && !r.pw.data.capped && !r.pw.data.skipped) pwApply(r.pw.data); }
         }
         if (r.trav) msg.push('击败了旅行精灵叶子喵！获得累积经验 ×' + fmt(r.trav.exp) + (r.trav.leaf ? '，她留下了一片「叶子喵的叶片」' : '') + '。');
+        if (r.psac) msg.push('它掉下了蘑菇毒囊 ×' + r.psac + '，已放入储存箱（加 5 个药草可以合成解毒药剂）。');
         if (r.horn) msg.push('它掉下了赫菲角片 ×' + r.horn + '，已放入储存箱（60 片可以合成奇声号角）。');
         if (r.disk) msg.push('它掉下了星盘 ×' + r.disk + '，已放入储存箱（100 个可以让一只幽灵鱼一系领悟隐藏技能）。');
         if (r.bowl) msg.push('放在熔岩原的那碗米饭被吃得一粒不剩。');
@@ -2873,6 +2877,7 @@
         }
         if (o.travel) setTimeout(function () { travelDlg(pickOne(downs && downs.length ? TRAVEL_TALK.win : res === 'lose' ? TRAVEL_TALK.lose : TRAVEL_TALK.quit), [['知道了', null]]); }, 700);   // 打完夸一句；她会留在原地，满 20 分钟才走
         if (o.sid === 'hephaestus' && downs && downs.length) { var hn = 0; downs.forEach(function () { hn += hornDrop(); }); earn('drop', 'horn', { items: { m_hfhorn: hn } }); msg.push('它掉下了赫菲角片 ×' + hn + '，已放入储存箱（60 片可以合成奇声号角）。'); }
+        if (o.sid === 'mush' && downs && downs.length) { var ps0 = 0; downs.forEach(function () { if (Math.random() < 0.1) ps0++; }); if (ps0) { earn('drop', 'psac', { items: { m_psac: ps0 } }); msg.push('它掉下了蘑菇毒囊 ×' + ps0 + '，已放入储存箱。'); } }
         if (o.sid === 'hauris' && downs && downs.length) { var hd = 0; downs.forEach(function () { hd += 50 + Math.floor(Math.random() * 21); }); earn('drop', 'disk', { items: { hrDisk: hd } }); msg.push('它掉下了星盘 ×' + hd + '，已放入储存箱（100 个可以让一只幽灵鱼一系领悟隐藏技能）。'); }   // 2026-10-24
         if (o.bait && (res === 'caught' || (downs && downs.length))) { acc.riceBowl = null; msg.push('放在熔岩原的那碗米饭被吃得一粒不剩。'); }
         if (o.flora && downs && downs.length) {   // 芙罗拉星野外：每击败一只，10% 掉落水稻种子
@@ -3230,18 +3235,18 @@
       var f = form(m), up = m.lv > x.lv0, f0 = frac(x.lv0, x.exp0), f1 = atCap(m) ? 1 : frac(m.lv, m.exp);
       return '<li class="rw-mon"><img src="' + f.img + '" alt=""><div class="rw-mt"><b>' + esc(f.name) + '</b><span class="rw-lv">LV' + x.lv0 + (up ? ' → <em>LV' + m.lv + '</em>' : '') + '</span>' +
         '<div class="rw-bar" data-f0="' + f0 + '" data-f1="' + f1 + '" data-up="' + (m.lv - x.lv0) + '"><i style="width:' + (f0 * 100) + '%"></i></div>' +
-        '<small>+' + fmt(x.amt) + ' 经验' + (up ? ' · 升级了！' : '') + (atCap(m) ? ' · 已到等级上限' : '') + '</small></div></li>';
+        '<b class="rw-num" data-n="' + x.amt + '">+0 经验</b>' + (up || atCap(m) ? '<small>' + (up ? '升级了！' : '') + (atCap(m) ? (up ? ' · ' : '') + '已到等级上限' : '') + '</small>' : '') + '</div></li>';
     }).join('');
     var d = document.createElement('div'); d.className = 'soc-dlg rew-dlg'; d.id = 'rew-dlg';
     d.innerHTML = '<div class="soc-box rew-box" role="dialog" aria-modal="true" aria-label="战斗奖励"><span class="tape l"></span><span class="tape r"></span><h2>' + ({ win: '胜利！', lose: '失败了', caught: '捕捉成功！', flee: '顺利逃走了', spared: '手下留情' }[REW.res] || '战斗结算') + '</h2>' +
       (rows.length ? '<ul class="rw-rows">' + rows.map(function (t, i) { return '<li style="animation-delay:' + (i * 70) + 'ms">' + esc(t) + '</li>'; }).join('') + '</ul>' : '') +
-      (pool ? '<h4 class="rw-h">经验背包</h4><div class="rw-pool"><img src="images/items/exp.png" alt=""><div><b class="rw-pool-n" data-n="' + pool + '">+0</b><small>现在共有 ' + fmt(acc.exp || 0) + ' 点，可以分配给任意精灵</small></div></div>' : '') +
+      (pool ? '<h4 class="rw-h">经验背包</h4><div class="rw-pool"><img src="images/items/exp.png" alt=""><div><b class="rw-pool-n rw-num" data-n="' + pool + '">+0 经验</b><small>现在共有 ' + fmt(acc.exp || 0) + ' 点，可以分配给任意精灵</small></div></div>' : '') +
       (monsH ? '<h4 class="rw-h">出战精灵</h4><ul class="rw-mons">' + monsH + '</ul>' : '') +
       '<div class="soc-foot"><button type="button" class="btn primary" data-rewok="1">确定</button></div></div>';
     document.body.appendChild(d);
     // 经验条动画：升级的先涨满（每升一级涨满一次），再涨到现在的位置
-    var pn = d.querySelector('.rw-pool-n');   // 经验背包的数字从 0 滚到这一场加的数
-    if (pn) { var tgt = +pn.dataset.n, t0 = performance.now(); (function tick(now) { var k = Math.min(1, (now - t0) / 900); pn.textContent = '+' + fmt(Math.round(tgt * (1 - Math.pow(1 - k, 3)))) + ' 经验'; if (k < 1 && pn.isConnected) requestAnimationFrame(tick); })(t0); }
+    // 经验背包、出战精灵的经验数字：从 0 滚到这一场加的数
+    Array.prototype.forEach.call(d.querySelectorAll('.rw-num'), function (pn) { var tgt = +pn.dataset.n, t0 = performance.now(); (function tick(now) { var k = Math.min(1, (now - t0) / 900); pn.textContent = '+' + fmt(Math.round(tgt * (1 - Math.pow(1 - k, 3)))) + ' 经验'; if (k < 1 && pn.isConnected) requestAnimationFrame(tick); })(t0); });
     Array.prototype.forEach.call(d.querySelectorAll('.rw-bar'), function (bar) {
       var i = bar.querySelector('i'), f1 = +bar.dataset.f1, up = +bar.dataset.up, step = 0;
       var next = function () {
@@ -4010,24 +4015,22 @@
       '<p class="log-st' + (closed ? '' : ' on') + '">' + (closed ? '投票已于 10 月 16 日截止，感谢参与！' : '10 月 16 日 24:00 截止') + '</p>' +
       '<div id="artvote">' + artVoteInner() + '</div></article>';
   }
-  // 航行日志 · BOSS「荒芜」：困难难度什么时候、在什么条件下开放挑战
-  var BARREN_HARD_AT = Date.UTC(2026, 9, 18, 8, 0, 0);   // 北京时间 2026-10-18 16:00
-  function barrenLogHTML() {
-    var hard = levelOpen('barren', 2), won = bossWon('barren', 2), timeOk = Date.now() >= BARREN_HARD_AT, storyOk = prog('flora6').done;
-    var st = won ? '你已经击败了困难难度的荒芜。' : hard ? '困难难度已经开放，可以挑战了！' :
-      (!timeOk ? '困难难度将在 10 月 18 日 16:00（北京时间）开放挑战。' : '困难难度已经到了开放时间。') + (storyOk ? '' : '需要先完成主线「第十段 · 瘴气之源」。');
-    return '<article class="log-card next wide barren-log"><span class="tape r"></span><span class="chip log-tag">BOSS挑战</span><h3>草系BOSS「荒芜」· 困难难度</h3>' +
-      '<div class="next-art"><img src="' + SPRITES.barren + '" alt=""></div>' +
-      '<p>盐碱地深处的荒芜，即将展现出前所未有的力量。LV70、体力 6,000，首次击败获得称号<b>「净土守护」</b>。</p>' +
+  // 航行日志 · BOSS「奥多亚克」困难难度（2026-10-27：原来是荒芜的卡片）
+  function odoLogHTML() {
+    var hard = levelOpen('odo', 2), won = bossWon('odo', 2), L = BOSSES.odo.lv[2];
+    var st = won ? '你已经击败了困难难度的奥多亚克。' : hard ? '困难难度已经开放，可以挑战了！' : '击败普通难度的奥多亚克后开放。';
+    return '<article class="log-card next wide barren-log"><span class="tape r"></span><span class="chip log-tag">BOSS挑战</span><h3>水系BOSS「奥多亚克」· 困难难度</h3>' +
+      '<div class="next-art"><img src="' + SPRITES.odo + '" alt=""></div>' +
+      '<p>坎伯兰星深海古代神殿附近的奥多亚克，会在歼灭形态和护阵形态之间切换，最后还会进入「虹霓暴走」。LV' + L.lv + '，' + L.hpText + '，首次击败获得' + rwList(L.reward).join('、') + '。</p>' +
       '<p class="log-st' + (hard ? ' on' : '') + '">' + st + '</p>' +
-      (bossOpen('barren') ? '<button type="button" class="btn" data-golog="boss-barren">去看看</button>' : '') + '</article>';
+      (bossOpen('odo') ? '<button type="button" class="btn" data-golog="boss-odo">去看看</button>' : '') + '</article>';
   }
   function renderLog() {
     var now = new Date(), h = now.getHours(), on = mysteryTime();
     var wait = on ? '' : (function () { var t = new Date(now); t.setHours(MYSTERY.from, 0, 0, 0); var m = Math.max(0, Math.round((t - now) / 60000)); return '距离今天的活动开始还有 ' + Math.floor(m / 60) + ' 小时 ' + (m % 60) + ' 分钟'; })();
     $('pg-log').innerHTML = '<div class="page-head"><h2 class="sec">航行日志</h2><p class="hint">荆楚号的公告板：更新公告、限时活动、每日任务和新BOSS。</p></div>' +
       '<div class="log-grid">' + '<article class="log-card wide qq-card"><span class="tape l"></span><span class="tape r"></span><div class="qq-txt"><span class="chip log-tag">船员交流</span><h3>QQ 群：<b class="qq-no">' + QQ_GROUP + '</b></h3><p class="hint">攻略、组队切磋、bug 反馈、新精灵立绘抢先看，都在群里。</p></div><button type="button" class="btn primary" data-copyqq="1">复制群号</button></article>' + '<div class="log-pair">' + changelogHTML() + monChangesHTML() + '</div>' +
-      mmLogHTML() + pwCardHTML('log') + contestLogHTML() + barrenLogHTML() + travelLogHTML() + pickHTML() + coreLogHTML() + hornLogHTML() + riceLogHTML() +   // 立绘更新投票已结束移除（2026-10-17）；荒芜放在更新公告正下方
+      mmLogHTML() + pwCardHTML('log') + contestLogHTML() + odoLogHTML() + travelLogHTML() + pickHTML() + coreLogHTML() + hornLogHTML() + riceLogHTML() +   // 立绘更新投票已结束移除（2026-10-17）；荒芜放在更新公告正下方
       '<article class="log-card ev"><span class="tape l"></span><span class="chip log-tag">限时活动</span><h3>神秘精灵出没</h3>' +
         '<p>每天 <b>16:00–24:00</b>，在星际探索的任何场景，都有 <b>3%</b> 的概率刷出一只神秘精灵！</p><p class="hint">它是什么？只有遇到过的人才知道。</p>' +
         '<p class="log-st ' + (on ? 'on' : '') + '">' + (on ? '活动进行中，今天 24:00 结束' : wait) + '</p></article>' +
@@ -4124,7 +4127,7 @@
       }).catch(function () { AV.busy = false; toast('连不上服务器，稍后再试'); });
       return;
     }
-    var g = e.target.closest('[data-golog]'); if (g) { if (g.dataset.golog === 'boss-barren') { ex.view = 'boss'; ex.boss = 'barren'; go('explore'); return; }
+    var g = e.target.closest('[data-golog]'); if (g) { if (g.dataset.golog === 'boss-barren') { ex.view = 'boss'; ex.boss = 'barren'; go('explore'); return; } if (g.dataset.golog === 'boss-odo') { ex.view = 'boss'; ex.boss = 'odo'; go('explore'); return; }
       if (g.dataset.golog === 'flora-catch') { ex.planet = 'flora'; ex.view = 'sites'; ex.fpart = 'catch'; go('explore'); renderExplore(); return; }
       if (g.dataset.golog === 'travelcat') { ex.planet = 'flora'; ex.view = 'sites'; ex.fpart = 'story'; ex.flSt = 'side'; go('explore'); renderExplore(); return; }
       if (g.dataset.golog === 'boss-tiger') { ex.view = 'boss'; ex.boss = 'tiger'; ex.bossK = 'tiger'; ex.bossD = 2; go('explore'); return; } go(g.dataset.golog); }

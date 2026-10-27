@@ -306,6 +306,7 @@ var GROW = (function () {
     { id: 'pot200', out: { pot200: 1 }, need: { c_herb: 2 } },
     { id: 'pp10', out: { pp10: 1 }, need: { c_flower: 3 } },   // PP 药水：只合成 10PP、20PP（大的更划算）
     { id: 'pp20', out: { pp20: 1 }, need: { c_flower: 5 } },
+    { id: 'antidote', out: { antidote: 1 }, need: { m_psac: 1, c_herb: 5 } },   // 2026-10-27：解毒药剂
     { id: 'bowl', out: { c_bowl: 1 }, need: { c_rice: 500 } },
     { id: 'lcEssence', out: { e_leafcat: 1 }, need: { m_lcleaf: 5 } },
     { id: 'formDev', out: { formDev: 1 }, need: { g_core: 6, g_sand: 300 } },
