@@ -125,8 +125,8 @@ function startMode(E, res, name, kind, u, acc, args) {
     if (!H || !H.mons.length) return A.reply(res, 400, { error: '这个茶室现在没法挑战' });
     args._foes = H.mons; args._owner = H.owner;
   }
-  if (kind === 'chal' && args.helper) {   // 助战：明明教官的，或好友名片上的（服务器自己查，不信浏览器给的资料）
-    if (args.helper === 'mm') { if (E.ACC.done(acc, 'fl_chal2')) args._helper = E.PVE.MM_HELPER; }
+  if ((kind === 'chal' || kind === 'weekly' || kind === 'ewk' || kind === 'mm') && args.helper) {   // 助战：明明教官的（只有挑战关卡），或好友名片上的（服务器自己查，不信浏览器给的资料）
+    if (args.helper === 'mm') { if (kind === 'chal' && E.ACC.done(acc, 'fl_chal2')) args._helper = E.PVE.MM_HELPER; }
     else if (typeof args.helper === 'object') args._helper = require('./social').friendHelper(u, String(args.helper.user || ''), args.helper.u | 0);
     if (!args._helper) return A.reply(res, 400, { error: '借不到这只助战精灵（可能已经不是好友，或对方换了助战）' });
   }

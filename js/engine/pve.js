@@ -167,6 +167,25 @@ var PVE = (function () {
   function done(a, id) { return ACC.done(a, id); }
   function chalStars(a, id) { var r = a && a.chal && a.chal[id]; return r && Array.isArray(r.s) ? r.s.filter(Boolean).length : 0; }
   function myTeam(a) { var t = ACC.team(a); return { us: t.map(function (m) { return m.u; }), p: t.map(function (m) { return ACC.battleMon(a, m); }) }; }
+  // 自选出战（2026-10-27，每周挑战、明明教官的试炼）：args.line = [精灵编号, 或 'h' 表示助战]，按顺序出场；助战由服务器查好放在 args._helper。没有 line 时用当前配队
+  function lineTeam(a, args) {
+    if (!args || !Array.isArray(args.line)) { var T0 = myTeam(a); return { p: T0.p, us: T0.us, slots: T0.us.slice() }; }
+    var team = (a.teams[a.active | 0] || []).filter(function (u) { return ACC.mon(a, u); }), Hp = args._helper || null, used = {}, slots = [];
+    args.line.forEach(function (v) {
+      if (v === 'h') { if (Hp && !used.h) { used.h = 1; slots.push(null); } return; }
+      var u = +v; if (team.indexOf(u) >= 0 && !used[u]) { used[u] = 1; slots.push(u); }
+    });
+    var own = slots.filter(function (u) { return u != null; });
+    if (!own.length) return { err: '至少要带一只自己的精灵' };
+    if (own.length + (used.h ? 1 : 0) > 5) return { err: '出战精灵太多了' };
+    return { p: slots.map(function (u) { return u == null ? helperSpec(Hp) : ACC.battleMon(a, ACC.mon(a, u)); }), us: own, slots: slots };
+  }
+  // 经验只给自己的精灵（助战不拿）
+  function lineXp(a, c, B, env) {
+    if (!c.slots) return ACC.battleXp(a, c.team, B.seen, B.downs, env);
+    var us = c.slots.filter(function (u) { return u != null; }), seen = c.slots.map(function (u, k) { return u != null ? !!(B.seen && B.seen[k]) : null; }).filter(function (v) { return v !== null; });
+    return ACC.battleXp(a, us, seen, B.downs, env);
+  }
 
   /* ---------- BOSS、每周挑战、属性每周挑战 ----------
    * lv：各档难度，按顺序解锁（open(a, now) 返回是否开放）。boss 是BOSS的特殊能力，规则写在 battle.js 的 BOSS_FX 里。
@@ -292,9 +311,10 @@ var PVE = (function () {
   }
   function useOne(a) { a.permit.n = Math.max(0, a.permit.n - 1); }
   // 先给精灵记图鉴、记挑战次数，再开打
-  function bossStart(a, k, d, recName, env) {
+  function bossStart(a, k, d, recName, env, args) {
+    var T = lineTeam(a, args); if (T.err) return { err: T.err };
     seedSeenFx(a, env.now);
-    var T = myTeam(a), foes = bossFoes(a, k, d);
+    var foes = bossFoes(a, k, d);
     ACC.seeMon(a, BOSSES[k].sid, BOSSES[k].lv[d].lv);
     bossRec(a, k, recName).tries++;
     return { T: T, foes: foes };
@@ -303,8 +323,8 @@ var PVE = (function () {
     start: function (a, args, env) {
       var k = String(args.k || ''), d = args.d | 0, B = BOSSES[k], L = B && B.lv[d];
       if (!L || !L.open(a, env.now)) return { err: '这一档难度还没有开放' };
-      var x = bossStart(a, k, d, d, env);
-      return { p: x.T.p, a: x.foes, ctx: { k: k, d: d, team: x.T.us }, dirty: true, opt: { foe: 'BOSS', diff: L.diff + '难度', bgm: L.bgm, bgmAt: L.bgmAt || null }, S: { bgmAt: L.bgmAt || null } };
+      var x = bossStart(a, k, d, d, env, args); if (x.err) return { err: x.err };
+      return { p: x.T.p, a: x.foes, ctx: { k: k, d: d, team: x.T.us, slots: x.T.slots }, dirty: true, opt: { foe: 'BOSS', diff: L.diff + '难度', bgm: L.bgm, bgmAt: L.bgmAt || null }, S: { bgmAt: L.bgmAt || null } };
     },
     end: function (a, c, B, env) {
       var L = BOSSES[c.k].lv[c.d], rec = bossRec(a, c.k, c.d), wasWeekly = weeklyOpen(a), rep = { k: c.k, d: c.d, res: B.res, first: false };
@@ -312,7 +332,7 @@ var PVE = (function () {
         rep.first = !rec.wins; rec.wins++;
         if (rep.first) { rep.fr = firstReward(a, L.reward, env); rep.weeklyNew = !wasWeekly && weeklyOpen(a); }
       }
-      rep.xp = ACC.battleXp(a, c.team, B.seen, B.downs, env);
+      rep.xp = lineXp(a, c, B, env);
       if (weeklyOpen(a)) permits(a, env.now);
       return rep;
     }
@@ -322,8 +342,8 @@ var PVE = (function () {
       var k = String(args.k || ''), d = args.d | 0, B = BOSSES[k], WK = WEEKLIES.filter(function (x) { return x.boss === k && x.d === d; })[0];
       if (!B || !WK || !wkOpen(a, WK)) return { err: '这个每周挑战还没有开放' };
       if (permits(a, env.now) < 1) return { err: '挑战许可用完了。' };
-      var L = B.lv[d], x = bossStart(a, k, d, wkKey(WK), env);
-      return { p: x.T.p, a: x.foes, ctx: { k: k, d: d, team: x.T.us }, dirty: true, opt: { foe: 'BOSS', diff: '每周挑战', bgm: L.bgm, bgmAt: L.bgmAt || null }, S: { bgmAt: L.bgmAt || null } };
+      var L = B.lv[d], x = bossStart(a, k, d, wkKey(WK), env, args); if (x.err) return { err: x.err };
+      return { p: x.T.p, a: x.foes, ctx: { k: k, d: d, team: x.T.us, slots: x.T.slots }, dirty: true, opt: { foe: 'BOSS', diff: '每周挑战', bgm: L.bgm, bgmAt: L.bgmAt || null }, S: { bgmAt: L.bgmAt || null } };
     },
     end: function (a, c, B, env) {
       var WK = WEEKLIES.filter(function (x) { return x.boss === c.k && x.d === c.d; })[0], rec = bossRec(a, c.k, wkKey(WK)), rep = { k: c.k, d: c.d, res: B.res };
@@ -337,7 +357,7 @@ var PVE = (function () {
         a.exp = (a.exp || 0) + WK.exp + (D.exp || 0); if (D.energy) a.energy = (a.energy || 0) + D.energy; ACC.addItems(a, wi);
         rep.wk = { exp: WK.exp, fix: fix, drop: D };
       }
-      rep.xp = ACC.battleXp(a, c.team, B.seen, B.downs, env);
+      rep.xp = lineXp(a, c, B, env);
       permits(a, env.now);
       return rep;
     }
@@ -347,11 +367,12 @@ var PVE = (function () {
       var t = String(args.t || ''), d = args.d | 0, T = ewkType(t), sid = T && ewkSid(t, env.now), L = EWK.lv[d];
       if (!sid || !L || !weeklyOpen(a)) return { err: '这个每周挑战还没有开放' };
       if (permits(a, env.now) < 1) return { err: '挑战许可用完了。' };
+      var Tm = lineTeam(a, args); if (Tm.err) return { err: Tm.err };
       seedSeenFx(a, env.now);
-      var Tm = myTeam(a), S = SPMAP[sid];
+      var S = SPMAP[sid];
       ACC.seeMon(a, sid, L.lv); bossRec(a, 'ewk_' + t, d).tries++;
       return { p: Tm.p, a: [{ id: sid, lv: L.lv, moves: ACC.defaultMoves(sid, L.lv), nick: S.name, img: SPRITES[sid], maxhp: L.hp, boss: JSON.parse(JSON.stringify(L.boss)) }],
-        ctx: { t: t, d: d, sid: sid, team: Tm.us }, dirty: true, opt: { foe: 'BOSS', diff: t + '系每周挑战 · ' + L.diff, bgm: L.bgm } };
+        ctx: { t: t, d: d, sid: sid, team: Tm.us, slots: Tm.slots }, dirty: true, opt: { foe: 'BOSS', diff: t + '系每周挑战 · ' + L.diff, bgm: L.bgm } };
     },
     end: function (a, c, B, env) {
       var T = ewkType(c.t), L = EWK.lv[c.d], rec = bossRec(a, 'ewk_' + c.t, c.d), rep = { t: c.t, d: c.d, sid: c.sid, res: B.res };
@@ -361,7 +382,7 @@ var PVE = (function () {
         ACC.addItems(a, it); a.exp = (a.exp || 0) + L.exp;
         rep.drop = { item: T.item, n: n, exp: L.exp };
       }
-      rep.xp = ACC.battleXp(a, c.team, B.seen, B.downs, env);
+      rep.xp = lineXp(a, c, B, env);
       return rep;
     }
   };
@@ -521,12 +542,13 @@ var PVE = (function () {
       if (!mmOpen(a, env.now)) return { err: '活动没有开放' };
       var key = String(args.key || ''), fin = key === 'final', d = args.d ? 1 : 0, idx = fin ? MM.order.length : MM.order.indexOf(key);
       if (idx < 0 || mmDay(env.now) < idx) return { err: '这一关还没有开放' };
-      var T = myTeam(a), foes = (fin ? mmFinalFoes(env.rand) : mmFoes(key, d)).map(function (x) {
+      var T = lineTeam(a, args); if (T.err) return { err: T.err };
+      var foes = (fin ? mmFinalFoes(env.rand) : mmFoes(key, d)).map(function (x) {
         ACC.seeMon(a, x.sid, x.lv);
         return { id: x.sid, lv: x.lv, moves: ACC.defaultMoves(x.sid, x.lv), nick: x.nick || ACC.form({ sid: x.sid, lv: x.lv }).name, img: SPRITES[x.sid], maxhp: x.maxhp, boss: x.boss };
       });
       var bgm = fin || d === 1 ? 'mingBattle2' : 'mingBattle1', bgmAt = { 2: fin || d === 1 ? 'mingFinal2' : 'mingFinal1' };
-      return { p: T.p, a: foes, ctx: { key: key, d: d, team: T.us }, dirty: true, S: { ordered: true, bgmAt: bgmAt },
+      return { p: T.p, a: foes, ctx: { key: key, d: d, team: T.us, slots: T.slots }, dirty: true, S: { ordered: true, bgmAt: bgmAt },
         opt: { foe: '明明教官的试炼', diff: fin ? '明明的最终试炼' : key + '系关卡 · ' + MM_DIFF[d].n, bgm: bgm, bgmAt: bgmAt } };
     },
     end: function (a, c, B, env) {
@@ -540,7 +562,7 @@ var PVE = (function () {
           a.exp = (a.exp || 0) + F.exp; ACC.addItems(a, { mmTok: F.tok, g_core: 1 }); rep.first = { tok: F.tok, exp: F.exp };
         }
       }
-      rep.xp = ACC.battleXp(a, c.team, B.seen, B.downs, env);
+      rep.xp = lineXp(a, c, B, env);
       return rep;
     }
   };

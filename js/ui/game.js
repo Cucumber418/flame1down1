@@ -2934,6 +2934,7 @@
       ex.hpBusy = false; if (r._code !== 200) return;
       ex.helpers = r.helpers || []; ex.helpersT = Date.now();
       if (page === 'explore' && ex.view === 'sites' && ex.fpart === 'challenge') renderExplore();
+      if ($('tp-dlg')) renderTeamPrep();
     }).catch(function () { ex.hpBusy = false; });
   }
   function helperList() {
@@ -4214,7 +4215,7 @@
       '<div class="boss-txt"><span class="chip boss-diff d' + d + '">' + (weekly ? '每周挑战 · ' : '') + L.diff + '难度</span><h3>' + B.name + '</h3><p class="hint">' + esc(B.d) + '</p>' +
       '<ul class="boss-rules"><li><b>等级</b>LV' + L.lv + '</li><li><b>体力</b>' + (L.hpText || fmt(L.hp)) + '</li>' + rules +
       '<li><b>奖励</b>' + rw + '</li><li><b>战绩</b>' + (rec.wins || 0) + ' 胜 / ' + (rec.tries || 0) + ' 次挑战</li></ul>' +
-      '<p class="hint">会使用你当前的出战配队（' + TEAM_NAME[acc.active] + '）。' + (L.only ? '记得带上会' + L.only.join('、') + '系技能的精灵。' : '') + '对战中可以使用补药。</p>' +
+      '<p class="hint">' + (weekly && srvMode() ? '开打前可以选择好友的助战精灵和出战顺序（精灵来自' + TEAM_NAME[acc.active] + '）。' : '会使用你当前的出战配队（' + TEAM_NAME[acc.active] + '）。') + (L.only ? '记得带上会' + L.only.join('、') + '系技能的精灵。' : '') + '对战中可以使用补药。</p>' +
       btn + '</div></article>' + (weekly ? '' : '<section class="bsoc" id="bsoc"><p class="hint">读取攻略中……</p></section>');
     if (!weekly) bsocLoad(k, d);
   }
@@ -4399,11 +4400,97 @@
     $('pg-arena').hidden = page !== 'arena'; $('pg-explore').hidden = page !== 'explore';
     renderTop(); syncBattle(); window.scrollTo(0, $('pg-explore').offsetTop - 8);
   }
-  function startBossRemote(k, d, weekly) {
+  /* ---------- 自选出战面板（2026-10-27）：每周挑战、明明教官的试炼开打前，选好友的助战精灵、调整出战顺序（排第一的是首发） ----------
+   * 自己的精灵来自当前配队，可以让某只休息；带助战时自己最多 4 只。选好后 go({ line: [精灵编号 或 'h'], helper: { user, u } 或 null, key: 助战的 key }) */
+  function tpTeam() { return (acc.teams[acc.active] || []).map(mon).filter(Boolean).slice(0, TEAM_SIZE); }
+  function tpHelpers() { return helperList().filter(function (h) { return h.key !== 'mm'; }); }
+  function tpHelper() { return ex.tp && ex.tp.helper ? tpHelpers().filter(function (h) { return h.key === ex.tp.helper; })[0] || null : null; }
+  function tpSync() {
+    var team = tpTeam(), tk = acc.active + ':' + team.map(function (m) { return m.u; }).join(',');
+    if (!ex.tp || ex.tp.tk !== tk) ex.tp = { tk: tk, helper: ex.tp ? ex.tp.helper : null, order: team.map(function (m) { return 'u' + m.u; }), off: {} };
+    var T = ex.tp; team.forEach(function (m) { if (T.order.indexOf('u' + m.u) < 0) T.order.push('u' + m.u); });
+    if (T.order.indexOf('h') < 0) T.order.push('h');
+    var HP = tpHelper(), max = HP ? TEAM_SIZE - 1 : TEAM_SIZE, on = T.order.filter(function (k) { return k !== 'h' && !T.off[k] && team.some(function (m) { return 'u' + m.u === k; }); });
+    while (on.length > max) T.off[on.pop()] = 1;   // 带上助战后超出 5 只：顺序最后的那只先休息
+    return { team: team, HP: HP, max: max };
+  }
+  function tpLineup() {
+    var X = tpSync(), T = ex.tp, out = [];
+    T.order.forEach(function (k) {
+      if (k === 'h') { if (X.HP) out.push({ k: 'h', h: X.HP }); return; }
+      var m = X.team.filter(function (x) { return 'u' + x.u === k; })[0]; if (m && !T.off[k]) out.push({ k: k, m: m });
+    });
+    return out;
+  }
+  function tpArgs(args, tp) {
+    if (!tp) return args;
+    args.line = tp.line; args.helper = tp.helper;
+    if (tp.helper && bsOnline()) CLOUD.api('POST', '/api/helper-use', { owner: tp.helper.user }).catch(function () {});   // 借了好友的助战：给主人记一次
+    return args;
+  }
+  // 「再来一局」前检查：精灵都还在配队里、助战还借得到；返回出战列表（给预览用），不行就返回 null
+  function tpValid(tp) {
+    if (!tp || !Array.isArray(tp.line)) return null;
+    var team = tpTeam(), out = [];
+    for (var i = 0; i < tp.line.length; i++) {
+      var v = tp.line[i];
+      if (v === 'h') { var H = tpHelpers().filter(function (h) { return h.key === tp.key; })[0] || tp.hp; if (!H) return null; out.push({ h: H }); continue; }
+      var m = team.filter(function (x) { return x.u === v; })[0]; if (!m) return null; out.push({ m: m });
+    }
+    return out.length ? out : null;
+  }
+  function openTeamPrep(title, go) {
+    var old = $('tp-dlg'); if (old) old.remove();
+    ex.tpGo = go; ex.tpTitle = title; loadHelpers(); renderTeamPrep();
+  }
+  function renderTeamPrep() {
+    var d = $('tp-dlg'), box = d && d.querySelector('.soc-box'), sc = box ? box.scrollTop : 0, sd = d ? d.scrollTop : 0;
+    if (!d) {
+      d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'tp-dlg'; document.body.appendChild(d);
+      d.addEventListener('click', function (e) {
+        var t = e.target, T = ex.tp; if (!T) return;
+        if (t === d || t.closest('[data-tpx]')) { d.remove(); return; }
+        var b;
+        if ((b = t.closest('[data-tphelp]'))) { T.helper = b.dataset.tphelp || null; renderTeamPrep(); return; }
+        if ((b = t.closest('[data-tplead]'))) { var k = b.dataset.tplead; T.order = [k].concat(T.order.filter(function (x) { return x !== k; })); renderTeamPrep(); return; }
+        if ((b = t.closest('[data-tpoff]'))) { var X = tpSync(), on = tpLineup().filter(function (x) { return x.m; }); if (on.length > 1) T.off[b.dataset.tpoff] = 1; else toast('至少要带一只自己的精灵。'); void X; renderTeamPrep(); return; }
+        if ((b = t.closest('[data-tpon]'))) { var X2 = tpSync(), on2 = tpLineup().filter(function (x) { return x.m; }); if (on2.length < X2.max) delete T.off[b.dataset.tpon]; else toast(X2.HP ? '带助战时自己最多 ' + X2.max + ' 只，先让一只休息。' : '最多 ' + X2.max + ' 只。'); renderTeamPrep(); return; }
+        if (t.closest('[data-tpgo]')) {
+          var L = tpLineup(); if (!L.some(function (x) { return x.m; })) return;
+          var HP = tpHelper(), go = ex.tpGo;
+          d.remove();
+          if (go) go({ line: L.map(function (x) { return x.m ? x.m.u : 'h'; }), helper: HP ? { user: HP.user, u: +String(HP.key).split(':').pop() } : null, key: HP ? HP.key : null, hp: HP });
+        }
+      });
+    }
+    var X = tpSync(), T = ex.tp, L = tpLineup(), rest = X.team.filter(function (m) { return T.off['u' + m.u]; });
+    var helps = tpHelpers(), card = function (e, i) {
+      var f = e.m ? form(e.m) : form(e.h.mon), lv = e.m ? e.m.lv : e.h.mon.lv;
+      return '<li class="lu-card' + (i ? '' : ' lead') + '" data-k="' + e.k + '"><span class="lu-no">' + (i ? '第 ' + (i + 1) + ' 位' : '首发') + '</span><img src="' + f.img + '" alt="" draggable="false"><b>' + esc(f.name) + '</b><small>LV' + lv + (e.h ? ' · 助战（' + esc(e.h.owner) + '）' : '') + '</small>' + tchips(SPMAP[e.m ? e.m.sid : e.h.mon.sid].types) +
+        '<span class="tp-btns">' + (i ? '<button type="button" class="btn ghost lu-lead" data-tplead="' + e.k + '">设为首发</button>' : '') + (e.m ? '<button type="button" class="btn ghost lu-lead" data-tpoff="' + e.k + '">休息</button>' : '') + '</span></li>';
+    };
+    d.innerHTML = '<div class="soc-box lu-box" role="dialog" aria-modal="true" aria-label="选择助战和首发"><span class="tape l"></span><span class="tape r"></span>' +
+      '<span class="step">' + esc(ex.tpTitle || '') + '</span><h2>助战与出战顺序</h2>' +
+      '<h4>助战精灵 <span class="hint">好友名片里的助战精灵，带上后自己最多 ' + (TEAM_SIZE - 1) + ' 只</span></h4>' +
+      '<div class="ch-helpers"><button type="button" class="ch-help' + (!X.HP ? ' on' : '') + '" data-tphelp=""><span class="ch-none">不带助战</span></button>' + helps.map(function (h) {
+        var f = form(h.mon), on = X.HP && X.HP.key === h.key;
+        return '<button type="button" class="ch-help' + (on ? ' on' : '') + '" data-tphelp="' + esc(h.key) + '"><img src="' + f.img + '" alt=""><b>' + esc(f.name) + '</b><small>LV' + h.mon.lv + ' · ' + esc(h.owner) + '</small></button>';
+      }).join('') + '</div>' +
+      (helps.length ? '' : '<p class="hint">' + (bsOnline() ? (ex.hpBusy ? '正在读取好友的助战精灵……' : '好友在「社交 → 我的名片」里放了助战精灵后，会出现在这里。') : '联网登录后，可以借用好友名片里的助战精灵。') + '</p>') +
+      '<h4>出战顺序 <span class="hint">按住拖动调整，排在第一个的就是首发</span></h4>' +
+      '<ol class="lu-list" id="tp-list">' + L.map(card).join('') + '</ol>' +
+      (rest.length ? '<h4>休息中</h4><div class="ch-mons">' + rest.map(function (m) { var f = form(m); return '<button type="button" class="ch-mon" data-tpon="u' + m.u + '"><img src="' + f.img + '" alt=""><b>' + esc(f.name) + '</b><small>LV' + m.lv + ' · 点一下上场</small></button>'; }).join('') + '</div>' : '') +
+      '<div class="soc-foot"><button type="button" class="btn ghost" data-tpx="1">取消</button><button type="button" class="btn primary" data-tpgo="1"' + (L.some(function (x) { return x.m; }) ? '' : ' disabled') + '>开始战斗</button></div></div>';
+    var list = $('tp-list');
+    if (window.HSUI && HSUI.sortable) HSUI.sortable(list, function (keys) { ex.tp.order = keys.concat(ex.tp.order.filter(function (k) { return keys.indexOf(k) < 0; })); renderTeamPrep(); });
+    box = d.querySelector('.soc-box'); if (box) box.scrollTop = sc; d.scrollTop = sd;
+  }
+  function startBossRemote(k, d, weekly, tp) {
     var B = BOSSES[k], WK = weekly ? WEEKLIES.filter(function (x) { return x.boss === k && x.d === d; })[0] : null; if (weekly && !WK) return;
     var L = B.lv[d]; if (!L || !(weekly ? wkOpen(WK) : L.open(acc, Date.now()))) return;
     if (weekly && permits() < 1) { toast('挑战许可用完了。' + permitNext() + '。'); return; }
-    pveRemote(weekly ? 'weekly' : 'boss', { k: k, d: d }, { bg: BG[floraBg(B.bg)], back: weekly ? '每周挑战' : bossWhere(B) }, function (e, res) {
+    if (weekly && !tp) { openTeamPrep('每周挑战 · ' + B.name, function (t) { startBossRemote(k, d, true, t); }); return; }   // 2026-10-27：先选助战和出战顺序
+    pveRemote(weekly ? 'weekly' : 'boss', tpArgs({ k: k, d: d }, tp), { bg: BG[floraBg(B.bg)], back: weekly ? '每周挑战' : bossWhere(B) }, function (e, res) {
       var msg = [], first = false;
       if (e) {
         var r = e.rep;
@@ -4507,13 +4594,14 @@
       '<div class="boss-txt"><span class="chip boss-diff d' + d + '">' + T.t + '系每周挑战 · ' + L.diff + '难度</span><h3>' + esc(S.name) + '</h3><p class="hint">本周的' + T.t + '系BOSS，还剩 ' + ewkLeft() + ' 换下一只。</p>' +
       '<ul class="boss-rules"><li><b>等级</b>LV' + L.lv + '</li><li><b>体力</b>' + fmt(L.hp) + '</li>' + rules +
       '<li><b>奖励</b>每次击败获得' + itemName(T.item) + ' ×' + L.drop[0] + '–' + L.drop[1] + '、累积经验 ×' + fmt(L.exp) + '，另有经验和学习力</li><li><b>战绩</b>' + (rec.wins || 0) + ' 胜 / ' + (rec.tries || 0) + ' 次挑战</li></ul>' +
-      '<p class="hint">会使用你当前的出战配队（' + TEAM_NAME[acc.active] + '）。对战中可以使用补药。</p>' +
+      '<p class="hint">' + (srvMode() ? '开打前可以选择好友的助战精灵和出战顺序（精灵来自' + TEAM_NAME[acc.active] + '）。' : '会使用你当前的出战配队（' + TEAM_NAME[acc.active] + '）。') + '对战中可以使用补药。</p>' +
       '<button type="button" class="btn primary" data-ewkgo="1"' + (pn > 0 ? '' : ' disabled') + '>开始挑战（获胜时消耗 1 枚挑战许可）</button><p class="hint permit-line">挑战许可 <b>' + pn + '</b> / ' + PERMIT.max + ' · ' + permitNext() + '</p></div></article>';
   }
-  function startEwkRemote(t, d) {
+  function startEwkRemote(t, d, tp) {
     var T = ewkType(t), sid = T && ewkSid(t), L = EWK.lv[d]; if (!sid || !L || !weeklyOpen()) return;
     if (permits() < 1) { toast('挑战许可用完了。' + permitNext() + '。'); return; }
-    pveRemote('ewk', { t: t, d: d }, { bg: ewkBg(sid), back: '每周挑战' }, function (e, res) {
+    if (!tp) { openTeamPrep('每周挑战 · ' + t + '系 · ' + SPMAP[sid].name, function (x) { startEwkRemote(t, d, x); }); return; }   // 2026-10-27：先选助战和出战顺序
+    pveRemote('ewk', tpArgs({ t: t, d: d }, tp), { bg: ewkBg(sid), back: '每周挑战' }, function (e, res) {
       var msg = [];
       if (e) {
         var r = e.rep, S = SPMAP[r.sid];
@@ -4820,9 +4908,10 @@
     seeMon(x.sid, x.lv); return o;
   }
   function mmTokRange(d) { return d === 'f' ? MM_FINAL.tok : MM_DIFF[d].tok; }
-  function mmStartRemote(key, d) {
+  function mmStartRemote(key, d, tp) {
     var fin = key === 'final';
-    pveRemote('mm', { key: key, d: d }, { bg: BG.bridge_p, back: '全息作战场地' }, function (e, res) {
+    if (!tp) { openTeamPrep('明明教官的试炼 · ' + (fin ? '明明的最终试炼' : key + '系关卡（' + MM_DIFF[d].n + '）'), function (x) { mmStartRemote(key, d, x); }); return; }   // 2026-10-27：先选助战和出战顺序
+    pveRemote('mm', tpArgs({ key: key, d: d }, tp), { bg: BG.bridge_p, back: '全息作战场地' }, function (e, res) {
       var msg = [];
       if (e) {
         var r = e.rep;
@@ -4836,6 +4925,22 @@
       } else if (res === 'void') msg.push('这场对战作废了。');
       bossBack('mmArena', function () {});
       if (msg.length) toast(msg.join(''));
+      if (e || res !== 'void') setTimeout(function () { mmAgain(key, d, tp); }, 400);   // 2026-10-27：同样的阵容再来一局？
+    });
+  }
+  function mmAgain(key, d, tp) {
+    if (!mmOpen() || document.querySelector('.soc-dlg')) return;
+    var L = tpValid(tp); if (!L) return;
+    var fin = key === 'final', dlg = document.createElement('div'); dlg.className = 'soc-dlg'; dlg.id = 'mm-again';
+    dlg.innerHTML = '<div class="soc-box" role="dialog" aria-modal="true" aria-label="再来一局"><span class="tape l"></span><span class="tape r"></span><span class="step">明明教官的试炼</span><h2>再来一局？</h2>' +
+      '<p>用相同的阵容（包括助战）和首发，再挑战一次' + (fin ? '「明明的最终试炼」' : key + '系关卡（' + MM_DIFF[d].n + '）') + '。</p>' +
+      '<div class="tp-again">' + L.map(function (e, i) { var f = e.m ? form(e.m) : form(e.h.mon); return '<span class="tp-mini' + (i ? '' : ' lead') + '"><img src="' + f.img + '" alt=""><small>' + (i ? '' : '首发 · ') + esc(f.name) + (e.h ? '（助战）' : '') + '</small></span>'; }).join('') + '</div>' +
+      '<div class="soc-foot"><button type="button" class="btn ghost" data-agx="1">不了</button><button type="button" class="btn" data-agedit="1">调整阵容</button><button type="button" class="btn primary" data-aggo="1">再来一局</button></div></div>';
+    document.body.appendChild(dlg);
+    dlg.addEventListener('click', function (ev) {
+      if (ev.target === dlg || ev.target.closest('[data-agx]')) { dlg.remove(); return; }
+      if (ev.target.closest('[data-agedit]')) { dlg.remove(); mmStartRemote(key, d); return; }
+      if (ev.target.closest('[data-aggo]')) { dlg.remove(); mmStartRemote(key, d, tp); }
     });
   }
   function mmStart(key, d) {   // key = 属性 或 'final'
