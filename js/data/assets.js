@@ -187,7 +187,7 @@ var BG = {
 
 // 角色立绘、立绘差分、图标  →  images/characters/
 var CHARS = {
-  "ship_icon": "images/characters/ship_icon.webp",
+  "ship_icon": "images/characters/ship_icon_v2.webp",
   "zwg": "images/characters/zwg.webp",
   "mm": "images/characters/mm.webp",   // 明明教官（暂定立绘）
   "threego": "images/characters/threego.webp",

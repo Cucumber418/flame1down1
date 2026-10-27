@@ -505,6 +505,7 @@
     if (m.ct) st.match.notes = ctNotes(m);
     if (m.brawl) { st.match.notes = brawlNotes(m); brawlShow(m); }
     if (m.bal) st.match.notes = balNotes(m);
+    vsSplash(m);   // 2026-10-27：战前 VS 小画面
     // 2026-10-24：服务器当裁判（m.srv）时双方都等服务器发来 init；旧办法（发起方结算）只在对方还是旧页面时用
     if (m.side === 0 && !m.srv) {
       var mk = m.brawl ? A.brawlSpec : m.bal ? A.balSpec : A.spec;
@@ -517,6 +518,30 @@
       hostPhase('act');
     }
     // 应战方等发起方发来 init
+  }
+  /* 玩家对战的战前画面（2026-10-27）：左边自己、右边对手（头像、名字、称号），中间 VS，约 2.6 秒后自动消失，点一下也能跳过 */
+  function vsSide(x, cls) {
+    var tn = x.title ? (A.titleName ? A.titleName(x.title) : x.title) : '';
+    return '<div class="vs-side ' + cls + '"><span class="pav big vs-av' + (x.avatar ? ' img' : '') + '">' + A.avatarInner(x.avatar, x.name || x.user) + '</span>' +
+      '<b class="vs-name">' + esc(x.name || x.user || '对手') + '</b>' + (tn ? '<span class="vs-title">' + esc(tn) + '</span>' : '<span class="vs-title none">暂无称号</span>') + '</div>';
+  }
+  function vsSplash(m) {
+    var old = document.getElementById('vs-splash'); if (old) old.remove();
+    var me = myCard(), p = (st.players || []).filter(function (x) { return x.user === m.peer; })[0] || { user: m.peer, name: m.peerName };
+    var foe = { user: m.peer, name: p.name || m.peerName, avatar: p.avatar || null, title: p.title || null };
+    var d = document.createElement('div'); d.id = 'vs-splash'; d.className = 'vs-splash'; d.setAttribute('aria-hidden', 'true');
+    var sparks = ''; for (var i = 0; i < 26; i++) sparks += '<i style="--a:' + Math.round(Math.random() * 360) + 'deg;--d:' + (60 + Math.round(Math.random() * 140)) + 'px;--t:' + (0.5 + Math.random() * 0.6).toFixed(2) + 's"></i>';
+    d.innerHTML = '<div class="vs-bg l"></div><div class="vs-bg r"></div>' + vsSide(me, 'l') + vsSide(foe, 'r') +
+      '<div class="vs-mid"><span class="vs-slash"></span><span class="vs-sparks">' + sparks + '</span><b class="vs-txt">VS</b></div>' +
+      (st.match && st.match.label ? '<div class="vs-label">' + esc(st.match.label) + '</div>' : '');
+    document.body.appendChild(d);
+    var close = function () { if (!d.isConnected) return; d.classList.add('out'); setTimeout(function () { d.remove(); }, 380); };
+    d.addEventListener('click', close);
+    setTimeout(close, 2600);
+    if (!p.avatar && m.peer) api('GET', '/api/card?user=' + encodeURIComponent(m.peer)).then(function (c) {   // 名单里没有对手的资料：补读一次名片
+      if (!c || c._code !== 200 || !d.isConnected) return;
+      var r = d.querySelector('.vs-side.r'); if (r) r.outerHTML = vsSide({ user: m.peer, name: c.name || foe.name, avatar: c.avatar, title: c.title }, 'r');
+    }).catch(function () {});
   }
   function begin(S) {
     var M0 = st.match;

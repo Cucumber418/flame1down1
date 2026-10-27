@@ -1897,12 +1897,8 @@
     },
     refresh: function () { contestLoad(); }
   };
-  function stationSvg() {
-    return '<svg viewBox="0 0 120 120" aria-hidden="true"><ellipse cx="60" cy="62" rx="50" ry="17" fill="none" stroke="#23222b" stroke-width="7"/><ellipse cx="60" cy="62" rx="50" ry="17" fill="none" stroke="#e6eaf0" stroke-width="4"/>' +
-      '<rect x="12" y="55" width="22" height="14" fill="#5b8fd0" stroke="#23222b" stroke-width="2.5"/><rect x="86" y="55" width="22" height="14" fill="#5b8fd0" stroke="#23222b" stroke-width="2.5"/>' +
-      '<rect x="49" y="40" width="22" height="44" rx="6" fill="#e6eaf0" stroke="#23222b" stroke-width="3"/><path d="M60 18 L66 40 H54 Z" fill="#c42f3a" stroke="#23222b" stroke-width="2.5" stroke-linejoin="round"/>' +
-      '<circle cx="60" cy="54" r="4" fill="#f2c46b" stroke="#23222b" stroke-width="2"/><circle cx="60" cy="68" r="4" fill="#f2c46b" stroke="#23222b" stroke-width="2"/></svg>';
-  }
+  function stationSvg() { return '<img class="station-ic" src="images/planets/station.webp" alt="">'; }   // 2026-10-27：空间站立绘（照片抠图 + 手绘风格）
+
   // 马亚尔星系：星系图，点星球进入
   function mayarMap() {
     var pts = Object.keys(MAYAR).map(function (id) {
