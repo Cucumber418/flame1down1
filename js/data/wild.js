@@ -70,5 +70,5 @@ var WILD_REGIONS = [
   { id: 'pp_lava', planet: 'pompeii', name: '熔岩原', en: 'Lava Field', d: '熔浆汇成的大湖一眼望不到边，湖岸上是堆满熔渣的旧矿区。赫菲喜欢在热气里打盹。', pool: 'pp_lava', bgs: ['pp_lake', 'pp_slag'] },
   { id: 'pp_city', planet: 'pompeii', name: '饮火城', en: 'Firedrink City', d: '熔岩湖中央矗立着一座古老的堡垒，再往里走就是星球炙热的核心。赫菲在这里长得更壮实。', pool: 'pp_city', bgs: ['pp_fort', 'pp_core'] },
   { id: 'lt_belt', planet: 'laiting', name: '雷暴陨石群', en: 'Storm Belt', d: '大大小小的陨石在电弧里漂浮，到处噼啪作响。锰怪和雷元素在石头之间穿梭。', pool: 'lt_belt', bgs: ['lt_field', 'lt_jupiter'] },
-  { id: 'wh_snow', planet: 'white', name: '永冻冰原', en: 'Permafrost', d: '一望无际的白色冰原，风里夹着冰晶。铸冰者在冰面下游荡，传说还有一只很少露面的亚当。', pool: 'wh_snow' }
+  { id: 'wh_snow', planet: 'white', name: '永冻冰原', en: 'Permafrost', d: '一望无际的白色冰原，风里夹着冰晶。铸冰者在冰面下游荡，传说还有一只很少露面的亚哆。', pool: 'wh_snow' }
 ];

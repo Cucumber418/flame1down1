@@ -163,7 +163,7 @@ var M = {
   零度冰破: { type: '冰', cat: '物攻', power: 110, hidden: true, custom: 'zeroBreak', d: '威力110，对方冰冻时附带对方1/8最大体力的固定伤害' },
   急冻打击: { type: '冰', cat: '物攻', power: 70, pri: 1, hidden: true, status: { k: '冰冻', min: 1, max: 3, chance: 0.3 }, d: '威力70，先制+1，30%概率使对方冰冻1-3回合' },
 
-  // —— 蛮荒遗息（远古）
+  // —— 亚贝拉赫（远古，原蛮荒遗息）
   秘术冲击: { type: '远古', cat: '特攻', power: 45, d: '威力45' },
   源力: { type: '远古', cat: '变化', selfStage: { atk: 1, def: 1 }, d: '提升1级物攻、物防' },
   灵术涌动: { type: '远古', cat: '变化', custom: 'nextCrit', pp: 10, d: '下回合必定致命一击' },
