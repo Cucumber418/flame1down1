@@ -1682,10 +1682,9 @@
       '<path class="hull" d="' + sPath(SHIP.outline) + '"/>' + g + '<path class="hull-l" d="' + sPath(SHIP.outline) + '"/></svg>' +
       '<figcaption><span><i class="lg open"></i>可传送</span><span><i class="lg pin">!</i>有可进行的剧情</span><span><i class="lg"></i>登船后开放</span>船尾（西侧）是引擎，船头朝东。</figcaption></figure>' + shipTiles();
   }
-  // 舰体图下方的区域板块（2026-10-27）：只列出有能用内容的区域，每块写明这里有什么；点击传送过去（和点舰体图一样）
+  // 舰体图下方的区域板块（2026-10-27）：只列出有功能的区域（不列剧情），每块写明有什么功能；点击传送过去（和点舰体图一样）
   function areaFeats(n) {
     var out = [];
-    deptSites(n).forEach(function (id) { if (!unlocked(id)) return; var S = SITES[id], pr = prog(id); out.push({ t: (/^活动/.test(S.chapter) ? '活动' : S.side ? '支线' : '剧情') + '「' + S.chapter.split(' · ').pop() + '」', s: pr.done ? '已读完' : pr.at > 0 ? '读到一半' : '可阅读', hot: !pr.done }); });
     Object.keys(BOSSES).forEach(function (k) { var B = BOSSES[k]; if (B.dept === n && bossOpen(k)) out.push({ t: 'BOSS「' + B.name + '」', s: B.lv.filter(function (L, i) { return levelOpen(k, i); }).map(function (L) { return L.diff; }).join(' / ') }); });
     if (n === '荆门' && shopOpen()) out.push({ t: '商城 · 物资兑换' });
     if (n === '黄石') { out.push({ t: '冶炼坊' , s: '合成捕捉装置、药水等' }); }
@@ -1699,7 +1698,7 @@
   }
   function shipTiles() {
     var tiles = SHIP.regions.filter(function (r) { return deptOpen(r.n) && areaFeats(r.n).length; }).map(function (r) {
-      var d = DEPTS[r.n], F = areaFeats(r.n), todo = deptTodo(r.n), bg = AREA_BG[r.n] && BG[AREA_BG[r.n]];
+      var d = DEPTS[r.n], F = areaFeats(r.n), todo = 0, bg = AREA_BG[r.n] && BG[AREA_BG[r.n]];
       return '<button type="button" class="st-tile' + (todo ? ' todo' : '') + '" data-area="' + r.n + '">' +
         '<span class="st-img">' + (bg ? '<img src="' + bg + '" alt="" loading="lazy">' : '<img class="st-ph" src="' + CHARS.ship_icon + '" alt="">') + (todo ? '<i class="st-pin">!</i>' : '') + '</span>' +
         '<span class="st-txt"><b>' + d[0] + '</b><small>' + r.n + '</small>' +
