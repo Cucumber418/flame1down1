@@ -4830,7 +4830,7 @@
     if (where.length && !/野生精灵/.test(t)) t = (t ? t + '；' : '') + '野外：' + where.join('、');
     return t || '暂未开放获得';
   }
-  function wikiItem(k, tail) { var it = USE_ITEMS[k] || MATS[k] || {}; return '<div class="wk-it"><b>' + esc(itemName(k)) + '</b>' + (tail ? '<span class="wk-tail">' + esc(tail) + '</span>' : '') + (it.d ? '<small>' + esc(it.d) + '</small>' : '') + '</div>'; }
+  function wikiItem(k, tail) { var inf = itemInfo(k); return '<div class="wk-it"><b>' + esc(itemName(k)) + '</b>' + (tail ? '<span class="wk-tail">' + esc(tail) + '</span>' : '') + (inf && inf.get ? '<small>获得方式：' + esc(inf.get) + '</small>' : '') + '</div>'; }   // 2026-10-27：只写获得方式
   /* 2026-10-24：Wiki 改成和竞技对战「精灵图鉴」一样的样式：左边卡片网格（按图鉴编号），右边资料面板 */
   var WK = { sel: null, t: '', v: null };
   function wikiNoText(s) { var a = (s.evo || []).map(function (e) { return e.no; }).filter(Boolean); return a.length ? 'No.' + a[0] + (a.length > 1 ? '–' + a[a.length - 1] : '') : ''; }
