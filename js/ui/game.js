@@ -1682,14 +1682,30 @@
       '<path class="hull" d="' + sPath(SHIP.outline) + '"/>' + g + '<path class="hull-l" d="' + sPath(SHIP.outline) + '"/></svg>' +
       '<figcaption><span><i class="lg open"></i>可传送</span><span><i class="lg pin">!</i>有可进行的剧情</span><span><i class="lg"></i>登船后开放</span>船尾（西侧）是引擎，船头朝东。</figcaption></figure>' + shipTiles();
   }
-  // 舰体图下方的区域板块（2026-10-27）：每个区域一块，点击传送过去（和点舰体图一样）
+  // 舰体图下方的区域板块（2026-10-27）：只列出有能用内容的区域，每块写明这里有什么；点击传送过去（和点舰体图一样）
+  function areaFeats(n) {
+    var out = [];
+    deptSites(n).forEach(function (id) { if (!unlocked(id)) return; var S = SITES[id], pr = prog(id); out.push({ t: (/^活动/.test(S.chapter) ? '活动' : S.side ? '支线' : '剧情') + '「' + S.chapter.split(' · ').pop() + '」', s: pr.done ? '已读完' : pr.at > 0 ? '读到一半' : '可阅读', hot: !pr.done }); });
+    Object.keys(BOSSES).forEach(function (k) { var B = BOSSES[k]; if (B.dept === n && bossOpen(k)) out.push({ t: 'BOSS「' + B.name + '」', s: B.lv.filter(function (L, i) { return levelOpen(k, i); }).map(function (L) { return L.diff; }).join(' / ') }); });
+    if (n === '荆门' && shopOpen()) out.push({ t: '商城 · 物资兑换' });
+    if (n === '黄石') { out.push({ t: '冶炼坊' , s: '合成捕捉装置、药水等' }); }
+    if (n === '咸宁' && spaOpen()) out.push({ t: '温泉疗养' });
+    if (n === '恩施' && farmOpen()) { out.push({ t: '太空种植园' }); out.push({ t: '种子商店' }); }
+    if (n === '黄冈' && medalOpen()) out.push({ t: '授勋馆' });
+    if (n === '宜昌' && coreOpen()) out.push({ t: '星球采矿 · 能量兑换' });
+    if (n === '神农架') out.push({ t: '精灵保育仓', s: '孵化精元' });
+    if (n === '天门' && homeOpen()) { out.push({ t: '我的房间' }); out.push({ t: '茶室商店' }); out.push({ t: '拜访船员的房间' }); }
+    return out;
+  }
   function shipTiles() {
-    return '<h3 class="sec st-h">舰内区域</h3><div class="ship-tiles">' + SHIP.regions.map(function (r) {
-      var d = DEPTS[r.n], open = deptOpen(r.n), todo = open && deptTodo(r.n), bg = AREA_BG[r.n] && BG[AREA_BG[r.n]];
-      return '<button type="button" class="st-tile' + (open ? '' : ' locked') + (todo ? ' todo' : '') + '"' + (open ? ' data-area="' + r.n + '"' : ' disabled') + '>' +
-        '<span class="st-img">' + (bg ? '<img src="' + bg + '" alt="" loading="lazy">' : '<img class="st-ph" src="' + CHARS.ship_icon + '" alt="">') + (todo ? '<i class="st-pin">!</i>' : '') + (open ? '' : '<i class="st-lock">🔒</i>') + '</span>' +
-        '<span class="st-txt"><b>' + d[0] + '</b><small>' + r.n + ' · ' + d[1] + '</small></span></button>';
-    }).join('') + '</div>';
+    var tiles = SHIP.regions.filter(function (r) { return deptOpen(r.n) && areaFeats(r.n).length; }).map(function (r) {
+      var d = DEPTS[r.n], F = areaFeats(r.n), todo = deptTodo(r.n), bg = AREA_BG[r.n] && BG[AREA_BG[r.n]];
+      return '<button type="button" class="st-tile' + (todo ? ' todo' : '') + '" data-area="' + r.n + '">' +
+        '<span class="st-img">' + (bg ? '<img src="' + bg + '" alt="" loading="lazy">' : '<img class="st-ph" src="' + CHARS.ship_icon + '" alt="">') + (todo ? '<i class="st-pin">!</i>' : '') + '</span>' +
+        '<span class="st-txt"><b>' + d[0] + '</b><small>' + r.n + '</small>' +
+        '<ul class="st-feat">' + F.map(function (f) { return '<li' + (f.hot ? ' class="hot"' : '') + '>' + esc(f.t) + (f.s ? '<em>' + esc(f.s) + '</em>' : '') + '</li>'; }).join('') + '</ul></span></button>';
+    });
+    return '<h3 class="sec st-h">舰内区域</h3>' + (tiles.length ? '<div class="ship-tiles">' + tiles.join('') + '</div>' : '<p class="hint">暂时还没有可以去的区域。</p>');
   }
   // 区域：传送过来后，点击场景里的剧情点开始剧情
   function renderArea() {

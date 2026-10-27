@@ -2797,3 +2797,12 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .rw-num { display: block; font-size: 20px; color: var(--blue); font-variant-numeric: tabular-nums; margin-top: 2px; }
 .rw-pool-n.rw-num { font-size: 24px; }
 .gx-rows + .boss-row { margin-top: 14px; }
+
+/* 舰内区域板块：区域里有什么（2026-10-27） */
+.st-feat { list-style: none; margin: 5px 0 0; padding: 0; display: grid; gap: 2px; }
+.st-feat li { font-size: 12px; line-height: 1.35; padding-left: 10px; position: relative; }
+.st-feat li::before { content: ''; position: absolute; left: 1px; top: .55em; width: 5px; height: 5px; border-radius: 50%; background: var(--blue); }
+.st-feat li.hot { color: var(--red); font-weight: 700; } .st-feat li.hot::before { background: var(--red); }
+.st-feat em { font-style: normal; color: var(--pencil); font-weight: 400; margin-left: 4px; }
+.st-feat em::before { content: '· '; }
+.st-tile { align-content: start; }
