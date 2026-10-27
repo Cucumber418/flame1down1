@@ -33,7 +33,7 @@
       </div>
     </div>
     <nav class="mainnav" id="mainnav" role="tablist" aria-label="主菜单">
-      <button type="button" class="nav on" data-page="arena" role="tab" aria-selected="true">竞技对战<small>沙盒调试 · 平衡排位</small></button>
+      <button type="button" class="nav holo on" data-page="holo" role="tab" aria-selected="true">全息作战<small>大型活动展厅</small></button>
       <button type="button" class="nav" data-page="log" role="tab" aria-selected="false">航行日志<small>活动 · 每日任务</small></button>
       <button type="button" class="nav" data-page="bag" role="tab" aria-selected="false">精灵背包<small>配队与首发</small></button>
       <button type="button" class="nav" data-page="store" role="tab" aria-selected="false">精灵仓库<small>全部精灵 · 检索</small></button>
@@ -45,7 +45,10 @@
   </header>
   <div class="onboard-wrap" id="onboard" hidden></div>
 
+  <div class="page" id="pg-holo" hidden></div>
+
   <div class="page" id="pg-arena">
+  <div class="crumb arena-crumb" id="arena-crumb"><button type="button" class="btn ghost" id="arena-back">‹ 返回太空竞技场</button><b>太空竞技场 · 竞技对战</b></div>
   <p class="hint arena-sub">S1 赛季：沙盒调试 / 平衡排位 / 精灵大乱斗三种模式 · 背包最多 5 只，可随时切换。<br>平衡排位使用孝感大厅的模拟精灵（本赛季 24 只精灵组成精灵池）：一律满级、学习力为 0、性格平衡（无修正），与账号里的精灵互不影响。</p>
 
   <!-- ============ 选精灵 ============ -->

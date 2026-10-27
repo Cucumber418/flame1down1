@@ -13,7 +13,7 @@
   var NAT_KEYS = Object.keys(NATURES), STAT_KEYS = ['hp', 'atk', 'def', 'spa', 'spd', 'spe'];
   var BASE_NAME = { hp: '体力', atk: '物攻', def: '物防', spa: '特攻', spd: '特防', spe: '速度' };
   var STAGE = ['一阶', '二阶', '最终形态'];
-  var acc = null, page = 'arena';
+  var acc = null, page = 'holo';   // 2026-10-27：第一栏改成「全息作战」（大型活动展厅），竞技对战移到太空竞技场里
   // 进账申报的缓冲区（见下面的 earn）。要放在最前面：读存档时的修复代码就会用到
   var claimBuf = [], WALLET_KEYS = ['exp', 'energy', 'tokens', 'twTok', 'merit', 'meritXp'];
   var ui = { sel: null, pick: -1, ob: { step: 1, name: '', starter: null }, f: { type: '', min: 1, max: 100, sort: 'lvd' }, resetArmed: 0, welcome: false };
@@ -292,12 +292,13 @@
     if (page === 'dex' && !dexOpen()) page = 'bag';
     if (page === 'shop') page = 'explore';
     [].forEach.call(document.querySelectorAll('#mainnav .nav'), function (b) {
-      var on = b.dataset.page === page; b.classList.toggle('on', on); b.setAttribute('aria-selected', on);
+      var on = b.dataset.page === page || (page === 'arena' && b.dataset.page === 'explore');   // 竞技对战在太空竞技场里
+      b.classList.toggle('on', on); b.setAttribute('aria-selected', on);
     });
     syncBattle();
     deliverMail(); checkRankRewards(); daily(); homeSettle();
     setTimeout(newsCheck, 1500);
-    ['arena', 'log', 'bag', 'store', 'dex', 'items', 'social', 'explore'].forEach(function (p) { $('pg-' + p).hidden = p !== page; });
+    ['holo', 'arena', 'log', 'bag', 'store', 'dex', 'items', 'social', 'explore'].forEach(function (p) { $('pg-' + p).hidden = p !== page; });
     renderRename();
     if (page === 'arena' && window.HSBATTLE && window.HSBATTLE.renderMode && $('battle').hidden) window.HSBATTLE.renderMode();
     if (page === 'social') { if (window.HSSOCIAL) window.HSSOCIAL.render(); }
@@ -307,6 +308,7 @@
     else if (page === 'store') renderStore();
     else if (page === 'items') renderItems();
     else if (page === 'explore') renderExplore();
+    else if (page === 'holo') renderHolo();
     if (typeof bgmScene === 'function') bgmScene();
   }
   function renderRes() { $('res').innerHTML = '<span class="res-chip" title="经验背包里的累积经验，可分配给精灵"><img class="res-ic" src="images/items/exp.png" alt="">经验 <b>' + fmt(acc.exp) + '</b></span><span class="res-chip en" title="能量（货币）"><img class="res-ic" src="images/items/energy.png" alt="">能量 <b>' + fmt(acc.energy) + '</b></span>'; setTimeout(renderQBadge, 0); }
@@ -331,6 +333,7 @@
   // 竞技对战进行中时锁住其他大栏，避免中途离开
   function syncBattle() {
     var inB = !$('battle').hidden, story = typeof ex !== 'undefined' && ex.fighting;
+    if ($('arena-crumb')) $('arena-crumb').hidden = inB || story;
     [].forEach.call(document.querySelectorAll('#mainnav .nav'), function (b) {
       var pg = b.dataset.page, lockA = (pg === 'arena' && !arenaOpen()) || (pg === 'dex' && !dexOpen());
       b.disabled = inB && (story || pg !== 'arena');
@@ -1782,7 +1785,10 @@
     if (!CT.busy && (!CT.data || Date.now() - CT.at > 15000)) contestLoad();
     clearInterval(ex.ctTick);
     ex.ctTick = setInterval(function () { if (!document.getElementById('ct-box')) { clearInterval(ex.ctTick); return; } contestLoad(); }, 20000);
-    return '<article class="log-card ct-card"><span class="tape l"></span><span class="chip log-tag">精灵王争霸赛</span><h3>' + CONTEST.name + '</h3><div id="ct-box">' + contestInner() + '</div></article>';
+    var aOk = arenaOpen();
+    return '<div class="sa-opts"><button type="button" class="sa-opt on" aria-pressed="true"><span class="tape l"></span><b>争霸赛</b><small>' + esc(CONTEST.name) + '</small></button>' +   // 2026-10-27：太空竞技场两个选项：争霸赛（下面）、竞技对战（原来第一栏）
+      '<button type="button" class="sa-opt' + (aOk ? '' : ' locked') + '" data-goarena="1"><span class="tape r"></span><b>竞技对战</b><small>' + (aOk ? '沙盒调试 · 平衡排位 · 精灵大乱斗' : '读完荆楚号 · 孝感大厅的支线后开放') + '</small></button></div>' +
+      '<article class="log-card ct-card"><span class="tape l"></span><span class="chip log-tag">精灵王争霸赛</span><h3>' + CONTEST.name + '</h3><div id="ct-box">' + contestInner() + '</div></article>';
   }
   function contestLogHTML() {
     var D = CT.data, ns = D && D.notices ? D.notices.slice(-3).reverse() : [];
@@ -4061,7 +4067,7 @@
   $('pg-log').addEventListener('click', function (e) {
     var c = e.target.closest('[data-dclaim]'); if (c) { claimDaily(+c.dataset.dclaim, renderLog); return; }
     if (e.target.closest('[data-gocore]')) { ex.planet = 'jingchu'; go('explore'); teleport('宜昌'); return; }
-    var ml = e.target.closest('[data-mmlog]'); if (ml) { var mk = ml.dataset.mmlog; if (mk === 'task') { ex.planet = 'jingchu'; go('explore'); teleport('襄阳'); return; } ex.mmFrom = mk === 'gacha' ? 'log' : 'arena'; ex.view = mk === 'gacha' ? 'mmGacha' : 'mmArena'; go('explore'); renderExplore(); return; }
+    var ml = e.target.closest('[data-mmlog]'); if (ml) { var mk = ml.dataset.mmlog; if (mk === 'task') { ex.planet = 'jingchu'; go('explore'); teleport('襄阳'); return; } ex.mmFrom = page === 'holo' ? 'holo' : mk === 'gacha' ? 'log' : 'arena'; ex.view = mk === 'gacha' ? 'mmGacha' : 'mmArena'; go('explore'); renderExplore(); return; }
     if (e.target.closest('[data-gosarena]')) { ex.planet = 'sarena'; ex.view = 'sites'; go('explore'); return; }
     var hd = e.target.closest('[data-hornday]'); if (hd && !hd.disabled && ready() && !hornDayGot()) { txRun('hornDay', {}, function (r) { toast('领取了赫菲角片 ×' + r.n + '，已放入储存箱。'); renderLog(); }); return; }
     var ap = e.target.closest('[data-avpick]');
@@ -4972,7 +4978,7 @@
     };
     var finOpen = mmStageOpen(5);
     $('pg-explore').innerHTML = exHead('明明教官在空间站安置的全息作战场地。每天开放一个属性的关卡，打败对方的 3 只精灵就能获得明明代币。') +
-      '<div class="crumb"><button type="button" class="btn ghost" id="mm-back">‹ 返回空间站</button><b>空间站 · 全息作战场地</b><span class="hint">限时活动 · ' + mmLeftText() + '</span></div>' +
+      '<div class="crumb"><button type="button" class="btn ghost" id="mm-back">‹ 返回' + (ex.mmFrom === 'holo' ? '全息作战' : '空间站') + '</button><b>空间站 · 全息作战场地</b><span class="hint">限时活动 · ' + mmLeftText() + '</span></div>' +
       '<div class="mm-bar"><span>明明代币 <b>' + fmt(tok) + '</b></span><button type="button" class="btn primary" data-mmgacha="1">去抽奖</button></div>' +
       '<div class="mm-grid">' + MM.order.map(stage).join('') +
       '<article class="mm-st final' + (finOpen ? '' : ' locked') + '"><span class="tape r"></span><div class="mm-art">' + (finOpen ? '<img src="' + SPRITES.leiming + '" alt="">' : '<span class="mm-lock">🔒</span>') + '</div><div class="mm-txt"><h3>明明的最终试炼</h3>' +
@@ -5005,7 +5011,7 @@
   function renderMmGacha() {
     var G = mmG(), P = mmPool(G.n), tok = acc.items.mmTok || 0;
     $('pg-explore').innerHTML = exHead('用明明代币抽奖：每个奖池有 20 个固定奖励，抽完一个奖池就会进入下一个。每逢 4 的倍数的奖池，50学习力合剂换成 100学习力合剂。从第 5 个奖池起，每逢 5 的倍数的奖池都有 50 个「雷明之眼」；第 10、30、50、70……个奖池还有「雷明灯的精元」（孵出的雷明灯 10% 是异色）。') +
-      '<div class="crumb"><button type="button" class="btn ghost" id="mmg-back">‹ 返回' + (ex.mmFrom === 'log' ? '航行日志' : '全息作战场地') + '</button><b>明明代币抽奖 · 第 ' + G.n + ' 个奖池</b></div>' +
+      '<div class="crumb"><button type="button" class="btn ghost" id="mmg-back">‹ 返回' + (ex.mmFrom === 'log' ? '航行日志' : ex.mmFrom === 'holo' ? '全息作战' : '全息作战场地') + '</button><b>明明代币抽奖 · 第 ' + G.n + ' 个奖池</b></div>' +
       '<div class="mm-bar"><span>明明代币 <b>' + fmt(tok) + '</b></span><span>剩余 <b>' + G.left.length + '</b> / 20</span><span class="hint">今天已解锁 ' + G.opened + ' / ' + MM_POOL_DAY + ' 个新奖池</span>' +
       '<button type="button" class="btn" data-mmdraw="1"' + (tok >= 10 ? '' : ' disabled') + '>抽一次（10）</button><button type="button" class="btn primary" data-mmdraw="10"' + (tok >= 100 ? '' : ' disabled') + '>十连抽（100）</button></div>' +
       '<ol class="mm-pool">' + P.map(function (z, i) { var left = G.left.indexOf(i) >= 0; return '<li class="' + (left ? '' : 'got') + (z.big ? ' big' : '') + '"><span class="mmp-ic">' + H.itemIcon(z.exp ? 'exp' : Object.keys(z.items)[0]) + '</span><span class="mmp-t">' + esc(mmPrizeText(z)) + '</span>' + (left ? '' : '<em>已抽到</em>') + '</li>'; }).join('') + '</ol>';
@@ -5021,6 +5027,24 @@
       if (e.target.closest('[data-mmpopgo]')) { d.remove(); ex.planet = 'jingchu'; go('explore'); teleport('襄阳'); }
     });
   }
+  /* ---------- 全息作战（2026-10-27）：原来「竞技对战」那一栏，改成大型活动展厅。竞技对战搬到星际探索 · 太空竞技场 ---------- */
+  function renderHolo() {
+    var el = $('pg-holo'); if (!el || !acc) return;
+    var live = mmLive(), f7 = prog('flora7').done, open = f7 && prog('mmTrial').done;
+    var mm = '<article class="holo-card' + (live ? ' live' : ' ended') + '"><span class="tape l"></span><span class="tape r"></span><span class="chip log-tag">' + (live ? '进行中' : Date.now() < MM.start ? '即将开始' : '已结束') + '</span>' +
+      '<div class="holo-art"><img src="' + (CHARS.mm || '') + '" alt=""></div><div class="holo-txt"><h3>明明教官的试炼</h3>' +
+      '<p>明明教官在空间站安置了全息作战场地。每天开放一个属性的关卡（水 → 火 → 草 → 电 → 冰），最后还有「明明的最终试炼」。赢取明明代币，参加抽奖！</p>' +
+      (live ? '<p class="hint">活动' + mmLeftText() + (open ? ' · 明明代币 ' + fmt(acc.items.mmTok || 0) : f7 ? ' · 先完成古城防卫部的活动任务「明明教官的试炼」' : ' · 读完主线第十一段后参加') + '</p>' : '<p class="hint">活动已经结束了，下一次大型活动敬请期待。</p>') +
+      '<div class="soc-foot">' + (live && open ? '<button type="button" class="btn" data-mmlog="gacha">代币抽奖</button><button type="button" class="btn primary" data-mmlog="arena">进入全息作战场地</button>' : live && f7 ? '<button type="button" class="btn primary" data-mmlog="task">去古城防卫部</button>' : (acc.mm ? '<button type="button" class="btn" data-mmlog="gacha">代币抽奖</button>' : '')) + '</div></div></article>';
+    el.innerHTML = '<div class="page-head holo-head"><h2 class="sec">全息作战 · 大型活动展厅</h2><p class="hint">全服大型活动都在这里。竞技对战（沙盒调试、平衡排位、精灵大乱斗）搬到了星际探索 · 太空竞技场。</p></div>' +
+      '<div class="holo-list">' + mm + '<article class="holo-card soon"><span class="tape r"></span><div class="holo-txt"><h3>更多大型活动</h3><p class="hint">敬请期待。</p></div></article></div>' +
+      '<p class="holo-foot"><button type="button" class="btn" data-gosarena="1">去太空竞技场（争霸赛 · 竞技对战）</button></p>';
+  }
+  $('pg-holo').addEventListener('click', function (e) {
+    var ml = e.target.closest('[data-mmlog]'); if (ml) { var mk = ml.dataset.mmlog; if (mk === 'task') { ex.planet = 'jingchu'; go('explore'); teleport('襄阳'); return; } ex.mmFrom = 'holo'; ex.view = mk === 'gacha' ? 'mmGacha' : 'mmArena'; go('explore'); renderExplore(); return; }
+    if (e.target.closest('[data-gosarena]')) { ex.planet = 'sarena'; ex.view = 'sites'; go('explore'); return; }
+  });
+  $('arena-back').addEventListener('click', function () { ex.planet = 'sarena'; ex.view = 'sites'; go('explore'); });
   function mmLogHTML() {
     if (!acc || !prog('flora7').done || !mmLive()) return '';
     var open = prog('mmTrial').done;
@@ -6052,10 +6076,11 @@
     if (b.dataset.arcgo) { var AS = SITES[b.dataset.arcgo]; ex.arc = false; ex.planet = AS.planet; if (AS.dept) { ex.view = 'area'; ex.area = AS.dept; } else { ex.view = 'sites'; if (AS.planet === 'flora') { ex.fpart = 'story'; ex.flSt = AS.side ? 'side' : 'main'; } } renderExplore(); return; }
     if (b.dataset.mmarena) { ex.view = 'mmArena'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
     if (b.dataset.mmgo) { mmStart(b.dataset.mmgo, +b.dataset.d || 0); return; }
-    if (b.dataset.mmgacha) { ex.mmFrom = 'arena'; ex.view = 'mmGacha'; renderExplore(); return; }
+    if (b.dataset.goarena) { if (!arenaOpen()) { toast('读完星际探索 · 荆楚号 · 孝感大厅的剧情后，「竞技对战」才会开放。', prog('board').done ? '前往孝感大厅' : '', '孝感'); return; } go('arena'); return; }   // 太空竞技场 → 竞技对战
+    if (b.dataset.mmgacha) { if (ex.mmFrom !== 'holo') ex.mmFrom = 'arena'; ex.view = 'mmGacha'; renderExplore(); return; }
     if (b.dataset.mmdraw) { mmDraw(+b.dataset.mmdraw || 1); return; }
-    if (b.id === 'mm-back') { ex.view = 'sites'; ex.planet = 'station'; renderExplore(); return; }
-    if (b.id === 'mmg-back') { if (ex.mmFrom === 'log') { go('log'); return; } ex.view = 'mmArena'; renderExplore(); return; }
+    if (b.id === 'mm-back') { if (ex.mmFrom === 'holo') { ex.mmFrom = null; ex.view = 'planets'; go('holo'); return; } ex.view = 'sites'; ex.planet = 'station'; renderExplore(); return; }
+    if (b.id === 'mmg-back') { if (ex.mmFrom === 'log') { go('log'); return; } if (ex.mmFrom === 'holo') { ex.mmFrom = null; ex.view = 'planets'; go('holo'); return; } ex.view = 'mmArena'; renderExplore(); return; }
     if (b.dataset.wkhub) { ex.view = 'wkhub'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
     if (b.id === 'wkhub-back') { ex.view = 'planets'; renderExplore(); return; }
     if (b.dataset.ewk) { ex.ewkT = b.dataset.ewk; ex.view = 'ewk'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
@@ -6496,7 +6521,7 @@
   var TEA_DAILY = PVE.TEA_DAILY, TEA_EXP = PVE.TEA_EXP;
   function teaLeft() { var t = acc && acc.teaFight; return t && t.d === todayKey() ? Math.max(0, TEA_DAILY - (t.n || 0)) : TEA_DAILY; }
   function teaFight(opt) {
-    if (srvMode() && opt.user) return pveRemote('tea', { owner: opt.user }, { bg: BG.tea_p, back: '茶室', pre: function () { ['log', 'bag', 'store', 'dex', 'items', 'social', 'explore'].forEach(function (pg) { $('pg-' + pg).hidden = true; }); $('who-menu').hidden = true; } }, function (e, res) {
+    if (srvMode() && opt.user) return pveRemote('tea', { owner: opt.user }, { bg: BG.tea_p, back: '茶室', pre: function () { ['holo', 'log', 'bag', 'store', 'dex', 'items', 'social', 'explore'].forEach(function (pg) { $('pg-' + pg).hidden = true; }); $('who-menu').hidden = true; } }, function (e, res) {
       ex.fighting = false; document.body.classList.remove('story-fight');
       var r = e && e.rep, msg = '', quit = !!(e && e.quit);
       if (!r) msg = res === 'void' ? '这场对战作废了，不计入奖励次数。' : '';
@@ -6511,7 +6536,7 @@
     if (!team.length) team = acc.mons.slice(0, 1);
     var p = team.slice(0, TEAM_SIZE).map(storyMon);
     stopTimers(); ex.fighting = true; document.body.classList.add('story-fight');
-    ['log', 'bag', 'store', 'dex', 'items', 'social', 'explore'].forEach(function (pg) { $('pg-' + pg).hidden = true; });
+    ['holo', 'log', 'bag', 'store', 'dex', 'items', 'social', 'explore'].forEach(function (pg) { $('pg-' + pg).hidden = true; });
     $('pg-arena').hidden = false; $('who-menu').hidden = true;
     window.HSBATTLE.start({ p: p, a: opt.foe, foe: opt.owner + '的茶室', bg: BG.tea_p, back: '茶室', onEnd: function (res, seen, downs, quit) {
       ex.fighting = false; document.body.classList.remove('story-fight');
@@ -6589,7 +6614,7 @@
     // 联网切磋：像剧情对战一样切到对战画面，锁住其他大栏
     enterBattle: function () {
       stopTimers(); ex.fighting = true; document.body.classList.add('story-fight');
-      ['log', 'bag', 'store', 'dex', 'items', 'social', 'explore'].forEach(function (p) { $('pg-' + p).hidden = true; });
+      ['holo', 'log', 'bag', 'store', 'dex', 'items', 'social', 'explore'].forEach(function (p) { $('pg-' + p).hidden = true; });
       $('pg-arena').hidden = false; $('who-menu').hidden = true;
     },
     leaveBattle: function () { ex.fighting = false; document.body.classList.remove('story-fight'); go('social'); }
@@ -6613,6 +6638,7 @@
     if (vnSite === 'earth') return 'earth';            // 地球上的剧情（含序章）
     if (!ready()) return 'ui';
     if (page === 'arena') return 'arena';              // 竞技大厅
+    if (page === 'holo') return mmLive() ? 'mingTheme' : 'ui';   // 全息作战（大型活动展厅）
     if (page === 'explore' && ex.view === 'home') return homeBgm();
     if (page === 'explore' && ex.view === 'spa') return spaBgm();   // 温泉：默认 spa，休息室里可以解锁别的   // 自己的茶室：放自己选的茶室音乐
     if (page === 'social' && window.HSSOCIAL && HSSOCIAL.visitBgm) { var vb = HSSOCIAL.visitBgm(); if (vb) return vb; }   // 拜访别人的茶室：放主人选的

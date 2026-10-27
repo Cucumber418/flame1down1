@@ -2689,3 +2689,29 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .sort-ghost { position: fixed !important; z-index: 400; pointer-events: none; margin: 0; transform: rotate(-3deg) scale(1.04); box-shadow: 0 10px 24px rgba(0,0,0,.22); opacity: .95; list-style: none; }
 .lu-card, .pp-ch-w { touch-action: manipulation; -webkit-touch-callout: none; }
 .lu-card img, .pp-ch-w img { -webkit-user-drag: none; pointer-events: none; }
+
+/* 全息作战（2026-10-27）：第一栏的大型活动展厅，用全息蓝紫渐变区分 */
+.nav.holo { background: linear-gradient(135deg, #e3f6ff 0%, #efe6ff 55%, #ffe6f6 100%); border-color: #5b4bd6; color: #3a2fa8; }
+.nav.holo small { color: #6a5fc0; }
+.nav.holo.on { background: linear-gradient(135deg, #2b6fd6 0%, #6a3fd6 55%, #c43fa8 100%); color: #fff; box-shadow: 0 3px 0 #2fd0e0; }
+.nav.holo.on small { color: #e6e0ff; }
+.holo-head .sec { background: linear-gradient(90deg, #2b6fd6, #6a3fd6 60%, #c43fa8); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.holo-list { display: grid; gap: 14px; }
+.holo-card { position: relative; display: flex; gap: 14px; align-items: stretch; padding: 14px; border: 1.5px solid var(--ink); border-radius: 14px; background: var(--paper); box-shadow: 3px 3px 0 #6a3fd6; }
+.holo-card.live { background: linear-gradient(135deg, #f2fbff, #f7f2ff 60%, #fff3fa); }
+.holo-card.ended { filter: grayscale(.6); opacity: .85; }
+.holo-card.soon { box-shadow: none; border-style: dashed; opacity: .7; }
+.holo-art { flex: none; width: 120px; display: flex; align-items: flex-end; justify-content: center; border-radius: 10px; background: radial-gradient(circle at 50% 70%, rgba(80,200,255,.35), rgba(106,63,214,.12) 60%, transparent 75%); overflow: hidden; }
+.holo-art img { width: 100%; max-height: 170px; object-fit: contain; object-position: bottom; }
+.holo-txt { flex: 1; min-width: 0; }
+.holo-txt h3 { margin: 4px 0 6px; }
+.holo-foot { margin-top: 14px; }
+@media (max-width: 560px) { .holo-art { width: 84px; } }
+/* 太空竞技场的两个选项 */
+.sa-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.sa-opt { position: relative; display: grid; gap: 2px; text-align: left; padding: 12px 14px; border: 1.5px solid var(--ink); border-radius: 12px; background: var(--paper); cursor: pointer; font: inherit; }
+.sa-opt b { font-size: 18px; } .sa-opt small { color: var(--pencil); }
+.sa-opt.on { background: var(--ink); color: #fff; box-shadow: 0 3px 0 var(--red); cursor: default; } .sa-opt.on small { color: #d8d4c8; }
+.sa-opt.locked { opacity: .5; filter: grayscale(1); }
+.arena-crumb { margin-bottom: 8px; }
+.story-fight .arena-crumb { display: none; }
