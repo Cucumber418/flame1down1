@@ -3205,8 +3205,9 @@
     var start0 = HSBATTLE.start;
     HSBATTLE.start = function (opt) {
       var end0 = opt.onEnd;
+      REW.exp0 = acc ? (acc.exp || 0) : 0;   // 2026-10-27：开战时的经验背包，结算时算这一场加了多少
       opt.onEnd = function () {
-        REW = { collect: true, capture: true, lines: [], gains: [], res: arguments[0] };
+        REW = { collect: true, capture: true, lines: [], gains: [], res: arguments[0], exp0: REW.exp0 };
         try { return end0 && end0.apply(this, arguments); }
         finally { REW.collect = false; setTimeout(rewShow, 0); }   // 等同一轮里排队的提示（如新称号）也收进来，马上弹出
       };
@@ -3217,10 +3218,11 @@
   function rewShow() {
     REW.capture = false;
     var rows = [];
-    REW.lines.forEach(function (t) { String(t).split(/(?<=[。！：])/).forEach(function (x) { x = x.trim().replace(/：$/, '。'); if (x && !/^[^，。]*获得了 [\d,]+ 点经验/.test(x)) rows.push(x); }); });   // 每只精灵各自的经验在下面的经验条里显示
+    REW.lines.forEach(function (t) { String(t).split(/(?<=[。！：])/).forEach(function (x) { x = x.trim().replace(/：$/, '。'); if (x && !/^[^，。]*获得了 [\d,]+ 点经验/.test(x) && !/^经验背包 \+[\d,]+。?$/.test(x)) rows.push(x); }); });
+    var pool = acc && REW.exp0 != null ? Math.max(0, Math.round((acc.exp || 0) - REW.exp0)) : 0;   // 这一场进经验背包的经验（单独一块显示）   // 每只精灵各自的经验在下面的经验条里显示
     var g = {}, order = [];
     REW.gains.forEach(function (x) { if (!g[x.u]) { g[x.u] = { u: x.u, lv0: x.lv0, exp0: x.exp0, amt: 0 }; order.push(x.u); } g[x.u].amt += x.amt; });
-    if (!rows.length && !order.length) return;
+    if (!rows.length && !order.length && !pool) return;
     var old = $('rew-dlg'); if (old) old.remove();
     var frac = function (lv, exp) { if (lv >= MAX_LV) return 1; var a = expAt(lv), b = expAt(lv + 1); return Math.max(0, Math.min(1, (exp - a) / (b - a))); };
     var monsH = order.map(function (u) {
@@ -3233,10 +3235,13 @@
     var d = document.createElement('div'); d.className = 'soc-dlg rew-dlg'; d.id = 'rew-dlg';
     d.innerHTML = '<div class="soc-box rew-box" role="dialog" aria-modal="true" aria-label="战斗奖励"><span class="tape l"></span><span class="tape r"></span><h2>' + ({ win: '胜利！', lose: '失败了', caught: '捕捉成功！', flee: '顺利逃走了', spared: '手下留情' }[REW.res] || '战斗结算') + '</h2>' +
       (rows.length ? '<ul class="rw-rows">' + rows.map(function (t, i) { return '<li style="animation-delay:' + (i * 70) + 'ms">' + esc(t) + '</li>'; }).join('') + '</ul>' : '') +
+      (pool ? '<h4 class="rw-h">经验背包</h4><div class="rw-pool"><img src="images/items/exp.png" alt=""><div><b class="rw-pool-n" data-n="' + pool + '">+0</b><small>现在共有 ' + fmt(acc.exp || 0) + ' 点，可以分配给任意精灵</small></div></div>' : '') +
       (monsH ? '<h4 class="rw-h">出战精灵</h4><ul class="rw-mons">' + monsH + '</ul>' : '') +
       '<div class="soc-foot"><button type="button" class="btn primary" data-rewok="1">确定</button></div></div>';
     document.body.appendChild(d);
     // 经验条动画：升级的先涨满（每升一级涨满一次），再涨到现在的位置
+    var pn = d.querySelector('.rw-pool-n');   // 经验背包的数字从 0 滚到这一场加的数
+    if (pn) { var tgt = +pn.dataset.n, t0 = performance.now(); (function tick(now) { var k = Math.min(1, (now - t0) / 900); pn.textContent = '+' + fmt(Math.round(tgt * (1 - Math.pow(1 - k, 3)))) + ' 经验'; if (k < 1 && pn.isConnected) requestAnimationFrame(tick); })(t0); }
     Array.prototype.forEach.call(d.querySelectorAll('.rw-bar'), function (bar) {
       var i = bar.querySelector('i'), f1 = +bar.dataset.f1, up = +bar.dataset.up, step = 0;
       var next = function () {

@@ -2785,3 +2785,9 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 }
 @media (prefers-reduced-motion: reduce) { .vs-splash *, .vs-splash { animation-duration: .01s !important; animation-delay: 0s !important; } }
 .vs-side.l { grid-column: 1; grid-row: 1; } .vs-mid { grid-column: 2; grid-row: 1; } .vs-side.r { grid-column: 3; grid-row: 1; }
+
+/* 战斗结算：经验背包单独一块（2026-10-27） */
+.rw-pool { display: grid; grid-template-columns: 56px 1fr; gap: 10px; align-items: center; padding: 8px 10px; margin-bottom: 4px; background: #f2f8ff; border: 1.5px solid var(--ink); border-radius: 10px; box-shadow: 2px 2px 0 var(--blue); }
+.rw-pool img { width: 48px; height: 48px; object-fit: contain; image-rendering: pixelated; justify-self: center; }
+.rw-pool-n { display: block; font-size: 24px; color: var(--blue); font-variant-numeric: tabular-nums; }
+.rw-pool small { color: var(--pencil); font-size: 12px; }
