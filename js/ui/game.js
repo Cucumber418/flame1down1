@@ -4927,8 +4927,9 @@
       if (e || res !== 'void') setTimeout(function () { mmAgain(key, d, tp); }, 400);   // 2026-10-27：同样的阵容再来一局？
     });
   }
-  function mmAgain(key, d, tp) {
-    if (!mmOpen() || document.querySelector('.soc-dlg')) return;
+  function mmAgain(key, d, tp, tries) {
+    if (!mmOpen() || ex.fighting || page !== 'explore' || ex.view !== 'mmArena') return;
+    if (document.querySelector('.soc-dlg')) { if ((tries || 0) < 600) setTimeout(function () { mmAgain(key, d, tp, (tries || 0) + 1); }, 400); return; }   // 先等战斗奖励面板关掉，再问（每个关卡、每种难度都会问）
     var L = tpValid(tp); if (!L) return;
     var fin = key === 'final', dlg = document.createElement('div'); dlg.className = 'soc-dlg'; dlg.id = 'mm-again';
     dlg.innerHTML = '<div class="soc-box" role="dialog" aria-modal="true" aria-label="再来一局"><span class="tape l"></span><span class="tape r"></span><span class="step">明明教官的试炼</span><h2>再来一局？</h2>' +
