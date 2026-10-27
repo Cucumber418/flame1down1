@@ -3033,6 +3033,7 @@
     });
     var end = function () { if (drag) { drag.classList.remove('drag'); drag = null; mark(); } };
     list.addEventListener('pointerup', end); list.addEventListener('pointercancel', end);
+    list.addEventListener('touchmove', function (e) { if (drag && e.cancelable) e.preventDefault(); }, { passive: false });   // iOS：拖动时不让页面跟着滚
     d.addEventListener('click', function (e) {
       var t = e.target;
       if (t === d || t.closest('[data-lux]')) { ex.chalOrder = order(); d.remove(); return; }
@@ -4452,6 +4453,7 @@
         if (t === d || t.closest('[data-tpx]')) { d.remove(); return; }
         var b;
         if ((b = t.closest('[data-tphelp]'))) { T.helper = b.dataset.tphelp || null; renderTeamPrep(); return; }
+        if ((b = t.closest('[data-tpmv]'))) { var vis = tpLineup().map(function (x) { return x.k; }), k0 = b.dataset.k2, j = vis.indexOf(k0), j2 = j + (+b.dataset.tpmv); if (j >= 0 && j2 >= 0 && j2 < vis.length) { var other = vis[j2], o = T.order.slice(), a1 = o.indexOf(k0), a2 = o.indexOf(other); o[a1] = other; o[a2] = k0; T.order = o; } renderTeamPrep(); return; }
         if ((b = t.closest('[data-tplead]'))) { var k = b.dataset.tplead; T.order = [k].concat(T.order.filter(function (x) { return x !== k; })); renderTeamPrep(); return; }
         if ((b = t.closest('[data-tpoff]'))) { var X = tpSync(), on = tpLineup().filter(function (x) { return x.m; }); if (on.length > 1) T.off[b.dataset.tpoff] = 1; else toast('至少要带一只自己的精灵。'); void X; renderTeamPrep(); return; }
         if ((b = t.closest('[data-tpon]'))) { var X2 = tpSync(), on2 = tpLineup().filter(function (x) { return x.m; }); if (on2.length < X2.max) delete T.off[b.dataset.tpon]; else toast(X2.HP ? '带助战时自己最多 ' + X2.max + ' 只，先让一只休息。' : '最多 ' + X2.max + ' 只。'); renderTeamPrep(); return; }
@@ -4467,7 +4469,7 @@
     var helps = tpHelpers(), card = function (e, i) {
       var f = e.m ? form(e.m) : form(e.h.mon), lv = e.m ? e.m.lv : e.h.mon.lv;
       return '<li class="lu-card' + (i ? '' : ' lead') + '" data-k="' + e.k + '"><span class="lu-no">' + (i ? '第 ' + (i + 1) + ' 位' : '首发') + '</span><img src="' + f.img + '" alt="" draggable="false"><b>' + esc(f.name) + '</b><small>LV' + lv + (e.h ? ' · 助战（' + esc(e.h.owner) + '）' : '') + '</small>' + tchips(SPMAP[e.m ? e.m.sid : e.h.mon.sid].types) +
-        '<span class="tp-btns">' + (i ? '<button type="button" class="btn ghost lu-lead" data-tplead="' + e.k + '">设为首发</button>' : '') + (e.m ? '<button type="button" class="btn ghost lu-lead" data-tpoff="' + e.k + '">休息</button>' : '') + '</span></li>';
+        '<span class="tp-btns">' + (i ? '<button type="button" class="btn ghost lu-lead" data-tpmv="-1" data-k2="' + e.k + '" aria-label="往前挪">‹</button><button type="button" class="btn ghost lu-lead" data-tplead="' + e.k + '">设为首发</button>' : '') + (i < L.length - 1 ? '<button type="button" class="btn ghost lu-lead" data-tpmv="1" data-k2="' + e.k + '" aria-label="往后挪">›</button>' : '') + (e.m ? '<button type="button" class="btn ghost lu-lead" data-tpoff="' + e.k + '">休息</button>' : '') + '</span></li>';
     };
     d.innerHTML = '<div class="soc-box lu-box" role="dialog" aria-modal="true" aria-label="选择助战和首发"><span class="tape l"></span><span class="tape r"></span>' +
       '<span class="step">' + esc(ex.tpTitle || '') + '</span><h2>助战与出战顺序</h2>' +
@@ -4477,7 +4479,7 @@
         return '<button type="button" class="ch-help' + (on ? ' on' : '') + '" data-tphelp="' + esc(h.key) + '"><img src="' + f.img + '" alt=""><b>' + esc(f.name) + '</b><small>LV' + h.mon.lv + ' · ' + esc(h.owner) + '</small></button>';
       }).join('') + '</div>' +
       (helps.length ? '' : '<p class="hint">' + (bsOnline() ? (ex.hpBusy ? '正在读取好友的助战精灵……' : '好友在「社交 → 我的名片」里放了助战精灵后，会出现在这里。') : '联网登录后，可以借用好友名片里的助战精灵。') + '</p>') +
-      '<h4>出战顺序 <span class="hint">按住拖动调整，排在第一个的就是首发</span></h4>' +
+      '<h4>出战顺序 <span class="hint">按住拖动、或点 ‹ › 调整，排在第一个的就是首发</span></h4>' +
       '<ol class="lu-list" id="tp-list">' + L.map(card).join('') + '</ol>' +
       (rest.length ? '<h4>休息中</h4><div class="ch-mons">' + rest.map(function (m) { var f = form(m); return '<button type="button" class="ch-mon" data-tpon="u' + m.u + '"><img src="' + f.img + '" alt=""><b>' + esc(f.name) + '</b><small>LV' + m.lv + ' · 点一下上场</small></button>'; }).join('') + '</div>' : '') +
       '<div class="soc-foot"><button type="button" class="btn ghost" data-tpx="1">取消</button><button type="button" class="btn primary" data-tpgo="1"' + (L.some(function (x) { return x.m; }) ? '' : ' disabled') + '>开始战斗</button></div></div>';

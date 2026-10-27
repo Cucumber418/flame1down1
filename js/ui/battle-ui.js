@@ -213,7 +213,11 @@
    * 移动超过 6 像素才算拖动，否则当成普通点击 */
   function makeSortable(list, done) {
     if (!list || list._sortable) return; list._sortable = true;
-    var drag = null, sx = 0, sy = 0, moved = false;
+    var drag = null, sx = 0, sy = 0, moved = false, ly = 0, auto = 0;
+    // 拖到面板上下边缘时自动滚动（手机上列表比屏幕长，拖不到下面去）（2026-10-27）
+    var scroller = function () { for (var e = list.parentNode; e && e !== document.body; e = e.parentNode) { var oy = getComputedStyle(e).overflowY; if ((oy === 'auto' || oy === 'scroll') && e.scrollHeight > e.clientHeight + 2) return e; } return null; };
+    var edge = function () { if (!drag || !moved) return; var sc = scroller(), top = sc ? sc.getBoundingClientRect().top : 0, bot = sc ? sc.getBoundingClientRect().bottom : window.innerHeight, v = ly < top + 60 ? -14 : ly > bot - 60 ? 14 : 0; if (v) { if (sc) sc.scrollTop += v; else window.scrollBy(0, v); } };
+    list.addEventListener('touchmove', function (e) { if (drag && e.cancelable) e.preventDefault(); }, { passive: false });   // iOS：拖动时不让页面跟着滚
     list.addEventListener('pointerdown', function (e) {
       var it = e.target.closest('[data-k]'); if (!it || it.parentNode !== list && !list.contains(it)) return;
       while (it.parentNode !== list) it = it.parentNode;
@@ -222,8 +226,8 @@
     list.addEventListener('pointermove', function (e) {
       if (!drag) return;
       if (!moved && Math.abs(e.clientX - sx) + Math.abs(e.clientY - sy) < 6) return;
-      if (!moved) { moved = true; drag.classList.add('sort-drag'); try { list.setPointerCapture(drag._pid); } catch (er) {} }
-      e.preventDefault();
+      if (!moved) { moved = true; drag.classList.add('sort-drag'); try { list.setPointerCapture(drag._pid); } catch (er) {} clearInterval(auto); auto = setInterval(edge, 30); }
+      e.preventDefault(); ly = e.clientY;
       var best = null, bd = Infinity;
       Array.prototype.forEach.call(list.children, function (c) { if (!c.dataset.k) return; var r = c.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2, dd = (cx - e.clientX) * (cx - e.clientX) + (cy - e.clientY) * (cy - e.clientY); if (dd < bd) { bd = dd; best = c; } });
       if (!best || best === drag) return;
@@ -231,7 +235,7 @@
       if (kids.indexOf(best) > kids.indexOf(drag)) list.insertBefore(drag, best.nextSibling); else list.insertBefore(drag, best);
     });
     var end = function () {
-      if (!drag) return; var was = moved; drag.classList.remove('sort-drag'); drag = null;
+      clearInterval(auto); if (!drag) return; var was = moved; drag.classList.remove('sort-drag'); drag = null;
       if (was) { list._justSorted = Date.now(); done(Array.prototype.filter.call(list.children, function (c) { return c.dataset.k; }).map(function (c) { return c.dataset.k; })); }
     };
     list.addEventListener('pointerup', end); list.addEventListener('pointercancel', end);
