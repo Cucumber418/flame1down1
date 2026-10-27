@@ -2715,3 +2715,31 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .sa-opt.locked { opacity: .5; filter: grayscale(1); }
 .arena-crumb { margin-bottom: 8px; }
 .story-fight .arena-crumb { display: none; }
+
+/* 舰体图下方的区域板块（2026-10-27） */
+.st-h { margin: 6px 0 10px; }
+.ship-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; margin-bottom: 16px; }
+.st-tile { position: relative; display: grid; grid-template-rows: auto auto; padding: 0; overflow: hidden; text-align: left; font: inherit; color: inherit; border: 1.5px solid var(--ink); border-radius: 12px; background: var(--paper); cursor: pointer; box-shadow: 2px 2px 0 var(--ink); transition: transform .12s, box-shadow .12s; }
+.st-tile:hover:not(:disabled) { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--ink); }
+.st-tile.todo { border-color: var(--red); box-shadow: 2px 2px 0 var(--red); }
+.st-tile.locked { opacity: .5; filter: grayscale(1); cursor: not-allowed; box-shadow: none; }
+.st-img { position: relative; display: block; aspect-ratio: 16 / 9; background: radial-gradient(ellipse at 50% 40%, #12284a, #060c1c 75%); }
+.st-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.st-img img.st-ph { object-fit: contain; padding: 18%; opacity: .7; }
+.st-pin { position: absolute; top: 6px; right: 6px; width: 22px; height: 22px; border-radius: 50%; background: var(--red); color: #fff; font-style: normal; font-weight: 800; display: grid; place-items: center; border: 2px solid #fff; animation: stPin 1.4s ease-in-out infinite; }
+@keyframes stPin { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+.st-lock { position: absolute; inset: 0; display: grid; place-items: center; font-style: normal; font-size: 22px; }
+.st-txt { display: grid; gap: 1px; padding: 7px 10px 9px; }
+.st-txt b { font-size: 15px; } .st-txt small { font-size: 11.5px; color: var(--pencil); }
+@media (max-width: 560px) { .ship-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; } }
+/* 星际探索：导航正中间、更大（核心入口）（2026-10-27） */
+.mainnav { grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(0, 1.7fr) repeat(3, minmax(0, 1fr)); align-items: end; }
+.nav.core { font-size: 32px; padding-top: 14px; padding-bottom: 9px; margin-top: -10px; border-width: 2.5px; border-color: var(--red); background: linear-gradient(180deg, #fff6e8, #ffe2c8); color: #b3261e; box-shadow: 0 4px 0 var(--red); position: relative; }
+.nav.core small { color: #b3564e; font-weight: 700; }
+.nav.core::before { content: '★'; position: absolute; top: 3px; left: 50%; transform: translateX(-50%); font-size: 11px; line-height: 1; color: var(--red); }
+.nav.core.on { background: linear-gradient(180deg, #d1352a, #a3201a); color: #fff; box-shadow: 0 4px 0 var(--ink); }
+.nav.core.on small, .nav.core.on::before { color: #ffe1d6; }
+@media (max-width: 900px) {
+  .mainnav { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .nav.core { grid-column: 1 / -1; grid-row: 2; margin-top: 0; font-size: 26px; }
+}

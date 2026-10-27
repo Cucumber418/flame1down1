@@ -1657,7 +1657,16 @@
     return '<figure class="shipmap"><svg viewBox="-60 20 880 560" role="img" aria-label="荆楚号舰体平面图">' +
       '<g class="eng">' + [[16, 398, 30], [20, 452, 26], [42, 510, 22], [130, 122, 24], [124, 74, 18]].map(function (e) { return '<path d="M' + (e[0] - 14) + ',' + (e[1] - e[2] / 2) + ' l-' + (e[2] * 1.6) + ',' + (e[2] * .3) + ' l0,' + (e[2] * .4) + ' l' + (e[2] * 1.6) + ',' + (e[2] * .3) + ' Z"/>'; }).join('') + '</g>' +
       '<path class="hull" d="' + sPath(SHIP.outline) + '"/>' + g + '<path class="hull-l" d="' + sPath(SHIP.outline) + '"/></svg>' +
-      '<figcaption><span><i class="lg open"></i>可传送</span><span><i class="lg pin">!</i>有可进行的剧情</span><span><i class="lg"></i>登船后开放</span>船尾（西侧）是引擎，船头朝东。</figcaption></figure>';
+      '<figcaption><span><i class="lg open"></i>可传送</span><span><i class="lg pin">!</i>有可进行的剧情</span><span><i class="lg"></i>登船后开放</span>船尾（西侧）是引擎，船头朝东。</figcaption></figure>' + shipTiles();
+  }
+  // 舰体图下方的区域板块（2026-10-27）：每个区域一块，点击传送过去（和点舰体图一样）
+  function shipTiles() {
+    return '<h3 class="sec st-h">舰内区域</h3><div class="ship-tiles">' + SHIP.regions.map(function (r) {
+      var d = DEPTS[r.n], open = deptOpen(r.n), todo = open && deptTodo(r.n), bg = AREA_BG[r.n] && BG[AREA_BG[r.n]];
+      return '<button type="button" class="st-tile' + (open ? '' : ' locked') + (todo ? ' todo' : '') + '"' + (open ? ' data-area="' + r.n + '"' : ' disabled') + '>' +
+        '<span class="st-img">' + (bg ? '<img src="' + bg + '" alt="" loading="lazy">' : '<img class="st-ph" src="' + CHARS.ship_icon + '" alt="">') + (todo ? '<i class="st-pin">!</i>' : '') + (open ? '' : '<i class="st-lock">🔒</i>') + '</span>' +
+        '<span class="st-txt"><b>' + d[0] + '</b><small>' + r.n + ' · ' + d[1] + '</small></span></button>';
+    }).join('') + '</div>';
   }
   // 区域：传送过来后，点击场景里的剧情点开始剧情
   function renderArea() {
