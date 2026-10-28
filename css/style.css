@@ -2809,3 +2809,12 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 
 /* 进入星球 / 场景时图片没加载完：先藏起来（2026-10-27） */
 .page.gating { visibility: hidden; }
+/* 2026-10-28：手机上对战结束的卡片比战场高，按钮被裁掉点不到 → 卡片区域可以滚动，按钮一直贴在卡片底部 */
+.endcard { overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 10px; place-items: start center; z-index: 6; }
+.endcard .box { margin: auto 0; max-width: 100%; box-sizing: border-box; }
+.endcard .row { position: sticky; bottom: -18px; padding: 8px 0 10px; background: var(--paper-2); width: 100%; z-index: 1; }
+@media (max-width: 640px) {
+  .endcard .box { padding: 12px 14px; gap: 8px; }
+  .endcard h3 { font-size: 44px; }
+  .endcard .hint { font-size: 13px; }
+}
