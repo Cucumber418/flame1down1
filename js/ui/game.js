@@ -291,6 +291,7 @@
     if (page === 'arena' && !arenaOpen()) page = 'bag';
     if (page === 'dex' && !dexOpen()) page = 'bag';
     if (page === 'shop') page = 'explore';
+    if (page === 'ship' && typeof ex !== 'undefined' && ex) { page = 'explore'; ex.view = 'sites'; ex.planet = 'jingchu'; if (ex.mode === 'replay') ex.mode = null; }   // 2026-10-28：飞船终端 = 荆楚号舰体图
     if (page === 'holo' && typeof ex !== 'undefined' && ex && mmOpen()) { page = 'explore'; ex.view = 'mmArena'; ex.mmFrom = null; }   // 2026-10-27：全息作战 = 直接进明明教官的试炼（全息作战场地）
     navSync();
     syncBattle();
@@ -311,10 +312,13 @@
   }
   function renderRes() { $('res').innerHTML = '<span class="res-chip" title="经验背包里的累积经验，可分配给精灵"><img class="res-ic" src="images/items/exp.png" alt="">经验 <b>' + fmt(acc.exp) + '</b></span><span class="res-chip en" title="能量（货币）"><img class="res-ic" src="images/items/energy.png" alt="">能量 <b>' + fmt(acc.energy) + '</b></span>'; setTimeout(renderQBadge, 0); }
   // 导航高亮：明明教官的试炼（全息作战场地、代币抽奖）不管从哪里进，都亮「全息作战」；竞技对战（在太空竞技场里）亮「星际探索」
+  // 现在是不是在荆楚号里（舰体图、区域、区域里的设施）：导航亮「飞船终端」
+  var SHIP_VIEWS = { area: 1, shop: 1, forge: 1, nursery: 1, medal: 1, farm: 1, seedshop: 1, spa: 1, home: 1, room: 1, teashop: 1 };
+  function shipCtx() { return page === 'explore' && typeof ex !== 'undefined' && ex && !ex.mode && !!(SHIP_VIEWS[ex.view] || (ex.view === 'sites' && ex.planet === 'jingchu')); }
   function navSync() {
-    var holo = page === 'explore' && typeof ex !== 'undefined' && (ex.view === 'mmArena' || ex.view === 'mmGacha');
+    var holo = page === 'explore' && typeof ex !== 'undefined' && (ex.view === 'mmArena' || ex.view === 'mmGacha'), ship = shipCtx();
     [].forEach.call(document.querySelectorAll('#mainnav .nav'), function (b) {
-      var pg = b.dataset.page, on = holo ? pg === 'holo' : pg === page || (page === 'arena' && pg === 'explore') || (page === 'store' && pg === 'bag');   // 精灵仓库在「精灵一览」里
+      var pg = b.dataset.page, on = holo ? pg === 'holo' : ship ? pg === 'ship' : pg === page || (page === 'arena' && pg === 'explore') || ((page === 'store' || page === 'dex') && pg === 'bag');   // 精灵仓库、图鉴在「精灵一览」里；荆楚号在「飞船终端」里
       b.classList.toggle('on', on); b.setAttribute('aria-selected', on);
     });
   }
@@ -327,7 +331,8 @@
       else toast('读完星际探索 · 荆楚号 · 孝感大厅的剧情后，「竞技对战」才会开放。', prog('board').done ? '前往孝感大厅' : '', '孝感');
       return;
     }
-    if (b.dataset.page === 'explore' && (ex.view === 'mmArena' || ex.view === 'mmGacha')) { ex.view = 'sites'; ex.planet = 'station'; }   // 在全息作战里点「星际探索」：回到空间站
+    if (b.dataset.page === 'explore' && (ex.view === 'mmArena' || ex.view === 'mmGacha')) { ex.view = 'sites'; ex.planet = 'station'; }
+    if (b.dataset.page === 'explore' && shipCtx()) ex.view = 'planets';   // 在荆楚号里点「星际探索」：回到星图   // 在全息作战里点「星际探索」：回到空间站
     go(b.dataset.page);
   });
   function toast(msg, act, area) {
@@ -1131,7 +1136,7 @@
     if (b.dataset.rmt != null) { var tm = acc.teams[+b.dataset.rmt]; tm.splice(tm.indexOf(+b.dataset.u), 1); if (!tm.length && acc.active === +b.dataset.rmt) { var nz = acc.teams.findIndex(function (x) { return x.length; }); if (nz >= 0) acc.active = nz; } save(); renderBag(); return; }
     if (b.dataset.topen != null) { var ti = +b.dataset.topen; if (!ui.tOpen) ui.tOpen = {}; ui.tOpen[ti] = !ui.tOpen[ti]; if (!ui.tOpen[ti] && ui.pick === ti) ui.pick = -1; renderBag(); return; }
     if (b.dataset.tunlock) { var tpz = TX.D.TEAM_PRICE[acc.teamX | 0]; if (!tpz) return; if ((acc.energy || 0) < tpz) { toast('能量不足：解锁需要 ' + fmt(tpz) + ' 能量。'); return; } txRun('teamSlot', {}, function (r) { while (acc.teams.length < r.n) acc.teams.push([]); if (!ui.tOpen) ui.tOpen = {}; ui.tOpen[r.n - 1] = true; save(); renderBag(); renderRes(); toast('解锁了' + TEAM_NAME[r.n - 1] + '！消耗 ' + fmt(r.cost) + ' 能量。'); }); return; }
-    if (b.dataset.mtab) { go(b.dataset.mtab); return; }
+    if (b.dataset.mtab) { if (b.dataset.mtab === 'dex' && !dexOpen()) { toast('读完星际探索 · 荆楚号 · 学院部的剧情后，「黄冈秘鉴」才会开放。', prog('board').done ? '前往学院部' : '', '黄冈'); return; } go(b.dataset.mtab); return; }
     if (b.dataset.pickt != null) { ui.pick = ui.pick === +b.dataset.pickt ? -1 : +b.dataset.pickt; renderBag(); return; }
     if (b.dataset.pickx) { ui.pick = -1; renderBag(); return; }
     if (b.dataset.padd != null) { var tp = acc.teams[+b.dataset.padd], u = +b.dataset.u; if (tp.length < TEAM_SIZE && tp.indexOf(u) < 0) tp.push(u); if (tp.length >= TEAM_SIZE) ui.pick = -1; ui.sel = u; save(); renderBag(); return; }
@@ -1208,7 +1213,7 @@
   var LV_PRE = [[1, 100, '全部'], [1, 24, 'LV1–24'], [25, 49, 'LV25–49'], [50, 100, 'LV50–100']];
   // 精灵一览（2026-10-27）：背包、仓库合成一栏，上面切换
   function monsTabs(cur) {
-    return '<div class="fparts mons-tabs" role="tablist">' + [['bag', '背包'], ['store', '仓库']].map(function (x) { return '<button type="button" role="tab" class="tab' + (x[0] === cur ? ' on' : '') + '" aria-selected="' + (x[0] === cur) + '" data-mtab="' + x[0] + '">' + x[1] + '</button>'; }).join('') + '</div>';
+    return '<div class="fparts mons-tabs" role="tablist">' + [['bag', '背包'], ['store', '仓库'], ['dex', '图鉴']].map(function (x) { var lk = x[0] === 'dex' && !dexOpen(); return '<button type="button" role="tab" class="tab' + (x[0] === cur ? ' on' : '') + '" aria-selected="' + (x[0] === cur) + '" data-mtab="' + x[0] + '"' + (lk ? ' title="读完荆楚号 · 学院部的剧情后开放"' : '') + '>' + x[1] + (lk ? ' 🔒' : '') + '</button>'; }).join('') + '</div>';
   }
   // 还能解锁的下一个配队
   function teamLockHTML() {
@@ -1241,7 +1246,7 @@
   }
   $('pg-store').addEventListener('click', function (e) {
     var b = e.target.closest('button'); if (!b) return;
-    if (b.dataset.mtab) { go(b.dataset.mtab); return; }
+    if (b.dataset.mtab) { if (b.dataset.mtab === 'dex' && !dexOpen()) { toast('读完星际探索 · 荆楚号 · 学院部的剧情后，「黄冈秘鉴」才会开放。', prog('board').done ? '前往学院部' : '', '黄冈'); return; } go(b.dataset.mtab); return; }
     if (b.closest('#store-detail')) { onDetailClick(e); return; }
     if (b.dataset.ft != null) { ui.f.type = b.dataset.ft; renderStore(); return; }
     if (b.dataset.flv) { var p = b.dataset.flv.split('-'); ui.f.min = +p[0]; ui.f.max = +p[1]; renderStore(); return; }
@@ -1301,7 +1306,7 @@
     var n = litCount(), T = TITLES[0];
     var ns = DEX_ALL.filter(function (s) { return !owned(s.id) && acc.seen && acc.seen[s.id] !== undefined; }).length;
     if (dexSel && !owned(dexSel)) dexSel = null;
-    var html = '<div class="page-head"><h2 class="sec">黄冈秘鉴</h2><p class="hint">荆楚号学院部收藏的精灵图鉴。带回某一类精灵后，它那一页就会点亮；在剧情里见过或交过手的精灵，会先记下名字。</p></div>' +
+    var html = monsTabs('dex') + '<div class="page-head"><h2 class="sec">黄冈秘鉴</h2><p class="hint">荆楚号学院部收藏的精灵图鉴。带回某一类精灵后，它那一页就会点亮；在剧情里见过或交过手的精灵，会先记下名字。</p></div>' +
       '<div class="dex-prog"><span class="tape l"></span><div><b>' + n + '</b> / ' + DEX_ALL.length + ' 类已点亮' + (ns ? '<small class="seen-n">　另有 ' + ns + ' 类见过</small>' : '') + '</div><div class="pbar2"><i style="width:' + (n / DEX_ALL.length * 100) + '%"></i></div>' +
       '<span class="hint">' + ((acc.titles || []).indexOf(T.id) >= 0 ? '已获得称号「' + T.n + '」' : '再点亮 ' + Math.max(0, 3 - n) + ' 类，可获得称号「' + T.n + '」') + '</span></div>' +
       '<div class="build"><div class="dex-grid hg-grid">' + DEX_ALL.map(function (s) {
@@ -1334,6 +1339,7 @@
   }
   function total(s) { var n = 0; for (var k in s.base) n += s.base[k]; return n; }
   $('pg-dex').addEventListener('click', function (e) {
+    var mt = e.target.closest('[data-mtab]'); if (mt) { go(mt.dataset.mtab); return; }
     var bg = e.target.closest('[data-abig]'); if (bg) { var q = bg.dataset.abig.split('|'); H.big(q[0], +q[1]); return; }
     var c = e.target.closest('[data-hg]'); if (!c) return;
     if (!owned(c.dataset.hg)) {
@@ -1635,12 +1641,12 @@
         '<small>' + wkIcons.length + ' 个BOSS · 获胜消耗 1 枚挑战许可</small></span><span class="wk-pm"><b>' + permits() + '</b> / ' + PERMIT.max + '<small>挑战许可</small></span></button>'
         : '<div class="weekly-card hub-card wk-hub locked"><span class="tape l"></span><span class="hub-ic">🔒</span><span class="wk-txt"><span class="chip boss-diff">每周挑战</span><b>每周挑战</b><small>击败困难难度的泰戈尔或荒芜后开放</small></span></div>';
       bossRow += '</div>';
-      // 2026-10-27 排列：马亚尔星系 → 荆楚号 / 空间站 / 太空竞技场 → BOSS挑战 / 每周挑战 → 剧情回顾 → 地球
-      html += '<div class="gx-rows">' + mayarMap() + '<div class="gx-row three">' + planetCard(planetOf('jingchu')) + planetCard(planetOf('station')) + planetCard(planetOf('sarena')) + '</div></div>' +
+      // 2026-10-28 排列：马亚尔星系 → 空间站 / 太空竞技场（荆楚号移到「飞船终端」）→ BOSS挑战 / 每周挑战 → 剧情回顾 → 地球
+      html += '<div class="gx-rows">' + mayarMap() + '<div class="gx-row two">' + planetCard(planetOf('station')) + planetCard(planetOf('sarena')) + '</div></div>' +
         bossRow + arcBarHTML() + '<div class="gx-rows"><div class="gx-row">' + planetCard(planetOf('earth')) + '</div></div>';
     } else {
       var P = PLANETS.filter(function (p) { return p.id === ex.planet; })[0];
-      html += '<div class="crumb"><button type="button" class="btn ghost" id="ex-back">‹ ' + (P.inStation ? '返回空间站' : '返回星图') + '</button><b>' + (P.inStation ? '空间站 · ' : MAYAR[P.id] ? '马亚尔星系 · ' : '') + P.name + '</b></div>';
+      html += '<div class="crumb">' + (P.ship ? '' : '<button type="button" class="btn ghost" id="ex-back">‹ ' + (P.inStation ? '返回空间站' : '返回星图') + '</button>') + '<b>' + (P.ship ? '飞船终端 · ' : '') + (P.inStation ? '空间站 · ' : MAYAR[P.id] ? '马亚尔星系 · ' : '') + P.name + '</b></div>';
       if (P.ship) { el.innerHTML = html + shipMap(P); return; }
       if (P.wild) { el.innerHTML = html + (P.id === 'flora' ? floraPage() : wildPage(P)); return; }
       if (P.tower) { el.innerHTML = html + towerPage(); return; }
@@ -5947,7 +5953,7 @@
   function qTodo(tab) { if (tab === 'daily') { var D = daily(); return D ? D.list.filter(function (t) { return !t.c; }).length : 0; } return qList(tab).filter(function (id) { var st = qState(id); return st === 'todo' || st === 'doing' || st === 'claim'; }).length; }
   function holoHead(hint) { return '<div class="page-head ex-head holo-head"><h2 class="sec">全息作战 · 明明教官的试炼</h2><p class="hint">' + hint + '</p></div>'; }   // 明明教官的试炼不管从哪里进，标题都是「全息作战」
   function exHead(hint) {
-    return '<div class="page-head ex-head"><h2 class="sec">星际探索</h2><p class="hint">' + hint + '</p></div>';
+    return '<div class="page-head ex-head"><h2 class="sec">' + (shipCtx() ? '飞船终端' : '星际探索') + '</h2><p class="hint">' + hint + '</p></div>';
   }
   function qName(id) { var W = wq(id); return W ? W.n : SITES[id].chapter.split(' · ')[1]; }
   function qWhere(id) {
