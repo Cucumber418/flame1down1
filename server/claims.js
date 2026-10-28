@@ -256,9 +256,13 @@ function teamStep(oldData, newData, info) {
   if ((B.teamX | 0) !== x) { if (x) B.teamX = x; else delete B.teamX; ch = true; }
   if (B.teams.length > cap) { B.teams = B.teams.slice(0, cap); ch = true; }
   if (!(B.active >= 0 && B.active < B.teams.length)) { B.active = 0; ch = true; }
+  if (A.gifts && typeof A.gifts === 'object') {   // 2026-10-28：领过的补偿礼包只由交易记，不能靠改存档再领一次
+    if (!B.gifts || typeof B.gifts !== 'object') B.gifts = {};
+    for (var gk in A.gifts) if (!B.gifts[gk]) { B.gifts[gk] = A.gifts[gk]; ch = true; }
+  }
   if (!ch) return newData;
   var o2 = {}; for (var k in newData) o2[k] = newData[k]; o2['hs-account-v1'] = JSON.stringify(B);
-  info.sync = (info.sync || []).concat(['teams', 'teamX', 'active']);
+  info.sync = (info.sync || []).concat(['teams', 'teamX', 'active', 'gifts']);
   return o2;
 }
 function onUpload(u, list, oldData, newData, info) {

@@ -3947,6 +3947,7 @@
   setInterval(function () { if (document.visibilityState === 'visible') newsCheck(); }, 20000);
   var QQ_GROUP = '1124145809';   // 航行日志最上方显示的船员 QQ 群
   $('pg-log').addEventListener('click', function (e) {
+    var gb = e.target.closest('[data-gift]'); if (gb && !gb.disabled && ready()) { gb.disabled = true; txRun('compGift', { id: gb.dataset.gift }, function () { toast('领取了补偿大礼包！经验已放进经验背包，道具已放入储存箱。'); renderRes(); renderLog(); }, function () { gb.disabled = false; }); return; }
     if (!e.target.closest('[data-copyqq]')) return;
     var done = function () { toast('群号 ' + QQ_GROUP + ' 已复制，打开 QQ 搜索加群即可。'); };
     // 网站是 http 打开的，浏览器不给用新的剪贴板接口，先用老办法复制
@@ -4056,11 +4057,18 @@
       '<p class="log-st' + (hard ? ' on' : '') + '">' + st + '</p>' +
       (bossOpen('odo') ? '<button type="button" class="btn" data-golog="boss-odo">去看看</button>' : '') + '</article>';
   }
+  // 补偿大礼包（2026-10-28）：航行日志最上面，每人领一次，领完卡片消失（服务器结算：js/engine/tx.js 的 compGift）
+  function giftLogHTML() {
+    var id = 'comp1', G = TX.D.GIFTS[id]; if (!G || (acc.gifts && acc.gifts[id])) return '';
+    return '<article class="log-card wide gift-card"><span class="tape l"></span><span class="tape r"></span><span class="chip log-tag">限时领取</span><h3>🎁 ' + G.name + '</h3>' +
+      '<p>感谢各位船员的耐心！这份补偿每个账号都能领一次：</p><ul class="gift-list">' + rwList({ exp: G.exp, energy: G.energy, items: G.items }).map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>' +
+      '<div class="soc-foot"><button type="button" class="btn primary" data-gift="' + id + '">立即领取</button></div></article>';
+  }
   function renderLog() {
     var now = new Date(), h = now.getHours(), on = mysteryTime();
     var wait = on ? '' : (function () { var t = new Date(now); t.setHours(MYSTERY.from, 0, 0, 0); var m = Math.max(0, Math.round((t - now) / 60000)); return '距离今天的活动开始还有 ' + Math.floor(m / 60) + ' 小时 ' + (m % 60) + ' 分钟'; })();
     $('pg-log').innerHTML = '<div class="page-head"><h2 class="sec">航行日志</h2><p class="hint">荆楚号的公告板：更新公告、限时活动、每日任务和新BOSS。</p></div>' +
-      '<div class="log-grid">' + '<article class="log-card wide qq-card"><span class="tape l"></span><span class="tape r"></span><div class="qq-txt"><span class="chip log-tag">船员交流</span><h3>QQ 群：<b class="qq-no">' + QQ_GROUP + '</b></h3><p class="hint">攻略、组队切磋、bug 反馈、新精灵立绘抢先看，都在群里。</p></div><button type="button" class="btn primary" data-copyqq="1">复制群号</button></article>' + '<div class="log-pair">' + changelogHTML() + monChangesHTML() + '</div>' +
+      '<div class="log-grid">' + giftLogHTML() + '<article class="log-card wide qq-card"><span class="tape l"></span><span class="tape r"></span><div class="qq-txt"><span class="chip log-tag">船员交流</span><h3>QQ 群：<b class="qq-no">' + QQ_GROUP + '</b></h3><p class="hint">攻略、组队切磋、bug 反馈、新精灵立绘抢先看，都在群里。</p></div><button type="button" class="btn primary" data-copyqq="1">复制群号</button></article>' + '<div class="log-pair">' + changelogHTML() + monChangesHTML() + '</div>' +
       mmLogHTML() + pwCardHTML('log') + contestLogHTML() + odoLogHTML() + travelLogHTML() + pickHTML() + coreLogHTML() + hornLogHTML() + riceLogHTML() +   // 立绘更新投票已结束移除（2026-10-17）；荒芜放在更新公告正下方
       '<article class="log-card ev"><span class="tape l"></span><span class="chip log-tag">限时活动</span><h3>神秘精灵出没</h3>' +
         '<p>每天 <b>16:00–24:00</b>，在星际探索的任何场景，都有 <b>3%</b> 的概率刷出一只神秘精灵！</p><p class="hint">它是什么？只有遇到过的人才知道。</p>' +

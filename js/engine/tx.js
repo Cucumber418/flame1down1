@@ -42,6 +42,8 @@ var TX = (function () {
     MINE_PRICE: { m_cu: 150, m_fe: 250 }, MINE_CAP: 3000, DRILL_MAX: 80,
     // 明明代币抽奖：10 个抽一次；每天最多解锁 100 个新奖池
     MM_COST: 10, MM_POOL_DAY: 100,
+    // 补偿礼包（2026-10-28）：每个账号每个礼包只能领一次（acc.gifts[礼包] 记领取时间）
+    GIFTS: { comp1: { name: '补偿大礼包', exp: 300000, energy: 50000, items: { m_mcry: 500, tgPearl: 200, brTwig: 200 } } },
     // 配队（2026-10-27）：最多 10 个，前 3 个免费，第 4 个起用能量解锁（下面是第 4 ~ 10 个的价格）
     TEAM_FREE: 3, TEAM_MAX: 10, TEAM_PRICE: [5000, 10000, 20000, 30000, 50000, 80000, 120000]
   };
@@ -134,6 +136,15 @@ var TX = (function () {
       return no('没有这件商品');
     },
     // 温泉休息室：{ k: 'juice' } 橘子汁；{ k: 'slot' } 栏位 +1；{ k: 'bgm', m: 曲子 } 解锁音乐
+    // 领补偿礼包：{ id }
+    compGift: function (acc, a, env) {
+      var G = D.GIFTS[a.id]; if (!G) return no('没有这个礼包');
+      if (!acc.gifts || typeof acc.gifts !== 'object') acc.gifts = {};
+      if (acc.gifts[a.id]) return no('已经领过了');
+      acc.gifts[a.id] = env.now;
+      acc.exp = num(acc.exp) + (G.exp || 0); acc.energy = num(acc.energy) + (G.energy || 0); if (G.items) give(acc, G.items);
+      return { ok: true, id: a.id };
+    },
     // 解锁一个新配队（第 4 个起）：acc.teamX = 已经买了几个
     teamSlot: function (acc) {
       var x = acc.teamX | 0, p = D.TEAM_PRICE[x];
