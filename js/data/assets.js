@@ -28,7 +28,7 @@ var SPRITES = {
   "bone": "images/sprites/bone.png",
   "aegis": "images/sprites/aegis.png",
   "leafcat": "images/sprites/leafcat.webp",
-  "phantom": "images/sprites/phantom.png",
+  "phantom": "images/sprites/phantom_v2.webp",
   "shroom": "images/sprites/shroom.webp",
   "firemouse": "images/sprites/firemouse.webp",
   "leiming": "images/sprites/leiming.webp",
@@ -55,8 +55,7 @@ var LINEART = {
   "mush": "images/lineart/mush.png",
   "siren": "images/lineart/siren.png",
   "bone": "images/lineart/bone.png",
-  "aegis": "images/lineart/aegis.png",
-  "phantom": "images/lineart/phantom.png"
+  "aegis": "images/lineart/aegis.png"
 };
 
 // 进化前形态立绘（_s1 一阶，_s2 二阶）  →  images/pre_sprites/
@@ -105,8 +104,7 @@ var PRE_SPRITES = {
   "aegis_s2": "images/pre_sprites/aegis_s2.png",
   "leafcat_s1": "images/pre_sprites/leafcat_s1_v3.webp",
   "leafcat_s2": "images/pre_sprites/leafcat_s2.svg",
-  "phantom_s1": "images/pre_sprites/phantom_s1.png",
-  "phantom_s2": "images/pre_sprites/phantom_s2.png",
+  "phantom_s1": "images/pre_sprites/phantom_s1_v2.webp",
   "shroom_s1": "images/pre_sprites/shroom_s1.webp",
   "firemouse_s1": "images/pre_sprites/firemouse_s1.webp",
   "leiming_s1": "images/pre_sprites/leiming_s1.webp",
@@ -311,7 +309,6 @@ var SILHOUETTES = {
   "leafcat_1": "images/silhouettes/leafcat_1.png",
   "phantom_0": "images/silhouettes/phantom_0.png",
   "phantom_1": "images/silhouettes/phantom_1.png",
-  "phantom_2": "images/silhouettes/phantom_2.png",
   "shroom_0": "images/silhouettes/shroom_0.png",
   "shroom_2": "images/silhouettes/shroom_2.png",
   "firemouse_0": "images/silhouettes/firemouse_0.png",
