@@ -3010,3 +3010,10 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .base-room.editing .hm-fig { pointer-events: none; opacity: .5; }
 .base-room.editing .hm-fig:hover { z-index: auto !important; }
 .base-room.editing .chat-bub { display: none; }
+
+/* 坎伯兰星保卫战：场景里的奥多亚克（2026-10-31） */
+.wf-mon.wf-odo img { filter: drop-shadow(0 0 6px rgba(255, 60, 40, .9)) drop-shadow(0 10px 8px rgba(0, 0, 0, .4)); animation: odoHover 2.4s ease-in-out infinite; }
+.wf-mon.wf-odo .wf-tag { background: #8a1d22; color: #fff; }
+.wf-mon.wf-odo.met { opacity: .45; cursor: default; }
+.wf-mon.wf-odo.met img { animation: none; filter: grayscale(.6) drop-shadow(0 10px 8px rgba(0, 0, 0, .4)); }
+@keyframes odoHover { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }

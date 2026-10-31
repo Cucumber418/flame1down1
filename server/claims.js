@@ -81,7 +81,7 @@ function clean(c) {
  * 返回 { data: 要保存的存档（enforce 模式下可能改过）, fixed: 修正说明（没改就是空） } */
 // 把塔的进度改回服务器上的（服务器那份没有的字段就删掉）
 // 只由服务器改的字段（「对象.字段」或整个顶层字段）：上传的存档里改了，悄悄改回服务器的
-var OWNED = ['tower.f', 'tower.cp', 'tower.best', 'tower.clears', 'tower.death', 'tower.day', 'bosses', 'permit', 'chal', 'mm.clr', 'mm.wins', 'cumberFt', 'npcWin', 'teaFight', 'purge', 'pwd', 'travel', 'rankExp', 'farm', 'nursery', 'home.mons', 'brawlExp', 'giftGot',
+var OWNED = ['tower.f', 'tower.cp', 'tower.best', 'tower.clears', 'tower.death', 'tower.day', 'bosses', 'permit', 'chal', 'mm.clr', 'mm.wins', 'cumberFt', 'npcWin', 'teaFight', 'purge', 'pwd', 'travel', 'kbw', 'kbwd', 'kbwK', 'kbwM', 'rankExp', 'farm', 'nursery', 'home.mons', 'brawlExp', 'giftGot',
   'gather', 'mine', 'drill', 'jade', 'hornDay', 'herbSeed', 'xcq',   // 野外每日产出（js/engine/world.js，2026-10-25）
   'daily', 'quests', 'stats.wildWins',   // 每日任务、世界任务（js/engine/quest.js）
   'chapters', 'starter', 'rival', 'split8',   // 剧情（js/engine/story.js）；a.story 另外处理（storyFix）
@@ -92,7 +92,7 @@ function getP(o, p) { var k = p.split('.'); return k.length === 1 ? o[k[0]] : o[
 function ownDiff(A, B) { return OWNED.filter(function (p) { var k = p.split('.'); if (k.length > 1 && (!A[k[0]] || !B[k[0]])) return false; var a = getP(A, p), b = getP(B, p); return JSON.stringify(a) !== JSON.stringify(b) && !(blankV(a) && blankV(b)) && !fresh(p, a, b, A); }); }
 function blankV(v) { return v == null || (typeof v === 'object' && !Object.keys(v).length); }   // 没有和空的 [] / {} 算一样（浏览器读的时候顺手建了个空记录）
 // 按天记的记录：浏览器跨天后自己清空成「今天、什么都没领」是正常的（服务器那份还是昨天的），不算改动
-var FRESH = { gather: 'day', mine: 'day', jade: 'd', 'tower.day': 'd', rankExp: 'd', npcWin: 'd', pwd: 'd', brawlExp: 'd', pveXp: 'd' };
+var FRESH = { gather: 'day', mine: 'day', jade: 'd', 'tower.day': 'd', rankExp: 'd', npcWin: 'd', pwd: 'd', kbwd: 'd', brawlExp: 'd', pveXp: 'd' };
 function fresh(p, a, b, A) {
   var E = require('./tx').engine();
   if (p === 'daily' && E && E.QST && b && (!a || a.date !== b.date)) {   // 每日任务：浏览器跨天后按同样的规则抽了今天的一套（进度都是 0）

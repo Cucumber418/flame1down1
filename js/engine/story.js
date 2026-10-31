@@ -43,7 +43,8 @@ var STY = (function () {
     storage: { after: 'board' }, brawl: { after: 'xiaogan', need: function (a) { return (a.mons || []).length >= 3; } },
     draft: { after: 'xiaogan', need: function (a) { return species(a) >= 10; } },
     core: { after: 'board' }, spa: { after: 'flora1' }, plant: { after: 'flora1' }, travelcat: { after: 'flora2' }, xiaogan: { after: 'board' },
-    kb1: { after: 'flora7' }, kb2: { after: 'kb1' }, kb3: { after: 'kb2' }, kb4: { after: 'kb3' }, kb5: { after: 'kb4' }, kb6: { after: 'kb5' }   // 2026-10-31：第二章 · 坎伯兰星
+    kb1: { after: 'flora7' }, kb2: { after: 'kb1' }, kb3: { after: 'kb2' }, kb4: { after: 'kb3' }, kb5: { after: 'kb4' }, kb6: { after: 'kb5' },
+    kb7: { after: 'kb6', need: function (a) { return (a.kbwK | 0) >= PVE.KBW.need || !!(a.story && a.story.kb7 && a.story.kb7.at > 0); } }   // 坎伯兰星保卫战：本账号累计击破 5 只奥多亚克   // 2026-10-31：第二章 · 坎伯兰星
   };
   function unlocked(a, site, env) { var S = SITES[site]; return !!S && (!S.after || done(a, S.after)) && (!S.need || S.need(a, env)); }
   // 剧本里有剧情对战的段：读完之前要先打过（胜负都算，服务器打完时记 bt）
@@ -56,7 +57,7 @@ var STY = (function () {
   if (typeof STORY_SCRIPT !== 'undefined') Object.keys(STORY_SCRIPT).forEach(function (site) { (STORY_SCRIPT[site] || []).forEach(function (st) { if (st && st.pay && st.pay.id) (PAY_OF[site] || (PAY_OF[site] = {}))[st.pay.id] = st.pay; }); });
   var SITE_OF = {}; Object.keys(FIGHT_OF).forEach(function (s) { FIGHT_OF[s].forEach(function (k) { if (!SITE_OF[k]) SITE_OF[k] = s; }); });
 
-  var MAIN = ['school', 'river', 'jiuquan', 'board', 'flora1', 'flora2', 'flora3', 'flora4', 'flora5', 'flora6', 'flora7', 'kb1', 'kb2', 'kb3', 'kb4', 'kb5', 'kb6'];
+  var MAIN = ['school', 'river', 'jiuquan', 'board', 'flora1', 'flora2', 'flora3', 'flora4', 'flora5', 'flora6', 'flora7', 'kb1', 'kb2', 'kb3', 'kb4', 'kb5', 'kb6', 'kb7'];
   var CHAPTERS = [{ id: 'prologue', sites: ['school', 'river', 'jiuquan', 'board'] }, { id: 'ch1', sites: ['flora1', 'flora2', 'flora3', 'flora4', 'flora5', 'flora6', 'flora7'] }];
   function chapterPay(a, now) {   // 读完一整章、还没领过章节大奖的：发
     var out = [];

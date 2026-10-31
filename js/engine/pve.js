@@ -673,6 +673,9 @@ var PVE = (function () {
       allyMon: { sid: 'leafcat', lv: 40, nick: '叶子喵', boss: { purify: 1 }, moves: ['闪光飞叶', '种子炸弹', '星星魔法', '光束'], ability: { n: '脚伤', d: '脚底被瘴气浸透，陷入永久的流血状态，无法被解除' } },
       env: 'miasma', bg: 'fl_salt_mia', desc: '荒芜（LV45）· 叶子喵助战（特性「脚伤」：永久流血）' },
     brLab: { foe: '荒芜', bgm: 'boss3', team: [{ sid: 'barren', lv: 50, nick: '荒芜', boss: { nourish: 1, pp: 99 } }], env: 'miasma', bg: 'fl_lab', desc: '荒芜（LV50）· 特效「养料汲取」：每回合恢复 50 体力' },
+    // 第十八段 · 星云显现（2026-10-31）：玫瑰星云（剧情限定，体力 10000），可以带 Cumber 的 LV80 坎克托斯助战
+    nebula: { foe: 'Rosette Nebula', bgm: 'kbDeep3', team: [{ sid: 'rosette', lv: 80, nick: '玫瑰星云', maxhp: 10000, moves: ['黑雾潮汐', '幽冥息', '夜影封魂', '幽冥结界'], boss: { dr: 0.15, pp: 99 } }],
+      allyMon: { sid: 'pede', lv: 80, nick: 'Cumber 的坎克托斯' }, allyOpt: true, bg: 'kb_dusk', desc: '玫瑰星云（体力 10000）· 可以带 Cumber 的坎克托斯（LV80）助战' },
     // 第十五段 · 暮色追击、第十六段 · 同舟（2026-10-31）
     cyKb: { foe: '辰爷', team: [{ sid: 'kaleo', lv: 44, nick: '卡莱奥' }, { sid: 'squid', lv: 48, nick: '邪恶水臂' }], bg: 'kb_dusk', desc: '辰爷的卡莱奥（LV44）、邪恶水臂（LV48）' },
     odoKb: { foe: '奥多亚克', team: [{ sid: 'odo', lv: 50, nick: '奥多亚克', boss: { dr: 0.15, pp: 99 } }], allyMon: { sid: 'squid', lv: 48, nick: '辰爷的邪恶水臂' }, allyOpt: true, bg: 'kb_floor', desc: '奥多亚克（LV50）· 可以带辰爷的邪恶水臂助战' },
@@ -762,7 +765,7 @@ var PVE = (function () {
         if (F.allyMon && !(F.allyOpt && args.allyOff)) { p = [resolveFoeEntry(F.allyMon, env.rand)].concat(p.slice(0, ACC.TEAM_SIZE - 1)); slots = [null].concat(slots.slice(0, ACC.TEAM_SIZE - 1)); }
       }
       var foes = fightTeam(F, a).map(function (x) { return resolveFoeEntry(x, env.rand); });
-      fightTeam(F, a).forEach(function (x) { if (SPMAP[x.sid]) ACC.seeMon(a, x.sid, x.lv); });
+      fightTeam(F, a).forEach(function (x) { if (SPMAP[x.sid] && !SPMAP[x.sid].nodex) ACC.seeMon(a, x.sid, x.lv); });
       var site = String(args.site || ''); if (typeof STY !== 'undefined' && !(STY.FIGHT_OF[site] && STY.FIGHT_OF[site].indexOf(String(args.key)) >= 0)) site = STY.SITE_OF[String(args.key)] || '';   // 这场对战属于哪段剧情（打完记 bt）
       return { p: p, a: foes, ctx: { key: args.key, slots: slots, site: site }, dirty: true, preStrike: !!F.preStrike, S: { env: F.env || null }, opt: { foe: F.foe, bgm: F.bgm || null } };
     },
@@ -814,6 +817,29 @@ var PVE = (function () {
   // 瘴气驱逐战：击破腐化精灵，自己经验背包 +1000，全服击破 +1（每人每天最多 50 次）
   var PW = { exp: 1000, cap: 50 };
   function pwOpen(a) { return done(a, 'flora6'); }
+  /* 坎伯兰星保卫战（2026-10-31）：读完第十七段「深海基站」后开放（参考瘴气驱逐战）
+   * 每个整点，坎伯兰星随机 per 个场景里各出现一只不同型号的奥多亚克（全服时间表一样，按小时编号算），停留一整个小时；
+   * 每只每人每小时只能挑战 1 次（开战就算），不能捕捉。击破：自己经验背包 +exp，全服击破 +1（每人每天最多 cap 次）；
+   * 本账号累计击破 need 只后开放第十八段。全服里程碑奖励见 js/engine/award.js（kbwReward） */
+  var KBW = { per: 4, cap: 20, exp: 3000, need: 5, regions: ['kb_surf', 'kb_sea', 'kb_deep'],
+    spots: [{ x: 24, y: 70 }, { x: 40, y: 62 }, { x: 78, y: 64 }, { x: 88, y: 74 }],
+    models: [
+      { k: 'scout', n: '侦察型奥多亚克', lv: 45, maxhp: 900, boss: { dr: 0.1, pp: 99 } },
+      { k: 'assault', n: '突击型奥多亚克', lv: 50, maxhp: 1200, boss: { dr: 0.15, pp: 99 } },
+      { k: 'heavy', n: '重装型奥多亚克', lv: 52, maxhp: 1800, boss: { dr: 0.25, pp: 99 } },
+      { k: 'hunter', n: '猎杀型奥多亚克', lv: 55, maxhp: 1500, boss: { dr: 0.15, pp: 99 } }
+    ] };
+  function kbwOpen(a) { return done(a, 'kb6'); }
+  function kbwAt(now) {
+    var h = Math.floor(now / 3600000), L = [], used = {};
+    for (var k = 0; k < KBW.per; k++) {
+      var s = ACC.thash(h * 7 + k + 40503), R = regionById(KBW.regions[s % KBW.regions.length]), si = (s >>> 8) % sceneCount(R), key = R.id + ':' + si;
+      var spot = KBW.spots[((s >>> 4) + (used[key] || 0)) % KBW.spots.length]; used[key] = (used[key] || 0) + 1;
+      L.push({ h: h, k: k, rid: R.id, si: si, spot: spot, m: KBW.models[(s >>> 16) % KBW.models.length], end: (h + 1) * 3600000 });
+    }
+    return L;
+  }
+  function kbwFought(a, h, k) { return !!(a.kbw && a.kbw.h === h && Array.isArray(a.kbw.k) && a.kbw.k.indexOf(k) >= 0); }
   // 神秘精灵：每天 16:00–24:00（北京时间），切换场景时有 3% 概率出现（真身是 LV10 幽灵鱼）
   var MYSTERY = { sid: 'hauris', lv: 10, rate: 0.4, chance: 0.03, shiny: 0.03, from: 16, to: 24 };
   function mysteryTime(now) { var h = new Date(now + 8 * 3600e3).getUTCHours(); return h >= MYSTERY.from && h < MYSTERY.to; }
@@ -837,6 +863,7 @@ var PVE = (function () {
   }
   function wildFoe(a, o, rand) {
     var s = SPMAP[o.sid];
+    if (o.odo) return { id: 'odo', lv: o.lv, moves: ACC.defaultMoves('odo', o.lv).filter(function (n) { return n !== '歼灭形态' && n !== '护阵形态'; }), nick: o.odo.n, img: SPRITES.odo, maxhp: o.odo.maxhp, boss: JSON.parse(JSON.stringify(o.odo.boss)) };
     if (o.corrupt) {   // 瘴气异变：强制最高阶段立绘、只会用攻击技能、深度侵蚀双攻 +100%
       return { id: o.sid, lv: o.lv, moves: puppetMoves(o.sid), nick: '瘴气' + s.name, img: o.shiny === 2 ? (SHINY_SPRITES[o.sid + '_2'] || SHINY_SPRITES[o.sid] || SPRITES[o.sid]) : o.shiny ? (SHINY_SPRITES[o.sid] || SPRITES[o.sid]) : SPRITES[o.sid], shiny: ACC.shinyV(o.shiny), miasma: o.miasma, boss: { erode: 1, mute: 1 } };
     }
@@ -850,7 +877,14 @@ var PVE = (function () {
     // args = { sp: 服务器刷出来的那只（server/pve.js 按编号取出，放在 args._sp） } 或 { travel: 小时编号 }
     start: function (a, args, env) {
       var o, R;
-      if (args.travel != null) {
+      if (args.odo != null) {   // 坎伯兰星保卫战的奥多亚克
+        var q = kbwAt(env.now)[args.odo | 0];
+        if (!kbwOpen(a) || !q) return { err: '奥多亚克已经潜回深海了。' };
+        if (kbwFought(a, q.h, q.k)) return { err: '这只奥多亚克已经交过手了。' };
+        if (!a.kbw || a.kbw.h !== q.h || !Array.isArray(a.kbw.k)) a.kbw = { h: q.h, k: [] };
+        a.kbw.k.push(q.k); R = regionById(q.rid);
+        o = { sid: 'odo', lv: q.m.lv, rate: 0, noCatch: true, odo: q.m, foe: '坎伯兰星保卫战', tag: ' · ' + q.m.n, rid: R.id };
+      } else if (args.travel != null) {
         var t = travelAt(env.now);
         if (!done(a, 'travelcat') || !t.active || t.h !== (args.travel | 0)) return { err: '叶子喵已经背起行囊，去别的地方旅行了。' };
         if (a.travel && a.travel.h === t.h) return { err: '这次已经和叶子喵切磋过了。' };
@@ -872,7 +906,7 @@ var PVE = (function () {
       var T = myTeam(a);
       return { p: T.p, a: [wildFoe(a, o, env.rand)], ctx: { o: o, team: T.us }, dirty: true,
         S: { wild: { rate: o.rate, noCatch: !!o.noCatch, spare: !!o.spare, back: '', where: '' } },
-        opt: { foe: o.foe || '野生精灵', bgm: o.corrupt ? 'disCommunication' : null, tag: o.tag, rid: o.rid, corrupt: !!o.corrupt, travel: !!o.travel } };
+        opt: { foe: o.foe || '野生精灵', bgm: o.corrupt ? 'disCommunication' : o.odo ? 'boss3' : null, tag: o.tag, rid: o.rid, corrupt: !!o.corrupt, travel: !!o.travel } };
     },
     end: function (a, c, B, env) {
       var o = c.o, rep = { res: B.res, sid: o.sid, lv: o.lv, travel: !!o.travel }, downs = (B.downs || []).slice();
@@ -902,6 +936,12 @@ var PVE = (function () {
           var pe = pw && pw.total >= 1000 && (pw.me || 0) > 5 ? Math.floor(PW.exp / 4) : PW.exp;
           a.exp = (a.exp || 0) + pe; rep.pw = { n: a.pwd.n, cap: PW.cap, exp: pe, data: pw };
         } else rep.pw = { full: true, cap: PW.cap };
+      }
+      if (o.odo && n) {   // 坎伯兰星保卫战
+        var dk = bjDay(env.now); if (!a.kbwd || a.kbwd.d !== dk) a.kbwd = { d: dk, n: 0 };
+        a.kbwK = (a.kbwK || 0) + 1;
+        if (a.kbwd.n < KBW.cap) { a.kbwd.n++; var kw = env.kbw ? env.kbw() : null; a.exp = (a.exp || 0) + KBW.exp; rep.kbw = { n: a.kbwd.n, cap: KBW.cap, exp: KBW.exp, me: a.kbwK, need: KBW.need, data: kw }; }
+        else rep.kbw = { full: true, cap: KBW.cap, me: a.kbwK, need: KBW.need };
       }
       if (o.travel && n) { var lf = env.rand() < TRAVEL.leaf; a.exp = (a.exp || 0) + TRAVEL.exp; if (lf) ACC.addItems(a, { m_lcleaf: 1 }); rep.trav = { exp: TRAVEL.exp, leaf: lf }; }
       if (o.sid === 'hephaestus' && n) { var hn = 0; downs.forEach(function () { hn += hornDrop(env.rand); }); ACC.addItems(a, { m_hfhorn: hn }); rep.horn = hn; }
@@ -991,7 +1031,7 @@ var PVE = (function () {
   };
 
   return { MODES: MODES, RANK_EXP: RANK_EXP, RANK_EXP_N: RANK_EXP_N, RANK_TOKEN: RANK_TOKEN, rankState: rankState, rankApply: rankApply, newDraft: newDraft, readKey: readKey, regionById: regionById, regionOpen: regionOpen, floraFallen: floraFallen, regionFallen: regionFallen, sceneCount: sceneCount, rollShiny: rollShiny, rollWild: rollWild,
-    MYSTERY: MYSTERY, mysteryTime: mysteryTime, RICE: RICE, HORN: HORN, TRAVEL: TRAVEL, travelAt: travelAt, PURGE: PURGE, purgeRec: purgeRec, purgeActive: purgeActive, SPARE_N: SPARE_N, spareActive: spareActive, PW: PW, wildRoll: wildRoll, LEAF_ALLY: LEAF_ALLY, FIGHTS: FIGHTS, fightTeam: fightTeam, resolveFoeEntry: resolveFoeEntry, CUMBER: CUMBER, NPC_WIN_EXP: NPC_WIN_EXP, NPC_HOURS: NPC_HOURS, NPC_FROM: NPC_FROM, NPC_TO: NPC_TO, NPC_AI_RANK: NPC_AI_RANK, NPC: NPC, NPC_SECRET: NPC_SECRET, NPC_POOL: NPC_POOL, npcPlan: npcPlan, bjDay: bjDay, TEA_DAILY: TEA_DAILY, TEA_EXP: TEA_EXP, MM: MM, MM_NICK: MM_NICK, MM_TEAM: MM_TEAM, MM_TEAM_HARD: MM_TEAM_HARD, MM_DIFF: MM_DIFF, MM_FINAL: MM_FINAL, mmFoes: mmFoes, mmDay: mmDay, CHAL: CHAL, starOk: starOk, chalLevelOpen: chalLevelOpen, chalTotal: chalTotal, MM_HELPER: MM_HELPER, ONLY3: ONLY3, BOSSES: BOSSES, BOSS_CRY: BOSS_CRY, WEEKLIES: WEEKLIES, EWK: EWK, PERMIT: PERMIT, SECRET_FX: SECRET_FX,
+    MYSTERY: MYSTERY, mysteryTime: mysteryTime, RICE: RICE, HORN: HORN, TRAVEL: TRAVEL, travelAt: travelAt, KBW: KBW, kbwAt: kbwAt, kbwOpen: kbwOpen, kbwFought: kbwFought, PURGE: PURGE, purgeRec: purgeRec, purgeActive: purgeActive, SPARE_N: SPARE_N, spareActive: spareActive, PW: PW, wildRoll: wildRoll, LEAF_ALLY: LEAF_ALLY, FIGHTS: FIGHTS, fightTeam: fightTeam, resolveFoeEntry: resolveFoeEntry, CUMBER: CUMBER, NPC_WIN_EXP: NPC_WIN_EXP, NPC_HOURS: NPC_HOURS, NPC_FROM: NPC_FROM, NPC_TO: NPC_TO, NPC_AI_RANK: NPC_AI_RANK, NPC: NPC, NPC_SECRET: NPC_SECRET, NPC_POOL: NPC_POOL, npcPlan: npcPlan, bjDay: bjDay, TEA_DAILY: TEA_DAILY, TEA_EXP: TEA_EXP, MM: MM, MM_NICK: MM_NICK, MM_TEAM: MM_TEAM, MM_TEAM_HARD: MM_TEAM_HARD, MM_DIFF: MM_DIFF, MM_FINAL: MM_FINAL, mmFoes: mmFoes, mmDay: mmDay, CHAL: CHAL, starOk: starOk, chalLevelOpen: chalLevelOpen, chalTotal: chalTotal, MM_HELPER: MM_HELPER, ONLY3: ONLY3, BOSSES: BOSSES, BOSS_CRY: BOSS_CRY, WEEKLIES: WEEKLIES, EWK: EWK, PERMIT: PERMIT, SECRET_FX: SECRET_FX,
     wkKey: wkKey, recKey: recKey, bossRec: bossRec, bossWon: bossWon, levelOpen: levelOpen, wkOpen: wkOpen, weeklyOpen: weeklyOpen, wkNum: wkNum, ewkPool: ewkPool, ewkType: ewkType, ewkSid: ewkSid,
     permits: permits, seedSeenFx: seedSeenFx, chalStars: chalStars, myTeam: myTeam,
     TOWER: TOWER, twLv: twLv, twExp: twExp, twTok: twTok, twFloor: twFloor, seeded: seeded, foeMoves: foeMoves, storyMon: storyMon,

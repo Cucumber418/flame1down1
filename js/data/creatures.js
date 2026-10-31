@@ -195,4 +195,8 @@ var ARENA_ROSTER = ['dragon', 'leaf', 'gorgon', 'squid', 'wind', 'pluto', 'pede'
 (function () { var all = SP.concat(EXTRA_SP), keep = []; EXTRA_SP = []; all.forEach(function (s) { (ARENA_ROSTER.indexOf(s.id) >= 0 ? keep : EXTRA_SP).push(s); }); SP = keep; })();   // 名单里的进 SP（竞技对战），其余进 EXTRA_SP
 var SPMAP = {};
 EXTRA_SP.concat(SP).forEach(function (s) { if (!s.types) s.types = [s.type]; s.type = s.types[0]; SPMAP[s.id] = s; });
-SPMAP.dummy = DUMMY;   // 只用于显示名字与图像，不进入图鉴和阵容
+SPMAP.dummy = DUMMY;
+// 2026-10-31：第二章剧情限定的玫瑰星云（Rosette Nebula NGC 2237，暗影系）。不进图鉴、Wiki 和阵容；全能力种族值暂定 150，剧情里体力固定 10000
+var NEBULA = { id: 'rosette', name: '玫瑰星云', types: ['暗影'], type: '暗影', base: { hp: 150, atk: 150, def: 150, spa: 150, spd: 150, spe: 150 },
+  evo: [{ n: '玫瑰星云', lv: 1 }], ability: { n: '星云', d: '剧情限定' }, moves: ['幽冥息', '夜影封魂', '幽冥结界', '黑雾潮汐'], hidden: [], def: ['黑雾潮汐', '幽冥息', '夜影封魂', '幽冥结界'], nodex: true };
+SPMAP.rosette = NEBULA;   // 只用于显示名字与图像，不进入图鉴和阵容

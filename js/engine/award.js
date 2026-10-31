@@ -162,6 +162,14 @@ var AWD = (function () {
     if (m === 100) return { exp: 30000, energy: 5000, items: { floraJade: 100, g_sand: 96, g_core: 4 } };
     return { exp: 20000, energy: 4000, items: { floraJade: 60, g_sand: 48, g_core: 2 } };
   }
+  // 坎伯兰星保卫战：全服击破 5 / 20 / 50、之后每 25 只，给击破过的船员发奖励邮件（奥多亚克比腐化精灵强，里程碑比瘴气驱逐战低）
+  function kbwMilestones(upTo) { var L = [5, 20, 50]; for (var m = 75; m <= upTo; m += 25) L.push(m); return L.filter(function (x) { return x <= upTo; }); }
+  function kbwReward(m) {
+    if (m === 5) return { exp: 5000, energy: 1000, items: { kbDrop: 20, g_sand: 24, g_core: 1 } };
+    if (m === 20) return { exp: 15000, energy: 3000, items: { kbDrop: 50, g_sand: 48, g_core: 2 } };
+    if (m === 50) return { exp: 30000, energy: 5000, items: { kbDrop: 100, g_sand: 96, g_core: 4 } };
+    return { exp: 20000, energy: 4000, items: { kbDrop: 60, g_sand: 48, g_core: 2 } };
+  }
   function twExp0(f) { return f >= PVE.TOWER.top ? 16000 : 400 + 20 * f; }
   function twTok0(f) { return f >= PVE.TOWER.top ? 232 : 2 + Math.floor(f / 10); }
   var PURGE_OLD = { 1: 300, 5: 1000, 10: 2000, 20: 4000, 30: 12000 };
@@ -269,6 +277,15 @@ var AWD = (function () {
         send(a, { id: 'pw-' + m, title: '瘴气驱逐战 · 全服击破 ' + m + ' 只', body: '{name}，你好！\n全服船员在瘴气驱逐战中，已经一起击破了 ' + m + ' 只腐化精灵！\n你目前一共击破了 ' + d.me + ' 只，感谢你的贡献，请领取附件里的奖励。', att: w }, now);
       });
     }
+    // 坎伯兰星保卫战：同上
+    var dk = env.fetch ? env.fetch('kbw') : null;
+    if (dk && dk.me > 0) {
+      if (!a.kbwM) a.kbwM = {};
+      kbwMilestones(dk.total).forEach(function (m) {
+        if (a.kbwM[m]) return; a.kbwM[m] = 1;
+        send(a, { id: 'kbw-' + m, title: '坎伯兰星保卫战 · 全服击破 ' + m + ' 只', body: '{name}，你好！\n全服船员在坎伯兰星保卫战中，已经一起击破了 ' + m + ' 只奥多亚克！\n你目前一共击破了 ' + dk.me + ' 只，感谢你守护深海基站，请领取附件里的奖励。', att: kbwReward(m) }, now);
+      });
+    }
     // 做题大王争霸赛：结束后按名次发奖（每个账号一次）
     var k2 = env.fetch ? env.fetch('ctPlace') : null;
     if (typeof k2 === 'number' && k2 >= 0) {
@@ -304,6 +321,6 @@ var AWD = (function () {
   });
 
   return { TITLES: TITLES, titleCheck: titleCheck, RANKS_MIL: RANKS_MIL, MIL_COST: MIL_COST, milMigrate: milMigrate, CHAL_STAR: CHAL_STAR, rankRec: rankRec, rankPending: rankPending, rankRwOf: rankRwOf, rankBest: rankBest,
-    hasAtt: hasAtt, send: send, sync: sync, MAIL_MAX: MAIL_MAX, pwMilestones: pwMilestones, pwReward: pwReward, CONTEST: CONTEST, CT_RW: CT_RW, CT_RW0: CT_RW0 };
+    hasAtt: hasAtt, send: send, sync: sync, MAIL_MAX: MAIL_MAX, pwMilestones: pwMilestones, pwReward: pwReward, kbwMilestones: kbwMilestones, kbwReward: kbwReward, CONTEST: CONTEST, CT_RW: CT_RW, CT_RW0: CT_RW0 };
 })();
 if (typeof module !== 'undefined') module.exports = AWD;

@@ -81,7 +81,7 @@ function finish(name, sess) {
   var end;
   if (sess.legacy) end = E.PVE.towerEnd(acc, sess.f, sess.F, S.over, !!S.quit, sess.team, seen, downs, now);
   else {   // 其他模式：规则在 js/engine/pve.js 的 MODES；结算完把整份存档发回去，浏览器直接换上
-    var env = { now: now, rand: Math.random, data: u.save.data, pw: function () { return require('./purgewar').hit(name); } };
+    var env = { now: now, rand: Math.random, data: u.save.data, pw: function () { return require('./purgewar').hit(name); }, kbw: function () { return require('./kbwar').hit(name); } };
     var rep = E.PVE.MODES[sess.kind].end(acc, sess.ctx, { res: S.over, quit: !!S.quit, seen: seen, downs: downs, S: S }, env);
     end = { kind: sess.kind, res: S.over, quit: !!S.quit, rep: rep };
     if (E.QST) { var rr = {}; for (var kk in rep || {}) rr[kk] = rep[kk]; if (rr.res == null) rr.res = S.over; var dh = E.QST.pveHits(acc, sess.kind, rr, now); if (rep && dh.length) rep.daily = dh; }   // 每日任务的进度（js/engine/quest.js）
@@ -115,7 +115,7 @@ function saveAcc(u, acc) {
 // 开一场其他模式的对战
 function startMode(E, res, name, kind, u, acc, args) {
   delete args._helper; delete args._foes; delete args._owner; delete args._sp;
-  if (kind === 'wild' && args.travel == null) {   // 野外：按编号取出服务器刷出来的那只
+  if (kind === 'wild' && args.travel == null && args.odo == null) {   // 野外：按编号取出服务器刷出来的那只（旅行精灵、保卫战的奥多亚克按时间表算，不用编号）
     var W = wildSp[name], sp = W && W.list[args.id | 0];
     if (!sp) return A.reply(res, 400, { error: '它已经离开了。' });
     delete W.list[args.id | 0]; args._sp = sp;

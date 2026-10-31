@@ -25,6 +25,7 @@ require('./contest');   // 太空竞技场 · 比赛报名
 require('./artvote');   // 航行日志 · 立绘更新投票
 require('./homelog');   // 茶室动态与留言板
 require('./purgewar');
+require('./kbwar');   // 2026-10-31：坎伯兰星保卫战
 require('./chalboard');   // 全服挑战进度（星球挑战、先驱之塔）   // 瘴气驱逐战（全服共享进度）
 require('./hlrestore');   // 2026-10-18：小月亮、骨刃隐藏技能从备份里恢复
 require('./cheatfix');   // 2026-10-22：找出改档的账号并恢复到改档前（只运行一次）
