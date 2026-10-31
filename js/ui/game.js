@@ -4507,7 +4507,10 @@
   function renderBoss(weekly) {
     var WK = weekly ? curWk() : null, k = ex.boss, B = BOSSES[k], d = weekly ? WK.d : bossSel(k), L = B.lv[d], won = bossWon(k, d);
     var rec = (acc.bosses && acc.bosses[recKey(k, weekly ? wkKey(WK) : d)]) || {}, open = weekly ? weeklyOpen() : levelOpen(k, d), pn = weekly ? permits() : 0;
-    var tabs = weekly ? '' : '<div class="fparts boss-tabs" role="tablist">' + B.lv.map(function (x, i) {
+    var tabs = weekly ? '<div class="fparts boss-tabs" role="tablist">' + WEEKLIES.map(function (x, i) { return [x, i]; }).filter(function (p) { return p[0].boss === k; }).map(function (p) {
+      var op = wkOpen(p[0]), on = p[0] === WK;
+      return '<button type="button" role="tab" class="tab' + (on ? ' on' : '') + (op ? '' : ' lock') + '" aria-selected="' + on + '"' + (op ? ' data-wkd="' + p[1] + '"' : ' disabled title="先击败' + B.lv[p[0].d].diff + '难度的' + B.name + '"') + '>' + (op ? '' : '🔒 ') + B.lv[p[0].d].diff + (bossWon(k, wkKey(p[0])) ? ' ✓' : '') + '</button>';
+    }).join('') + '</div>' : '<div class="fparts boss-tabs" role="tablist">' + B.lv.map(function (x, i) {
       var op = levelOpen(k, i);
       return '<button type="button" role="tab" class="tab' + (i === d ? ' on' : '') + (op ? '' : ' lock') + '" aria-selected="' + (i === d) + '"' + (op ? ' data-bossd="' + i + '"' : ' disabled title="' + esc(x.lockText) + '"') + '>' + (op ? '' : '🔒 ') + x.diff + (bossWon(k, i) ? ' ✓' : '') + '</button>';
     }).join('') + '</div>';
@@ -4878,10 +4881,14 @@
 
   function weeklyCardsHTML() {
     var pn = permits(), html = '';
-        WEEKLIES.forEach(function (W, wi) {
-          if (!wkOpen(W)) return; var WB = BOSSES[W.boss];
-          html += '<button type="button" class="weekly-card" data-weekly="' + (wi + 1) + '"><span class="tape l"></span><img src="' + SPRITES[WB.sid] + '" alt=""><span class="wk-txt"><span class="chip boss-diff d' + W.d + '">每周挑战</span><b>' + WB.name + ' · ' + WB.lv[W.d].diff + '难度</b>' +
-            '<small>获胜时消耗 1 枚挑战许可 · 击败得累积经验 ×' + fmt(W.exp) + '、' + rwList({ items: W.item }).join('、') + (W.cry ? '、' + itemName('m_mcry') + ' ×' + W.cry[0] + '–' + W.cry[1] : '') + ' 和随机掉落</small></span><span class="wk-pm"><b>' + pn + '</b> / ' + PERMIT.max + '<small>挑战许可（共用）</small></span></button>';
+        // 2026-11-01：每个BOSS的三档难度合成一张卡（和属性挑战一样），进去再切难度
+        var seen = {};
+        WEEKLIES.forEach(function (W) {
+          if (seen[W.boss]) return; seen[W.boss] = 1;
+          var all = WEEKLIES.map(function (x, i) { return [x, i]; }).filter(function (p) { return p[0].boss === W.boss; }), op = all.filter(function (p) { return wkOpen(p[0]); });
+          if (!op.length) return; var WB = BOSSES[W.boss], pick = op[op.length - 1];
+          html += '<button type="button" class="weekly-card" data-weekly="' + (pick[1] + 1) + '"><span class="tape l"></span><img src="' + SPRITES[WB.sid] + '" alt=""><span class="wk-txt"><span class="chip boss-diff d1">BOSS · 每周挑战</span><b>' + WB.name + '</b>' +
+            '<small>' + all.map(function (p) { return WB.lv[p[0].d].diff + (wkOpen(p[0]) ? '' : '🔒'); }).join(' / ') + ' · 获胜消耗 1 枚挑战许可 · 掉落' + rwList({ items: pick[0].item }).join('、').replace(/ ×\d+/, '') + '等</small></span><span class="wk-pm"><b>' + pn + '</b> / ' + PERMIT.max + '<small>挑战许可（共用）</small></span></button>';
         });
     return html + ewkCardHTML(pn);
   }
@@ -6580,6 +6587,7 @@
     if (b.dataset.bossd) { ex.bossK = ex.boss; ex.bossD = +b.dataset.bossd; renderBoss(); return; }
     if (b.dataset.bossgo) { startBoss(b.dataset.bossgo, +b.dataset.d || 0); return; }
     if (b.dataset.weekly) { ex.wk = (+b.dataset.weekly || 1) - 1; ex.view = 'weekly'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
+    if (b.dataset.wkd) { ex.wk = +b.dataset.wkd; renderExplore(); return; }   // 每周挑战里切换难度
     if (b.dataset.weeklygo) { startBoss(curWk().boss, curWk().d, true); return; }
     if (b.dataset.archive) { ex.view = 'archive'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
     if (b.dataset.arctab) { ex.arcTab = b.dataset.arctab; renderArchive(); return; }

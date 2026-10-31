@@ -247,11 +247,11 @@ var PVE = (function () {
   ];
   var EWK = {
     types: [{ t: '草', item: 'floraJade' }, { t: '水', item: 'kbDrop' }, { t: '火', item: 'ppAsh' }, { t: '冰', item: 'whFrost' }, { t: '电', item: 'ltOrb' },
-      { t: '地球', item: 'earthShard', team: ['leaf', 'squid', 'shroom'], hpMul: 0.5, dropMul: 1.5 }],   // 2026-11-01：地球挑战，地球三主宠轮流上场（每只体力是这一档的一半），地球元素掉得更多
+      { t: '地球', item: 'earthShard', team: ['leaf', 'squid', 'shroom'], hpMul: 0.4, dropMul: 1.5 }],   // 2026-11-01：地球挑战，地球三主宠轮流上场（每只体力是这一档的一半），地球元素掉得更多
     lv: [
-      { diff: '简单', lv: 40, hp: 2000, boss: { pp: 99 }, bgm: 'boss', drop: [8, 12], exp: 3000 },
-      { diff: '普通', lv: 60, hp: 5000, boss: { dr: 0.15, pp: 99 }, bgm: 'boss2', drop: [16, 24], exp: 6000 },
-      { diff: '困难', lv: 80, hp: 10000, boss: { dr: 0.2, noStatus: 1, pp: 99 }, bgm: 'boss3', drop: [30, 45], exp: 12000 }
+      { diff: '简单', lv: 40, hp: 1600, boss: { pp: 99 }, bgm: 'boss', drop: [8, 12], exp: 3000 },   // 2026-11-01：三档都削弱（体力 −20%，减伤降一档）
+      { diff: '普通', lv: 60, hp: 4000, boss: { dr: 0.1, pp: 99 }, bgm: 'boss2', drop: [16, 24], exp: 6000 },
+      { diff: '困难', lv: 80, hp: 8000, boss: { dr: 0.15, noStatus: 1, pp: 99 }, bgm: 'boss3', drop: [30, 45], exp: 12000 }
     ]
   };
 
