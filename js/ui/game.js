@@ -6984,7 +6984,7 @@
       return { id: raw.sid, lv: BAL_LV, moves: mv, nick: f.name, img: f.img, ev: {}, nat: null };
     },
     BAL_LV: BAL_LV, speciesN: speciesN, homeOpen: homeOpen,
-    homeRefresh: function () { if (page === 'explore' && ex.view === 'home' && !ex.fighting && document.querySelector('.home-room')) renderHome(); },
+    homeRefresh: function () { if (page === 'explore' && ex.view === 'home' && !ex.fighting && !ex.baseEdit && document.querySelector('.home-room')) renderHome(); },
     goHome: function () { if (!homeOpen()) { toast('读完星际探索 · 荆楚号 · 天门「陆羽茶室」支线后，才有自己的茶室。'); return; } ex.planet = 'jingchu'; ex.area = '天门'; ex.view = 'home'; go('explore'); },
     // 参加过一次竞技征召（支线任务「竞技征召」用）
     noteDraft: function () { if (!acc.stats) acc.stats = {}; acc.stats.drafts = (acc.stats.drafts || 0) + 1; save(); },

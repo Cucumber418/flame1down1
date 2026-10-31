@@ -3005,3 +3005,8 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .sn-art .sn-bg { object-fit: cover; }
 .sn-art .sn-card { object-fit: contain; animation: vcArt 1.2s cubic-bezier(.2,.8,.2,1) .2s both; }
 .sn-sub { color: var(--pencil); font-weight: 700; margin-top: -6px !important; }
+
+/* 基地编辑模式：精灵不挡住摆件（悬停时精灵会浮到最上面，按下去点到的是精灵而不是摆件） */
+.base-room.editing .hm-fig { pointer-events: none; opacity: .5; }
+.base-room.editing .hm-fig:hover { z-index: auto !important; }
+.base-room.editing .chat-bub { display: none; }
