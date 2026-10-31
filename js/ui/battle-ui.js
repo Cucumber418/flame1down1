@@ -310,6 +310,7 @@
   }
   function rankOn() { return !!(app.S && app.S.mode === 'rank'); }
   function statTip(sd, hidden) {
+    if (sd.id === 'rosette') return '<span class="chip sc lvc" tabindex="0">LV' + (sd.lv || 80) + '<span class="tip" role="tooltip"><b>' + esc(sd.name) + ' · 能力值</b>？？？</span></span>';   // 玫瑰星云（2026-10-31）：能力值不公开
     if (hidden) return '<span class="chip sc lvc" tabindex="0">LV ??<span class="tip" role="tooltip"><b>' + esc(sd.name) + ' · 能力值未知</b>平衡排位中不公开对手的具体能力值。<span class="tipx">' + rankFull(app.S.rankAt, app.S.rankDv) + '段位的对手能力值 ×' + (app.S.ai && app.S.ai.mult || rankAI(app.S.rankAt, 0, app.S.rankDv).mult) + '</span></span></span>';
     var rows = sd.stats.map(function (r) {
       var stg = r.st ? '<span class="sg ' + (r.st > 0 ? 'up' : 'dn') + '">' + (r.st > 0 ? '+' : '') + r.st + '</span>' : '';
@@ -949,8 +950,8 @@
       var pl = $('plate' + i);
       var html = '<span class="tape ' + (i ? 'r' : 'l') + '"></span>' +
         '<div class="row1"><span class="pn">' + esc(sd.name) + '</span>' + typeTips(sd, sn.sides[1 - i]) + statTip(sd, i === 1 && rankOn()) +
-          '<span class="abil" tabindex="0" aria-label="特性 ' + esc(sd.ability.n) + '：' + esc(sd.ability.d) + '">特性 · ' + esc(sd.ability.n) +
-          '<span class="tip" role="tooltip"><b>特性 · ' + esc(sd.ability.n) + '</b>' + esc(sd.ability.d) + (sd.ability.extra ? '<span class="tipx">' + esc(sd.ability.extra) + '</span>' : '') + '<span class="tipx">当前是否生效，看血条下方状态栏里的特性</span></span></span><span class="who">' + esc(sd.dummy ? '训练木桩' : i ? (pvp ? pvp.foe : app.S && app.S.story ? app.S.story.foe + (app.S.story.diff ? ' · ' + app.S.story.diff : '') : '对手') : '你') + '</span></div>' +
+          (sd.id === 'rosette' ? '<span class="abil" tabindex="0" aria-label="特性 未知">特性 · ？？？<span class="tip" role="tooltip"><b>特性 · ？？？</b>？？？</span></span>' : '<span class="abil" tabindex="0" aria-label="特性 ' + esc(sd.ability.n) + '：' + esc(sd.ability.d) + '">特性 · ' + esc(sd.ability.n) +
+          '<span class="tip" role="tooltip"><b>特性 · ' + esc(sd.ability.n) + '</b>' + esc(sd.ability.d) + (sd.ability.extra ? '<span class="tipx">' + esc(sd.ability.extra) + '</span>' : '') + '<span class="tipx">当前是否生效，看血条下方状态栏里的特性</span></span></span>') + '<span class="who">' + esc(sd.dummy ? '训练木桩' : i ? (pvp ? pvp.foe : app.S && app.S.story ? app.S.story.foe + (app.S.story.diff ? ' · ' + app.S.story.diff : '') : '对手') : '你') + '</span></div>' +
         '<div class="hpbar"><i class="' + hpClass(sd.hp, sd.maxhp) + '" style="width:' + (sd.hp / sd.maxhp * 100) + '%"></i></div>' +
         '<div class="hprow"><span>' + (sd.dummy ? '体力 ∞' : sd.hp + ' / ' + sd.maxhp) + '</span><span class="pips">' +
         sd.team.map(function (t) { var hide = i === 1 && rankOn() && !t.seen; return '<span class="' + (hide ? 'unk' : t.fainted ? 'dead' : '') + (t.active ? ' cur' : '') + '" title="' + esc(hide ? '还没派出' : t.nick || SPMAP[t.id].name) + '">' + (hide ? '?' : '') + '</span>'; }).join('') + '</span></div>' +

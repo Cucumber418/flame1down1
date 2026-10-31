@@ -254,7 +254,7 @@ function abilityLive(m, foe) {
 function chipsOf(m, foe) {
   var c = [];
   var abo = abilObj(m);
-  if (abo && abo.n !== '无') c.push({ t: '特性 · ' + abo.n, k: 'ab' + (/^生效中/.test(abilityLive(m, foe)) ? ' on' : ''), d: abilityLive(m, foe), h: abo.n + ' · 当前效果' });
+  if (abo && abo.n !== '无' && m.id !== 'rosette') c.push({ t: '特性 · ' + abo.n, k: 'ab' + (/^生效中/.test(abilityLive(m, foe)) ? ' on' : ''), d: abilityLive(m, foe), h: abo.n + ' · 当前效果' });
   STG.forEach(function (k) { var v = m.stages[k]; if (v) c.push({ t: STG_NAME[k] + (v > 0 ? '+' : '') + v, k: v > 0 ? 'up' : 'down', h: STG_NAME[k] + (v > 0 ? ' 提升' : ' 下降'), d: stageText(k, v) }); });
   for (var s in m.st) if (m.st[s] > 0) {
     var pz = s === '中毒' ? (m.fx.poison || 1) : 0;

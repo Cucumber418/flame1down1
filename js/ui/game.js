@@ -4902,7 +4902,7 @@
     ['boss', 'Boss', '简单难度BOSS战'], ['boss2', 'Boss2', '普通难度BOSS战'], ['boss3', 'Boss3', '困难难度BOSS战与每周挑战'], ['tigerFinal', '东北的往事', '？'],
     ['flora', 'FloraBackground', '芙罗拉星'], ['floraGrass', 'Flora1', '芙罗拉星 · 草甸'], ['floraForest', 'Flora2', '芙罗拉星 · 丛林'], ['floraFallen', 'Flora3 · The Great Cover', '瘴气化之后的芙罗拉星'],
     ['grassTalk', 'Grass Talk', '剧情'], ['memory', 'Memory', '剧情'], ['saver', 'Saver', '剧情'], ['disCommunication', 'Dis-communication', '瘴气化之后的野外对战'], ['beforeEnd', 'before the end', '？'],
-    ['spa', '温泉', '温泉疗养'], ['kb', '坎伯兰星', '坎伯兰星'], ['kbSurface', '坎伯兰星 · 水面', '坎伯兰星水面'], ['kbShallow', '坎伯兰星 · 浅海', '坎伯兰星浅海'], ['kbDeep', 'Cumberland Deeps', '坎伯兰星 · 深海'], ['temple', '古代神殿', '坎伯兰星 · 古代神殿'], ['vitalVoyage', 'Vital Voyage', '？'],
+    ['spa', '温泉', '温泉疗养'], ['kb', '坎伯兰星', '坎伯兰星'], ['kbSurface', '坎伯兰星 · 水面', '坎伯兰星水面'], ['kbShallow', '坎伯兰星 · 浅海', '坎伯兰星浅海'], ['kbDeep', 'Cumberland Deeps', '坎伯兰星 · 深海'], ['temple', '古代神殿', '坎伯兰星 · 古代神殿'], ['vitalVoyage', 'Vital Voyage', '？'], ['finalStar', 'Final Star', '剧情'], ['decision', 'Decision', '剧情'], ['kbDeep2', 'Cumberland Deeps II', '坎伯兰星保卫战'], ['kbDeep3', 'Cumberland Deeps III', '？'],
     ['floraLab', 'Flora Lab', '盐碱地 · 地下实验室'], ['pompeiiCity', 'Pompeii City', '？'], ['mingTheme', 'Ming Theme', '明明教官的试炼'], ['mingBattle1', 'Ming Battle 1', '明明教官的试炼 · 关卡'], ['mingBattle2', 'Ming Battle 2', '明明教官的试炼 · 高难 / 最终试炼'], ['mingFinal1', 'Ming Final Battle 1', '明明教官的试炼 · 通常 · 第三只精灵'], ['mingFinal2', 'Ming Final Battle 2', '明明教官的试炼 · 高难 / 最终试炼 · 第三只精灵']
   ];
   var MUSIC_ALIAS = { disComScene: 'disCommunication', faceEnemyScene: 'faceEnemy' };
@@ -7152,6 +7152,9 @@
     if (page === 'social' && window.HSSOCIAL && HSSOCIAL.visitBgm) { var vb = HSSOCIAL.visitBgm(); if (vb) return vb; }   // 拜访别人的茶室：放主人选的
     if (page === 'explore') {
       if (vnSite === 'flora') return 'flora';
+      // 2026-10-31：第十八段里见过玫瑰星云之后，坎伯兰星的所有地方（星球界面、剧情页、野外、古代神殿、BOSS页）都换成 Cumberland5
+      var kbArea = vnSite === 'kamble' || (ex.view === 'sites' && ex.planet === 'kamble') || (ex.view === 'field' && regionById(ex.region) && regionById(ex.region).planet === 'kamble') || (ex.view === 'boss' && BOSSES[ex.boss] && BOSSES[ex.boss].region === 'kb_deep');
+      if (kbArea && nebulaSeen()) return 'kbDeep3';
       if (vnSite === 'kamble') return 'kb';
       if (ex.view === 'mmArena' || ex.view === 'mmGacha') return 'mingTheme';
       if (ex.view === 'field' && ex.region === 'fl_record') return 'floraFallen';
@@ -7169,6 +7172,7 @@
     }
     return 'ui';
   }
+  function nebulaSeen() { var p7 = prog('kb7'); if (p7.done) return true; var i7 = (SCRIPT.kb7 || []).findIndex(function (st) { return st.card === 'nebula'; }); return i7 >= 0 && p7.at >= i7; }
   function bgmScene() { if (window.HSAUDIO && HSAUDIO.scene) HSAUDIO.scene(sceneNow()); }
   setInterval(bgmScene, 500);
 
