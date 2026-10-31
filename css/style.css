@@ -2908,7 +2908,6 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 
 /* 2026-10-31：基地画面左边悬停的入口 + 弹出面板；基地里的精灵只显示精灵，悬停看信息 */
 .base-stage { position: relative; }
-.base-stage.editing { margin-bottom: 46vh; }
 .base-side { position: absolute; left: 0; top: 50%; transform: translateY(-50%); z-index: 200; display: flex; align-items: center; }
 .bs-list { display: flex; flex-direction: column; gap: 6px; width: 150px; padding-left: 10px; transition: transform .25s ease, opacity .25s ease; }
 .bs-tog { flex: none; margin-left: 4px; width: 20px; height: 48px; padding: 0; border: 1.5px solid rgba(143, 211, 255, .6); border-radius: 0 10px 10px 0; background: rgba(18, 40, 74, .78); color: #cfe9ff; cursor: pointer; display: grid; place-items: center; font-size: 11px; order: 2; transition: margin .25s ease; }
@@ -2954,7 +2953,8 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .bpm-st .hm-auto { color: #b07a00; }
 .bpm-act { display: flex; flex-wrap: wrap; gap: 8px; }
 @media (max-width: 520px) { .bpm-top { flex-direction: column; text-align: center; } .bpm-st { text-align: left; } .bpm-img { width: 120px; height: 120px; } }
-.base-edit.be-sheet { position: fixed; left: 50%; bottom: 10px; transform: translateX(-50%); width: min(980px, calc(100vw - 20px)); max-height: 44vh; overflow-y: auto; z-index: 300; margin: 0; box-shadow: 0 6px 24px rgba(0,0,0,.25), 3px 3px 0 var(--red); }
+.base-edit.be-sheet { margin-top: 12px; }
+.base-room.editing .bdeco::after { content: ''; position: absolute; inset: -10px; }
 .base-edit.be-sheet.min .be-body, .base-edit.be-sheet.min .be-sel, .base-edit.be-sheet.min .be-head > .hint { display: none; }
 .be-min { padding: 2px 8px; min-width: 0; }
 
