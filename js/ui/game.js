@@ -4641,6 +4641,9 @@
     for (var k in fx) { if (fx[k] === null) delete acc[k]; else acc[k] = fx[k]; }
     save(); try { renderRes(); } catch (e) {}   // 不重画整页（剧情、对战画面开着时会被打断）
   }
+  window.HS_CORE = function () { return (acc && acc.items && acc.items.g_core) || 0; };   // 对战里花圣晶石复活用（battle-ui.js 的 coreAsk）
+  window.HS_ADOPT = function (js) { adoptAcc(js); renderRes(); };
+  window.HS_USECORE = function () { if (!acc || !(acc.items.g_core > 0)) return false; acc.items.g_core--; save(); renderRes(); return true; };
   function adoptAcc(js) {
     try { var a = typeof js === 'string' ? JSON.parse(js) : js; if (!valid(a)) return false; acc = a; save(); return true; } catch (e) { return false; }
   }

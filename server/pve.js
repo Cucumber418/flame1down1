@@ -190,12 +190,22 @@ A.use(function (req, res, url) {
       sess.t = Date.now();
       if (op === 'act') {
         if (S2.needSwitch) return A.reply(res, 409, { error: '要先选下一只出战的精灵' });
+        if (S2.needCore) return A.reply(res, 409, { error: '要先决定是否用圣晶石复活' });
         evs = E.resolveTurn(S2, [checkAct(E, S2, sess, body.a), E.aiChoose(S2)]);
       } else if (op === 'repl') {
         if (!S2.needSwitch) return A.reply(res, 409, { error: '现在不用换精灵' });
         var k = body.k | 0, t = S2.sides[0].team[k];
         if (!t || t.fainted || k === S2.sides[0].active) k = E.aliveIdx(S2, 0).filter(function (x) { return x !== S2.sides[0].active; })[0];
         evs = E.playerReplace(S2, k);
+      } else if (op === 'core') {   // 2026-11-01：全员倒下时花 1 个圣晶石全员复活（第十九段的玫瑰星云）
+        if (!S2.needCore) return A.reply(res, 409, { error: '现在不需要复活' });
+        var uc = A.loadUser(name), ac = uc && accOf(uc);
+        if (!ac || !ac.items || !(ac.items.g_core > 0)) return A.reply(res, 400, { error: '圣晶石不够了' });
+        ac.items.g_core--;
+        evs = E.coreRevive(S2, []);
+        var outC = { ok: true, evs: evs, S: S2, rev: saveAcc(uc, ac), acc: uc.save.data['hs-account-v1'] };
+        outC = JSON.parse(E.battleJSON(S2, outC)); sess.seq = seq || sess.seq + 1; sess.last = outC;
+        return A.reply(res, 200, outC);
       } else if (op === 'quit') {
         if (S2.wild) { S2.over = 'flee'; evs = []; }   // 野外：逃跑
         else { S2.over = 'lose'; S2.quit = true; evs = []; }

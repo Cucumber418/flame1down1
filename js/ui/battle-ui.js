@@ -1147,8 +1147,31 @@
     var S = app.S; renderStats(); drawStars();
     renderSnap(snap(S));
     if (S.over) return showEnd();
+    if (S.needCore) { busy = true; refreshCmd(); coreAsk(); return; }
     if (pvp ? S.need && S.need[PV] : S.needSwitch) showTab('team');
     refreshCmd();
+  }
+  /* 全员倒下、可以花 1 个圣晶石复活的对战（第十九段的玫瑰星云，2026-11-01）：问玩家复活还是放弃 */
+  function coreAsk() {
+    var old = $('core-ask'); if (old) old.remove();
+    var n = window.HS_CORE ? HS_CORE() : 0, d = document.createElement('div'); d.className = 'core-ask'; d.id = 'core-ask';
+    d.innerHTML = '<div class="ca-box" role="dialog" aria-label="全员复活"><b>你的精灵全部倒下了……</b><p>要用 <b>1 个圣晶石</b>让全员复活、继续战斗吗？</p><p class="hint">持有圣晶石：' + n + ' 个</p>' +
+      '<div class="ca-btns"><button type="button" class="btn ghost" data-cax="1">放弃</button><button type="button" class="btn primary" data-cago="1"' + (n > 0 ? '' : ' disabled') + '>' + (n > 0 ? '用 1 个圣晶石复活' : '圣晶石不够了') + '</button></div></div>';
+    $('field').appendChild(d);
+    d.addEventListener('click', async function (e) {
+      if (e.target.closest('[data-cago]')) {
+        d.remove();
+        if (remote) {
+          busy = true; refreshCmd(); var S0 = app.S, r = await rCall({ op: 'core' }); if (app.S !== S0) return;
+          if (!r.ok) { busy = false; addLog(r.err || '没能复活', 'bad'); afterTurn(); return; }
+          if (r.acc && window.HS_ADOPT) HS_ADOPT(r.acc);
+          app.S = r.S; await play(r.evs || []); busy = false; afterTurn(); return;
+        }
+        if (!(window.HS_USECORE && HS_USECORE())) { addLog('圣晶石不够了', 'bad'); afterTurn(); return; }
+        await play(coreRevive(app.S, [])); busy = false; afterTurn(); return;
+      }
+      if (e.target.closest('[data-cax]')) { d.remove(); addLog('你放弃了这场战斗。', 'bad'); busy = false; if (remote) rApply({ op: 'quit' }); else { app.S.over = 'lose'; app.S.quit = true; showEnd(); } }
+    });
   }
   function applyRank(result) {
     var R = fixRank(app.rank), x = { from: R.r, fromDv: R.dv, fromStars: R.stars };

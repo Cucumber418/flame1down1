@@ -3068,3 +3068,10 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .log-grid > .qq-card h3 { font-size: 17px; margin: 0; }
 .log-grid > .qq-card .qq-no { font-size: 19px; }
 .log-grid > .qq-card .tape { display: none; }
+
+/* 全员倒下时花圣晶石复活（2026-11-01） */
+.core-ask { position: absolute; inset: 0; z-index: 6; display: grid; place-items: center; background: rgba(20, 10, 12, .55); padding: 16px; }
+.core-ask .ca-box { background: var(--paper); border: 1.5px solid var(--ink); border-radius: 14px; box-shadow: 3px 3px 0 var(--ink); padding: 16px 18px; max-width: 360px; text-align: center; display: grid; gap: 6px; }
+.core-ask .ca-box > b { font-size: 16px; color: var(--red); }
+.core-ask p { margin: 0; }
+.core-ask .ca-btns { display: flex; gap: 10px; justify-content: center; margin-top: 6px; }

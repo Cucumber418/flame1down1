@@ -693,7 +693,8 @@ var PVE = (function () {
     nebula: { foe: 'Rosette Nebula', bgm: 'disCommunication', team: [{ sid: 'rosette', lv: 80, nick: '玫瑰星云', maxhp: 10000, moves: ['黑雾潮汐', '幽冥息', '夜影封魂', '幽冥结界'], boss: { erode: 9, sure: 1, dr: 0.15, stRes: 0.8, pp: 99 } }], bg: 'kb_dusk', desc: '玫瑰星云（LV80）' },
     // 第十三段 · 冥岛的歌声（2026-10-31）：唱歌的塞米
     // 第十九段 · 码头决战（2026-11-01）：必须打赢才能读完；机制见 battle.js 的 nebCumber
-    nebula2: { foe: 'Rosette Nebula', bgm: 'ngc2237', mustWin: true, team: [{ sid: 'rosette', lv: 80, nick: '玫瑰星云', maxhp: 6336, moves: ['强烈恒星风', '氢-α发射线'], ability: { n: '疏散星团', d: '先出手时造成的伤害提升 50%；后出手时受到的伤害减免 50%' }, boss: { neb: 1, dust: 1, bok: 1, stRes: 0.8, pp: 99 } }], bg: 'kb_dock', desc: '玫瑰星云（LV80）· Cumber 助阵' },
+    nebula2: { foe: 'Rosette Nebula', bgm: 'ngc2237', mustWin: true, coreRevive: true,   // coreRevive：全员倒下时可以花 1 个圣晶石全员复活（battle.js 的 coreRevive）
+      team: [{ sid: 'rosette', lv: 80, nick: '玫瑰星云', maxhp: 6336, moves: ['强烈恒星风', '氢-α发射线'], ability: { n: '疏散星团', d: '先出手时造成的伤害提升 50%；后出手时受到的伤害减免 50%' }, boss: { neb: 1, dust: 1, bok: 1, stRes: 0.8, pp: 99 } }], bg: 'kb_dock', desc: '玫瑰星云（LV80）· Cumber 助阵' },
     semi: { foe: '唱歌的小精灵', team: [{ sid: 'siren', lv: 20, nick: '塞米' }], bg: 'kb_isle', desc: '塞米（LV20）' },
     threego: { foe: 'Threego', team: [{ sid: 'tagore', lv: 3 }] },
     karo: { foe: '被瘴气污染的野生精灵', team: [{ sid: 'wind', lv: 3, miasma: 5 }], env: 'miasma', bg: 'fl_salt', desc: '被瘴气污染的卡罗（LV3）' },
@@ -781,7 +782,7 @@ var PVE = (function () {
       var foes = fightTeam(F, a).map(function (x) { return resolveFoeEntry(x, env.rand); });
       fightTeam(F, a).forEach(function (x) { if (SPMAP[x.sid] && !SPMAP[x.sid].nodex) ACC.seeMon(a, x.sid, x.lv); });
       var site = String(args.site || ''); if (typeof STY !== 'undefined' && !(STY.FIGHT_OF[site] && STY.FIGHT_OF[site].indexOf(String(args.key)) >= 0)) site = STY.SITE_OF[String(args.key)] || '';   // 这场对战属于哪段剧情（打完记 bt）
-      return { p: p, a: foes, ctx: { key: args.key, slots: slots, site: site }, dirty: true, preStrike: !!F.preStrike, S: { env: F.env || null }, opt: { foe: F.foe, bgm: F.bgm || null } };
+      return { p: p, a: foes, ctx: { key: args.key, slots: slots, site: site }, dirty: true, preStrike: !!F.preStrike, S: { env: F.env || null, coreRevive: F.coreRevive ? 1 : null }, opt: { foe: F.foe, bgm: F.bgm || null } };
     },
     end: function (a, c, B, env) {
       var rep = { key: c.key, res: B.res, own: c.slots.some(function (u) { return u != null; }) };
