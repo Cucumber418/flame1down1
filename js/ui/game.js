@@ -5747,7 +5747,7 @@
     // 2026-10-31：基地里的精灵只显示精灵本身；鼠标悬停看基本信息，点击弹出它的面板
     var figs = H.mons.map(function (x, i) {
       var m = mon(x.u), f = form(m), p = baseMonPos(LY.room, i);
-      return '<div class="hm-fig' + (H.mons.length > 3 ? ' many' : '') + '" data-csid="' + m.sid + '" data-cst="' + (f.stage || 0) + '" data-cctx="home" data-hu="' + m.u + '" style="left:' + p[0] + '%;top:' + p[1] + '%"><button type="button" class="hm-poke" data-hmon="' + m.u + '" aria-label="' + esc(f.name) + '"><img src="' + f.img + '" alt=""></button><span class="hm-tip" data-htag="' + i + '">' + homeTag(x) + '</span></div>';
+      return '<div class="hm-fig' + (H.mons.length > 3 ? ' many' : '') + '" data-csid="' + m.sid + '" data-cst="' + (f.stage || 0) + '" data-cctx="home" data-hu="' + m.u + '" style="left:' + p[0] + '%;top:' + p[1] + '%;--fw:' + baseFigW(m.sid, f.stage, LY.room, p[1]) + '"><button type="button" class="hm-poke" data-hmon="' + m.u + '" aria-label="' + esc(f.name) + '"><img src="' + f.img + '" alt=""></button><span class="hm-tip" data-htag="' + i + '">' + homeTag(x) + '</span></div>';
     }).join('');
     var title = ex.homeEdit
       ? '<form class="home-edit" onsubmit="return false"><input id="home-name" maxlength="10" value="' + esc(H.name || '我的基地') + '" aria-label="基地名字"><button type="button" class="btn primary" id="home-ok">保存</button><button type="button" class="btn ghost" id="home-cancel">取消</button><span class="hint">最多 10 个字</span></form>'
@@ -5836,6 +5836,12 @@
     return best ? [best[0], best[1]] : [x, y];
   }
   function floorTop(room) { var R = BASE_UI[room] || BASE_UI.r1, t = 100; R.floor.forEach(function (P) { P.forEach(function (q) { t = Math.min(t, q[1]); }); }); return t; }
+  // 基地里精灵的大小（2026-10-31）：按进化阶段来，一阶最小、最终形态最大（单形态的算最终形态）；越靠里（越往上）画得越小
+  function baseFigW(sid, stage, room, y) {
+    var S0 = SPMAP[sid], n = S0 && S0.evo ? S0.evo.length : 1, fr = n > 1 ? Math.min(1, (stage || 0) / (n - 1)) : 1;
+    var ft = floorTop(room), dep = 0.82 + 0.3 * Math.max(0, Math.min(1, (y - ft) / (100 - ft)));
+    return Math.round((5 + 6 * fr) * dep * 100) / 100;
+  }
   function baseMonPos(room, i) { var R = BASE_UI[room] || BASE_UI.r1; return R.mons[i] || R.mons[0]; }
   function baseZonesSVG(room) {
     var R = BASE_UI[room] || BASE_UI.r1, pg = function (P, c) { return '<polygon class="' + c + '" points="' + P.map(function (q) { return q[0] + ',' + q[1]; }).join(' ') + '"/>'; };
@@ -6896,7 +6902,7 @@
     goHome: function () { if (!homeOpen()) { toast('读完星际探索 · 荆楚号 · 天门「陆羽茶室」支线后，才有自己的茶室。'); return; } ex.planet = 'jingchu'; ex.area = '天门'; ex.view = 'home'; go('explore'); },
     // 参加过一次竞技征召（支线任务「竞技征召」用）
     noteDraft: function () { if (!acc.stats) acc.stats = {}; acc.stats.drafts = (acc.stats.drafts || 0) + 1; save(); },
-    teaFight: teaFight, teaLeft: teaLeft, TEA_DAILY: TEA_DAILY, TEA_EXP: TEA_EXP, homePos: HOME_POS, baseRoom: baseRoomHTML, baseMonPos: baseMonPos,
+    teaFight: teaFight, teaLeft: teaLeft, TEA_DAILY: TEA_DAILY, TEA_EXP: TEA_EXP, homePos: HOME_POS, baseRoom: baseRoomHTML, baseMonPos: baseMonPos, baseFigW: baseFigW,
     view: function (m) { var f = form(m); return { name: f.name, img: f.img, stage: f.stage, shiny: f.shiny }; },
     // 把服务器发来的精灵资料变成对战用的精灵（逐项检查，不信任外来数据）
     spec: function (raw) {
