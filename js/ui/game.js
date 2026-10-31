@@ -871,6 +871,8 @@
   MATS.e_pluto = { name: '帕努托尔的精元', d: '在先驱之塔的代币商店兑换的精元。放进神农架 · 精灵保育仓，孵化 12 小时后会诞生一只帕努。', hatch: { sid: 'pluto', lv: 1, min: 720 } };
   MATS.m_psac = { name: '蘑菇毒囊', d: '玛西一族身上的毒囊，鼓鼓的，别捏破。1 个加 5 个药草，可以在黄石 · 冶炼坊合成「解毒药剂」。' };   // 2026-10-27
   MATS.m_hfhorn = { name: '赫菲角片', d: '赫菲一系身上掉下来的角片，还带着一点余温。60 片可以在黄石 · 冶炼坊合成「奇声号角」。' };
+  MATS.m_sj = { name: '沙姜', d: '长在坎伯兰星深海礁石缝里的沙姜。辰爷说，捣碎了能消肿止痛。' };
+  MATS.m_xml = { name: '小米辣', d: '长在坎伯兰星深海礁石缝里的小米辣，光是闻一下眼泪就要出来了。' };
   MATS.m_horn = { name: '奇声号角', d: '用 60 片赫菲角片做成的号角，吹起来声音很奇怪。在坎伯兰星 · 水面的「冥岛」吹响，会引来一只可以捕捉的塞米；和它进入战斗时，号角就会用掉。' };
   MATS.m_mcry = { name: '马亚尔晶体', d: '泰戈尔每周挑战必掉的晶体，凝着马亚尔星系各处的能量。在黄石 · 冶炼坊每 10 个可以换成 10 个任意一种星球特产（芙罗拉玉、不化水滴、火山灰烬、闪电球体、永久冻土）。' };
   MATS.m_cu = { name: '马亚尔煤炭', d: '在芙罗拉星、坎伯兰星的野外挖到的煤炭。可以在荆楚号 · 宜昌的三峡能源核心换成能量。' };
@@ -1372,7 +1374,7 @@
   ];
   // 坎伯兰星的样子随剧情变化：0 是平常的蓝色，越往后越红（4 最红）。KB_STAGE_SITES 里每读完一段剧情，往后变一档
   var KB_STAGE_SITES = [];
-  function kbStage() { return prog('kb7').done ? 4 : prog('kb6').done ? 3 : 0; }   // 2026-10-31：保卫战期间变红一些，星云显现之后最红
+  function kbStage() { return prog('kb7').done ? 4 : prog('kb6').done ? 2 : 0; }   // 2026-10-31：保卫战期间变红一些，星云显现之后最红
   // 马亚尔星系：星系图上每颗星球的位置（% 坐标）和大小（占图宽的 %）；没有星球的位置显示「？」
   var MAYAR = { flora: [84.1, 51.4, 12], kamble: [58.3, 63.4, 9], pompeii: [30.4, 42.3, 8.5], laiting: [16.2, 28.2, 11], white: [8.5, 58, 7.5], kongyan: [43.3, 21.1, 8.5], ivy: [59.8, 26.6, 8] };   // 白之星离太阳最远
   var MAYAR_UNK = [[35.9, 28.9], [71.3, 54.3]];
@@ -1407,11 +1409,11 @@
     kb1: { name: '编钟通讯站', planet: 'jingchu', dept: '随州', chapter: '第十二段 · 远航', bg: 'bridge2_p', d: '编钟通讯站的 Jager 上尉找到了地面小队：下一站，是一颗被海洋覆盖的星球。', after: 'flora7', pos: [50, 64] },
     kb2: { name: '冥岛', planet: 'kamble', chapter: '第十三段 · 冥岛的歌声', bg: 'kb_isle', d: '穿梭机飞到冥岛上空时，海面上传来一阵奇怪的歌声……', after: 'kb1', fpart: 'story' },
     kb3: { name: '浅水区', planet: 'kamble', chapter: '第十四段 · 墨水结晶', bg: 'kb_lookup', d: '为了找到辰爷、拿到解药，你和 Bttp 潜进了坎伯兰星的海里。', after: 'kb2', fpart: 'story' },
-    kb4: { name: '暮色海面', planet: 'kamble', chapter: '第十五段 · 暮色追击', bg: 'kb_dusk', d: '辰爷带着 Threego 往太阳落下的方向逃去。塞米说，它可以叫朋友来帮忙。', after: 'kb3', fpart: 'story' },
-    kb5: { name: '幽深地', planet: 'kamble', chapter: '第十六段 · 同舟', bg: 'kb_floor', d: '被巨浪卷进海底之后，睁开眼睛，身边的人是……辰爷？', after: 'kb4', fpart: 'story' },
-    kb7: { name: '玫瑰星云', planet: 'kamble', chapter: '第十八段 · 星云显现', bg: 'kb_dusk', d: '奥多亚克被击退了。可是，从星球最深的地方传来了一阵从没有过的震动……', after: 'kb6', fpart: 'story',
+    kb4: { name: '墨迹的尽头', planet: 'kamble', chapter: '第十五段 · 墨迹追踪', bg: 'kb_shore', d: '海面上还残留着一道淡淡的墨迹。只要跟着它，就能找到辰爷和 Threego。', after: 'kb3', fpart: 'story' },
+    kb5: { name: '幽深地', planet: 'kamble', chapter: '第十六段 · 深海同行', bg: 'kb_floor', d: '被巨浪拍进深海之后，睁开眼睛，身边的人是……辰爷？', after: 'kb4', fpart: 'story' },
+    kb7: { name: '水星码头', planet: 'kamble', chapter: '第十八段 · 星云显现', bg: 'kb_dock', d: '奥多亚克被击退了。回到码头的时候，一行人以为一切都尘埃落定了……', after: 'kb6', fpart: 'story',
       need: function () { return (acc.kbwK | 0) >= KBW.need || prog('kb7').at > 0; }, get needText() { return '在「坎伯兰星保卫战」里累计击破 ' + KBW.need + ' 只奥多亚克（' + Math.min(KBW.need, acc.kbwK | 0) + ' / ' + KBW.need + '）'; } },
-    kb6: { name: '深海基站', planet: 'kamble', chapter: '第十七段 · 深海基站', bg: 'kb_temple', spot: '深海基站', d: '沿着发光的管道一直游下去，尽头是一扇刻着英文的舱门。', after: 'kb5', fpart: 'story' },
+    kb6: { name: '古代神殿', planet: 'kamble', chapter: '第十七段 · Cumberland', bg: 'kb_temple', d: '巨大的水蛇卷着一行人，游进了深海里的一座「神殿」。', after: 'kb5', fpart: 'story' },
     mmTrial: { name: '古城防卫部', planet: 'jingchu', dept: '襄阳', chapter: '活动任务 · 明明教官的试炼', side: true, event: true, bg: 'bridge_p', d: '明明教官说，要带大家去一个「好地方」。读完后开放活动「明明教官的试炼」。', after: 'flora7', pos: [42, 60] },   // 2026-10-24：读完即完成任务，送 500 明明代币
     tea: { name: '陆羽茶室', planet: 'jingchu', dept: '天门', chapter: '支线 · 陆羽茶室', side: true, bg: 'tea_p', d: '从芙罗拉星回来后，舰上要给第一支地面小队分配休息舱。读完后开放你自己的「茶室」（家园）。', after: 'flora1', pos: [50, 84] },
     mingming: { name: '古城防卫部', planet: 'jingchu', dept: '襄阳', chapter: '支线 · 明明教官的礼物', side: true, bg: 'bridge_p', d: '古城防卫部的明明教官听说你在黄冈秘鉴里点亮了十类精灵，想见见你。', after: 'board', pos: [48, 82], need: function () { return litCount() >= 10; }, needText: '在黄冈秘鉴中点亮 10 类精灵后开放' },
@@ -1461,6 +1463,7 @@
     hw: { name: function () { return '荒芜'; }, color: '#5a3d6e', tall: 0.95, spr: 'barren', sprLv: 30 },
     r: { name: function () { return '日透骨消'; }, color: '#5a6a8a', tall: 1.0, img: 'rtg' },   // 三峡能源核心主人
     ms: { name: function () { return '玛西'; }, color: '#8a5a9a', tall: 0.55, spr: 'mush', sprLv: 10 },
+    cx: { name: function () { return '？？？'; }, color: '#4f7aa8', tall: 1.0, img: 'cumber', sil: true },   // Cumber 现身前的黑色剪影
     cb: { name: function () { return 'Cumber'; }, color: '#4f7aa8', tall: 1.0, img: 'cumber' },   // 2026-10-31：深海基站的 Cumber（差分：oh 惊讶、smile 笑、close 闭眼、angry 生气）
     yn: { name: function () { return '一鸟'; }, color: '#5a2a3a' },   // 常春藤，辰爷的上级（只出声音，立绘待补）
     jg: { name: function () { return 'Jager 上尉'; }, color: '#3f5f7a', tall: 1.0 },   // 2026-10-31：编钟通讯站站长（立绘待补）
@@ -1545,7 +1548,7 @@
   var FACE_KEY = { t: 'threego', y: 'dd', b: 'bttp', h: 'drh' };
   function standee(k, face) {
     if (CAST[k].spr) return '<img class="vn-art vn-mon" src="' + (CAST[k].sprLv ? form({ sid: CAST[k].spr, lv: CAST[k].sprLv }).img : SPRITES[CAST[k].spr]) + '" alt="" style="height:' + (CAST[k].tall * 100) + '%">';   // 精灵出场：直接用精灵立绘
-    if (CAST[k].img) { var src = (face && CHARS[(FACE_KEY[k] || CAST[k].img) + '_' + face]) || CHARS[CAST[k].img]; return '<img class="vn-art" src="' + src + '" alt="" style="height:' + (CAST[k].tall * 100) + '%">'; }
+    if (CAST[k].img) { var src = (face && CHARS[(FACE_KEY[k] || CAST[k].img) + '_' + face]) || CHARS[CAST[k].img]; return '<img class="vn-art" src="' + src + '" alt="" style="height:' + (CAST[k].tall * 100) + '%' + (CAST[k].sil ? ';filter:brightness(0) drop-shadow(0 0 6px rgba(120,190,255,.6))' : '') + '">'; }
     var c = CAST[k], col = c.color, head = 'M100 18c34 0 52 26 52 58s-20 60-52 60-52-28-52-60 18-58 52-58z', body = 'M40 420c-6-80 -8-150 14-200 14-32 34-50 46-54 12 4 32 22 46 54 22 50 20 120 14 200z';
     return '<svg viewBox="0 0 200 420" aria-hidden="true" style="height:' + (c.tall * 100) + '%"><g stroke="#23222b" stroke-width="4" stroke-linejoin="round">' +
       '<path d="' + body + '" fill="#fbfaf3" fill-opacity=".94"/><path d="' + body + '" fill="' + col + '" fill-opacity=".22" stroke-dasharray="11 7"/>' +
@@ -1592,7 +1595,7 @@
       });
     }
     if (F.pteam) {
-      team = F.pteam.map(function (x) { return { id: x.sid, lv: x.lv, moves: x.moves || defaultMoves(x.sid, x.lv), nick: x.nick, img: x.img || formImg(SPMAP[x.sid], stageOf(SPMAP[x.sid], x.lv)) }; });
+      team = F.pteam.map(function (x) { return { id: x.sid, lv: x.lv, moves: x.moves || defaultMoves(x.sid, x.lv), nick: x.nick, img: x.img || formImg(SPMAP[x.sid], x.st != null ? x.st : stageOf(SPMAP[x.sid], x.lv)), boss: x.boss ? JSON.parse(JSON.stringify(x.boss)) : undefined }; });
       realN = 0;
     } else {
       team = (acc.teams[acc.active] || []).map(mon).filter(Boolean);
@@ -2560,6 +2563,30 @@
       return '<button type="button" class="wf-mon wf-odo' + (met ? ' met' : '') + '" data-kbw="' + q.k + '" title="' + esc(q.m.n) + ' LV' + q.m.lv + '" aria-label="迎战' + esc(q.m.n) + '" style="left:' + q.spot.x + '%;top:' + q.spot.y + '%;z-index:' + q.spot.y + '"' + (met ? ' disabled' : '') + '><i class="wf-sh" aria-hidden="true"></i><img src="' + SPRITES.odo + '" alt=""><span class="wf-tag">' + (met ? '已交手 · 整点后会有新的' : esc(q.m.n) + ' · LV' + q.m.lv) + '</span></button>';
     }).join('');
   }
+  // 剧情要交的东西（剧本 pay.gather）：在对应区域的场景里出现采集点，点一下 +1（交易 story · gather）
+  var SG_SPOTS = { m_sj: { x: 18, y: 84 }, m_xml: { x: 64, y: 86 } };
+  function storyGatherList(R) {
+    var out = [];
+    Object.keys(SCRIPT).forEach(function (site) { if (!SITES[site] || prog(site).done || !unlocked(site)) return; (SCRIPT[site] || []).forEach(function (st) {
+      if (!st.pay || st.pay.gather !== R.id) return; var pr = prog(site); if (pr.paid && pr.paid[st.pay.id]) return;
+      Object.keys(st.pay.items).forEach(function (k) { out.push({ site: site, k: k, need: st.pay.items[k] }); });
+    }); });
+    return out;
+  }
+  function storyGatherHTML(R) {
+    return storyGatherList(R).map(function (g) {
+      var have = acc.items[g.k] || 0, full = have >= g.need, sp = SG_SPOTS[g.k] || { x: 50, y: 84 };
+      return '<button type="button" class="wf-node sg-node' + (full ? ' done' : '') + '" data-sgk="' + g.k + '" data-sgsite="' + g.site + '" style="left:' + sp.x + '%;top:' + sp.y + '%"' + (full ? ' disabled' : '') + '>' + H.itemIcon(g.k) + '<span>' + esc(itemName(g.k)) + ' ' + Math.min(have, g.need) + '/' + g.need + '</span></button>';
+    }).join('');
+  }
+  function storyGather(site, k, el) {
+    if (el) el.disabled = true;
+    txRun('story', { a: 'gather', site: site, k: k }, function (r) {
+      toast('采到了' + itemName(k) + '（' + r.n + ' / ' + r.need + '）' + (r.n >= r.need ? '。够了！' : '。'));
+      if (storyGatherList(regionById(ex.region) || {}).every(function (g) { return (acc.items[g.k] || 0) >= g.need; })) setTimeout(function () { toast('沙姜和小米辣都采够了！回到坎伯兰星的「剧情」页，把它们交给辰爷吧。'); }, 1600);
+      if (page === 'explore' && ex.view === 'field') renderField();
+    }, function (err) { toast(err || '没采到。'); if (el) el.disabled = false; });
+  }
   function engageOdo(k) {
     if (ex.fighting) return;
     var R = regionById(ex.region), F = R && fields[R.id], q = PVE.kbwAt(Date.now())[k];
@@ -2852,7 +2879,7 @@
     var spareTip = R.pool && R.planet === 'flora' && spareActive() ? '<div class="spare-note"><span class="tape l"></span><b>主线任务 · 引出猎杀者</b>　手下留情：这些精灵不会倒下，体力剩 1 点时就会逃走，算作「假装击败」。已完成 <b>' + spareN() + ' / ' + SPARE_N + '</b>。</div>' : '';
     $('pg-explore').innerHTML = exHead(R.pool ? '点击场景里走动的精灵，就会和它开战。' : '这里没有野生精灵。点击场景里的BOSS就能挑战它。') +
       '<div class="crumb"><button type="button" class="btn ghost" id="field-back">‹ 返回' + esc(P.name) + '</button><b>' + esc(P.name) + ' · ' + esc(R.name) + '</b>' + (n > 1 ? '<span class="hint">场景 ' + (F.scene + 1) + ' / ' + n + (BG_NAME[sc.bgKey] ? ' · ' + BG_NAME[sc.bgKey] : '') + '</span>' : '') + '</div>' +
-      invLine() + spareTip + '<div class="wf-scene' + (sc.corrupt ? ' miasma-bg' : '') + '" id="wf-scene">' + bg + mons + gatherNodesHTML(R.id, F.scene, n) + jadeHTML(R.id, F.scene) + riceBowlHTML(R, F.scene) + oreHTML(R, F, F.scene) + hornHTML(R, F, F.scene) + travelHTML(R, F.scene) + kbwHTML(R, F.scene) + fmNpcHTML(F, F.scene) + fieldBossHTML(R) + nav + '</div>' +
+      invLine() + spareTip + '<div class="wf-scene' + (sc.corrupt ? ' miasma-bg' : '') + '" id="wf-scene">' + bg + mons + gatherNodesHTML(R.id, F.scene, n) + jadeHTML(R.id, F.scene) + riceBowlHTML(R, F.scene) + oreHTML(R, F, F.scene) + hornHTML(R, F, F.scene) + travelHTML(R, F.scene) + kbwHTML(R, F.scene) + storyGatherHTML(R) + fmNpcHTML(F, F.scene) + fieldBossHTML(R) + nav + '</div>' +
       (R.pool ? '<p class="hint">点左右两边的箭头可以切换场景。每只精灵在自己的一小片范围里走动，待一会儿就会离开，过一阵又会有新的精灵出现，各走各的。点中哪只，就和哪只对战；打完、抓到或逃走之后，这只离开，过一会儿会有新的一只补上。采集点固定在场景里，每个每天可以采集 1 次：芙罗拉、坎伯兰、庞贝采到星砂 ×12，莱汀和白之星采到圣晶石 ×1。' + (RICE.regions.indexOf(R.id) >= 0 ? '带着「一碗饭」来的话，可以在任意一个场景里放下它。' : '') + '</p>' : '');
     startFieldMove();
   }
@@ -4059,7 +4086,7 @@
   /* 新剧情上线通知（2026-10-31）：每推出一批新剧情，在 STORY_NEWS 最前面加一条；每个存档只弹一次（记在 storyNews） */
   var STORY_NEWS = [
     { id: 'kb-3', title: '坎伯兰星保卫战', sub: '第十八段 · 星云显现', card: 'nebula', site: 'kb7', d: '一鸟唤醒了海里所有休眠的奥多亚克。和全服船员一起守住深海基站吧——然后，迎接从深海升起的东西。' },
-    { id: 'kb-2', title: '第二章 · 坎伯兰星（续）', sub: '第十五段 ～ 第十七段', card: 'kb', site: 'kb4', d: '暮色里的追击，深海里的同舟，还有一座刻着英文的基站。' },
+    { id: 'kb-2', title: '第二章 · 坎伯兰星（续）', sub: '第十五段 ～ 第十七段', card: 'kb', site: 'kb4', d: '顺着墨迹追上辰爷，被巨浪拍进深海，在海底遇见一位十九世纪的调查队员。' },
     { id: 'kb-1', title: '第二章 · 坎伯兰星', sub: '第十二段 ～ 第十四段', card: 'kb', site: 'kb1', d: '远航禁闭海洋。荆楚号的下一站，是一颗被海洋覆盖的星球。' }
   ];
   function storyNewsCheck() {
@@ -6577,6 +6604,7 @@
     if (b.dataset.ore) { mineOre(b.dataset.ore); return; }
     if (b.dataset.travel) { engageTravel(+b.dataset.travel); return; }
     if (b.dataset.kbw) { engageOdo(+b.dataset.kbw); return; }
+    if (b.dataset.sgk) { storyGather(b.dataset.sgsite, b.dataset.sgk, b); return; }
     if (b.dataset.fmnpc) { fmNpcTalk(); return; }
     if (b.dataset.wfid) { engageField(+b.dataset.wfid); return; }
     if (b.dataset.wfnav) { fieldNav(+b.dataset.wfnav); return; }
@@ -6813,7 +6841,7 @@
       var have = acc.items[k] || 0;
       return '<span class="vp-it' + (have >= P.items[k] ? '' : ' short') + '"><span class="vp-ic">' + H.itemIcon(k) + '</span><b>' + esc(itemName(k)) + ' ×' + P.items[k] + '</b><small>持有 ' + fmt(have) + '</small></span>';
     }).join('') + '</div>' +
-      (ok ? '' : '<p class="hint">数量不够。药草可以在荆楚号 · 恩施 · 生态舱的「太空种植园」种出来。可以先点右上角「退出」，准备好以后回来，会从这里接着读。</p>') +
+      (ok ? '' : '<p class="hint">数量不够。' + esc(P.hint || '药草可以在荆楚号 · 恩施 · 生态舱的「太空种植园」种出来。可以先点右上角「退出」，准备好以后回来，会从这里接着读。') + '</p>') +
       '<button type="button" class="btn primary" data-vn="pay"' + (ok ? '' : ' disabled') + '>交出</button></div>';
   }
   // 剧本里要求配队里有某种属性的精灵（needType）：没有就停在这里，调整配队后点「重新检查」继续
@@ -6824,7 +6852,7 @@
   }
   function openFight(key) {
     var F = FIGHTS[key], el = $('vn-pick'), fteam = fightTeam(F), f0 = fteam[0];
-    var mineImg = F.pteam ? (F.pteam[0].img || formImg(SPMAP[F.pteam[0].sid], stageOf(SPMAP[F.pteam[0].sid], F.pteam[0].lv))) : (((acc.teams[acc.active] || []).map(mon).filter(Boolean)[0] || acc.mons[0]) ? form((acc.teams[acc.active] || []).map(mon).filter(Boolean)[0] || acc.mons[0]).img : '');
+    var mineImg = F.pteam ? (F.pteam[0].img || formImg(SPMAP[F.pteam[0].sid], F.pteam[0].st != null ? F.pteam[0].st : stageOf(SPMAP[F.pteam[0].sid], F.pteam[0].lv))) : (((acc.teams[acc.active] || []).map(mon).filter(Boolean)[0] || acc.mons[0]) ? form((acc.teams[acc.active] || []).map(mon).filter(Boolean)[0] || acc.mons[0]).img : '');
     var foeImg = f0.img || (f0.moves || f0.boss ? (f0.sid === 'dummy' ? '' : formImg(SPMAP[f0.sid], stageOf(SPMAP[f0.sid], f0.lv))) : form({ sid: f0.sid, lv: f0.lv }).img);
     var foeName = f0.nick || form({ sid: f0.sid, lv: f0.lv }).name;
     el.hidden = false;
@@ -6853,6 +6881,21 @@
     ex.i++; show();
   }
   // 第一次读完第十段后弹出：芙罗拉星已经被腐化
+  // 坎伯兰星变色（2026-10-31）：第十七段读完 → 稍微变红（保卫战开始）；第十八段读完 → 最红
+  function kbShiftNotice(to) {
+    if ($('fallen-dlg')) return;
+    var from = to === 4 ? 2 : 0, war = to === 2;
+    var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'fallen-dlg';
+    d.innerHTML = '<div class="soc-box fallen-box" role="dialog" aria-modal="true" aria-label="坎伯兰星"><span class="step">坎伯兰星</span><h2>' + (war ? '异变' : '星云显现') + '</h2>' +
+      '<div class="fallen-planet" aria-hidden="true"><img class="fp-a" src="images/planets/kamble_' + from + '.webp?v=2" alt=""><img class="fp-b" src="images/planets/kamble_' + to + '.webp?v=2" alt=""><i class="fp-fog kb"></i></div>' +
+      (war ? '<p>坎伯兰星的颜色发生了变化，海面隐隐泛着红光。</p><p>沉睡在海底的机械精灵，正在一个接一个地苏醒。</p>' +
+        '<div class="pw-open"><span class="chip log-tag pw-tag">全服任务</span><b>坎伯兰星保卫战已开启</b><span>坎伯兰星的三个野外区域会出现奥多亚克，所有船员一起击退它们。在航行日志和坎伯兰星的「星球任务」里查看。</span></div>'
+        : '<p>坎伯兰星被染成了血一样的红色。</p><p class="vn-tbc">未完待续</p>') +
+      '<div class="soc-foot">' + (war ? '<button type="button" class="btn" data-fallenlog="1">去看看</button>' : '') + '<button type="button" class="btn primary" data-fallenx="1">知道了</button></div></div>';
+    document.body.appendChild(d);
+    d.addEventListener('click', function (e) { if (e.target.closest('[data-fallenlog]')) { d.remove(); go('log'); } });
+    d.addEventListener('click', function (e) { if (e.target === d || e.target.closest('[data-fallenx]')) d.remove(); });
+  }
   function floraFallenNotice() {
     if ($('fallen-dlg')) return;
     var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'fallen-dlg';
@@ -6894,6 +6937,7 @@
     var intro = ex.mode === 'intro';
     if (!$('vn-end')) { if (R || chPaid) renderRes(); return; }   // 已经离开剧情画面了
     if (ex.site === 'flora6' && firstDone) setTimeout(floraFallenNotice, 600);
+    if ((ex.site === 'kb6' || ex.site === 'kb7') && firstDone) { fields = {}; var kbTo = ex.site === 'kb7' ? 4 : 2; setTimeout(function () { kbShiftNotice(kbTo); }, 600); }
     if (ex.site === 'flora7' && firstDone) { fields = {}; if (mmLive()) setTimeout(mmEventPop, 900); }   // 芙罗拉星恢复：野外场景重建；弹出新活动   // 第一次读完第十段：芙罗拉星被腐化的提示
     if (chPaid) renderRes();
     if (R && ready()) renderRes();

@@ -134,6 +134,16 @@ var STY = (function () {
       p3.paid[P.id] = 1;
       return { ok: true, paid: P.id };
     }
+    if (args.a === 'gather') {   // 剧本里要交的东西要在野外采（pay.gather 写着在哪个区域；2026-10-31 第十六段的沙姜、小米辣）：每次 +1，采够就不能再采
+      var k5 = String(args.k || ''), G = null;
+      Object.keys(PAY_OF[site] || {}).forEach(function (id) { var P2 = PAY_OF[site][id]; if (P2.gather && P2.items[k5]) G = P2; });
+      if (!G) return no('这里采不到这个');
+      if (!unlocked(a, site, env) || done(a, site)) return no('现在不需要这个了');
+      var p5 = prog(a, site); if (p5.paid && p5.paid[G.id]) return no('已经交过了');
+      var I5 = items(a); if ((I5[k5] || 0) >= G.items[k5]) return no('已经够了');
+      I5[k5] = (I5[k5] || 0) + 1;
+      return { ok: true, k: k5, n: I5[k5], need: G.items[k5] };
+    }
     if (args.a === 'pick') {   // 第一段里选初始精灵
       var sid = String(args.sid || '');
       if (STARTERS.indexOf(sid) < 0) return no('没有这只精灵');

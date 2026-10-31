@@ -814,12 +814,14 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   if (mv.custom === 'poisonHeart' && !(foe.st['中毒'] > 0)) { E(S, evs, 'miss', { side: j }); log(S, evs, '但是没有命中！（渗透孢子只能命中中毒的敌人）'); me.fx.boostNext = 0; return; }
   var sure = me.fx.sureHit; if (sure) me.fx.sureHit = 0;
   if (me.tm.sure3 > 0 || me.tm.ear > 0) sure = 1;
+  var unstop = !!(me.boss && me.boss.sure);   // 剧情限定（2026-10-31）：技能必中，也不会被闪开
+  if (unstop) sure = 1;
   if (!sure && me.st['失明'] > 0 && RNG() < 0.5) { E(S, evs, 'miss', { side: j }); log(S, evs, nm(me) + '看不清目标，攻击落空了！'); me.fx.boostNext = 0; return; }
   if (!sure && RNG() >= hitChance(me, foe, mv)) { E(S, evs, 'miss', { side: j }); log(S, evs, '但是没有命中！'); me.fx.boostNext = 0; return; }
-  if (foe.fx.cave === S.turn) { foe.fx.x2Next = 1; E(S, evs, 'stage', { side: j }); log(S, evs, nm(foe) + '躲进岩洞，规避了这次攻击！下一次直接攻击伤害翻倍', 'fxl'); me.fx.boostNext = 0; return; }   // 岩洞藏匿：只管这一回合
-  if (foe.fx.absDef) { foe.fx.absDef = 0; log(S, evs, nm(foe) + '闪开了这次攻击！', 'fxl'); me.fx.boostNext = 0; return; }
-  if (foe.tm.dodge > 0 && RNG() < 0.4) { log(S, evs, nm(foe) + '用光滑皮肤闪开了攻击！', 'fxl'); me.fx.boostNext = 0; return; }
-  if (mv.cat === '物攻' && foe.tm.voidPhys > 0) { log(S, evs, nm(foe) + '处于虚空化，物理攻击穿过了它的身体！', 'fxl'); me.fx.boostNext = 0; return; }
+  if (!unstop && foe.fx.cave === S.turn) { foe.fx.x2Next = 1; E(S, evs, 'stage', { side: j }); log(S, evs, nm(foe) + '躲进岩洞，规避了这次攻击！下一次直接攻击伤害翻倍', 'fxl'); me.fx.boostNext = 0; return; }   // 岩洞藏匿：只管这一回合
+  if (!unstop && foe.fx.absDef) { foe.fx.absDef = 0; log(S, evs, nm(foe) + '闪开了这次攻击！', 'fxl'); me.fx.boostNext = 0; return; }
+  if (!unstop && foe.tm.dodge > 0 && RNG() < 0.4) { log(S, evs, nm(foe) + '用光滑皮肤闪开了攻击！', 'fxl'); me.fx.boostNext = 0; return; }
+  if (!unstop && mv.cat === '物攻' && foe.tm.voidPhys > 0) { log(S, evs, nm(foe) + '处于虚空化，物理攻击穿过了它的身体！', 'fxl'); me.fx.boostNext = 0; return; }
 
   if (mv.bomb) {   // 爆燃炸弹 / 火灵炸弹：先埋下，下回合结束时在 endOfTurn 里爆炸（按爆炸时的对手算伤害，扔炸弹的倒下了也照样炸）
     if (!S.bombs) S.bombs = [];

@@ -673,12 +673,17 @@ var PVE = (function () {
       allyMon: { sid: 'leafcat', lv: 40, nick: '叶子喵', boss: { purify: 1 }, moves: ['闪光飞叶', '种子炸弹', '星星魔法', '光束'], ability: { n: '脚伤', d: '脚底被瘴气浸透，陷入永久的流血状态，无法被解除' } },
       env: 'miasma', bg: 'fl_salt_mia', desc: '荒芜（LV45）· 叶子喵助战（特性「脚伤」：永久流血）' },
     brLab: { foe: '荒芜', bgm: 'boss3', team: [{ sid: 'barren', lv: 50, nick: '荒芜', boss: { nourish: 1, pp: 99 } }], env: 'miasma', bg: 'fl_lab', desc: '荒芜（LV50）· 特效「养料汲取」：每回合恢复 50 体力' },
-    // 第十八段 · 星云显现（2026-10-31）：玫瑰星云（剧情限定，体力 10000），可以带 Cumber 的 LV80 坎克托斯助战
-    nebula: { foe: 'Rosette Nebula', bgm: 'kbDeep3', team: [{ sid: 'rosette', lv: 80, nick: '玫瑰星云', maxhp: 10000, moves: ['黑雾潮汐', '幽冥息', '夜影封魂', '幽冥结界'], boss: { dr: 0.15, pp: 99 } }],
-      allyMon: { sid: 'pede', lv: 80, nick: 'Cumber 的坎克托斯' }, allyOpt: true, bg: 'kb_dusk', desc: '玫瑰星云（体力 10000）· 可以带 Cumber 的坎克托斯（LV80）助战' },
-    // 第十五段 · 暮色追击、第十六段 · 同舟（2026-10-31）
-    cyKb: { foe: '辰爷', team: [{ sid: 'kaleo', lv: 44, nick: '卡莱奥' }, { sid: 'squid', lv: 48, nick: '邪恶水臂' }], bg: 'kb_dusk', desc: '辰爷的卡莱奥（LV44）、邪恶水臂（LV48）' },
-    odoKb: { foe: '奥多亚克', team: [{ sid: 'odo', lv: 50, nick: '奥多亚克', boss: { dr: 0.15, pp: 99 } }], allyMon: { sid: 'squid', lv: 48, nick: '辰爷的邪恶水臂' }, allyOpt: true, bg: 'kb_floor', desc: '奥多亚克（LV50）· 可以带辰爷的邪恶水臂助战' },
+    // 第二章 · 坎伯兰星（2026-10-31，作者剧本）
+    // 第十五段：两只野生克托斯；辰爷的三只克托斯 + 一只坎克托斯
+    ketos2: { foe: '野生克托斯', team: [{ sid: 'pede', lv: 35, nick: '克托斯' }, { sid: 'pede', lv: 35, nick: '克托斯' }], bg: 'kb_dusk', desc: '野生克托斯 ×2（LV35）' },
+    cyKb: { foe: '辰爷', team: [{ sid: 'pede', lv: 40, nick: '克托斯' }, { sid: 'pede', lv: 40, nick: '克托斯' }, { sid: 'pede', lv: 40, nick: '克托斯' }, { sid: 'pede', lv: 50, nick: '坎克托斯' }], bg: 'kb_shore', desc: '辰爷的克托斯 ×3（LV40）、坎克托斯（LV50）' },
+    // 第十六段：操控 Threego 的 LV50 胖虎打辰爷的 LV40 邪恶水臂（隐藏效果：胖虎的技能必中、威力翻倍——用「深度侵蚀」双攻 +100% 加 sure 必中实现）
+    tgSquid: { foe: '辰爷', pteam: [{ sid: 'tagore', lv: 50, st: 1, nick: '胖虎', boss: { erode: 1, sure: 1 } }], team: [{ sid: 'squid', lv: 40, nick: '邪恶水臂' }], bg: 'kb_floor', desc: '辰爷的邪恶水臂（LV40）· 你操控 Threego 的胖虎（LV50）' },
+    odo45: { foe: '机械精灵', team: [{ sid: 'odo', lv: 45, nick: '？？？', boss: { dr: 0.1, pp: 99 } }], bg: 'kb_abyss', desc: '机械精灵（LV45）' },
+    // 剧情杀：第二只 LV65，双攻隐含 +500%、技能必中、不能被闪避
+    odoTwin: { foe: '机械精灵', team: [{ sid: 'odo', lv: 45, nick: '？？？', boss: { dr: 0.1, pp: 99 } }, { sid: 'odo', lv: 65, nick: '？？？', boss: { erode: 5, sure: 1, pp: 99 } }], bg: 'kb_abyss', desc: '机械精灵 ×2（LV45 / LV65）' },
+    // 第十八段 · 星云显现：玫瑰星云（剧情限定，LV80、体力 10000，玩家不出意外地被秒杀）
+    nebula: { foe: 'Rosette Nebula', bgm: 'kbDeep3', team: [{ sid: 'rosette', lv: 80, nick: '玫瑰星云', maxhp: 10000, moves: ['黑雾潮汐', '幽冥息', '夜影封魂', '幽冥结界'], boss: { erode: 9, sure: 1, dr: 0.15, pp: 99 } }], bg: 'kb_dusk', desc: '玫瑰星云（LV80）' },
     // 第十三段 · 冥岛的歌声（2026-10-31）：唱歌的塞米
     semi: { foe: '唱歌的小精灵', team: [{ sid: 'siren', lv: 20, nick: '塞米' }], bg: 'kb_isle', desc: '塞米（LV20）' },
     threego: { foe: 'Threego', team: [{ sid: 'tagore', lv: 3 }] },
@@ -758,7 +763,7 @@ var PVE = (function () {
       var F = FIGHTS[String(args.key || '')]; if (!F) return { err: '没有这场剧情对战' };
       var p, slots;
       if (F.pteam) {
-        p = F.pteam.map(function (x) { return { id: x.sid, lv: x.lv, moves: x.moves || ACC.defaultMoves(x.sid, x.lv), nick: x.nick, img: x.img || formImg(SPMAP[x.sid], ACC.stageOf(SPMAP[x.sid], x.lv)) }; });
+        p = F.pteam.map(function (x) { return { id: x.sid, lv: x.lv, moves: x.moves || ACC.defaultMoves(x.sid, x.lv), nick: x.nick, img: x.img || formImg(SPMAP[x.sid], x.st != null ? x.st : ACC.stageOf(SPMAP[x.sid], x.lv)), boss: x.boss ? JSON.parse(JSON.stringify(x.boss)) : undefined }; });   // st：指定立绘阶段；boss：剧情限定的隐藏效果
         slots = p.map(function () { return null; });
       } else {
         var own = ACC.team(a); p = own.map(function (m) { return ACC.battleMon(a, m); }); slots = own.map(function (m) { return m.u; });
