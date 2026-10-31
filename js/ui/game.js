@@ -1679,10 +1679,26 @@
         (big ? '<text x="' + r.c[0] + '" y="' + (r.c[1] + 11) + '" class="df">' + r.n + '</text>' : '') +
         (todo ? '<g transform="translate(' + (r.c[0] + (big ? 30 : 14)) + ',' + (r.c[1] - (big ? 20 : 14)) + ')"><g class="pin"><circle r="10"/><text y="4.5">!</text></g></g>' : '') + '</g>';
     }).join('');
-    return '<figure class="shipmap"><div class="sm-wrap"><svg viewBox="-60 20 880 560" role="img" aria-label="荆楚号舰体平面图">' +
+    return '<figure class="shipmap">' + shipQuick() + '<div class="sm-wrap"><svg viewBox="-60 20 880 560" role="img" aria-label="荆楚号舰体平面图">' +
       '<g class="eng">' + [[16, 398, 30], [20, 452, 26], [42, 510, 22], [130, 122, 24], [124, 74, 18]].map(function (e) { return '<path d="M' + (e[0] - 14) + ',' + (e[1] - e[2] / 2) + ' l-' + (e[2] * 1.6) + ',' + (e[2] * .3) + ' l0,' + (e[2] * .4) + ' l' + (e[2] * 1.6) + ',' + (e[2] * .3) + ' Z"/>'; }).join('') + '</g>' +
       '<path class="hull" d="' + sPath(SHIP.outline) + '"/>' + g + '<path class="hull-l" d="' + sPath(SHIP.outline) + '"/></svg>' + shipSide() + '</div>' +
       '<figcaption><span><i class="lg open"></i>可传送</span><span><i class="lg pin">!</i>有可进行的剧情</span><span><i class="lg"></i>登船后开放</span>船尾（西侧）是引擎，船头朝东。</figcaption></figure>' + shipTiles();
+  }
+  // 舰体图上方（同一个黑框里）的快捷入口：基地、种植园、冶炼、孵化、商城（2026-10-31）
+  var SHIP_QUICK = [
+    { k: 'home', ic: '🏠', t: '基地', area: '天门', open: function () { return homeOpen(); }, lock: '读完天门支线「陆羽茶室」后开放' },
+    { k: 'farm', ic: '🌱', t: '种植园', area: '恩施', open: function () { return farmOpen(); }, lock: '读完支线「伟大的种植园」后开放' },
+    { k: 'forge', ic: '🔥', t: '冶炼', area: '黄石', open: function () { return true; } },
+    { k: 'nursery', ic: '🥚', t: '孵化', area: '神农架', open: function () { return true; } },
+    { k: 'shop', ic: '🛒', t: '商城', area: '荆门', open: function () { return shopOpen(); }, lock: '读完支线「物资仓储」后开放' }
+  ];
+  function shipQuick() {
+    return '<div class="sm-quick">' + SHIP_QUICK.map(function (q) { var op = q.open(); return '<button type="button" class="sm-q' + (op ? '' : ' locked') + '" data-smq="' + q.k + '"' + (op ? '' : ' title="' + q.lock + '"') + '><span>' + q.ic + '</span><b>' + q.t + '</b></button>'; }).join('') + '</div>';
+  }
+  function shipQuickGo(k) {
+    var q = SHIP_QUICK.filter(function (x) { return x.k === k; })[0]; if (!q) return;
+    if (!q.open()) { toast(q.lock); return; }
+    ex.view = q.k; ex.area = q.area; ex.planet = 'jingchu'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8);
   }
   // 舰体图右边（同一个黑框里）：空间站、太空竞技场、BOSS挑战、每周挑战（2026-10-31，从星际探索的星图页搬过来）
   function shipSide() {
@@ -6260,6 +6276,7 @@
     var b = e.target.closest('button, .dept.open'); if (!b) return;
     if (chalClick(b)) return;
     if (towerClick(b)) return;
+    if (b.dataset.smq) { shipQuickGo(b.dataset.smq); return; }
     if (b.dataset.area) { teleport(b.dataset.area); return; }
     if (b.dataset.npctalk) { npcTalk(b.dataset.npctalk); return; }
     if (b.dataset.room) { ex.view = 'room'; ex.room = b.dataset.room; ex.area = '天门'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); mysteryRoll('荆楚号 · 陆羽茶室'); return; }
