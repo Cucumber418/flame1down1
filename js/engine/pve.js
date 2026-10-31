@@ -681,7 +681,7 @@ var PVE = (function () {
     tgSquid: { foe: '辰爷', pteam: [{ sid: 'tagore', lv: 50, st: 1, nick: '胖虎', boss: { erode: 1, sure: 1 } }], team: [{ sid: 'squid', lv: 40, nick: '邪恶水臂' }], bg: 'kb_floor', desc: '辰爷的邪恶水臂（LV40）· 你操控 Threego 的胖虎（LV50）' },
     odo45: { foe: '机械精灵', team: [{ sid: 'odo', lv: 45, nick: '？？？', boss: { dr: 0.1, pp: 99 } }], bg: 'kb_abyss', desc: '机械精灵（LV45）' },
     // 剧情杀：第二只 LV65，双攻隐含 +500%、技能必中、不能被闪避
-    odoTwin: { foe: '机械精灵', team: [{ sid: 'odo', lv: 45, nick: '？？？', boss: { dr: 0.1, pp: 99 } }, { sid: 'odo', lv: 65, nick: '？？？', boss: { erode: 5, sure: 1, pp: 99 } }], bg: 'kb_abyss', desc: '机械精灵 ×2（LV45 / LV65）' },
+    odoTwin: { foe: '机械精灵', team: [{ sid: 'odo', lv: 45, nick: '？？？', boss: { dr: 0.1, pp: 99 } }, { sid: 'odo', lv: 65, nick: '？？？', maxhp: 30000, moves: ['钢铁冲击', '水打击', '铁拳', '海浪'], boss: { sure: 1, kill: 1, pp: 99 } }], bg: 'kb_abyss', desc: '机械精灵 ×2（LV45 / LV65）' },
     // 第十八段 · 星云显现：玫瑰星云（剧情限定，LV80、体力 10000，玩家不出意外地被秒杀）
     nebula: { foe: 'Rosette Nebula', bgm: 'kbDeep3', team: [{ sid: 'rosette', lv: 80, nick: '玫瑰星云', maxhp: 10000, moves: ['黑雾潮汐', '幽冥息', '夜影封魂', '幽冥结界'], boss: { erode: 9, sure: 1, dr: 0.15, pp: 99 } }], bg: 'kb_dusk', desc: '玫瑰星云（LV80）' },
     // 第十三段 · 冥岛的歌声（2026-10-31）：唱歌的塞米

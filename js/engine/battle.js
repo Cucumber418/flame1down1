@@ -848,7 +848,9 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
       if (mv.custom === 'burnExtend' && foe.st['烧伤'] > 0 && foe.hp > res.dmg) { foe.st['烧伤']++; burnX = (burnX || 0) + 1; }   // 烈焰风暴：每次命中延长 1 回合烧伤
       if (res.crit) log(S, evs, '致命一击！', 'crit');
       if (res.petri) log(S, evs, '石化中被暴击，伤害翻倍！', 'crit');
+      if (me.boss && me.boss.kill) res.dmg = Math.max(res.dmg, foe.hp * 20 + 99999);   // 剧情限定（2026-10-31 第十六段最后那只奥多亚克）：打中必定秒杀，不显示
       S.lastShown = null; dmgAdd(applyDamage(S, evs, j, res.dmg, i, { crit: res.crit, eff: res.eff, noFaint: true }));
+      if (me.boss && me.boss.kill && foe.hp > 0) foe.hp = 0;
       if (res.petri) petriBreak(S, evs, j);
       if (res.crit && foe.hp > 0 && !foe.fainted) changeStages(S, evs, j, mv.cat === '物攻' ? { def: -1 } : { spd: -1 }, i);   // 2026-10-20：暴击降低对应防御 1 级
       if (me.fainted) break;
