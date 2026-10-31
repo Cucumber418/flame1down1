@@ -1363,7 +1363,7 @@
     { id: 'sarena', name: '太空竞技场', d: '空间站旁边新建的竞技场，各种比赛都在这里举办。', sites: [], sarena: true, after: 'flora1' },   // 2026-10-19
     { id: 'tower', name: '先驱之塔', d: '空间站里的一座高塔，共 60 层。每一层都守着一批强大的精灵，塔顶住着死神。', sites: [], tower: true, after: 'flora1', inStation: true },
     { id: 'flora', name: '芙罗拉星', d: '草系星球。丛林、草甸和盐碱地里栖息着许多野生精灵。', sites: ['flora1', 'flora2', 'flora3', 'flora4', 'flora5', 'flora6', 'flora7', 'travelcat'], wild: true, ptype: '草系星球', color: ['#9fd08a', '#3f7d4a'], get img() { return floraFallen() ? 'images/planets/flora_corrupt.webp?v=3' : 'images/planets/flora.webp?v=3'; }, after: 'board' },
-    { id: 'kamble', name: '坎伯兰星', d: '水系星球。整颗星球都被海洋覆盖，从水面一直往下，是浅水区和深不见底的深海区。', sites: ['kb2', 'kb3'], storyIds: ['kb1', 'kb2', 'kb3'], storyEmpty: '第二章 · 坎伯兰星：读完第十一段「盐碱地之下」后，到荆楚号 · 随州 · 编钟通讯站开始。', wild: true, ptype: '水系星球', color: ['#8cc6ea', '#2a6fb0'], get img() { return 'images/planets/kamble_' + kbStage() + '.webp?v=2'; }, after: 'flora1' },
+    { id: 'kamble', name: '坎伯兰星', d: '水系星球。整颗星球都被海洋覆盖，从水面一直往下，是浅水区和深不见底的深海区。', sites: ['kb2', 'kb3', 'kb4', 'kb5', 'kb6'], storyIds: ['kb1', 'kb2', 'kb3', 'kb4', 'kb5', 'kb6'], storyEmpty: '第二章 · 坎伯兰星：读完第十一段「盐碱地之下」后，到荆楚号 · 随州 · 编钟通讯站开始。', wild: true, ptype: '水系星球', color: ['#8cc6ea', '#2a6fb0'], get img() { return 'images/planets/kamble_' + kbStage() + '.webp?v=2'; }, after: 'flora1' },
     { id: 'pompeii', name: '庞贝星', d: '火系星球。火山终年喷发，地面被熔岩烤得发烫。', sites: [], wild: true, ptype: '火系星球', color: ['#f2a46b', '#b3401f'], img: 'images/planets/pompeii.webp', after: 'flora1' },
     { id: 'laiting', name: '莱汀陨石带', d: '电系区域。无数陨石在雷暴中漂浮。', sites: [], wild: true, ptype: '电系陨石带', color: ['#f1dd73', '#7a6a1a'], belt: true, img: 'images/planets/laiting.webp', after: 'flora1' },
     { id: 'white', name: '白之星', d: '冰系星球。离太阳最远，整颗星球都裹在冰雪里。', sites: [], wild: true, ptype: '冰系星球', color: ['#e4f2fa', '#6aa6c8'], after: 'flora1' },
@@ -1407,6 +1407,9 @@
     kb1: { name: '编钟通讯站', planet: 'jingchu', dept: '随州', chapter: '第十二段 · 远航', bg: 'bridge2_p', d: '编钟通讯站的 Jager 上尉找到了地面小队：下一站，是一颗被海洋覆盖的星球。', after: 'flora7', pos: [50, 64] },
     kb2: { name: '冥岛', planet: 'kamble', chapter: '第十三段 · 冥岛的歌声', bg: 'kb_isle', d: '穿梭机飞到冥岛上空时，海面上传来一阵奇怪的歌声……', after: 'kb1', fpart: 'story' },
     kb3: { name: '浅水区', planet: 'kamble', chapter: '第十四段 · 墨水结晶', bg: 'kb_lookup', d: '为了找到辰爷、拿到解药，你和 Bttp 潜进了坎伯兰星的海里。', after: 'kb2', fpart: 'story' },
+    kb4: { name: '暮色海面', planet: 'kamble', chapter: '第十五段 · 暮色追击', bg: 'kb_dusk', d: '辰爷带着 Threego 往太阳落下的方向逃去。塞米说，它可以叫朋友来帮忙。', after: 'kb3', fpart: 'story' },
+    kb5: { name: '幽深地', planet: 'kamble', chapter: '第十六段 · 同舟', bg: 'kb_floor', d: '被巨浪卷进海底之后，睁开眼睛，身边的人是……辰爷？', after: 'kb4', fpart: 'story' },
+    kb6: { name: '深海基站', planet: 'kamble', chapter: '第十七段 · 深海基站', bg: 'kb_temple', spot: '深海基站', d: '沿着发光的管道一直游下去，尽头是一扇刻着英文的舱门。', after: 'kb5', fpart: 'story' },
     mmTrial: { name: '古城防卫部', planet: 'jingchu', dept: '襄阳', chapter: '活动任务 · 明明教官的试炼', side: true, event: true, bg: 'bridge_p', d: '明明教官说，要带大家去一个「好地方」。读完后开放活动「明明教官的试炼」。', after: 'flora7', pos: [42, 60] },   // 2026-10-24：读完即完成任务，送 500 明明代币
     tea: { name: '陆羽茶室', planet: 'jingchu', dept: '天门', chapter: '支线 · 陆羽茶室', side: true, bg: 'tea_p', d: '从芙罗拉星回来后，舰上要给第一支地面小队分配休息舱。读完后开放你自己的「茶室」（家园）。', after: 'flora1', pos: [50, 84] },
     mingming: { name: '古城防卫部', planet: 'jingchu', dept: '襄阳', chapter: '支线 · 明明教官的礼物', side: true, bg: 'bridge_p', d: '古城防卫部的明明教官听说你在黄冈秘鉴里点亮了十类精灵，想见见你。', after: 'board', pos: [48, 82], need: function () { return litCount() >= 10; }, needText: '在黄冈秘鉴中点亮 10 类精灵后开放' },
@@ -1434,7 +1437,7 @@
   var BG_NAME = { gate: '校门', school: '校门', flag: '教学楼', garden: '牌坊花园', qiyi: '起义门', street: '彭刘杨路', bridge: '长江大桥', desert: '鸣沙山 · 月牙泉', jslc: '发射中心', tower: '发射塔', launch: '火箭升空', orbit: '地球轨道', hangar: '鄂州港 · 停泊区', cockpit_p: '武汉 · 指挥中枢', hangar_p: '鄂州港 · 停泊区', cabin_p: '温泉生活区', greenhouse_p: '太空温室', pp_lake: '熔浆大湖', pp_slag: '熔渣矿区', pp_fort: '湖心堡垒', pp_core: '炙热核心', fl_lab: '地下实验室', fl_meadow_mia: '瘴气草甸', fl_beech_mia: '瘴气丛林', gym_p: '体能馆', storage_p: '物资仓储', pod_p: '学院部 · 资料室', tea_p: '陆羽茶室 · 04 号舱', teahall: '陆羽茶室 · 大厅', bridge2_p: '编钟通讯站', bridge_p: '古城防卫部', xiaogan: '孝感大厅', paifang: '惟楚有材牌坊', hall: '报告厅', field: '操场', aerial: '校园全景' };
   // 芙罗拉星的场景名；瘴气化后的 *_mia 版本沿用同一个名字
   Object.assign(BG_NAME, { lt_field: '雷暴星尘', lt_jupiter: '巨星之下' });
-  Object.assign(BG_NAME, { kb_dock: '水星码头', kb_isle: '冥岛', kb_lookup: '仰望水面', kb_shoal: '群灵深海', kb_temple: '古代神殿', kb_floor: '幽深地', kb_abyss: '深渊潜底' });
+  Object.assign(BG_NAME, { kb_shore: '黄昏礁滩', kb_dusk: '暮色海面', kb_wave: '巨浪', black: '', kb_dock: '水星码头', kb_isle: '冥岛', kb_lookup: '仰望水面', kb_shoal: '群灵深海', kb_temple: '古代神殿', kb_floor: '幽深地', kb_abyss: '深渊潜底' });
   Object.assign(BG_NAME, { fl_path: '林间小路', fl_lake: '草甸湖畔', fl_beech: '山毛榉林', fl_maple: '丛林边缘', fl_meadow: '草甸', fl_sun: '丛林深处', fl_salt: '盐碱地', fl_village: '叶之村落', fl_horizon: '草甸尽头', fl_jungle_corrupt: '瘴气丛林' });
   Object.keys(BG_NAME).forEach(function (k) { if (BG[k + '_mia']) BG_NAME[k + '_mia'] = BG_NAME[k]; });
   // 角色（立绘为占位）
@@ -1456,6 +1459,8 @@
     hw: { name: function () { return '荒芜'; }, color: '#5a3d6e', tall: 0.95, spr: 'barren', sprLv: 30 },
     r: { name: function () { return '日透骨消'; }, color: '#5a6a8a', tall: 1.0, img: 'rtg' },   // 三峡能源核心主人
     ms: { name: function () { return '玛西'; }, color: '#8a5a9a', tall: 0.55, spr: 'mush', sprLv: 10 },
+    cb: { name: function () { return 'Cumber'; }, color: '#4f7aa8', tall: 1.0, img: 'cumber' },   // 2026-10-31：深海基站的 Cumber（差分：oh 惊讶、smile 笑、close 闭眼、angry 生气）
+    yn: { name: function () { return '一鸟'; }, color: '#5a2a3a' },   // 常春藤，辰爷的上级（只出声音，立绘待补）
     jg: { name: function () { return 'Jager 上尉'; }, color: '#3f5f7a', tall: 1.0 },   // 2026-10-31：编钟通讯站站长（立绘待补）
     sm: { name: function () { return '塞米'; }, color: '#3f8fc4', tall: 0.5, spr: 'siren', sprLv: 12 },   // 冥岛上唱歌的塞米（戴着翻译器能听懂）
     man: { name: function () { return '男人'; }, color: '#6a6a6a' },
@@ -1496,7 +1501,7 @@
   var CHAPTERS = [
     { id: 'prologue', n: '序章', d: '从省实验中学出发，一路到登上荆楚号。', sites: ['school', 'river', 'jiuquan', 'board'] },
     { id: 'ch1', n: '第一章 · 芙罗拉星', d: '降落芙罗拉星，追查瘴气和猎杀者的真相。', sites: ['flora1', 'flora2', 'flora3', 'flora4', 'flora5', 'flora6', 'flora7'] },
-    { id: 'ch2', n: '第二章 · 坎伯兰星', d: '远航禁闭海洋。', sites: ['kb1', 'kb2', 'kb3'], wip: true }   // 2026-10-31：未完待续   // 2026-10-17：茶室音乐「芙罗拉星」移除，章节大奖改为经验和能量
+    { id: 'ch2', n: '第二章 · 坎伯兰星', d: '远航禁闭海洋。', sites: ['kb1', 'kb2', 'kb3', 'kb4', 'kb5', 'kb6'], wip: true }   // 2026-10-31：未完待续   // 2026-10-17：茶室音乐「芙罗拉星」移除，章节大奖改为经验和能量
   ];
   CHAPTERS.forEach(function (x) { x.reward = RW.CHAPTER[x.id] || x.reward || {}; });   // 奖励数额在 js/engine/rewards.js（服务器按它核对）
   function chapterOf(site) { return CHAPTERS.filter(function (C) { return C.sites.indexOf(site) >= 0; })[0] || null; }
@@ -3992,6 +3997,7 @@
   setInterval(function () { if (document.visibilityState === 'visible') { storyNewsCheck(); newsCheck(); } }, 20000);
   /* 新剧情上线通知（2026-10-31）：每推出一批新剧情，在 STORY_NEWS 最前面加一条；每个存档只弹一次（记在 storyNews） */
   var STORY_NEWS = [
+    { id: 'kb-2', title: '第二章 · 坎伯兰星（续）', sub: '第十五段 ～ 第十七段', card: 'kb', site: 'kb4', d: '暮色里的追击，深海里的同舟，还有一座刻着英文的基站。' },
     { id: 'kb-1', title: '第二章 · 坎伯兰星', sub: '第十二段 ～ 第十四段', card: 'kb', site: 'kb1', d: '远航禁闭海洋。荆楚号的下一站，是一颗被海洋覆盖的星球。' }
   ];
   function storyNewsCheck() {
@@ -6186,7 +6192,7 @@
   $('pg-explore').addEventListener('keydown', function (e) { if (e.target.id === 'home-name') { if (e.key === 'Enter') { e.preventDefault(); saveHomeName(); } else if (e.key === 'Escape') { ex.homeEdit = false; renderHome(); } } });
 
   /* ---------- 任务：主线 / 支线 / 世界 ---------- */
-  var MAIN_Q = ['school', 'river', 'jiuquan', 'board', 'flora1', 'flora2', 'flora3', 'flora4', 'flora5', 'flora6', 'flora7', 'kb1', 'kb2', 'kb3'], EVENT_Q = ['mmTrial'], SIDE_Q = ['academy', 'xiaogan', 'brawl', 'draft', 'storage', 'tiger', 'tiger2', 'tea', 'rare', 'mingming', 'medal', 'spa', 'fl_chal', 'hiddenSk'];
+  var MAIN_Q = ['school', 'river', 'jiuquan', 'board', 'flora1', 'flora2', 'flora3', 'flora4', 'flora5', 'flora6', 'flora7', 'kb1', 'kb2', 'kb3', 'kb4', 'kb5', 'kb6'], EVENT_Q = ['mmTrial'], SIDE_Q = ['academy', 'xiaogan', 'brawl', 'draft', 'storage', 'tiger', 'tiger2', 'tea', 'rare', 'mingming', 'medal', 'spa', 'fl_chal', 'hiddenSk'];
   // 世界任务（奖励暂定）
   var WQ = [
     { id: 'w_first', n: '初到芙罗拉', d: '荆楚号已经抵达芙罗拉星。去丛林或草甸，和那里的野生精灵过过招吧。', where: '芙罗拉星 · 丛林 / 草甸', steps: [{ t: '在芙罗拉星击败 1 只野生精灵', k: 'wins', n: 1 }], after: 'flora1', go: 'flora' },
@@ -6724,7 +6730,7 @@
     if (ex.auto) ex.timer = setTimeout(next, 1200 + Array.from(ex.full).length * 45);
   }
   // 全屏标题演出（2026-10-31，剧本行写 card）：背景 + 标题图，标题图上扫过一道光；点击继续
-  var CARDS = { kb: { bg: 'kb_isle', img: 'images/cg/kb_title.webp' } };
+  var CARDS = { kb: { bg: 'kb_isle', img: 'images/cg/kb_title.webp' }, nebula: { bg: 'black', img: 'images/cg/nebula_reveal.webp' } };   // nebula：星云显现（第二章后面用）
   function showCard(k) {
     var C = CARDS[k], v = $('vn'); if (!C || !v) return false;
     if ($('vn-card')) $('vn-card').remove();

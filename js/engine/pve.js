@@ -673,6 +673,9 @@ var PVE = (function () {
       allyMon: { sid: 'leafcat', lv: 40, nick: '叶子喵', boss: { purify: 1 }, moves: ['闪光飞叶', '种子炸弹', '星星魔法', '光束'], ability: { n: '脚伤', d: '脚底被瘴气浸透，陷入永久的流血状态，无法被解除' } },
       env: 'miasma', bg: 'fl_salt_mia', desc: '荒芜（LV45）· 叶子喵助战（特性「脚伤」：永久流血）' },
     brLab: { foe: '荒芜', bgm: 'boss3', team: [{ sid: 'barren', lv: 50, nick: '荒芜', boss: { nourish: 1, pp: 99 } }], env: 'miasma', bg: 'fl_lab', desc: '荒芜（LV50）· 特效「养料汲取」：每回合恢复 50 体力' },
+    // 第十五段 · 暮色追击、第十六段 · 同舟（2026-10-31）
+    cyKb: { foe: '辰爷', team: [{ sid: 'kaleo', lv: 44, nick: '卡莱奥' }, { sid: 'squid', lv: 48, nick: '邪恶水臂' }], bg: 'kb_dusk', desc: '辰爷的卡莱奥（LV44）、邪恶水臂（LV48）' },
+    odoKb: { foe: '奥多亚克', team: [{ sid: 'odo', lv: 50, nick: '奥多亚克', boss: { dr: 0.15, pp: 99 } }], allyMon: { sid: 'squid', lv: 48, nick: '辰爷的邪恶水臂' }, allyOpt: true, bg: 'kb_floor', desc: '奥多亚克（LV50）· 可以带辰爷的邪恶水臂助战' },
     // 第十三段 · 冥岛的歌声（2026-10-31）：唱歌的塞米
     semi: { foe: '唱歌的小精灵', team: [{ sid: 'siren', lv: 20, nick: '塞米' }], bg: 'kb_isle', desc: '塞米（LV20）' },
     threego: { foe: 'Threego', team: [{ sid: 'tagore', lv: 3 }] },
