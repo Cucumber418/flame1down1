@@ -44,7 +44,8 @@ var STY = (function () {
     draft: { after: 'xiaogan', need: function (a) { return species(a) >= 10; } },
     core: { after: 'board' }, spa: { after: 'flora1' }, plant: { after: 'flora1' }, travelcat: { after: 'flora2' }, xiaogan: { after: 'board' },
     kb1: { after: 'flora7' }, kb2: { after: 'kb1' }, kb3: { after: 'kb2' }, kb4: { after: 'kb3' }, kb5: { after: 'kb4' }, kb6: { after: 'kb5' },
-    kb8: { after: 'kb7' },   // 2026-11-01：第十九段 · 玫瑰之战（必须在码头击败玫瑰星云）
+    kb8: { after: 'kb7' },
+    barrenMys: { after: 'kb8' },   // 2026-11-01：世界任务「荒芜的谜团？」   // 2026-11-01：第十九段 · 玫瑰之战（必须在码头击败玫瑰星云）
     kb7: { after: 'kb6', need: function (a) { return (a.kbwK | 0) >= PVE.KBW.need || !!(a.story && a.story.kb7 && a.story.kb7.at > 0); } }   // 坎伯兰星保卫战：本账号累计击破 5 只奥多亚克   // 2026-10-31：第二章 · 坎伯兰星
   };
   function unlocked(a, site, env) { var S = SITES[site]; return !!S && (!S.after || done(a, S.after)) && (!S.need || S.need(a, env)); }

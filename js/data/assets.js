@@ -352,6 +352,7 @@ var ITEM_IMG = {
   "drone": "images/items/drone.webp",
   "plantbomb": "images/sprites/plantbomb.webp",   // 第八段 Bttp 的炸弹
   "dive": "images/items/dive.webp",   // 第十二段 潜水头盔
+  "shovel": "images/items/shovel.webp",   // 世界任务「荒芜的谜团？」的小铲子
   "ink": "images/items/ink.webp",   // 第十四段 乌贼墨水结晶
   "antidote": "images/items/antidote.png"
 };

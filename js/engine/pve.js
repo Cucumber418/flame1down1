@@ -692,6 +692,8 @@ var PVE = (function () {
     // 第十八段 · 星云显现：玫瑰星云（剧情限定，LV80、体力 10000，玩家不出意外地被秒杀）
     nebula: { foe: 'Rosette Nebula', bgm: 'disCommunication', team: [{ sid: 'rosette', lv: 80, nick: '玫瑰星云', maxhp: 10000, moves: ['黑雾潮汐', '幽冥息', '夜影封魂', '幽冥结界'], boss: { erode: 9, sure: 1, dr: 0.15, stRes: 0.8, pp: 99 } }], bg: 'kb_dusk', desc: '玫瑰星云（LV80）' },
     // 第十三段 · 冥岛的歌声（2026-10-31）：唱歌的塞米
+    // 世界任务「荒芜的谜团？」（2026-11-01）：实验室里重新启动的荒芜，必须打赢
+    brMys: { foe: '荒芜', bgm: 'boss3', mustWin: true, team: [{ sid: 'barren', lv: 60, nick: '荒芜', maxhp: 3500, boss: { dr: 0.1, nourish: 1, pp: 99 } }], bg: 'fl_lab', desc: '荒芜（LV60）· 特效「养料汲取」：每回合恢复 50 体力' },
     // 第十九段 · 码头决战（2026-11-01）：必须打赢才能读完；机制见 battle.js 的 nebCumber
     nebula2: { foe: 'Rosette Nebula', bgm: 'ngc2237', mustWin: true, coreRevive: true,   // coreRevive：全员倒下时可以花 1 个圣晶石全员复活（battle.js 的 coreRevive）
       team: [{ sid: 'rosette', lv: 80, nick: '玫瑰星云', maxhp: 6336, moves: ['强烈恒星风', '氢-α发射线'], ability: { n: '疏散星团', d: '先出手时造成的伤害提升 50%；后出手时受到的伤害减免 50%' }, boss: { neb: 1, dust: 1, bok: 1, stRes: 0.8, pp: 99 } }], bg: 'kb_dock', desc: '玫瑰星云（LV80）· Cumber 助阵' },

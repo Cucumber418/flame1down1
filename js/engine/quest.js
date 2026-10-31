@@ -91,6 +91,7 @@ var QST = (function () {
     { id: 'w_hunt', steps: [{ k: 'wins', n: 10 }], after: 'flora1' },
     { id: 'w_kaleo', steps: [{ k: 'own:kaleo', n: 1 }], after: 'flora1' },
     { id: 'w_travel', steps: [{ k: 'story:travelcat', n: 1 }], after: 'flora2' },
+    { id: 'w_barren', steps: [{ k: 'story:barrenMys', n: 1 }], after: 'kb8' },
     { id: 'w_dex', steps: [{ k: 'lit', n: 3 }], after: 'academy' }
   ];
   function wq(id) { for (var i = 0; i < WQ.length; i++) if (WQ[i].id === id) return WQ[i]; return null; }
