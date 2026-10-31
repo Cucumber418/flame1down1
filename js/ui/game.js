@@ -6958,7 +6958,7 @@
     if (ex.auto) ex.timer = setTimeout(next, 1200 + Array.from(ex.full).length * 45);
   }
   // 全屏标题演出（2026-10-31，剧本行写 card）：背景 + 标题图，标题图上扫过一道光；点击继续
-  var CARDS = { kb: { bg: 'kb_isle', img: 'images/cg/kb_title.webp' }, nebula: { bg: 'black', img: 'images/cg/nebula_reveal.webp' } };   // nebula：星云显现（第二章后面用）
+  var CARDS = { kb: { bg: 'kb_isle', img: 'images/cg/kb_title.webp' }, nebula: { bg: 'black', img: 'images/cg/nebula_reveal.webp' }, kbclear: { bg: 'black', img: 'images/cg/kb_clear.webp' } };   // kbclear：第二章通关「雾海突破」   // nebula：星云显现（第二章后面用）
   function showCard(k) {
     var C = CARDS[k], v = $('vn'); if (!C || !v) return false;
     if ($('vn-card')) $('vn-card').remove();
