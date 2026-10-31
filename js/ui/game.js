@@ -377,6 +377,7 @@
     { id: 'purifier', n: '芙罗拉净化者', d: '完成芙罗拉星的星球任务「祛除瘴气」', ok: function () { return !!(acc.purge && acc.purge.n >= 30); } },
     { id: 'force', n: '原力掌控者', d: '击败困难难度的BOSS「泰戈尔」', ok: function () { return bossWon('tiger', 2); } },
     { id: 'guardian', n: '净土守护', d: '击败困难难度的BOSS「荒芜」', ok: function () { return bossWon('barren', 2); } },
+    { id: 'odoClean', n: '深海清洁工', d: '击败困难难度的BOSS「奥多亚克」', ok: function () { return bossWon('odo', 2); } },
     { id: 'reaper', n: '死神', d: '击败先驱之塔第 60 层的死神「帕努托尔」', ok: function () { return !!(acc.tower && acc.tower.clears > 0); } },
     { id: 'xcking', n: '行测之王', d: '通过日透骨消的考核，领取挖矿钻头', ok: function () { return !!acc.drill; } },
     { id: 'spa120', n: '温泉爱好者', d: '泡温泉累计 120 分钟', ok: function () { return spaMinTotal() >= 120; } },
@@ -848,11 +849,12 @@
    * 一般道具：捕捉装置、补药（对战中用）、改名卡、自律训练装置、挑战许可
    * 储存箱（主菜单，黄冈秘鉴和社交中间）列出所有道具 */
   var USE_ITEMS = GROW.USE_ITEMS;   // 精灵道具的数据和用法在 js/engine/grow.js（服务器和浏览器共用，2026-10-25）
-  var MON_ORDER = ['formDev', 'earthShard', 'floraJade', 'kbDrop', 'ppAsh', 'ltOrb', 'whFrost', 'moonStone', 'boneDust', 'tgPearl', 'brTwig', 'odoFin', 'hrDisk', 'deathTok', 'ivMoon', 'ivBone', 'ivReroll', 'ev50', 'evAny', 'evTagore', 'natAny', 'natTagore', 'evReset', 'fruit1', 'fruit2'], GEN_ORDER = ['trans', 'helmet', 'auto', 'rename', 'cap1', 'cap2', 'cap3', 'pot1', 'pot2', 'pot200'];
+  var MON_ORDER = ['formDev', 'earthShard', 'floraJade', 'kbDrop', 'ppAsh', 'ltOrb', 'whFrost', 'moonStone', 'boneDust', 'tgPearl', 'brTwig', 'odoFin', 'hrDisk', 'deathTok', 'ivMoon', 'ivBone', 'ivReroll', 'ev50', 'evAny', 'evTagore', 'natAny', 'natTagore', 'evReset', 'fruit1', 'fruit2'], GEN_ORDER = ['trans', 'helmet', 'dive', 'auto', 'rename', 'cap1', 'cap2', 'cap3', 'pot1', 'pot2', 'pot200'];
   // 剧情道具：主线里拿到的，不能使用也不会消耗
   var KEY_ITEMS = {
     trans: { name: '精灵翻译器', d: '汉街总部国际A座的情报显示，这个翻译器能凭一己之力考到雅思 6.5 分。这样一来，翻译精灵的语言也一定能行吧……', img: 'translator' },
-    helmet: { name: '烟雾保护头盔', d: 'Bttp 用无人机空投下来的头盔，戴上后在浓密的瘴气里也能呼吸、看清路。很容易摔坏。', img: 'helmet' }
+    helmet: { name: '烟雾保护头盔', d: 'Bttp 用无人机空投下来的头盔，戴上后在浓密的瘴气里也能呼吸、看清路。很容易摔坏。', img: 'helmet' },
+    dive: { name: '潜水头盔', d: '编钟通讯站的 Jager 上尉发的头盔，Bttp 调过参数。戴上后能在水里呼吸，也能和精灵翻译器连在一起用。从三楼掉下去也砸不坏。', img: 'dive' }
   };
   // 野外采集物：每个区域 2 个采集点，每个点每天 1 次。星砂做加强装置，圣晶石做华为装置。
   var GATHER_ITEMS = {
@@ -953,7 +955,8 @@
     auto: ['装在茶室精灵身上的小装置。', '装在茶室里展示中的一只精灵身上：它每训练满 1 天就自动结算经验，再开始下一天，一共 7 天，不用每天回来收。', '天门 · 陆羽茶室大厅的茶室商店（1,500 能量）。'],
     permit: ['挑战BOSS每周挑战用的许可。', '进行「每周挑战」时消耗 1 枚。', '每 12 小时自动恢复 1 枚，最多同时持有 ' + PVE.PERMIT.max + ' 枚。'],
     trans: ['汉街总部国际A座的情报显示，这个翻译器能凭一己之力考到雅思 6.5 分。', '剧情道具：戴上后能听懂精灵说的话。不能使用，也不会消耗。', '主线剧情里获得。'],
-    helmet: ['Bttp 用无人机空投下来的头盔，很容易摔坏。', '剧情道具：戴上后在浓密的瘴气里也能呼吸、看清路。不能使用，也不会消耗。', '主线剧情里获得。']
+    helmet: ['Bttp 用无人机空投下来的头盔，很容易摔坏。', '剧情道具：戴上后在浓密的瘴气里也能呼吸、看清路。不能使用，也不会消耗。', '主线剧情里获得。'],
+    dive: ['Jager 上尉发的潜水头盔，Bttp 调过参数。', '剧情道具：戴上后能在水里呼吸，也能和精灵翻译器连在一起用。不能使用，也不会消耗。', '主线剧情里获得。']
   };
   Object.keys(SPEC_OF).forEach(function (k) {
     var P = SPEC_OF[k];
@@ -1360,7 +1363,7 @@
     { id: 'sarena', name: '太空竞技场', d: '空间站旁边新建的竞技场，各种比赛都在这里举办。', sites: [], sarena: true, after: 'flora1' },   // 2026-10-19
     { id: 'tower', name: '先驱之塔', d: '空间站里的一座高塔，共 60 层。每一层都守着一批强大的精灵，塔顶住着死神。', sites: [], tower: true, after: 'flora1', inStation: true },
     { id: 'flora', name: '芙罗拉星', d: '草系星球。丛林、草甸和盐碱地里栖息着许多野生精灵。', sites: ['flora1', 'flora2', 'flora3', 'flora4', 'flora5', 'flora6', 'flora7', 'travelcat'], wild: true, ptype: '草系星球', color: ['#9fd08a', '#3f7d4a'], get img() { return floraFallen() ? 'images/planets/flora_corrupt.webp?v=3' : 'images/planets/flora.webp?v=3'; }, after: 'board' },
-    { id: 'kamble', name: '坎伯兰星', d: '水系星球。整颗星球都被海洋覆盖，从水面一直往下，是浅水区和深不见底的深海区。', sites: [], wild: true, ptype: '水系星球', color: ['#8cc6ea', '#2a6fb0'], get img() { return 'images/planets/kamble_' + kbStage() + '.webp?v=2'; }, after: 'flora1' },
+    { id: 'kamble', name: '坎伯兰星', d: '水系星球。整颗星球都被海洋覆盖，从水面一直往下，是浅水区和深不见底的深海区。', sites: ['kb2', 'kb3'], wild: true, ptype: '水系星球', color: ['#8cc6ea', '#2a6fb0'], get img() { return 'images/planets/kamble_' + kbStage() + '.webp?v=2'; }, after: 'flora1' },
     { id: 'pompeii', name: '庞贝星', d: '火系星球。火山终年喷发，地面被熔岩烤得发烫。', sites: [], wild: true, ptype: '火系星球', color: ['#f2a46b', '#b3401f'], img: 'images/planets/pompeii.webp', after: 'flora1' },
     { id: 'laiting', name: '莱汀陨石带', d: '电系区域。无数陨石在雷暴中漂浮。', sites: [], wild: true, ptype: '电系陨石带', color: ['#f1dd73', '#7a6a1a'], belt: true, img: 'images/planets/laiting.webp', after: 'flora1' },
     { id: 'white', name: '白之星', d: '冰系星球。离太阳最远，整颗星球都裹在冰雪里。', sites: [], wild: true, ptype: '冰系星球', color: ['#e4f2fa', '#6aa6c8'], after: 'flora1' },
@@ -1400,6 +1403,10 @@
     flora7: { name: '盐碱地之下', planet: 'flora', chapter: '第十一段 · 盐碱地之下', bg: 'fl_salt', d: '芙罗拉星上的大多数精灵依然被瘴气缠着。必须从根源上解决问题——这一次，一行人决定真正踏上盐碱地。', after: 'flora6',
       need: function () { pwFetch(); return !!(PW.data && PW.data.total >= 500) && (miaK() >= 10 || prog('flora7').at > 0); },
       get needText() { return PW.data && PW.data.total >= 500 ? '在芙罗拉星的丛林或草甸累计击败 10 只被瘴气污染的野生精灵（' + Math.min(10, miaK()) + ' / 10）' : '全服「瘴气驱逐战」击破数达到 500（目前 ' + (PW.data ? PW.data.total : '?') + ' 只）'; } },   // 2026-10-27：加上本账号累计击败 10 只瘴气污染精灵
+    // 2026-10-31：第二章 · 坎伯兰星（未完待续）
+    kb1: { name: '编钟通讯站', planet: 'jingchu', dept: '随州', chapter: '第十二段 · 远航', bg: 'bridge2_p', d: '编钟通讯站的 Jager 上尉找到了地面小队：下一站，是一颗被海洋覆盖的星球。', after: 'flora7', pos: [50, 64] },
+    kb2: { name: '冥岛', planet: 'kamble', chapter: '第十三段 · 冥岛的歌声', bg: 'kb_isle', d: '穿梭机飞到冥岛上空时，海面上传来一阵奇怪的歌声……', after: 'kb1', fpart: 'story' },
+    kb3: { name: '浅水区', planet: 'kamble', chapter: '第十四段 · 墨水结晶', bg: 'kb_lookup', d: '为了找到辰爷、拿到解药，你和 Bttp 潜进了坎伯兰星的海里。', after: 'kb2', fpart: 'story' },
     mmTrial: { name: '古城防卫部', planet: 'jingchu', dept: '襄阳', chapter: '活动任务 · 明明教官的试炼', side: true, event: true, bg: 'bridge_p', d: '明明教官说，要带大家去一个「好地方」。读完后开放活动「明明教官的试炼」。', after: 'flora7', pos: [42, 60] },   // 2026-10-24：读完即完成任务，送 500 明明代币
     tea: { name: '陆羽茶室', planet: 'jingchu', dept: '天门', chapter: '支线 · 陆羽茶室', side: true, bg: 'tea_p', d: '从芙罗拉星回来后，舰上要给第一支地面小队分配休息舱。读完后开放你自己的「茶室」（家园）。', after: 'flora1', pos: [50, 84] },
     mingming: { name: '古城防卫部', planet: 'jingchu', dept: '襄阳', chapter: '支线 · 明明教官的礼物', side: true, bg: 'bridge_p', d: '古城防卫部的明明教官听说你在黄冈秘鉴里点亮了十类精灵，想见见你。', after: 'board', pos: [48, 82], need: function () { return litCount() >= 10; }, needText: '在黄冈秘鉴中点亮 10 类精灵后开放' },
@@ -1448,7 +1455,11 @@
     cy: { name: function () { return '辰爷'; }, color: '#3a4a66', tall: 1.0, img: 'cy' },
     hw: { name: function () { return '荒芜'; }, color: '#5a3d6e', tall: 0.95, spr: 'barren', sprLv: 30 },
     r: { name: function () { return '日透骨消'; }, color: '#5a6a8a', tall: 1.0, img: 'rtg' },   // 三峡能源核心主人
-    ms: { name: function () { return '玛西'; }, color: '#8a5a9a', tall: 0.55, spr: 'mush', sprLv: 10 }   // 戴着翻译器能听懂的玛西（第八段）   // 「常春藤怀克」，常春藤组织的特工（第八段登场）
+    ms: { name: function () { return '玛西'; }, color: '#8a5a9a', tall: 0.55, spr: 'mush', sprLv: 10 },
+    jg: { name: function () { return 'Jager 上尉'; }, color: '#3f5f7a', tall: 1.0 },   // 2026-10-31：编钟通讯站站长（立绘待补）
+    sm: { name: function () { return '塞米'; }, color: '#3f8fc4', tall: 0.5, spr: 'siren', sprLv: 12 },   // 冥岛上唱歌的塞米（戴着翻译器能听懂）
+    man: { name: function () { return '男人'; }, color: '#6a6a6a' },
+    wom: { name: function () { return '女人'; }, color: '#8a6a7a' }   // 戴着翻译器能听懂的玛西（第八段）   // 「常春藤怀克」，常春藤组织的特工（第八段登场）
   };
   var SCRIPT = STORY_SCRIPT;   // 剧本内容见 js/data/story.js
   function unlocked(id) { var S = SITES[id], a = S.after; return (!a || prog(a).done) && (!S.need || S.need()); }
@@ -1484,7 +1495,8 @@
    * wip 表示这一章还没写完（未完待续），写完之前不算通关 */
   var CHAPTERS = [
     { id: 'prologue', n: '序章', d: '从省实验中学出发，一路到登上荆楚号。', sites: ['school', 'river', 'jiuquan', 'board'] },
-    { id: 'ch1', n: '第一章 · 芙罗拉星', d: '降落芙罗拉星，追查瘴气和猎杀者的真相。', sites: ['flora1', 'flora2', 'flora3', 'flora4', 'flora5', 'flora6', 'flora7'] }   // 2026-10-17：茶室音乐「芙罗拉星」移除，章节大奖改为经验和能量
+    { id: 'ch1', n: '第一章 · 芙罗拉星', d: '降落芙罗拉星，追查瘴气和猎杀者的真相。', sites: ['flora1', 'flora2', 'flora3', 'flora4', 'flora5', 'flora6', 'flora7'] },
+    { id: 'ch2', n: '第二章 · 坎伯兰星', d: '远航禁闭海洋。', sites: ['kb1', 'kb2', 'kb3'], wip: true }   // 2026-10-31：未完待续   // 2026-10-17：茶室音乐「芙罗拉星」移除，章节大奖改为经验和能量
   ];
   CHAPTERS.forEach(function (x) { x.reward = RW.CHAPTER[x.id] || x.reward; });   // 奖励数额在 js/engine/rewards.js（服务器按它核对）
   function chapterOf(site) { return CHAPTERS.filter(function (C) { return C.sites.indexOf(site) >= 0; })[0] || null; }
@@ -3505,10 +3517,13 @@
   // 其他星球的探索页（只有捕捉）
   function wildPage(P) {
     var regs = regionsOf(P.id);
-    var part = ex.fpart === 'task' ? 'task' : 'catch';
+    var stIds = (P.sites || []).filter(function (id) { return SITES[id] && (prog(id).done || prog(id).at > 0 || unlocked(id) || (SITES[id].after && prog(SITES[id].after).done)); });
+    var part = ex.fpart === 'task' ? 'task' : ex.fpart === 'story' && stIds.length ? 'story' : 'catch';
     var head = '<div class="flora-hero"><span class="tape l"></span>' + (P.img ? planetImg(P, 150) : planetSvgC(P, 150)) + '<div><h3 style="color:' + P.color[1] + '">' + P.name + ' <span class="chip ptype">' + P.ptype + '</span></h3><p class="hint">' + P.d + (P.img ? '' : '星球立绘还在绘制中，这里先用示意图。') + '</p>' +
-      '<div class="fparts" role="tablist"><button type="button" role="tab" class="tab' + (part === 'catch' ? ' on' : '') + '" data-fpart="catch" aria-selected="' + (part === 'catch') + '">探索</button>' + taskTab(P.id, part) + '</div></div></div>';
+      '<div class="fparts" role="tablist">' + (stIds.length ? '<button type="button" role="tab" class="tab' + (part === 'story' ? ' on' : '') + '" data-fpart="story" aria-selected="' + (part === 'story') + '">剧情' + (stIds.some(function (id) { return unlocked(id) && !prog(id).done; }) ? '<i class="q-badge">!</i>' : '') + '</button>' : '') +
+      '<button type="button" role="tab" class="tab' + (part === 'catch' ? ' on' : '') + '" data-fpart="catch" aria-selected="' + (part === 'catch') + '">探索</button>' + taskTab(P.id, part) + '</div></div></div>';
     if (part === 'task') return head + planetTasks(P.id);
+    if (part === 'story') return head + planetStoryList(stIds);
     var cards = regs.map(function (R) {
       var bgs = (R.bgs || []).filter(function (k) { return BG[k]; });
       return '<article class="region"><div class="rg-art">' + (bgs.length ? '<img src="' + BG[bgs[0]] + '" alt="' + R.name + '">' : regionArt(R.id)) + '</div><div class="rg-txt"><h4>' + R.name + ' <small>' + R.en + '</small></h4><p class="hint">' + R.d + '</p>' +
@@ -3536,6 +3551,18 @@
       '<div class="wild-list"><h4>' + P.name + '的野生精灵</h4><ul>' + list.join('') + '</ul><p class="hint">进入区域后，精灵会在场景里走动，点中哪只就和哪只对战。捕捉、经验和学习力的规则和芙罗拉星一样。</p></div>';
   }
 
+  // 坎伯兰星等星球的「剧情」页（2026-10-31）：主线从新到旧排，和芙罗拉星的剧情页同样的卡片
+  function planetStoryList(ids) {
+    var card = function (id) {
+      var S = SITES[id], pr = prog(id), started = pr.at > 0 && !pr.done, lock = !unlocked(id);
+      return '<article class="site fl-story' + (lock ? ' locked' : '') + '"><span class="tape r"></span><div class="site-img"><img src="' + BG[S.bg] + '" alt=""></div><div class="site-txt"><span class="sc-tag">' + S.chapter + '</span><h3>' + S.name + '</h3><p class="hint">' + S.d + '</p>' +
+        (S.reward ? '<p class="hint">首次读完奖励：' + rwList(S.reward).join('、') + (pr.rewarded ? '（已领取）' : '') + '</p>' : '') +
+        (lock ? '<p class="site-st red">' + (S.needText ? '任务：' + esc(S.needText) : '读完「' + SITES[S.after].chapter.split(' · ')[1] + '」后开放') + '</p>' :
+        '<p class="site-st ' + (pr.done ? 'blue' : started ? 'red' : '') + '">' + (pr.done ? '已读完' : started ? '读到一半' : '未读') + '</p><div class="site-act">' +
+        (started ? '<button type="button" class="btn primary" data-go="' + id + '" data-from="cont">继续剧情</button><button type="button" class="btn" data-go="' + id + '" data-from="0">从头开始</button>' : '<button type="button" class="btn primary" data-go="' + id + '" data-from="0">' + (pr.done ? '重温剧情' : '进入') + '</button>') + '</div>') + '</div></article>';
+    };
+    return '<div class="sites fl-sites">' + ids.slice().reverse().map(card).join('') + '</div>';
+  }
   /* ---------- 星球任务：每颗星球的专属任务 ---------- */
   // 芙罗拉星 · 祛除瘴气：任务完成前，在芙罗拉星作战有 10% 概率遇到瘴气精灵（自带 5 层瘴气，无法捕捉），击败它们累计计数
   var PURGE = PVE.PURGE;
@@ -6140,7 +6167,7 @@
   $('pg-explore').addEventListener('keydown', function (e) { if (e.target.id === 'home-name') { if (e.key === 'Enter') { e.preventDefault(); saveHomeName(); } else if (e.key === 'Escape') { ex.homeEdit = false; renderHome(); } } });
 
   /* ---------- 任务：主线 / 支线 / 世界 ---------- */
-  var MAIN_Q = ['school', 'river', 'jiuquan', 'board', 'flora1', 'flora2', 'flora3', 'flora4', 'flora5', 'flora6', 'flora7'], EVENT_Q = ['mmTrial'], SIDE_Q = ['academy', 'xiaogan', 'brawl', 'draft', 'storage', 'tiger', 'tiger2', 'tea', 'rare', 'mingming', 'medal', 'spa', 'fl_chal', 'hiddenSk'];
+  var MAIN_Q = ['school', 'river', 'jiuquan', 'board', 'flora1', 'flora2', 'flora3', 'flora4', 'flora5', 'flora6', 'flora7', 'kb1', 'kb2', 'kb3'], EVENT_Q = ['mmTrial'], SIDE_Q = ['academy', 'xiaogan', 'brawl', 'draft', 'storage', 'tiger', 'tiger2', 'tea', 'rare', 'mingming', 'medal', 'spa', 'fl_chal', 'hiddenSk'];
   // 世界任务（奖励暂定）
   var WQ = [
     { id: 'w_first', n: '初到芙罗拉', d: '荆楚号已经抵达芙罗拉星。去丛林或草甸，和那里的野生精灵过过招吧。', where: '芙罗拉星 · 丛林 / 草甸', steps: [{ t: '在芙罗拉星击败 1 只野生精灵', k: 'wins', n: 1 }], after: 'flora1', go: 'flora' },
@@ -6499,6 +6526,7 @@
     try {
       arr.forEach(function (st, i) {
         if (st.bg && BG[st.bg]) out.push(BG[st.bg]);
+        if (st.card && CARDS[st.card]) { out.push(BG[CARDS[st.card].bg]); out.push(CARDS[st.card].img); }
         if (st.cg && CG[st.cg]) { out.push(CG[st.cg][gender()] || CG[st.cg].m); if (CG[st.cg].land) out.push(CG[st.cg].land[gender()] || CG[st.cg].land.m); }
         if (st.on !== undefined) on = st.on || [];
         try { if (st.mons) grab(monsHTML(st.mons)); } catch (e1) {}
@@ -6625,6 +6653,7 @@
     stopTimers();
     var arr = SCRIPT[ex.site], pr = prog(ex.site);
     ex.i = stepAt(ex.i);
+    if ($('vn-card') && !(arr[ex.i] && arr[ex.i].card)) { $('vn-card').remove(); $('vn-box').hidden = false; }
     if (ex.i >= arr.length) { finish(); return; }
     pr.at = ex.i; save();
     var st = arr[ex.i], on = carry(ex.i, 'on', []), mons = carry(ex.i, 'mons', '');
@@ -6647,12 +6676,13 @@
       $('vn-chars').dataset.holo = hk;
     } else $('vn-chars').dataset.holo = '';
     $('vn-choices').hidden = true; $('vn-pick').hidden = true; $('vn-box').classList.remove('wait');
+    if (st.card && showCard(st.card)) { $('vn-box').hidden = true; ex.skip = false; ex.auto = false; ex.typing = false; ex.full = ''; syncBtns(); return; }
     if (st.choice) {
       $('vn-box').classList.add('wait'); $('vn-choices').hidden = false;
       $('vn-choices').innerHTML = st.choice.map(function (c) { return '<button type="button" class="vn-opt" data-ch="' + c.k + '">' + esc(fill(c.t)) + '</button>'; }).join('');
       ex.skip = false; syncBtns(); return;
     }
-    if (st.pick || st.battle) { ex.skip = false; ex.auto = false; syncBtns(); }
+    if (st.pick || st.battle || (st.pay && !paidOk(st.pay))) { ex.skip = false; ex.auto = false; syncBtns(); }
     var nar = st.s === 'n', name = nar ? '' : CAST[st.s].name();
     $('vn-name').textContent = name; $('vn-name').hidden = nar; $('vn-name').style.setProperty('--cc', nar ? '' : CAST[st.s].color);
     $('vn-box').classList.toggle('narr', nar);
@@ -6670,8 +6700,31 @@
     if (st && st.pick) { openPick(); return; }
     if (st && st.battle) { openFight(st.battle); return; }
     if (st && st.needType && !teamHasType(st.needType)) { openNeedType(st.needType); return; }
+    if (st && st.pay && !paidOk(st.pay)) { openPay(st.pay); return; }
     $('vn-next').hidden = false;
     if (ex.auto) ex.timer = setTimeout(next, 1200 + Array.from(ex.full).length * 45);
+  }
+  // 全屏标题演出（2026-10-31，剧本行写 card）：背景 + 标题图，标题图上扫过一道光；点击继续
+  var CARDS = { kb: { bg: 'kb_isle', img: 'images/cg/kb_title.webp' } };
+  function showCard(k) {
+    var C = CARDS[k], v = $('vn'); if (!C || !v) return false;
+    if ($('vn-card')) $('vn-card').remove();
+    var el = document.createElement('div'); el.className = 'vn-card'; el.id = 'vn-card';
+    el.innerHTML = '<img class="vc-bg" src="' + BG[C.bg] + '" alt=""><img class="vc-art" src="' + C.img + '" alt=""><i class="vc-shine" aria-hidden="true" style="-webkit-mask-image:url(' + C.img + ');mask-image:url(' + C.img + ')"></i><span class="vc-tip">点击继续</span>';
+    v.appendChild(el); ex.cardAt = Date.now();
+    return true;
+  }
+  // 剧本里要交东西（pay：{ id, items }）：交过才能往下读（交易 story · pay，服务器扣道具）
+  function paidOk(P) { var pr = prog(ex.site); return !!(pr.paid && pr.paid[P.id]); }
+  function openPay(P) {
+    var el = $('vn-pick'), ok = Object.keys(P.items).every(function (k) { return (acc.items[k] || 0) >= P.items[k]; });
+    el.hidden = false; $('vn-box').classList.add('wait');
+    el.innerHTML = '<div class="vn-fight vn-pay"><b>交出道具</b><div class="vp-items">' + Object.keys(P.items).map(function (k) {
+      var have = acc.items[k] || 0;
+      return '<span class="vp-it' + (have >= P.items[k] ? '' : ' short') + '"><span class="vp-ic">' + H.itemIcon(k) + '</span><b>' + esc(itemName(k)) + ' ×' + P.items[k] + '</b><small>持有 ' + fmt(have) + '</small></span>';
+    }).join('') + '</div>' +
+      (ok ? '' : '<p class="hint">数量不够。药草可以在荆楚号 · 恩施 · 生态舱的「太空种植园」种出来。可以先点右上角「退出」，准备好以后回来，会从这里接着读。</p>') +
+      '<button type="button" class="btn primary" data-vn="pay"' + (ok ? '' : ' disabled') + '>交出</button></div>';
   }
   // 剧本里要求配队里有某种属性的精灵（needType）：没有就停在这里，调整配队后点「重新检查」继续
   function teamHasType(t) { return (acc.teams[acc.active] || []).map(mon).filter(Boolean).some(function (m) { return SPMAP[m.sid] && SPMAP[m.sid].types.indexOf(t) >= 0; }); }
@@ -6705,7 +6758,8 @@
   function next() {
     if (!$('vn')) return;
     if (ex.typing) { doneTyping(); return; }
-    var st = SCRIPT[ex.site][ex.i]; if (st && (st.choice || st.pick || st.battle)) return;
+    var st = SCRIPT[ex.site][ex.i]; if (st && (st.choice || st.pick || st.battle || (st.pay && !paidOk(st.pay)))) return;
+    if (st && st.card && $('vn-card') && Date.now() - (ex.cardAt || 0) < 2600) return;   // 标题演出至少放完入场动画
     ex.i++; show();
   }
   // 第一次读完第十段后弹出：芙罗拉星已经被腐化
@@ -6790,6 +6844,13 @@
       if (a === 'next' && ex.arc && ex.arcQ && ex.arcQ[0] === b.dataset.nx) ex.arcQ.shift();
       if (a === 'next') { startVN(b.dataset.nx, 'replay', ex.host, prog(b.dataset.nx).done || !prog(b.dataset.nx).at); return; }
       if (a === 'needok') { var nst = SCRIPT[ex.site][ex.i]; if (nst && nst.needType && !teamHasType(nst.needType)) { toast('出战配队里还没有' + nst.needType + '系精灵。'); return; } $('vn-pick').hidden = true; $('vn-box').classList.remove('wait'); next(); return; }
+      if (a === 'pay') {
+        var pst = SCRIPT[ex.site][ex.i]; if (!pst || !pst.pay) return;
+        if (paidOk(pst.pay)) { $('vn-pick').hidden = true; $('vn-box').classList.remove('wait'); next(); return; }
+        b.disabled = true;
+        txRun('story', { a: 'pay', site: ex.site, id: pst.pay.id }, function () { renderRes(); $('vn-pick').hidden = true; $('vn-box').classList.remove('wait'); next(); }, function (err) { b.disabled = false; toast(err || '没能交出去，请稍后再试。'); });
+        return;
+      }
       if (a === 'enter') { finishIntro(); return; }
       if (a === 'inext') { startVN(b.dataset.nx, 'intro', ex.host, true); return; }
       if (a === 'auto') { ex.auto = !ex.auto; ex.skip = false; syncBtns(); if (ex.auto && !ex.typing && !ex.tick) ex.timer = setTimeout(next, 600); return; }
@@ -6950,6 +7011,7 @@
     if (page === 'social' && window.HSSOCIAL && HSSOCIAL.visitBgm) { var vb = HSSOCIAL.visitBgm(); if (vb) return vb; }   // 拜访别人的茶室：放主人选的
     if (page === 'explore') {
       if (vnSite === 'flora') return 'flora';
+      if (vnSite === 'kamble') return 'kb';
       if (ex.view === 'mmArena' || ex.view === 'mmGacha') return 'mingTheme';
       if (ex.view === 'field' && ex.region === 'fl_record') return 'floraFallen';
       if (ex.view === 'sites' && ex.planet === 'flora') return 'flora';

@@ -2975,3 +2975,25 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 /* 基地精灵按进化阶段大小不同（--fw 由 game.js 的 baseFigW 算，单位 %） */
 .base-room .hm-fig, .base-room .hm-fig.many { width: calc(var(--fw, 5) * 1%); }
 @media (max-width: 640px) { .base-room .hm-fig, .base-room .hm-fig.many { width: calc(var(--fw, 5) * 1.5%); } }
+
+/* 剧情 · 全屏标题演出（2026-10-31，剧本行写 card） */
+.vn-card { position: absolute; inset: 0; z-index: 60; overflow: hidden; background: #000; cursor: pointer; animation: vcIn .9s ease-out both; }
+.vn-card .vc-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; animation: vcZoom 9s ease-out both; }
+.vn-card .vc-art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; animation: vcArt 1.6s cubic-bezier(.2,.8,.2,1) .35s both; }
+.vn-card .vc-shine { position: absolute; inset: 0; pointer-events: none; -webkit-mask-size: contain; mask-size: contain; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center;
+  background: linear-gradient(110deg, transparent 35%, rgba(255,255,255,.85) 48%, rgba(190,245,255,.6) 52%, transparent 65%) no-repeat; background-size: 250% 100%; background-position: 160% 0; mix-blend-mode: screen; animation: vcShine 1.4s ease-in-out 1.6s both; }
+.vn-card .vc-tip { position: absolute; right: 18px; bottom: 14px; color: #e8f6ff; font-size: 13px; text-shadow: 0 1px 3px #000; opacity: 0; animation: vcTip 1.6s ease-in-out 2.6s infinite alternate; }
+@keyframes vcIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes vcZoom { from { transform: scale(1.12); filter: brightness(.55); } to { transform: scale(1); filter: brightness(1); } }
+@keyframes vcArt { from { opacity: 0; transform: scale(1.08); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes vcShine { from { background-position: 160% 0; } to { background-position: -60% 0; } }
+@keyframes vcTip { from { opacity: .2; } to { opacity: .9; } }
+/* 剧情 · 交出道具（剧本行写 pay） */
+.vn-pay .vp-items { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 6px 0; }
+.vn-pay .vp-it { display: grid; justify-items: center; gap: 2px; padding: 8px 14px; border: 1.5px solid var(--ink); border-radius: 12px; background: var(--paper); }
+.vn-pay .vp-it.short { border-color: var(--red); background: #fff4ef; }
+.vn-pay .vp-it small { color: var(--pencil); }
+.vn-pay .vp-it.short small { color: var(--red); font-weight: 700; }
+.vn-pay .vp-ic { width: 40px; height: 40px; display: grid; place-items: center; }
+.vn-pay .vp-ic svg, .vn-pay .vp-ic img { width: 40px; height: 40px; }
+.vn-pay .vp-it b { font-family: inherit; font-size: 14px; color: var(--ink); line-height: 1.3; }

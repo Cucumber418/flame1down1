@@ -42,7 +42,8 @@ var STY = (function () {
     rare_r: { after: 'rare', need: function (a) { var R = rareList(a); return (a.mons || []).some(function (m) { return m && R.indexOf(m.sid) >= 0; }); } },
     storage: { after: 'board' }, brawl: { after: 'xiaogan', need: function (a) { return (a.mons || []).length >= 3; } },
     draft: { after: 'xiaogan', need: function (a) { return species(a) >= 10; } },
-    core: { after: 'board' }, spa: { after: 'flora1' }, plant: { after: 'flora1' }, travelcat: { after: 'flora2' }, xiaogan: { after: 'board' }
+    core: { after: 'board' }, spa: { after: 'flora1' }, plant: { after: 'flora1' }, travelcat: { after: 'flora2' }, xiaogan: { after: 'board' },
+    kb1: { after: 'flora7' }, kb2: { after: 'kb1' }, kb3: { after: 'kb2' }   // 2026-10-31：第二章 · 坎伯兰星
   };
   function unlocked(a, site, env) { var S = SITES[site]; return !!S && (!S.after || done(a, S.after)) && (!S.need || S.need(a, env)); }
   // 剧本里有剧情对战的段：读完之前要先打过（胜负都算，服务器打完时记 bt）
@@ -50,8 +51,12 @@ var STY = (function () {
   if (typeof STORY_SCRIPT !== 'undefined') Object.keys(STORY_SCRIPT).forEach(function (site) { (STORY_SCRIPT[site] || []).forEach(function (st) { if (st && st.battle) (FIGHT_OF[site] || (FIGHT_OF[site] = [])).push(st.battle); }); });
   // 一定会打到的对战（不在选项分支、不看上一场胜负的）
   function mustFight(site, pr) { return (STORY_SCRIPT[site] || []).some(function (st) { return st && st.battle && !st.res && (!st.only || st.only === pr.ch); }); }
+  // 剧本里要交东西的地方（pay：{ id, items }，例如第十四段交 10 份药草）：读完之前要先交过（服务器扣道具、记在 paid）
+  var PAY_OF = {};
+  if (typeof STORY_SCRIPT !== 'undefined') Object.keys(STORY_SCRIPT).forEach(function (site) { (STORY_SCRIPT[site] || []).forEach(function (st) { if (st && st.pay && st.pay.id) (PAY_OF[site] || (PAY_OF[site] = {}))[st.pay.id] = st.pay; }); });
   var SITE_OF = {}; Object.keys(FIGHT_OF).forEach(function (s) { FIGHT_OF[s].forEach(function (k) { if (!SITE_OF[k]) SITE_OF[k] = s; }); });
 
+  var MAIN = ['school', 'river', 'jiuquan', 'board', 'flora1', 'flora2', 'flora3', 'flora4', 'flora5', 'flora6', 'flora7', 'kb1', 'kb2', 'kb3'];
   var CHAPTERS = [{ id: 'prologue', sites: ['school', 'river', 'jiuquan', 'board'] }, { id: 'ch1', sites: ['flora1', 'flora2', 'flora3', 'flora4', 'flora5', 'flora6', 'flora7'] }];
   function chapterPay(a, now) {   // 读完一整章、还没领过章节大奖的：发
     var out = [];
@@ -68,6 +73,7 @@ var STY = (function () {
     give(a, R);
     if (R.title) { if (!Array.isArray(a.titles)) a.titles = []; if (a.titles.indexOf(R.title) < 0) a.titles.push(R.title); }
     pr.rewarded = true; pr.itemsGiven = true; pr.got = { exp: R.exp || 0, energy: R.energy || 0 };
+    if (R.items && R.items.g_core) pr.core = 1;
     return R;
   }
   // 旧存档的补发（以前在浏览器里做）：主线奖励调整后的差额、物资仓储新增的道具、读完了却没发过的奖励、第八段拆分、章节大奖
@@ -85,6 +91,8 @@ var STY = (function () {
     var ps = a.story && a.story.storage;
     if (ps && ps.rewarded && !ps.itemsGiven) { ps.itemsGiven = true; var it = RW.STORY.storage.items, I = items(a); for (var k in it) { I[k] = (I[k] || 0) + it[k]; out.items[k] = (out.items[k] || 0) + it[k]; } }
     Object.keys(SITES).forEach(function (id) { if (done(a, id) && RW.STORY[id] && !prog(a, id).rewarded) { var R = grant(a, id); if (R) { out.sites.push(id); out.exp += R.exp || 0; out.energy += R.energy || 0; for (var k2 in R.items || {}) out.items[k2] = (out.items[k2] || 0) + R.items[k2]; } } });
+    // 2026-10-31：每段主线读完送 1 个圣晶石；之前读完的补发
+    MAIN.forEach(function (id) { var q = a.story && a.story[id]; if (!q || !q.done || !q.rewarded || q.core) return; q.core = 1; var I2 = items(a); I2.g_core = (I2.g_core || 0) + 1; out.items.g_core = (out.items.g_core || 0) + 1; });
     out.chapters = chapterPay(a, now);
     out.chapters.forEach(function (id) { var R = RW.CHAPTER[id]; out.exp += R.exp || 0; out.energy += R.energy || 0; });
     return out;
@@ -99,6 +107,7 @@ var STY = (function () {
       if (!unlocked(a, site, env)) return no('这段剧情还没有开放');
       if (FIGHT_OF[site] && !pr.bt && mustFight(site, pr)) return no('这段剧情里的对战还没有打');
       if (site === 'school' && !a.starter) return no('还没有选初始精灵');
+      if (PAY_OF[site] && Object.keys(PAY_OF[site]).some(function (id) { return !(pr.paid && pr.paid[id]); })) return no('这段剧情里要交的东西还没有交');
       pr.done = true; pr.at = 0;
       var R = grant(a, site), ch = chapterPay(a, env.now);
       return { ok: true, first: true, reward: R, chapters: ch };
@@ -111,6 +120,18 @@ var STY = (function () {
       if (p2.gave[g.id]) return { ok: true, again: true };
       p2.gave[g.id] = 1; give(a, g);
       return { ok: true, g: g };
+    }
+    if (args.a === 'pay') {   // 剧本里写的 pay（每个存档只交一次）
+      var P = PAY_OF[site] && PAY_OF[site][String(args.id || '')];
+      if (!P) return no('不需要交这个');
+      if (!unlocked(a, site, env) && !done(a, site)) return no('这段剧情还没有开放');
+      var p3 = prog(a, site); if (!p3.paid) p3.paid = {};
+      if (p3.paid[P.id]) return { ok: true, again: true };
+      var I3 = items(a);
+      for (var k3 in P.items) if ((I3[k3] || 0) < P.items[k3]) return no('数量不够');
+      for (var k4 in P.items) I3[k4] -= P.items[k4];
+      p3.paid[P.id] = 1;
+      return { ok: true, paid: P.id };
     }
     if (args.a === 'pick') {   // 第一段里选初始精灵
       var sid = String(args.sid || '');
@@ -130,6 +151,6 @@ var STY = (function () {
     return no('不支持的操作');
   });
 
-  return { SITES: SITES, unlocked: unlocked, FIGHT_OF: FIGHT_OF, SITE_OF: SITE_OF, CHAPTERS: CHAPTERS, STARTERS: STARTERS, START_LV: START_LV, rivalOf: rivalOf, grant: grant, chapterPay: chapterPay, legacy: legacy };
+  return { PAY_OF: PAY_OF, SITES: SITES, unlocked: unlocked, FIGHT_OF: FIGHT_OF, SITE_OF: SITE_OF, CHAPTERS: CHAPTERS, STARTERS: STARTERS, START_LV: START_LV, rivalOf: rivalOf, grant: grant, chapterPay: chapterPay, legacy: legacy };
 })();
 if (typeof module !== 'undefined') module.exports = STY;

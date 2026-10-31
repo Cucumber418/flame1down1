@@ -42,6 +42,7 @@ var AWD = (function () {
     { id: 'purifier', ok: function (a) { return !!(a.purge && a.purge.n >= 30); } },
     { id: 'force', ok: function (a) { return PVE.bossWon(a, 'tiger', 2); } },
     { id: 'guardian', ok: function (a) { return PVE.bossWon(a, 'barren', 2); } },
+    { id: 'odoClean', ok: function (a) { return PVE.bossWon(a, 'odo', 2); } },   // 2026-10-31：困难奥多亚克（之前打过的自动补发）
     { id: 'reaper', ok: function (a) { return !!(a.tower && a.tower.clears > 0); } },
     { id: 'xcking', ok: function (a) { return !!a.drill; } },
     { id: 'spa120', ok: function (a) { return spaMin(a) >= 120; } },

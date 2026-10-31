@@ -138,6 +138,7 @@ var BG = {
   "pp_lake": "images/backgrounds/pp_lake.jpg",
   "kb_dock": "images/backgrounds/kb_dock.jpg",
   "kb_isle": "images/backgrounds/kb_isle.jpg",
+  "black": "images/backgrounds/black.jpg",
   "kb_lookup": "images/backgrounds/kb_lookup.jpg",
   "kb_shoal": "images/backgrounds/kb_shoal.jpg",
   "kb_temple": "images/backgrounds/kb_temple.jpg?v=2",
@@ -345,7 +346,10 @@ var ITEM_IMG = {
   "translator": "images/items/translator.webp",
   "helmet": "images/items/helmet.webp",
   "drone": "images/items/drone.webp",
-  "plantbomb": "images/sprites/plantbomb.webp"   // 第八段 Bttp 的炸弹
+  "plantbomb": "images/sprites/plantbomb.webp",   // 第八段 Bttp 的炸弹
+  "dive": "images/items/dive.webp",   // 第十二段 潜水头盔
+  "ink": "images/items/ink.webp",   // 第十四段 乌贼墨水结晶
+  "antidote": "images/items/antidote.png"
 };
 
 // 剧情 CG（竖版大图，按主角性别分男 / 女两版；m 男主，f 女主）

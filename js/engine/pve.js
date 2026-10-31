@@ -215,7 +215,7 @@ var PVE = (function () {
       lv: [
         { diff: '简单', lv: 40, hp: 1000, boss: { dr: 0.15, pp: 99 }, bgm: 'boss3', open: function (a, now) { return done(a, 'flora1'); }, lockText: '开放坎伯兰星后开放', reward: { items: { e_odo: 1 } } },
         { diff: '普通', lv: 65, hp: 3000, boss: { dr: 0.15, ambush: 200, pp: 99 }, bgm: 'boss3', open: function (a, now) { return bossWon(a, 'odo', 0); }, lockText: '击败简单难度后开放', reward: { items: { odoFin: 40 } } },
-        { diff: '困难', lv: 70, hp: 2500, boss: { dr: 0.15, ambush: 400, odoRate: 1, odoWill: 1, rainbow: 1, odoSwap: 1, pp: 99 }, bgm: 'boss3', open: function (a, now) { return bossWon(a, 'odo', 1); }, lockText: '击败普通难度后开放', reward: { exp: 50000, items: { odoFin: 80 } },
+        { diff: '困难', lv: 70, hp: 2500, boss: { dr: 0.15, ambush: 400, odoRate: 1, odoWill: 1, rainbow: 1, odoSwap: 1, pp: 99 }, bgm: 'boss3', open: function (a, now) { return bossWon(a, 'odo', 1); }, lockText: '击败普通难度后开放', reward: { title: 'odoClean', exp: 50000, items: { odoFin: 80 } },
           hpText: '歼灭形态 2500 · 护阵形态 5000 · 虹霓暴走 4000', bgmAt: { 2: 'vitalVoyage' },
           team: [
             { nick: '奥多亚克 · 歼灭形态', odoForm: 'atk', maxhp: 2500, boss: { dr: 0.15, ambush: 400, odoRate: 1, odoSwap: 1, orderRepl: 1, pp: 99, healCd: 25 } },
@@ -673,6 +673,8 @@ var PVE = (function () {
       allyMon: { sid: 'leafcat', lv: 40, nick: '叶子喵', boss: { purify: 1 }, moves: ['闪光飞叶', '种子炸弹', '星星魔法', '光束'], ability: { n: '脚伤', d: '脚底被瘴气浸透，陷入永久的流血状态，无法被解除' } },
       env: 'miasma', bg: 'fl_salt_mia', desc: '荒芜（LV45）· 叶子喵助战（特性「脚伤」：永久流血）' },
     brLab: { foe: '荒芜', bgm: 'boss3', team: [{ sid: 'barren', lv: 50, nick: '荒芜', boss: { nourish: 1, pp: 99 } }], env: 'miasma', bg: 'fl_lab', desc: '荒芜（LV50）· 特效「养料汲取」：每回合恢复 50 体力' },
+    // 第十三段 · 冥岛的歌声（2026-10-31）：唱歌的塞米
+    semi: { foe: '唱歌的小精灵', team: [{ sid: 'siren', lv: 20, nick: '塞米' }], bg: 'kb_isle', desc: '塞米（LV20）' },
     threego: { foe: 'Threego', team: [{ sid: 'tagore', lv: 3 }] },
     karo: { foe: '被瘴气污染的野生精灵', team: [{ sid: 'wind', lv: 3, miasma: 5 }], env: 'miasma', bg: 'fl_salt', desc: '被瘴气污染的卡罗（LV3）' },
     hunter: { foe: '神秘的猎杀者', team: [{ sid: 'kaleo', lv: 15 }], bg: 'fl_maple', desc: '猎杀者卡莱（LV15）' },

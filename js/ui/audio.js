@@ -44,7 +44,7 @@
     mingFinal1: 'audio/bgm_ming_final1.mp3', mingFinal2: 'audio/bgm_ming_final2.mp3', pompeiiCity: 'audio/bgm_pompeii_city.mp3'
   };
   // silence：剧情里「音乐突然停止」，没有曲子
-  var SCENES = { kbDeep: 1, kbDeep2: 1, kbDeep3: 1, floraLab: 1, pompeiiCity: 1, mingTheme: 1, kb: 1, kbShallow: 1, kbSurface: 1, temple: 1, spa: 1, ui: 1, arena: 1, earth: 1, flora: 1, floraGrass: 1, floraForest: 1, floraFallen: 1, grassTalk: 1, memory: 1, saver: 1, disComScene: 1, faceEnemyScene: 1, silence: 1 };
+  var SCENES = { vitalVoyage: 1, kbDeep: 1, kbDeep2: 1, kbDeep3: 1, floraLab: 1, pompeiiCity: 1, mingTheme: 1, kb: 1, kbShallow: 1, kbSurface: 1, temple: 1, spa: 1, ui: 1, arena: 1, earth: 1, flora: 1, floraGrass: 1, floraForest: 1, floraFallen: 1, grassTalk: 1, memory: 1, saver: 1, disComScene: 1, faceEnemyScene: 1, silence: 1 };
   var ONESHOT = { faceEnemy: 1 };
   var FRESH = { disComScene: 1 };   // 每次开始放都从头放，不记上次停下的位置（剧情里的 dis-communication）   // 不循环；播完触发 chainNext 指定的下一首
   var KEY = 'hs-sound-v1';
