@@ -104,7 +104,10 @@ function aiChoose(S) {
   P.randomP = Math.max(P.randomP || 0, AI_DUMB.randomP); P.noise = Math.max(P.noise || 0, AI_DUMB.noise);
   // 2026-10-21：BOSS / 每周挑战的泰戈尔前两回合不用自我崩坏、元神崩坏
   var early = me.boss && me.id === 'tagore' && S.turn <= 2, healCd = me.boss && me.boss.healCd && S.bossHealAt != null && S.turn - S.bossHealAt < me.boss.healCd;
-  var banned = function (slot) { return (early && (slot.n === '自我崩坏' || slot.n === '元神崩坏')) || (healCd && M[slot.n] && M[slot.n].heal); };   // healCd：回血技能隔这么多回合才能再用
+  // 2026-11-01：所有 PVE 的 BOSS（每周挑战、BOSS 挑战、剧情 BOSS 等带 boss 的对手）几乎不用百分比回复的变化技能（吸水、光合作用等），只有 5% 的回合会考虑
+  var noPctHeal = !S.pvp && me.boss && RNG() >= 0.05;
+  var pctHeal = function (slot) { var mv = M[slot.n]; return !!(mv && mv.cat === '变化' && mv.heal && !mv.custom); };
+  var banned = function (slot) { return (early && (slot.n === '自我崩坏' || slot.n === '元神崩坏')) || (healCd && M[slot.n] && M[slot.n].heal) || (noPctHeal && pctHeal(slot)); };   // healCd：回血技能隔这么多回合才能再用
   // 2026-10-24：BOSS奥多亚克（简单 / 普通）从第 2 回合起每 2 回合切换一次形态；困难难度三只是固定形态，不带形态技能
   if (me.boss && me.boss.neb) {   // 玫瑰星云（第十九段）：每 5 回合放一次强烈恒星风，其余回合用氢-α发射线
     var want = S.turn % 5 === 0 ? '强烈恒星风' : '氢-α发射线', ni = me.moves.findIndex(function (slot) { return slot.n === want; });
@@ -134,6 +137,7 @@ function aiChoose(S) {
     var v = scoreMove(S, me, foe, M[slot.n]) * (1 - P.noise + RNG() * 2 * P.noise);
     if (!best || v > best.v) best = { v: v, i: idx };
   });
+  if (!best && noPctHeal) { noPctHeal = false; me.moves.forEach(function (slot, idx) { if (!best && slot.pp > 0 && !moveBlocked(me, slot) && !banned(slot)) best = { v: 0, i: idx }; }); }   // 只剩回复技能可用时照样用
   return { kind: 'move', i: best ? best.i : -1 };
 }
 function aiPickReplacement(S) {
