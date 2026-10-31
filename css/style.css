@@ -3082,3 +3082,13 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .deco-box { text-align: center; max-width: 340px; }
 .deco-box img { width: 120px; height: 120px; object-fit: contain; margin: 4px auto 0; display: block; }
 .deco-box h3 { margin: 6px 0 4px; }
+
+/* 明明画像面板（2026-11-01） */
+.mm-box { max-width: 640px; }
+.mm-por { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: center; }
+.mm-frame { padding: 12px; border-radius: 10px; background: linear-gradient(135deg, #c79a52, #8a5a2b); border: 3px solid #3a2a1c; box-shadow: inset 0 0 0 3px #e9c98a; }
+.mm-frame img { display: block; width: 100%; aspect-ratio: 4 / 5; object-fit: cover; object-position: 50% 20%; background: #1e2434; border: 3px solid #3a2a1c; }
+.mm-txt h2 { margin: 0; }
+.mm-txt ul { list-style: none; padding: 0; margin: 6px 0 0; display: grid; gap: 6px; }
+.mm-txt li { padding: 6px 10px; border: 1.5px dashed var(--rule); border-radius: 10px; background: #fffaf0; font-size: 13.5px; }
+@media (max-width: 560px) { .mm-por { grid-template-columns: 1fr; } .mm-frame { max-width: 240px; margin: 0 auto; } }

@@ -5640,29 +5640,38 @@
       (top ? '' : '<button type="button" class="btn primary" data-promote="1"' + (xp >= c ? '' : ' disabled') + '>晋升</button>') + '</section>';
   }
   function renderNursery() {
+    var cards = nurseryCards();
+    $('pg-explore').innerHTML = exHead('精灵保育仓有 3 个孵化槽。把精元放进去，过一段时间就会孵化出精灵（叶子喵的精元要 8 小时）。') +
+      '<div class="crumb"><button type="button" class="btn ghost" id="nursery-back">‹ 返回精灵保育区</button><b>神农架 · 精灵保育仓</b></div>' + nurseryBody(cards);
+    nurseryTick();
+  }
+  function nurseryCards() {
     var N = nursery(), ess = MAT_ORDER.filter(function (k) { return MATS[k].hatch && acc.items[k] > 0; });
-    var cards = N.slots.map(function (x, i) {
+    return N.slots.map(function (x, i) {
       if (!x) return '<article class="farm-plot"><b>孵化槽 ' + (i + 1) + '</b><p class="hint">空着</p>' + (ess.length ? '<div class="farm-acts">' + ess.map(function (k) { return '<button type="button" class="btn" data-incub="' + i + '|' + k + '">放入' + itemName(k) + '</button>'; }).join('') + '</div>' : '<p class="hint">没有可以孵化的精元。</p>') + '</article>';
       var H_ = MATS[x.k].hatch, left = hatchLeft(x), nm = form({ sid: H_.sid, lv: H_.lv }).name;
       return '<article class="farm-plot' + (left ? ' grow' : ' ready') + '"><b>孵化槽 ' + (i + 1) + ' · ' + itemName(x.k) + '</b>' +
         (left ? '<p class="hint">还要 <span data-hatchleft="' + i + '">' + farmLeftText({ t: x.t, seed: null, _ms: left }) + '</span>，会诞生一只' + esc(nm) + '。</p>' : '<p class="hint">精元在发光……可以孵化了！</p><div class="farm-acts"><button type="button" class="btn primary" data-hatch="' + i + '">孵化</button></div>') + '</article>';
     }).join('');
-    $('pg-explore').innerHTML = exHead('精灵保育仓有 3 个孵化槽。把精元放进去，过一段时间就会孵化出精灵（叶子喵的精元要 8 小时）。') +
-      '<div class="crumb"><button type="button" class="btn ghost" id="nursery-back">‹ 返回精灵保育区</button><b>神农架 · 精灵保育仓</b></div>' +
-      stockBar('精元', MAT_ORDER.filter(function (k) { return MATS[k].hatch; })) + '<div class="farm-plots">' + cards + '</div>';
+  }
+  // 孵化面板的内容（保育仓页面和基地里的精元转化仪共用，孵化槽是同一套，2026-11-01）
+  function nurseryBody(cards) { return stockBar('精元', MAT_ORDER.filter(function (k) { return MATS[k].hatch; })) + '<div class="farm-plots">' + cards + '</div>'; }
+  function nurseryInPanel() { return ex.view === 'home' && ex.bpanel === 'nursery'; }
+  function nurseryRefresh() { if (nurseryInPanel()) renderHome(); else if (ex.view === 'nursery') renderNursery(); }
+  function nurseryTick() {
     clearInterval(ex.farmTick);
     ex.farmTick = setInterval(function () {
-      if (ex.view !== 'nursery' || !document.querySelector('.farm-plots')) { clearInterval(ex.farmTick); return; }
+      if ((ex.view !== 'nursery' && !nurseryInPanel()) || !document.querySelector('.farm-plots')) { clearInterval(ex.farmTick); return; }
       var flip = false;
       nursery().slots.forEach(function (x, i) { if (!x) return; var el = document.querySelector('[data-hatchleft="' + i + '"]'), left = hatchLeft(x); if (!left && el) flip = true; else if (el) el.textContent = farmLeftText({ _ms: left }); });
-      if (flip) renderNursery();
+      if (flip) nurseryRefresh();
     }, 1000);
   }
   function nurseryPut(i, k) {
     var N = nursery(); if (i < 0 || i >= NURSERY_N || N.slots[i] || !MATS[k] || !MATS[k].hatch || !(acc.items[k] > 0)) return;
     txRun('hatch', { a: 'put', i: i, k: k }, function () {   // 走交易（grow.js）：放入的时间由服务器记
       toast('把「' + itemName(k) + '」放进了孵化槽 ' + (i + 1) + '，' + growText(MATS[k].hatch.min) + '后可以孵化。');
-      renderNursery();
+      nurseryRefresh();
     });
   }
   function nurseryHatch(i) {
@@ -5670,7 +5679,7 @@
     txRun('hatch', { a: 'hatch', i: i }, function (res) {   // 走交易（grow.js）：孵出的精灵由服务器生成
       var m = mon(res.u);
       toast('精元裂开了——诞生了一只' + (res.shiny ? '异色的' : '') + form(m).name + '（LV' + m.lv + '，' + m.nat + '）！' + (res.added ? '已加入' + TEAM_NAME[acc.active] + '。' : '已收入精灵仓库。'));
-      renderNursery(); renderRes && renderRes();
+      nurseryRefresh(); renderRes && renderRes();
     });
   }
 
@@ -6008,6 +6017,8 @@
     else if (k === 'mons') { ttl = '精灵展示'; cls = ' wide'; body = baseMonsBody(); }
     else if (k === 'shop') { ttl = '基地商城'; cls = ' wide'; body = baseShopBody(); }
     else if (k.indexOf('mon:') === 0) { cls = ' bp-mon'; body = baseMonBody(+k.slice(4)); if (!body) return ''; }
+    else if (k === 'nursery') { ttl = '精元转化仪'; cls = ' wide'; body = '<p class="hint">和神农架 · 精灵保育仓的孵化槽是同一套，在这里放进去、在那边孵化也一样。</p>' + nurseryBody(nurseryCards()); setTimeout(nurseryTick, 0); }
+    else if (k === 'mm') { cls = ' mm-box'; body = mmPortraitBody(); }
     else return '';
     return '<div class="soc-dlg bp-dlg"><div class="soc-box bp-box' + cls + '" role="dialog" aria-modal="true"' + (ttl ? ' aria-label="' + ttl + '"' : '') + '><span class="tape l"></span><span class="tape r"></span>' + (ttl ? '<h2>' + ttl + '</h2>' : '') + body +
       '<div class="soc-foot"><button type="button" class="btn primary" data-bpx="1">关闭</button></div></div></div>';
@@ -6045,11 +6056,17 @@
     r1: { img: 'images/base/room1.jpg', floor: [[[0,50],[4,40],[8,33],[14,30],[22,36],[27,31],[40,27],[58,27],[70,30],[76,32],[86,32],[90,44],[95,58],[97,70],[93,80],[84,88],[82,93],[80,100],[0,100]]], wall: [], block: [], mons: [[22,88],[46,82],[70,72],[34,66],[58,60],[84,66],[8,76]] },
     r2: { img: 'images/base/room2.jpg', floor: [[[0,63],[9,55],[14,51],[24,44],[33,41],[42,41],[54,43],[66,43],[72,47],[75,54],[82,60],[92,63],[100,61],[100,100],[0,100]]], wall: [[[0,16],[8,8],[30,2],[32,22],[30,32],[18,37],[9,50],[6,56],[0,59]],[[35,4],[54,4],[56,22],[35,22]],[[58,0],[100,0],[100,32],[94,24],[84,19],[62,18],[57,10]]], block: [[[27,65],[30,57],[36,52],[44,48],[52,47],[60,48],[66,52],[70,58],[71,66],[69,77],[64,86],[56,92],[48,94],[40,92],[33,86],[28,77]]], mons: [[14,82],[80,82],[88,72],[18,66],[76,96],[6,94],[94,94]] },
     r3: { img: 'images/base/room3.jpg', floor: [[[33,47],[67,47],[85,61],[88,70],[90,82],[91,100],[9,100],[10,82],[12,70],[15,61]]], wall: [[[17,8],[29,2],[25,20],[23,43],[17,43]],[[71,2],[83,8],[83,43],[77,43],[75,20]],[[4,36],[15,30],[15,58],[11,74],[5,70]],[[85,30],[96,36],[95,70],[89,74],[85,58]]], block: [[[45,47],[55,47],[55,56],[45,56]]], mons: [[22,88],[47,82],[74,72],[32,68],[62,64],[80,92],[18,74]] },
-    r4: { img: 'images/base/room4.jpg', floor: [[[24,42],[31,34],[45,30],[58,29],[70,32],[80,39],[86,46],[90,56],[92,70],[90,82],[84,90],[72,94],[66,100],[22,100],[20,92],[13,76],[10,66],[16,60],[22,58],[26,52]]], wall: [[[22,8],[40,4],[60,0],[82,0],[86,12],[88,30],[85,40],[80,37],[70,30],[58,27],[45,28],[30,32],[24,37],[22,26]]], block: [[[34,62],[38,54],[45,50],[58,50],[65,56],[66,68],[60,82],[50,86],[40,84],[35,76]]], mons: [[26,90],[74,88],[80,66],[26,68],[62,40],[44,42],[20,78]] }
+    r4: { img: 'images/base/room4.jpg', floor: [[[24,42],[31,34],[45,30],[58,29],[70,32],[80,39],[86,46],[90,56],[92,70],[90,82],[84,90],[72,94],[66,100],[22,100],[20,92],[13,76],[10,66],[16,60],[22,58],[26,52]]], wall: [[[22,8],[40,4],[60,0],[82,0],[86,12],[88,30],[85,40],[80,37],[70,30],[58,27],[45,28],[30,32],[24,37],[22,26]]], block: [], mons: [[26,90],[74,88],[80,66],[26,68],[62,40],[44,42],[20,78]] }
   };
   var DECO_IMG = { d1: 'images/base/deco1.webp', d2: 'images/base/deco2.webp', d3: 'images/base/deco3.webp', d4: 'images/base/deco4.webp', d5: 'images/base/deco5.webp', d6: 'images/base/deco6.webp', d7: 'images/base/deco7.webp', d8: 'images/base/deco8.webp', d9: 'images/base/deco9.webp', d10: 'images/base/deco10.webp' };
   // 可以点的摆件（2026-11-01）：发现纪念弹出说明；精元转化仪打开孵化；留言板打开留言
-  var DECO_ACT = { d5: '叶粒种子', d6: '水臂乌贼', d7: '方头蘑菇', d8: 'nursery', d10: 'msg' };
+  var DECO_ACT = { d5: '叶粒种子', d6: '水臂乌贼', d7: '方头蘑菇', d8: 'nursery', d9: 'mm', d10: 'msg' };
+  var DECO_SIZE = { d8: 2.5 };   // 精元转化仪画得大一些（2026-11-01）
+  // 明明画像的面板：大图 + 荣誉（2026-11-01）
+  var MM_HONORS = ['荆楚号 · 古城防卫部教官', '「明明教官的试炼」主考官', '光霆主、赫菲斯托的训练师', '推行防卫部老规矩：出任务时可以向队友借一只精灵助战'];
+  function mmPortraitBody() {
+    return '<div class="mm-por"><div class="mm-frame"><img src="' + CHARS.mm + '" alt="明明教官"></div><div class="mm-txt"><h2>明明教官</h2><p class="hint">古城防卫部</p><h4>荣誉</h4><ul>' + MM_HONORS.map(function (t) { return '<li>🏅 ' + esc(t) + '</li>'; }).join('') + '</ul></div></div>';
+  }
   function baseInv() { var B = (acc && acc.baseInv) || {}; return { rooms: B.rooms || {}, deco: B.deco || {} }; }
   function roomOwned(k) { return k === 'r1' || !!baseInv().rooms[k]; }
   function decoOwn(k) { return baseInv().deco[k] | 0; }
@@ -6083,7 +6100,7 @@
     var fl = floorTop(room), wall = decoLayer(d.k) === 'wall', q = baseSnap(room, wall ? 'wall' : 'floor', +d.x || 50, +d.y || 80);
     d = { k: d.k, x: q[0], y: q[1], f: d.f };
     var sc = wall ? 0.9 : 0.72 + 0.42 * Math.max(0, Math.min(1, (d.y - fl) / (100 - fl)));
-    return '<div class="bdeco' + (wall ? ' wall' : '') + (d.f ? ' flip' : '') + (edit && sel === i ? ' sel' : '') + (!edit && DECO_ACT[d.k] ? ' act' : '') + '" data-dk="' + d.k + '" data-bi="' + i + '" style="left:' + d.x + '%;top:' + d.y + '%;width:' + (7.2 * sc).toFixed(2) + '%;z-index:' + (edit && sel === i ? 150 : wall ? 2 : Math.round(d.y)) + '"><img src="' + (DECO_IMG[d.k] || '') + '" alt="' + esc((TX.D.BASE_DECO[d.k] || {}).n || '') + '" draggable="false"></div>';
+    return '<div class="bdeco' + (wall ? ' wall' : '') + (d.f ? ' flip' : '') + (edit && sel === i ? ' sel' : '') + (!edit && DECO_ACT[d.k] ? ' act' : '') + '" data-dk="' + d.k + '" data-bi="' + i + '" style="left:' + d.x + '%;top:' + d.y + '%;width:' + (7.2 * sc * (DECO_SIZE[d.k] || 1)).toFixed(2) + '%;z-index:' + (edit && sel === i ? 150 : wall ? 2 : Math.round(d.y)) + '"><img src="' + (DECO_IMG[d.k] || '') + '" alt="' + esc((TX.D.BASE_DECO[d.k] || {}).n || '') + '" draggable="false"></div>';
   }
   function baseRoomHTML(L, inner, edit) {
     L = L || { room: 'r1', deco: [] }; var R = BASE_UI[L.room] || BASE_UI.r1;
@@ -6139,7 +6156,12 @@
   document.addEventListener('click', function (e) {
     var el = e.target.closest('.bdeco.act'); if (!el || ex.baseEdit) return;
     var k = el.dataset.dk, A = DECO_ACT[k], mine = !!el.closest('#pg-explore'); if (!A) return;
-    if (A === 'nursery') { if (!mine) { toast('这是主人的精元转化仪。'); return; } ex.bpanel = null; ex.view = 'nursery'; ex.area = '神农架'; ex.planet = 'jingchu'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
+    if (A === 'nursery') { if (!mine) { toast('这是主人的精元转化仪。'); return; } ex.bpanel = 'nursery'; renderHome(); return; }
+    if (A === 'mm') {
+      if (mine) { ex.bpanel = 'mm'; renderHome(); return; }
+      var dm = document.createElement('div'); dm.className = 'soc-dlg'; dm.innerHTML = '<div class="soc-box bp-box mm-box" role="dialog" aria-modal="true">' + mmPortraitBody() + '<div class="soc-foot"><button type="button" class="btn primary" data-decox="1">关闭</button></div></div>';
+      document.body.appendChild(dm); dm.addEventListener('click', function (ev) { if (ev.target === dm || ev.target.closest('[data-decox]')) dm.remove(); }); return;
+    }
     if (A === 'msg') { if (!mine) { toast('留言板在下面，给主人留句话吧。'); return; } if (!baseOnline()) { toast('留言板需要联网：用服务器网址打开游戏并登录后才能用。'); return; } ex.bpanel = 'msg'; renderHome(); return; }
     var old = $('deco-dlg'); if (old) old.remove();
     var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'deco-dlg';
