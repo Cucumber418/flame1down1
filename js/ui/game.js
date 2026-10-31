@@ -6061,9 +6061,9 @@
   var DECO_IMG = { d1: 'images/base/deco1.webp', d2: 'images/base/deco2.webp', d3: 'images/base/deco3.webp', d4: 'images/base/deco4.webp', d5: 'images/base/deco5.webp', d6: 'images/base/deco6.webp', d7: 'images/base/deco7.webp', d8: 'images/base/deco8.webp', d9: 'images/base/deco9.webp', d10: 'images/base/deco10.webp' };
   // 可以点的摆件（2026-11-01）：发现纪念弹出说明；精元转化仪打开孵化；留言板打开留言
   var DECO_ACT = { d5: '叶粒种子', d6: '水臂乌贼', d7: '方头蘑菇', d8: 'nursery', d9: 'mm', d10: 'msg' };
-  var DECO_SIZE = { d8: 2.5 };   // 精元转化仪画得大一些（2026-11-01）
+  var DECO_SIZE = { d8: 1.75 };   // 精元转化仪画得大一些（2026-11-01）
   // 明明画像的面板：大图 + 荣誉（2026-11-01）
-  var MM_HONORS = ['军衔：少校', '湖北理科高考优胜者', '华中科技大学光电优秀毕业生', '荆楚号古城防卫部总教官'];
+  var MM_HONORS = ['军衔：少校', '湖北理科高考优胜者', '华中科技大学光学与电子信息学院优秀毕业生', '荆楚号古城防卫部总教官'];
   function mmPortraitBody() {
     return '<div class="mm-por"><div class="mm-frame"><img src="' + CHARS.mm + '" alt="明明教官"></div><div class="mm-txt"><h2>明明教官</h2><p class="hint">古城防卫部</p><h4>荣誉</h4><ul>' + MM_HONORS.map(function (t) { return '<li>🏅 ' + esc(t) + '</li>'; }).join('') + '</ul></div></div>';
   }
