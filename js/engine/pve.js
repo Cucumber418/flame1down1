@@ -453,6 +453,29 @@ var PVE = (function () {
       { id: 'fl50', n: '芙罗拉 · 极境', bg: 'fl_horizon', foes: [{ sid: 'inkarm', lv: 138, q: 1 }, { sid: 'phantom', lv: 140, q: 1 }, { sid: 'mush', lv: 142, q: 1 }, { sid: 'siren', lv: 144, q: 1 }], s2: 'nofaint', s3: 'noitem', reward: { exp: 75500, energy: 5100, items: { floraJade: 50 } } }
     ]
   };
+  // 坎伯兰星挑战路线（2026-11-01）：50 关，和芙罗拉星一一对应，每只敌人都比芙罗拉星同一关高 5 级；敌人换成海里的精灵，奖励的芙罗拉玉换成不化水滴
+  (function () {
+    var NAMES = ['码头初航', '冥岛浅滩', '礁石回声', '潮汐双生', '尾刃的巢穴', '暮色航道', '珊瑚迷宫', '漩涡之眼', '黄昏礁滩', '浮光海面',
+      '潜流回廊', '鱼群风暴', '墨色水域', '沉船残骸', '深蓝前哨', '海妖的歌声', '三叉合围', '断桥之下', '暗礁伏击', '月下潮汐',
+      '信号塔遗迹', '戈耳贡的试炼', '尾刃再临', '幽深沙丘', '发光管道', '涡流风暴', '迷雾海峡', '深海法则', '墨潮沼泽', '静水之下',
+      '蔚蓝连环', '深渊回声', '风暴潮前夕', '海渊守望', '千浪之门', '幽蓝裂谷', '潮汐王座', '深海猎场', '回旋暗流', '坎伯兰之心',
+      '极光边境', '海底暗涌', '古殿低语', '蓝色风暴', '百级之海', '？？？之海', '无名深渊', '寂静海沟', '终末之潮', '坎伯兰 · 极境'];
+    var BGS = [['kb_dock', 'kb_isle', 'kb_shore', 'kb_dusk'], ['kb_lookup', 'kb_shoal', 'kb_dusk', 'kb_isle'], ['kb_floor', 'kb_abyss', 'kb_temple', 'kb_shoal']];
+    var POOLS = [['gorgon', 'pede'], ['gorgon', 'pede', 'squid', 'siren'], ['pede', 'squid', 'siren', 'inkarm', 'gorgon', 'odo'], ['inkarm', 'odo', 'siren', 'squid', 'bone', 'frost', 'pluto', 'moon', 'faraday', 'pede']];
+    var IMMUNE = { 流血: ['odo'], 冰冻: ['frost'], 烧伤: [], 寄生: [] };
+    CHAL.kamble = CHAL.flora.map(function (x, i) {
+      var tier = i < 5 ? 0 : i < 15 ? 1 : i < 32 ? 2 : 3, pool = POOLS[tier], bgs = BGS[i < 12 ? 0 : i < 30 ? 1 : 2], used = {};
+      var foes = x.foes.map(function (f, j) {
+        var k = (i * 3 + j * 5) % pool.length, sid = pool[k];
+        for (var t = 0; t < pool.length && used[sid]; t++) sid = pool[(k + t + 1) % pool.length];
+        used[sid] = 1; var lv = f.lv + 5, o = { sid: sid, lv: lv }; if (f.q || lv > 100) o.q = 1; return o;
+      });
+      var st = /^st:/.test(x.s3) ? x.s3.slice(3) : null, imm = st && IMMUNE[st];
+      if (imm && imm.length && foes.every(function (f) { return imm.indexOf(f.sid) >= 0; })) foes[foes.length - 1].sid = 'gorgon';
+      var rw = JSON.parse(JSON.stringify(x.reward)); if (rw.items && rw.items.floraJade) { rw.items.kbDrop = rw.items.floraJade; delete rw.items.floraJade; }
+      return { id: 'kc' + (i + 1), n: NAMES[i], bg: bgs[i % bgs.length], foes: foes, s2: x.s2, s3: x.s3, reward: rw };
+    });
+  })();
     function starOk(c, S, mine) {
     var cs = S.cs || {}, p = c.split(':');
     if (c === 'win') return true;
@@ -474,7 +497,7 @@ var PVE = (function () {
     return false;
   }
   var MM_HELPER = { key: 'mm', owner: '明明教官', mon: { sid: 'hephaestus', lv: 30, moves: [] } };
-  function chalLevelOpen(a, P, i) { return done(a, 'fl_chal') && !!CHAL[P] && !!CHAL[P][i] && (i === 0 || chalStars(a, CHAL[P][i - 1].id) > 0); }
+  function chalLevelOpen(a, P, i) { return done(a, 'fl_chal') && (P !== 'kamble' || done(a, 'kb1')) && !!CHAL[P] && !!CHAL[P][i] && (i === 0 || chalStars(a, CHAL[P][i - 1].id) > 0); }   // 坎伯兰星的路线：读完第十二段（到达坎伯兰星）后开放
   function helperSpec(Hp) {
     var m = Hp.mon, hm = ACC.battleMon(null, { sid: m.sid, lv: m.lv, moves: m.moves || [], ev: m.ev || null, nat: m.nat || null, iv: m.iv || null, shiny: ACC.shinyV(m.shiny) });
     hm.nick = hm.nick + '（' + Hp.owner + '）'; return hm;

@@ -1536,7 +1536,7 @@
     }, function () { storyFixBusy = false; });
   }
   function giveItems(o) { if (o) earn('misc', '', { items: o }); }   // 旧写法：新代码请直接用 earn，写明来源
-  function rwList(R) { var a = [R.exp ? '累积经验 ×' + fmt(R.exp) : '', R.energy ? '能量 ×' + fmt(R.energy) : '', R.bgm ? '茶室音乐「' + bgmName(R.bgm) + '」' : '']; if (R.items) for (var k in R.items) a.push(itemName(k) + ' ×' + R.items[k]); if (R.title) a.push('称号「' + TITLES.filter(function (x) { return x.id === R.title; })[0].n + '」'); if (R.mon) a.push(R.mon); (R.gift || []).forEach(function (g) { a.push(form(g).name + ' LV' + g.lv); }); return a.filter(Boolean); }
+  function rwList(R) { var a = [R.exp ? '累积经验 ×' + fmt(R.exp) : '', R.energy ? '能量 ×' + fmt(R.energy) : '', R.bgm ? '基地音乐「' + bgmName(R.bgm) + '」' : '']; if (R.items) for (var k in R.items) a.push(itemName(k) + ' ×' + R.items[k]); if (R.title) a.push('称号「' + TITLES.filter(function (x) { return x.id === R.title; })[0].n + '」'); if (R.mon) a.push(R.mon); (R.gift || []).forEach(function (g) { a.push(form(g).name + ' LV' + g.lv); }); return a.filter(Boolean); }
   var ex = { view: 'planets', planet: 'earth', site: null, mode: null, host: null, i: 0, typing: false, auto: false, skip: false, timer: null, tick: null, full: '', log: [], pickSel: null };
   function story() { if (!acc.story) acc.story = {}; return acc.story; }
   function prog(site) { var st = story(); if (!st[site]) st[site] = { at: 0, done: false, ch: null }; return st[site]; }
@@ -3088,13 +3088,12 @@
    * 存档：acc.chal[关卡 id] = { s: [星1, 星2, 星3], got: 首通时间 } */
   var CHAL = PVE.CHAL;   // 关卡数据和星级判定在 js/engine/pve.js（服务器和浏览器共用，2026-10-25）
   // 星级要求：固定的几种，加上带参数的 'turns:N'（N 回合内获胜）、'st:状态'（让敌人陷入某种异常）、'heal:N'（累计恢复 N 点体力）
-  var STAR_HINT = { 中毒: '如毒孢子', 麻痹: '如电磁波、麻醉孢子、闪电烙印', 睡眠: '如催眠孢子、魔眼', 烧伤: '如火焰漩涡、烈焰云', 流血: '如怒海疾刺', 寄生: '如寄生之种', 冰冻: '如冰冻打击、霜冻结界', 害怕: '如龙吟崩山震、颤栗' };
   function starTxt(c) {
     if (STAR_TXT[c]) return STAR_TXT[c];
     var p = c.split(':');
     if (p[0] === 'turns') return '在 ' + p[1] + ' 回合内获胜';
-    if (p[0] === 'st') return '让一名敌人陷入「' + p[1] + '」状态' + (STAR_HINT[p[1]] ? '（' + STAR_HINT[p[1]] + '）' : '');
-    if (p[0] === 'heal') return '战斗中累计恢复 ' + p[1] + ' 点体力（如吸取、光合作用、饮血刀光）';
+    if (p[0] === 'st') return '让一名敌人陷入「' + p[1] + '」状态';   // 2026-11-01：不再用括号提示技能
+    if (p[0] === 'heal') return '战斗中累计恢复 ' + p[1] + ' 点体力';
     return c;
   }
   function starOk(c, S, mine) { return PVE.starOk(c, S, mine); }
@@ -3107,28 +3106,31 @@
     { n: 120, rw: { exp: 120000, energy: 10000, items: { floraJade: 100, g_core: 4 } } },
     { n: 150, rw: { exp: 150000, energy: 15000, items: { floraJade: 200, g_core: 8 } } }
   ];
+  var CHAL_STARS = { flora: CHAL_STAR, kamble: AWD.CHAL_STAR_KB };   // 2026-11-01：坎伯兰星的路线也有星数奖励（基地音乐 Cumberland1～3）
+  function chalP() { return ex.planet === 'kamble' ? 'kamble' : 'flora'; }
   function chalTotal(P) { return CHAL[P || 'flora'].reduce(function (a, x) { return a + chalStars(x.id); }, 0); }
-  function chalGot(n) { return !!(acc && acc.chalGot && acc.chalGot[n]); }
-  function chalStarHTML(total) {
-    return '<div class="ch-mile">' + CHAL_STAR.map(function (x) {
-      var got = chalGot(x.n), can = !got && total >= x.n;
+  function chalGot(n, P) { var k = P === 'kamble' ? 'kb:' + n : n; return !!(acc && acc.chalGot && acc.chalGot[k]); }
+  function chalStarHTML(total, P) {
+    return '<div class="ch-mile">' + CHAL_STARS[P].map(function (x) {
+      var got = chalGot(x.n, P), can = !got && total >= x.n;
       return '<div class="ch-mi' + (got ? ' got' : can ? ' can' : '') + '"><b>★ ' + x.n + '</b><span>' + rwList(x.rw).join('、') + '</span>' +
         (got ? '<em>已领取</em>' : can ? '<button type="button" class="btn primary" data-chstar="' + x.n + '">领取</button>' : '<em>' + total + ' / ' + x.n + '</em>') + '</div>';
     }).join('') + '</div>';
   }
-  function claimChalStar(n) {
-    var x = CHAL_STAR.filter(function (y) { return y.n === n; })[0]; if (!x || chalGot(n) || chalTotal() < n) return;
+  function claimChalStar(n, P) {
+    P = P || 'flora';
+    var x = CHAL_STARS[P].filter(function (y) { return y.n === n; })[0]; if (!x || chalGot(n, P) || chalTotal(P) < n) return;
     var R = x.rw;
-    txRun('chalStar', { n: n }, function () {   // 服务器按它记的星数结算（js/engine/award.js）
-      renderTop(); toast('挑战路线累计 ' + n + ' 颗星奖励：' + rwList(R).join('、') + (R.bgm ? '。茶室音乐可以在「我的茶室」里切换。' : '。'));
+    txRun('chalStar', { n: n, P: P }, function () {   // 服务器按它记的星数结算（js/engine/award.js）
+      renderTop(); toast((P === 'kamble' ? '坎伯兰星' : '芙罗拉星') + '挑战路线累计 ' + n + ' 颗星奖励：' + rwList(R).join('、') + (R.bgm ? '。基地音乐可以在基地里切换。' : '。'));
       if (page === 'explore') renderExplore();
     });
   }
-  var STAR_TXT = { win: '击败所有敌人', nofaint: '无精灵倒下', half: '战斗结束时，所有出战精灵的体力都高于一半', super: '使用一次克制对方属性的技能（效果拔群）', nostatus: '战斗结束时，所有精灵都不处于异常状态',
+  var STAR_TXT = { win: '击败所有敌人', nofaint: '无精灵倒下', half: '战斗结束时，所有出战精灵的体力都高于一半', super: '使用一次克制对方属性的技能', nostatus: '战斗结束时，所有精灵都不处于异常状态',
     noitem: '整场战斗不使用任何道具', nosw: '整场战斗不主动更换出战精灵', lead: '首发精灵在战斗结束时没有倒下',
-    crit: '至少打出一次致命一击（暴击）', up6: '让我方精灵的任意一项能力等级提升到 +6（如饮血刀光、灵光等强化技能）',
-    down6: '让敌人的任意一项能力等级下降到 −6（如混沌海流、软化粉等削弱技能）', oneshot: '一次攻击造成超过敌人最大体力的伤害（满体力时一击击倒，如淬命之焰）',
-    dotko: '用持续伤害（中毒、烧伤、流血、寄生等）击败一名敌人（如渗透孢子、灭却）' };
+    crit: '至少打出一次致命一击', up6: '让我方精灵的任意一项能力等级提升到 +6',
+    down6: '让敌人的任意一项能力等级下降到 −6', oneshot: '一次攻击造成超过敌人最大体力的伤害',
+    dotko: '用异常状态的持续伤害击败一名敌人' };
   // 对战中的「星级要求」下拉面板：每一条当前的状态
   function starLive(c, S, mine) {
     var cs = S.cs || {}, p = c.split(':');
@@ -3155,7 +3157,7 @@
   function chalRec(id) { if (!acc.chal) acc.chal = {}; return acc.chal[id] || null; }
   function chalStars(id) { return PVE.chalStars(acc, id); }
   function chalOpen() { return !!(acc && prog('fl_chal').done); }
-  function chalLevelOpen(P, i) { return chalOpen() && (i === 0 || chalStars(CHAL[P][i - 1].id) > 0); }
+  function chalLevelOpen(P, i) { return chalOpen() && (P !== 'kamble' || prog('kb1').done) && (i === 0 || chalStars(CHAL[P][i - 1].id) > 0); }
   function helperSet() { var c = acc && acc.card; return !!(c && ((Array.isArray(c.helpers) && c.helpers.some(function (u) { return mon(u); })) || (c.helper != null && mon(c.helper)))); }
   function helperOk() { return prog('fl_chal2').done; }
   function starRow(n, got) { var h = ''; for (var i = 0; i < 3; i++) h += '<i class="' + (got ? (got[i] ? 'on' : '') : i < n ? 'on' : '') + '">★</i>'; return '<span class="ch-stars">' + h + '</span>'; }
@@ -3188,6 +3190,8 @@
       return '<div class="fl-soon"><span class="tape r"></span><b>挑战 · 关卡副本</b><p>古城防卫部的明明教官在芙罗拉星上划出了一条挑战路线：一关接一关，每一关都会根据表现评出 1~3 颗星。</p><p class="stars3" aria-hidden="true">☆ ☆ ☆</p>' +
         (prog('flora1').done ? '<p class="hint">去荆楚号 · 襄阳 · 古城防卫部，找明明教官接取挑战任务。</p><button type="button" class="btn primary" data-tpgo="襄阳">前往古城防卫部</button>' : '<p class="hint">读完主线「降临芙罗拉」后，去古城防卫部找明明教官。</p>') + '</div>';
     }
+    if (P === 'kamble' && !prog('kb1').done) return '<div class="fl-soon"><span class="tape r"></span><b>挑战 · 关卡副本</b><p class="hint">读完第二章第十二段「远航」、抵达坎伯兰星后开放。</p></div>';
+    if (ex.chalP !== P) { ex.chalP = P; ex.chal = null; }   // 换了星球：重新选关
     var L = CHAL[P], sel = ex.chal != null && L[ex.chal] && chalLevelOpen(P, ex.chal) ? ex.chal : (function () { var k = 0; L.forEach(function (x, i) { if (chalLevelOpen(P, i)) k = i; }); return k; })();
     ex.chal = sel;
     if (helperOk()) loadHelpers();
@@ -3210,14 +3214,14 @@
         return '<button type="button" class="ch-help' + (on ? ' on' : '') + '" data-chhelp="' + esc(h.key) + '"><img src="' + f.img + '" alt=""><b>' + esc(f.name) + '</b><small>LV' + h.mon.lv + ' · ' + esc(h.owner) + '</small></button>';
       }).join('') + '</div><p class="hint">' + (bsOnline() ? (ex.helpers && ex.helpers.length ? '好友在名片里放的助战精灵都在这里。' : '好友在名片里放了助战精灵后，也会出现在这里。') : '联网登录后，还能借用好友名片里的助战精灵。') + '自己也可以在「社交 → 我的名片」里挂一只助战精灵。</p>';
     var ready_ = T.own.length > 0;
-    return '<div class="ch-wrap"><div class="ch-head"><b>芙罗拉星 · 挑战路线</b><span class="hint">共 ' + L.length + ' 关 · 已获得 ' + total + ' / ' + L.length * 3 + ' 颗星</span></div>' + chalStarHTML(total) + chain +
+    return '<div class="ch-wrap"><div class="ch-head"><b>' + (P === 'kamble' ? '坎伯兰星' : '芙罗拉星') + ' · 挑战路线</b><span class="hint">共 ' + L.length + ' 关 · 已获得 ' + total + ' / ' + L.length * 3 + ' 颗星</span></div>' + chalStarHTML(total, P) + chain +
       '<article class="ch-detail"><span class="tape r"></span><div class="ch-dh"><span class="sc-tag">第 ' + (sel + 1) + ' 关</span><h3>' + esc(x.n) + '</h3>' + starRow(chalStars(x.id), rec && rec.s) + '</div>' +
       '<div class="ch-cols"><div><h4>敌人</h4><ul class="ch-foes">' + foes + '</ul>' +
       '<h4>星级要求</h4><ol class="ch-conds">' + conds.map(function (c, k) { var got = rec && rec.s[k]; return '<li class="' + (got ? 'ok' : '') + '"><span class="ch-star">' + (got ? '★' : '☆') + '</span>' + starTxt(c) + '</li>'; }).join('') + '</ol>' +
       '<p class="ch-rw"><b>首次通关奖励</b>　' + rwList(x.reward).map(function (t) { return '<span class="chip">' + t + '</span>'; }).join(' ') + (rec && rec.got ? '<span class="hint">（已领取）</span>' : '') + '</p></div>' +
       '<div><h4>出战精灵 <span class="hint">' + (T.helper ? '自己的 ' + T.own.length + ' / 4 只 + 1 只助战' : '自己的 ' + T.own.length + ' / 5 只') + '，点一下选上或取下</span></h4><div class="ch-mons">' + (ownHTML || '<p class="hint">当前配队是空的。</p>') + '</div>' +
       '<h4>助战精灵</h4>' + helpHTML + '</div></div>' +
-      '<div class="ch-go"><button type="button" class="btn primary" data-chgo="' + sel + '"' + (ready_ ? '' : ' disabled') + '>开始挑战</button><span class="hint">战斗中可以使用补药；挑战失败不会有任何损失，可以反复挑战。</span></div></article>' + cbHTML(P) + '</div>';
+      '<div class="ch-go"><button type="button" class="btn primary" data-chgo="' + sel + '"' + (ready_ ? '' : ' disabled') + '>开始挑战</button><span class="hint">战斗中可以使用补药；挑战失败不会有任何损失，可以反复挑战。</span></div></article>' + (P === 'flora' ? cbHTML(P) : '') + '</div>';
   }
   // 出战顺序：自己的精灵用 'u' + 编号，助战精灵用 'h'；排在第一个的就是首发
   function chalLineup() {
@@ -3276,7 +3280,7 @@
           if (miss.length) msg.push('没拿到的星：' + miss.join('；') + '。');
           if (r.first) msg.push('首次通关奖励：' + rwList(x.reward).join('、') + '。');
           if (CHAL[P][i + 1] && !r.before) { ex.chal = i + 1; msg.push('第 ' + (i + 2) + ' 关已开放。'); }
-          var tot = chalTotal(P), mi = CHAL_STAR.filter(function (y) { return tot >= y.n && !chalGot(y.n); });
+          var tot = chalTotal(P), mi = CHAL_STARS[P].filter(function (y) { return tot >= y.n && !chalGot(y.n, P); });
           if (mi.length) msg.push('累计星数达到 ' + mi[mi.length - 1].n + ' 颗，挑战页上方可以领取星数奖励！');
         } else if (r.res !== 'win') msg.push(e.quit ? '退出了挑战。' : '挑战失败了……调整一下出战精灵再来吧。');
         dailyHit('pve');
@@ -3314,7 +3318,7 @@
           if (miss.length) msg.push('没拿到的星：' + miss.join('；') + '。');
           if (!r.got) { r.got = Date.now(); earn('chalFirst', x.id, { exp: x.reward.exp, energy: x.reward.energy, items: x.reward.items }); msg.push('首次通关奖励：' + rwList(x.reward).join('、') + '。'); }
           if (CHAL[P][i + 1] && !before) { ex.chal = i + 1; msg.push('第 ' + (i + 2) + ' 关已开放。'); }
-          var tot = chalTotal(P), mi = CHAL_STAR.filter(function (y) { return tot >= y.n && !chalGot(y.n); });
+          var tot = chalTotal(P), mi = CHAL_STARS[P].filter(function (y) { return tot >= y.n && !chalGot(y.n, P); });
           if (mi.length) msg.push('累计星数达到 ' + mi[mi.length - 1].n + ' 颗，挑战页上方可以领取星数奖励！');
         } else if (res !== 'win') msg.push(quit ? '退出了挑战。' : '挑战失败了……调整一下出战精灵再来吧。');
         dailyHit('pve');
@@ -3329,12 +3333,12 @@
       } });
   }
   function chalClick(b) {
-    if (b.dataset.chstar) { claimChalStar(+b.dataset.chstar); renderExplore(); return true; }
+    if (b.dataset.chstar) { claimChalStar(+b.dataset.chstar, chalP()); renderExplore(); return true; }
     if (b.dataset.tpgo) { ex.planet = 'jingchu'; teleport(b.dataset.tpgo); return true; }
     if (b.dataset.chal != null && b.dataset.chal !== undefined && !b.disabled) {
       var i = +b.dataset.chal; ex.chal = i;
       // 第一次点开第二关：插播支线「借来的力量」，读完自动选上明明教官的赫菲斯
-      if (i === 1 && unlocked('fl_chal2') && !prog('fl_chal2').done) { ex.chalHelper = 'mm'; startVN('fl_chal2', 'replay', $('pg-explore'), true); window.scrollTo(0, $('pg-explore').offsetTop - 8); return true; }
+      if (i === 1 && chalP() === 'flora' && unlocked('fl_chal2') && !prog('fl_chal2').done) { ex.chalHelper = 'mm'; startVN('fl_chal2', 'replay', $('pg-explore'), true); window.scrollTo(0, $('pg-explore').offsetTop - 8); return true; }
       renderExplore(); return true;
     }
     if (b.dataset.chown) {
@@ -3349,8 +3353,8 @@
     }
     if (b.dataset.chgo) {
       var gi = +b.dataset.chgo;
-      if (gi === 1 && unlocked('fl_chal2') && !prog('fl_chal2').done) { ex.chalHelper = 'mm'; startVN('fl_chal2', 'replay', $('pg-explore'), true); window.scrollTo(0, $('pg-explore').offsetTop - 8); return true; }   // 第二关：先强制播完明明教官的助战教学
-      openLineup('flora', gi); return true;
+      if (gi === 1 && chalP() === 'flora' && unlocked('fl_chal2') && !prog('fl_chal2').done) { ex.chalHelper = 'mm'; startVN('fl_chal2', 'replay', $('pg-explore'), true); window.scrollTo(0, $('pg-explore').offsetTop - 8); return true; }   // 第二关：先强制播完明明教官的助战教学
+      openLineup(chalP(), gi); return true;
     }
     return false;
   }
@@ -3640,11 +3644,13 @@
   function wildPage(P) {
     var regs = regionsOf(P.id);
     var stIds = P.storyIds || P.sites || [], hasStory = stIds.length > 0, ST = hasStory ? storyTabs(stIds) : null;
-    var part = ex.fpart === 'task' ? 'task' : ex.fpart === 'story' && hasStory ? 'story' : 'catch';
+    var hasChal = !!CHAL[P.id], part = ex.fpart === 'task' ? 'task' : ex.fpart === 'story' && hasStory ? 'story' : ex.fpart === 'challenge' && hasChal ? 'challenge' : 'catch';
     var head = '<div class="flora-hero"><span class="tape l"></span>' + (P.img ? planetImg(P, 150) : planetSvgC(P, 150)) + '<div><h3 style="color:' + P.color[1] + '">' + P.name + ' <span class="chip ptype">' + P.ptype + '</span></h3><p class="hint">' + P.d + (P.img ? '' : '星球立绘还在绘制中，这里先用示意图。') + '</p>' +
       '<div class="fparts" role="tablist">' + (hasStory ? '<button type="button" role="tab" class="tab' + (part === 'story' ? ' on' : '') + '" data-fpart="story" aria-selected="' + (part === 'story') + '">剧情' + (ST.any ? '<i class="q-badge">!</i>' : '') + '</button>' : '') +
+      (hasChal ? '<button type="button" role="tab" class="tab' + (part === 'challenge' ? ' on' : '') + '" data-fpart="challenge" aria-selected="' + (part === 'challenge') + '">挑战</button>' : '') +
       '<button type="button" role="tab" class="tab' + (part === 'catch' ? ' on' : '') + '" data-fpart="catch" aria-selected="' + (part === 'catch') + '">探索</button>' + taskTab(P.id, part) + '</div></div></div>';
     if (part === 'task') return head + planetTasks(P.id);
+    if (part === 'challenge') return head + chalPage(P.id);
     if (part === 'story') return head + ST.html(P.storyEmpty);
     var cards = regs.map(function (R) {
       var bgs = (R.bgs || []).filter(function (k) { return BG[k]; });
@@ -4488,7 +4494,7 @@
     if (R.title) a.push('称号「' + titleName(R.title) + '」');
     if (R.items) for (var k in R.items) a.push(itemName(k) + ' ×' + R.items[k]);
     if (R.exp) a.push('累积经验 ×' + fmt(R.exp));
-    if (R.bgm) a.push('茶室音乐「' + bgmName(R.bgm) + '」');
+    if (R.bgm) a.push('基地音乐「' + bgmName(R.bgm) + '」');
     if (R.later) a.push('奖励将在之后添加');
     return a.join('、');
   }
@@ -5854,7 +5860,10 @@
     { k: 'earth', n: '地球', d: '自动解锁' },
     { k: 'floraGrass', n: 'Flora1', d: '芙罗拉星挑战路线累计 30 颗星后领取', own: function () { return chalGot(30); } },
     { k: 'floraForest', n: 'Flora2', d: '芙罗拉星挑战路线累计 60 颗星后领取', own: function () { return chalGot(60); } },
-    { k: 'floraFallen', n: 'Flora3', d: '芙罗拉星挑战路线累计 90 颗星后领取', own: function () { return chalGot(90); } }
+    { k: 'floraFallen', n: 'Flora3', d: '芙罗拉星挑战路线累计 90 颗星后领取', own: function () { return chalGot(90); } },
+    { k: 'kbSurface', n: 'Cumberland1', d: '坎伯兰星挑战路线累计 30 颗星后领取', own: function () { return chalGot(30, 'kamble'); } },
+    { k: 'kbShallow', n: 'Cumberland2', d: '坎伯兰星挑战路线累计 60 颗星后领取', own: function () { return chalGot(60, 'kamble'); } },
+    { k: 'kbDeep', n: 'Cumberland3', d: '坎伯兰星挑战路线累计 90 颗星后领取', own: function () { return chalGot(90, 'kamble'); } }
   ];
   function bgmName(k) { var b = HOME_BGM.filter(function (x) { return x.k === k; })[0]; return b ? b.n : k; }
   function bgmOwned(k) { var b = HOME_BGM.filter(function (x) { return x.k === k; })[0]; return !!b && (!b.own || b.own()); }

@@ -101,12 +101,21 @@ var AWD = (function () {
     { n: 120, rw: { exp: 120000, energy: 10000, items: { floraJade: 100, g_core: 4 } } },
     { n: 150, rw: { exp: 150000, energy: 15000, items: { floraJade: 200, g_core: 8 } } }
   ];
+  // 坎伯兰星挑战路线的累计星数奖励（2026-11-01）：记在 a.chalGot['kb:星数']
+  var CHAL_STAR_KB = [
+    { n: 30, rw: { bgm: 'kbSurface', exp: 30000, energy: 3000 } },
+    { n: 60, rw: { bgm: 'kbShallow', exp: 60000, energy: 5000 } },
+    { n: 90, rw: { bgm: 'kbDeep', exp: 90000, energy: 8000 } },
+    { n: 120, rw: { exp: 120000, energy: 10000, items: { kbDrop: 100, g_core: 4 } } },
+    { n: 150, rw: { exp: 150000, energy: 15000, items: { kbDrop: 200, g_core: 8 } } }
+  ];
+  function chalGotKey(P, n) { return P === 'kamble' ? 'kb:' + n : n; }
   TX.add('chalStar', function (a, args, env) {
-    var n = args.n, x = CHAL_STAR.filter(function (y) { return y.n === n; })[0];
+    var P = args.P === 'kamble' ? 'kamble' : 'flora', n = args.n, x = (P === 'kamble' ? CHAL_STAR_KB : CHAL_STAR).filter(function (y) { return y.n === n; })[0], gk = chalGotKey(P, n);
     if (!x) return no('没有这档奖励');
-    if (a.chalGot && a.chalGot[n]) return no('已经领过了');
-    if (PVE.chalTotal(a, 'flora') < n) return no('星数还不够');
-    if (!a.chalGot) a.chalGot = {}; a.chalGot[n] = env.now;
+    if (a.chalGot && a.chalGot[gk]) return no('已经领过了');
+    if (PVE.chalTotal(a, P) < n) return no('星数还不够');
+    if (!a.chalGot) a.chalGot = {}; a.chalGot[gk] = env.now;
     give(a, x.rw);
     return { ok: true, n: n, rw: x.rw };
   });
@@ -320,7 +329,7 @@ var AWD = (function () {
     return no('不支持的操作');
   });
 
-  return { TITLES: TITLES, titleCheck: titleCheck, RANKS_MIL: RANKS_MIL, MIL_COST: MIL_COST, milMigrate: milMigrate, CHAL_STAR: CHAL_STAR, rankRec: rankRec, rankPending: rankPending, rankRwOf: rankRwOf, rankBest: rankBest,
+  return { TITLES: TITLES, titleCheck: titleCheck, RANKS_MIL: RANKS_MIL, MIL_COST: MIL_COST, milMigrate: milMigrate, CHAL_STAR: CHAL_STAR, CHAL_STAR_KB: CHAL_STAR_KB, rankRec: rankRec, rankPending: rankPending, rankRwOf: rankRwOf, rankBest: rankBest,
     hasAtt: hasAtt, send: send, sync: sync, MAIL_MAX: MAIL_MAX, pwMilestones: pwMilestones, pwReward: pwReward, kbwMilestones: kbwMilestones, kbwReward: kbwReward, CONTEST: CONTEST, CT_RW: CT_RW, CT_RW0: CT_RW0 };
 })();
 if (typeof module !== 'undefined') module.exports = AWD;
