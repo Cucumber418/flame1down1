@@ -2558,7 +2558,7 @@
   function kbwOpenC() { return !!acc && prog('kb6').done; }
   function kbwHTML(R, si) {
     if (!kbwOpenC() || R.planet !== 'kamble') return '';
-    return PVE.kbwAt(Date.now()).filter(function (q) { return q.rid === R.id && q.si === si; }).map(function (q) {
+    return PVE.kbwAt(Date.now(), acc).filter(function (q) { return q.rid === R.id && q.si === si; }).map(function (q) {
       var met = PVE.kbwFought(acc, q.h, q.k);
       return '<button type="button" class="wf-mon wf-odo' + (met ? ' met' : '') + '" data-kbw="' + q.k + '" title="' + esc(q.m.n) + ' LV' + q.m.lv + '" aria-label="迎战' + esc(q.m.n) + '" style="left:' + q.spot.x + '%;top:' + q.spot.y + '%;z-index:' + q.spot.y + '"' + (met ? ' disabled' : '') + '><i class="wf-sh" aria-hidden="true"></i><img src="' + SPRITES.odo + '" alt=""><span class="wf-tag">' + (met ? '已交手 · 整点后会有新的' : esc(q.m.n) + ' · LV' + q.m.lv) + '</span></button>';
     }).join('');
@@ -2592,7 +2592,7 @@
   }
   function engageOdo(k) {
     if (ex.fighting) return;
-    var R = regionById(ex.region), F = R && fields[R.id], q = PVE.kbwAt(Date.now())[k];
+    var R = regionById(ex.region), F = R && fields[R.id], q = PVE.kbwAt(Date.now(), acc).filter(function (x) { return x.k === k; })[0];
     if (!F || !q || q.rid !== R.id || q.si !== F.scene || PVE.kbwFought(acc, q.h, q.k)) { toast('奥多亚克已经潜回深海了。'); renderField(); return; }
     if (!srvMode()) { toast('坎伯兰星保卫战是全服任务，需要用服务器网址打开游戏并登录后才能参与。'); return; }
     var sc = F.scenes[F.scene], P = planetOf(R.planet);
@@ -2610,11 +2610,13 @@
   function kbwNext(t) { if (t < 5) return 5; if (t < 20) return 20; if (t < 50) return 50; return (Math.floor(t / 25) + 1) * 25; }
   function kbwPrev(t) { if (t < 5) return 0; if (t < 20) return 5; if (t < 50) return 20; return Math.floor(t / 25) * 25; }
   function kbwInner() {
-    var me = acc.kbwK | 0, day = acc.kbwd && acc.kbwd.d === bjDay() ? acc.kbwd.n : 0, now = Date.now(), L = PVE.kbwAt(now);
+    var me = acc.kbwK | 0, day = acc.kbwd && acc.kbwd.d === bjDay() ? acc.kbwd.n : 0, now = Date.now(), LA = PVE.kbwAt(now, acc), L = LA.filter(function (q) { return !q.p; }), LP = LA.filter(function (q) { return q.p; });
+    var where = function (q) { var R = regionById(q.rid), sc = R.bgs && R.bgs[q.si]; return R.name + (sc && BG_NAME[sc] ? ' · ' + BG_NAME[sc] : ''); };
     var head = '<span class="tape l"></span><span class="tape r"></span><span class="chip log-tag pw-tag">全服任务</span><h3>坎伯兰星保卫战</h3>' +
       '<p>一鸟唤醒了海里所有休眠的奥多亚克。每个整点，坎伯兰星的水面、浅水区、深海区里会随机出现 ' + KBW.per + ' 只不同型号的奥多亚克，每只每人每小时可以迎战一次，不能捕捉。每击破一只，你的经验背包 +' + fmt(KBW.exp) + '，全服进度 +1。每人每天最多计入 ' + KBW.cap + ' 次。</p>' +
       '<div class="pt-bar"><i style="width:' + Math.min(100, me / KBW.need * 100) + '%"></i><em>你的击破 ' + Math.min(me, KBW.need) + ' / ' + KBW.need + (me >= KBW.need ? ' · 第十八段已开放' : ' · 击破 ' + KBW.need + ' 只后开放下一段剧情') + '</em></div>' +
-      '<p class="hint">这个小时的奥多亚克（还剩 ' + Math.max(1, Math.ceil((L[0].end - now) / 60000)) + ' 分钟）：' + L.map(function (q) { var R = regionById(q.rid), sc = R.bgs && R.bgs[q.si]; return esc(q.m.n) + '（' + R.name + (sc && BG_NAME[sc] ? ' · ' + BG_NAME[sc] : '') + '）' + (PVE.kbwFought(acc, q.h, q.k) ? ' ✓' : ''); }).join('、') + '</p>';
+      '<p class="hint">这个小时的奥多亚克（还剩 ' + Math.max(1, Math.ceil((L[0].end - now) / 60000)) + ' 分钟）：' + L.map(function (q) { var R = regionById(q.rid), sc = R.bgs && R.bgs[q.si]; return esc(q.m.n) + '（' + R.name + (sc && BG_NAME[sc] ? ' · ' + BG_NAME[sc] : '') + '）' + (PVE.kbwFought(acc, q.h, q.k) ? ' ✓' : ''); }).join('、') + '</p>' +
+      (LP.length ? '<p class="hint"><b>先遣奥多亚克</b>（只有你看得到，不会潜回深海，输了可以再打）：' + LP.map(function (q) { return esc(q.m.n) + '（' + where(q) + '）'; }).join('、') + '</p>' : '');
     if (!pwOnline()) return head + '<p class="hint">坎伯兰星保卫战是全服任务，需要用服务器网址打开游戏并登录后才能参与。</p>';
     var d = KW.data; if (!d) return head + '<p class="hint">' + (KW.err ? esc(KW.err) : '正在读取全服进度……') + '</p>';
     var prev = kbwPrev(d.total), next = kbwNext(d.total), pct = Math.min(100, (d.total - prev) / (next - prev) * 100);

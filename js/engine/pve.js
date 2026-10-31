@@ -826,7 +826,7 @@ var PVE = (function () {
    * 每个整点，坎伯兰星随机 per 个场景里各出现一只不同型号的奥多亚克（全服时间表一样，按小时编号算），停留一整个小时；
    * 每只每人每小时只能挑战 1 次（开战就算），不能捕捉。击破：自己经验背包 +exp，全服击破 +1（每人每天最多 cap 次）；
    * 本账号累计击破 need 只后开放第十八段。全服里程碑奖励见 js/engine/award.js（kbwReward） */
-  var KBW = { calm: ['kb_temple'], per: 4, cap: 20, exp: 3000, need: 5, regions: ['kb_surf', 'kb_sea', 'kb_deep'],
+  var KBW = { calm: ['kb_temple'], first: [0, 0, 1, 1, 2], per: 4, cap: 20, exp: 3000, need: 5, regions: ['kb_surf', 'kb_sea', 'kb_deep'],
     spots: [{ x: 24, y: 70 }, { x: 40, y: 62 }, { x: 78, y: 64 }, { x: 88, y: 74 }],
     models: [
       { k: 'scout', n: '侦察型奥多亚克', lv: 45, maxhp: 900, boss: { dr: 0.1, pp: 99 } },
@@ -841,16 +841,27 @@ var PVE = (function () {
     for (var i = 0; i < sceneCount(R); i++) if (!bgs.length || KBW.calm.indexOf(bgs[i % bgs.length]) < 0) out.push(i);
     return out.length ? out : [0];
   }
-  function kbwAt(now) {
+  function kbwAt(now, a) {
     var h = Math.floor(now / 3600000), L = [], used = {};
     for (var k = 0; k < KBW.per; k++) {
       var s = ACC.thash(h * 7 + k + 40503), R = regionById(KBW.regions[s % KBW.regions.length]), SI = kbwScenes(R), si = SI[(s >>> 8) % SI.length], key = R.id + ':' + si;
       var spot = KBW.spots[((s >>> 4) + (used[key] || 0)) % KBW.spots.length]; used[key] = (used[key] || 0) + 1;
       L.push({ h: h, k: k, rid: R.id, si: si, spot: spot, m: KBW.models[(s >>> 16) % KBW.models.length], end: (h + 1) * 3600000 });
     }
+    // 先遣奥多亚克（2026-10-31）：保卫战刚开始、本人还没击破够 KBW.need 只时，另外给这个人刷 5 只不会离开的（编号 100+j），
+    // 打赢一只少一只（a.kbwS 记着打赢了哪几只），输了可以再打；保证当天就能打够、进入第十八段
+    if (a && kbwOpen(a) && (a.kbwK | 0) < KBW.need) {
+      var got = Array.isArray(a.kbwS) ? a.kbwS : [];
+      KBW.first.forEach(function (mi, j) {
+        if (got.indexOf(j) >= 0) return;
+        var R2 = regionById(KBW.regions[j % KBW.regions.length]), SI2 = kbwScenes(R2), si2 = SI2[Math.floor(j / KBW.regions.length) % SI2.length], key2 = R2.id + ':' + si2;
+        var spot2 = KBW.spots[(j + 1 + (used[key2] || 0)) % KBW.spots.length]; used[key2] = (used[key2] || 0) + 1;
+        L.push({ h: 'p', k: 100 + j, p: 1, rid: R2.id, si: si2, spot: spot2, m: KBW.models[mi], end: (h + 1) * 3600000 });
+      });
+    }
     return L;
   }
-  function kbwFought(a, h, k) { return !!(a.kbw && a.kbw.h === h && Array.isArray(a.kbw.k) && a.kbw.k.indexOf(k) >= 0); }
+  function kbwFought(a, h, k) { if (h === 'p') return !!(Array.isArray(a.kbwS) && a.kbwS.indexOf(k - 100) >= 0); return !!(a.kbw && a.kbw.h === h && Array.isArray(a.kbw.k) && a.kbw.k.indexOf(k) >= 0); }
   // 神秘精灵：每天 16:00–24:00（北京时间），切换场景时有 3% 概率出现（真身是 LV10 幽灵鱼）
   var MYSTERY = { sid: 'hauris', lv: 10, rate: 0.4, chance: 0.03, shiny: 0.03, from: 16, to: 24 };
   function mysteryTime(now) { var h = new Date(now + 8 * 3600e3).getUTCHours(); return h >= MYSTERY.from && h < MYSTERY.to; }
@@ -889,12 +900,12 @@ var PVE = (function () {
     start: function (a, args, env) {
       var o, R;
       if (args.odo != null) {   // 坎伯兰星保卫战的奥多亚克
-        var q = kbwAt(env.now)[args.odo | 0];
+        var q = kbwAt(env.now, a).filter(function (x) { return x.k === (args.odo | 0); })[0];   // 按编号找（先遣的是 100+j）
         if (!kbwOpen(a) || !q) return { err: '奥多亚克已经潜回深海了。' };
         if (kbwFought(a, q.h, q.k)) return { err: '这只奥多亚克已经交过手了。' };
-        if (!a.kbw || a.kbw.h !== q.h || !Array.isArray(a.kbw.k)) a.kbw = { h: q.h, k: [] };
-        a.kbw.k.push(q.k); R = regionById(q.rid);
-        o = { sid: 'odo', lv: q.m.lv, rate: 0, noCatch: true, odo: q.m, foe: '坎伯兰星保卫战', tag: ' · ' + q.m.n, rid: R.id };
+        if (!q.p) { if (!a.kbw || a.kbw.h !== q.h || !Array.isArray(a.kbw.k)) a.kbw = { h: q.h, k: [] }; a.kbw.k.push(q.k); }   // 先遣的不记（输了可以再打）
+        R = regionById(q.rid);
+        o = { sid: 'odo', lv: q.m.lv, rate: 0, noCatch: true, odo: q.m, odoP: q.p ? q.k - 100 : null, foe: '坎伯兰星保卫战', tag: ' · ' + (q.p ? '先遣' : '') + q.m.n, rid: R.id };
       } else if (args.travel != null) {
         var t = travelAt(env.now);
         if (!done(a, 'travelcat') || !t.active || t.h !== (args.travel | 0)) return { err: '叶子喵已经背起行囊，去别的地方旅行了。' };
@@ -951,6 +962,7 @@ var PVE = (function () {
       if (o.odo && n) {   // 坎伯兰星保卫战
         var dk = bjDay(env.now); if (!a.kbwd || a.kbwd.d !== dk) a.kbwd = { d: dk, n: 0 };
         a.kbwK = (a.kbwK || 0) + 1;
+        if (o.odoP != null) { if (!Array.isArray(a.kbwS)) a.kbwS = []; if (a.kbwS.indexOf(o.odoP) < 0) a.kbwS.push(o.odoP); }
         if (a.kbwd.n < KBW.cap) { a.kbwd.n++; var kw = env.kbw ? env.kbw() : null; a.exp = (a.exp || 0) + KBW.exp; rep.kbw = { n: a.kbwd.n, cap: KBW.cap, exp: KBW.exp, me: a.kbwK, need: KBW.need, data: kw }; }
         else rep.kbw = { full: true, cap: KBW.cap, me: a.kbwK, need: KBW.need };
       }
