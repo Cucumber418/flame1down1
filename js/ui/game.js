@@ -5743,28 +5743,69 @@
       if (ex.view !== 'home' || !document.querySelector('.home-room')) { clearInterval(ex.homeTick); return; }
       H.mons.forEach(function (x, i) { var t = document.querySelector('[data-htag="' + i + '"]'); if (t) t.innerHTML = homeTag(x); });
     }, 20000);
+    var E0 = ex.baseEdit, LY = E0 || baseLayout();
+    // 2026-10-31：基地里的精灵只显示精灵本身；鼠标悬停看基本信息，点击弹出它的面板
     var figs = H.mons.map(function (x, i) {
-      var m = mon(x.u), f = form(m), p = baseMonPos((ex.baseEdit || baseLayout()).room, i);
-      return '<div class="hm-fig' + (H.mons.length > 3 ? ' many' : '') + '" data-csid="' + m.sid + '" data-cst="' + (f.stage || 0) + '" data-cctx="home" style="left:' + p[0] + '%;top:' + p[1] + '%"><button type="button" class="hm-poke" data-hpoke="1" aria-label="摸摸' + esc(f.name) + '"><img src="' + f.img + '" alt=""></button><span class="hm-tag" data-htag="' + i + '">' + homeTag(x) + '</span></div>';
+      var m = mon(x.u), f = form(m), p = baseMonPos(LY.room, i);
+      return '<div class="hm-fig' + (H.mons.length > 3 ? ' many' : '') + '" data-csid="' + m.sid + '" data-cst="' + (f.stage || 0) + '" data-cctx="home" data-hu="' + m.u + '" style="left:' + p[0] + '%;top:' + p[1] + '%"><button type="button" class="hm-poke" data-hmon="' + m.u + '" aria-label="' + esc(f.name) + '"><img src="' + f.img + '" alt=""></button><span class="hm-tip" data-htag="' + i + '">' + homeTag(x) + '</span></div>';
     }).join('');
-    var nAuto = acc.items.auto || 0;
-    var autoBar = '<div class="hm-autobar"><b>7日自律训练装置</b><span class="hint">持有 ' + nAuto + ' 个' + (nAuto ? '，点下面展示中的精灵卡片上的「装上装置」' : '，可以在茶室大厅的茶室商店兑换') + '。装上后每满 1 天自动结算经验并重新开始，一共 7 天；中途收回精灵，剩下的天数作废。</span></div>';
     var title = ex.homeEdit
-      ? '<form class="home-edit" onsubmit="return false"><input id="home-name" maxlength="10" value="' + esc(H.name) + '" aria-label="基地名字"><button type="button" class="btn primary" id="home-ok">保存</button><button type="button" class="btn ghost" id="home-cancel">取消</button><span class="hint">最多 10 个字</span></form>'
-      : '<b class="home-name">' + esc(H.name) + '</b><button type="button" class="btn ghost" id="home-rn">改名</button>';
-    var ins = H.mons.map(function (x) { return x.u; });
-    var cards = acc.mons.map(function (m) {
+      ? '<form class="home-edit" onsubmit="return false"><input id="home-name" maxlength="10" value="' + esc(H.name || '我的基地') + '" aria-label="基地名字"><button type="button" class="btn primary" id="home-ok">保存</button><button type="button" class="btn ghost" id="home-cancel">取消</button><span class="hint">最多 10 个字</span></form>'
+      : '<b class="home-name">' + esc(H.name || '我的基地') + '</b><button type="button" class="btn ghost" id="home-rn">改名</button>';
+    var dl0 = document.querySelector('.bp-dlg'), dlTop = dl0 ? dl0.scrollTop : 0, pan = ex.bpanel ? basePanelHTML(ex.bpanel) : '';
+    if (!pan) ex.bpanel = null;
+    $('pg-explore').innerHTML = exHead('你在荆楚号上的基地。点画面左边的按钮管理基地；点基地里的精灵可以看它的详细情况。') +
+      '<div class="crumb"><button type="button" class="btn ghost" id="home-back">‹ 返回大厅</button>' + title + '</div>' +
+      '<div class="base-stage' + (E0 ? ' editing' : '') + '">' + baseRoomHTML(LY, figs + (H.mons.length || E0 ? '' : '<p class="home-empty">基地里空荡荡的。点左边的「精灵展示」放几只精灵出来，或者点「基地编辑」摆上摆件吧。</p>') + (E0 ? '' : baseSideHTML()), E0) + '</div>' +
+      (E0 ? baseEditBar() : '') + pan;
+    var dl1 = document.querySelector('.bp-dlg'); if (dl1 && dl0) dl1.scrollTop = dlTop;
+  }
+  // 基地画面左边悬停的入口（2026-10-31，参考飞船终端舰体图右边的入口）
+  function baseOnline() { var SO = window.HSSOCIAL; return !!(SO && SO.homeBoard && (!SO.online || SO.online())); }
+  function baseSideHTML() {
+    var H = home(), SO = window.HSSOCIAL, nNew = baseOnline() && SO.homeNew ? SO.homeNew() : 0;
+    var it = function (attr, ic, t, sub, badge) { return '<button type="button" class="bs-it" ' + attr + ' title="' + t + '"><span class="bs-ic" aria-hidden="true">' + ic + (badge ? '<i class="bs-badge">' + badge + '</i>' : '') + '</span><span class="bs-t"><b>' + t + '</b>' + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</span></button>'; };
+    return '<div class="base-side">' +
+      (baseOnline() ? it('data-bpanel="log"', '📰', '基地动态', nNew ? nNew + ' 条新动态' : '谁来过', nNew) + it('data-bpanel="msg"', '💬', '留言板', '船员的留言') : '') +
+      it('data-bgmopen="1"', '♪', '基地音乐', bgmName(homeBgm())) +
+      it('data-bpanel="mons"', '🐾', '精灵展示', H.mons.length + ' / ' + homeMax() + ' 只') +
+      it('data-bedit="1"', '✎', '基地编辑', '房型和摆件') +
+      it('data-bpanel="shop"', '🛍', '基地商城', '能量 ' + fmt(acc.energy)) + '</div>';
+  }
+  function basePanelHTML(k) {
+    var body = '', cls = '', ttl = '';
+    if (k === 'log' || k === 'msg') { if (!baseOnline()) return ''; ttl = k === 'log' ? '基地动态' : '留言板'; body = HSSOCIAL.homeBoard(null, k); }
+    else if (k === 'mons') { ttl = '精灵展示'; cls = ' wide'; body = baseMonsBody(); }
+    else if (k === 'shop') { ttl = '基地商城'; cls = ' wide'; body = baseShopBody(); }
+    else if (k.indexOf('mon:') === 0) { cls = ' bp-mon'; body = baseMonBody(+k.slice(4)); if (!body) return ''; }
+    else return '';
+    return '<div class="soc-dlg bp-dlg"><div class="soc-box bp-box' + cls + '" role="dialog" aria-modal="true"' + (ttl ? ' aria-label="' + ttl + '"' : '') + '><span class="tape l"></span><span class="tape r"></span>' + (ttl ? '<h2>' + ttl + '</h2>' : '') + body +
+      '<div class="soc-foot"><button type="button" class="btn primary" data-bpx="1">关闭</button></div></div></div>';
+  }
+  // 精灵展示面板：放出、收回精灵；给展示中的精灵装自律训练装置
+  function baseMonsBody() {
+    var H = home(), nAuto = acc.items.auto || 0, ins = H.mons.map(function (x) { return x.u; });
+    var list = acc.mons.slice().sort(function (a, b) { return (ins.indexOf(b.u) >= 0) - (ins.indexOf(a.u) >= 0); });
+    var cards = list.map(function (m) {
       var on = ins.indexOf(m.u) >= 0, f = form(m), full = !on && H.mons.length >= homeMax(), x = on ? H.mons[ins.indexOf(m.u)] : null;
       var armed = on && ex.hmArm === m.u;
-      return '<div class="hm-cell"><button type="button" class="card hm-card' + (on ? ' on' : '') + (armed ? ' armed' : '') + '" data-hm="' + m.u + '"' + (full ? ' disabled' : '') + ' aria-pressed="' + on + '"><img src="' + f.img + '" alt=""><span class="nm">' + esc(f.name) + '</span><span class="meta">LV' + m.lv + (armed ? ' · 再点一次收回（装置剩余天数作废）' : on ? (x.auto ? ' · 自律训练中 · 点击收回' : ' · 展示中，点击收回') : ' · 每小时 ' + homeRate(m) + ' 经验') + '</span></button>' +
-        (on && !x.auto && nAuto ? '<button type="button" class="btn hm-autobtn" data-hauto="' + m.u + '">装上装置</button>' : '') + '</div>';
+      return '<div class="hm-cell"><button type="button" class="card hm-card' + (on ? ' on' : '') + (armed ? ' armed' : '') + '" data-hm="' + m.u + '"' + (full ? ' disabled' : '') + ' aria-pressed="' + on + '"><img src="' + f.img + '" alt=""><span class="nm">' + esc(f.name) + '</span><span class="meta">LV' + m.lv + (armed ? ' · 再点一次收回（装置剩余天数作废）' : on ? (x.auto ? ' · 自律训练中 · 还剩 ' + x.auto.left + ' 天' : ' · 展示中，点击收回') : ' · 每小时 ' + homeRate(m) + ' 经验') + '</span></button>' +
+        (on && !x.auto ? '<button type="button" class="btn hm-autobtn" data-hauto="' + m.u + '"' + (nAuto ? '' : ' disabled') + '>' + (nAuto ? '装上自律装置' : '没有自律装置') + '</button>' : '') + '</div>';
     }).join('');
-    var E0 = ex.baseEdit, LY = E0 || baseLayout();
-    $('pg-explore').innerHTML = exHead('你在荆楚号上的基地。放精灵出来展示，收回时会按等级和展示时长获得经验，离开游戏也会照常计时；还可以换房型、摆放摆件。') +
-      '<div class="crumb"><button type="button" class="btn ghost" id="home-back">‹ 返回大厅</button>' + title + (E0 ? '' : '<span class="base-acts"><button type="button" class="btn" data-bedit="1">✎ 编辑基地</button><button type="button" class="btn" data-bshop="1">基地商城</button></span>') + '</div>' +
-      baseRoomHTML(LY, figs + (H.mons.length || E0 ? '' : '<p class="home-empty">基地里空荡荡的。从下面选几只精灵放出来展示，或者点「编辑基地」摆上摆件吧。</p>'), E0) + (E0 ? baseEditBar() : '') +
-      (window.HSSOCIAL && HSSOCIAL.homeBoard ? HSSOCIAL.homeBoard() : '') +   // 茶室信息栏与留言板（联网时才有，见 social.js）
-      homeBgmBar() + autoBar + '<div class="home-pick"><h4>展示的精灵 <span class="hint">' + H.mons.length + ' / ' + homeMax() + ' · 展示越久、等级越高，收回时经验越多，最多累计 ' + HOME_CAP_H + ' 小时 · 点击卡片放出或收回，点基地里的精灵可以摸摸它</span></h4><div class="hm-grid">' + cards + '</div></div>';
+    return '<p class="hint">展示中 <b>' + H.mons.length + ' / ' + homeMax() + '</b> 只。展示越久、等级越高，收回时经验越多，最多累计 ' + HOME_CAP_H + ' 小时，离开游戏也照常计时。点卡片放出或收回。</p>' +
+      '<div class="hm-autobar"><b>7日自律训练装置</b><span class="hint">持有 ' + nAuto + ' 个' + (nAuto ? '，点展示中精灵下面的「装上自律装置」使用' : '，可以在茶室大厅的茶室商店兑换') + '。装上后每满 1 天自动结算经验并重新开始，一共 7 天；中途收回精灵，剩下的天数作废。</span></div>' +
+      '<div class="hm-grid">' + cards + '</div>';
+  }
+  // 点基地里的精灵弹出的面板
+  function baseMonBody(u) {
+    var H = home(), x = H.mons.filter(function (y) { return y.u === u; })[0], m = x && mon(u); if (!m) return '';
+    var f = form(m), min = homeMins(x), nAuto = acc.items.auto || 0, armed = ex.hmArm === u;
+    return '<div class="bpm-top"><img class="bpm-img" src="' + f.img + '" alt=""><div class="bpm-txt"><h2>' + esc(f.name) + '</h2><p class="bpm-lv">LV' + m.lv + '</p>' +
+      '<ul class="bpm-st"><li>已展示 <b>' + durText(min) + '</b>' + (min >= HOME_CAP_H * 60 ? '（已满 ' + HOME_CAP_H + ' 小时）' : '') + '</li><li>现在收回可得 <b>+' + fmt(homeExp(x)) + '</b> 经验</li><li>每小时 <b>' + homeRate(m) + '</b> 经验</li>' +
+      (x.auto ? '<li class="hm-auto">自律训练中 · 还剩 <b>' + x.auto.left + '</b> 天' + (x.auto.got ? ' · 已结算 ' + fmt(x.auto.got) + ' 经验' : '') + '</li>' : '') + '</ul></div></div>' +
+      '<div class="bpm-act"><button type="button" class="btn" data-hpoke2="' + u + '">摸摸它</button>' +
+      (x.auto ? '' : '<button type="button" class="btn" data-hauto="' + u + '"' + (nAuto ? '' : ' disabled') + '>装上自律装置（持有 ' + nAuto + '）</button>') +
+      '<button type="button" class="btn ' + (armed ? 'primary' : 'ghost') + '" data-hm="' + u + '">' + (armed ? '再点一次收回（装置剩余天数作废）' : '收回') + '</button></div>';
   }
   /* ---------- 基地（2026-10-31，取代原来的茶室）：2.5D 房间，可以换房型、摆放摆件 ----------
    * 房型、摆件在基地商城用能量买（js/engine/tx.js 的 baseBuy，记在 acc.baseInv）；摆放记在 acc.home.layout = { room, deco: [{ k, x, y, f }] }
@@ -5814,17 +5855,18 @@
   function baseEditBar() {
     var E0 = ex.baseEdit, used = {}; E0.deco.forEach(function (d) { used[d.k] = (used[d.k] | 0) + 1; });
     var sel = E0.deco[E0.sel];
-    return '<div class="base-edit"><span class="tape l"></span><div class="be-head"><b>编辑基地</b><span class="hint">拖动摆件调整位置，最多摆 ' + TX.D.BASE_DECO_MAX + ' 个。<span class="be-lg"><i class="zf"></i>地板（放地板摆件）<i class="zw"></i>墙壁（挂墙壁摆件）<i class="zb"></i>不能放</span></span>' +
+    var myRooms = Object.keys(TX.D.BASE_ROOMS).filter(roomOwned), myDeco = Object.keys(TX.D.BASE_DECO).filter(function (k) { return decoOwn(k) > 0; });
+    return '<div class="base-edit be-sheet' + (ex.beMin ? ' min' : '') + '"><div class="be-head"><button type="button" class="btn ghost be-min" data-bemin="1" aria-label="' + (ex.beMin ? '展开' : '收起') + '">' + (ex.beMin ? '▲' : '▼') + '</button><b>编辑基地</b><span class="hint">拖动摆件调整位置，最多摆 ' + TX.D.BASE_DECO_MAX + ' 个。<span class="be-lg"><i class="zf"></i>地板（放地板摆件）<i class="zw"></i>墙壁（挂墙壁摆件）<i class="zb"></i>不能放</span></span>' +
       '<span class="be-save"><button type="button" class="btn ghost" data-becancel="1">取消</button><button type="button" class="btn primary" data-besave="1">保存</button></span></div>' +
       (sel ? '<div class="be-sel"><b>已选中：' + esc(TX.D.BASE_DECO[sel.k].n) + '</b><button type="button" class="btn" data-beflip="1">↔ 左右转向</button><button type="button" class="btn ghost" data-bedel="1">收进摆件库</button></div>' : '') +
-      '<h4>房型</h4><div class="be-rooms">' + Object.keys(TX.D.BASE_ROOMS).map(function (k) {
-        var own = roomOwned(k), on = E0.room === k;
-        return '<button type="button" class="be-room' + (on ? ' on' : '') + (own ? '' : ' locked') + '" data-beroom="' + k + '"><img src="' + BASE_UI[k].img + '" alt=""><b>' + esc(TX.D.BASE_ROOMS[k].n) + '</b><small>' + (on ? '使用中' : own ? '点击换上' : '🔒 在基地商城购买') + '</small></button>';
+      '<div class="be-body"><h4>房型</h4><div class="be-rooms">' + myRooms.map(function (k) {
+        var on = E0.room === k;
+        return '<button type="button" class="be-room' + (on ? ' on' : '') + '" data-beroom="' + k + '"><img src="' + BASE_UI[k].img + '" alt=""><b>' + esc(TX.D.BASE_ROOMS[k].n) + '</b><small>' + (on ? '使用中' : '点击换上') + '</small></button>';
       }).join('') + '</div>' +
-      '<h4>摆件库 <span class="hint">点一下放进基地</span></h4><div class="be-decos">' + Object.keys(TX.D.BASE_DECO).map(function (k) {
+      '<h4>摆件库 <span class="hint">点一下放进基地</span></h4>' + (myDeco.length ? '<div class="be-decos">' + myDeco.map(function (k) {
         var left = decoOwn(k) - (used[k] | 0), X = TX.D.BASE_DECO[k];
-        return '<button type="button" class="be-deco" data-beadd="' + k + '"' + (left > 0 && E0.deco.length < TX.D.BASE_DECO_MAX ? '' : ' disabled') + '><img src="' + DECO_IMG[k] + '" alt=""><b>' + esc(X.n) + '</b><small>' + (X.layer === 'wall' ? '墙壁' : '地板') + ' · 可放 ' + Math.max(0, left) + ' / ' + decoOwn(k) + '</small></button>';
-      }).join('') + '</div>' + (Object.keys(TX.D.BASE_DECO).some(function (k) { return decoOwn(k) > 0; }) ? '' : '<p class="hint">还没有摆件，去<button type="button" class="linkbtn" data-bshop="1">基地商城</button>买几个吧。</p>') + '</div>';
+        return '<button type="button" class="be-deco" data-beadd="' + k + '"' + (left > 0 && E0.deco.length < TX.D.BASE_DECO_MAX ? '' : ' disabled') + '><img src="' + DECO_IMG[k] + '" alt=""><b>' + esc(X.n) + '</b><small>' + (X.layer === 'wall' ? '墙壁' : '地板') + ' · ' + (left > 0 ? '还能放 ' + left + ' 个' : '已全部摆出') + '</small></button>';
+      }).join('') + '</div>' : '<p class="hint">还没有摆件，去<button type="button" class="linkbtn" data-bshop="1">基地商城</button>买几个吧。</p>') + '</div></div>';
   }
   function baseClamp(d, room) {
     var q = baseSnap(room, decoLayer(d.k) === 'wall' ? 'wall' : 'floor', Math.max(1, Math.min(99, +d.x || 50)), Math.max(1, Math.min(100, +d.y || 80)));
@@ -5832,9 +5874,19 @@
     return d;
   }
   $('pg-explore').addEventListener('click', function (e) {
+    if (e.target.classList && e.target.classList.contains('bp-dlg')) { ex.bpanel = null; ex.hmArm = null; e.target.remove(); return; }
     var b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.bshop && ex.view === 'home') { ex.bpanel = 'shop'; renderHome(); return; }
+    if (b.dataset.bpanel) { ex.bpanel = b.dataset.bpanel; renderHome(); return; }
+    if (b.dataset.bpx) { ex.bpanel = null; ex.hmArm = null; var dlx = document.querySelector('.bp-dlg'); if (dlx) dlx.remove(); return; }
+    if (b.dataset.hmon) { ex.bpanel = 'mon:' + b.dataset.hmon; renderHome(); return; }
+    if (b.dataset.hpoke2) {
+      var fg = document.querySelector('#base-room .hm-fig[data-hu="' + b.dataset.hpoke2 + '"]'), im = document.querySelector('.bp-dlg .bpm-img');
+      [fg, im].forEach(function (z) { if (z) { z.classList.remove('hop'); void z.offsetWidth; z.classList.add('hop'); } }); return;
+    }
+    if (b.dataset.bemin) { ex.beMin = !ex.beMin; var bar0 = document.querySelector('.base-edit'); if (bar0) bar0.outerHTML = baseEditBar(); return; }
     if (b.dataset.bshop) { if (ex.baseEdit && !confirmLeaveEdit()) return; ex.baseEdit = null; ex.view = 'baseshop'; ex.area = '天门'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
-    if (b.dataset.bedit) { var L0 = baseLayout(); ex.baseEdit = { room: L0.room, deco: L0.deco.map(function (d) { return { k: d.k, x: d.x, y: d.y, f: d.f ? 1 : 0 }; }), sel: -1 }; renderHome(); return; }
+    if (b.dataset.bedit) { ex.bpanel = null; var L0 = baseLayout(); ex.baseEdit = { room: L0.room, deco: L0.deco.map(function (d) { return { k: d.k, x: d.x, y: d.y, f: d.f ? 1 : 0 }; }), sel: -1 }; renderHome(); return; }
     var E0 = ex.baseEdit; if (!E0) return;
     if (b.dataset.becancel) { ex.baseEdit = null; renderHome(); return; }
     if (b.dataset.besave) { var H = home(); H.layout = { room: E0.room, deco: E0.deco.map(function (d) { return baseClamp({ k: d.k, x: d.x, y: d.y, f: d.f ? 1 : 0 }, E0.room); }) }; ex.baseEdit = null; save(); renderHome(); toast('基地布置已保存。'); return; }
@@ -5869,10 +5921,13 @@
   })();
   /* 基地商城：房型（买一次）、摆件（可以买很多个） */
   function renderBaseShop() {
-    var q = function (k) { return Math.max(1, Math.min(20, shopQty['bd-' + k] || 1)); };
     $('pg-explore').innerHTML = exHead('基地商城：用能量购买基地的房型和摆件。买到的在基地的「编辑基地」里使用。') +
-      '<div class="crumb"><button type="button" class="btn ghost" data-bhome="1">‹ 返回基地</button><b>基地商城</b></div>' +
-      '<div class="shop-bal"><span class="tape l"></span>当前能量 <b>' + fmt(acc.energy) + '</b></div>' +
+      '<div class="crumb"><button type="button" class="btn ghost" data-bhome="1">‹ 返回基地</button><b>基地商城</b></div>' + baseShopBody();
+  }
+  function baseShopRefresh() { if (ex.view === 'home') renderHome(); else renderBaseShop(); }
+  function baseShopBody() {
+    var q = function (k) { return Math.max(1, Math.min(20, shopQty['bd-' + k] || 1)); };
+    return '<div class="shop-bal"><span class="tape l"></span>当前能量 <b>' + fmt(acc.energy) + '</b></div>' +
       '<h3 class="sec bs-h">房型</h3><div class="bs-rooms">' + Object.keys(TX.D.BASE_ROOMS).map(function (k) {
         var R = TX.D.BASE_ROOMS[k], own = roomOwned(k);
         return '<article class="bs-room"><span class="tape r"></span><img src="' + BASE_UI[k].img + '" alt=""><div class="bs-txt"><b>' + esc(R.n) + '</b>' +
@@ -5889,12 +5944,12 @@
   $('pg-explore').addEventListener('click', function (e) {
     var b = e.target.closest('button'); if (!b || b.disabled) return;
     if (b.dataset.bhome) { ex.view = 'home'; ex.area = '天门'; renderExplore(); return; }
-    if (b.dataset.bq) { var p = b.dataset.bq.split('|'); shopQty['bd-' + p[0]] = Math.max(1, Math.min(20, (shopQty['bd-' + p[0]] || 1) + (+p[1]))); renderBaseShop(); return; }
+    if (b.dataset.bq) { var p = b.dataset.bq.split('|'); shopQty['bd-' + p[0]] = Math.max(1, Math.min(20, (shopQty['bd-' + p[0]] || 1) + (+p[1]))); baseShopRefresh(); return; }
     if (b.dataset.bbuy) {
       var q2 = b.dataset.bbuy.split('|'), t = q2[0], k = q2[1], n = t === 'deco' ? Math.max(1, Math.min(20, shopQty['bd-' + k] || 1)) : 1;
       b.disabled = true;
       txRun('baseBuy', { t: t, k: k, n: n }, function (r) {
-        shopQty['bd-' + k] = 1; renderRes(); renderBaseShop();
+        shopQty['bd-' + k] = 1; renderRes(); baseShopRefresh();
         toast(t === 'room' ? '买到了房型「' + TX.D.BASE_ROOMS[k].n + '」！在基地点「编辑基地」就能换上。' : '买到了「' + TX.D.BASE_DECO[k].n + '」×' + r.n + '，消耗 ' + fmt(r.cost) + ' 能量。在基地点「编辑基地」摆出来吧。');
       }, function () { b.disabled = false; });
     }

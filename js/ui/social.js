@@ -178,6 +178,25 @@
       render();
     }).catch(function () { if (st.view) { st.view.err = '连不上服务器'; render(); } });
   }
+  // 拜访别人的基地：点精灵弹出它的面板（2026-10-31），可以摸摸它
+  function vmonPanel(i) {
+    var d = st.view && st.view.data, m = d && d.mons[i]; if (!m) return;
+    var v = A.view({ sid: m.sid, lv: m.lv, shiny: m.shiny, fs: m.fs }), old = $('vmon-dlg'); if (old) old.remove();
+    var dl = document.createElement('div'); dl.className = 'soc-dlg'; dl.id = 'vmon-dlg';
+    dl.innerHTML = '<div class="soc-box bp-box bp-mon" role="dialog" aria-modal="true" aria-label="' + esc(v.name) + '"><span class="tape l"></span><span class="tape r"></span>' +
+      '<div class="bpm-top"><img class="bpm-img" src="' + v.img + '" alt=""><div class="bpm-txt"><h2>' + esc(v.name) + '</h2><p class="bpm-lv">LV' + m.lv + (m.shiny ? ' · 异色' : '') + '</p><p class="hint">' + esc(d.name) + ' 在基地里展示的精灵。</p></div></div>' +
+      '<div class="soc-foot"><button type="button" class="btn" data-vpoke="1">摸摸它</button><button type="button" class="btn primary" data-vx="1">关闭</button></div></div>';
+    document.body.appendChild(dl);
+    dl.addEventListener('click', function (e) {
+      if (e.target.closest('[data-vpoke]')) {
+        var fig = document.querySelector('#pg-social .hm-fig[data-fi="' + i + '"]'); if (fig) { fig.classList.remove('hop'); void fig.offsetWidth; fig.classList.add('hop'); }
+        var img = dl.querySelector('.bpm-img'); img.classList.remove('hop'); void img.offsetWidth; img.classList.add('hop');
+        if (!d.me && !(pokeAt[v.name] && Date.now() - pokeAt[v.name] < 1500)) { pokeAt[v.name] = Date.now(); hbEvent(d.user, { kind: 'poke', mon: v.name }); }
+        return;
+      }
+      if (e.target === dl || e.target.closest('[data-vx]')) dl.remove();
+    });
+  }
   function homeHTML() {
     var V0 = st.view, d = V0.data, back = '<div class="crumb"><button type="button" class="btn ghost" data-back="1">‹ 返回社交</button>';
     if (!d) return back + '</div><p class="hint soc-load">' + (V0.err ? esc(V0.err) : '正在前往基地……') + '</p>';
@@ -185,7 +204,7 @@
     if (!d.open) return back + '<b class="home-name">' + esc(d.name) + ' 的休息舱</b></div><div class="soc-empty"><p>' + esc(d.name) + ' 还没有读完「陆羽茶室」支线，基地还没开放。</p></div>';
     var pos = A.homePos, figs = d.mons.map(function (m, i) {
       var v = A.view({ sid: m.sid, lv: m.lv, shiny: m.shiny, fs: m.fs }), p = A.baseMonPos ? A.baseMonPos(d.layout && d.layout.room, i) : (pos[i] || pos[0]);
-      return '<div class="hm-fig' + (d.mons.length > 3 ? ' many' : '') + '" data-csid="' + esc(m.sid) + '" data-cst="' + (v.stage || 0) + '" data-cctx="home" style="left:' + p[0] + '%;top:' + p[1] + '%"><button type="button" class="hm-poke" data-poke="1" data-mon="' + esc(v.name) + '" aria-label="摸摸' + esc(v.name) + '"><img src="' + v.img + '" alt=""></button><span class="hm-tag">' + esc(v.name) + ' · LV' + m.lv + '</span></div>';
+      return '<div class="hm-fig' + (d.mons.length > 3 ? ' many' : '') + '" data-csid="' + esc(m.sid) + '" data-cst="' + (v.stage || 0) + '" data-cctx="home" data-fi="' + i + '" style="left:' + p[0] + '%;top:' + p[1] + '%"><button type="button" class="hm-poke" data-vmon="' + i + '" aria-label="' + esc(v.name) + '"><img src="' + v.img + '" alt=""></button><span class="hm-tip">' + esc(v.name) + ' · LV' + m.lv + '</span></div>';
     }).join('');
     var left = A.teaLeft(), mine = (A.acc().teams[A.acc().active] || []).map(A.mon).filter(Boolean);
     return back + '<b class="home-name">' + esc(d.homeName) + '</b><span class="hint">' + esc(d.name) + ' 的基地' + (d.online ? ' · 主人在线' : '') + ' · 基地音乐「' + ({ ui: '大厅', earth: '地球', flora: '芙罗拉星' }[d.bgm] || '大厅') + '」</span></div>' +
@@ -283,8 +302,9 @@
       if ((t = e.target.closest('[data-reload]'))) { load(); return; }
       if ((t = e.target.closest('[data-back]'))) { st.view = null; render(); load(); return; }
       if ((t = e.target.closest('[data-home]'))) { if (!t.disabled) openHome(t.dataset.home); return; }
+      if ((t = e.target.closest('[data-vmon]'))) { vmonPanel(+t.dataset.vmon); return; }
       if ((t = e.target.closest('[data-poke]'))) {
-        var fig = t.closest('.hm-fig'); fig.classList.remove('hop'); void fig.offsetWidth; fig.classList.add('hop');
+        var fig = t.closest('.hm-fig'); if (fig) { fig.classList.remove('hop'); void fig.offsetWidth; fig.classList.add('hop'); }
         var pd = st.view && st.view.data, pm = t.dataset.mon || '精灵';
         if (pd && !pd.me && !(pokeAt[pm] && Date.now() - pokeAt[pm] < 1500)) { pokeAt[pm] = Date.now(); hbEvent(pd.user, { kind: 'poke', mon: pm }); }   // 记进主人的基地动态
         return;
@@ -1357,15 +1377,16 @@
       '<small>' + hbClock(m.t) + '</small>' + (m.owner ? '' : '<button type="button" class="linkbtn" data-hbcard="' + esc(m.user) + '">名片</button>') + (canDel ? '<button type="button" class="linkbtn red" data-hbdel="' + esc(m.id) + '">删除</button>' : '') + '</p>' +
       '<p class="hb-text">' + esc(m.text) + '</p></div></li>';
   }
-  function hbInner() {
+  function hbInner(kind) {
     var d = hb.data;
     if (!d) return '<div class="hb-col"><p class="hint">' + (hb.err ? esc(hb.err) : '正在读取基地动态……') + '</p></div>';
     var html = '';
-    if (d.mine) {
+    if (d.mine && kind !== 'msg') {
       var seen = (d.seen && d.seen.log) || 0, nNew = d.logs.filter(function (e) { return e.t2 > seen; }).length;
       html += '<div class="hb-col"><h4>基地动态 <span class="hint">' + (nNew ? nNew + ' 条新动态' : '谁来过、做了什么') + '</span></h4>' +
         (d.logs.length ? '<ul class="hb-list">' + d.logs.map(function (e) { return hbEv(e, seen); }).join('') + '</ul>' : '<p class="hb-empty">还没有船员来过你的基地。好友在社交页点「基地」就能来拜访。</p>') + '</div>';
     }
+    if (kind === 'log') return html;
     var n = Array.from(hb.draft).length;
     html += '<div class="hb-col"><h4>留言板 <span class="hint">' + (d.mine ? '来访的船员给你的留言，你也可以写' : '给基地主人留句话') + '</span></h4>' +
       '<form class="hb-form" onsubmit="return false"><textarea id="hb-text" rows="2" maxlength="200" placeholder="' + (d.mine ? '写点什么，来访的船员都能看到' : '比如：你的小月亮好可爱！') + '">' + esc(hb.draft) + '</textarea>' +
@@ -1376,15 +1397,15 @@
   function hbDraw() {
     var el = $('hboard'); if (!el || el.dataset.owner !== hb.owner) return;
     var foc = document.activeElement && document.activeElement.id === 'hb-text' ? $('hb-text').selectionStart : null;
-    el.innerHTML = hbInner();
+    el.innerHTML = hbInner(el.dataset.kind);
     if (foc != null && $('hb-text')) { $('hb-text').focus(); $('hb-text').setSelectionRange(foc, foc); }
   }
   // 基地页面里放这一块：返回 HTML，同时去服务器读最新的
-  function hbSlot(owner) {
+  function hbSlot(owner, kind) {
     if (!online || !owner) return '';
     setTimeout(function () { hbLoad(owner); }, 0);
     if (hb.owner !== owner) { hb.owner = owner; hb.data = null; hb.err = ''; hb.draft = ''; hb.at = 0; }
-    return '<section class="hboard" id="hboard" data-owner="' + esc(owner) + '" aria-label="基地信息栏与留言板">' + hbInner() + '</section>';
+    return '<section class="hboard' + (kind ? ' one' : '') + '" id="hboard" data-owner="' + esc(owner) + '"' + (kind ? ' data-kind="' + kind + '"' : '') + ' aria-label="基地信息栏与留言板">' + hbInner(kind) + '</section>';
   }
   function hbSend() {
     var text = hb.draft.trim(), owner = hb.owner; if (!text || !owner) return;
@@ -1452,7 +1473,8 @@
     // 正在拜访的基地的主人选的基地音乐（game.js 选界面音乐时用）
     visitBgm: function () { var d = st.view && st.view.data; return d && d.open && !d.noChar ? d.bgm || 'ui' : null; },
     // 基地信息栏与留言板（game.js 的「我的基地」页面调用，不传参数就是自己的基地）
-    homeBoard: function (owner) { return hbSlot(owner || meUser()); },
+    homeBoard: function (owner, kind) { return hbSlot(owner || meUser(), kind); },
+    homeNew: function () { return hb.newN || 0; }, online: function () { return !!online; },
     // 做题大王争霸赛：约对手对战、观看直播、看回放
     ctAsk: ctAsk, ctRematch: ctRematch, watch: function (user) { watchStart(user); }, replay: replayStart, wsOk: function () { return !!st.wsOk; } };
   if (A.homeRefresh) A.homeRefresh();   // 如果已经停在自己的基地页面，补上信息栏

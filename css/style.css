@@ -2905,3 +2905,45 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 @media (max-width: 640px) { .base-room .hm-fig, .base-room .hm-fig.many { width: 7.5%; } .base-room .hm-tag { font-size: 8px; } }
 .base-room .hm-fig { grid-template-columns: minmax(0, 1fr); }
 .base-room .hm-tag { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 2px; }
+
+/* 2026-10-31：基地画面左边悬停的入口 + 弹出面板；基地里的精灵只显示精灵，悬停看信息 */
+.base-stage { position: relative; }
+.base-stage.editing { margin-bottom: 46vh; }
+.base-side { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); z-index: 200; display: flex; flex-direction: column; gap: 6px; width: 150px; }
+.bs-it { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border: 1.5px solid rgba(143, 211, 255, .6); border-radius: 10px; background: rgba(18, 40, 74, .78); color: #e8f4ff; cursor: pointer; font: inherit; text-align: left; backdrop-filter: blur(2px); transition: background .15s, border-color .15s, transform .15s; }
+.bs-it:hover { background: rgba(40, 80, 140, .9); border-color: #8fd3ff; transform: translateX(2px); }
+.bs-ic { position: relative; flex: none; width: 26px; height: 26px; display: grid; place-items: center; font-size: 18px; line-height: 1; }
+.bs-badge { position: absolute; top: -6px; right: -8px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--red); color: #fff; font-size: 10px; font-style: normal; font-weight: 800; display: grid; place-items: center; border: 1.5px solid #fff; }
+.bs-t { display: grid; min-width: 0; }
+.bs-t b { font-size: 13px; white-space: nowrap; } .bs-t small { font-size: 10.5px; color: #a9c4dd; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 760px) {
+  .base-side { left: 6px; top: 6px; transform: none; width: auto; display: grid; grid-template-columns: repeat(2, auto); gap: 4px; }
+  .bs-it { padding: 3px; gap: 0; }
+  .bs-t { display: none; }
+  .bs-ic { width: 24px; height: 24px; font-size: 15px; }
+}
+.base-room .hm-tag { display: none; }
+.hm-tip { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 4px; display: none; z-index: 5; pointer-events: none; white-space: nowrap; text-align: center; font-size: 11.5px; font-weight: 700; line-height: 1.35; color: #fff; background: rgba(22, 26, 36, .9); border-radius: 8px; padding: 4px 9px; box-shadow: 0 2px 6px rgba(0,0,0,.25); }
+.hm-tip small { display: block; font-weight: 400; font-size: 10.5px; color: #cfd6df; }
+.hm-tip small.hm-auto { color: #ffd25a; }
+.hm-fig:hover { z-index: 150 !important; }
+.hm-fig:hover .hm-tip { display: block; }
+.bp-box { max-width: 560px; max-height: none; }
+.bp-box.wide { max-width: 880px; }
+.bp-box .hboard { margin-top: 0; grid-template-columns: 1fr; }
+.bp-box .hboard.one .hb-col > h4 { display: none; }
+.bp-box .hm-grid { max-height: 52vh; overflow-y: auto; padding: 2px; }
+.bp-box .hm-autobar { margin: 0; }
+.bp-box .shop-bal { margin-top: 0; }
+.bpm-top { display: flex; gap: 16px; align-items: center; }
+.bpm-img { width: 150px; height: 150px; object-fit: contain; flex: none; filter: drop-shadow(0 6px 0 rgba(0,0,0,.12)); }
+.bpm-img.hop { animation: hmHop .6s ease-out; }
+.bpm-txt { display: grid; gap: 4px; min-width: 0; }
+.bpm-lv { font-weight: 700; color: var(--pencil); }
+.bpm-st { margin: 4px 0 0; padding-left: 18px; display: grid; gap: 3px; font-size: 13.5px; }
+.bpm-st .hm-auto { color: #b07a00; }
+.bpm-act { display: flex; flex-wrap: wrap; gap: 8px; }
+@media (max-width: 520px) { .bpm-top { flex-direction: column; text-align: center; } .bpm-st { text-align: left; } .bpm-img { width: 120px; height: 120px; } }
+.base-edit.be-sheet { position: fixed; left: 50%; bottom: 10px; transform: translateX(-50%); width: min(980px, calc(100vw - 20px)); max-height: 44vh; overflow-y: auto; z-index: 300; margin: 0; box-shadow: 0 6px 24px rgba(0,0,0,.25), 3px 3px 0 var(--red); }
+.base-edit.be-sheet.min .be-body, .base-edit.be-sheet.min .be-sel, .base-edit.be-sheet.min .be-head > .hint { display: none; }
+.be-min { padding: 2px 8px; min-width: 0; }
