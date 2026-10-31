@@ -2273,7 +2273,7 @@
    * acc.sideSeen 记着已经提醒过的支线；第一次运行时把现有的支线都记为看过（这次新加的 SIDE_NEW 除外） */
   var SIDE_NEW = ['core'];
   function sideCheck() {
-    if (!ready() || !acc.introDone || ex.fighting || ex.view === 'vn' || document.querySelector('.soc-dlg') || ($('battle') && !$('battle').hidden)) return;
+    if (ex.baseEdit || !ready() || !acc.introDone || ex.fighting || ex.view === 'vn' || document.querySelector('.soc-dlg') || ($('battle') && !$('battle').hidden)) return;
     if (!acc.sideSeen) { acc.sideSeen = {}; Object.keys(SITES).forEach(function (id) { if (SITES[id].side && SIDE_NEW.indexOf(id) < 0) acc.sideSeen[id] = 1; }); save(); }
     var nw = Object.keys(SITES).filter(function (id) { var S = SITES[id]; return S.side && !S.event && !acc.sideSeen[id] && !prog(id).done && unlocked(id) && (!S.dept || deptOpen(S.dept)); });
     if (!nw.length) return;
@@ -2312,7 +2312,7 @@
     });
   }
   function guideCheck() {
-    if (!ready() || ex.fighting || ex.view === 'vn' || ex.mode || document.querySelector('.soc-dlg') || ($('battle') && !$('battle').hidden)) return;
+    if (ex.baseEdit || !ready() || ex.fighting || ex.view === 'vn' || ex.mode || document.querySelector('.soc-dlg') || ($('battle') && !$('battle').hidden)) return;
     if (!acc.guide) acc.guide = {};
     var G = acc.guide, id = mainNext();
     if (G.coach) return;   // 正在一步一步指引捕捉
@@ -2376,7 +2376,7 @@
   /* 做题大王争霸赛（2026-10-19）：进游戏后先读一次赛事状态。报名期间还没报名的弹报名窗（每次打开游戏一次）；没看过的全服公告补弹最新一条 */
   var ctPopped = false;
   function ctPopCheck() {
-    if (!ready() || !acc.introDone || ex.fighting || ex.view === 'vn' || ($('battle') && !$('battle').hidden)) return;
+    if (ex.baseEdit || !ready() || !acc.introDone || ex.fighting || ex.view === 'vn' || ($('battle') && !$('battle').hidden)) return;
     if (!CT.data) { if (!CT.busy && !CT.err) contestLoad(); return; }
     if (document.querySelector('.soc-dlg') || document.querySelector('.ctd')) return;
     if (ctNoticeQ.length) { ctNoticePop(ctNoticeQ.shift()); return; }
@@ -2401,7 +2401,7 @@
   /* ---------- 助战回报（2026-10-20）：上线时领取离线期间好友借用自己助战的记录，每次 1000 能量 + 1000 经验 ---------- */
   var HELP_RW = GROW.HELP_RW, helpClaimed = false, helpBusy = false;
   function helpClaimCheck() {
-    if (helpClaimed || helpBusy || !ready() || !bsOnline() || ex.fighting || ex.view === 'vn' || ($('battle') && !$('battle').hidden) || document.querySelector('.soc-dlg')) return;
+    if (ex.baseEdit || helpClaimed || helpBusy || !ready() || !bsOnline() || ex.fighting || ex.view === 'vn' || ($('battle') && !$('battle').hidden) || document.querySelector('.soc-dlg')) return;
     helpBusy = true;
     txRun('help', {}, function (r) {   // 走交易（grow.js）：借用次数由服务器记，奖励由服务器发
       helpBusy = false; helpClaimed = true;
@@ -4059,7 +4059,7 @@
    * 正在对战或看剧情时先不弹，等结束后再弹。 */
   function clKey(c) { return c.date + '|' + c.title; }
   function newsCheck() {
-    if (!ready() || typeof CHANGELOG === 'undefined' || !CHANGELOG.length || acc.newsDay === dayStr()) return;
+    if (ex.baseEdit || !ready() || typeof CHANGELOG === 'undefined' || !CHANGELOG.length || acc.newsDay === dayStr()) return;
     if (!$('battle').hidden || ex.fighting || (ex.mode && (ex.mode === 'intro' || ex.view === 'vn')) || $('news') || $('mailbox') || $('story-news')) return;
     var first = !Array.isArray(acc.newsSeen), seen = first ? [] : acc.newsSeen;   // 第一次弹：只列最近 3 条，不然一下子十几条太多
     var fresh = first ? CHANGELOG.slice(0, 3) : CHANGELOG.filter(function (c) { return seen.indexOf(clKey(c)) < 0; });
@@ -4090,7 +4090,7 @@
     { id: 'kb-1', title: '第二章 · 坎伯兰星', sub: '第十二段 ～ 第十四段', card: 'kb', site: 'kb1', d: '远航禁闭海洋。荆楚号的下一站，是一颗被海洋覆盖的星球。' }
   ];
   function storyNewsCheck() {
-    if (!ready() || !acc.introDone || !STORY_NEWS.length) return;
+    if (ex.baseEdit || !ready() || !acc.introDone || !STORY_NEWS.length) return;
     if (!$('battle').hidden || ex.fighting || (ex.mode && (ex.mode === 'intro' || ex.view === 'vn')) || $('news') || $('mailbox') || $('story-news') || document.querySelector('.soc-dlg')) return;
     var seen = Array.isArray(acc.storyNews) ? acc.storyNews : [], N = STORY_NEWS.filter(function (x) { return seen.indexOf(x.id) < 0; })[0];
     if (!N) return;
@@ -5995,7 +5995,7 @@
     var fl = floorTop(room), wall = decoLayer(d.k) === 'wall', q = baseSnap(room, wall ? 'wall' : 'floor', +d.x || 50, +d.y || 80);
     d = { k: d.k, x: q[0], y: q[1], f: d.f };
     var sc = wall ? 0.9 : 0.72 + 0.42 * Math.max(0, Math.min(1, (d.y - fl) / (100 - fl)));
-    return '<div class="bdeco' + (wall ? ' wall' : '') + (d.f ? ' flip' : '') + (edit && sel === i ? ' sel' : '') + '" data-bi="' + i + '" style="left:' + d.x + '%;top:' + d.y + '%;width:' + (7.2 * sc).toFixed(2) + '%;z-index:' + (wall ? 2 : Math.round(d.y)) + '"><img src="' + (DECO_IMG[d.k] || '') + '" alt="' + esc((TX.D.BASE_DECO[d.k] || {}).n || '') + '" draggable="false"></div>';
+    return '<div class="bdeco' + (wall ? ' wall' : '') + (d.f ? ' flip' : '') + (edit && sel === i ? ' sel' : '') + '" data-bi="' + i + '" style="left:' + d.x + '%;top:' + d.y + '%;width:' + (7.2 * sc).toFixed(2) + '%;z-index:' + (edit && sel === i ? 150 : wall ? 2 : Math.round(d.y)) + '"><img src="' + (DECO_IMG[d.k] || '') + '" alt="' + esc((TX.D.BASE_DECO[d.k] || {}).n || '') + '" draggable="false"></div>';
   }
   function baseRoomHTML(L, inner, edit) {
     L = L || { room: 'r1', deco: [] }; var R = BASE_UI[L.room] || BASE_UI.r1;
@@ -6055,13 +6055,14 @@
       var el = e.target.closest('#base-room .bdeco'); if (!el) { if (e.target.closest('#base-room') && E0.sel >= 0) { E0.sel = -1; renderHome(); } return; }
       e.preventDefault();
       var i = +el.dataset.bi, room = $('base-room').getBoundingClientRect();
-      if (E0.sel !== i) { E0.sel = i; Array.prototype.forEach.call(document.querySelectorAll('#base-room .bdeco'), function (x) { x.classList.toggle('sel', +x.dataset.bi === i); }); var bar = document.querySelector('.base-edit'); if (bar) bar.outerHTML = baseEditBar(); }
+      if (E0.sel !== i) { E0.sel = i; Array.prototype.forEach.call(document.querySelectorAll('#base-room .bdeco'), function (x) { var j = +x.dataset.bi, on = j === i; x.classList.toggle('sel', on); if (E0.deco[j]) x.style.zIndex = on ? 150 : decoLayer(E0.deco[j].k) === 'wall' ? 2 : Math.round(E0.deco[j].y); }); var bar = document.querySelector('.base-edit'); if (bar) bar.outerHTML = baseEditBar(); }
       drag = { i: i, el: $('base-room').querySelector('.bdeco[data-bi="' + i + '"]'), rect: room, x0: e.clientX, y0: e.clientY, dx: E0.deco[i].x, dy: E0.deco[i].y };
       try { $('base-room').setPointerCapture(e.pointerId); } catch (er) {}
     });
     $('pg-explore').addEventListener('pointermove', function (e) {
       if (!drag || !ex.baseEdit) return;
       var E0 = ex.baseEdit, d = E0.deco[drag.i]; if (!d) return;
+      if (!drag.el || !drag.el.isConnected) { drag.el = document.querySelector('#base-room .bdeco[data-bi="' + drag.i + '"]'); if (!drag.el) return; }   // 拖动途中基地被重画过：重新找一下这个摆件
       d.x = drag.dx + (e.clientX - drag.x0) / drag.rect.width * 100; d.y = drag.dy + (e.clientY - drag.y0) / drag.rect.height * 100;
       baseClamp(d, E0.room);
       var tmp = document.createElement('div'); tmp.innerHTML = decoHTML(d, drag.i, E0.room, true, drag.i); var nw = tmp.firstChild;
