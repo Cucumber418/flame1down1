@@ -5928,10 +5928,20 @@
   setInterval(function () {
     var figs = document.querySelectorAll('.home-room .hm-fig'); if (!figs.length) return;
     var now = performance.now() / 1000;
+    // 2026-11-01：地板摆件有碰撞体积（脚下一圈椭圆），精灵走到那里会被推开
+    var solids = Array.prototype.map.call(document.querySelectorAll('.home-room .bdeco:not(.wall)'), function (d) {
+      var w = parseFloat(d.style.width) || 6; return { x: parseFloat(d.style.left) || 0, y: (parseFloat(d.style.top) || 0) - w * 0.12, rx: w * 0.5, ry: w * 0.28 };
+    });
     Array.prototype.forEach.call(figs, function (f) {
       var D = f.dataset;
       if (!D.hx) { D.hx = parseFloat(f.style.left) || 50; D.hy = parseFloat(f.style.top) || 80; D.ph = Math.random() * 6.283; D.sp = 0.22 + Math.random() * 0.22; D.px = D.hx; }
       var t = now * +D.sp + +D.ph, x = Math.max(8, Math.min(92, +D.hx + Math.cos(t) * 9)), y = Math.max(45, Math.min(96, +D.hy + Math.sin(t * 0.85) * 4));
+      var fw = parseFloat(f.style.getPropertyValue('--fw')) || 6;
+      solids.forEach(function (c) {
+        var rx = c.rx + fw * 0.3, ry = c.ry + fw * 0.15, dx = (x - c.x) / rx, dy = (y - c.y) / ry, dd = Math.sqrt(dx * dx + dy * dy);
+        if (dd < 1) { if (dd < 0.001) { dx = 1; dy = 0; dd = 1; } x = c.x + dx / dd * rx; y = c.y + dy / dd * ry; }
+      });
+      x = Math.max(4, Math.min(96, x)); y = Math.max(40, Math.min(99, y));
       f.style.left = x.toFixed(2) + '%'; f.style.top = y.toFixed(2) + '%'; f.style.zIndex = Math.round(y);
       if (x > +D.px + 0.005) f.classList.remove('flip'); else if (x < +D.px - 0.005) f.classList.add('flip');
       D.px = x;
@@ -6026,7 +6036,7 @@
   // 精灵展示面板：放出、收回精灵；给展示中的精灵装自律训练装置
   function baseMonsBody() {
     var H = home(), nAuto = acc.items.auto || 0, ins = H.mons.map(function (x) { return x.u; });
-    var list = acc.mons.slice().sort(function (a, b) { return (ins.indexOf(b.u) >= 0) - (ins.indexOf(a.u) >= 0); });
+    var list = acc.mons.slice();   // 2026-11-01：顺序固定，点了放出 / 收回也不会跳到最上面
     var cards = list.map(function (m) {
       var on = ins.indexOf(m.u) >= 0, f = form(m), full = !on && H.mons.length >= homeMax(), x = on ? H.mons[ins.indexOf(m.u)] : null;
       var armed = on && ex.hmArm === m.u;
