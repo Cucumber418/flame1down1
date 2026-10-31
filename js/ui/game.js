@@ -325,7 +325,8 @@
     });
   }
   function go(p) { if (typeof SPA !== 'undefined' && SPA.on && page === 'explore' && ex.view === 'spa' && p !== 'explore') { spaLeaveAsk(function () { go(p); }); return; }
-    if (ex.mode === 'replay' && p !== 'explore') { stopTimers(); ex.mode = null; ex.view = 'sites'; } page = p; ui.pick = -1; savePage(); renderTop(); window.scrollTo(0, 0); }
+    if (ex.mode === 'replay' && p !== 'explore') { stopTimers(); ex.mode = null; ex.view = 'sites'; } PAGE_Y[page] = window.scrollY; page = p; ui.pick = -1; savePage(); renderTop(); var y0 = PAGE_Y[p] || 0; window.scrollTo(0, y0); requestAnimationFrame(function () { if (page === p) window.scrollTo(0, Math.min(y0, document.documentElement.scrollHeight)); }); }
+  var PAGE_Y = {};   // 2026-11-01：切换大栏时记住每一栏的滚动位置，回来时停在原来的地方
   $('mainnav').addEventListener('click', function (e) {
     var b = e.target.closest('[data-page]'); if (!b || b.disabled) return;
     if (b.classList.contains('lockA')) {
@@ -1365,7 +1366,7 @@
     { id: 'sarena', name: '太空竞技场', d: '空间站旁边新建的竞技场，各种比赛都在这里举办。', sites: [], sarena: true, after: 'flora1' },   // 2026-10-19
     { id: 'tower', name: '先驱之塔', d: '空间站里的一座高塔，共 60 层。每一层都守着一批强大的精灵，塔顶住着死神。', sites: [], tower: true, after: 'flora1', inStation: true },
     { id: 'flora', name: '芙罗拉星', d: '草系星球。丛林、草甸和盐碱地里栖息着许多野生精灵。', sites: ['flora1', 'flora2', 'flora3', 'flora4', 'flora5', 'flora6', 'flora7', 'travelcat'], wild: true, ptype: '草系星球', color: ['#9fd08a', '#3f7d4a'], get img() { return floraFallen() ? 'images/planets/flora_corrupt.webp?v=3' : 'images/planets/flora.webp?v=3'; }, after: 'board' },
-    { id: 'kamble', name: '坎伯兰星', d: '水系星球。整颗星球都被海洋覆盖，从水面一直往下，是浅水区和深不见底的深海区。', sites: ['kb2', 'kb3', 'kb4', 'kb5', 'kb6', 'kb7'], storyIds: ['kb1', 'kb2', 'kb3', 'kb4', 'kb5', 'kb6', 'kb7'], storyEmpty: '第二章 · 坎伯兰星：读完第十一段「盐碱地之下」后，到荆楚号 · 随州 · 编钟通讯站开始。', wild: true, ptype: '水系星球', color: ['#8cc6ea', '#2a6fb0'], get img() { return 'images/planets/kamble_' + kbStage() + '.webp?v=2'; }, after: 'flora1' },
+    { id: 'kamble', name: '坎伯兰星', d: '水系星球。整颗星球都被海洋覆盖，从水面一直往下，是浅水区和深不见底的深海区。', sites: ['kb2', 'kb3', 'kb4', 'kb5', 'kb6', 'kb7', 'kb8'], storyIds: ['kb1', 'kb2', 'kb3', 'kb4', 'kb5', 'kb6', 'kb7', 'kb8'], storyEmpty: '第二章 · 坎伯兰星：读完第十一段「盐碱地之下」后，到荆楚号 · 随州 · 编钟通讯站开始。', wild: true, ptype: '水系星球', color: ['#8cc6ea', '#2a6fb0'], get img() { return 'images/planets/kamble_' + kbStage() + '.webp?v=2'; }, after: 'flora1' },
     { id: 'pompeii', name: '庞贝星', d: '火系星球。火山终年喷发，地面被熔岩烤得发烫。', sites: [], wild: true, ptype: '火系星球', color: ['#f2a46b', '#b3401f'], img: 'images/planets/pompeii.webp', after: 'flora1' },
     { id: 'laiting', name: '莱汀陨石带', d: '电系区域。无数陨石在雷暴中漂浮。', sites: [], wild: true, ptype: '电系陨石带', color: ['#f1dd73', '#7a6a1a'], belt: true, img: 'images/planets/laiting.webp', after: 'flora1' },
     { id: 'white', name: '白之星', d: '冰系星球。离太阳最远，整颗星球都裹在冰雪里。', sites: [], wild: true, ptype: '冰系星球', color: ['#e4f2fa', '#6aa6c8'], after: 'flora1' },
@@ -1411,6 +1412,7 @@
     kb3: { name: '浅水区', planet: 'kamble', chapter: '第十四段 · 墨水结晶', bg: 'kb_lookup', d: '为了找到辰爷、拿到解药，你和 Bttp 潜进了坎伯兰星的海里。', after: 'kb2', fpart: 'story' },
     kb4: { name: '墨迹的尽头', planet: 'kamble', chapter: '第十五段 · 墨迹追踪', bg: 'kb_shore', d: '海面上还残留着一道淡淡的墨迹。只要跟着它，就能找到辰爷和 Threego。', after: 'kb3', fpart: 'story' },
     kb5: { name: '幽深地', planet: 'kamble', chapter: '第十六段 · 深海同行', bg: 'kb_floor', d: '被巨浪拍进深海之后，睁开眼睛，身边的人是……辰爷？', after: 'kb4', fpart: 'story' },
+    kb8: { name: '水星码头', planet: 'kamble', chapter: '第十九段 · 玫瑰之战', bg: 'kb_dock', d: '想让坎伯兰星活下去，就只能打败那团星云。这一次，Cumber 也站在了码头上。', after: 'kb7', fpart: 'story' },   // 2026-11-01：第二章最后一段
     kb7: { name: '水星码头', planet: 'kamble', chapter: '第十八段 · 星云显现', bg: 'kb_dock', d: '奥多亚克被击退了。回到码头的时候，一行人以为一切都尘埃落定了……', after: 'kb6', fpart: 'story',
       need: function () { return (acc.kbwK | 0) >= KBW.need || prog('kb7').at > 0; }, get needText() { return '在「坎伯兰星保卫战」里累计击破 ' + KBW.need + ' 只奥多亚克（' + Math.min(KBW.need, acc.kbwK | 0) + ' / ' + KBW.need + '）'; } },
     kb6: { name: '古代神殿', planet: 'kamble', chapter: '第十七段 · Cumberland', bg: 'kb_temple', d: '巨大的水蛇卷着一行人，游进了深海里的一座「神殿」。', after: 'kb5', fpart: 'story' },
@@ -1506,7 +1508,7 @@
   var CHAPTERS = [
     { id: 'prologue', n: '序章', d: '从省实验中学出发，一路到登上荆楚号。', sites: ['school', 'river', 'jiuquan', 'board'] },
     { id: 'ch1', n: '第一章 · 芙罗拉星', d: '降落芙罗拉星，追查瘴气和猎杀者的真相。', sites: ['flora1', 'flora2', 'flora3', 'flora4', 'flora5', 'flora6', 'flora7'] },
-    { id: 'ch2', n: '第二章 · 坎伯兰星', d: '远航禁闭海洋。', sites: ['kb1', 'kb2', 'kb3', 'kb4', 'kb5', 'kb6', 'kb7'], wip: true }   // 2026-10-31：未完待续   // 2026-10-17：茶室音乐「芙罗拉星」移除，章节大奖改为经验和能量
+    { id: 'ch2', n: '第二章 · 坎伯兰星', d: '远航禁闭海洋。', sites: ['kb1', 'kb2', 'kb3', 'kb4', 'kb5', 'kb6', 'kb7', 'kb8'] }   // 2026-11-01：第十九段完结（章节大奖待定）   // 2026-10-31：未完待续   // 2026-10-17：茶室音乐「芙罗拉星」移除，章节大奖改为经验和能量
   ];
   CHAPTERS.forEach(function (x) { x.reward = RW.CHAPTER[x.id] || x.reward || {}; });   // 奖励数额在 js/engine/rewards.js（服务器按它核对）
   function chapterOf(site) { return CHAPTERS.filter(function (C) { return C.sites.indexOf(site) >= 0; })[0] || null; }
@@ -1591,6 +1593,7 @@
         $('pg-arena').hidden = page !== 'arena' || ex.mode === 'intro' || ex.mode === 'replay';
         host0.hidden = false; if (ex.mode === 'replay') $('pg-explore').hidden = false;
         if (bt === 'void') { toast('这场对战作废了，重新开始这一战吧。'); renderVN(); syncBattle(); return; }
+        if (F.mustWin && bt !== 'win') { toast('没能打倒' + (F.foe || '对手') + '……调整一下配队，再来一次吧。'); renderVN(); syncBattle(); return; }   // mustWin：必须打赢才能往下读（第十九段）
         ex.i++; renderVN(); syncBattle(); window.scrollTo(0, host0.offsetTop - 8);
       });
     }
@@ -1620,6 +1623,7 @@
       ex.fighting = false; document.body.classList.remove('story-fight'); prog(ex.site).bt = res; save();
       $('pg-arena').hidden = page !== 'arena' || ex.mode === 'intro' || ex.mode === 'replay';
       host.hidden = false; if (ex.mode === 'replay') $('pg-explore').hidden = false;
+      if (F.mustWin && res !== 'win') { toast('没能打倒' + (F.foe || '对手') + '……调整一下配队，再来一次吧。'); renderVN(); syncBattle(); return; }
       ex.i++; renderVN(); syncBattle(); window.scrollTo(0, host.offsetTop - 8);
     } });
   }
@@ -1627,6 +1631,7 @@
   function carry(i, key, def) { var arr = SCRIPT[ex.site], p = prog(ex.site), v = def; for (var k = 0; k <= i && k < arr.length; k++) if (arr[k][key] !== undefined && !(arr[k].only && arr[k].only !== p.ch)) v = arr[k][key]; return v; }
 
   function renderExplore() {
+    if (ex.shipBack && !shipBackOn()) ex.shipBack = null;
     navSync();
     if (ex.mode === 'intro') return;
     if (typeof SPA !== 'undefined' && SPA.on && ex.view !== 'spa') { var pend = Object.assign({}, ex); ex.view = 'spa'; ex.area = '咸宁'; renderSpa(); spaLeaveAsk(function () { Object.assign(ex, pend); renderExplore(); }); return; }   // 正在泡温泉：离开前先确认
@@ -1720,8 +1725,18 @@
   function shipQuickGo(k) {
     var q = SHIP_QUICK.filter(function (x) { return x.k === k; })[0]; if (!q) return;
     if (!q.open()) { toast(q.lock); return; }
+    ex.shipBack = { k: q.k, y: window.scrollY };   // 从飞船终端点进来的：返回时直接回飞船终端（2026-11-01）
     ex.view = q.k; ex.area = q.area; ex.planet = 'jingchu'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8);
   }
+  var SHIP_BACK = { home: { views: ['home'], btn: 'home-back' }, farm: { views: ['farm', 'seedshop'], btn: 'farm-back' }, forge: { views: ['forge'], btn: 'forge-back' }, nursery: { views: ['nursery'], btn: 'nursery-back' }, shop: { views: ['shop'], btn: 'ex-area' } };
+  function shipBackOn() { var B = ex.shipBack && SHIP_BACK[ex.shipBack.k]; return B && B.views.indexOf(ex.view) >= 0 ? B : null; }
+  if (window.MutationObserver) new MutationObserver(function () { shipBackLabel(); }).observe($('pg-explore'), { childList: true });
+  function shipBackLabel() { var B = shipBackOn(); if (!B) return; var el = $(B.btn); if (el) el.textContent = '‹ 返回飞船终端'; }
+  $('pg-explore').addEventListener('click', function (e) {
+    var b = e.target.closest('button'), B = shipBackOn(); if (!b || !B || b.id !== B.btn) return;
+    e.stopImmediatePropagation(); var y = ex.shipBack.y; ex.shipBack = null;
+    ex.view = 'sites'; ex.planet = 'jingchu'; renderExplore(); window.scrollTo(0, y || 0);
+  }, true);
   // 舰体图右边（同一个黑框里）：空间站、太空竞技场、BOSS挑战、每周挑战（2026-10-31，从星际探索的星图页搬过来）
   function shipSide() {
     var item = function (attr, ic, t, sub, open) { return '<button type="button" class="sm-it' + (open ? '' : ' locked') + '"' + (open ? ' ' + attr : ' disabled') + '><span class="sm-ic">' + ic + '</span><span class="sm-t"><b>' + t + '</b><small>' + sub + '</small></span></button>'; };
@@ -4091,6 +4106,7 @@
   setInterval(function () { if (document.visibilityState === 'visible') { storyNewsCheck(); newsCheck(); } }, 20000);
   /* 新剧情上线通知（2026-10-31）：每推出一批新剧情，在 STORY_NEWS 最前面加一条；每个存档只弹一次（记在 storyNews） */
   var STORY_NEWS = [
+    { id: 'kb-4', title: '第二章 · 完结', sub: '第十九段 · 玫瑰之战', card: 'nebula', site: 'kb8', d: '想让坎伯兰星活下去，就只能打败那团星云。这一次，Cumber 和她的老朋友们也会站在你身边。' },
     { id: 'kb-3', title: '坎伯兰星保卫战', sub: '第十八段 · 星云显现', card: 'nebula', site: 'kb7', d: '一鸟唤醒了海里所有休眠的奥多亚克。和全服船员一起守住深海基站吧——然后，迎接从深海升起的东西。' },
     { id: 'kb-2', title: '第二章 · 坎伯兰星（续）', sub: '第十五段 ～ 第十七段', card: 'kb', site: 'kb4', d: '顺着墨迹追上辰爷，被巨浪拍进深海，在海底遇见一位十九世纪的调查队员。' },
     { id: 'kb-1', title: '第二章 · 坎伯兰星', sub: '第十二段 ～ 第十四段', card: 'kb', site: 'kb1', d: '远航禁闭海洋。荆楚号的下一站，是一颗被海洋覆盖的星球。' }
@@ -4902,7 +4918,7 @@
     ['boss', 'Boss', '简单难度BOSS战'], ['boss2', 'Boss2', '普通难度BOSS战'], ['boss3', 'Boss3', '困难难度BOSS战与每周挑战'], ['tigerFinal', '东北的往事', '？'],
     ['flora', 'FloraBackground', '芙罗拉星'], ['floraGrass', 'Flora1', '芙罗拉星 · 草甸'], ['floraForest', 'Flora2', '芙罗拉星 · 丛林'], ['floraFallen', 'Flora3 · The Great Cover', '瘴气化之后的芙罗拉星'],
     ['grassTalk', 'Grass Talk', '剧情'], ['memory', 'Memory', '剧情'], ['saver', 'Saver', '剧情'], ['disCommunication', 'Dis-communication', '瘴气化之后的野外对战'], ['beforeEnd', 'before the end', '？'],
-    ['spa', '温泉', '温泉疗养'], ['kb', '坎伯兰星', '坎伯兰星'], ['kbSurface', '坎伯兰星 · 水面', '坎伯兰星水面'], ['kbShallow', '坎伯兰星 · 浅海', '坎伯兰星浅海'], ['kbDeep', 'Cumberland Deeps', '坎伯兰星 · 深海'], ['temple', '古代神殿', '坎伯兰星 · 古代神殿'], ['vitalVoyage', 'Vital Voyage', '？'], ['finalStar', 'Final Star', '剧情'], ['decision', 'Decision', '剧情'], ['kbDeep2', 'Cumberland Deeps II', '坎伯兰星保卫战'], ['kbDeep3', 'Cumberland Deeps III', '？'],
+    ['spa', '温泉', '温泉疗养'], ['kb', '坎伯兰星', '坎伯兰星'], ['kbSurface', '坎伯兰星 · 水面', '坎伯兰星水面'], ['kbShallow', '坎伯兰星 · 浅海', '坎伯兰星浅海'], ['kbDeep', 'Cumberland Deeps', '坎伯兰星 · 深海'], ['temple', '古代神殿', '坎伯兰星 · 古代神殿'], ['vitalVoyage', 'Vital Voyage', '？'], ['finalStar', 'Final Star', '剧情'], ['decision', 'Decision', '剧情'], ['kbDeep2', 'Cumberland Deeps II', '坎伯兰星保卫战'], ['kbDeep3', 'Cumberland Deeps III', '？'], ['ngc2237', 'NGC 2237', '？'],
     ['floraLab', 'Flora Lab', '盐碱地 · 地下实验室'], ['pompeiiCity', 'Pompeii City', '？'], ['mingTheme', 'Ming Theme', '明明教官的试炼'], ['mingBattle1', 'Ming Battle 1', '明明教官的试炼 · 关卡'], ['mingBattle2', 'Ming Battle 2', '明明教官的试炼 · 高难 / 最终试炼'], ['mingFinal1', 'Ming Final Battle 1', '明明教官的试炼 · 通常 · 第三只精灵'], ['mingFinal2', 'Ming Final Battle 2', '明明教官的试炼 · 高难 / 最终试炼 · 第三只精灵']
   ];
   var MUSIC_ALIAS = { disComScene: 'disCommunication', faceEnemyScene: 'faceEnemy' };
@@ -6290,7 +6306,7 @@
   $('pg-explore').addEventListener('keydown', function (e) { if (e.target.id === 'home-name') { if (e.key === 'Enter') { e.preventDefault(); saveHomeName(); } else if (e.key === 'Escape') { ex.homeEdit = false; renderHome(); } } });
 
   /* ---------- 任务：主线 / 支线 / 世界 ---------- */
-  var MAIN_Q = ['school', 'river', 'jiuquan', 'board', 'flora1', 'flora2', 'flora3', 'flora4', 'flora5', 'flora6', 'flora7', 'kb1', 'kb2', 'kb3', 'kb4', 'kb5', 'kb6', 'kb7'], EVENT_Q = ['mmTrial'], SIDE_Q = ['academy', 'xiaogan', 'brawl', 'draft', 'storage', 'tiger', 'tiger2', 'tea', 'rare', 'mingming', 'medal', 'spa', 'fl_chal', 'hiddenSk'];
+  var MAIN_Q = ['school', 'river', 'jiuquan', 'board', 'flora1', 'flora2', 'flora3', 'flora4', 'flora5', 'flora6', 'flora7', 'kb1', 'kb2', 'kb3', 'kb4', 'kb5', 'kb6', 'kb7', 'kb8'], EVENT_Q = ['mmTrial'], SIDE_Q = ['academy', 'xiaogan', 'brawl', 'draft', 'storage', 'tiger', 'tiger2', 'tea', 'rare', 'mingming', 'medal', 'spa', 'fl_chal', 'hiddenSk'];
   // 世界任务（奖励暂定）
   var WQ = [
     { id: 'w_first', n: '初到芙罗拉', d: '荆楚号已经抵达芙罗拉星。去丛林或草甸，和那里的野生精灵过过招吧。', where: '芙罗拉星 · 丛林 / 草甸', steps: [{ t: '在芙罗拉星击败 1 只野生精灵', k: 'wins', n: 1 }], after: 'flora1', go: 'flora' },
@@ -6897,7 +6913,7 @@
       '<div class="fallen-planet" aria-hidden="true"><img class="fp-a" src="images/planets/kamble_' + from + '.webp?v=2" alt=""><img class="fp-b" src="images/planets/kamble_' + to + '.webp?v=2" alt=""><i class="fp-fog kb"></i></div>' +
       (war ? '<p>坎伯兰星的颜色发生了变化，海面隐隐泛着红光。</p><p>沉睡在海底的机械精灵，正在一个接一个地苏醒。</p>' +
         '<div class="pw-open"><span class="chip log-tag pw-tag">全服任务</span><b>坎伯兰星保卫战已开启</b><span>坎伯兰星的三个野外区域会出现奥多亚克，所有船员一起击退它们。在航行日志和坎伯兰星的「星球任务」里查看。</span></div>'
-        : '<p>坎伯兰星被染成了血一样的红色。</p><p class="vn-tbc">未完待续</p>') +
+        : '<p>坎伯兰星被染成了血一样的红色。</p><p class="hint">第十九段「玫瑰之战」已经开放。</p>') +
       '<div class="soc-foot">' + (war ? '<button type="button" class="btn" data-fallenlog="1">去看看</button>' : '') + '<button type="button" class="btn primary" data-fallenx="1">知道了</button></div></div>';
     document.body.appendChild(d);
     d.addEventListener('click', function (e) { if (e.target.closest('[data-fallenlog]')) { d.remove(); go('log'); } });
@@ -7172,7 +7188,7 @@
     }
     return 'ui';
   }
-  function nebulaSeen() { var p7 = prog('kb7'); if (p7.done) return true; var i7 = (SCRIPT.kb7 || []).findIndex(function (st) { return st.card === 'nebula'; }); return i7 >= 0 && p7.at >= i7; }
+  function nebulaSeen() { var p7 = prog('kb7'); if (p7.done) return true; var i7 = (SCRIPT.kb7 || []).findIndex(function (st) { return st.battle === 'nebula'; }); return i7 >= 0 && p7.at >= i7; }
   function bgmScene() { if (window.HSAUDIO && HSAUDIO.scene) HSAUDIO.scene(sceneNow()); }
   setInterval(bgmScene, 500);
 

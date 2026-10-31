@@ -44,6 +44,7 @@ var STY = (function () {
     draft: { after: 'xiaogan', need: function (a) { return species(a) >= 10; } },
     core: { after: 'board' }, spa: { after: 'flora1' }, plant: { after: 'flora1' }, travelcat: { after: 'flora2' }, xiaogan: { after: 'board' },
     kb1: { after: 'flora7' }, kb2: { after: 'kb1' }, kb3: { after: 'kb2' }, kb4: { after: 'kb3' }, kb5: { after: 'kb4' }, kb6: { after: 'kb5' },
+    kb8: { after: 'kb7' },   // 2026-11-01：第十九段 · 玫瑰之战（必须在码头击败玫瑰星云）
     kb7: { after: 'kb6', need: function (a) { return (a.kbwK | 0) >= PVE.KBW.need || !!(a.story && a.story.kb7 && a.story.kb7.at > 0); } }   // 坎伯兰星保卫战：本账号累计击破 5 只奥多亚克   // 2026-10-31：第二章 · 坎伯兰星
   };
   function unlocked(a, site, env) { var S = SITES[site]; return !!S && (!S.after || done(a, S.after)) && (!S.need || S.need(a, env)); }
@@ -57,7 +58,7 @@ var STY = (function () {
   if (typeof STORY_SCRIPT !== 'undefined') Object.keys(STORY_SCRIPT).forEach(function (site) { (STORY_SCRIPT[site] || []).forEach(function (st) { if (st && st.pay && st.pay.id) (PAY_OF[site] || (PAY_OF[site] = {}))[st.pay.id] = st.pay; }); });
   var SITE_OF = {}; Object.keys(FIGHT_OF).forEach(function (s) { FIGHT_OF[s].forEach(function (k) { if (!SITE_OF[k]) SITE_OF[k] = s; }); });
 
-  var MAIN = ['school', 'river', 'jiuquan', 'board', 'flora1', 'flora2', 'flora3', 'flora4', 'flora5', 'flora6', 'flora7', 'kb1', 'kb2', 'kb3', 'kb4', 'kb5', 'kb6', 'kb7'];
+  var MAIN = ['school', 'river', 'jiuquan', 'board', 'flora1', 'flora2', 'flora3', 'flora4', 'flora5', 'flora6', 'flora7', 'kb1', 'kb2', 'kb3', 'kb4', 'kb5', 'kb6', 'kb7', 'kb8'];
   var CHAPTERS = [{ id: 'prologue', sites: ['school', 'river', 'jiuquan', 'board'] }, { id: 'ch1', sites: ['flora1', 'flora2', 'flora3', 'flora4', 'flora5', 'flora6', 'flora7'] }];
   function chapterPay(a, now) {   // 读完一整章、还没领过章节大奖的：发
     var out = [];
@@ -107,6 +108,7 @@ var STY = (function () {
       if (pr.done) return { ok: true, again: true };
       if (!unlocked(a, site, env)) return no('这段剧情还没有开放');
       if (FIGHT_OF[site] && !pr.bt && mustFight(site, pr)) return no('这段剧情里的对战还没有打');
+      if (FIGHT_OF[site] && FIGHT_OF[site].some(function (k) { return PVE.FIGHTS[k] && PVE.FIGHTS[k].mustWin; }) && pr.bt !== 'win') return no('还没有打赢这段剧情里的对战');   // mustWin：必须打赢（第十九段的玫瑰星云）
       if (site === 'school' && !a.starter) return no('还没有选初始精灵');
       if (PAY_OF[site] && Object.keys(PAY_OF[site]).some(function (id) { return !(pr.paid && pr.paid[id]); })) return no('这段剧情里要交的东西还没有交');
       pr.done = true; pr.at = 0;

@@ -35,7 +35,7 @@ var SPRITES = {
   "odo": "images/sprites/odo.webp",
   "turkey": "images/sprites/turkey.webp",
   "dummy": "images/sprites/dummy.svg",
-  "rosette": "images/sprites/rosette.webp",   // 第二章剧情限定的玫瑰星云
+  "rosette": "images/sprites/rosette.webp?v=2",   // 第二章剧情限定的玫瑰星云
   "plantbomb": "images/sprites/plantbomb.webp"   // 第八段 Bttp 的炸弹（剧情木桩用，不是精灵）
 };
 

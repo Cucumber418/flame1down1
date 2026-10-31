@@ -366,10 +366,12 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .mon.p1 .face { transform: scaleX(-1); } /* 立绘统一朝右，对手镜像成朝左 */
 .mon img { position: relative; max-height: 100%; max-width: 100%; object-fit: contain; transform-origin: 50% 90%; filter: drop-shadow(0 6px 0 var(--shade)); }
 .mon.fainted img { animation: faint .6s forwards; }
-/* 玫瑰星云（第十八段）：占满对战画面的整个右半边 */
-.mon.p1.giant { right: 0; width: 56%; height: 100%; bottom: 0; z-index: 0; }
+/* 玫瑰星云：霸屏，占满对战画面的大半边，盖在背景上、在我方精灵后面；放技能、挨打时都一动不动（2026-11-01） */
+.mon.p1.giant { right: -14%; width: 92%; height: 150%; bottom: -26%; z-index: 0; pointer-events: none; }
 .mon.p1.giant .ground { display: none; }
-.mon.p1.giant img, .field.scene .mon.p1.giant img { width: 100%; height: 100%; max-width: none; object-fit: cover; filter: drop-shadow(0 0 18px rgba(230,70,90,.6)); -webkit-mask-image: radial-gradient(ellipse 70% 72% at 55% 50%, #000 55%, transparent 100%); mask-image: radial-gradient(ellipse 70% 72% at 55% 50%, #000 55%, transparent 100%); }
+.mon.p1.giant .face { transform: none; }
+.mon.p1.giant img, .field.scene .mon.p1.giant img { width: 100%; height: 100%; max-width: none; max-height: none; object-fit: contain; filter: drop-shadow(0 0 24px rgba(230, 60, 40, .45)); animation: none !important; transform: none !important; }
+.field:has(.mon.p1.giant) .mon.p0 { z-index: 2; }
 .mon.miasma img, .field.scene .mon.miasma img { filter: drop-shadow(0 0 3px #b48fd6) drop-shadow(0 0 10px rgba(107,63,143,.85)) drop-shadow(0 6px 0 rgba(0,0,0,.2)); }
 @keyframes faint { to { transform: translateY(25%) scaleY(.6); opacity: 0; } }
 /* 芙罗拉星整体瘴气化（第八段后）：没有专门瘴气版画面的场景（草甸、盐碱地）用滤镜叠一层紫色侵蚀，丛林有专门的 fl_jungle_corrupt 背景图，不需要这个 */
@@ -2929,10 +2931,12 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .bs-t { display: grid; min-width: 0; }
 .bs-t b { font-size: 13px; white-space: nowrap; } .bs-t small { font-size: 10.5px; color: #a9c4dd; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 @media (max-width: 760px) {
-  .base-side { top: 6px; transform: none; align-items: flex-start; }
-  .bs-list { width: auto; padding-left: 6px; display: grid; grid-template-columns: repeat(2, auto); gap: 4px; }
-  .bs-tog { height: 40px; width: 18px; margin-top: 30px; }
-  .base-side.hid .bs-tog { margin-left: -66px; }
+  /* 手机：基地功能排成最上面一排（2026-11-01） */
+  .base-side { top: 6px; transform: none; align-items: center; }
+  .bs-list { width: auto; padding-left: 6px; display: flex; flex-direction: row; flex-wrap: nowrap; gap: 4px; }
+  .bs-tog { height: 32px; width: 18px; margin-top: 0; }
+  .base-side.hid .bs-list { display: none; }
+  .base-side.hid .bs-tog { margin-left: 6px; }
   .bs-it { padding: 3px; gap: 0; }
   .bs-t { display: none; }
   .bs-ic { width: 24px; height: 24px; font-size: 15px; }
@@ -3023,3 +3027,13 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .wf-mon.wf-odo.met { opacity: .45; cursor: default; }
 .wf-mon.wf-odo.met img { animation: none; filter: grayscale(.6) drop-shadow(0 10px 8px rgba(0, 0, 0, .4)); }
 @keyframes odoHover { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+
+/* 星云显现：每次和玫瑰星云开战时先放（2026-11-01） */
+.neb-reveal { position: fixed; inset: 0; z-index: 9000; background: #000; display: grid; place-items: center; animation: nebIn .6s ease-out both; cursor: pointer; }
+.neb-reveal img { width: min(100vw, 177vh); height: auto; max-height: 100vh; object-fit: contain; animation: nebZoom 4.2s ease-out both; }
+.neb-reveal small { position: absolute; bottom: 18px; left: 0; right: 0; text-align: center; color: rgba(255, 220, 220, .7); font-size: 12px; letter-spacing: .2em; }
+.neb-reveal.out { animation: nebOut .45s ease-in both; }
+@keyframes nebIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes nebOut { to { opacity: 0; } }
+@keyframes nebZoom { from { transform: scale(1.12); filter: brightness(.3); } 40% { filter: brightness(1.15); } to { transform: scale(1); filter: brightness(1); } }
+@media (prefers-reduced-motion: reduce) { .neb-reveal, .neb-reveal img { animation: none; } }

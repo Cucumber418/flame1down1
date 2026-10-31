@@ -167,7 +167,7 @@ var ST_DESC = {
   害怕: '无法行动', 石化: '无法行动；被暴击时这次暴击伤害翻倍，并解除石化', 睡眠: '无法行动，受到攻击伤害时会醒来', 麻痹: '无法行动', 冰冻: '无法行动（冰系精灵免疫）',
   疲惫: '无法行动', 寄生: '每回合结束损失1/10最大体力，被对方吸走（草系精灵免疫）', 溺水: '每回合结束损失1/10最大体力；攻击造成的伤害变为30%（水系精灵免疫）',
   流血: '每回合结束损失60点体力（机械系免疫）', 中毒: '每回合结束损失1/16最大体力×层数；可无限叠加，叠加时回合数取较长的一方', 烧伤: '每回合结束损失1/8最大体力（火系精灵免疫）',
-  失明: '攻击时有50%概率落空', 冻伤: '每回合结束损失1/8最大体力（冰系精灵免疫）'
+  失明: '攻击时有50%概率落空', 冻伤: '每回合结束损失1/8最大体力（冰系精灵免疫）', 混乱: '攻击时有40%概率攻击自己'
 };
 var TM_DESC = {
   odoAtk: '全弹搭载：造成的伤害提升25%', odoDef: '强效外壳：受到的伤害减少20%',
@@ -254,7 +254,7 @@ function abilityLive(m, foe) {
 function chipsOf(m, foe) {
   var c = [];
   var abo = abilObj(m);
-  if (abo && abo.n !== '无' && m.id !== 'rosette') c.push({ t: '特性 · ' + abo.n, k: 'ab' + (/^生效中/.test(abilityLive(m, foe)) ? ' on' : ''), d: abilityLive(m, foe), h: abo.n + ' · 当前效果' });
+  if (abo && abo.n !== '无' && !(m.id === 'rosette' && abo.n === '星云')) c.push({ t: '特性 · ' + abo.n, k: 'ab' + (/^生效中/.test(abilityLive(m, foe)) ? ' on' : ''), d: abilityLive(m, foe), h: abo.n + ' · 当前效果' });
   STG.forEach(function (k) { var v = m.stages[k]; if (v) c.push({ t: STG_NAME[k] + (v > 0 ? '+' : '') + v, k: v > 0 ? 'up' : 'down', h: STG_NAME[k] + (v > 0 ? ' 提升' : ' 下降'), d: stageText(k, v) }); });
   for (var s in m.st) if (m.st[s] > 0) {
     var pz = s === '中毒' ? (m.fx.poison || 1) : 0;
@@ -271,6 +271,7 @@ function chipsOf(m, foe) {
   if (m.fx.leiyin) c.push({ t: '引雷', k: 'st', h: '引雷', d: '下一次受到的伤害提升20%' });
   if (m.fx.sureHit && !m.fx.sureCrit) c.push({ t: '下次必中', k: 'fx', h: '下次必中', d: '下一次攻击必定命中' });
   if (m.perm && m.perm.melt) c.push({ t: '熔化 ×' + m.perm.melt, k: 'st', h: '熔化 · ' + m.perm.melt + ' 层', d: '受到的伤害提升 ' + m.perm.melt * 20 + '%（每层20%，最多5层），持续到战斗结束，换下场也不会消失' });
+  if (m.cbl) c.push({ t: 'Cumberland', k: 'fx on', h: 'Cumberland' + (m.cbl > 1 ? ' · 增幅' : ''), d: cblText(m.cbl) });   // 第十九段：Cumber 给的加成
   if (m.onlyHit) c.push({ t: '元素亲和', k: 'fx', h: 'BOSS · 元素亲和', d: '只有' + m.onlyHit.join('、') + '系技能才能命中它，其他属性的技能都会被挡下' });
   if (m.boss) BOSS_FX.forEach(function (f) {
     if (!m.boss[f.k]) return;
@@ -398,11 +399,13 @@ function loseHp(S, evs, j, amt, why) {
   if (t.hp <= 0 && why) hqDot(S, evs, t, why);
   if (t.hp <= 0 && j === 1 && !S.pvp) CS(S).dotKO++;
   if (t.hp <= 0) faint(S, evs, j);
+  if (t.boss && t.boss.bok && !t.boss.bokUsed && !t.fainted && t.hp > 0 && t.hp < 2000) nebBok(S, evs, j, t);
   return amt;
 }
 function applyDamage(S, evs, j, amount, src, o) {
   o = o || {};
   var t = act(S, j); if (t.fainted) return 0;
+  if (t.cbl) amount = amount * (1 - 0.25 * t.cbl);   // Cumberland：受到的伤害减免 25%（增幅后 37.5%）
   var amt = Math.floor(amount), excess = 0;
   if (t.tm.cap > 0 && amt > 250 && src != null) { excess = amt - 250; amt = 250; }
   var willEx = 0; if (t.boss && t.boss.odoWill && amt > 200 && src != null && src !== j) { willEx = amt - 200; amt = 200; RV(t, 'odoWill'); }   // 护阵意志：单次受伤不超过 200，超出的反弹
@@ -427,7 +430,9 @@ function applyDamage(S, evs, j, amount, src, o) {
   }
   if (willEx > 0 && !act(S, src).fainted) { log(S, evs, nm(t) + '的「护阵意志」把 ' + willEx + ' 点伤害反弹了回去！', 'fxl'); loseHp(S, evs, src, willEx); }
   if (t.boss && t.boss.rebirth && !t.boss.reborn && t.hp < 2500) { rebirthBarren(S, evs, j, t); return amt; }
+  if (j === 0 && amt > 0 && src === 1 && act(S, 1).boss && act(S, 1).boss.neb) S.nebHit = 1;   // 第十九段：玩家第一次被玫瑰星云打中，回合结束时 Cumber 加入
   if (t.hp <= 0 && !o.noFaint) faint(S, evs, j);
+  if (t.boss && t.boss.bok && !t.boss.bokUsed && !t.fainted && t.hp > 0 && t.hp < 2000) nebBok(S, evs, j, t);
   // 虹霓暴走：对对方累计造成 1000 点伤害（不算溢出）就爆破一次，自己损失 500，对方受到 500 固定伤害
   var rbm = src != null && src !== j ? act(S, src) : null;
   if (rbm && rbm.boss && rbm.boss.rainbow && amt > 0 && !rbm.fainted) {
@@ -598,6 +603,9 @@ function calcDamage(me, foe, mv, firstMover, est) {
   if (phys && foe.tm.halfPhys > 0) mod *= 0.5;
   if (foe.tm.dr40 > 0) mod *= 0.6;
   if (foe.boss && foe.boss.dr) { mod *= 1 - foe.boss.dr; if (!est) RV(foe, 'dr'); }   // BOSS「星球聚能」
+  if (me.boss && me.boss.neb && firstMover) mod *= 1.5;   // 玫瑰星云「疏散星团」：先出手时伤害 +50%
+  if (foe.boss && foe.boss.neb && firstMover) mod *= 0.5;   // 后出手（对方先打它）时受到的伤害减半
+  if (me.cbl) mod *= 1 + 0.5 * me.cbl;   // Cumberland：双攻 +50%（增幅后 +75%）
   if (!est && me.boss) ['feud', 'mmGift', 'rainbow', 'erode', 'eternal'].forEach(function (k) { RV(me, k); });   // 物攻 / 特攻加成类：第一次出手造成伤害时揭晓
   if (foe.boss && foe.boss.eternal) { mod *= 1.2; if (!est) RV(foe, 'eternal'); }   // 复活后的泰戈尔「永续的纷争」：受到的伤害 +20%
   if (me.boss && me.boss.purify && miaN(foe) > 0) { mod *= 2; if (!est) RV(me, 'purify'); }
@@ -638,6 +646,7 @@ function resolveTurn(S, acts) {
   S.sides.forEach(function (sd) { sd.team.forEach(function (m) { if (m.fx) m.fx.lateNow = 0; }); });   // 歼灭速率：「这回合被抢先出手」只算当回合
   log(S, evs, '第 ' + S.turn + ' 回合', 'turn');
   if (S.turn === 1 && !S.ambushed) { S.ambushed = 1; var amb = act(S, 1); if (amb.boss && amb.boss.ambush && !act(S, 0).fainted) { RV(amb, 'ambush'); log(S, evs, nm(amb) + '使用了「突然袭击」！', 'use'); E(S, evs, 'use', { side: 1, move: '突然袭击', type: typesOf(amb)[0] }); applyDamage(S, evs, 0, amb.boss.ambush, null, {}); if (act(S, 0).fainted && !S.over) { checkOver(S, evs); } } }
+  if (S.turn === 1 && !S.nebOpen) { var nb = act(S, 1); if (nb.boss && nb.boss.neb && !act(S, 0).fainted && M['强烈恒星风']) { S.nebOpen = 1; log(S, evs, nm(nb) + '一现身，就释放了恒星风暴！', 'crit'); useMove(S, evs, 1, M['强烈恒星风'], -1, true); checkOver(S, evs); if (S.over) { S.turn++; return evs; } } }   // 玫瑰星云：开局先放一次强烈恒星风
   if (acts[0].kind === 'item') { useItem(S, evs, 0, acts[0].key); S.turnActed[0] = true; if (S.over) { S.turn++; return evs; } }
   [0, 1].forEach(function (i) { if (acts[i].kind === 'switch') doSwitch(S, evs, i, acts[i].to, true); });
   // BOSS「瘴毒傀儡」：占用BOSS这一回合，下场并召唤傀儡
@@ -657,6 +666,7 @@ function resolveTurn(S, acts) {
     checkOver(S, evs);
   }
   if (!S.over) endOfTurn(S, evs);
+  if (!S.over) nebCumber(S, evs);
   checkOver(S, evs);
   if (!S.over && !S.training && !S.noLimit && S.turn >= MAX_TURNS) timeUp(S, evs);   // noLimit：PVE 不限回合（2026-10-24），竞技对战仍是 60 回合
   if (!S.over) {
@@ -740,6 +750,7 @@ function checkOver(S, evs) {
   if (S.over) return;
   var p = aliveIdx(S, 0).length, a = aliveIdx(S, 1).length;
   if (S.training) { if (!p) { S.over = 'lose'; E(S, evs, 'over', { result: 'lose' }); } return; }
+  if (!p && a && nebReviveDue(S)) return;   // 第十九段：倒下第 2 只（或全倒）时 Cumber 会在回合结束时把大家救起来
   if (!p || !a) { S.over = !a ? 'win' : 'lose'; if (!p && !a) S.over = 'draw'; E(S, evs, 'over', { result: S.over }); }
 }
 
@@ -808,6 +819,11 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   if (ability(me) === '雷明' && !extra) { var lmt = mvType(me, mv); if (lmt === '电') me.tm.lmE = 3; else if (lmt === '光') me.tm.lmL = 3; }   // 特性「雷明」（2026-10-22）：用了技能就算，3 回合内每回合末生效，重复使用只刷新回合数
   if (mv.cat !== '变化') { if (extra) me.fx.chargeNow = 0; else { me.fx.chargeNow = me.fx.charge || 0; me.fx.charge = 0; me.fx.atkT = S.turn; } }   // 特性「爆燃」：主动攻击时把蓄力全部用掉
   if (mv.cat === '变化') { doStatus(S, evs, i, mv); return; }
+  if (!extra && me.st['混乱'] > 0 && RNG() < 0.4) {   // 混乱（2026-11-01，玫瑰星云的「尘埃柱」）：攻击时 40% 打到自己（威力 40 的无属性物理攻击）
+    var cA = me.stats.atk * stageMult(me.stages.atk), cD = me.stats.def * stageMult(me.stages.def);
+    var cd = Math.floor(Math.floor(Math.floor(2 * (me.lv || LV) / 5 + 2) * 40 * cA / cD) / 50) + 2;
+    loseHp(S, evs, i, cd, nm(me) + '陷入混乱，攻击了自己！（' + cd + '）'); me.fx.boostNext = 0; return;
+  }
 
   if (foe.fainted) { log(S, evs, '但是没有目标'); return; }
   if (hitBlocked(foe, mt)) { log(S, evs, nm(foe) + '毫发无伤！只有' + foe.onlyHit.join('、') + '系技能才能命中它', 'bad'); me.fx.boostNext = 0; return; }
@@ -956,6 +972,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
       case 'vuln': foe.tm.vuln = 3; E(S, evs, 'stage', { side: j }); log(S, evs, nm(foe) + '被恶魔触手缠住，3回合内受到的伤害增加30%', 'bad'); break;
       case 'weak3': foe.tm.weak = 3; E(S, evs, 'stage', { side: j }); log(S, evs, nm(foe) + '的力量被荒芜侵蚀，3回合内伤害降低30%', 'bad'); break;
       case 'blastSlash': if (firstMover && statusRoll(me, 0.5)) addStatus(S, evs, j, '烧伤', rint(2, 5), i); break;
+      case 'randStatus': if (statusRoll(me, 0.5)) { var rk = RAND_ST[Math.floor(RNG() * RAND_ST.length)]; addStatus(S, evs, j, rk, CONTROL[rk] ? 2 : 3, i); } break;   // 氢-α发射线：50% 随机一种异常状态
       case 'poisonHeart': foe.st['中毒'] += 1; foe.fx.poison = (foe.fx.poison || 1) + 1; E(S, evs, 'stage', { side: j }); log(S, evs, nm(foe) + '的中毒叠加到 ' + foe.fx.poison + ' 层，并延长了1回合（剩 ' + foe.st['中毒'] + ' 回合）', 'fxl'); break;
       case 'lifeSqueeze':
         if (foe.st['寄生'] > 0) { var ls = loseHp(S, evs, j, foe.hp / 6, '额外吸取了' + nm(foe) + '的体力'); heal(S, evs, i, ls); } break;   // 按对方当前体力的 1/6
@@ -1329,6 +1346,8 @@ var BOSS_FX = [
   { k: 'odoWill', t: '护阵意志', h: '护阵意志', d: function () { return '每次受到的伤害不会超过 200，超过的部分全部反弹给攻击者'; } },
   { k: 'rainbow', t: '虹霓暴走', h: '虹霓暴走', d: function () { return '物攻、特攻提升 50%。对你每累计造成 1000 点伤害（不计溢出）就爆破一次：自身损失 500 体力，并对你造成 500 点固定伤害'; } },
   { k: 'odoSwap', t: '形态切换', h: '形态切换', d: function () { return '歼灭形态和护阵形态每 2 回合主动切换一次；两种形态都被击败后，化为虹霓暴走'; } },
+  { k: 'dust', t: '尘埃柱', h: '尘埃柱', d: function () { return '每回合结束时有 30% 的概率让对方陷入混乱 2 回合（攻击时有 40% 的概率攻击自己）'; } },   // 玫瑰星云（第十九段）
+  { k: 'bok', t: '博克球状体', h: '博克球状体', d: function (m) { return m.boss.bokUsed ? '已经发动过了' : '体力低于 2000 时，恢复 500 体力并对对方造成 200 点固定伤害（只发动一次）'; } },
   { k: 'dr', t: '星球聚能', h: '星球聚能', d: function (m) { return '受到的伤害减少 ' + Math.round(m.boss.dr * 100) + '%'; } },
   { k: 'mia', t: '瘴气领域', h: '瘴气领域', d: function () { return '只要它还没倒下，每回合结束时为对手在场的精灵添加 1 层瘴气'; } },
   { k: 'puppet', t: '瘴毒傀儡', h: '瘴毒傀儡', d: function (m) { var cd = puppetCd(m), left = m.boss.last == null ? 0 : Math.max(0, cd - (m.boss.now - m.boss.last));
@@ -1471,6 +1490,64 @@ function miasmaTick(S, evs) {
     log(S, evs, nm(m) + '受到瘴气侵染（瘴气 ×' + m.perm.miasma + '）', 'fxl');
   });
 }
+/* ---------- 第十九段 · 码头决战玫瑰星云（2026-11-01） ----------
+ * 星云带 boss.neb：开局放强烈恒星风（resolveTurn）、疏散星团（calcDamage）、尘埃柱（endOfTurn）、博克球状体（nebBok）
+ * 玩家第一次被它打中后，Cumber 加入：全员获得【Cumberland】（m.cbl = 1）；之后每 3 回合 Cumber 轮流让戈耳贡 / 坎克托斯助阵
+ * 玩家倒下第 2 只（或全倒）时，Cumber 插话、复活全员，Cumberland 再增幅 50%（m.cbl = 1.5），只发生一次 */
+var RAND_ST = ['害怕', '石化', '睡眠', '麻痹', '冰冻', '寄生', '溺水', '流血', '中毒', '烧伤', '失明', '冻伤'];
+function cblText(k) { return '体力上限 +' + Math.round(200 * k) + '，物攻、特攻 +' + Math.round(50 * k) + '%，受到的伤害减免 ' + (25 * k) + '%，每回合结束恢复 ' + Math.round(100 * k) + ' 体力'; }
+var NEB_CB1 = [['cb', '别慌。这里是坎伯兰星——是我的领土。'], ['cb', '只要还站在这片海上，我就能把力量借给你们！'], ['n', '一股温暖的海流涌向了你的每一只精灵。全员获得了【Cumberland】！']];
+var NEB_CB2 = [['cb', '你知道，这片土地为什么叫 Cumberland 吗？'], ['cb', '因为它就是我两百年经营的伟大之土！'], ['cb', '在我的土地上，谁也不许倒下——都给我站起来！'], ['n', '倒下的精灵全部站了起来。【Cumberland】的力量再次增幅了！']];
+function nebFight(S) { var m = S.sides[1].team.filter(function (x) { return x.boss && x.boss.neb; })[0]; return m || null; }
+function nebReviveDue(S) {
+  if (S.pvp || S.cbRev || !nebFight(S)) return false;
+  var T = S.sides[0].team, dead = T.filter(function (m) { return m.fainted; }).length;
+  return dead >= 2 || dead >= T.length;
+}
+function cblAdd(S, k) {   // 把全员的 Cumberland 提到 k 档；体力上限按差值增加
+  S.sides[0].team.forEach(function (m) { var d = Math.round(200 * k) - Math.round(200 * (m.cbl || 0)); m.cbl = k; m.maxhp += d; if (!m.fainted) m.hp += d; });
+}
+function nebBok(S, evs, j, t) {
+  t.boss.bokUsed = 1; RV(t, 'bok');
+  log(S, evs, nm(t) + '的「博克球状体」：暗星云收缩成一团，吸回了力量！', 'crit');
+  heal(S, evs, j, 500);
+  if (!act(S, 1 - j).fainted) { log(S, evs, '收缩的星云爆开，冲击波扫向' + nm(act(S, 1 - j)), 'fxl'); applyDamage(S, evs, 1 - j, 200, null, {}); }
+}
+function nebCumber(S, evs) {
+  var nb = nebFight(S); if (!nb || S.pvp) return;
+  if (S.nebHit && !S.cblOn) {
+    S.cblOn = 1; cblAdd(S, 1);
+    E(S, evs, 'scene', { side: 0, lines: NEB_CB1 });
+    NEB_CB1.forEach(function (l) { log(S, evs, (l[0] === 'cb' ? 'Cumber：' : '') + l[1], 'fxl'); });
+    log(S, evs, '全员获得了【Cumberland】：' + cblText(1), 'good'); E(S, evs, 'stage', { side: 0 });
+  }
+  if (nebReviveDue(S)) {
+    S.cbRev = 1; if (!S.cblOn) S.cblOn = 1;
+    E(S, evs, 'scene', { side: 0, lines: NEB_CB2 });
+    NEB_CB2.forEach(function (l) { log(S, evs, (l[0] === 'cb' ? 'Cumber：' : '') + l[1], 'fxl'); });
+    cblAdd(S, 1.5);
+    S.sides[0].team.forEach(function (m, k) { if (m.fainted) { m.fainted = false; clearVolatile(m); m.hp = m.maxhp; } });
+    if (act(S, 0).fainted === false && act(S, 0).hp <= 0) act(S, 0).hp = act(S, 0).maxhp;
+    log(S, evs, '你的精灵全部复活了！【Cumberland】增幅：' + cblText(1.5), 'good');
+    E(S, evs, 'heal', { side: 0, amount: act(S, 0).hp }); E(S, evs, 'stage', { side: 0 });
+  }
+  if (S.turn % 3 === 0 && !nb.fainted) {   // Cumber 每 3 回合助阵一次，戈耳贡、坎克托斯轮流
+    S.cbN = (S.cbN || 0) + 1;
+    if (S.cbN % 2 === 1) {
+      var pm = act(S, 0);
+      if (!pm.fainted) {
+        log(S, evs, 'Cumber：戈耳贡啊，散播净化之水吧！', 'crit');
+        var had = 0; for (var sk in pm.st) if (pm.st[sk] > 0 && ST_DESC[sk]) { delete pm.st[sk]; had++; }
+        if (pm.fx) delete pm.fx.poison;
+        if (had) log(S, evs, nm(pm) + '身上的异常状态都被冲走了', 'good');
+        E(S, evs, 'stage', { side: 0 }); heal(S, evs, 0, 200);
+      }
+    } else {
+      log(S, evs, 'Cumber：坎克托斯啊，冲散你的敌人吧！', 'crit');
+      applyDamage(S, evs, 1, 500, null, {});
+    }
+  }
+}
 function endOfTurn(S, evs) {
   S.curMove = null;
   // 星星魔法 / 残月之痕的「本次使用中」标记只在出招的这一回合有效，回合结束清掉，免得之后的威力预估（电脑估分、界面）少算一档
@@ -1481,6 +1558,9 @@ function endOfTurn(S, evs) {
   miasmaField(S, evs);
   humusField(S, evs);
   weedField(S, evs);
+  var nbm = act(S, 1), pm0 = act(S, 0);
+  if (nbm.boss && nbm.boss.dust && !nbm.fainted && !pm0.fainted && RNG() < 0.3) { RV(nbm, 'dust'); log(S, evs, nm(nbm) + '的「尘埃柱」：星尘遮住了' + nm(pm0) + '的视线', 'fxl'); addStatus(S, evs, 0, '混乱', 2, 1); }
+  if (pm0.cbl && !pm0.fainted && pm0.hp < pm0.maxhp) { log(S, evs, 'Cumberland 的海流包裹着' + nm(pm0), 'fxl'); heal(S, evs, 0, 100 * pm0.cbl); }
   [0, 1].forEach(function (i) { var m = act(S, i); if (!m.fainted && m.boss && m.boss.regen && m.hp < m.maxhp) { RV(m, 'regen'); log(S, evs, nm(m) + '的「再生」发动了', 'fxl'); heal(S, evs, i, m.maxhp * (m.boss.regen === true ? 0.06 : m.boss.regen)); } });   // 先驱之塔「再生」
   [0, 1].forEach(function (i) {
     var m = act(S, i); if (m.fainted) return;

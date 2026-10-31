@@ -751,6 +751,15 @@
     storyCuts = (opt.cuts || []).map(function (c) { return { hp: c.hp, lines: c.lines, done: false }; });
     if (remote && opt.preEvs && opt.preEvs.length) prePlay(opt.preEvs); else if (opt.preStrike && !remote) preStrike();
     drawStars();
+    if (app.S.sides[1].team.some(function (m) { return m.id === 'rosette'; })) nebulaReveal();   // 每次和玫瑰星云开战，先放「星云显现」（2026-11-01）
+  }
+  function nebulaReveal() {
+    var d = document.createElement('div'), t0 = Date.now(); d.className = 'neb-reveal'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-label', '星云显现');
+    d.innerHTML = '<img src="images/cg/nebula_reveal.webp" alt="星云显现"><small>点击继续</small>';
+    document.body.appendChild(d);
+    var close = function () { if (!d.parentNode) return; d.classList.add('out'); setTimeout(function () { d.remove(); }, 450); };
+    d.addEventListener('click', function () { if (Date.now() - t0 > 1200) close(); });
+    setTimeout(close, 4200);
   }
   var storyEnd = null, itemUsed = null, storyCuts = [];
   /* ---------- 服务器结算的对战：出招发给服务器，播放服务器算好的这一回合 ---------- */
@@ -950,7 +959,7 @@
       var pl = $('plate' + i);
       var html = '<span class="tape ' + (i ? 'r' : 'l') + '"></span>' +
         '<div class="row1"><span class="pn">' + esc(sd.name) + '</span>' + typeTips(sd, sn.sides[1 - i]) + statTip(sd, i === 1 && rankOn()) +
-          (sd.id === 'rosette' ? '<span class="abil" tabindex="0" aria-label="特性 未知">特性 · ？？？<span class="tip" role="tooltip"><b>特性 · ？？？</b>？？？</span></span>' : '<span class="abil" tabindex="0" aria-label="特性 ' + esc(sd.ability.n) + '：' + esc(sd.ability.d) + '">特性 · ' + esc(sd.ability.n) +
+          (sd.id === 'rosette' && sd.ability.n === '星云' ? '<span class="abil" tabindex="0" aria-label="特性 未知">特性 · ？？？<span class="tip" role="tooltip"><b>特性 · ？？？</b>？？？</span></span>' : '<span class="abil" tabindex="0" aria-label="特性 ' + esc(sd.ability.n) + '：' + esc(sd.ability.d) + '">特性 · ' + esc(sd.ability.n) +
           '<span class="tip" role="tooltip"><b>特性 · ' + esc(sd.ability.n) + '</b>' + esc(sd.ability.d) + (sd.ability.extra ? '<span class="tipx">' + esc(sd.ability.extra) + '</span>' : '') + '<span class="tipx">当前是否生效，看血条下方状态栏里的特性</span></span></span>') + '<span class="who">' + esc(sd.dummy ? '训练木桩' : i ? (pvp ? pvp.foe : app.S && app.S.story ? app.S.story.foe + (app.S.story.diff ? ' · ' + app.S.story.diff : '') : '对手') : '你') + '</span></div>' +
         '<div class="hpbar"><i class="' + hpClass(sd.hp, sd.maxhp) + '" style="width:' + (sd.hp / sd.maxhp * 100) + '%"></i></div>' +
         '<div class="hprow"><span>' + (sd.dummy ? '体力 ∞' : sd.hp + ' / ' + sd.maxhp) + '</span><span class="pips">' +
@@ -1051,7 +1060,7 @@
   }
 
   // 对战中的小剧情（比如困难泰戈尔复活时）：在战场上盖一层对话框，点一下翻到下一句（不点也会自己往下走）
-  var SCENE_WHO = { tg: { name: '泰戈尔', img: 'tagore' }, n: null };
+  var SCENE_WHO = { tg: { name: '泰戈尔', img: 'tagore' }, cb: { name: 'Cumber', src: 'images/characters/cumber_smile.webp' }, n: null };   // cb：第十九段决战玫瑰星云时插话
   function showScene(lines) {
     return new Promise(function (done) {
       var f = $('field'), box = document.createElement('div'); box.className = 'bscene'; f.appendChild(box);
@@ -1060,7 +1069,7 @@
         clearTimeout(timer);
         if (i >= lines.length) { box.remove(); done(); return; }
         var l = lines[i++], w = SCENE_WHO[l[0]];
-        box.innerHTML = (w ? '<img class="bs-img" src="' + SPRITES[w.img] + '" alt="">' : '') + '<div class="bs-say' + (w ? '' : ' narr') + '">' + (w ? '<b>' + w.name + '</b>' : '') + '<p>' + esc(l[1]) + '</p><small>点击继续</small></div>';
+        box.innerHTML = (w ? '<img class="bs-img" src="' + (w.src || SPRITES[w.img]) + '" alt="">' : '') + '<div class="bs-say' + (w ? '' : ' narr') + '">' + (w ? '<b>' + w.name + '</b>' : '') + '<p>' + esc(l[1]) + '</p><small>点击继续</small></div>';
         timer = setTimeout(next, app.fast ? 2200 : 4200);
       }
       box.addEventListener('click', next);
