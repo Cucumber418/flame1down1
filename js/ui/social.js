@@ -19,7 +19,7 @@
   var esc = H.esc, tchips = H.tchips;
   var SHOW_MAX = 5, HELP_MAX = 3, MOTTO_MAX = 200, TURN_SEC = 90;
   var online = !!(C && C.user && C.user());   // 用服务器打开并登录了才有社交功能
-  var hb = { owner: null, data: null, err: '', at: 0, draft: '', newN: 0, peeked: false }, pokeAt = {};   // 茶室信息栏与留言板（见下面「茶室信息栏」一节）
+  var hb = { owner: null, data: null, err: '', at: 0, draft: '', newN: 0, peeked: false }, pokeAt = {};   // 基地信息栏与留言板（见下面「基地信息栏」一节）
   var st = { prep: null, bw: { picks: null, wait: null, inv: null }, view: null, tab: 'players', players: null, me: null, err: '', ws: null, wsOk: false, retry: 0, pend: null, inc: null, match: null, edit: null };
 
   /* ---------- 小工具 ---------- */
@@ -84,7 +84,7 @@
       '<span class="pr-show">' + (p.show || []).map(monThumb).join('') + '</span></button>' +
       '<span class="pr-acts">' +
       (p.me ? '<button type="button" class="btn" data-tab="mine">编辑名片</button>' :
-        '<button type="button" class="btn ghost" data-home="' + esc(p.user) + '"' + (p.homeOpen ? '' : ' disabled title="对方还没有开放茶室"') + '>茶室' + (p.homeN ? ' · ' + p.homeN : '') + '</button>' +
+        '<button type="button" class="btn ghost" data-home="' + esc(p.user) + '"' + (p.homeOpen ? '' : ' disabled title="对方还没有开放基地"') + '>基地' + (p.homeN ? ' · ' + p.homeN : '') + '</button>' +
         '<button type="button" class="btn' + (p.friend ? ' on' : '') + '" data-friend="' + esc(p.user) + '" aria-pressed="' + !!p.friend + '">' + (p.friend ? '★ 好友' : '＋ 加好友') + '</button>' +
         (p.friend && !p.noChar ? '<button type="button" class="btn dm-btn" data-dm="' + esc(p.user) + '">💬 私信' + (dmUnreadOf(p.user) ? '<i class="q-badge">' + dmUnreadOf(p.user) + '</i>' : '') + '</button>' : '') +
         (canWatch(p) ? watchBtn(p) : '<button type="button" class="btn primary" data-fight="' + esc(p.user) + '"' + (canFight ? '' : ' disabled title="' + (p.noChar ? '对方还没有创建角色' : p.busy ? '对方正在对战中' + (p.friend ? '' : '，加为好友后可以观战') : '对方不在线') + '"') + '>切磋</button>')) +
@@ -151,7 +151,7 @@
       if (c._code !== 200) { body.innerHTML = '<p class="hint">' + esc(c.error || '读取失败') + '</p>'; return; }
       var canFight = !c.me && !c.noChar && c.online && !c.busy;
       body.innerHTML = cardHTML(c) + '<div class="soc-foot"><button type="button" class="btn ghost" data-x="1">关闭</button>' +
-        (c.me ? '' : '<button type="button" class="btn ghost" data-home="' + esc(c.user) + '"' + (c.homeOpen ? '' : ' disabled') + '>拜访茶室</button>' +
+        (c.me ? '' : '<button type="button" class="btn ghost" data-home="' + esc(c.user) + '"' + (c.homeOpen ? '' : ' disabled') + '>拜访基地</button>' +
           '<button type="button" class="btn" data-friend="' + esc(c.user) + '">' + (c.friend ? '取消好友' : '＋ 加好友') + '</button>' +
           (c.friend && !c.noChar ? '<button type="button" class="btn dm-btn" data-dm="' + esc(c.user) + '">💬 私信</button>' : '') +
           (canWatch(c) ? watchBtn(c) : '<button type="button" class="btn primary" data-fight="' + esc(c.user) + '"' + (canFight ? '' : ' disabled') + '>切磋</button>')) + '</div>';
@@ -167,7 +167,7 @@
     }).catch(function () { A.toast('连不上服务器'); });
   }
 
-  /* ---------- 拜访茶室 ---------- */
+  /* ---------- 拜访基地 ---------- */
   function openHome(user) {
     st.view = { user: user, data: null, err: '' };
     if (A.page() !== 'social') A.go('social'); else render();
@@ -180,23 +180,23 @@
   }
   function homeHTML() {
     var V0 = st.view, d = V0.data, back = '<div class="crumb"><button type="button" class="btn ghost" data-back="1">‹ 返回社交</button>';
-    if (!d) return back + '</div><p class="hint soc-load">' + (V0.err ? esc(V0.err) : '正在前往茶室……') + '</p>';
+    if (!d) return back + '</div><p class="hint soc-load">' + (V0.err ? esc(V0.err) : '正在前往基地……') + '</p>';
     if (d.noChar) return back + '</div><div class="soc-empty"><p>@' + esc(d.user) + ' 还没有创建游戏角色。</p></div>';
-    if (!d.open) return back + '<b class="home-name">' + esc(d.name) + ' 的休息舱</b></div><div class="soc-empty"><p>' + esc(d.name) + ' 还没有读完「陆羽茶室」支线，茶室还没开放。</p></div>';
+    if (!d.open) return back + '<b class="home-name">' + esc(d.name) + ' 的休息舱</b></div><div class="soc-empty"><p>' + esc(d.name) + ' 还没有读完「陆羽茶室」支线，基地还没开放。</p></div>';
     var pos = A.homePos, figs = d.mons.map(function (m, i) {
       var v = A.view({ sid: m.sid, lv: m.lv, shiny: m.shiny, fs: m.fs }), p = pos[i] || pos[0];
       return '<div class="hm-fig' + (d.mons.length > 3 ? ' many' : '') + '" data-csid="' + esc(m.sid) + '" data-cst="' + (v.stage || 0) + '" data-cctx="home" style="left:' + p[0] + '%;top:' + p[1] + '%"><button type="button" class="hm-poke" data-poke="1" data-mon="' + esc(v.name) + '" aria-label="摸摸' + esc(v.name) + '"><img src="' + v.img + '" alt=""></button><span class="hm-tag">' + esc(v.name) + ' · LV' + m.lv + '</span></div>';
     }).join('');
     var left = A.teaLeft(), mine = (A.acc().teams[A.acc().active] || []).map(A.mon).filter(Boolean);
-    return back + '<b class="home-name">' + esc(d.homeName) + '</b><span class="hint">' + esc(d.name) + ' 的茶室' + (d.online ? ' · 主人在线' : '') + ' · 茶室音乐「' + ({ ui: '大厅', earth: '地球', flora: '芙罗拉星' }[d.bgm] || '大厅') + '」</span></div>' +
-      '<div class="home-room"><img class="home-bg" src="' + BG.tea_p + '" alt="' + esc(d.homeName) + '">' + figs +
-      (d.mons.length ? '' : '<p class="home-empty">茶室里空荡荡的，主人还没有放精灵出来展示。</p>') + '</div>' +
-      (d.me ? '<p class="hint" style="margin-top:8px">这是你自己的茶室。</p>' :
-      '<div class="tea-bar"><span class="tape l"></span><div class="tea-txt"><b>挑战茶室</b>' +
-      '<p class="hint">用你的出战配队（' + Math.min(5, mine.length) + ' 只）挑战茶室里正在训练的 ' + d.mons.length + ' 只精灵，对手由电脑操控，用的是它们的真实等级和技能。' +
-      '每天前 ' + A.TEA_DAILY + ' 场茶室对战各奖励 ' + A.fmt(A.TEA_EXP) + ' 累积经验（进经验背包），赢输都算，认输不算，0 点刷新。</p>' +
+    return back + '<b class="home-name">' + esc(d.homeName) + '</b><span class="hint">' + esc(d.name) + ' 的基地' + (d.online ? ' · 主人在线' : '') + ' · 基地音乐「' + ({ ui: '大厅', earth: '地球', flora: '芙罗拉星' }[d.bgm] || '大厅') + '」</span></div>' +
+      (A.baseRoom ? A.baseRoom(d.layout, figs + (d.mons.length ? '' : '<p class="home-empty">基地里空荡荡的，主人还没有放精灵出来展示。</p>')) :   // 2026-10-31：基地改成基地，显示主人的房型和摆件
+      '<div class="home-room"><img class="home-bg" src="' + BG.tea_p + '" alt="' + esc(d.homeName) + '">' + figs + '</div>') +
+      (d.me ? '<p class="hint" style="margin-top:8px">这是你自己的基地。</p>' :
+      '<div class="tea-bar"><span class="tape l"></span><div class="tea-txt"><b>挑战基地</b>' +
+      '<p class="hint">用你的出战配队（' + Math.min(5, mine.length) + ' 只）挑战基地里正在训练的 ' + d.mons.length + ' 只精灵，对手由电脑操控，用的是它们的真实等级和技能。' +
+      '每天前 ' + A.TEA_DAILY + ' 场基地对战各奖励 ' + A.fmt(A.TEA_EXP) + ' 累积经验（进经验背包），赢输都算，认输不算，0 点刷新。</p>' +
       '<p class="tea-left">今天还能领奖 <b>' + left + '</b> / ' + A.TEA_DAILY + ' 次</p></div>' +
-      '<button type="button" class="btn primary" data-teafight="1"' + (d.mons.length && mine.length ? '' : ' disabled') + '>' + (d.mons.length ? '挑战茶室' : '没有可挑战的精灵') + '</button></div>') +
+      '<button type="button" class="btn primary" data-teafight="1"' + (d.mons.length && mine.length ? '' : ' disabled') + '>' + (d.mons.length ? '挑战基地' : '没有可挑战的精灵') + '</button></div>') +
       hbSlot(d.user);
   }
 
@@ -254,7 +254,7 @@
     }
     var P = st.players || [], friends = P.filter(function (p) { return p.friend; }), on = P.filter(function (p) { return p.online; }).length;
     var focus = document.activeElement && document.activeElement.id === 'me-motto' ? $('me-motto').selectionStart : null;
-    if (st.view) { pg.innerHTML = '<div class="soc-head"><h2 class="sec">拜访茶室</h2></div>' + homeHTML(); return; }
+    if (st.view) { pg.innerHTML = '<div class="soc-head"><h2 class="sec">拜访基地</h2></div>' + homeHTML(); return; }
     var body;
     if (st.tab === 'mine') body = mineHTML();
     else if (st.tab === 'dm') body = dmListHTML();
@@ -270,7 +270,7 @@
       '<button type="button" class="sub' + (st.tab === 'friends' ? ' on' : '') + '" data-tab="friends" role="tab" aria-selected="' + (st.tab === 'friends') + '">好友 ' + (st.players ? friends.length : '') + '</button>' +
       '<button type="button" class="sub' + (st.tab === 'dm' ? ' on' : '') + '" data-tab="dm" role="tab" aria-selected="' + (st.tab === 'dm') + '">私信' + (st.dmUnread ? '<i class="q-badge">' + st.dmUnread + '</i>' : '') + '</button>' +
       '<button type="button" class="sub' + (st.tab === 'mine' ? ' on' : '') + '" data-tab="mine" role="tab" aria-selected="' + (st.tab === 'mine') + '">我的名片</button>' +
-      '<button type="button" class="sub sub-go" data-myhome="1" title="' + (A.homeOpen() ? '直接去我的茶室' : '读完「陆羽茶室」支线后开放') + '">我的茶室' + (hb.newN ? '<i class="q-badge" title="茶室里有新动态或新留言">' + hb.newN + '</i>' : '') + ' ›</button>' +
+      '<button type="button" class="sub sub-go" data-myhome="1" title="' + (A.homeOpen() ? '直接去我的基地' : '读完「陆羽茶室」支线后开放') + '">我的基地' + (hb.newN ? '<i class="q-badge" title="基地里有新动态或新留言">' + hb.newN + '</i>' : '') + ' ›</button>' +
       '<span class="soc-on">' + (st.wsOk ? '<span class="dot on"></span>' + on + ' 人在线' : '<span class="dot"></span>正在连接服务器……') + '</span></div>' +
       body;
     if (focus != null && $('me-motto')) { var ta = $('me-motto'); ta.focus(); ta.setSelectionRange(focus, focus); }
@@ -286,7 +286,7 @@
       if ((t = e.target.closest('[data-poke]'))) {
         var fig = t.closest('.hm-fig'); fig.classList.remove('hop'); void fig.offsetWidth; fig.classList.add('hop');
         var pd = st.view && st.view.data, pm = t.dataset.mon || '精灵';
-        if (pd && !pd.me && !(pokeAt[pm] && Date.now() - pokeAt[pm] < 1500)) { pokeAt[pm] = Date.now(); hbEvent(pd.user, { kind: 'poke', mon: pm }); }   // 记进主人的茶室动态
+        if (pd && !pd.me && !(pokeAt[pm] && Date.now() - pokeAt[pm] < 1500)) { pokeAt[pm] = Date.now(); hbEvent(pd.user, { kind: 'poke', mon: pm }); }   // 记进主人的基地动态
         return;
       }
       if ((t = e.target.closest('[data-teafight]'))) {
@@ -1321,9 +1321,9 @@
     });
   }
 
-  /* ---------- 茶室信息栏与留言板（服务器见 server/homelog.js） ----------
-   * 自己的茶室：「茶室动态」（谁什么时候来过、摸了哪只精灵、挑战了几场）+「留言板」
-   * 别人的茶室：只有留言板。同一位访客 30 分钟内的动作合并成一条动态（服务器合并）。
+  /* ---------- 基地信息栏与留言板（服务器见 server/homelog.js） ----------
+   * 自己的基地：「基地动态」（谁什么时候来过、摸了哪只精灵、挑战了几场）+「留言板」
+   * 别人的基地：只有留言板。同一位访客 30 分钟内的动作合并成一条动态（服务器合并）。
    * 主人在线时，有人来访 / 摸摸 / 挑战 / 留言会收到提示；不在线时，下次登录提示有几条新动态。 */
   function meUser() { return st.me || (C && C.user && C.user()); }
   function hbLoad(owner, force) {
@@ -1347,7 +1347,7 @@
     var pk = Object.keys(e.poke || {}), F = e.fights || [], c = { win: 0, lose: 0, draw: 0, quit: 0 }, acts = [];
     F.forEach(function (f) { c[f.r] = (c[f.r] || 0) + 1; });
     if (pk.length) acts.push('摸了摸 ' + pk.map(function (n) { return esc(n) + (e.poke[n] > 1 ? ' ×' + e.poke[n] : ''); }).join('、'));
-    if (F.length) acts.push('挑战了茶室 ' + F.length + ' 场（' + [c.win ? '对方赢 ' + c.win + ' 场' : '', c.lose ? '你的精灵守住 ' + c.lose + ' 场' : '', c.draw ? '平局 ' + c.draw + ' 场' : '', c.quit ? '对方认输 ' + c.quit + ' 场' : ''].filter(Boolean).join('，') + '）');
+    if (F.length) acts.push('挑战了基地 ' + F.length + ' 场（' + [c.win ? '对方赢 ' + c.win + ' 场' : '', c.lose ? '你的精灵守住 ' + c.lose + ' 场' : '', c.draw ? '平局 ' + c.draw + ' 场' : '', c.quit ? '对方认输 ' + c.quit + ' 场' : ''].filter(Boolean).join('，') + '）');
     return '<li class="hb-ev' + (e.t2 > seen ? ' new' : '') + '">' + hbAv(e) + '<div><p class="hb-what"><b>' + esc(e.name || e.user) + '</b> 来访' + (acts.length ? '，' + acts.join('；') : '') + '</p>' +
       '<small>' + hbClock(e.t) + (e.t2 - e.t > 60000 ? ' ~ ' + hbClock(e.t2).replace(/^今天 /, '') : '') + ' · ' + ago(e.t2) + ' · <button type="button" class="linkbtn" data-hbcard="' + esc(e.user) + '">看名片</button></small></div></li>';
   }
@@ -1359,15 +1359,15 @@
   }
   function hbInner() {
     var d = hb.data;
-    if (!d) return '<div class="hb-col"><p class="hint">' + (hb.err ? esc(hb.err) : '正在读取茶室动态……') + '</p></div>';
+    if (!d) return '<div class="hb-col"><p class="hint">' + (hb.err ? esc(hb.err) : '正在读取基地动态……') + '</p></div>';
     var html = '';
     if (d.mine) {
       var seen = (d.seen && d.seen.log) || 0, nNew = d.logs.filter(function (e) { return e.t2 > seen; }).length;
-      html += '<div class="hb-col"><h4>茶室动态 <span class="hint">' + (nNew ? nNew + ' 条新动态' : '谁来过、做了什么') + '</span></h4>' +
-        (d.logs.length ? '<ul class="hb-list">' + d.logs.map(function (e) { return hbEv(e, seen); }).join('') + '</ul>' : '<p class="hb-empty">还没有船员来过你的茶室。好友在社交页点「茶室」就能来拜访。</p>') + '</div>';
+      html += '<div class="hb-col"><h4>基地动态 <span class="hint">' + (nNew ? nNew + ' 条新动态' : '谁来过、做了什么') + '</span></h4>' +
+        (d.logs.length ? '<ul class="hb-list">' + d.logs.map(function (e) { return hbEv(e, seen); }).join('') + '</ul>' : '<p class="hb-empty">还没有船员来过你的基地。好友在社交页点「基地」就能来拜访。</p>') + '</div>';
     }
     var n = Array.from(hb.draft).length;
-    html += '<div class="hb-col"><h4>留言板 <span class="hint">' + (d.mine ? '来访的船员给你的留言，你也可以写' : '给茶室主人留句话') + '</span></h4>' +
+    html += '<div class="hb-col"><h4>留言板 <span class="hint">' + (d.mine ? '来访的船员给你的留言，你也可以写' : '给基地主人留句话') + '</span></h4>' +
       '<form class="hb-form" onsubmit="return false"><textarea id="hb-text" rows="2" maxlength="200" placeholder="' + (d.mine ? '写点什么，来访的船员都能看到' : '比如：你的小月亮好可爱！') + '">' + esc(hb.draft) + '</textarea>' +
       '<div class="hb-form-row"><span class="hint" id="hb-cnt">' + n + ' / 200</span><button type="button" class="btn primary" data-hbsend="1"' + (n ? '' : ' disabled') + '>留言</button></div></form>' +
       (d.msgs.length ? '<ul class="hb-list">' + d.msgs.map(function (m) { return hbMsg(m, d); }).join('') + '</ul>' : '<p class="hb-empty">还没有留言。</p>') + '</div>';
@@ -1379,12 +1379,12 @@
     el.innerHTML = hbInner();
     if (foc != null && $('hb-text')) { $('hb-text').focus(); $('hb-text').setSelectionRange(foc, foc); }
   }
-  // 茶室页面里放这一块：返回 HTML，同时去服务器读最新的
+  // 基地页面里放这一块：返回 HTML，同时去服务器读最新的
   function hbSlot(owner) {
     if (!online || !owner) return '';
     setTimeout(function () { hbLoad(owner); }, 0);
     if (hb.owner !== owner) { hb.owner = owner; hb.data = null; hb.err = ''; hb.draft = ''; hb.at = 0; }
-    return '<section class="hboard" id="hboard" data-owner="' + esc(owner) + '" aria-label="茶室信息栏与留言板">' + hbInner() + '</section>';
+    return '<section class="hboard" id="hboard" data-owner="' + esc(owner) + '" aria-label="基地信息栏与留言板">' + hbInner() + '</section>';
   }
   function hbSend() {
     var text = hb.draft.trim(), owner = hb.owner; if (!text || !owner) return;
@@ -1400,7 +1400,7 @@
       if (r._code !== 200) A.toast(r.error || '删除失败'); hbLoad(owner, true);
     }).catch(function () { A.toast('连不上服务器'); });
   }
-  // 访客的动作记进主人的茶室动态
+  // 访客的动作记进主人的基地动态
   function hbEvent(owner, obj) { if (online && owner && owner !== meUser()) api('POST', '/api/home-ev', Object.assign({ owner: owner }, obj)).catch(function () {}); }
   document.addEventListener('click', function (e) {
     if (!e.target.closest('#hboard')) return;
@@ -1422,17 +1422,17 @@
   document.addEventListener('keydown', function (e) {
     if (e.target.id === 'hb-text' && e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); hbSend(); }
   });
-  // 服务器推来的茶室动态（主人在线时）
+  // 服务器推来的基地动态（主人在线时）
   function homeEv(m) {
-    var txt = m.kind === 'visit' ? m.name + ' 来拜访了你的茶室' :
-      m.kind === 'poke' ? m.name + ' 在你的茶室里摸了摸' + (m.mon || '精灵') :
-      m.kind === 'fight' ? m.name + ' 挑战了你的茶室' + ({ win: '，赢了', lose: '，你的精灵守住了', draw: '，打成平局', quit: '，中途认输了' }[m.r] || '') :
-      m.kind === 'msg' ? m.name + ' 在你的茶室留言：' + (m.text || '') : '';
+    var txt = m.kind === 'visit' ? m.name + ' 来拜访了你的基地' :
+      m.kind === 'poke' ? m.name + ' 在你的基地里摸了摸' + (m.mon || '精灵') :
+      m.kind === 'fight' ? m.name + ' 挑战了你的基地' + ({ win: '，赢了', lose: '，你的精灵守住了', draw: '，打成平局', quit: '，中途认输了' }[m.r] || '') :
+      m.kind === 'msg' ? m.name + ' 在你的基地留言：' + (m.text || '') : '';
     if (!txt) return;
     var me = meUser();
     if ($('hboard') && hb.owner === me) hbLoad(me, true);
     else { hb.newN++; if (A.page() === 'social' && !st.view && st.tab !== 'mine') render(); }
-    if (!A.inBattle || !A.inBattle()) A.toast('茶室：' + txt);
+    if (!A.inBattle || !A.inBattle()) A.toast('基地：' + txt);
   }
   // 登录后看看不在线时有没有人来过
   function hbPeek() {
@@ -1442,20 +1442,20 @@
       var n = (r.newLog || 0) + (r.newMsg || 0); hb.newN = n;
       if (n) {
         if (A.page() === 'social' && !st.view) render();
-        setTimeout(function () { A.toast('你不在的时候，茶室里有 ' + (r.newLog ? r.newLog + ' 条新动态' : '') + (r.newLog && r.newMsg ? '、' : '') + (r.newMsg ? r.newMsg + ' 条新留言' : '') + '。去「我的茶室」看看吧。'); }, 4000);
+        setTimeout(function () { A.toast('你不在的时候，基地里有 ' + (r.newLog ? r.newLog + ' 条新动态' : '') + (r.newLog && r.newMsg ? '、' : '') + (r.newMsg ? r.newMsg + ' 条新留言' : '') + '。去「我的基地」看看吧。'); }, 4000);
       }
     }).catch(function () {});
   }
 
   window.HSBRAWL = { render: renderBrawl };
   window.HSSOCIAL = { render: function () { if (!st.players) load(); render(); },
-    // 正在拜访的茶室的主人选的茶室音乐（game.js 选界面音乐时用）
+    // 正在拜访的基地的主人选的基地音乐（game.js 选界面音乐时用）
     visitBgm: function () { var d = st.view && st.view.data; return d && d.open && !d.noChar ? d.bgm || 'ui' : null; },
-    // 茶室信息栏与留言板（game.js 的「我的茶室」页面调用，不传参数就是自己的茶室）
+    // 基地信息栏与留言板（game.js 的「我的基地」页面调用，不传参数就是自己的基地）
     homeBoard: function (owner) { return hbSlot(owner || meUser()); },
     // 做题大王争霸赛：约对手对战、观看直播、看回放
     ctAsk: ctAsk, ctRematch: ctRematch, watch: function (user) { watchStart(user); }, replay: replayStart, wsOk: function () { return !!st.wsOk; } };
-  if (A.homeRefresh) A.homeRefresh();   // 如果已经停在自己的茶室页面，补上信息栏
+  if (A.homeRefresh) A.homeRefresh();   // 如果已经停在自己的基地页面，补上信息栏
   connect();
   if (A.page() === 'social') window.HSSOCIAL.render();
   renderBrawl();

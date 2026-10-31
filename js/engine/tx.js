@@ -42,6 +42,10 @@ var TX = (function () {
     MINE_PRICE: { m_cu: 150, m_fe: 250 }, MINE_CAP: 3000, DRILL_MAX: 80,
     // 明明代币抽奖：10 个抽一次；每天最多解锁 100 个新奖池
     MM_COST: 10, MM_POOL_DAY: 100,
+    // 基地（2026-10-31，取代茶室）：房型（r1 默认，其余 30000 能量买一次）和摆件（5000 能量一个，可以买无数个）；layer：floor 地板 / wall 墙壁
+    BASE_ROOMS: { r1: { n: '星空甲板', price: 0 }, r2: { n: '海底穹顶', price: 30000 }, r3: { n: '沙海舰桥', price: 30000 }, r4: { n: '雪原树屋', price: 30000 } },
+    BASE_DECO: { d1: { n: '星角羊娃娃', price: 5000, layer: 'floor' }, d2: { n: '灰毛猫娃娃', price: 5000, layer: 'floor' }, d3: { n: '卷毛犬娃娃', price: 5000, layer: 'floor' }, d4: { n: '粉发熊娃娃', price: 5000, layer: 'floor' } },
+    BASE_DECO_MAX: 40,   // 基地里最多同时摆 40 个
     // 补偿礼包（2026-10-28）：每个账号每个礼包只能领一次（acc.gifts[礼包] 记领取时间）
     GIFTS: { comp1: { name: '补偿大礼包', exp: 300000, energy: 50000, items: { m_mcry: 500, tgPearl: 200, brTwig: 200 } } },
     // 配队（2026-10-27）：最多 10 个，前 3 个免费，第 4 个起用能量解锁（下面是第 4 ~ 10 个的价格）
@@ -136,6 +140,22 @@ var TX = (function () {
       return no('没有这件商品');
     },
     // 温泉休息室：{ k: 'juice' } 橘子汁；{ k: 'slot' } 栏位 +1；{ k: 'bgm', m: 曲子 } 解锁音乐
+    // 基地商城：{ t: 'room' | 'deco', k, n }。买到的记在 acc.baseInv = { rooms: { r2: 时间 }, deco: { d1: 个数 } }
+    baseBuy: function (acc, a, env) {
+      if (!acc.baseInv || typeof acc.baseInv !== 'object') acc.baseInv = {};
+      var B = acc.baseInv; if (!B.rooms) B.rooms = {}; if (!B.deco) B.deco = {};
+      if (a.t === 'room') {
+        var R = D.BASE_ROOMS[a.k]; if (!R || !R.price) return no('没有这个房型');
+        if (B.rooms[a.k]) return no('已经有这个房型了');
+        if (num(acc.energy) < R.price) return no('能量不足');
+        acc.energy = num(acc.energy) - R.price; B.rooms[a.k] = env.now;
+        return { ok: true, t: 'room', k: a.k, cost: R.price };
+      }
+      var X = D.BASE_DECO[a.k], n = cnt(a.n, 20); if (!X || !n) return no('没有这个摆件');
+      var cost = X.price * n; if (num(acc.energy) < cost) return no('能量不足');
+      acc.energy = num(acc.energy) - cost; B.deco[a.k] = (B.deco[a.k] | 0) + n;
+      return { ok: true, t: 'deco', k: a.k, n: n, cost: cost };
+    },
     // 领补偿礼包：{ id }
     compGift: function (acc, a, env) {
       var G = D.GIFTS[a.id]; if (!G) return no('没有这个礼包');

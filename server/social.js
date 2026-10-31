@@ -130,7 +130,9 @@ function homeOf(acc) {
   var flora = !!((acc.chapters && acc.chapters.ch1) || (acc.mailSeen && acc.mailSeen['barren-bgm']));   // 主线第一章通关（之前击败普通荒芜拿到的也保留）
   var cg = acc.chalGot || {}, cbgm = { floraGrass: 30, floraForest: 60, floraFallen: 90 };   // 芙罗拉星挑战累计星数奖励的茶室音乐
   var bgm = h.bgm === 'earth' || (cbgm[h.bgm] && cg[cbgm[h.bgm]]) ? h.bgm : 'ui';   // 「芙罗拉星」2026-10-17 移除
-  return { open: open, name: str(h.name, 10) || '陆羽茶室', mons: open ? mons : [], bgm: bgm };
+  var L = h.layout && typeof h.layout === 'object' ? h.layout : {}, rooms = (acc.baseInv && acc.baseInv.rooms) || {};   // 2026-10-31：基地的房型和摆件（拜访时显示）
+  var layout = { room: /^r[1-4]$/.test(L.room) && (L.room === 'r1' || rooms[L.room]) ? L.room : 'r1', deco: (Array.isArray(L.deco) ? L.deco : []).slice(0, 40).filter(function (d) { return d && /^d\d+$/.test(d.k); }).map(function (d) { return { k: d.k, x: +d.x || 50, y: +d.y || 80, f: d.f ? 1 : 0 }; }) };
+  return { open: open, name: str(h.name, 10) || '我的基地', mons: open ? mons : [], bgm: bgm, layout: layout };
 }
 var KING_R = 10;   // 王者（段位表见 js/engine/ranked.js 的 RANKS）
 // 军衔：新存档（milV 3）直接读；还没上线换算的旧存档按 game.js 的 milMigrate 同样的规则算出新阶级
@@ -814,7 +816,7 @@ A.use(function (req, res, url) {
     if (!ha || !ha.introDone) { A.reply(res, 200, { user: hu.name, noChar: true }); return true; }
     var hm = homeOf(ha);
     if (hm.open && hu.name !== me.name) require('./homelog').visit(hu.name, me.name);   // 记进主人的茶室动态
-    A.reply(res, 200, { user: hu.name, name: str(ha.name, 20), me: hu.name === me.name, open: hm.open, homeName: hm.name, bgm: hm.bgm, mons: hm.mons.map(function (m) { return monOut(m, ha); }), online: isOnline(hu.name) });
+    A.reply(res, 200, { user: hu.name, name: str(ha.name, 20), me: hu.name === me.name, open: hm.open, homeName: hm.name, bgm: hm.bgm, layout: hm.layout, mons: hm.mons.map(function (m) { return monOut(m, ha); }), online: isOnline(hu.name) });
     return true;
   }
   if (url === '/api/friends' && req.method === 'POST') {

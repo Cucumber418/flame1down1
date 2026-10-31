@@ -313,7 +313,7 @@
   function renderRes() { $('res').innerHTML = '<span class="res-chip" title="经验背包里的累积经验，可分配给精灵"><img class="res-ic" src="images/items/exp.png" alt="">经验 <b>' + fmt(acc.exp) + '</b></span><span class="res-chip en" title="能量（货币）"><img class="res-ic" src="images/items/energy.png" alt="">能量 <b>' + fmt(acc.energy) + '</b></span>'; setTimeout(renderQBadge, 0); }
   // 导航高亮：明明教官的试炼（全息作战场地、代币抽奖）不管从哪里进，都亮「全息作战」；竞技对战（在太空竞技场里）亮「星际探索」
   // 现在是不是在荆楚号里（舰体图、区域、区域里的设施）：导航亮「飞船终端」
-  var SHIP_VIEWS = { area: 1, shop: 1, forge: 1, nursery: 1, medal: 1, farm: 1, seedshop: 1, spa: 1, home: 1, room: 1, teashop: 1 };
+  var SHIP_VIEWS = { area: 1, shop: 1, forge: 1, nursery: 1, medal: 1, farm: 1, seedshop: 1, spa: 1, home: 1, room: 1, teashop: 1, baseshop: 1 };
   function shipCtx() { return page === 'explore' && typeof ex !== 'undefined' && ex && !ex.mode && !!(SHIP_VIEWS[ex.view] || (ex.view === 'sites' && ex.planet === 'jingchu')); }
   function navSync() {
     var holo = page === 'explore' && typeof ex !== 'undefined' && (ex.view === 'mmArena' || ex.view === 'mmGacha'), ship = shipCtx();
@@ -1468,7 +1468,8 @@
   function homeOpen() { return !!(acc && acc.story && acc.story.tea && acc.story.tea.done); }
   // 茶室里展示的精灵：[{ u, t: 放出来的时间 }]
   function home() {
-    if (!acc.home) acc.home = { name: '陆羽茶室', mons: [] };
+    if (!acc.home) acc.home = { name: '我的基地', mons: [] };
+    if (acc.home.name === '陆羽茶室') acc.home.name = '我的基地';   // 2026-10-31：茶室改成基地，没改过名的换成新名字
     acc.home.mons = acc.home.mons.map(function (x) { return typeof x === 'number' ? { u: x, t: Date.now() } : x; }).filter(function (x) { return mon(x.u); });
     return acc.home;
   }
@@ -1623,6 +1624,7 @@
     if (ex.view === 'ewk') { if (weeklyOpen() && ewkType(ex.ewkT)) { renderEwk(); return; } ex.view = 'planets'; }
     if (ex.view === 'room') { if (homeOpen()) { renderRoom(); return; } ex.view = 'area'; renderArea(); return; }
     if (ex.view === 'teashop') { if (homeOpen()) { renderTeaShop(); return; } ex.view = 'area'; renderArea(); return; }
+    if (ex.view === 'baseshop') { if (homeOpen()) { renderBaseShop(); return; } ex.view = 'area'; renderArea(); return; }
     if (ex.view === 'shop') { if (shopOpen()) { renderShop(); return; } ex.view = 'area'; renderArea(); return; }
     if (ex.view === 'forge') { renderForge(); return; }
     if (ex.view === 'nursery') { renderNursery(); return; }
@@ -5630,13 +5632,13 @@
   document.addEventListener('click', function (e) { if (e.target.closest('[data-bgmopen]')) openBgmPicker(); });
   function homeBgmBar() {
     var cur = homeBgm(), n = HOME_BGM.filter(function (b) { return bgmOwned(b.k); }).length;
-    return '<div class="hm-bgm"><b>茶室音乐</b><button type="button" class="btn bgm-btn" data-bgmopen="1"><span aria-hidden="true">♪</span> ' + esc(bgmName(cur)) + ' <small>（已解锁 ' + n + ' 首）</small></button><span class="hint">你和来拜访的船员在茶室里都会听到。</span></div>';
+    return '<div class="hm-bgm"><b>基地音乐</b><button type="button" class="btn bgm-btn" data-bgmopen="1"><span aria-hidden="true">♪</span> ' + esc(bgmName(cur)) + ' <small>（已解锁 ' + n + ' 首）</small></button><span class="hint">你和来拜访的船员在基地里都会听到。</span></div>';
   }
   /* 茶室商店（茶室大厅）
    * auto：7日自律训练装置，装在展示中的精灵身上；每满 1 天自动收回结算经验、再开始下一天，一共 7 天
    * cap：茶室精灵容量 +1，价格依次 2000 / 5000 / 10000 / 20000 能量，最多 4 次 */
   var AUTO_DAYS = 7, DAY_MS = 24 * 3600 * 1000, CAP_PRICE = TX.D.CAP_PRICE;   // 价格在 js/engine/tx.js
-  var TEA_SHOP = { auto: { name: '7日自律训练装置', price: TX.D.AUTO_PRICE, d: '装在茶室里展示中的一只精灵身上。它每训练满 1 天，就自动收回、结算经验，再开始下一天，一共 7 天。7 天里不用每天回来收精灵。' } };
+  var TEA_SHOP = { auto: { name: '7日自律训练装置', price: TX.D.AUTO_PRICE, d: '装在基地里展示中的一只精灵身上。它每训练满 1 天，就自动收回、结算经验，再开始下一天，一共 7 天。7 天里不用每天回来收精灵。' } };
   // 展示经验：每小时 30 + LV × 6 点，按分钟累计，最多累计 24 小时（离线也照样计时）
   function homeRate(m) { return 30 + m.lv * 6; }
   function homeMins(x) { return Math.max(0, Math.min(HOME_CAP_H * 60, Math.floor((Date.now() - x.t) / 60000))); }
@@ -5722,7 +5724,7 @@
     var nAuto = acc.items.auto || 0;
     var autoBar = '<div class="hm-autobar"><b>7日自律训练装置</b><span class="hint">持有 ' + nAuto + ' 个' + (nAuto ? '，点下面展示中的精灵卡片上的「装上装置」' : '，可以在茶室大厅的茶室商店兑换') + '。装上后每满 1 天自动结算经验并重新开始，一共 7 天；中途收回精灵，剩下的天数作废。</span></div>';
     var title = ex.homeEdit
-      ? '<form class="home-edit" onsubmit="return false"><input id="home-name" maxlength="10" value="' + esc(H.name) + '" aria-label="茶室名字"><button type="button" class="btn primary" id="home-ok">保存</button><button type="button" class="btn ghost" id="home-cancel">取消</button><span class="hint">最多 10 个字</span></form>'
+      ? '<form class="home-edit" onsubmit="return false"><input id="home-name" maxlength="10" value="' + esc(H.name) + '" aria-label="基地名字"><button type="button" class="btn primary" id="home-ok">保存</button><button type="button" class="btn ghost" id="home-cancel">取消</button><span class="hint">最多 10 个字</span></form>'
       : '<b class="home-name">' + esc(H.name) + '</b><button type="button" class="btn ghost" id="home-rn">改名</button>';
     var ins = H.mons.map(function (x) { return x.u; });
     var cards = acc.mons.map(function (m) {
@@ -5731,13 +5733,124 @@
       return '<div class="hm-cell"><button type="button" class="card hm-card' + (on ? ' on' : '') + (armed ? ' armed' : '') + '" data-hm="' + m.u + '"' + (full ? ' disabled' : '') + ' aria-pressed="' + on + '"><img src="' + f.img + '" alt=""><span class="nm">' + esc(f.name) + '</span><span class="meta">LV' + m.lv + (armed ? ' · 再点一次收回（装置剩余天数作废）' : on ? (x.auto ? ' · 自律训练中 · 点击收回' : ' · 展示中，点击收回') : ' · 每小时 ' + homeRate(m) + ' 经验') + '</span></button>' +
         (on && !x.auto && nAuto ? '<button type="button" class="btn hm-autobtn" data-hauto="' + m.u + '">装上装置</button>' : '') + '</div>';
     }).join('');
-    $('pg-explore').innerHTML = exHead('你在荆楚号上的休息舱。放精灵出来展示，收回时会按等级和展示时长获得经验，离开游戏也会照常计时。') +
-      '<div class="crumb"><button type="button" class="btn ghost" id="home-back">‹ 返回大厅</button>' + title + '</div>' +
-      '<div class="home-room"><img class="home-bg" src="' + BG.tea_p + '" alt="' + esc(H.name) + '">' + figs +
-      (H.mons.length ? '' : '<p class="home-empty">茶室里空荡荡的。从下面选几只精灵，放出来展示吧。</p>') + '</div>' +
+    var E0 = ex.baseEdit, LY = E0 || baseLayout();
+    $('pg-explore').innerHTML = exHead('你在荆楚号上的基地。放精灵出来展示，收回时会按等级和展示时长获得经验，离开游戏也会照常计时；还可以换房型、摆放摆件。') +
+      '<div class="crumb"><button type="button" class="btn ghost" id="home-back">‹ 返回大厅</button>' + title + (E0 ? '' : '<span class="base-acts"><button type="button" class="btn" data-bedit="1">✎ 编辑基地</button><button type="button" class="btn" data-bshop="1">基地商城</button></span>') + '</div>' +
+      baseRoomHTML(LY, figs + (H.mons.length || E0 ? '' : '<p class="home-empty">基地里空荡荡的。从下面选几只精灵放出来展示，或者点「编辑基地」摆上摆件吧。</p>'), E0) + (E0 ? baseEditBar() : '') +
       (window.HSSOCIAL && HSSOCIAL.homeBoard ? HSSOCIAL.homeBoard() : '') +   // 茶室信息栏与留言板（联网时才有，见 social.js）
-      homeBgmBar() + autoBar + '<div class="home-pick"><h4>展示的精灵 <span class="hint">' + H.mons.length + ' / ' + homeMax() + ' · 展示越久、等级越高，收回时经验越多，最多累计 ' + HOME_CAP_H + ' 小时 · 点击卡片放出或收回，点茶室里的精灵可以摸摸它</span></h4><div class="hm-grid">' + cards + '</div></div>';
+      homeBgmBar() + autoBar + '<div class="home-pick"><h4>展示的精灵 <span class="hint">' + H.mons.length + ' / ' + homeMax() + ' · 展示越久、等级越高，收回时经验越多，最多累计 ' + HOME_CAP_H + ' 小时 · 点击卡片放出或收回，点基地里的精灵可以摸摸它</span></h4><div class="hm-grid">' + cards + '</div></div>';
   }
+  /* ---------- 基地（2026-10-31，取代原来的茶室）：2.5D 房间，可以换房型、摆放摆件 ----------
+   * 房型、摆件在基地商城用能量买（js/engine/tx.js 的 baseBuy，记在 acc.baseInv）；摆放记在 acc.home.layout = { room, deco: [{ k, x, y, f }] }
+   * x、y 是摆件脚底在房间里的位置（百分比）；f = 1 左右翻转。floor：房间地板从多高开始（百分比），地板摆件只能放在它下面，墙壁摆件只能放在上面 */
+  var BASE_UI = { r1: { img: 'images/base/room1.jpg', floor: 36 }, r2: { img: 'images/base/room2.jpg', floor: 46 }, r3: { img: 'images/base/room3.jpg', floor: 50 }, r4: { img: 'images/base/room4.jpg', floor: 34 } };
+  var DECO_IMG = { d1: 'images/base/deco1.webp', d2: 'images/base/deco2.webp', d3: 'images/base/deco3.webp', d4: 'images/base/deco4.webp' };
+  function baseInv() { var B = (acc && acc.baseInv) || {}; return { rooms: B.rooms || {}, deco: B.deco || {} }; }
+  function roomOwned(k) { return k === 'r1' || !!baseInv().rooms[k]; }
+  function decoOwn(k) { return baseInv().deco[k] | 0; }
+  function baseLayout() { var H = home(); if (!H.layout || typeof H.layout !== 'object') H.layout = { room: 'r1', deco: [] }; if (!roomOwned(H.layout.room) || !BASE_UI[H.layout.room]) H.layout.room = 'r1'; if (!Array.isArray(H.layout.deco)) H.layout.deco = []; return H.layout; }
+  function decoLayer(k) { var X = TX.D.BASE_DECO[k]; return X ? X.layer : 'floor'; }
+  // 越靠里（越往上）的地板摆件画得越小，看起来有纵深
+  function decoHTML(d, i, room, edit, sel) {
+    var fl = (BASE_UI[room] || BASE_UI.r1).floor, wall = decoLayer(d.k) === 'wall';
+    var sc = wall ? 0.9 : 0.72 + 0.42 * Math.max(0, Math.min(1, (d.y - fl) / (100 - fl)));
+    return '<div class="bdeco' + (wall ? ' wall' : '') + (d.f ? ' flip' : '') + (edit && sel === i ? ' sel' : '') + '" data-bi="' + i + '" style="left:' + d.x + '%;top:' + d.y + '%;width:' + (12 * sc).toFixed(2) + '%;z-index:' + (wall ? 2 : Math.round(d.y)) + '"><img src="' + (DECO_IMG[d.k] || '') + '" alt="' + esc((TX.D.BASE_DECO[d.k] || {}).n || '') + '" draggable="false"></div>';
+  }
+  function baseRoomHTML(L, inner, edit) {
+    L = L || { room: 'r1', deco: [] }; var R = BASE_UI[L.room] || BASE_UI.r1;
+    return '<div class="home-room base-room' + (edit ? ' editing' : '') + '" id="base-room" style="--floor:' + R.floor + '%"><img class="home-bg" src="' + R.img + '" alt="">' +
+      (L.deco || []).map(function (d, i) { return decoHTML(d, i, L.room, !!edit, edit ? edit.sel : -1); }).join('') + (edit ? '<div class="base-floorline" aria-hidden="true"></div>' : '') + (inner || '') + '</div>';
+  }
+  function baseEditBar() {
+    var E0 = ex.baseEdit, used = {}; E0.deco.forEach(function (d) { used[d.k] = (used[d.k] | 0) + 1; });
+    var sel = E0.deco[E0.sel];
+    return '<div class="base-edit"><span class="tape l"></span><div class="be-head"><b>编辑基地</b><span class="hint">拖动摆件调整位置；地板摆件只能放在地板上，墙壁摆件只能挂在墙上。最多摆 ' + TX.D.BASE_DECO_MAX + ' 个。</span>' +
+      '<span class="be-save"><button type="button" class="btn ghost" data-becancel="1">取消</button><button type="button" class="btn primary" data-besave="1">保存</button></span></div>' +
+      (sel ? '<div class="be-sel"><b>已选中：' + esc(TX.D.BASE_DECO[sel.k].n) + '</b><button type="button" class="btn" data-beflip="1">↔ 左右转向</button><button type="button" class="btn ghost" data-bedel="1">收进摆件库</button></div>' : '') +
+      '<h4>房型</h4><div class="be-rooms">' + Object.keys(TX.D.BASE_ROOMS).map(function (k) {
+        var own = roomOwned(k), on = E0.room === k;
+        return '<button type="button" class="be-room' + (on ? ' on' : '') + (own ? '' : ' locked') + '" data-beroom="' + k + '"><img src="' + BASE_UI[k].img + '" alt=""><b>' + esc(TX.D.BASE_ROOMS[k].n) + '</b><small>' + (on ? '使用中' : own ? '点击换上' : '🔒 在基地商城购买') + '</small></button>';
+      }).join('') + '</div>' +
+      '<h4>摆件库 <span class="hint">点一下放进基地</span></h4><div class="be-decos">' + Object.keys(TX.D.BASE_DECO).map(function (k) {
+        var left = decoOwn(k) - (used[k] | 0), X = TX.D.BASE_DECO[k];
+        return '<button type="button" class="be-deco" data-beadd="' + k + '"' + (left > 0 && E0.deco.length < TX.D.BASE_DECO_MAX ? '' : ' disabled') + '><img src="' + DECO_IMG[k] + '" alt=""><b>' + esc(X.n) + '</b><small>' + (X.layer === 'wall' ? '墙壁' : '地板') + ' · 可放 ' + Math.max(0, left) + ' / ' + decoOwn(k) + '</small></button>';
+      }).join('') + '</div>' + (Object.keys(TX.D.BASE_DECO).some(function (k) { return decoOwn(k) > 0; }) ? '' : '<p class="hint">还没有摆件，去<button type="button" class="linkbtn" data-bshop="1">基地商城</button>买几个吧。</p>') + '</div>';
+  }
+  function baseClamp(d, room) {
+    var fl = (BASE_UI[room] || BASE_UI.r1).floor;
+    d.x = Math.max(4, Math.min(96, d.x));
+    d.y = decoLayer(d.k) === 'wall' ? Math.max(14, Math.min(fl - 2, d.y)) : Math.max(fl + 6, Math.min(99, d.y));
+    d.x = Math.round(d.x * 10) / 10; d.y = Math.round(d.y * 10) / 10;
+    return d;
+  }
+  $('pg-explore').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.bshop) { if (ex.baseEdit && !confirmLeaveEdit()) return; ex.baseEdit = null; ex.view = 'baseshop'; ex.area = '天门'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
+    if (b.dataset.bedit) { var L0 = baseLayout(); ex.baseEdit = { room: L0.room, deco: L0.deco.map(function (d) { return { k: d.k, x: d.x, y: d.y, f: d.f ? 1 : 0 }; }), sel: -1 }; renderHome(); return; }
+    var E0 = ex.baseEdit; if (!E0) return;
+    if (b.dataset.becancel) { ex.baseEdit = null; renderHome(); return; }
+    if (b.dataset.besave) { var H = home(); H.layout = { room: E0.room, deco: E0.deco.map(function (d) { return baseClamp({ k: d.k, x: d.x, y: d.y, f: d.f ? 1 : 0 }, E0.room); }) }; ex.baseEdit = null; save(); renderHome(); toast('基地布置已保存。'); return; }
+    if (b.dataset.beroom) { var k = b.dataset.beroom; if (!roomOwned(k)) { toast('这个房型要在基地商城用 ' + fmt(TX.D.BASE_ROOMS[k].price) + ' 能量购买。'); return; } E0.room = k; E0.deco.forEach(function (d) { baseClamp(d, k); }); renderHome(); return; }
+    if (b.dataset.beadd) { var dk = b.dataset.beadd, fl = BASE_UI[E0.room].floor; E0.deco.push(baseClamp({ k: dk, x: 40 + Math.random() * 20, y: decoLayer(dk) === 'wall' ? fl * 0.55 : fl + (100 - fl) * 0.55, f: 0 }, E0.room)); E0.sel = E0.deco.length - 1; renderHome(); return; }
+    if (b.dataset.beflip && E0.deco[E0.sel]) { E0.deco[E0.sel].f = E0.deco[E0.sel].f ? 0 : 1; renderHome(); return; }
+    if (b.dataset.bedel && E0.deco[E0.sel]) { E0.deco.splice(E0.sel, 1); E0.sel = -1; renderHome(); return; }
+  });
+  function confirmLeaveEdit() { return true; }   // 编辑中离开：直接放弃没保存的改动
+  // 编辑模式下拖动摆件（鼠标、触屏都可以）
+  (function () {
+    var drag = null;
+    $('pg-explore').addEventListener('pointerdown', function (e) {
+      var E0 = ex.baseEdit; if (!E0) return;
+      var el = e.target.closest('#base-room .bdeco'); if (!el) { if (e.target.closest('#base-room') && E0.sel >= 0) { E0.sel = -1; renderHome(); } return; }
+      e.preventDefault();
+      var i = +el.dataset.bi, room = $('base-room').getBoundingClientRect();
+      if (E0.sel !== i) { E0.sel = i; Array.prototype.forEach.call(document.querySelectorAll('#base-room .bdeco'), function (x) { x.classList.toggle('sel', +x.dataset.bi === i); }); var bar = document.querySelector('.base-edit'); if (bar) bar.outerHTML = baseEditBar(); }
+      drag = { i: i, el: $('base-room').querySelector('.bdeco[data-bi="' + i + '"]'), rect: room, x0: e.clientX, y0: e.clientY, dx: E0.deco[i].x, dy: E0.deco[i].y };
+      try { $('base-room').setPointerCapture(e.pointerId); } catch (er) {}
+    });
+    $('pg-explore').addEventListener('pointermove', function (e) {
+      if (!drag || !ex.baseEdit) return;
+      var E0 = ex.baseEdit, d = E0.deco[drag.i]; if (!d) return;
+      d.x = drag.dx + (e.clientX - drag.x0) / drag.rect.width * 100; d.y = drag.dy + (e.clientY - drag.y0) / drag.rect.height * 100;
+      baseClamp(d, E0.room);
+      var tmp = document.createElement('div'); tmp.innerHTML = decoHTML(d, drag.i, E0.room, true, drag.i); var nw = tmp.firstChild;
+      drag.el.style.left = nw.style.left; drag.el.style.top = nw.style.top; drag.el.style.width = nw.style.width; drag.el.style.zIndex = nw.style.zIndex;
+    });
+    var end = function () { drag = null; };
+    $('pg-explore').addEventListener('pointerup', end); $('pg-explore').addEventListener('pointercancel', end);
+  })();
+  /* 基地商城：房型（买一次）、摆件（可以买很多个） */
+  function renderBaseShop() {
+    var q = function (k) { return Math.max(1, Math.min(20, shopQty['bd-' + k] || 1)); };
+    $('pg-explore').innerHTML = exHead('基地商城：用能量购买基地的房型和摆件。买到的在基地的「编辑基地」里使用。') +
+      '<div class="crumb"><button type="button" class="btn ghost" data-bhome="1">‹ 返回基地</button><b>基地商城</b></div>' +
+      '<div class="shop-bal"><span class="tape l"></span>当前能量 <b>' + fmt(acc.energy) + '</b></div>' +
+      '<h3 class="sec bs-h">房型</h3><div class="bs-rooms">' + Object.keys(TX.D.BASE_ROOMS).map(function (k) {
+        var R = TX.D.BASE_ROOMS[k], own = roomOwned(k);
+        return '<article class="bs-room"><span class="tape r"></span><img src="' + BASE_UI[k].img + '" alt=""><div class="bs-txt"><b>' + esc(R.n) + '</b>' +
+          (own ? '<span class="hint">' + (R.price ? '已拥有' : '默认房型') + '</span>' : '<button type="button" class="btn primary" data-bbuy="room|' + k + '"' + (acc.energy >= R.price ? '' : ' disabled') + '>' + (acc.energy >= R.price ? '购买 · ' + fmt(R.price) + ' 能量' : '能量不足（' + fmt(R.price) + '）') + '</button>') + '</div></article>';
+      }).join('') + '</div>' +
+      '<h3 class="sec bs-h">摆件</h3><div class="shop-grid">' + Object.keys(TX.D.BASE_DECO).map(function (k) {
+        var X = TX.D.BASE_DECO[k], n = q(k), cost = X.price * n, ok = acc.energy >= cost;
+        return '<article class="shop-it"><span class="tape r"></span><img class="bs-deco" src="' + DECO_IMG[k] + '" alt=""><div class="si-txt"><b>' + esc(X.n) + '</b><p class="hint">' + (X.layer === 'wall' ? '墙壁摆件' : '地板摆件') + '，可以买很多个。</p><p class="si-own">持有 <b>' + decoOwn(k) + '</b></p></div>' +
+          '<div class="si-buy"><span class="si-price">' + fmt(X.price) + ' <small>能量</small></span>' +
+          '<div class="qty"><button type="button" class="btn ghost" data-bq="' + k + '|-1"' + (n <= 1 ? ' disabled' : '') + '>−</button><span aria-live="polite">' + n + '</span><button type="button" class="btn ghost" data-bq="' + k + '|1"' + (n >= 20 ? ' disabled' : '') + '>+</button></div>' +
+          '<button type="button" class="btn primary" data-bbuy="deco|' + k + '"' + (ok ? '' : ' disabled') + '>' + (ok ? '购买 · ' + fmt(cost) : '能量不足') + '</button></div></article>';
+      }).join('') + '</div>';
+  }
+  $('pg-explore').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b || b.disabled) return;
+    if (b.dataset.bhome) { ex.view = 'home'; ex.area = '天门'; renderExplore(); return; }
+    if (b.dataset.bq) { var p = b.dataset.bq.split('|'); shopQty['bd-' + p[0]] = Math.max(1, Math.min(20, (shopQty['bd-' + p[0]] || 1) + (+p[1]))); renderBaseShop(); return; }
+    if (b.dataset.bbuy) {
+      var q2 = b.dataset.bbuy.split('|'), t = q2[0], k = q2[1], n = t === 'deco' ? Math.max(1, Math.min(20, shopQty['bd-' + k] || 1)) : 1;
+      b.disabled = true;
+      txRun('baseBuy', { t: t, k: k, n: n }, function (r) {
+        shopQty['bd-' + k] = 1; renderRes(); renderBaseShop();
+        toast(t === 'room' ? '买到了房型「' + TX.D.BASE_ROOMS[k].n + '」！在基地点「编辑基地」就能换上。' : '买到了「' + TX.D.BASE_DECO[k].n + '」×' + r.n + '，消耗 ' + fmt(r.cost) + ' 能量。在基地点「编辑基地」摆出来吧。');
+      }, function () { b.disabled = false; });
+    }
+  });
   function renderTeaShop() {
     var nCap = Math.min(4, (acc.home && acc.home.cap) || 0), capPrice = CAP_PRICE[nCap], A0 = TEA_SHOP.auto, q = shopQty.tsauto || 1, cost = A0.price * q, ok = acc.energy >= cost;
     $('pg-explore').innerHTML = exHead('陆羽茶室大厅里的小商店，卖茶室专用的东西。') +
@@ -5749,7 +5862,7 @@
         '<div class="si-buy"><span class="si-price">' + fmt(A0.price) + ' <small>能量</small></span>' +
         '<div class="qty"><button type="button" class="btn ghost" data-tsq="-1" aria-label="减少"' + (q <= 1 ? ' disabled' : '') + '>−</button><span aria-live="polite">' + q + '</span><button type="button" class="btn ghost" data-tsq="1" aria-label="增加"' + (q >= 20 ? ' disabled' : '') + '>+</button></div>' +
         '<button type="button" class="btn primary" data-tsbuy="auto"' + (ok ? '' : ' disabled') + '>' + (ok ? '兑换 · ' + fmt(cost) : '能量不足') + '</button></div></article>' +
-      '<article class="shop-it"><span class="tape r"></span><span class="it-ic ts-ic" aria-hidden="true">＋</span><div class="si-txt"><b>茶室精灵容量 +1</b><p class="hint">茶室里能同时展示的精灵多 1 只。基础 ' + HOME_BASE + ' 只，最多买 4 次，价格依次 ' + CAP_PRICE.map(fmt).join(' / ') + ' 能量。</p>' +
+      '<article class="shop-it"><span class="tape r"></span><span class="it-ic ts-ic" aria-hidden="true">＋</span><div class="si-txt"><b>基地精灵容量 +1</b><p class="hint">基地里能同时展示的精灵多 1 只。基础 ' + HOME_BASE + ' 只，最多买 4 次，价格依次 ' + CAP_PRICE.map(fmt).join(' / ') + ' 能量。</p>' +
         '<p class="si-own">现在能展示 <b>' + homeMax() + '</b> 只 · 已购买 <b>' + nCap + '</b> / 4</p></div>' +
         '<div class="si-buy">' + (capPrice ? '<span class="si-price">' + fmt(capPrice) + ' <small>能量</small></span><button type="button" class="btn primary" data-tsbuy="cap"' + (acc.energy >= capPrice ? '' : ' disabled') + '>' + (acc.energy >= capPrice ? '扩容' : '能量不足') + '</button>' : '<span class="hint">已经扩到最大（' + homeMax() + ' 只）了</span>') + '</div></article>' +
       '</div>';
@@ -5782,9 +5895,9 @@
   ];
   function hallSpots() {
     var open = homeOpen();
-    return '<button type="button" class="mk shop' + (open ? '' : ' locked') + '"' + (open ? ' data-teashop="1"' : ' disabled') + ' style="left:50%;top:72%"><span class="mk-dot">' + (open ? '商' : '锁') + '</span><span class="mk-lab"><b>茶室商店</b><small>' + (open ? '自律训练装置 · 茶室扩容' : '读完「陆羽茶室」支线后开放') + '</small></span></button>' + ROOMS.map(function (R) {
-      var me = R.k === 'me', label = me ? (open ? '我的房间 · ' + esc(home().name) : '我的房间') : R.n, inside = !me && open && npcHome(R.k);
-      return '<button type="button" class="mk shop home' + (me ? '' : ' fr') + (inside ? ' npc-in' : '') + (open ? '' : ' locked') + '"' + (open ? (me ? ' data-home="1"' : ' data-room="' + R.k + '"') : ' disabled') + ' style="left:' + R.pos[0] + '%;top:' + R.pos[1] + '%"><span class="mk-dot">' + (open ? (me ? '家' : '门') : '锁') + '</span><span class="mk-lab"><b>' + label + '</b><small>' + (open ? (me ? '你的休息舱（家园）' : inside ? '● 主人在家 · 点击拜访' : '点击拜访') : '读完「陆羽茶室」支线后开放') + '</small></span></button>';
+    return '<button type="button" class="mk shop' + (open ? '' : ' locked') + '"' + (open ? ' data-teashop="1"' : ' disabled') + ' style="left:50%;top:72%"><span class="mk-dot">' + (open ? '商' : '锁') + '</span><span class="mk-lab"><b>茶室商店</b><small>' + (open ? '自律训练装置 · 基地扩容' : '读完「陆羽茶室」支线后开放') + '</small></span></button>' + ROOMS.map(function (R) {
+      var me = R.k === 'me', label = me ? (open ? '我的基地 · ' + esc(home().name) : '我的基地') : R.n, inside = !me && open && npcHome(R.k);
+      return '<button type="button" class="mk shop home' + (me ? '' : ' fr') + (inside ? ' npc-in' : '') + (open ? '' : ' locked') + '"' + (open ? (me ? ' data-home="1"' : ' data-room="' + R.k + '"') : ' disabled') + ' style="left:' + R.pos[0] + '%;top:' + R.pos[1] + '%"><span class="mk-dot">' + (open ? (me ? '家' : '门') : '锁') + '</span><span class="mk-lab"><b>' + label + '</b><small>' + (open ? (me ? '你的基地：展示精灵、摆放摆件' : inside ? '● 主人在家 · 点击拜访' : '点击拜访') : '读完「陆羽茶室」支线后开放') + '</small></span></button>';
     }).join('');
   }
   // Threego 房间里固定展示：LV8 小胖虎 + LV7 的「被玩家主宠克制的那只初始精灵」
@@ -5894,7 +6007,7 @@
     var ip = $('home-name'); if (!ip) return;
     var v = Array.from(ip.value.trim()).slice(0, 10).join('');
     if (!v) { toast('名字不能为空。'); return; }
-    home().name = v; save(); ex.homeEdit = false; renderHome(); toast('茶室改名为「' + v + '」。');
+    home().name = v; save(); ex.homeEdit = false; renderHome(); toast('基地改名为「' + v + '」。');
   }
   function toggleHomeMon(u) {
     var H = home(), i = -1;
@@ -6602,7 +6715,7 @@
   var TEA_DAILY = PVE.TEA_DAILY, TEA_EXP = PVE.TEA_EXP;
   function teaLeft() { var t = acc && acc.teaFight; return t && t.d === todayKey() ? Math.max(0, TEA_DAILY - (t.n || 0)) : TEA_DAILY; }
   function teaFight(opt) {
-    if (srvMode() && opt.user) return pveRemote('tea', { owner: opt.user }, { bg: BG.tea_p, back: '茶室', pre: function () { ['holo', 'log', 'bag', 'store', 'dex', 'items', 'social', 'explore'].forEach(function (pg) { $('pg-' + pg).hidden = true; }); $('who-menu').hidden = true; } }, function (e, res) {
+    if (srvMode() && opt.user) return pveRemote('tea', { owner: opt.user }, { bg: BG.tea_p, back: '基地', pre: function () { ['holo', 'log', 'bag', 'store', 'dex', 'items', 'social', 'explore'].forEach(function (pg) { $('pg-' + pg).hidden = true; }); $('who-menu').hidden = true; } }, function (e, res) {
       ex.fighting = false; document.body.classList.remove('story-fight');
       var r = e && e.rep, msg = '', quit = !!(e && e.quit);
       if (!r) msg = res === 'void' ? '这场对战作废了，不计入奖励次数。' : '';
@@ -6619,7 +6732,7 @@
     stopTimers(); ex.fighting = true; document.body.classList.add('story-fight');
     ['holo', 'log', 'bag', 'store', 'dex', 'items', 'social', 'explore'].forEach(function (pg) { $('pg-' + pg).hidden = true; });
     $('pg-arena').hidden = false; $('who-menu').hidden = true;
-    window.HSBATTLE.start({ p: p, a: opt.foe, foe: opt.owner + '的茶室', bg: BG.tea_p, back: '茶室', onEnd: function (res, seen, downs, quit) {
+    window.HSBATTLE.start({ p: p, a: opt.foe, foe: opt.owner + '的基地', bg: BG.tea_p, back: '基地', onEnd: function (res, seen, downs, quit) {
       ex.fighting = false; document.body.classList.remove('story-fight');
       var msg = '';
       if (quit) msg = '认输的茶室对战不计入奖励次数。';
@@ -6677,7 +6790,7 @@
     goHome: function () { if (!homeOpen()) { toast('读完星际探索 · 荆楚号 · 天门「陆羽茶室」支线后，才有自己的茶室。'); return; } ex.planet = 'jingchu'; ex.area = '天门'; ex.view = 'home'; go('explore'); },
     // 参加过一次竞技征召（支线任务「竞技征召」用）
     noteDraft: function () { if (!acc.stats) acc.stats = {}; acc.stats.drafts = (acc.stats.drafts || 0) + 1; save(); },
-    teaFight: teaFight, teaLeft: teaLeft, TEA_DAILY: TEA_DAILY, TEA_EXP: TEA_EXP, homePos: HOME_POS,
+    teaFight: teaFight, teaLeft: teaLeft, TEA_DAILY: TEA_DAILY, TEA_EXP: TEA_EXP, homePos: HOME_POS, baseRoom: baseRoomHTML,
     view: function (m) { var f = form(m); return { name: f.name, img: f.img, stage: f.stage, shiny: f.shiny }; },
     // 把服务器发来的精灵资料变成对战用的精灵（逐项检查，不信任外来数据）
     spec: function (raw) {

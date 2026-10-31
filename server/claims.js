@@ -256,13 +256,27 @@ function teamStep(oldData, newData, info) {
   if ((B.teamX | 0) !== x) { if (x) B.teamX = x; else delete B.teamX; ch = true; }
   if (B.teams.length > cap) { B.teams = B.teams.slice(0, cap); ch = true; }
   if (!(B.active >= 0 && B.active < B.teams.length)) { B.active = 0; ch = true; }
+  // 2026-10-31：基地的房型、摆件只能用交易买（acc.baseInv 由服务器管）；摆放（home.layout）不能超过买到的数量
+  var E0 = require('./tx').engine(), BD = E0 && E0.TX && E0.TX.D;
+  if (JSON.stringify(A.baseInv || null) !== JSON.stringify(B.baseInv || null)) { if (A.baseInv) B.baseInv = JSON.parse(JSON.stringify(A.baseInv)); else delete B.baseInv; ch = true; }
+  if (BD && B.home && B.home.layout && typeof B.home.layout === 'object') {
+    var L = B.home.layout, inv = (B.baseInv && B.baseInv.deco) || {}, rooms = (B.baseInv && B.baseInv.rooms) || {}, used = {}, ok = [];
+    if (L.room !== 'r1' && !(BD.BASE_ROOMS[L.room] && rooms[L.room])) { L.room = 'r1'; ch = true; }
+    (Array.isArray(L.deco) ? L.deco : []).forEach(function (d) {
+      if (!d || !BD.BASE_DECO[d.k] || ok.length >= BD.BASE_DECO_MAX) { ch = true; return; }
+      used[d.k] = (used[d.k] | 0) + 1; if (used[d.k] > (inv[d.k] | 0)) { ch = true; return; }
+      ok.push({ k: d.k, x: Math.max(0, Math.min(100, +d.x || 50)), y: Math.max(0, Math.min(100, +d.y || 80)), f: d.f ? 1 : 0 });
+    });
+    if (!Array.isArray(L.deco) || ok.length !== L.deco.length) ch = true;
+    L.deco = ok;
+  }
   if (A.gifts && typeof A.gifts === 'object') {   // 2026-10-28：领过的补偿礼包只由交易记，不能靠改存档再领一次
     if (!B.gifts || typeof B.gifts !== 'object') B.gifts = {};
     for (var gk in A.gifts) if (!B.gifts[gk]) { B.gifts[gk] = A.gifts[gk]; ch = true; }
   }
   if (!ch) return newData;
   var o2 = {}; for (var k in newData) o2[k] = newData[k]; o2['hs-account-v1'] = JSON.stringify(B);
-  info.sync = (info.sync || []).concat(['teams', 'teamX', 'active', 'gifts']);
+  info.sync = (info.sync || []).concat(['teams', 'teamX', 'active', 'gifts', 'baseInv', 'home']);
   return o2;
 }
 function onUpload(u, list, oldData, newData, info) {
