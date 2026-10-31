@@ -136,6 +136,8 @@ function startMode(E, res, name, kind, u, acc, args) {
   S.story = { foe: o.foe, back: o.back || null, diff: o.diff || null }; S.noLimit = true; S.remote = true;
   if (st.noStory) delete S.story;   // 竞技对战：不是剧情类对战
   if (st.S) Object.keys(st.S).forEach(function (k) { if (st.S[k] != null) S[k] = st.S[k]; });   // env、wild、ai、ordered 等
+  var seenFx = acc.seenFx || {};   // 2026-11-01：这个账号触发过的BOSS特效，对战里一开始就直接显示（不再是「？？？」）
+  S.sides[1].team.forEach(function (m) { if (!m.boss) return; m.boss.seen = m.boss.seen || {}; Object.keys(seenFx).forEach(function (k) { if (m.boss[k]) m.boss.seen[k] = 1; }); });
   var items0 = {}; E.ITEM_ORDER.forEach(function (k) { items0[k] = (acc.items && acc.items[k]) || 0; });
   if (!st.noItems) S.items = JSON.parse(JSON.stringify(items0));
   var out = { ok: true, S: S, opt: o };
