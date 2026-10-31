@@ -2878,3 +2878,6 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
   .shipmap .sm-wrap { flex-direction: column; }
   .sm-side { width: auto; display: grid; grid-template-columns: 1fr 1fr; padding: 0 10px 10px; }
 }
+
+.gift-art { display: flex; gap: 10px; align-items: flex-end; margin: 6px 0; }
+.gift-art img { width: 84px; height: 84px; object-fit: contain; }

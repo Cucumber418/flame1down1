@@ -3954,7 +3954,7 @@
   setInterval(function () { if (document.visibilityState === 'visible') newsCheck(); }, 20000);
   var QQ_GROUP = '1124145809';   // 航行日志最上方显示的船员 QQ 群
   $('pg-log').addEventListener('click', function (e) {
-    var gb = e.target.closest('[data-gift]'); if (gb && !gb.disabled && ready()) { gb.disabled = true; txRun('compGift', { id: gb.dataset.gift }, function () { toast('领取了补偿大礼包！经验已放进经验背包，道具已放入储存箱。'); renderRes(); renderLog(); }, function () { gb.disabled = false; }); return; }
+    var gb = e.target.closest('[data-gift]'); if (gb && !gb.disabled && ready()) { gb.disabled = true; txRun('compGift', { id: gb.dataset.gift }, function () { toast(gb.dataset.gift === 'base1' ? '领取了基地改版纪念礼包！三个纪念摆件已经放进基地的摆件库。' : '领取了补偿大礼包！经验已放进经验背包，道具已放入储存箱。'); renderRes(); renderLog(); }, function () { gb.disabled = false; }); return; }
     if (!e.target.closest('[data-copyqq]')) return;
     var done = function () { toast('群号 ' + QQ_GROUP + ' 已复制，打开 QQ 搜索加群即可。'); };
     // 网站是 http 打开的，浏览器不给用新的剪贴板接口，先用老办法复制
@@ -4066,10 +4066,15 @@
   }
   // 补偿大礼包（2026-10-28）：航行日志最上面，每人领一次，领完卡片消失（服务器结算：js/engine/tx.js 的 compGift）
   function giftLogHTML() {
-    var id = 'comp1', G = TX.D.GIFTS[id]; if (!G || (acc.gifts && acc.gifts[id])) return '';
-    return '<article class="log-card wide gift-card"><span class="tape l"></span><span class="tape r"></span><span class="chip log-tag">限时领取</span><h3>🎁 ' + G.name + '</h3>' +
-      '<p>感谢各位船员的耐心！这份补偿每个账号都能领一次：</p><ul class="gift-list">' + rwList({ exp: G.exp, energy: G.energy, items: G.items }).map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>' +
-      '<div class="soc-foot"><button type="button" class="btn primary" data-gift="' + id + '">立即领取</button></div></article>';
+    return ['base1', 'comp1'].map(function (id) {
+      var G = TX.D.GIFTS[id]; if (!G || (acc.gifts && acc.gifts[id])) return '';
+      var list = rwList({ exp: G.exp, energy: G.energy, items: G.items }).concat(Object.keys(G.deco || {}).map(function (k) { return '摆件「' + TX.D.BASE_DECO[k].n + '」×' + G.deco[k]; }));
+      var intro = id === 'base1' ? '茶室升级成了「基地」！为了庆祝基地改版，送每位船员一套纪念摆件——三只初始精灵的小形态，镀了一层淡淡的金属光泽。领取后在基地点「编辑基地」就能摆出来；基地商城里也可以用 3,000 能量继续购买。' : '感谢各位船员的耐心！这份补偿每个账号都能领一次：';
+      var art = id === 'base1' ? '<div class="gift-art">' + Object.keys(G.deco).map(function (k) { return '<img src="' + DECO_IMG[k] + '" alt="">'; }).join('') + '</div>' : '';
+      return '<article class="log-card wide gift-card"><span class="tape l"></span><span class="tape r"></span><span class="chip log-tag">限时领取</span><h3>🎁 ' + G.name + '</h3>' + art +
+        '<p>' + intro + '</p><ul class="gift-list">' + list.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>' +
+        '<div class="soc-foot"><button type="button" class="btn primary" data-gift="' + id + '">立即领取</button></div></article>';
+    }).join('');
   }
   function renderLog() {
     var now = new Date(), h = now.getHours(), on = mysteryTime();
@@ -5749,7 +5754,7 @@
    * 房型、摆件在基地商城用能量买（js/engine/tx.js 的 baseBuy，记在 acc.baseInv）；摆放记在 acc.home.layout = { room, deco: [{ k, x, y, f }] }
    * x、y 是摆件脚底在房间里的位置（百分比）；f = 1 左右翻转。floor：房间地板从多高开始（百分比），地板摆件只能放在它下面，墙壁摆件只能放在上面 */
   var BASE_UI = { r1: { img: 'images/base/room1.jpg', floor: 36 }, r2: { img: 'images/base/room2.jpg', floor: 46 }, r3: { img: 'images/base/room3.jpg', floor: 50 }, r4: { img: 'images/base/room4.jpg', floor: 34 } };
-  var DECO_IMG = { d1: 'images/base/deco1.webp', d2: 'images/base/deco2.webp', d3: 'images/base/deco3.webp', d4: 'images/base/deco4.webp' };
+  var DECO_IMG = { d1: 'images/base/deco1.webp', d2: 'images/base/deco2.webp', d3: 'images/base/deco3.webp', d4: 'images/base/deco4.webp', d5: 'images/base/deco5.webp', d6: 'images/base/deco6.webp', d7: 'images/base/deco7.webp' };
   function baseInv() { var B = (acc && acc.baseInv) || {}; return { rooms: B.rooms || {}, deco: B.deco || {} }; }
   function roomOwned(k) { return k === 'r1' || !!baseInv().rooms[k]; }
   function decoOwn(k) { return baseInv().deco[k] | 0; }

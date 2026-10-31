@@ -44,10 +44,12 @@ var TX = (function () {
     MM_COST: 10, MM_POOL_DAY: 100,
     // 基地（2026-10-31，取代茶室）：房型（r1 默认，其余 30000 能量买一次）和摆件（5000 能量一个，可以买无数个）；layer：floor 地板 / wall 墙壁
     BASE_ROOMS: { r1: { n: '星空甲板', price: 0 }, r2: { n: '海底穹顶', price: 30000 }, r3: { n: '沙海舰桥', price: 30000 }, r4: { n: '雪原树屋', price: 30000 } },
-    BASE_DECO: { d1: { n: '星角羊娃娃', price: 5000, layer: 'floor' }, d2: { n: '灰毛猫娃娃', price: 5000, layer: 'floor' }, d3: { n: '卷毛犬娃娃', price: 5000, layer: 'floor' }, d4: { n: '粉发熊娃娃', price: 5000, layer: 'floor' } },
+    BASE_DECO: { d1: { n: '星角羊娃娃', price: 5000, layer: 'floor' }, d2: { n: '灰毛猫娃娃', price: 5000, layer: 'floor' }, d3: { n: '卷毛犬娃娃', price: 5000, layer: 'floor' }, d4: { n: '粉发熊娃娃', price: 5000, layer: 'floor' },
+      d5: { n: '叶粒种子发现纪念', price: 3000, layer: 'floor' }, d6: { n: '水臂乌贼发现纪念', price: 3000, layer: 'floor' }, d7: { n: '方头蘑菇发现纪念', price: 3000, layer: 'floor' } },   // d5–d7：2026-10-31 基地改版纪念
     BASE_DECO_MAX: 40,   // 基地里最多同时摆 40 个
     // 补偿礼包（2026-10-28）：每个账号每个礼包只能领一次（acc.gifts[礼包] 记领取时间）
-    GIFTS: { comp1: { name: '补偿大礼包', exp: 300000, energy: 50000, items: { m_mcry: 500, tgPearl: 200, brTwig: 200 } } },
+    GIFTS: { comp1: { name: '补偿大礼包', exp: 300000, energy: 50000, items: { m_mcry: 500, tgPearl: 200, brTwig: 200 } },
+      base1: { name: '基地改版纪念礼包', deco: { d5: 1, d6: 1, d7: 1 } } },   // deco：直接放进基地的摆件库
     // 配队（2026-10-27）：最多 10 个，前 3 个免费，第 4 个起用能量解锁（下面是第 4 ~ 10 个的价格）
     TEAM_FREE: 3, TEAM_MAX: 10, TEAM_PRICE: [5000, 10000, 20000, 30000, 50000, 80000, 120000]
   };
@@ -163,6 +165,7 @@ var TX = (function () {
       if (acc.gifts[a.id]) return no('已经领过了');
       acc.gifts[a.id] = env.now;
       acc.exp = num(acc.exp) + (G.exp || 0); acc.energy = num(acc.energy) + (G.energy || 0); if (G.items) give(acc, G.items);
+      if (G.deco) { if (!acc.baseInv || typeof acc.baseInv !== 'object') acc.baseInv = {}; if (!acc.baseInv.deco) acc.baseInv.deco = {}; for (var dk in G.deco) acc.baseInv.deco[dk] = (acc.baseInv.deco[dk] | 0) + G.deco[dk]; }
       return { ok: true, id: a.id };
     },
     // 解锁一个新配队（第 4 个起）：acc.teamX = 已经买了几个
