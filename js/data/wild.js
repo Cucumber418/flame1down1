@@ -64,7 +64,7 @@ var WILD_REGIONS = [
   { id: 'fl_record', planet: 'flora', name: '瘴气污染的记录', en: 'Miasma Record', record: true, d: '芙罗拉星被瘴气污染时的记录。草甸和丛林依旧缠满深紫色的脉络，里面的瘴气精灵可以继续用来进行瘴气驱逐战。', pool: 'fl_record', bgs: ['fl_meadow_mia', 'fl_beech_mia'] },
   { id: 'salt', planet: 'flora', name: '盐碱地', en: 'Saline-alkali Land', d: '寸草不生的白色荒原，四处飘着灰紫色的瘴气。着陆舱就是在这里迫降的。瘴气的源头——草系BOSS「荒芜」就潜伏在地底。这里没有野生精灵。', boss: '荒芜', bgs: ['fl_salt'] }
 ,
-  { id: 'kb_surf', planet: 'kamble', name: '水面', en: 'Surface', d: '码头的灯照着翻涌的海浪，远处的冥岛不时喷出高高的水柱。这里的精灵最温和。传说在冥岛吹响号角，会引来唱歌的小精灵。', pool: 'kb_surf', bgs: ['kb_dock', 'kb_isle', 'kb_shore', 'kb_dusk', 'kb_wave'] },   // 2026-11-01：加上黄昏礁滩、暮色海面、巨浪
+  { id: 'kb_surf', planet: 'kamble', name: '水面', en: 'Surface', d: '码头的灯照着翻涌的海浪，远处的冥岛不时喷出高高的水柱。这里的精灵最温和。传说在冥岛吹响号角，会引来唱歌的小精灵。', pool: 'kb_surf', bgs: ['kb_dock', 'kb_isle', 'kb_shore', 'kb_dusk'] },   // 2026-11-01：加上黄昏礁滩、暮色海面（巨浪只在剧情里出现）
   { id: 'kb_sea', planet: 'kamble', name: '浅水区', en: 'Shallows', d: '阳光还能照进来的一层海水，抬头就能看见水面，鱼群成片游过。', pool: 'kb_sea', bgs: ['kb_lookup', 'kb_shoal'] },
   { id: 'kb_deep', planet: 'kamble', name: '深海区', en: 'Deep Sea', d: '光几乎照不到的深处，幽深的沙丘间沉睡着一座古代神殿，还有一条不知道谁留下的发光管道。这里的精灵更强。', pool: 'kb_deep', bgs: ['kb_floor', 'kb_abyss', 'kb_temple'] },
   { id: 'pp_lava', planet: 'pompeii', name: '熔岩原', en: 'Lava Field', d: '熔浆汇成的大湖一眼望不到边，湖岸上是堆满熔渣的旧矿区。赫菲喜欢在热气里打盹。', pool: 'pp_lava', bgs: ['pp_lake', 'pp_slag'] },

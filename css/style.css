@@ -3041,3 +3041,30 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 /* 地球挑战：三只初始精灵并排（2026-11-01） */
 .ewk-trio { position: absolute; inset: 0; display: flex; align-items: flex-end; justify-content: center; gap: 2%; padding: 0 4% 4%; }
 .ewk-trio img { width: 31%; max-height: 92%; object-fit: contain; filter: drop-shadow(0 0 2px #fff) drop-shadow(0 4px 0 rgba(0,0,0,.25)); }
+
+/* 航行日志 · 小板块（2026-11-01）：点开才是完整面板；更新公告在最下面只显示摘要 */
+.log-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; margin-top: 14px; }
+.log-tile { position: relative; display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto 1fr auto; gap: 4px 8px; align-items: start; text-align: left; min-height: 96px; padding: 12px 28px 12px 12px; background: var(--paper-2); border: 1.5px solid var(--ink); border-radius: 14px; box-shadow: 2px 2px 0 var(--ink); font: inherit; color: inherit; cursor: pointer; transition: transform .12s, box-shadow .12s; }
+.log-tile:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--ink); }
+.log-tile .log-tag { grid-column: 1; font-size: 11px; }
+.log-tile img { grid-column: 2; grid-row: 1 / 3; width: 46px; height: 46px; object-fit: contain; }
+.log-tile b { grid-column: 1; font-size: 14.5px; line-height: 1.35; }
+.log-tile small { grid-column: 1 / -1; font-size: 11.5px; color: var(--pencil); line-height: 1.35; }
+.log-tile .lt-go { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 20px; color: var(--pencil); }
+.log-tile.hot { border-color: var(--red); }
+.log-panel { position: fixed; inset: 0; z-index: 800; background: rgba(20, 18, 14, .45); display: grid; place-items: center; padding: 16px; animation: lpIn .18s ease-out; }
+.log-panel.quiet { animation: none; }
+.log-panel-box { position: relative; width: min(820px, 100%); max-height: calc(100vh - 32px); overflow: auto; border-radius: 16px; }
+.log-panel-box > .log-card { margin: 0; }
+.log-panel-box .lp-x { position: absolute; top: 10px; right: 10px; z-index: 3; background: var(--paper); }
+.log-panel-box > .log-card { padding-right: 52px; }
+@keyframes lpIn { from { opacity: 0; } to { opacity: 1; } }
+.cl-mini { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 18px; padding: 10px 14px; border: 1.5px dashed var(--rule); border-radius: 12px; font-size: 13px; color: var(--pencil); }
+.cl-mini b { color: var(--ink); }
+.cl-mini-d { font-size: 12px; }
+.cl-mini-t { flex: 1 1 260px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 760px) { .log-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; } .log-tile { min-height: 84px; padding: 10px 24px 10px 10px; } .log-tile img { width: 36px; height: 36px; } .cl-mini-t { white-space: normal; } }
+.log-grid > .qq-card { padding: 10px 14px; gap: 2px; }
+.log-grid > .qq-card h3 { font-size: 17px; margin: 0; }
+.log-grid > .qq-card .qq-no { font-size: 19px; }
+.log-grid > .qq-card .tape { display: none; }

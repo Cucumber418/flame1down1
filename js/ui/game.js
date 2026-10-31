@@ -4261,7 +4261,8 @@
     var now = new Date(), h = now.getHours(), on = mysteryTime();
     var wait = on ? '' : (function () { var t = new Date(now); t.setHours(MYSTERY.from, 0, 0, 0); var m = Math.max(0, Math.round((t - now) / 60000)); return '距离今天的活动开始还有 ' + Math.floor(m / 60) + ' 小时 ' + (m % 60) + ' 分钟'; })();
     $('pg-log').innerHTML = '<div class="page-head"><h2 class="sec">航行日志</h2><p class="hint">荆楚号的公告板：更新公告、限时活动、每日任务和新BOSS。</p></div>' +
-      '<div class="log-grid">' + giftLogHTML() + '<article class="log-card wide qq-card"><span class="tape l"></span><span class="tape r"></span><div class="qq-txt"><span class="chip log-tag">船员交流</span><h3>QQ 群：<b class="qq-no">' + QQ_GROUP + '</b></h3><p class="hint">攻略、组队切磋、bug 反馈、新精灵立绘抢先看，都在群里。</p></div><button type="button" class="btn primary" data-copyqq="1">复制群号</button></article>' + '<div class="log-pair">' + changelogHTML() + monChangesHTML() + '</div>' +
+      '<div class="log-grid">' + '<article class="log-card wide qq-card"><span class="tape l"></span><span class="tape r"></span><div class="qq-txt"><span class="chip log-tag">船员交流</span><h3>QQ 群：<b class="qq-no">' + QQ_GROUP + '</b></h3><p class="hint">攻略、组队切磋、bug 反馈、新精灵立绘抢先看，都在群里。</p></div><button type="button" class="btn primary" data-copyqq="1">复制群号</button></article></div>' +
+      '<div class="log-tiles" id="log-tiles"></div>' + changelogMini() + '<div class="log-store" id="log-store" hidden>' + giftLogHTML() + monChangesHTML() + changelogHTML() +
       mmLogHTML() + pwCardHTML('log') + contestLogHTML() + odoLogHTML() + travelLogHTML() + pickHTML() + coreLogHTML() + hornLogHTML() + riceLogHTML() +   // 立绘更新投票已结束移除（2026-10-17）；荒芜放在更新公告正下方
       '<article class="log-card ev"><span class="tape l"></span><span class="chip log-tag">限时活动</span><h3>神秘精灵出没</h3>' +
         '<p>每天 <b>16:00–24:00</b>，在星际探索的任何场景，都有 <b>3%</b> 的概率刷出一只神秘精灵！</p><p class="hint">它是什么？只有遇到过的人才知道。</p>' +
@@ -4275,7 +4276,46 @@
       })() +
       '<article class="log-card wide"><span class="tape l"></span><span class="chip log-tag">每日任务</span><h3>今天的任务</h3>' + dailyHTML() + '</article>' +
       '</div>';
+    logTiles();
   }
+  /* 航行日志（2026-11-01）：各个内容先显示成小板块，点开才是完整面板；完整的卡片放在隐藏的 #log-store 里
+   * （很多卡片会按 id 原地刷新，所以打开面板时把卡片节点搬进面板，关掉再搬回去）。更新公告放在最下面，只显示最新一条的摘要 */
+  var LOG_OPEN = null;
+  function logKey(el) { var h = el.querySelector('h3'); return (h ? h.textContent : '') + '|' + el.className; }
+  function logTiles() {
+    var st = $('log-store'), box = $('log-tiles'); if (!st || !box) return;
+    var cards = Array.prototype.filter.call(st.children, function (el) { return el.classList.contains('log-card') && !el.classList.contains('changelog'); });
+    box.innerHTML = cards.map(function (el, i) {
+      var tag = el.querySelector('.log-tag'), h = el.querySelector('h3'), img = el.querySelector('img'), lst = el.querySelector('.log-st');
+      var ttl = h ? h.textContent : '', hot = /限时|新活动|全服|争霸|领取/.test(tag ? tag.textContent : '');
+      return '<button type="button" class="log-tile' + (hot ? ' hot' : '') + '" data-logi="' + i + '"><span class="chip log-tag">' + esc(tag ? tag.textContent : '公告') + '</span>' +
+        (img && img.getAttribute('src') ? '<img src="' + esc(img.getAttribute('src')) + '" alt="">' : '') + '<b>' + esc(ttl) + '</b>' + (lst ? '<small>' + esc(lst.textContent) + '</small>' : '') + '<span class="lt-go" aria-hidden="true">›</span></button>';
+    }).join('');
+    box._cards = cards;
+    if (LOG_OPEN) { var hit = cards.concat(Array.prototype.slice.call(st.querySelectorAll('.changelog'))).filter(function (el) { return logKey(el) === LOG_OPEN; })[0]; LOG_OPEN = null; if (hit) logOpen(hit, true); }
+  }
+  function logOpen(el, quiet) {
+    logClose(); LOG_OPEN = logKey(el);
+    var ov = document.createElement('div'); ov.className = 'log-panel' + (quiet ? ' quiet' : ''); ov.id = 'log-panel'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true');
+    ov.innerHTML = '<div class="log-panel-box"><button type="button" class="btn ghost lp-x" data-logx="1" aria-label="关闭">✕</button></div>';
+    $('pg-log').appendChild(ov); ov.firstChild.appendChild(el);
+  }
+  function logClose() {
+    var ov = $('log-panel'); if (!ov) return; var el = ov.querySelector('.log-card'), st = $('log-store');
+    if (el && st) st.appendChild(el); ov.remove(); LOG_OPEN = null;
+  }
+  function changelogMini() {
+    var L = typeof CHANGELOG !== 'undefined' ? CHANGELOG : []; if (!L.length) return '';
+    var c = L[0];
+    return '<div class="cl-mini"><span class="chip log-tag">更新公告</span><b>' + esc(c.title) + '</b><span class="cl-mini-d">' + esc(c.date) + '</span>' +
+      '<span class="cl-mini-t">' + esc(c.items.slice(0, 2).join('；')) + (c.items.length > 2 ? '……' : '') + '</span><button type="button" class="btn ghost" data-clall="1">查看全部</button></div>';
+  }
+  $('pg-log').addEventListener('click', function (e) {
+    var t = e.target.closest('[data-logi]'); if (t) { var c = ($('log-tiles') || {})._cards; if (c && c[+t.dataset.logi]) logOpen(c[+t.dataset.logi]); return; }
+    if (e.target.closest('[data-clall]')) { var cl = document.querySelector('#log-store .changelog'); if (cl) logOpen(cl); return; }
+    if (e.target.closest('[data-logx]') || (e.target.classList && e.target.classList.contains('log-panel'))) { logClose(); return; }
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && $('log-panel')) logClose(); });
   /* ---------- 竞技代币商店（2026-10-14） ----------
    * 竞技代币：平衡排位每天前 10 局每局掉 20 个。商店在竞技对战 · 平衡排位的段位卡里打开（弹窗）。
    * 卖的都是精灵道具，买到后放进储存箱，在储存箱或精灵资料里使用。 */
