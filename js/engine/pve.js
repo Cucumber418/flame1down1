@@ -251,7 +251,7 @@ var PVE = (function () {
     lv: [
       { diff: '简单', lv: 40, hp: 1600, boss: { pp: 99 }, bgm: 'boss', drop: [8, 12], exp: 3000 },   // 2026-11-01：三档都削弱（体力 −20%，减伤降一档）
       { diff: '普通', lv: 60, hp: 4000, boss: { dr: 0.1, pp: 99 }, bgm: 'boss2', drop: [16, 24], exp: 6000 },
-      { diff: '困难', lv: 80, hp: 8000, boss: { dr: 0.15, noStatus: 1, pp: 99 }, bgm: 'boss3', drop: [30, 45], exp: 12000 }
+      { diff: '困难', lv: 80, hp: 8000, boss: { dr: 0.15, stRes: 0.2, pp: 99 }, bgm: 'boss3', drop: [30, 45], exp: 12000 }
     ]
   };
 

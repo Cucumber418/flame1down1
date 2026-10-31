@@ -4473,7 +4473,7 @@
     if (L.boss) BOSS_FX.forEach(function (f) {
       if (!L.boss[f.k]) return;
       if (!(acc.seenFx && acc.seenFx[f.k])) { out.push(['【？？？】', '尚未揭晓。打一场看看它会什么……']); return; }
-      out.push(['【' + f.h + '】', f.d(fake).split('\n')[0]]);
+      out.push(['【' + (f.nm ? f.nm(fake) : f.h) + '】', f.d(fake).split('\n')[0]]);
     });
     var pastKnown = !!(acc.seenFx && acc.seenFx.past);
     if (L.boss && L.boss.past && pastKnown) ['eternal', 'relive', 'sy'].forEach(function (k) { var f = BOSS_FX.filter(function (x) { return x.k === k; })[0]; out.push(['复活后 · 【' + f.h + '】', f.d(fake)]); });

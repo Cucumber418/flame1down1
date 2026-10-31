@@ -276,7 +276,7 @@ function chipsOf(m, foe) {
   if (m.boss) BOSS_FX.forEach(function (f) {
     if (!m.boss[f.k]) return;
     if ((f.hide && f.hide(m)) || !fxKnown(m, f.k)) { c.push({ t: '？？？', k: 'fx', h: '？？？ · 尚未揭晓', d: '它好像还藏着什么本事……' }); return; }   // 隐藏特效：第一次发动前只显示问号
-    c.push({ t: f.t, k: 'fx', h: f.h, d: f.d(m) });
+    var fn = f.nm ? f.nm(m) : null; c.push({ t: fn || f.t, k: 'fx', h: fn || f.h, d: f.d(m) });
   });
   if (m.flags && m.flags.sy && !m.boss) c.push({ t: '沈阳大街', k: 'bad', h: '沈阳大街（场地）', d: '场地效果：不能使用变化类技能' });
   if (m.shiny) c.push({ t: '异色', k: 'fx', h: '异色精灵', d: '和同类长得不一样的稀有配色，能力和普通的一样' });
@@ -1347,7 +1347,7 @@ var BOSS_FX = [
   { k: 'odoWill', t: '护阵意志', h: '护阵意志', d: function () { return '每次受到的伤害不会超过 200，超过的部分全部反弹给攻击者'; } },
   { k: 'rainbow', t: '虹霓暴走', h: '虹霓暴走', d: function () { return '物攻、特攻提升 50%。对你每累计造成 1000 点伤害（不计溢出）就爆破一次：自身损失 500 体力，并对你造成 500 点固定伤害'; } },
   { k: 'odoSwap', t: '形态切换', h: '形态切换', d: function () { return '歼灭形态和护阵形态每 2 回合主动切换一次；两种形态都被击败后，化为虹霓暴走'; } },
-  { k: 'stRes', t: '稀薄粒子', h: '稀薄粒子', d: function (m) { return '异常状态造成的持续伤害只有原来的 ' + Math.round((1 - m.boss.stRes) * 100) + '%（寄生被吸走的体力也一样）；异常状态本身照常生效'; } },
+  { k: 'stRes', t: '稀薄粒子', h: '稀薄粒子', nm: function (m) { return m.id === 'rosette' ? '稀薄粒子' : '异常抗性'; }, d: function (m) { return '异常状态造成的持续伤害只有原来的 ' + Math.round((1 - m.boss.stRes) * 100) + '%（寄生被吸走的体力也一样）；异常状态本身照常生效'; } },
   { k: 'dust', t: '尘埃柱', h: '尘埃柱', d: function () { return '每回合结束时有 30% 的概率让对方陷入混乱 2 回合（攻击时有 40% 的概率攻击自己）'; } },   // 玫瑰星云（第十九段）
   { k: 'bok', t: '博克球状体', h: '博克球状体', d: function (m) { return m.boss.bokUsed ? '已经发动过了' : '体力低于 2000 时，恢复 500 体力并对对方造成 200 点固定伤害（只发动一次）'; } },
   { k: 'dr', t: '星球聚能', h: '星球聚能', d: function (m) { return '受到的伤害减少 ' + Math.round(m.boss.dr * 100) + '%'; } },
