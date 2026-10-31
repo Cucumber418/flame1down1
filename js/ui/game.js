@@ -6063,7 +6063,7 @@
   var DECO_ACT = { d5: '叶粒种子', d6: '水臂乌贼', d7: '方头蘑菇', d8: 'nursery', d9: 'mm', d10: 'msg' };
   var DECO_SIZE = { d8: 2.5 };   // 精元转化仪画得大一些（2026-11-01）
   // 明明画像的面板：大图 + 荣誉（2026-11-01）
-  var MM_HONORS = ['荆楚号 · 古城防卫部教官', '「明明教官的试炼」主考官', '光霆主、赫菲斯托的训练师', '推行防卫部老规矩：出任务时可以向队友借一只精灵助战'];
+  var MM_HONORS = ['军衔：少校', '湖北理科高考优胜者', '华中科技大学光电优秀毕业生', '荆楚号古城防卫部总教官'];
   function mmPortraitBody() {
     return '<div class="mm-por"><div class="mm-frame"><img src="' + CHARS.mm + '" alt="明明教官"></div><div class="mm-txt"><h2>明明教官</h2><p class="hint">古城防卫部</p><h4>荣誉</h4><ul>' + MM_HONORS.map(function (t) { return '<li>🏅 ' + esc(t) + '</li>'; }).join('') + '</ul></div></div>';
   }
