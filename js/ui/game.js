@@ -3221,7 +3221,7 @@
       '<p class="ch-rw"><b>首次通关奖励</b>　' + rwList(x.reward).map(function (t) { return '<span class="chip">' + t + '</span>'; }).join(' ') + (rec && rec.got ? '<span class="hint">（已领取）</span>' : '') + '</p></div>' +
       '<div><h4>出战精灵 <span class="hint">' + (T.helper ? '自己的 ' + T.own.length + ' / 4 只 + 1 只助战' : '自己的 ' + T.own.length + ' / 5 只') + '，点一下选上或取下</span></h4><div class="ch-mons">' + (ownHTML || '<p class="hint">当前配队是空的。</p>') + '</div>' +
       '<h4>助战精灵</h4>' + helpHTML + '</div></div>' +
-      '<div class="ch-go"><button type="button" class="btn primary" data-chgo="' + sel + '"' + (ready_ ? '' : ' disabled') + '>开始挑战</button><span class="hint">战斗中可以使用补药；挑战失败不会有任何损失，可以反复挑战。</span></div></article>' + (P === 'flora' ? cbHTML(P) : '') + '</div>';
+      '<div class="ch-go"><button type="button" class="btn primary" data-chgo="' + sel + '"' + (ready_ ? '' : ' disabled') + '>开始挑战</button><span class="hint">战斗中可以使用补药；挑战失败不会有任何损失，可以反复挑战。</span></div></article>' + cbHTML(P) + '</div>';
   }
   // 出战顺序：自己的精灵用 'u' + 编号，助战精灵用 'h'；排在第一个的就是首发
   function chalLineup() {
@@ -6047,7 +6047,9 @@
     r3: { img: 'images/base/room3.jpg', floor: [[[33,47],[67,47],[85,61],[88,70],[90,82],[91,100],[9,100],[10,82],[12,70],[15,61]]], wall: [[[17,8],[29,2],[25,20],[23,43],[17,43]],[[71,2],[83,8],[83,43],[77,43],[75,20]],[[4,36],[15,30],[15,58],[11,74],[5,70]],[[85,30],[96,36],[95,70],[89,74],[85,58]]], block: [[[45,47],[55,47],[55,56],[45,56]]], mons: [[22,88],[47,82],[74,72],[32,68],[62,64],[80,92],[18,74]] },
     r4: { img: 'images/base/room4.jpg', floor: [[[24,42],[31,34],[45,30],[58,29],[70,32],[80,39],[86,46],[90,56],[92,70],[90,82],[84,90],[72,94],[66,100],[22,100],[20,92],[13,76],[10,66],[16,60],[22,58],[26,52]]], wall: [[[22,8],[40,4],[60,0],[82,0],[86,12],[88,30],[85,40],[80,37],[70,30],[58,27],[45,28],[30,32],[24,37],[22,26]]], block: [[[34,62],[38,54],[45,50],[58,50],[65,56],[66,68],[60,82],[50,86],[40,84],[35,76]]], mons: [[26,90],[74,88],[80,66],[26,68],[62,40],[44,42],[20,78]] }
   };
-  var DECO_IMG = { d1: 'images/base/deco1.webp', d2: 'images/base/deco2.webp', d3: 'images/base/deco3.webp', d4: 'images/base/deco4.webp', d5: 'images/base/deco5.webp', d6: 'images/base/deco6.webp', d7: 'images/base/deco7.webp' };
+  var DECO_IMG = { d1: 'images/base/deco1.webp', d2: 'images/base/deco2.webp', d3: 'images/base/deco3.webp', d4: 'images/base/deco4.webp', d5: 'images/base/deco5.webp', d6: 'images/base/deco6.webp', d7: 'images/base/deco7.webp', d8: 'images/base/deco8.webp', d9: 'images/base/deco9.webp', d10: 'images/base/deco10.webp' };
+  // 可以点的摆件（2026-11-01）：发现纪念弹出说明；精元转化仪打开孵化；留言板打开留言
+  var DECO_ACT = { d5: '叶粒种子', d6: '水臂乌贼', d7: '方头蘑菇', d8: 'nursery', d10: 'msg' };
   function baseInv() { var B = (acc && acc.baseInv) || {}; return { rooms: B.rooms || {}, deco: B.deco || {} }; }
   function roomOwned(k) { return k === 'r1' || !!baseInv().rooms[k]; }
   function decoOwn(k) { return baseInv().deco[k] | 0; }
@@ -6081,7 +6083,7 @@
     var fl = floorTop(room), wall = decoLayer(d.k) === 'wall', q = baseSnap(room, wall ? 'wall' : 'floor', +d.x || 50, +d.y || 80);
     d = { k: d.k, x: q[0], y: q[1], f: d.f };
     var sc = wall ? 0.9 : 0.72 + 0.42 * Math.max(0, Math.min(1, (d.y - fl) / (100 - fl)));
-    return '<div class="bdeco' + (wall ? ' wall' : '') + (d.f ? ' flip' : '') + (edit && sel === i ? ' sel' : '') + '" data-bi="' + i + '" style="left:' + d.x + '%;top:' + d.y + '%;width:' + (7.2 * sc).toFixed(2) + '%;z-index:' + (edit && sel === i ? 150 : wall ? 2 : Math.round(d.y)) + '"><img src="' + (DECO_IMG[d.k] || '') + '" alt="' + esc((TX.D.BASE_DECO[d.k] || {}).n || '') + '" draggable="false"></div>';
+    return '<div class="bdeco' + (wall ? ' wall' : '') + (d.f ? ' flip' : '') + (edit && sel === i ? ' sel' : '') + (!edit && DECO_ACT[d.k] ? ' act' : '') + '" data-dk="' + d.k + '" data-bi="' + i + '" style="left:' + d.x + '%;top:' + d.y + '%;width:' + (7.2 * sc).toFixed(2) + '%;z-index:' + (edit && sel === i ? 150 : wall ? 2 : Math.round(d.y)) + '"><img src="' + (DECO_IMG[d.k] || '') + '" alt="' + esc((TX.D.BASE_DECO[d.k] || {}).n || '') + '" draggable="false"></div>';
   }
   function baseRoomHTML(L, inner, edit) {
     L = L || { room: 'r1', deco: [] }; var R = BASE_UI[L.room] || BASE_UI.r1;
@@ -6133,6 +6135,18 @@
     if (b.dataset.bedel && E0.deco[E0.sel]) { E0.deco.splice(E0.sel, 1); E0.sel = -1; renderHome(); return; }
   });
   function confirmLeaveEdit() { return true; }   // 编辑中离开：直接放弃没保存的改动
+  // 点摆件（不在编辑模式时）：发现纪念弹出说明；自己基地里的精元转化仪打开孵化、留言板打开留言
+  document.addEventListener('click', function (e) {
+    var el = e.target.closest('.bdeco.act'); if (!el || ex.baseEdit) return;
+    var k = el.dataset.dk, A = DECO_ACT[k], mine = !!el.closest('#pg-explore'); if (!A) return;
+    if (A === 'nursery') { if (!mine) { toast('这是主人的精元转化仪。'); return; } ex.bpanel = null; ex.view = 'nursery'; ex.area = '神农架'; ex.planet = 'jingchu'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
+    if (A === 'msg') { if (!mine) { toast('留言板在下面，给主人留句话吧。'); return; } if (!baseOnline()) { toast('留言板需要联网：用服务器网址打开游戏并登录后才能用。'); return; } ex.bpanel = 'msg'; renderHome(); return; }
+    var old = $('deco-dlg'); if (old) old.remove();
+    var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'deco-dlg';
+    d.innerHTML = '<div class="soc-box deco-box" role="dialog" aria-modal="true"><img src="' + DECO_IMG[k] + '" alt=""><h3>' + esc(TX.D.BASE_DECO[k].n) + '</h3><p>2019 年，在省实验中学 4 班发现了' + A + '。</p><div class="soc-foot"><button type="button" class="btn primary" data-decox="1">知道了</button></div></div>';
+    document.body.appendChild(d);
+    d.addEventListener('click', function (ev) { if (ev.target === d || ev.target.closest('[data-decox]')) d.remove(); });
+  });
   // 编辑模式下拖动摆件（鼠标、触屏都可以）
   (function () {
     var drag = null;
