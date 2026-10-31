@@ -7172,6 +7172,15 @@
     if (page === 'explore') {
       if (vnSite === 'flora') return 'flora';
       // 2026-10-31：第十八段里见过玫瑰星云之后，坎伯兰星的所有地方（星球界面、剧情页、野外、古代神殿、BOSS页）都换成 Cumberland5
+      if (prog('kb8').done) {   // 2026-11-01：第二章通关后，坎伯兰星的曲子变回原来的；只有深海区（野外和奥多亚克BOSS页）从 Cumberland3 换成 Cumberland4
+        if (vnSite === 'kamble' || (ex.view === 'sites' && ex.planet === 'kamble')) return 'kb';
+        if (ex.view === 'boss' && BOSSES[ex.boss] && BOSSES[ex.boss].region === 'kb_deep') return 'kbDeep2';
+        if (ex.view === 'field' && regionById(ex.region) && regionById(ex.region).planet === 'kamble') {
+          var sck = fields[ex.region] && fields[ex.region].scenes && fields[ex.region].scenes[fields[ex.region].scene];
+          if (sck && sck.bgKey === 'kb_temple') return 'temple';
+          return ex.region === 'kb_sea' ? 'kbShallow' : ex.region === 'kb_surf' ? 'kbSurface' : ex.region === 'kb_deep' ? 'kbDeep2' : 'kb';
+        }
+      }
       var kbArea = vnSite === 'kamble' || (ex.view === 'sites' && ex.planet === 'kamble') || (ex.view === 'field' && ex.region !== 'kb_deep' && regionById(ex.region) && regionById(ex.region).planet === 'kamble');   // 深海区（野外和奥多亚克BOSS页）维持原来的曲子（保卫战开始后是 Cumberland4）
       if (kbArea && nebulaSeen()) return 'kbDeep3';
       if (vnSite === 'kamble') return 'kb';
