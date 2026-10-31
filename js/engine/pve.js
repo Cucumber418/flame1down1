@@ -826,7 +826,7 @@ var PVE = (function () {
    * 每个整点，坎伯兰星随机 per 个场景里各出现一只不同型号的奥多亚克（全服时间表一样，按小时编号算），停留一整个小时；
    * 每只每人每小时只能挑战 1 次（开战就算），不能捕捉。击破：自己经验背包 +exp，全服击破 +1（每人每天最多 cap 次）；
    * 本账号累计击破 need 只后开放第十八段。全服里程碑奖励见 js/engine/award.js（kbwReward） */
-  var KBW = { per: 4, cap: 20, exp: 3000, need: 5, regions: ['kb_surf', 'kb_sea', 'kb_deep'],
+  var KBW = { calm: ['kb_temple'], per: 4, cap: 20, exp: 3000, need: 5, regions: ['kb_surf', 'kb_sea', 'kb_deep'],
     spots: [{ x: 24, y: 70 }, { x: 40, y: 62 }, { x: 78, y: 64 }, { x: 88, y: 74 }],
     models: [
       { k: 'scout', n: '侦察型奥多亚克', lv: 45, maxhp: 900, boss: { dr: 0.1, pp: 99 } },
@@ -835,10 +835,16 @@ var PVE = (function () {
       { k: 'hunter', n: '猎杀型奥多亚克', lv: 55, maxhp: 1500, boss: { dr: 0.15, pp: 99 } }
     ] };
   function kbwOpen(a) { return done(a, 'kb6'); }
+  // 保卫战奥多亚克能出现的场景：古代神殿（KBW.calm）里不出现（2026-10-31）
+  function kbwScenes(R) {
+    var bgs = (R.bgs || []).filter(function (k) { return BG[k]; }), out = [];
+    for (var i = 0; i < sceneCount(R); i++) if (!bgs.length || KBW.calm.indexOf(bgs[i % bgs.length]) < 0) out.push(i);
+    return out.length ? out : [0];
+  }
   function kbwAt(now) {
     var h = Math.floor(now / 3600000), L = [], used = {};
     for (var k = 0; k < KBW.per; k++) {
-      var s = ACC.thash(h * 7 + k + 40503), R = regionById(KBW.regions[s % KBW.regions.length]), si = (s >>> 8) % sceneCount(R), key = R.id + ':' + si;
+      var s = ACC.thash(h * 7 + k + 40503), R = regionById(KBW.regions[s % KBW.regions.length]), SI = kbwScenes(R), si = SI[(s >>> 8) % SI.length], key = R.id + ':' + si;
       var spot = KBW.spots[((s >>> 4) + (used[key] || 0)) % KBW.spots.length]; used[key] = (used[key] || 0) + 1;
       L.push({ h: h, k: k, rid: R.id, si: si, spot: spot, m: KBW.models[(s >>> 16) % KBW.models.length], end: (h + 1) * 3600000 });
     }

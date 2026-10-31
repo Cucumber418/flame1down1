@@ -2573,7 +2573,10 @@
     }); });
     return out;
   }
-  function storyGatherHTML(R) {
+  // 古代神殿是安静的地方：沙姜、小米辣、奥多亚克都不在这个场景出现（2026-10-31）
+  function sceneCalm(R, si) { var bgs = (R.bgs || []).filter(function (k) { return BG[k]; }); return si != null && bgs.length && PVE.KBW.calm.indexOf(bgs[si % bgs.length]) >= 0; }
+  function storyGatherHTML(R, si) {
+    if (sceneCalm(R, si)) return '';
     return storyGatherList(R).map(function (g) {
       var have = acc.items[g.k] || 0, full = have >= g.need, sp = SG_SPOTS[g.k] || { x: 50, y: 84 };
       return '<button type="button" class="wf-node sg-node' + (full ? ' done' : '') + '" data-sgk="' + g.k + '" data-sgsite="' + g.site + '" style="left:' + sp.x + '%;top:' + sp.y + '%"' + (full ? ' disabled' : '') + '>' + H.itemIcon(g.k) + '<span>' + esc(itemName(g.k)) + ' ' + Math.min(have, g.need) + '/' + g.need + '</span></button>';
@@ -2632,7 +2635,8 @@
   function kbwRedraw() { ['task', 'log'].forEach(function (w) { var el = $('kbw-card-' + w); if (el) el.innerHTML = kbwInner(); }); }
   setInterval(function () { if ($('kbw-card-task') || $('kbw-card-log')) kbwFetch(); }, 30000);
   // 区域里的BOSS（盐碱地的荒芜）：直接画在场景里，点它进BOSS页；没开放时显示开放条件
-  function fieldBossHTML(R) {
+  function fieldBossHTML(R, si) {
+    if (sceneCalm(R, si)) return '';
     var BK = Object.keys(BOSSES).filter(function (k) { return BOSSES[k].region === R.id; })[0]; if (!BK) return '';
     var B = BOSSES[BK], open = bossOpen(BK);
     return '<button type="button" class="wf-mon wf-boss' + (open ? '' : ' locked') + '"' + (open ? ' data-boss="' + BK + '" data-from="field"' : ' disabled') + ' title="BOSS · ' + esc(B.name) + '" style="left:58%;top:78%;z-index:78"><i class="wf-sh" aria-hidden="true"></i><img src="' + SPRITES[B.sid] + '" alt="' + esc(B.name) + '">' +
@@ -2879,7 +2883,7 @@
     var spareTip = R.pool && R.planet === 'flora' && spareActive() ? '<div class="spare-note"><span class="tape l"></span><b>主线任务 · 引出猎杀者</b>　手下留情：这些精灵不会倒下，体力剩 1 点时就会逃走，算作「假装击败」。已完成 <b>' + spareN() + ' / ' + SPARE_N + '</b>。</div>' : '';
     $('pg-explore').innerHTML = exHead(R.pool ? '点击场景里走动的精灵，就会和它开战。' : '这里没有野生精灵。点击场景里的BOSS就能挑战它。') +
       '<div class="crumb"><button type="button" class="btn ghost" id="field-back">‹ 返回' + esc(P.name) + '</button><b>' + esc(P.name) + ' · ' + esc(R.name) + '</b>' + (n > 1 ? '<span class="hint">场景 ' + (F.scene + 1) + ' / ' + n + (BG_NAME[sc.bgKey] ? ' · ' + BG_NAME[sc.bgKey] : '') + '</span>' : '') + '</div>' +
-      invLine() + spareTip + '<div class="wf-scene' + (sc.corrupt ? ' miasma-bg' : '') + '" id="wf-scene">' + bg + mons + gatherNodesHTML(R.id, F.scene, n) + jadeHTML(R.id, F.scene) + riceBowlHTML(R, F.scene) + oreHTML(R, F, F.scene) + hornHTML(R, F, F.scene) + travelHTML(R, F.scene) + kbwHTML(R, F.scene) + storyGatherHTML(R) + fmNpcHTML(F, F.scene) + fieldBossHTML(R) + nav + '</div>' +
+      invLine() + spareTip + '<div class="wf-scene' + (sc.corrupt ? ' miasma-bg' : '') + '" id="wf-scene">' + bg + mons + gatherNodesHTML(R.id, F.scene, n) + jadeHTML(R.id, F.scene) + riceBowlHTML(R, F.scene) + oreHTML(R, F, F.scene) + hornHTML(R, F, F.scene) + travelHTML(R, F.scene) + kbwHTML(R, F.scene) + storyGatherHTML(R, F.scene) + fmNpcHTML(F, F.scene) + fieldBossHTML(R, F.scene) + nav + '</div>' +
       (R.pool ? '<p class="hint">点左右两边的箭头可以切换场景。每只精灵在自己的一小片范围里走动，待一会儿就会离开，过一阵又会有新的精灵出现，各走各的。点中哪只，就和哪只对战；打完、抓到或逃走之后，这只离开，过一会儿会有新的一只补上。采集点固定在场景里，每个每天可以采集 1 次：芙罗拉、坎伯兰、庞贝采到星砂 ×12，莱汀和白之星采到圣晶石 ×1。' + (RICE.regions.indexOf(R.id) >= 0 ? '带着「一碗饭」来的话，可以在任意一个场景里放下它。' : '') + '</p>' : '');
     startFieldMove();
   }
