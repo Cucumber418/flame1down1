@@ -5757,7 +5757,7 @@
     $('pg-explore').innerHTML = exHead('你在荆楚号上的基地。点画面左边的按钮管理基地；点基地里的精灵可以看它的详细情况。') +
       '<div class="crumb"><button type="button" class="btn ghost" id="home-back">‹ 返回大厅</button>' + title + '</div>' +
       '<div class="base-stage' + (E0 ? ' editing' : '') + '">' + baseRoomHTML(LY, figs + (H.mons.length || E0 ? '' : '<p class="home-empty">基地里空荡荡的。点左边的「精灵展示」放几只精灵出来，或者点「基地编辑」摆上摆件吧。</p>') + (E0 ? '' : baseSideHTML()), E0) + '</div>' +
-      (E0 ? baseEditBar() : '') + pan;
+      (E0 ? baseEditBar() : '') + (!E0 && window.HSSOCIAL && HSSOCIAL.friendBases ? HSSOCIAL.friendBases() : '') + pan;
     var dl1 = document.querySelector('.bp-dlg'); if (dl1 && dl0) dl1.scrollTop = dlTop;
   }
   // 基地画面左边悬停的入口（2026-10-31，参考飞船终端舰体图右边的入口）
@@ -5765,12 +5765,13 @@
   function baseSideHTML() {
     var H = home(), SO = window.HSSOCIAL, nNew = baseOnline() && SO.homeNew ? SO.homeNew() : 0;
     var it = function (attr, ic, t, sub, badge) { return '<button type="button" class="bs-it" ' + attr + ' title="' + t + '"><span class="bs-ic" aria-hidden="true">' + ic + (badge ? '<i class="bs-badge">' + badge + '</i>' : '') + '</span><span class="bs-t"><b>' + t + '</b>' + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</span></button>'; };
-    return '<div class="base-side">' +
+    var hid = false; try { hid = localStorage.getItem('hs-bside-hide') === '1'; } catch (e) {}
+    return '<div class="base-side' + (hid ? ' hid' : '') + '"><button type="button" class="bs-tog" data-bstog="1" aria-label="' + (hid ? '展开' : '收起') + '基地菜单" title="' + (hid ? '展开' : '收起') + '"><span aria-hidden="true">◀</span></button><div class="bs-list">' +
       (baseOnline() ? it('data-bpanel="log"', '📰', '基地动态', nNew ? nNew + ' 条新动态' : '谁来过', nNew) + it('data-bpanel="msg"', '💬', '留言板', '船员的留言') : '') +
       it('data-bgmopen="1"', '♪', '基地音乐', bgmName(homeBgm())) +
       it('data-bpanel="mons"', '🐾', '精灵展示', H.mons.length + ' / ' + homeMax() + ' 只') +
       it('data-bedit="1"', '✎', '基地编辑', '房型和摆件') +
-      it('data-bpanel="shop"', '🛍', '基地商城', '能量 ' + fmt(acc.energy)) + '</div>';
+      it('data-bpanel="shop"', '🛍', '基地商城', '能量 ' + fmt(acc.energy)) + '</div></div>';
   }
   function basePanelHTML(k) {
     var body = '', cls = '', ttl = '';
@@ -5877,6 +5878,7 @@
     if (e.target.classList && e.target.classList.contains('bp-dlg')) { ex.bpanel = null; ex.hmArm = null; e.target.remove(); return; }
     var b = e.target.closest('button'); if (!b) return;
     if (b.dataset.bshop && ex.view === 'home') { ex.bpanel = 'shop'; renderHome(); return; }
+    if (b.dataset.bstog) { var sd = b.closest('.base-side'), h2 = sd.classList.toggle('hid'); try { localStorage.setItem('hs-bside-hide', h2 ? '1' : '0'); } catch (er) {} b.setAttribute('aria-label', (h2 ? '展开' : '收起') + '基地菜单'); b.title = h2 ? '展开' : '收起'; return; }
     if (b.dataset.bpanel) { ex.bpanel = b.dataset.bpanel; renderHome(); return; }
     if (b.dataset.bpx) { ex.bpanel = null; ex.hmArm = null; var dlx = document.querySelector('.bp-dlg'); if (dlx) dlx.remove(); return; }
     if (b.dataset.hmon) { ex.bpanel = 'mon:' + b.dataset.hmon; renderHome(); return; }

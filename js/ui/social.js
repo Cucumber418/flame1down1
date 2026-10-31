@@ -64,13 +64,32 @@
     api('GET', '/api/players').then(function (r) {
       loading = false;
       if (r._code !== 200) { st.err = r.error || '读取失败'; render(); return; }
-      st.err = ''; st.players = r.players; st.me = r.me; st.loadedAt = Date.now(); render(); renderBrawl();
+      st.err = ''; st.players = r.players; st.me = r.me; st.loadedAt = Date.now(); render(); renderBrawl(); fbDraw();
     }).catch(function () { loading = false; st.err = '连不上服务器'; render(); });
   }
   setInterval(function () { if (A.page() === 'social' && !A.inBattle() && document.visibilityState === 'visible') load(); }, 30000);
   // 竞技对战的大乱斗面板开着时，20 秒刷新一次谁能匹配（别人刚读完支线、刚上线都要能看到）
   setInterval(function () { var el = $('brawl'); if (el && !el.hidden && A.page() === 'arena' && !A.inBattle() && document.visibilityState === 'visible') load(); }, 20000);
 
+  // 自己基地画面下方的「好友的基地」（2026-10-31）：点一下去拜访
+  function fbInner() {
+    if (!online) return '<p class="hint">连上服务器后才能看到好友的基地。</p>';
+    if (!st.players) return '<p class="hint">' + (st.err ? esc(st.err) : '正在读取好友名单……') + '</p>';
+    var F = st.players.filter(function (p) { return p.friend && !p.me && !p.noChar; }).sort(function (a, b) { return (b.homeOpen ? 1 : 0) - (a.homeOpen ? 1 : 0) || (b.online ? 1 : 0) - (a.online ? 1 : 0); });
+    if (!F.length) return '<p class="hint">还没有好友。去「社交」页加几个好友，就能在这里直接拜访他们的基地。</p>';
+    return '<div class="fb-grid">' + F.map(function (p) {
+      return '<button type="button" class="fb-it' + (p.online ? ' live' : '') + '" data-fbvisit="' + esc(p.user) + '"' + (p.homeOpen ? '' : ' disabled title="对方还没有开放基地"') + '>' +
+        '<span class="pav' + (p.avatar ? ' img' : '') + '">' + A.avatarInner(p.avatar, p.name || p.user) + '</span>' +
+        '<span class="fb-txt"><b>' + esc(p.name) + '</b><small>' + (p.homeOpen ? (p.homeN ? '展示中 ' + p.homeN + ' 只精灵' : '基地里还没有精灵') : '基地还没开放') + (p.online ? ' · 在线' : '') + '</small></span>' +
+        '<span class="fb-show">' + (p.show || []).slice(0, 3).map(monThumb).join('') + '</span></button>';
+    }).join('') + '</div>';
+  }
+  function fbDraw() { var el = $('base-friends'); if (el) el.innerHTML = fbInner(); }
+  function friendBases() {
+    if (online && (!st.players || Date.now() - (st.loadedAt || 0) > 30000)) setTimeout(load, 0);
+    return '<section class="base-friends"><h3 class="sec">好友的基地 <span class="hint">点一下去拜访</span></h3><div id="base-friends">' + fbInner() + '</div></section>';
+  }
+  document.addEventListener('click', function (e) { var t = e.target.closest('[data-fbvisit]'); if (t && !t.disabled) openHome(t.dataset.fbvisit, 'base'); });
   // 能不能观战：对方正在对战，并且是自己的好友（或者对方发了全服观战邀请）
   function canWatch(p) { return !p.me && p.online && p.busy && !!p.battle && (p.friend || p.watchOpen); }
   function watchBtn(p) { return canWatch(p) ? '<button type="button" class="btn watch" data-watch="' + esc(p.user) + '">👁 观战</button>' : ''; }
@@ -168,8 +187,8 @@
   }
 
   /* ---------- 拜访基地 ---------- */
-  function openHome(user) {
-    st.view = { user: user, data: null, err: '' };
+  function openHome(user, from) {
+    st.view = { user: user, data: null, err: '', from: from || null };
     if (A.page() !== 'social') A.go('social'); else render();
     window.scrollTo(0, 0);
     api('GET', '/api/home?user=' + encodeURIComponent(user)).then(function (r) {
@@ -198,7 +217,7 @@
     });
   }
   function homeHTML() {
-    var V0 = st.view, d = V0.data, back = '<div class="crumb"><button type="button" class="btn ghost" data-back="1">‹ 返回社交</button>';
+    var V0 = st.view, d = V0.data, back = '<div class="crumb"><button type="button" class="btn ghost" data-back="1">‹ ' + (V0.from === 'base' ? '返回我的基地' : '返回社交') + '</button>';
     if (!d) return back + '</div><p class="hint soc-load">' + (V0.err ? esc(V0.err) : '正在前往基地……') + '</p>';
     if (d.noChar) return back + '</div><div class="soc-empty"><p>@' + esc(d.user) + ' 还没有创建游戏角色。</p></div>';
     if (!d.open) return back + '<b class="home-name">' + esc(d.name) + ' 的休息舱</b></div><div class="soc-empty"><p>' + esc(d.name) + ' 还没有读完「陆羽茶室」支线，基地还没开放。</p></div>';
@@ -300,7 +319,7 @@
       if ((t = e.target.closest('[data-tab]'))) { st.tab = t.dataset.tab; if (st.tab === 'mine' && !st.edit) startEdit(); render(); if (st.tab === 'dm') dmLoadList(); else if (st.tab !== 'mine') load(); return; }
       if ((t = e.target.closest('[data-myhome]'))) { A.goHome(); return; }
       if ((t = e.target.closest('[data-reload]'))) { load(); return; }
-      if ((t = e.target.closest('[data-back]'))) { st.view = null; render(); load(); return; }
+      if ((t = e.target.closest('[data-back]'))) { var fromBase = st.view && st.view.from === 'base'; st.view = null; if (fromBase) { A.goHome(); return; } render(); load(); return; }
       if ((t = e.target.closest('[data-home]'))) { if (!t.disabled) openHome(t.dataset.home); return; }
       if ((t = e.target.closest('[data-vmon]'))) { vmonPanel(+t.dataset.vmon); return; }
       if ((t = e.target.closest('[data-poke]'))) {
@@ -1474,7 +1493,7 @@
     visitBgm: function () { var d = st.view && st.view.data; return d && d.open && !d.noChar ? d.bgm || 'ui' : null; },
     // 基地信息栏与留言板（game.js 的「我的基地」页面调用，不传参数就是自己的基地）
     homeBoard: function (owner, kind) { return hbSlot(owner || meUser(), kind); },
-    homeNew: function () { return hb.newN || 0; }, online: function () { return !!online; },
+    homeNew: function () { return hb.newN || 0; }, friendBases: friendBases, online: function () { return !!online; },
     // 做题大王争霸赛：约对手对战、观看直播、看回放
     ctAsk: ctAsk, ctRematch: ctRematch, watch: function (user) { watchStart(user); }, replay: replayStart, wsOk: function () { return !!st.wsOk; } };
   if (A.homeRefresh) A.homeRefresh();   // 如果已经停在自己的基地页面，补上信息栏
