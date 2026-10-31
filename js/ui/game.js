@@ -314,7 +314,9 @@
   // 导航高亮：明明教官的试炼（全息作战场地、代币抽奖）不管从哪里进，都亮「全息作战」；竞技对战（在太空竞技场里）亮「星际探索」
   // 现在是不是在荆楚号里（舰体图、区域、区域里的设施）：导航亮「飞船终端」
   var SHIP_VIEWS = { area: 1, shop: 1, forge: 1, nursery: 1, medal: 1, farm: 1, seedshop: 1, spa: 1, home: 1, room: 1, teashop: 1, baseshop: 1 };
-  function shipCtx() { return page === 'explore' && typeof ex !== 'undefined' && ex && !ex.mode && !!(SHIP_VIEWS[ex.view] || (ex.view === 'sites' && ex.planet === 'jingchu')); }
+  // 2026-10-31：空间站、太空竞技场、BOSS挑战、每周挑战也挂在飞船终端里
+  var SHIP_SIDE = { jingchu: 1, station: 1, sarena: 1 }, SHIP_HUBS = { bosshub: 1, wkhub: 1, weekly: 1, ewk: 1 };
+  function shipCtx() { if (!(page === 'explore' && typeof ex !== 'undefined' && ex && !ex.mode)) return false; var P = ex.view === 'sites' && planetOf(ex.planet); return !!(SHIP_VIEWS[ex.view] || SHIP_HUBS[ex.view] || (ex.view === 'boss' && ex.bossFrom === 'hub') || (P && (SHIP_SIDE[P.id] || P.inStation))); }
   function navSync() {
     var holo = page === 'explore' && typeof ex !== 'undefined' && (ex.view === 'mmArena' || ex.view === 'mmGacha'), ship = shipCtx();
     [].forEach.call(document.querySelectorAll('#mainnav .nav'), function (b) {
@@ -1635,20 +1637,12 @@
     var Pp = ex.view === 'sites' && PLANETS.filter(function (p) { return p.id === ex.planet; })[0];
     var html = exHead(ex.view === 'planets' ? '选择要前往的星球。' : Pp && Pp.ship ? '点击舰上的区域，即可传送过去。' : '选择要前往的地点。');
     if (ex.view === 'planets') {
-      var nOpen = Object.keys(BOSSES).filter(bossOpen).length;
-      var bossRow = '<div class="boss-row"><button type="button" class="weekly-card hub-card" data-bosshub="1"><span class="tape l"></span><span class="hub-ic">' + Object.keys(BOSSES).map(function (k) { return '<img src="' + SPRITES[BOSSES[k].sid] + '" alt="">'; }).join('') + '</span><span class="wk-txt"><span class="chip boss-diff">BOSS挑战</span><b>BOSS一览</b>' +
-        '<small>' + Object.keys(BOSSES).map(function (k) { return BOSSES[k].name; }).join('、') + ' · 已开放 ' + nOpen + ' / ' + Object.keys(BOSSES).length + '</small></span><span class="wk-pm">›</span></button>';
-      var wkIcons = WEEKLIES.filter(wkOpen).map(function (W) { return BOSSES[W.boss].sid; }).filter(function (x, i, a) { return a.indexOf(x) === i; }).concat(EWK.types.map(function (T) { return ewkSid(T.t); }).filter(Boolean));
-      bossRow += weeklyOpen() ? '<button type="button" class="weekly-card hub-card wk-hub" data-wkhub="1"><span class="tape l"></span><span class="hub-ic">' + wkIcons.slice(0, 3).map(function (sid) { return '<img src="' + SPRITES[sid] + '" alt="">'; }).join('') + '</span><span class="wk-txt"><span class="chip boss-diff d2">每周挑战</span><b>每周挑战</b>' +
-        '<small>' + wkIcons.length + ' 个BOSS · 获胜消耗 1 枚挑战许可</small></span><span class="wk-pm"><b>' + permits() + '</b> / ' + PERMIT.max + '<small>挑战许可</small></span></button>'
-        : '<div class="weekly-card hub-card wk-hub locked"><span class="tape l"></span><span class="hub-ic">🔒</span><span class="wk-txt"><span class="chip boss-diff">每周挑战</span><b>每周挑战</b><small>击败困难难度的泰戈尔或荒芜后开放</small></span></div>';
-      bossRow += '</div>';
-      // 2026-10-28 排列：马亚尔星系 → 空间站 / 太空竞技场（荆楚号移到「飞船终端」）→ BOSS挑战 / 每周挑战 → 剧情回顾 → 地球
-      html += '<div class="gx-rows">' + mayarMap() + '<div class="gx-row two">' + planetCard(planetOf('station')) + planetCard(planetOf('sarena')) + '</div></div>' +
-        bossRow + arcBarHTML() + '<div class="gx-rows"><div class="gx-row">' + planetCard(planetOf('earth')) + '</div></div>';
+      // 2026-10-31：空间站、太空竞技场、BOSS挑战、每周挑战移到飞船终端（舰体图右边）
+      html += '<div class="gx-rows">' + mayarMap() + '</div>' + arcBarHTML() +
+        '<div class="gx-rows"><div class="gx-row">' + planetCard(planetOf('earth')) + '</div></div>';
     } else {
       var P = PLANETS.filter(function (p) { return p.id === ex.planet; })[0];
-      html += '<div class="crumb">' + (P.ship ? '' : '<button type="button" class="btn ghost" id="ex-back">‹ ' + (P.inStation ? '返回空间站' : '返回星图') + '</button>') + '<b>' + (P.ship ? '飞船终端 · ' : '') + (P.inStation ? '空间站 · ' : MAYAR[P.id] ? '马亚尔星系 · ' : '') + P.name + '</b></div>';
+      html += '<div class="crumb">' + (P.ship ? '' : '<button type="button" class="btn ghost" id="ex-back">‹ ' + (P.inStation ? '返回空间站' : SHIP_SIDE[P.id] ? '返回飞船终端' : '返回星图') + '</button>') + '<b>' + (P.ship ? '飞船终端 · ' : '') + (P.inStation ? '空间站 · ' : MAYAR[P.id] ? '马亚尔星系 · ' : '') + P.name + '</b></div>';
       if (P.ship) { el.innerHTML = html + shipMap(P); return; }
       if (P.wild) { el.innerHTML = html + (P.id === 'flora' ? floraPage() : wildPage(P)); return; }
       if (P.tower) { el.innerHTML = html + towerPage(); return; }
@@ -1685,10 +1679,21 @@
         (big ? '<text x="' + r.c[0] + '" y="' + (r.c[1] + 11) + '" class="df">' + r.n + '</text>' : '') +
         (todo ? '<g transform="translate(' + (r.c[0] + (big ? 30 : 14)) + ',' + (r.c[1] - (big ? 20 : 14)) + ')"><g class="pin"><circle r="10"/><text y="4.5">!</text></g></g>' : '') + '</g>';
     }).join('');
-    return '<figure class="shipmap"><svg viewBox="-60 20 880 560" role="img" aria-label="荆楚号舰体平面图">' +
+    return '<figure class="shipmap"><div class="sm-wrap"><svg viewBox="-60 20 880 560" role="img" aria-label="荆楚号舰体平面图">' +
       '<g class="eng">' + [[16, 398, 30], [20, 452, 26], [42, 510, 22], [130, 122, 24], [124, 74, 18]].map(function (e) { return '<path d="M' + (e[0] - 14) + ',' + (e[1] - e[2] / 2) + ' l-' + (e[2] * 1.6) + ',' + (e[2] * .3) + ' l0,' + (e[2] * .4) + ' l' + (e[2] * 1.6) + ',' + (e[2] * .3) + ' Z"/>'; }).join('') + '</g>' +
-      '<path class="hull" d="' + sPath(SHIP.outline) + '"/>' + g + '<path class="hull-l" d="' + sPath(SHIP.outline) + '"/></svg>' +
+      '<path class="hull" d="' + sPath(SHIP.outline) + '"/>' + g + '<path class="hull-l" d="' + sPath(SHIP.outline) + '"/></svg>' + shipSide() + '</div>' +
       '<figcaption><span><i class="lg open"></i>可传送</span><span><i class="lg pin">!</i>有可进行的剧情</span><span><i class="lg"></i>登船后开放</span>船尾（西侧）是引擎，船头朝东。</figcaption></figure>' + shipTiles();
+  }
+  // 舰体图右边（同一个黑框里）：空间站、太空竞技场、BOSS挑战、每周挑战（2026-10-31，从星际探索的星图页搬过来）
+  function shipSide() {
+    var item = function (attr, ic, t, sub, open) { return '<button type="button" class="sm-it' + (open ? '' : ' locked') + '"' + (open ? ' ' + attr : ' disabled') + '><span class="sm-ic">' + ic + '</span><span class="sm-t"><b>' + t + '</b><small>' + sub + '</small></span></button>'; };
+    var st = planetOf('station'), sa = planetOf('sarena'), bk = Object.keys(BOSSES), nOpen = bk.filter(bossOpen).length, wk = weeklyOpen();
+    return '<div class="sm-side">' +
+      item('data-planet="station"', '<img src="images/planets/station.webp" alt="">', '空间站', planetOpen(st) ? '先驱之塔 · 全息作战场地' : '读完「降临芙罗拉」后开放', planetOpen(st)) +
+      item('data-planet="sarena"', sarenaSvg(), '太空竞技场', planetOpen(sa) ? '争霸赛 · 竞技对战' : '读完「降临芙罗拉」后开放', planetOpen(sa)) +
+      item('data-bosshub="1"', '<img src="' + SPRITES[BOSSES[bk[0]].sid] + '" alt="">', 'BOSS挑战', '已开放 ' + nOpen + ' / ' + bk.length, true) +
+      item('data-wkhub="1"', wk ? '<span class="sm-pm">' + permits() + '</span>' : '🔒', '每周挑战', wk ? '挑战许可 ' + permits() + ' / ' + PERMIT.max : '击败困难难度的泰戈尔或荒芜后开放', wk) +
+      '</div>';
   }
   // 舰体图下方的区域板块（2026-10-27）：只列出有功能的区域（不列剧情），每块写明有什么功能；点击传送过去（和点舰体图一样）
   function areaFeats(n) {
@@ -4266,7 +4271,7 @@
         (open ? '<button type="button" class="btn primary" data-boss="' + k + '" data-from="hub">挑战</button>' : '<button type="button" class="btn" disabled>' + esc(B.lv[0].lockText) + '</button>') + '</div></article>';
     }).join('');
     $('pg-explore').innerHTML = exHead('所有BOSS都集中在这里。难度依次开放，每档难度第一次击败都有奖励。') +
-      '<div class="crumb"><button type="button" class="btn ghost" id="ex-back">‹ 返回星球</button><b>BOSS挑战</b></div>' +
+      '<div class="crumb"><button type="button" class="btn ghost" id="ex-back">‹ 返回飞船终端</button><b>BOSS挑战</b></div>' +
       (weeklyOpen() ? '<p class="hint">每周挑战在星球列表上方单独入口，挑战许可 ' + permits() + ' / ' + PERMIT.max + '。</p>' : '') +
       '<div class="boss-hub">' + cards + '</div>';
   }
@@ -4653,7 +4658,7 @@
   }
   function renderWkHub() {
     $('pg-explore').innerHTML = exHead('所有每周挑战都在这里，挑战许可共用：每 12 小时恢复 1 枚，最多 ' + PERMIT.max + ' 枚。获胜才消耗，输了不消耗。') +
-      '<div class="crumb"><button type="button" class="btn ghost" id="wkhub-back">‹ 返回星际探索</button><b>每周挑战</b></div>' +
+      '<div class="crumb"><button type="button" class="btn ghost" id="wkhub-back">‹ 返回飞船终端</button><b>每周挑战</b></div>' +
       '<p class="hint permit-line">挑战许可 <b>' + permits() + '</b> / ' + PERMIT.max + ' · ' + permitNext() + '</p><div class="boss-row">' + weeklyCardsHTML() + '</div>';
   }
   function renderEwk() {
@@ -6276,7 +6281,7 @@
     if (b.id === 'mm-back') { if (ex.mmFrom === 'holo') { ex.mmFrom = null; ex.view = 'planets'; go('holo'); return; } ex.view = 'sites'; ex.planet = 'station'; renderExplore(); return; }
     if (b.id === 'mmg-back') { if (ex.mmFrom === 'log') { go('log'); return; } if (ex.mmFrom === 'holo') { ex.mmFrom = null; ex.view = 'planets'; go('holo'); return; } ex.view = 'mmArena'; renderExplore(); return; }
     if (b.dataset.wkhub) { ex.view = 'wkhub'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
-    if (b.id === 'wkhub-back') { ex.view = 'planets'; renderExplore(); return; }
+    if (b.id === 'wkhub-back') { ex.view = 'sites'; ex.planet = 'jingchu'; renderExplore(); return; }
     if (b.dataset.ewk) { ex.ewkT = b.dataset.ewk; ex.view = 'ewk'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
     if (b.dataset.ewkd) { ex.ewkD = +b.dataset.ewkd; renderEwk(); return; }
     if (b.dataset.ewkgo) { startEwk(ex.ewkT, ex.ewkD | 0); return; }
@@ -6362,7 +6367,7 @@
     if (b.dataset.ctwatch) { if (window.HSSOCIAL && window.HSSOCIAL.watch) window.HSSOCIAL.watch(b.dataset.ctwatch); return; }
     if (b.dataset.ctrep) { if (window.HSSOCIAL && window.HSSOCIAL.replay) window.HSSOCIAL.replay(b.dataset.ctrep); return; }
     if (b.dataset.planet && !b.disabled) { ex.planet = b.dataset.planet; ex.view = 'sites'; renderExplore(); loadGate($('pg-explore'), '正在前往' + planetOf(b.dataset.planet).name + '～'); mysteryRoll(planetOf(b.dataset.planet).name); return; }
-    if (b.id === 'ex-back') { var P_ = ex.view === 'sites' && planetOf(ex.planet); if (P_ && P_.inStation) { ex.planet = 'station'; renderExplore(); return; } ex.view = 'planets'; renderExplore(); return; }
+    if (b.id === 'ex-back') { var P_ = ex.view === 'sites' && planetOf(ex.planet); if (P_ && P_.inStation) { ex.planet = 'station'; renderExplore(); return; } if (ex.view === 'bosshub' || (P_ && SHIP_SIDE[P_.id])) { ex.view = 'sites'; ex.planet = 'jingchu'; renderExplore(); return; } ex.view = 'planets'; renderExplore(); return; }
     if (b.dataset.go && unlocked(b.dataset.go)) { ex.arc = false; startVN(b.dataset.go, 'replay', $('pg-explore'), b.dataset.from === '0'); window.scrollTo(0, $('pg-explore').offsetTop - 8); }
   });
 
