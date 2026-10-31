@@ -5909,10 +5909,10 @@
       H.mons.forEach(function (x, i) { var t = document.querySelector('[data-htag="' + i + '"]'); if (t) t.innerHTML = homeTag(x); });
     }, 20000);
     var E0 = ex.baseEdit, LY = E0 || baseLayout();
-    // 2026-10-31：基地里的精灵只显示精灵本身；鼠标悬停看基本信息，点击弹出它的面板
+    // 2026-10-31：基地里的精灵只显示精灵本身；鼠标悬停看基本信息；点击是摸摸（2026-11-01 改回，面板在「精灵展示」里看）
     var figs = H.mons.map(function (x, i) {
       var m = mon(x.u), f = form(m), p = baseMonPos(LY.room, i);
-      return '<div class="hm-fig' + (H.mons.length > 3 ? ' many' : '') + '" data-csid="' + m.sid + '" data-cst="' + (f.stage || 0) + '" data-cctx="home" data-hu="' + m.u + '" style="left:' + p[0] + '%;top:' + p[1] + '%;--fw:' + baseFigW(m.sid, f.stage, LY.room, p[1]) + '"><button type="button" class="hm-poke" data-hmon="' + m.u + '" aria-label="' + esc(f.name) + '"><img src="' + f.img + '" alt=""></button><span class="hm-tip" data-htag="' + i + '">' + homeTag(x) + '</span></div>';
+      return '<div class="hm-fig' + (H.mons.length > 3 ? ' many' : '') + '" data-csid="' + m.sid + '" data-cst="' + (f.stage || 0) + '" data-cctx="home" data-hu="' + m.u + '" style="left:' + p[0] + '%;top:' + p[1] + '%;--fw:' + baseFigW(m.sid, f.stage, LY.room, p[1]) + '"><button type="button" class="hm-poke" data-hpoke="1" aria-label="摸摸' + esc(f.name) + '"><img src="' + f.img + '" alt=""></button><span class="hm-tip" data-htag="' + i + '">' + homeTag(x) + '</span></div>';
     }).join('');
     var title = ex.homeEdit
       ? '<form class="home-edit" onsubmit="return false"><input id="home-name" maxlength="10" value="' + esc(H.name || '我的基地') + '" aria-label="基地名字"><button type="button" class="btn primary" id="home-ok">保存</button><button type="button" class="btn ghost" id="home-cancel">取消</button><span class="hint">最多 10 个字</span></form>'
