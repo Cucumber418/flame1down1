@@ -296,7 +296,7 @@
     navSync();
     syncBattle();
     deliverMail(); checkRankRewards(); daily(); homeSettle();
-    setTimeout(newsCheck, 1500);
+    setTimeout(function () { storyNewsCheck(); newsCheck(); }, 1500);
     ['holo', 'arena', 'log', 'bag', 'store', 'dex', 'items', 'social', 'explore'].forEach(function (p) { $('pg-' + p).hidden = p !== page; });
     renderRename();
     if (page === 'arena' && window.HSBATTLE && window.HSBATTLE.renderMode && $('battle').hidden) window.HSBATTLE.renderMode();
@@ -1363,7 +1363,7 @@
     { id: 'sarena', name: '太空竞技场', d: '空间站旁边新建的竞技场，各种比赛都在这里举办。', sites: [], sarena: true, after: 'flora1' },   // 2026-10-19
     { id: 'tower', name: '先驱之塔', d: '空间站里的一座高塔，共 60 层。每一层都守着一批强大的精灵，塔顶住着死神。', sites: [], tower: true, after: 'flora1', inStation: true },
     { id: 'flora', name: '芙罗拉星', d: '草系星球。丛林、草甸和盐碱地里栖息着许多野生精灵。', sites: ['flora1', 'flora2', 'flora3', 'flora4', 'flora5', 'flora6', 'flora7', 'travelcat'], wild: true, ptype: '草系星球', color: ['#9fd08a', '#3f7d4a'], get img() { return floraFallen() ? 'images/planets/flora_corrupt.webp?v=3' : 'images/planets/flora.webp?v=3'; }, after: 'board' },
-    { id: 'kamble', name: '坎伯兰星', d: '水系星球。整颗星球都被海洋覆盖，从水面一直往下，是浅水区和深不见底的深海区。', sites: ['kb2', 'kb3'], wild: true, ptype: '水系星球', color: ['#8cc6ea', '#2a6fb0'], get img() { return 'images/planets/kamble_' + kbStage() + '.webp?v=2'; }, after: 'flora1' },
+    { id: 'kamble', name: '坎伯兰星', d: '水系星球。整颗星球都被海洋覆盖，从水面一直往下，是浅水区和深不见底的深海区。', sites: ['kb2', 'kb3'], storyIds: ['kb1', 'kb2', 'kb3'], storyEmpty: '第二章 · 坎伯兰星：读完第十一段「盐碱地之下」后，到荆楚号 · 随州 · 编钟通讯站开始。', wild: true, ptype: '水系星球', color: ['#8cc6ea', '#2a6fb0'], get img() { return 'images/planets/kamble_' + kbStage() + '.webp?v=2'; }, after: 'flora1' },
     { id: 'pompeii', name: '庞贝星', d: '火系星球。火山终年喷发，地面被熔岩烤得发烫。', sites: [], wild: true, ptype: '火系星球', color: ['#f2a46b', '#b3401f'], img: 'images/planets/pompeii.webp', after: 'flora1' },
     { id: 'laiting', name: '莱汀陨石带', d: '电系区域。无数陨石在雷暴中漂浮。', sites: [], wild: true, ptype: '电系陨石带', color: ['#f1dd73', '#7a6a1a'], belt: true, img: 'images/planets/laiting.webp', after: 'flora1' },
     { id: 'white', name: '白之星', d: '冰系星球。离太阳最远，整颗星球都裹在冰雪里。', sites: [], wild: true, ptype: '冰系星球', color: ['#e4f2fa', '#6aa6c8'], after: 'flora1' },
@@ -1498,7 +1498,7 @@
     { id: 'ch1', n: '第一章 · 芙罗拉星', d: '降落芙罗拉星，追查瘴气和猎杀者的真相。', sites: ['flora1', 'flora2', 'flora3', 'flora4', 'flora5', 'flora6', 'flora7'] },
     { id: 'ch2', n: '第二章 · 坎伯兰星', d: '远航禁闭海洋。', sites: ['kb1', 'kb2', 'kb3'], wip: true }   // 2026-10-31：未完待续   // 2026-10-17：茶室音乐「芙罗拉星」移除，章节大奖改为经验和能量
   ];
-  CHAPTERS.forEach(function (x) { x.reward = RW.CHAPTER[x.id] || x.reward; });   // 奖励数额在 js/engine/rewards.js（服务器按它核对）
+  CHAPTERS.forEach(function (x) { x.reward = RW.CHAPTER[x.id] || x.reward || {}; });   // 奖励数额在 js/engine/rewards.js（服务器按它核对）
   function chapterOf(site) { return CHAPTERS.filter(function (C) { return C.sites.indexOf(site) >= 0; })[0] || null; }
   function chapterDone(C) { return !C.wip && C.sites.every(function (id) { return prog(id).done; }); }
   function chapterGot(id) { return !!(acc && acc.chapters && acc.chapters[id]); }
@@ -2037,35 +2037,42 @@
     return '<div class="inv"><span><b>捕捉装置</b>　' + cap + '</span><span><b>补药</b>　' + pot + '</span>' +
       (shopOpen() ? '<button type="button" class="btn" data-goshop="1">去物资仓储兑换</button>' : '<span class="hint">在荆楚号 · 荆门 · 物资仓储读完支线后开放商城</span>') + '</div>';
   }
-  function floraPage() {
-    var part = ex.fpart || 'catch';
-    var head = '<div class="flora-hero"><span class="tape l"></span>' + planetImg(planetOf('flora'), 150) + '<div><h3>芙罗拉星 <span class="chip ptype">草系星球</span></h3><p class="hint">地表分为丛林、草甸、盐碱地三片区域。</p>' +
-      '<div class="fparts" role="tablist"><button type="button" role="tab" class="tab' + (part === 'challenge' ? ' on' : '') + '" data-fpart="challenge" aria-selected="' + (part === 'challenge') + '">挑战</button><button type="button" role="tab" class="tab' + (part === 'catch' ? ' on' : '') + '" data-fpart="catch" aria-selected="' + (part === 'catch') + '">探索</button>' + taskTab('flora', part) + '</div></div></div>';
-    // 剧情页（2026-10-17）：分「主线」「支线」两栏，从上往下是 新 → 旧
-    var flSites = PLANETS.filter(function (p) { return p.id === 'flora'; })[0].sites, stab = ex.flSt === 'side' ? 'side' : ex.flSt === 'cg' ? 'cg' : 'main';
+  // 星球的「剧情」页：主线 / 支线 / 画廊三栏，从上往下是 新 → 旧（lockBtn：有任务没完成时卡片上的按钮）
+  function storyTabs(sites, lockBtn) {
+    var stab = ex.flSt === 'side' ? 'side' : ex.flSt === 'cg' ? 'cg' : 'main';
     var stCard = function (id) {
       var S = SITES[id], pr = prog(id), started = pr.at > 0 && !pr.done, lock = !unlocked(id);
       if (lock && !prog(S.after).done) return '';   // 前一段还没读完的不显示
       if (lock) return '<article class="site fl-story locked"><span class="tape r"></span><div class="site-img"><img src="' + BG[S.bg] + '" alt=""></div><div class="site-txt"><span class="sc-tag">' + S.chapter + '</span><h3>' + S.name + '</h3><p class="hint">' + S.d + '</p>' +
-        '<p class="site-st red">任务：' + esc(S.needText) + (id === 'flora3' ? '（' + spareN() + ' / ' + SPARE_N + '）' : '') + '</p><div class="site-act"><button type="button" class="btn primary" data-fpart="catch">去丛林 / 草甸</button></div></div></article>';
+        '<p class="site-st red">任务：' + esc(S.needText || '') + (id === 'flora3' ? '（' + spareN() + ' / ' + SPARE_N + '）' : '') + '</p><div class="site-act">' + (lockBtn || '') + '</div></div></article>';
       return '<article class="site fl-story"><span class="tape r"></span><div class="site-img"><img src="' + BG[S.bg] + '" alt=""></div><div class="site-txt"><span class="sc-tag">' + S.chapter + '</span><h3>' + S.name + '</h3><p class="hint">' + S.d + '</p>' +
-        (S.reward ? '<p class="hint">首次读完奖励：' + rwList(S.reward).join('、') + (pr.rewarded ? '（已领取）' : '') + '</p>' : '') +
+        (S.reward ? '<p class="hint">首次读完奖励：' + rwList(S.reward).filter(Boolean).join('、') + (pr.rewarded ? '（已领取）' : '') + '</p>' : '') +
         '<p class="site-st ' + (pr.done ? 'blue' : started ? 'red' : '') + '">' + (pr.done ? '已读完' : started ? '读到一半' : '未读') + '</p><div class="site-act">' +
         (started ? '<button type="button" class="btn primary" data-go="' + id + '" data-from="cont">继续剧情</button><button type="button" class="btn" data-go="' + id + '" data-from="0">从头开始</button>' : '<button type="button" class="btn primary" data-go="' + id + '" data-from="0">' + (pr.done ? '重温剧情' : '进入') + '</button>') + '</div></div></article>';
     };
     var isNew = function (id) { return unlocked(id) && !prog(id).done; };
-    var mainIds = flSites.filter(function (id) { return !SITES[id].side; }), sideIds = flSites.filter(function (id) { return SITES[id].side; });
-    var listOf = function (ids) { var h = ids.slice().reverse().map(stCard).join(''); return h || '<p class="hint fl-none">暂时还没有可以阅读的剧情。</p>'; };
+    var mainIds = sites.filter(function (id) { return !SITES[id].side; }), sideIds = sites.filter(function (id) { return SITES[id].side; });
+    var listOf = function (ids, empty) { var h = ids.slice().reverse().map(stCard).join(''); return h || '<p class="hint fl-none">' + (empty || '暂时还没有可以阅读的剧情。') + '</p>'; };
     var nM = mainIds.some(isNew), nS = sideIds.some(isNew);
-    var sp = '<div class="fparts st-tabs" role="tablist"><button type="button" role="tab" class="tab' + (stab === 'main' ? ' on' : '') + '" data-flst="main" aria-selected="' + (stab === 'main') + '">主线' + (nM ? '<i class="q-badge">!</i>' : '') + '</button>' +
-      '<button type="button" role="tab" class="tab' + (stab === 'side' ? ' on' : '') + '" data-flst="side" aria-selected="' + (stab === 'side') + '">支线' + (nS ? '<i class="q-badge">!</i>' : '') + '</button>' +
-      '<button type="button" role="tab" class="tab' + (stab === 'cg' ? ' on' : '') + '" data-flst="cg" aria-selected="' + (stab === 'cg') + '">画廊</button></div>' +
-      (stab === 'cg' ? cgGallery(flSites) : listOf(stab === 'side' ? sideIds : mainIds));
+    return { isNew: isNew, mainIds: mainIds, listOf: listOf, any: sites.some(isNew), html: function (empty) {
+      return '<div class="fparts st-tabs" role="tablist"><button type="button" role="tab" class="tab' + (stab === 'main' ? ' on' : '') + '" data-flst="main" aria-selected="' + (stab === 'main') + '">主线' + (nM ? '<i class="q-badge">!</i>' : '') + '</button>' +
+        '<button type="button" role="tab" class="tab' + (stab === 'side' ? ' on' : '') + '" data-flst="side" aria-selected="' + (stab === 'side') + '">支线' + (nS ? '<i class="q-badge">!</i>' : '') + '</button>' +
+        '<button type="button" role="tab" class="tab' + (stab === 'cg' ? ' on' : '') + '" data-flst="cg" aria-selected="' + (stab === 'cg') + '">画廊</button></div>' +
+        (stab === 'cg' ? cgGallery(sites) : listOf(stab === 'side' ? sideIds : mainIds, stab === 'main' ? empty : null));
+    } };
+  }
+  function floraPage() {
+    var part = ex.fpart || 'catch';
+    var head = '<div class="flora-hero"><span class="tape l"></span>' + planetImg(planetOf('flora'), 150) + '<div><h3>芙罗拉星 <span class="chip ptype">草系星球</span></h3><p class="hint">地表分为丛林、草甸、盐碱地三片区域。</p>' +
+      '<div class="fparts" role="tablist"><button type="button" role="tab" class="tab' + (part === 'challenge' ? ' on' : '') + '" data-fpart="challenge" aria-selected="' + (part === 'challenge') + '">挑战</button><button type="button" role="tab" class="tab' + (part === 'catch' ? ' on' : '') + '" data-fpart="catch" aria-selected="' + (part === 'catch') + '">探索</button>' + taskTab('flora', part) + '</div></div></div>';
+    // 剧情页（2026-10-17）：分「主线」「支线」两栏，从上往下是 新 → 旧（2026-10-31 抽成 storyTabs，坎伯兰星也用）
+    var flSites = PLANETS.filter(function (p) { return p.id === 'flora'; })[0].sites, ST = storyTabs(flSites, '<button type="button" class="btn primary" data-fpart="catch">去丛林 / 草甸</button>'), sp = ST.html;
+    var isNew = ST.isNew, mainIds = ST.mainIds, listOf = ST.listOf;
     head = head + (prog('flora1').done ? '' : listOf(mainIds));
     // 有新的主线可以读时，「剧情」页签上显示红点
     var newMain = flSites.some(isNew);
     if (prog('flora1').done) head = head.replace('<div class="fparts" role="tablist">', '<div class="fparts" role="tablist"><button type="button" class="tab' + (part === 'story' ? ' on' : '') + '" data-fpart="story">剧情' + (newMain ? '<i class="q-badge">!</i>' : '') + '</button>');
-    if (part === 'story') return head + sp;
+    if (part === 'story') return head + sp();
     if (part === 'task') return head + planetTasks('flora');
     if (part === 'challenge') return head + chalPage('flora');
     var regs = REGIONS.filter(function (R) { return !R.record || regionOpen(R); }).map(function (R) {
@@ -3517,13 +3524,13 @@
   // 其他星球的探索页（只有捕捉）
   function wildPage(P) {
     var regs = regionsOf(P.id);
-    var stIds = (P.sites || []).filter(function (id) { return SITES[id] && (prog(id).done || prog(id).at > 0 || unlocked(id) || (SITES[id].after && prog(SITES[id].after).done)); });
-    var part = ex.fpart === 'task' ? 'task' : ex.fpart === 'story' && stIds.length ? 'story' : 'catch';
+    var stIds = P.storyIds || P.sites || [], hasStory = stIds.length > 0, ST = hasStory ? storyTabs(stIds) : null;
+    var part = ex.fpart === 'task' ? 'task' : ex.fpart === 'story' && hasStory ? 'story' : 'catch';
     var head = '<div class="flora-hero"><span class="tape l"></span>' + (P.img ? planetImg(P, 150) : planetSvgC(P, 150)) + '<div><h3 style="color:' + P.color[1] + '">' + P.name + ' <span class="chip ptype">' + P.ptype + '</span></h3><p class="hint">' + P.d + (P.img ? '' : '星球立绘还在绘制中，这里先用示意图。') + '</p>' +
-      '<div class="fparts" role="tablist">' + (stIds.length ? '<button type="button" role="tab" class="tab' + (part === 'story' ? ' on' : '') + '" data-fpart="story" aria-selected="' + (part === 'story') + '">剧情' + (stIds.some(function (id) { return unlocked(id) && !prog(id).done; }) ? '<i class="q-badge">!</i>' : '') + '</button>' : '') +
+      '<div class="fparts" role="tablist">' + (hasStory ? '<button type="button" role="tab" class="tab' + (part === 'story' ? ' on' : '') + '" data-fpart="story" aria-selected="' + (part === 'story') + '">剧情' + (ST.any ? '<i class="q-badge">!</i>' : '') + '</button>' : '') +
       '<button type="button" role="tab" class="tab' + (part === 'catch' ? ' on' : '') + '" data-fpart="catch" aria-selected="' + (part === 'catch') + '">探索</button>' + taskTab(P.id, part) + '</div></div></div>';
     if (part === 'task') return head + planetTasks(P.id);
-    if (part === 'story') return head + planetStoryList(stIds);
+    if (part === 'story') return head + ST.html(P.storyEmpty);
     var cards = regs.map(function (R) {
       var bgs = (R.bgs || []).filter(function (k) { return BG[k]; });
       return '<article class="region"><div class="rg-art">' + (bgs.length ? '<img src="' + BG[bgs[0]] + '" alt="' + R.name + '">' : regionArt(R.id)) + '</div><div class="rg-txt"><h4>' + R.name + ' <small>' + R.en + '</small></h4><p class="hint">' + R.d + '</p>' +
@@ -3551,18 +3558,6 @@
       '<div class="wild-list"><h4>' + P.name + '的野生精灵</h4><ul>' + list.join('') + '</ul><p class="hint">进入区域后，精灵会在场景里走动，点中哪只就和哪只对战。捕捉、经验和学习力的规则和芙罗拉星一样。</p></div>';
   }
 
-  // 坎伯兰星等星球的「剧情」页（2026-10-31）：主线从新到旧排，和芙罗拉星的剧情页同样的卡片
-  function planetStoryList(ids) {
-    var card = function (id) {
-      var S = SITES[id], pr = prog(id), started = pr.at > 0 && !pr.done, lock = !unlocked(id);
-      return '<article class="site fl-story' + (lock ? ' locked' : '') + '"><span class="tape r"></span><div class="site-img"><img src="' + BG[S.bg] + '" alt=""></div><div class="site-txt"><span class="sc-tag">' + S.chapter + '</span><h3>' + S.name + '</h3><p class="hint">' + S.d + '</p>' +
-        (S.reward ? '<p class="hint">首次读完奖励：' + rwList(S.reward).join('、') + (pr.rewarded ? '（已领取）' : '') + '</p>' : '') +
-        (lock ? '<p class="site-st red">' + (S.needText ? '任务：' + esc(S.needText) : '读完「' + SITES[S.after].chapter.split(' · ')[1] + '」后开放') + '</p>' :
-        '<p class="site-st ' + (pr.done ? 'blue' : started ? 'red' : '') + '">' + (pr.done ? '已读完' : started ? '读到一半' : '未读') + '</p><div class="site-act">' +
-        (started ? '<button type="button" class="btn primary" data-go="' + id + '" data-from="cont">继续剧情</button><button type="button" class="btn" data-go="' + id + '" data-from="0">从头开始</button>' : '<button type="button" class="btn primary" data-go="' + id + '" data-from="0">' + (pr.done ? '重温剧情' : '进入') + '</button>') + '</div>') + '</div></article>';
-    };
-    return '<div class="sites fl-sites">' + ids.slice().reverse().map(card).join('') + '</div>';
-  }
   /* ---------- 星球任务：每颗星球的专属任务 ---------- */
   // 芙罗拉星 · 祛除瘴气：任务完成前，在芙罗拉星作战有 10% 概率遇到瘴气精灵（自带 5 层瘴气，无法捕捉），击败它们累计计数
   var PURGE = PVE.PURGE;
@@ -3972,7 +3967,7 @@
   function clKey(c) { return c.date + '|' + c.title; }
   function newsCheck() {
     if (!ready() || typeof CHANGELOG === 'undefined' || !CHANGELOG.length || acc.newsDay === dayStr()) return;
-    if (!$('battle').hidden || ex.fighting || (ex.mode && (ex.mode === 'intro' || ex.view === 'vn')) || $('news') || $('mailbox')) return;
+    if (!$('battle').hidden || ex.fighting || (ex.mode && (ex.mode === 'intro' || ex.view === 'vn')) || $('news') || $('mailbox') || $('story-news')) return;
     var first = !Array.isArray(acc.newsSeen), seen = first ? [] : acc.newsSeen;   // 第一次弹：只列最近 3 条，不然一下子十几条太多
     var fresh = first ? CHANGELOG.slice(0, 3) : CHANGELOG.filter(function (c) { return seen.indexOf(clKey(c)) < 0; });
     var list = fresh.length ? fresh.slice(0, 5) : CHANGELOG.slice(0, 1);
@@ -3994,7 +3989,31 @@
     document.addEventListener('keydown', function esc0(e) { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', esc0); } });
     d.querySelector('[data-nx]').focus();
   }
-  setInterval(function () { if (document.visibilityState === 'visible') newsCheck(); }, 20000);
+  setInterval(function () { if (document.visibilityState === 'visible') { storyNewsCheck(); newsCheck(); } }, 20000);
+  /* 新剧情上线通知（2026-10-31）：每推出一批新剧情，在 STORY_NEWS 最前面加一条；每个存档只弹一次（记在 storyNews） */
+  var STORY_NEWS = [
+    { id: 'kb-1', title: '第二章 · 坎伯兰星', sub: '第十二段 ～ 第十四段', card: 'kb', site: 'kb1', d: '远航禁闭海洋。荆楚号的下一站，是一颗被海洋覆盖的星球。' }
+  ];
+  function storyNewsCheck() {
+    if (!ready() || !acc.introDone || !STORY_NEWS.length) return;
+    if (!$('battle').hidden || ex.fighting || (ex.mode && (ex.mode === 'intro' || ex.view === 'vn')) || $('news') || $('mailbox') || $('story-news') || document.querySelector('.soc-dlg')) return;
+    var seen = Array.isArray(acc.storyNews) ? acc.storyNews : [], N = STORY_NEWS.filter(function (x) { return seen.indexOf(x.id) < 0; })[0];
+    if (!N) return;
+    acc.storyNews = STORY_NEWS.map(function (x) { return x.id; }).concat(seen.filter(function (k) { return !STORY_NEWS.some(function (x) { return x.id === k; }); })).slice(0, 50); save();
+    var S = SITES[N.site], open = unlocked(N.site), C = N.card && CARDS[N.card];
+    var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'story-news';
+    d.innerHTML = '<div class="soc-box sn-box" role="dialog" aria-modal="true" aria-label="新剧情上线"><span class="tape l"></span><span class="tape r"></span>' +
+      (C ? '<div class="sn-art"><img class="sn-bg" src="' + BG[C.bg] + '" alt=""><img class="sn-card" src="' + C.img + '" alt=""></div>' : '') +
+      '<span class="step">新剧情上线</span><h2>' + esc(N.title) + '</h2><p class="sn-sub">' + esc(N.sub) + '</p><p>' + esc(N.d) + '</p>' +
+      '<p class="hint">' + (prog(N.site).done ? '你已经读过了。' : open ? '从「' + esc(S.chapter) + '」开始：' + (S.dept ? '荆楚号 · ' + S.dept + ' · ' + S.name : PLANETS.filter(function (p) { return p.id === S.planet; })[0].name + ' · 剧情') + '。' : '开放条件：读完「' + esc(SITES[S.after].chapter) + '」。') + '</p>' +
+      '<div class="soc-foot"><button type="button" class="btn ghost" data-snx="1">知道了</button>' + (open ? '<button type="button" class="btn primary" data-sngo="' + N.site + '">前往</button>' : '<button type="button" class="btn primary" data-snq="1">查看主线任务</button>') + '</div></div>';
+    document.body.appendChild(d);
+    d.addEventListener('click', function (e) {
+      if (e.target === d || e.target.closest('[data-snx]')) { d.remove(); return; }
+      var g = e.target.closest('[data-sngo]'); if (g) { d.remove(); questGo(g.dataset.sngo); return; }
+      if (e.target.closest('[data-snq]')) { d.remove(); openQuests('main'); }
+    });
+  }
   var QQ_GROUP = '1124145809';   // 航行日志最上方显示的船员 QQ 群
   $('pg-log').addEventListener('click', function (e) {
     var gb = e.target.closest('[data-gift]'); if (gb && !gb.disabled && ready()) { gb.disabled = true; txRun('compGift', { id: gb.dataset.gift }, function () { toast(gb.dataset.gift === 'base1' ? '领取了基地改版纪念礼包！三个纪念摆件已经放进基地的摆件库。' : '领取了补偿大礼包！经验已放进经验背包，道具已放入储存箱。'); renderRes(); renderLog(); }, function () { gb.disabled = false; }); return; }
@@ -6279,7 +6298,7 @@
       if (CH && CH !== lastCh) {   // 主线按章节分组，章节标题上写通关状态和章节大奖
         lastCh = CH;
         var got = chapterGot(CH.id);
-        head = '<p class="q-chap"><b>' + esc(CH.n) + '</b><span class="' + (got ? 'ok' : '') + '">' + (got ? '已通关' : CH.wip ? '未完待续' : '进行中') + '</span><small>章节大奖：' + rwList(CH.reward).join('、') + (got ? '（已领取）' : '') + '</small></p>';
+        head = '<p class="q-chap"><b>' + esc(CH.n) + '</b><span class="' + (got ? 'ok' : '') + '">' + (got ? '已通关' : CH.wip ? '未完待续' : '进行中') + '</span><small>章节大奖：' + (rwList(CH.reward).filter(Boolean).join('、') || '待定') + (got ? '（已领取）' : '') + '</small></p>';
       }
       return head + '<button type="button" class="q-item ' + st + (ex.qsel === id ? ' sel' : '') + '" data-q="' + id + '"><span class="qi-n">' + esc(qName(id)) + '</span><span class="qi-w">' + esc(qWhere(id)) + '</span><span class="q-st ' + st + '">' + QLAB[st] + '</span></button>';
     }).join('');

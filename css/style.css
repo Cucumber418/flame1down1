@@ -2997,3 +2997,11 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .vn-pay .vp-ic { width: 40px; height: 40px; display: grid; place-items: center; }
 .vn-pay .vp-ic svg, .vn-pay .vp-ic img { width: 40px; height: 40px; }
 .vn-pay .vp-it b { font-family: inherit; font-size: 14px; color: var(--ink); line-height: 1.3; }
+
+/* 新剧情上线弹窗（2026-10-31） */
+.sn-box { max-width: 620px; overflow: hidden; }
+.sn-art { position: relative; margin: -24px -20px 4px; aspect-ratio: 16 / 9; overflow: hidden; border-bottom: 1.5px solid var(--ink); background: #000; }
+.sn-art img { position: absolute; inset: 0; width: 100%; height: 100%; }
+.sn-art .sn-bg { object-fit: cover; }
+.sn-art .sn-card { object-fit: contain; animation: vcArt 1.2s cubic-bezier(.2,.8,.2,1) .2s both; }
+.sn-sub { color: var(--pencil); font-weight: 700; margin-top: -6px !important; }
