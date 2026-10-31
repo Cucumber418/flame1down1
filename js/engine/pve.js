@@ -683,10 +683,10 @@ var PVE = (function () {
     // 剧情杀：第二只 LV65，双攻隐含 +500%、技能必中、不能被闪避
     odoTwin: { foe: '机械精灵', team: [{ sid: 'odo', lv: 45, nick: '？？？', boss: { dr: 0.1, pp: 99 } }, { sid: 'odo', lv: 65, nick: '？？？', maxhp: 30000, moves: ['钢铁冲击', '水打击', '铁拳', '海浪'], boss: { sure: 1, kill: 1, pp: 99 } }], bg: 'kb_abyss', desc: '机械精灵 ×2（LV45 / LV65）' },
     // 第十八段 · 星云显现：玫瑰星云（剧情限定，LV80、体力 10000，玩家不出意外地被秒杀）
-    nebula: { foe: 'Rosette Nebula', bgm: 'ngc2237', team: [{ sid: 'rosette', lv: 80, nick: '玫瑰星云', maxhp: 10000, moves: ['黑雾潮汐', '幽冥息', '夜影封魂', '幽冥结界'], boss: { erode: 9, sure: 1, dr: 0.15, pp: 99 } }], bg: 'kb_dusk', desc: '玫瑰星云（LV80）' },
+    nebula: { foe: 'Rosette Nebula', bgm: 'disCommunication', team: [{ sid: 'rosette', lv: 80, nick: '玫瑰星云', maxhp: 10000, moves: ['黑雾潮汐', '幽冥息', '夜影封魂', '幽冥结界'], boss: { erode: 9, sure: 1, dr: 0.15, stRes: 0.8, pp: 99 } }], bg: 'kb_dusk', desc: '玫瑰星云（LV80）' },
     // 第十三段 · 冥岛的歌声（2026-10-31）：唱歌的塞米
     // 第十九段 · 码头决战（2026-11-01）：必须打赢才能读完；机制见 battle.js 的 nebCumber
-    nebula2: { foe: 'Rosette Nebula', bgm: 'ngc2237', mustWin: true, team: [{ sid: 'rosette', lv: 80, nick: '玫瑰星云', maxhp: 6336, moves: ['强烈恒星风', '氢-α发射线'], ability: { n: '疏散星团', d: '先出手时造成的伤害提升 50%；后出手时受到的伤害减免 50%' }, boss: { neb: 1, dust: 1, bok: 1, pp: 99 } }], bg: 'kb_dock', desc: '玫瑰星云（LV80）· Cumber 助阵' },
+    nebula2: { foe: 'Rosette Nebula', bgm: 'ngc2237', mustWin: true, team: [{ sid: 'rosette', lv: 80, nick: '玫瑰星云', maxhp: 6336, moves: ['强烈恒星风', '氢-α发射线'], ability: { n: '疏散星团', d: '先出手时造成的伤害提升 50%；后出手时受到的伤害减免 50%' }, boss: { neb: 1, dust: 1, bok: 1, stRes: 0.8, pp: 99 } }], bg: 'kb_dock', desc: '玫瑰星云（LV80）· Cumber 助阵' },
     semi: { foe: '唱歌的小精灵', team: [{ sid: 'siren', lv: 20, nick: '塞米' }], bg: 'kb_isle', desc: '塞米（LV20）' },
     threego: { foe: 'Threego', team: [{ sid: 'tagore', lv: 3 }] },
     karo: { foe: '被瘴气污染的野生精灵', team: [{ sid: 'wind', lv: 3, miasma: 5 }], env: 'miasma', bg: 'fl_salt', desc: '被瘴气污染的卡罗（LV3）' },

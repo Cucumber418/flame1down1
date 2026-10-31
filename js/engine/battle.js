@@ -481,6 +481,7 @@ function petriBreak(S, evs, j) { var t = act(S, j); if (t.st['石化'] > 0) { t.
 var ST_IMMUNE = { 寄生: '草', 烧伤: '火', 溺水: '水', 冻伤: '冰', 冰冻: '冰' };
 function addStatus(S, evs, j, k, turns, src, noReflect, refresh) {
   var t = act(S, j); if (t.fainted) return;
+  if (t.boss && t.boss.stRes && RNG() < t.boss.stRes) { RV(t, 'stRes'); log(S, evs, nm(t) + '的星云之躯几乎不受影响，「' + k + '」没有生效'); return; }   // 玫瑰星云：异常状态的效能降低 80%（2026-11-01）
   if (t.boss && (t.boss.noStatus || t.boss.immortal)) { RV(t, 'noStatus'); RV(t, 'immortal'); log(S, evs, nm(t) + '免疫异常状态，「' + k + '」没有效果'); return; }
   if (ST_IMMUNE[k] && typesOf(t).indexOf(ST_IMMUNE[k]) >= 0) { log(S, evs, nm(t) + '是' + ST_IMMUNE[k] + '系精灵，不会' + (k === '寄生' ? '被寄生' : k === '冰冻' ? '被冰冻' : '陷入' + k)); return; }
   if (t.tm.reflect > 0) {
@@ -1346,6 +1347,7 @@ var BOSS_FX = [
   { k: 'odoWill', t: '护阵意志', h: '护阵意志', d: function () { return '每次受到的伤害不会超过 200，超过的部分全部反弹给攻击者'; } },
   { k: 'rainbow', t: '虹霓暴走', h: '虹霓暴走', d: function () { return '物攻、特攻提升 50%。对你每累计造成 1000 点伤害（不计溢出）就爆破一次：自身损失 500 体力，并对你造成 500 点固定伤害'; } },
   { k: 'odoSwap', t: '形态切换', h: '形态切换', d: function () { return '歼灭形态和护阵形态每 2 回合主动切换一次；两种形态都被击败后，化为虹霓暴走'; } },
+  { k: 'stRes', t: '星云之躯', h: '星云之躯', d: function (m) { return '异常状态的效能降低 ' + Math.round(m.boss.stRes * 100) + '%：每次对它施加异常状态，有 ' + Math.round(m.boss.stRes * 100) + '% 的概率无效'; } },
   { k: 'dust', t: '尘埃柱', h: '尘埃柱', d: function () { return '每回合结束时有 30% 的概率让对方陷入混乱 2 回合（攻击时有 40% 的概率攻击自己）'; } },   // 玫瑰星云（第十九段）
   { k: 'bok', t: '博克球状体', h: '博克球状体', d: function (m) { return m.boss.bokUsed ? '已经发动过了' : '体力低于 2000 时，恢复 500 体力并对对方造成 200 点固定伤害（只发动一次）'; } },
   { k: 'dr', t: '星球聚能', h: '星球聚能', d: function (m) { return '受到的伤害减少 ' + Math.round(m.boss.dr * 100) + '%'; } },
@@ -1536,14 +1538,14 @@ function nebCumber(S, evs) {
     if (S.cbN % 2 === 1) {
       var pm = act(S, 0);
       if (!pm.fainted) {
-        log(S, evs, 'Cumber：戈耳贡啊，散播净化之水吧！', 'crit');
+        E(S, evs, 'scene', { side: 0, lines: [['cb', '戈耳贡啊，散播净化之水吧！']] }); log(S, evs, 'Cumber：戈耳贡啊，散播净化之水吧！', 'crit');
         var had = 0; for (var sk in pm.st) if (pm.st[sk] > 0 && ST_DESC[sk]) { delete pm.st[sk]; had++; }
         if (pm.fx) delete pm.fx.poison;
         if (had) log(S, evs, nm(pm) + '身上的异常状态都被冲走了', 'good');
         E(S, evs, 'stage', { side: 0 }); heal(S, evs, 0, 200);
       }
     } else {
-      log(S, evs, 'Cumber：坎克托斯啊，冲散你的敌人吧！', 'crit');
+      E(S, evs, 'scene', { side: 0, lines: [['cb', '坎克托斯啊，冲散你的敌人吧！']] }); log(S, evs, 'Cumber：坎克托斯啊，冲散你的敌人吧！', 'crit');
       applyDamage(S, evs, 1, 500, null, {});
     }
   }
