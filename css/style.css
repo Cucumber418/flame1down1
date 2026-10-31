@@ -2834,8 +2834,16 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .base-room.editing .bdeco { pointer-events: auto; cursor: grab; touch-action: none; }
 .base-room.editing .bdeco.sel { outline: 2.5px dashed var(--red); outline-offset: 3px; border-radius: 8px; background: rgba(255,255,255,.18); }
 .base-room.editing .hm-fig { pointer-events: none; opacity: .55; }
-.base-floorline { position: absolute; left: 0; right: 0; top: var(--floor); border-top: 2px dashed rgba(196,47,58,.7); pointer-events: none; z-index: 1; }
-.base-floorline::before { content: '↑ 墙壁　　↓ 地板'; position: absolute; right: 8px; top: -18px; font-size: 11px; color: #fff; background: rgba(196,47,58,.8); padding: 1px 6px; border-radius: 6px; }
+.base-zones { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+.base-zones polygon { stroke-width: 1.5; vector-effect: non-scaling-stroke; stroke-dasharray: 5 4; stroke-linejoin: round; }
+.base-zones .zf, .be-lg .zf { fill: rgba(70, 210, 110, .22); stroke: rgba(30, 150, 70, .9); }
+.base-zones .zw, .be-lg .zw { fill: rgba(70, 130, 255, .2); stroke: rgba(40, 90, 220, .9); }
+.base-zones .zb, .be-lg .zb { fill: rgba(230, 50, 60, .28); stroke: rgba(196, 47, 58, .95); }
+.be-lg { display: inline-flex; flex-wrap: wrap; gap: 2px 10px; align-items: center; margin-left: 6px; }
+.be-lg i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; border: 1.5px dashed; vertical-align: -2px; margin-right: 3px; }
+.be-lg .zf { background: rgba(70, 210, 110, .35); border-color: rgba(30, 150, 70, .9); }
+.be-lg .zw { background: rgba(70, 130, 255, .3); border-color: rgba(40, 90, 220, .9); }
+.be-lg .zb { background: rgba(230, 50, 60, .35); border-color: rgba(196, 47, 58, .95); }
 .base-acts { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
 .base-edit { position: relative; margin-top: 12px; padding: 12px 14px; background: var(--paper-2); border: 1.5px solid var(--ink); border-radius: 14px; box-shadow: 3px 3px 0 var(--red); }
 .be-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }

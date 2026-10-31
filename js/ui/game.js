@@ -5744,7 +5744,7 @@
       H.mons.forEach(function (x, i) { var t = document.querySelector('[data-htag="' + i + '"]'); if (t) t.innerHTML = homeTag(x); });
     }, 20000);
     var figs = H.mons.map(function (x, i) {
-      var m = mon(x.u), f = form(m), p = HOME_POS[i];
+      var m = mon(x.u), f = form(m), p = baseMonPos((ex.baseEdit || baseLayout()).room, i);
       return '<div class="hm-fig' + (H.mons.length > 3 ? ' many' : '') + '" data-csid="' + m.sid + '" data-cst="' + (f.stage || 0) + '" data-cctx="home" style="left:' + p[0] + '%;top:' + p[1] + '%"><button type="button" class="hm-poke" data-hpoke="1" aria-label="摸摸' + esc(f.name) + '"><img src="' + f.img + '" alt=""></button><span class="hm-tag" data-htag="' + i + '">' + homeTag(x) + '</span></div>';
     }).join('');
     var nAuto = acc.items.auto || 0;
@@ -5768,29 +5768,53 @@
   }
   /* ---------- 基地（2026-10-31，取代原来的茶室）：2.5D 房间，可以换房型、摆放摆件 ----------
    * 房型、摆件在基地商城用能量买（js/engine/tx.js 的 baseBuy，记在 acc.baseInv）；摆放记在 acc.home.layout = { room, deco: [{ k, x, y, f }] }
-   * x、y 是摆件脚底在房间里的位置（百分比）；f = 1 左右翻转。floor：房间地板从多高开始（百分比），地板摆件只能放在它下面，墙壁摆件只能放在上面 */
-  var BASE_UI = { r1: { img: 'images/base/room1.jpg', floor: 36 }, r2: { img: 'images/base/room2.jpg', floor: 46 }, r3: { img: 'images/base/room3.jpg', floor: 50 }, r4: { img: 'images/base/room4.jpg', floor: 34 } };
+   * x、y 是摆件脚底在房间里的位置（百分比）；f = 1 左右翻转。地板摆件只能放在地板区域，墙壁摆件只能挂在墙壁区域（见下面的 BASE_UI） */
+  /* 2026-10-31：地板、墙壁按每个房型的画面描出来（多边形，百分比坐标）：floor 能走、能放地板摆件的地面；wall 能挂墙壁摆件的墙面；block 地面上不能放东西的地方（水池、地洞、控制台）；mons 精灵展示的站位 */
+  var BASE_UI = {
+    r1: { img: 'images/base/room1.jpg', floor: [[[0,52],[8,49],[17,58],[21,55],[23,45],[29,37],[40,46],[50,50],[60,46],[67,40],[78,53],[88,47],[93,57],[95,66],[96,72],[92,80],[84,88],[82,93],[80,100],[0,100]]], wall: [[[28,30],[40,27],[58,27],[69,30],[69,38],[60,45],[50,48],[41,44],[30,36]],[[67,36],[73,32],[86,32],[87,46],[78,51]]], block: [], mons: [[22,88],[46,82],[70,72],[34,66],[58,60],[84,66],[8,76]] },
+    r2: { img: 'images/base/room2.jpg', floor: [[[0,63],[9,55],[14,51],[24,44],[33,41],[42,41],[54,43],[66,43],[72,47],[75,54],[82,60],[92,63],[100,61],[100,100],[0,100]]], wall: [[[0,16],[8,8],[30,2],[32,22],[30,32],[18,37],[9,50],[6,56],[0,59]],[[35,4],[54,4],[56,22],[35,22]],[[58,0],[100,0],[100,32],[94,24],[84,19],[62,18],[57,10]]], block: [[[27,65],[30,57],[36,52],[44,48],[52,47],[60,48],[66,52],[70,58],[71,66],[69,77],[64,86],[56,92],[48,94],[40,92],[33,86],[28,77]]], mons: [[14,82],[80,82],[88,72],[18,66],[76,96],[6,94],[94,94]] },
+    r3: { img: 'images/base/room3.jpg', floor: [[[33,47],[67,47],[85,61],[88,70],[90,82],[91,100],[9,100],[10,82],[12,70],[15,61]]], wall: [[[17,8],[29,2],[25,20],[23,43],[17,43]],[[71,2],[83,8],[83,43],[77,43],[75,20]],[[4,36],[15,30],[15,58],[11,74],[5,70]],[[85,30],[96,36],[95,70],[89,74],[85,58]]], block: [[[45,47],[55,47],[55,56],[45,56]]], mons: [[22,88],[47,82],[74,72],[32,68],[62,64],[80,92],[18,74]] },
+    r4: { img: 'images/base/room4.jpg', floor: [[[24,42],[31,34],[45,30],[58,29],[70,32],[80,39],[86,46],[90,56],[92,70],[90,82],[84,90],[72,94],[66,100],[22,100],[20,92],[13,76],[10,66],[16,60],[22,58],[26,52]]], wall: [[[22,8],[40,4],[60,0],[82,0],[86,12],[88,30],[85,40],[80,37],[70,30],[58,27],[45,28],[30,32],[24,37],[22,26]]], block: [[[34,62],[38,54],[45,50],[58,50],[65,56],[66,68],[60,82],[50,86],[40,84],[35,76]]], mons: [[26,90],[74,88],[80,66],[26,68],[62,40],[44,42],[20,78]] }
+  };
   var DECO_IMG = { d1: 'images/base/deco1.webp', d2: 'images/base/deco2.webp', d3: 'images/base/deco3.webp', d4: 'images/base/deco4.webp', d5: 'images/base/deco5.webp', d6: 'images/base/deco6.webp', d7: 'images/base/deco7.webp' };
   function baseInv() { var B = (acc && acc.baseInv) || {}; return { rooms: B.rooms || {}, deco: B.deco || {} }; }
   function roomOwned(k) { return k === 'r1' || !!baseInv().rooms[k]; }
   function decoOwn(k) { return baseInv().deco[k] | 0; }
   function baseLayout() { var H = home(); if (!H.layout || typeof H.layout !== 'object') H.layout = { room: 'r1', deco: [] }; if (!roomOwned(H.layout.room) || !BASE_UI[H.layout.room]) H.layout.room = 'r1'; if (!Array.isArray(H.layout.deco)) H.layout.deco = []; return H.layout; }
   function decoLayer(k) { var X = TX.D.BASE_DECO[k]; return X ? X.layer : 'floor'; }
+  function inPoly(x, y, P) { var c = false; for (var i = 0, j = P.length - 1; i < P.length; j = i++) { var a = P[i], b = P[j]; if ((a[1] > y) !== (b[1] > y) && x < (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0]) c = !c; } return c; }
+  function baseOk(R, layer, x, y) { return R[layer].some(function (P) { return inPoly(x, y, P); }) && !(layer === 'floor' && R.block.some(function (P) { return inPoly(x, y, P); })); }
+  var baseGrid = {};
+  // 可以放的点（每 1% 一个），拖出范围时吸到最近的一个；房间图是 1400×817，纵向 1% 只有横向的 0.58 那么长
+  function baseSnap(room, layer, x, y) {
+    var R = BASE_UI[room] || BASE_UI.r1; if (baseOk(R, layer, x, y)) return [x, y];
+    var key = room + layer, G = baseGrid[key];
+    if (!G) { G = baseGrid[key] = []; for (var gx = 2; gx <= 98; gx++) for (var gy = 3; gy <= 99; gy++) if (baseOk(R, layer, gx, gy)) G.push([gx, gy]); }
+    var best = null, bd = 1e9; G.forEach(function (q) { var dx = q[0] - x, dy = (q[1] - y) * 0.58, dd = dx * dx + dy * dy; if (dd < bd) { bd = dd; best = q; } });
+    return best ? [best[0], best[1]] : [x, y];
+  }
+  function floorTop(room) { var R = BASE_UI[room] || BASE_UI.r1, t = 100; R.floor.forEach(function (P) { P.forEach(function (q) { t = Math.min(t, q[1]); }); }); return t; }
+  function baseMonPos(room, i) { var R = BASE_UI[room] || BASE_UI.r1; return R.mons[i] || R.mons[0]; }
+  function baseZonesSVG(room) {
+    var R = BASE_UI[room] || BASE_UI.r1, pg = function (P, c) { return '<polygon class="' + c + '" points="' + P.map(function (q) { return q[0] + ',' + q[1]; }).join(' ') + '"/>'; };
+    return '<svg class="base-zones" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">' + R.wall.map(function (P) { return pg(P, 'zw'); }).join('') + R.floor.map(function (P) { return pg(P, 'zf'); }).join('') + R.block.map(function (P) { return pg(P, 'zb'); }).join('') + '</svg>';
+  }
   // 越靠里（越往上）的地板摆件画得越小，看起来有纵深
   function decoHTML(d, i, room, edit, sel) {
-    var fl = (BASE_UI[room] || BASE_UI.r1).floor, wall = decoLayer(d.k) === 'wall';
+    var fl = floorTop(room), wall = decoLayer(d.k) === 'wall', q = baseSnap(room, wall ? 'wall' : 'floor', +d.x || 50, +d.y || 80);
+    d = { k: d.k, x: q[0], y: q[1], f: d.f };
     var sc = wall ? 0.9 : 0.72 + 0.42 * Math.max(0, Math.min(1, (d.y - fl) / (100 - fl)));
     return '<div class="bdeco' + (wall ? ' wall' : '') + (d.f ? ' flip' : '') + (edit && sel === i ? ' sel' : '') + '" data-bi="' + i + '" style="left:' + d.x + '%;top:' + d.y + '%;width:' + (7.2 * sc).toFixed(2) + '%;z-index:' + (wall ? 2 : Math.round(d.y)) + '"><img src="' + (DECO_IMG[d.k] || '') + '" alt="' + esc((TX.D.BASE_DECO[d.k] || {}).n || '') + '" draggable="false"></div>';
   }
   function baseRoomHTML(L, inner, edit) {
     L = L || { room: 'r1', deco: [] }; var R = BASE_UI[L.room] || BASE_UI.r1;
-    return '<div class="home-room base-room' + (edit ? ' editing' : '') + '" id="base-room" style="--floor:' + R.floor + '%"><img class="home-bg" src="' + R.img + '" alt="">' +
-      (L.deco || []).map(function (d, i) { return decoHTML(d, i, L.room, !!edit, edit ? edit.sel : -1); }).join('') + (edit ? '<div class="base-floorline" aria-hidden="true"></div>' : '') + (inner || '') + '</div>';
+    return '<div class="home-room base-room' + (edit ? ' editing' : '') + '" id="base-room"><img class="home-bg" src="' + R.img + '" alt="">' +
+      (L.deco || []).map(function (d, i) { return decoHTML(d, i, L.room, !!edit, edit ? edit.sel : -1); }).join('') + (edit ? baseZonesSVG(L.room) : '') + (inner || '') + '</div>';
   }
   function baseEditBar() {
     var E0 = ex.baseEdit, used = {}; E0.deco.forEach(function (d) { used[d.k] = (used[d.k] | 0) + 1; });
     var sel = E0.deco[E0.sel];
-    return '<div class="base-edit"><span class="tape l"></span><div class="be-head"><b>编辑基地</b><span class="hint">拖动摆件调整位置；地板摆件只能放在地板上，墙壁摆件只能挂在墙上。最多摆 ' + TX.D.BASE_DECO_MAX + ' 个。</span>' +
+    return '<div class="base-edit"><span class="tape l"></span><div class="be-head"><b>编辑基地</b><span class="hint">拖动摆件调整位置，最多摆 ' + TX.D.BASE_DECO_MAX + ' 个。<span class="be-lg"><i class="zf"></i>地板（放地板摆件）<i class="zw"></i>墙壁（挂墙壁摆件）<i class="zb"></i>不能放</span></span>' +
       '<span class="be-save"><button type="button" class="btn ghost" data-becancel="1">取消</button><button type="button" class="btn primary" data-besave="1">保存</button></span></div>' +
       (sel ? '<div class="be-sel"><b>已选中：' + esc(TX.D.BASE_DECO[sel.k].n) + '</b><button type="button" class="btn" data-beflip="1">↔ 左右转向</button><button type="button" class="btn ghost" data-bedel="1">收进摆件库</button></div>' : '') +
       '<h4>房型</h4><div class="be-rooms">' + Object.keys(TX.D.BASE_ROOMS).map(function (k) {
@@ -5803,10 +5827,8 @@
       }).join('') + '</div>' + (Object.keys(TX.D.BASE_DECO).some(function (k) { return decoOwn(k) > 0; }) ? '' : '<p class="hint">还没有摆件，去<button type="button" class="linkbtn" data-bshop="1">基地商城</button>买几个吧。</p>') + '</div>';
   }
   function baseClamp(d, room) {
-    var fl = (BASE_UI[room] || BASE_UI.r1).floor;
-    d.x = Math.max(4, Math.min(96, d.x));
-    d.y = decoLayer(d.k) === 'wall' ? Math.max(14, Math.min(fl - 2, d.y)) : Math.max(fl + 6, Math.min(99, d.y));
-    d.x = Math.round(d.x * 10) / 10; d.y = Math.round(d.y * 10) / 10;
+    var q = baseSnap(room, decoLayer(d.k) === 'wall' ? 'wall' : 'floor', Math.max(1, Math.min(99, +d.x || 50)), Math.max(1, Math.min(100, +d.y || 80)));
+    d.x = Math.round(q[0] * 10) / 10; d.y = Math.round(q[1] * 10) / 10;
     return d;
   }
   $('pg-explore').addEventListener('click', function (e) {
@@ -5817,7 +5839,7 @@
     if (b.dataset.becancel) { ex.baseEdit = null; renderHome(); return; }
     if (b.dataset.besave) { var H = home(); H.layout = { room: E0.room, deco: E0.deco.map(function (d) { return baseClamp({ k: d.k, x: d.x, y: d.y, f: d.f ? 1 : 0 }, E0.room); }) }; ex.baseEdit = null; save(); renderHome(); toast('基地布置已保存。'); return; }
     if (b.dataset.beroom) { var k = b.dataset.beroom; if (!roomOwned(k)) { toast('这个房型要在基地商城用 ' + fmt(TX.D.BASE_ROOMS[k].price) + ' 能量购买。'); return; } E0.room = k; E0.deco.forEach(function (d) { baseClamp(d, k); }); renderHome(); return; }
-    if (b.dataset.beadd) { var dk = b.dataset.beadd, fl = BASE_UI[E0.room].floor; E0.deco.push(baseClamp({ k: dk, x: 40 + Math.random() * 20, y: decoLayer(dk) === 'wall' ? fl * 0.55 : fl + (100 - fl) * 0.55, f: 0 }, E0.room)); E0.sel = E0.deco.length - 1; renderHome(); return; }
+    if (b.dataset.beadd) { var dk = b.dataset.beadd, fl = floorTop(E0.room); E0.deco.push(baseClamp({ k: dk, x: 40 + Math.random() * 20, y: decoLayer(dk) === 'wall' ? fl * 0.5 : fl + (100 - fl) * 0.55, f: 0 }, E0.room)); E0.sel = E0.deco.length - 1; renderHome(); return; }
     if (b.dataset.beflip && E0.deco[E0.sel]) { E0.deco[E0.sel].f = E0.deco[E0.sel].f ? 0 : 1; renderHome(); return; }
     if (b.dataset.bedel && E0.deco[E0.sel]) { E0.deco.splice(E0.sel, 1); E0.sel = -1; renderHome(); return; }
   });
@@ -6817,7 +6839,7 @@
     goHome: function () { if (!homeOpen()) { toast('读完星际探索 · 荆楚号 · 天门「陆羽茶室」支线后，才有自己的茶室。'); return; } ex.planet = 'jingchu'; ex.area = '天门'; ex.view = 'home'; go('explore'); },
     // 参加过一次竞技征召（支线任务「竞技征召」用）
     noteDraft: function () { if (!acc.stats) acc.stats = {}; acc.stats.drafts = (acc.stats.drafts || 0) + 1; save(); },
-    teaFight: teaFight, teaLeft: teaLeft, TEA_DAILY: TEA_DAILY, TEA_EXP: TEA_EXP, homePos: HOME_POS, baseRoom: baseRoomHTML,
+    teaFight: teaFight, teaLeft: teaLeft, TEA_DAILY: TEA_DAILY, TEA_EXP: TEA_EXP, homePos: HOME_POS, baseRoom: baseRoomHTML, baseMonPos: baseMonPos,
     view: function (m) { var f = form(m); return { name: f.name, img: f.img, stage: f.stage, shiny: f.shiny }; },
     // 把服务器发来的精灵资料变成对战用的精灵（逐项检查，不信任外来数据）
     spec: function (raw) {
