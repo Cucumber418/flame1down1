@@ -246,7 +246,8 @@ var PVE = (function () {
     { boss: 'odo', d: 2, exp: 5000, item: { odoFin: 50 }, cry: [40, 80], drops: [{ items: { kbDrop: 20 } }, { items: { evAny: 1 } }, { energy: 2000 }, { exp: 2000 }] }
   ];
   var EWK = {
-    types: [{ t: '草', item: 'floraJade' }, { t: '水', item: 'kbDrop' }, { t: '火', item: 'ppAsh' }, { t: '冰', item: 'whFrost' }, { t: '电', item: 'ltOrb' }],
+    types: [{ t: '草', item: 'floraJade' }, { t: '水', item: 'kbDrop' }, { t: '火', item: 'ppAsh' }, { t: '冰', item: 'whFrost' }, { t: '电', item: 'ltOrb' },
+      { t: '地球', item: 'earthShard', team: ['leaf', 'squid', 'shroom'], hpMul: 0.5, dropMul: 1.5 }],   // 2026-11-01：地球挑战，地球三主宠轮流上场（每只体力是这一档的一半），地球元素掉得更多
     lv: [
       { diff: '简单', lv: 40, hp: 2000, boss: { pp: 99 }, bgm: 'boss', drop: [8, 12], exp: 3000 },
       { diff: '普通', lv: 60, hp: 5000, boss: { dr: 0.15, pp: 99 }, bgm: 'boss2', drop: [16, 24], exp: 6000 },
@@ -267,7 +268,13 @@ var PVE = (function () {
     return o.sort();
   }
   function ewkType(t) { return EWK.types.filter(function (x) { return x.t === t; })[0]; }
-  function ewkSid(t, now) { var P = ewkPool(t), i = EWK.types.indexOf(ewkType(t)); return P.length ? P[ACC.thash(wkNum(now) * 7 + i * 131 + 17) % P.length] : null; }
+  function ewkFoes(T, L, now) {   // 这一档的对手：普通属性挑战是本周那一只；地球挑战是三只初始精灵按顺序上场
+    var one = function (sid, hp) { return { id: sid, lv: L.lv, moves: ACC.defaultMoves(sid, L.lv), nick: SPMAP[sid].name, img: SPRITES[sid], maxhp: hp, boss: JSON.parse(JSON.stringify(L.boss)) }; };
+    if (T.team) return T.team.map(function (sid) { return one(sid, Math.round(L.hp * (T.hpMul || 1))); });
+    var sid = ewkSid(T.t, now); return sid ? [one(sid, L.hp)] : [];
+  }
+  function ewkDrop(T, L) { var k = T.dropMul || 1; return [Math.round(L.drop[0] * k), Math.round(L.drop[1] * k)]; }
+  function ewkSid(t, now) { var T0 = ewkType(t); if (T0 && T0.team) return T0.team[0]; var P = ewkPool(t), i = EWK.types.indexOf(ewkType(t)); return P.length ? P[ACC.thash(wkNum(now) * 7 + i * 131 + 17) % P.length] : null; }
   // 挑战许可：第一次开放每周挑战时送 1 枚，之后每 12 小时恢复 1 枚，最多 24 枚。返回现在有几枚（会更新 a.permit）
   var PERMIT = { max: 24, every: 12 * 3600 * 1000 };
   function permits(a, now) {
@@ -369,16 +376,16 @@ var PVE = (function () {
       if (permits(a, env.now) < 1) return { err: '挑战许可用完了。' };
       var Tm = lineTeam(a, args); if (Tm.err) return { err: Tm.err };
       seedSeenFx(a, env.now);
-      var S = SPMAP[sid];
-      ACC.seeMon(a, sid, L.lv); bossRec(a, 'ewk_' + t, d).tries++;
-      return { p: Tm.p, a: [{ id: sid, lv: L.lv, moves: ACC.defaultMoves(sid, L.lv), nick: S.name, img: SPRITES[sid], maxhp: L.hp, boss: JSON.parse(JSON.stringify(L.boss)) }],
-        ctx: { t: t, d: d, sid: sid, team: Tm.us, slots: Tm.slots }, dirty: true, opt: { foe: 'BOSS', diff: t + '系每周挑战 · ' + L.diff, bgm: L.bgm } };
+      var foes = ewkFoes(T, L, env.now);
+      foes.forEach(function (f) { ACC.seeMon(a, f.id, L.lv); }); bossRec(a, 'ewk_' + t, d).tries++;
+      return { p: Tm.p, a: foes,
+        ctx: { t: t, d: d, sid: sid, team: Tm.us, slots: Tm.slots }, dirty: true, opt: { foe: 'BOSS', diff: (T.team ? '地球挑战' : t + '系每周挑战') + ' · ' + L.diff, bgm: L.bgm, ordered: !!T.team }, S: { ordered: !!T.team } };
     },
     end: function (a, c, B, env) {
       var T = ewkType(c.t), L = EWK.lv[c.d], rec = bossRec(a, 'ewk_' + c.t, c.d), rep = { t: c.t, d: c.d, sid: c.sid, res: B.res };
       if (B.res === 'win') {
         rec.wins++; permits(a, env.now); useOne(a);
-        var n = L.drop[0] + Math.floor(env.rand() * (L.drop[1] - L.drop[0] + 1)), it = {}; it[T.item] = n;
+        var DR = ewkDrop(T, L), n = DR[0] + Math.floor(env.rand() * (DR[1] - DR[0] + 1)), it = {}; it[T.item] = n;
         ACC.addItems(a, it); a.exp = (a.exp || 0) + L.exp;
         rep.drop = { item: T.item, n: n, exp: L.exp };
       }
@@ -1057,7 +1064,7 @@ var PVE = (function () {
 
   return { MODES: MODES, RANK_EXP: RANK_EXP, RANK_EXP_N: RANK_EXP_N, RANK_TOKEN: RANK_TOKEN, rankState: rankState, rankApply: rankApply, newDraft: newDraft, readKey: readKey, regionById: regionById, regionOpen: regionOpen, floraFallen: floraFallen, regionFallen: regionFallen, sceneCount: sceneCount, rollShiny: rollShiny, rollWild: rollWild,
     MYSTERY: MYSTERY, mysteryTime: mysteryTime, RICE: RICE, HORN: HORN, TRAVEL: TRAVEL, travelAt: travelAt, KBW: KBW, kbwAt: kbwAt, kbwOpen: kbwOpen, kbwFought: kbwFought, PURGE: PURGE, purgeRec: purgeRec, purgeActive: purgeActive, SPARE_N: SPARE_N, spareActive: spareActive, PW: PW, wildRoll: wildRoll, LEAF_ALLY: LEAF_ALLY, FIGHTS: FIGHTS, fightTeam: fightTeam, resolveFoeEntry: resolveFoeEntry, CUMBER: CUMBER, NPC_WIN_EXP: NPC_WIN_EXP, NPC_HOURS: NPC_HOURS, NPC_FROM: NPC_FROM, NPC_TO: NPC_TO, NPC_AI_RANK: NPC_AI_RANK, NPC: NPC, NPC_SECRET: NPC_SECRET, NPC_POOL: NPC_POOL, npcPlan: npcPlan, bjDay: bjDay, TEA_DAILY: TEA_DAILY, TEA_EXP: TEA_EXP, MM: MM, MM_NICK: MM_NICK, MM_TEAM: MM_TEAM, MM_TEAM_HARD: MM_TEAM_HARD, MM_DIFF: MM_DIFF, MM_FINAL: MM_FINAL, mmFoes: mmFoes, mmDay: mmDay, CHAL: CHAL, starOk: starOk, chalLevelOpen: chalLevelOpen, chalTotal: chalTotal, MM_HELPER: MM_HELPER, ONLY3: ONLY3, BOSSES: BOSSES, BOSS_CRY: BOSS_CRY, WEEKLIES: WEEKLIES, EWK: EWK, PERMIT: PERMIT, SECRET_FX: SECRET_FX,
-    wkKey: wkKey, recKey: recKey, bossRec: bossRec, bossWon: bossWon, levelOpen: levelOpen, wkOpen: wkOpen, weeklyOpen: weeklyOpen, wkNum: wkNum, ewkPool: ewkPool, ewkType: ewkType, ewkSid: ewkSid,
+    wkKey: wkKey, recKey: recKey, bossRec: bossRec, bossWon: bossWon, levelOpen: levelOpen, wkOpen: wkOpen, weeklyOpen: weeklyOpen, wkNum: wkNum, ewkPool: ewkPool, ewkType: ewkType, ewkSid: ewkSid, ewkFoes: ewkFoes, ewkDrop: ewkDrop,
     permits: permits, seedSeenFx: seedSeenFx, chalStars: chalStars, myTeam: myTeam,
     TOWER: TOWER, twLv: twLv, twExp: twExp, twTok: twTok, twFloor: twFloor, seeded: seeded, foeMoves: foeMoves, storyMon: storyMon,
     PVE_XP_CAP: PVE_XP_CAP, foeExp: foeExp, foeEv: foeEv, dayStr: dayStr, xpSplit: xpSplit, towerStart: towerStart, towerEnd: towerEnd, towerApply: towerApply };

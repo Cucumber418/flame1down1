@@ -59,7 +59,7 @@ var STY = (function () {
   var SITE_OF = {}; Object.keys(FIGHT_OF).forEach(function (s) { FIGHT_OF[s].forEach(function (k) { if (!SITE_OF[k]) SITE_OF[k] = s; }); });
 
   var MAIN = ['school', 'river', 'jiuquan', 'board', 'flora1', 'flora2', 'flora3', 'flora4', 'flora5', 'flora6', 'flora7', 'kb1', 'kb2', 'kb3', 'kb4', 'kb5', 'kb6', 'kb7', 'kb8'];
-  var CHAPTERS = [{ id: 'prologue', sites: ['school', 'river', 'jiuquan', 'board'] }, { id: 'ch1', sites: ['flora1', 'flora2', 'flora3', 'flora4', 'flora5', 'flora6', 'flora7'] }];
+  var CHAPTERS = [{ id: 'prologue', sites: ['school', 'river', 'jiuquan', 'board'] }, { id: 'ch1', sites: ['flora1', 'flora2', 'flora3', 'flora4', 'flora5', 'flora6', 'flora7'] }, { id: 'ch2', sites: ['kb1', 'kb2', 'kb3', 'kb4', 'kb5', 'kb6', 'kb7', 'kb8'] }];
   function chapterPay(a, now) {   // 读完一整章、还没领过章节大奖的：发
     var out = [];
     CHAPTERS.forEach(function (C) {
@@ -95,8 +95,10 @@ var STY = (function () {
     Object.keys(SITES).forEach(function (id) { if (done(a, id) && RW.STORY[id] && !prog(a, id).rewarded) { var R = grant(a, id); if (R) { out.sites.push(id); out.exp += R.exp || 0; out.energy += R.energy || 0; for (var k2 in R.items || {}) out.items[k2] = (out.items[k2] || 0) + R.items[k2]; } } });
     // 2026-10-31：每段主线读完送 1 个圣晶石；之前读完的补发
     MAIN.forEach(function (id) { var q = a.story && a.story[id]; if (!q || !q.done || !q.rewarded || q.core) return; q.core = 1; var I2 = items(a); I2.g_core = (I2.g_core || 0) + 1; out.items.g_core = (out.items.g_core || 0) + 1; });
+    // 2026-11-01：第一章大奖新加了 10 个圣晶石，之前已经领过第一章大奖的补发（记在 chapters.ch1g）
+    if (a.chapters && a.chapters.ch1 && !a.chapters.ch1g) { a.chapters.ch1g = now; var I3 = items(a); I3.g_core = (I3.g_core || 0) + 10; out.items.g_core = (out.items.g_core || 0) + 10; }
     out.chapters = chapterPay(a, now);
-    out.chapters.forEach(function (id) { var R = RW.CHAPTER[id]; out.exp += R.exp || 0; out.energy += R.energy || 0; });
+    out.chapters.forEach(function (id) { var R = RW.CHAPTER[id]; out.exp += R.exp || 0; out.energy += R.energy || 0; Object.keys(R.items || {}).forEach(function (k) { out.items[k] = (out.items[k] || 0) + R.items[k]; }); });
     return out;
   }
 

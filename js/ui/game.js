@@ -1375,7 +1375,7 @@
   ];
   // 坎伯兰星的样子随剧情变化：0 是平常的蓝色，越往后越红（4 最红）。KB_STAGE_SITES 里每读完一段剧情，往后变一档
   var KB_STAGE_SITES = [];
-  function kbStage() { return prog('kb7').done ? 4 : prog('kb6').done ? 2 : 0; }   // 2026-10-31：保卫战期间变红一些，星云显现之后最红
+  function kbStage() { return prog('kb8').done ? 0 : prog('kb7').done ? 4 : prog('kb6').done ? 2 : 0; }   // 2026-11-01：打赢玫瑰星云（第十九段）后变回蓝色   // 2026-10-31：保卫战期间变红一些，星云显现之后最红
   // 马亚尔星系：星系图上每颗星球的位置（% 坐标）和大小（占图宽的 %）；没有星球的位置显示「？」
   var MAYAR = { flora: [84.1, 51.4, 12], kamble: [58.3, 63.4, 9], pompeii: [30.4, 42.3, 8.5], laiting: [16.2, 28.2, 11], white: [8.5, 58, 7.5], kongyan: [43.3, 21.1, 8.5], ivy: [59.8, 26.6, 8] };   // 白之星离太阳最远
   var MAYAR_UNK = [[35.9, 28.9], [71.3, 54.3]];
@@ -1508,7 +1508,7 @@
   var CHAPTERS = [
     { id: 'prologue', n: '序章', d: '从省实验中学出发，一路到登上荆楚号。', sites: ['school', 'river', 'jiuquan', 'board'] },
     { id: 'ch1', n: '第一章 · 芙罗拉星', d: '降落芙罗拉星，追查瘴气和猎杀者的真相。', sites: ['flora1', 'flora2', 'flora3', 'flora4', 'flora5', 'flora6', 'flora7'] },
-    { id: 'ch2', n: '第二章 · 坎伯兰星', d: '远航禁闭海洋。', sites: ['kb1', 'kb2', 'kb3', 'kb4', 'kb5', 'kb6', 'kb7', 'kb8'] }   // 2026-11-01：第十九段完结（章节大奖待定）   // 2026-10-31：未完待续   // 2026-10-17：茶室音乐「芙罗拉星」移除，章节大奖改为经验和能量
+    { id: 'ch2', n: '第二章 · 坎伯兰星', d: '远航禁闭海洋。', sites: ['kb1', 'kb2', 'kb3', 'kb4', 'kb5', 'kb6', 'kb7', 'kb8'] }   // 2026-11-01：第十九段完结；章节大奖和第一章一样，另加 10 个圣晶石   // 2026-10-31：未完待续   // 2026-10-17：茶室音乐「芙罗拉星」移除，章节大奖改为经验和能量
   ];
   CHAPTERS.forEach(function (x) { x.reward = RW.CHAPTER[x.id] || x.reward || {}; });   // 奖励数额在 js/engine/rewards.js（服务器按它核对）
   function chapterOf(site) { return CHAPTERS.filter(function (C) { return C.sites.indexOf(site) >= 0; })[0] || null; }
@@ -4382,13 +4382,16 @@
   function ewkPool(t) { return PVE.ewkPool(t); }
   function ewkType(t) { return PVE.ewkType(t); }
   function ewkSid(t) { return PVE.ewkSid(t, Date.now()); }
-  function ewkBg(sid) { for (var i = 0; i < WILD_REGIONS.length; i++) { var R = WILD_REGIONS[i]; if ((WILD[R.pool] || []).some(function (w) { return w.sid === sid; }) && R.bgs && BG[R.bgs[0]]) return BG[floraBg(R.bgs[0])]; } return null; }
+  function ewkBg(sid) { if (/^(leaf|squid|shroom)$/.test(sid) && BG.field) return BG.field;   // 地球挑战：放地球的操场
+    for (var i = 0; i < WILD_REGIONS.length; i++) { var R = WILD_REGIONS[i]; if ((WILD[R.pool] || []).some(function (w) { return w.sid === sid; }) && R.bgs && BG[R.bgs[0]]) return BG[floraBg(R.bgs[0])]; } return null; }
   function ewkLeft() { var end = (wkNum(Date.now()) + 1) * 7 - 3, ms = end * 86400000 - 8 * 3600e3 - Date.now(), h = Math.max(0, Math.floor(ms / 3600000)); return h >= 24 ? Math.floor(h / 24) + ' 天 ' + (h % 24) + ' 小时' : h + ' 小时'; }
+  function ewkLabel(T) { return T.team ? '地球挑战' : T.t + '系每周挑战'; }
+  function ewkName(T, sid) { return T.team ? T.team.map(function (x) { return SPMAP[x].name; }).join(' · ') : SPMAP[sid].name; }
   function ewkCardHTML(pn) {
     return EWK.types.map(function (T) {
       var sid = ewkSid(T.t); if (!sid) return '';
-      return '<button type="button" class="weekly-card ewk-card" data-ewk="' + T.t + '"><span class="tape l"></span><img src="' + SPRITES[sid] + '" alt=""><span class="wk-txt"><span class="chip boss-diff d1">' + T.t + '系 · 每周挑战</span><b>' + esc(SPMAP[sid].name) + '</b>' +
-        '<small>简单 / 普通 / 困难 · 获胜消耗 1 枚挑战许可 · 掉落' + itemName(T.item) + ' · 本周还剩 ' + ewkLeft() + '</small></span><span class="wk-pm"><b>' + pn + '</b> / ' + PERMIT.max + '<small>挑战许可（共用）</small></span></button>';
+      return '<button type="button" class="weekly-card ewk-card" data-ewk="' + T.t + '"><span class="tape l"></span><img src="' + SPRITES[sid] + '" alt=""><span class="wk-txt"><span class="chip boss-diff d1">' + (T.team ? '地球挑战 · 每周挑战' : T.t + '系 · 每周挑战') + '</span><b>' + esc(ewkName(T, sid)) + '</b>' +
+        '<small>简单 / 普通 / 困难 · 获胜消耗 1 枚挑战许可 · 掉落' + itemName(T.item) + (T.team ? '（比属性挑战多 ' + Math.round((T.dropMul - 1) * 100) + '%）' : ' · 本周还剩 ' + ewkLeft()) + '</small></span><span class="wk-pm"><b>' + pn + '</b> / ' + PERMIT.max + '<small>挑战许可（共用）</small></span></button>';
     }).join('');
   }
   var PERMIT = PVE.PERMIT;   // 每 12 小时恢复 1 枚，最多 24 枚
@@ -4848,30 +4851,30 @@
       '<p class="hint permit-line">挑战许可 <b>' + permits() + '</b> / ' + PERMIT.max + ' · ' + permitNext() + '</p><div class="boss-row">' + weeklyCardsHTML() + '</div>';
   }
   function renderEwk() {
-    var T = ewkType(ex.ewkT), sid = ewkSid(T.t), S = SPMAP[sid], d = ex.ewkD | 0, L = EWK.lv[d], pn = permits();
+    var T = ewkType(ex.ewkT), sid = ewkSid(T.t), S = SPMAP[sid], d = ex.ewkD | 0, L = EWK.lv[d], pn = permits(), DR = PVE.ewkDrop(T, L), nm0 = ewkName(T, sid), lb = ewkLabel(T);
     var rec = (acc.bosses && acc.bosses[recKey('ewk_' + T.t, d)]) || {};
     var tabs = '<div class="fparts boss-tabs" role="tablist">' + EWK.lv.map(function (x, i) { return '<button type="button" role="tab" class="tab' + (i === d ? ' on' : '') + '" aria-selected="' + (i === d) + '" data-ewkd="' + i + '">' + x.diff + (bossWon('ewk_' + T.t, i) ? ' ✓' : '') + '</button>'; }).join('') + '</div>';
     var rules = fxRules(L).map(function (r) { return '<li><b>特殊</b>' + esc(r[0]) + '：' + esc(r[1]) + '</li>'; }).join('');
     var bg = ewkBg(sid);
-    $('pg-explore').innerHTML = exHead(T.t + '系每周挑战：BOSS 每周一 0 点从' + T.t + '系野生精灵里随机换一只。三档难度都能直接挑战，获胜消耗 1 枚挑战许可，输了不消耗。') +
-      '<div class="crumb"><button type="button" class="btn ghost" id="ewk-back">‹ 返回每周挑战</button><b>每周挑战 · ' + T.t + '系 · ' + esc(S.name) + '</b></div>' + tabs +
-      '<article class="boss-card"><span class="tape l"></span><div class="boss-art">' + (bg ? '<img src="' + bg + '" alt="" class="boss-bg">' : '') + '<img src="' + SPRITES[sid] + '" alt="' + esc(S.name) + '" class="boss-mon"></div>' +
-      '<div class="boss-txt"><span class="chip boss-diff d' + d + '">' + T.t + '系每周挑战 · ' + L.diff + '难度</span><h3>' + esc(S.name) + '</h3><p class="hint">本周的' + T.t + '系BOSS，还剩 ' + ewkLeft() + ' 换下一只。</p>' +
-      '<ul class="boss-rules"><li><b>等级</b>LV' + L.lv + '</li><li><b>体力</b>' + fmt(L.hp) + '</li>' + rules +
-      '<li><b>奖励</b>每次击败获得' + itemName(T.item) + ' ×' + L.drop[0] + '–' + L.drop[1] + '、累积经验 ×' + fmt(L.exp) + '，另有经验和学习力</li><li><b>战绩</b>' + (rec.wins || 0) + ' 胜 / ' + (rec.tries || 0) + ' 次挑战</li></ul>' +
+    $('pg-explore').innerHTML = exHead(T.team ? '地球挑战：从地球一起出发的三只伙伴——' + nm0 + '——会按顺序轮流上场，全部击败才算获胜。掉落的地球元素比属性挑战更多。三档难度都能直接挑战，获胜消耗 1 枚挑战许可，输了不消耗。' : T.t + '系每周挑战：BOSS 每周一 0 点从' + T.t + '系野生精灵里随机换一只。三档难度都能直接挑战，获胜消耗 1 枚挑战许可，输了不消耗。') +
+      '<div class="crumb"><button type="button" class="btn ghost" id="ewk-back">‹ 返回每周挑战</button><b>每周挑战 · ' + (T.team ? '地球挑战' : T.t + '系 · ' + esc(S.name)) + '</b></div>' + tabs +
+      '<article class="boss-card"><span class="tape l"></span><div class="boss-art">' + (bg ? '<img src="' + bg + '" alt="" class="boss-bg">' : '') + (T.team ? '<span class="ewk-trio">' + T.team.map(function (x) { return '<img src="' + SPRITES[x] + '" alt="' + esc(SPMAP[x].name) + '">'; }).join('') + '</span>' : '<img src="' + SPRITES[sid] + '" alt="' + esc(S.name) + '" class="boss-mon">') + '</div>' +
+      '<div class="boss-txt"><span class="chip boss-diff d' + d + '">' + lb + ' · ' + L.diff + '难度</span><h3>' + esc(nm0) + '</h3><p class="hint">' + (T.team ? '三只轮流上场，打倒一只换下一只。' : '本周的' + T.t + '系BOSS，还剩 ' + ewkLeft() + ' 换下一只。') + '</p>' +
+      '<ul class="boss-rules"><li><b>等级</b>LV' + L.lv + '</li><li><b>体力</b>' + (T.team ? '每只 ' + fmt(Math.round(L.hp * T.hpMul)) + '（共 ' + T.team.length + ' 只）' : fmt(L.hp)) + '</li>' + rules +
+      '<li><b>奖励</b>每次击败获得' + itemName(T.item) + ' ×' + DR[0] + '–' + DR[1] + '、累积经验 ×' + fmt(L.exp) + '，另有经验和学习力</li><li><b>战绩</b>' + (rec.wins || 0) + ' 胜 / ' + (rec.tries || 0) + ' 次挑战</li></ul>' +
       '<p class="hint">' + (srvMode() ? '开打前可以选择好友的助战精灵和出战顺序（精灵来自' + TEAM_NAME[acc.active] + '）。' : '会使用你当前的出战配队（' + TEAM_NAME[acc.active] + '）。') + '对战中可以使用补药。</p>' +
       '<button type="button" class="btn primary" data-ewkgo="1"' + (pn > 0 ? '' : ' disabled') + '>开始挑战（获胜时消耗 1 枚挑战许可）</button><p class="hint permit-line">挑战许可 <b>' + pn + '</b> / ' + PERMIT.max + ' · ' + permitNext() + '</p></div></article>';
   }
   function startEwkRemote(t, d, tp) {
     var T = ewkType(t), sid = T && ewkSid(t), L = EWK.lv[d]; if (!sid || !L || !weeklyOpen()) return;
     if (permits() < 1) { toast('挑战许可用完了。' + permitNext() + '。'); return; }
-    if (!tp) { openTeamPrep('每周挑战 · ' + t + '系 · ' + SPMAP[sid].name, function (x) { startEwkRemote(t, d, x); }); return; }   // 2026-10-27：先选助战和出战顺序
+    if (!tp) { openTeamPrep('每周挑战 · ' + (T.team ? '地球挑战' : t + '系 · ' + SPMAP[sid].name), function (x) { startEwkRemote(t, d, x); }); return; }   // 2026-10-27：先选助战和出战顺序
     pveRemote('ewk', tpArgs({ t: t, d: d }, tp), { bg: ewkBg(sid), back: '每周挑战' }, function (e, res) {
       var msg = [];
       if (e) {
         var r = e.rep, S = SPMAP[r.sid];
         dailyHit('boss'); dailyHit('pve');
-        if (r.res === 'win') msg.push(t + '系每周挑战：击败了' + L.diff + '难度的「' + S.name + '」！获得' + itemName(r.drop.item) + ' ×' + r.drop.n + '、累积经验 +' + fmt(r.drop.exp) + '。消耗了 1 枚挑战许可。');
+        if (r.res === 'win') msg.push(ewkLabel(T) + '：击败了' + L.diff + '难度的「' + ewkName(T, r.sid) + '」！获得' + itemName(r.drop.item) + ' ×' + r.drop.n + '、累积经验 +' + fmt(r.drop.exp) + '。消耗了 1 枚挑战许可。');
         msg = msg.concat(xpMsg(r.xp));
         save();
       } else if (res === 'void') msg.push('这场对战作废了，战绩和挑战许可都没有变化。');
@@ -4885,20 +4888,20 @@
     if (permits() < 1) { toast('挑战许可用完了。' + permitNext() + '。'); return; }
     var team = (acc.teams[acc.active] || []).map(mon).filter(Boolean); if (!team.length) team = acc.mons.slice(0, 1);
     team = team.slice(0, TEAM_SIZE);
-    var S = SPMAP[sid], a = [{ id: sid, lv: L.lv, moves: defaultMoves(sid, L.lv), nick: S.name, img: SPRITES[sid], maxhp: L.hp, boss: JSON.parse(JSON.stringify(L.boss)) }];
-    seeMon(sid, L.lv);
+    var a = PVE.ewkFoes(T, L, Date.now());
+    a.forEach(function (f) { seeMon(f.id, L.lv); });
     var rec = bossRec('ewk_' + t, d); rec.tries++; save();
     stopTimers(); ex.fighting = true; document.body.classList.add('story-fight'); syncBattle();
     $('pg-explore').hidden = true; $('pg-arena').hidden = false;
-    window.HSBATTLE.start({ p: team.map(storyMon), a: a, foe: 'BOSS', diff: t + '系每周挑战 · ' + L.diff, bgm: L.bgm, items: invCopy(), onItem: useInv, bg: ewkBg(sid), back: '每周挑战',
+    window.HSBATTLE.start({ p: team.map(storyMon), a: a, foe: 'BOSS', diff: ewkLabel(T) + ' · ' + L.diff, bgm: L.bgm, ordered: !!T.team, items: invCopy(), onItem: useInv, bg: ewkBg(sid), back: '每周挑战',
       onEnd: function (res, seen, downs) {
         var msg = [];
         dailyHit('boss'); dailyHit('pve');
         if (res === 'win') {
           rec.wins++; permits(); acc.permit.n = Math.max(0, acc.permit.n - 1);
-          var n = L.drop[0] + Math.floor(Math.random() * (L.drop[1] - L.drop[0] + 1)), it = {}; it[T.item] = n;
+          var DR = PVE.ewkDrop(T, L), n = DR[0] + Math.floor(Math.random() * (DR[1] - DR[0] + 1)), it = {}; it[T.item] = n;
           earn('ewk', '', { items: it, exp: L.exp });
-          msg.push(t + '系每周挑战：击败了' + L.diff + '难度的「' + S.name + '」！获得' + itemName(T.item) + ' ×' + n + '、累积经验 +' + fmt(L.exp) + '。消耗了 1 枚挑战许可。');
+          msg.push(ewkLabel(T) + '：击败了' + L.diff + '难度的「' + ewkName(T, sid) + '」！获得' + itemName(T.item) + ' ×' + n + '、累积经验 +' + fmt(L.exp) + '。消耗了 1 枚挑战许可。');
         }
         msg = msg.concat(battleRewards(team, seen, downs));
         save();
@@ -6907,13 +6910,13 @@
   // 坎伯兰星变色（2026-10-31）：第十七段读完 → 稍微变红（保卫战开始）；第十八段读完 → 最红
   function kbShiftNotice(to) {
     if ($('fallen-dlg')) return;
-    var from = to === 4 ? 2 : 0, war = to === 2;
+    var from = to === 4 ? 2 : to === 0 ? 4 : 0, war = to === 2, calm = to === 0;
     var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'fallen-dlg';
-    d.innerHTML = '<div class="soc-box fallen-box" role="dialog" aria-modal="true" aria-label="坎伯兰星"><span class="step">坎伯兰星</span><h2>' + (war ? '异变' : '星云显现') + '</h2>' +
+    d.innerHTML = '<div class="soc-box fallen-box" role="dialog" aria-modal="true" aria-label="坎伯兰星"><span class="step">坎伯兰星</span><h2>' + (war ? '异变' : calm ? '平静' : '星云显现') + '</h2>' +
       '<div class="fallen-planet" aria-hidden="true"><img class="fp-a" src="images/planets/kamble_' + from + '.webp?v=2" alt=""><img class="fp-b" src="images/planets/kamble_' + to + '.webp?v=2" alt=""><i class="fp-fog kb"></i></div>' +
       (war ? '<p>坎伯兰星的颜色发生了变化，海面隐隐泛着红光。</p><p>沉睡在海底的机械精灵，正在一个接一个地苏醒。</p>' +
         '<div class="pw-open"><span class="chip log-tag pw-tag">全服任务</span><b>坎伯兰星保卫战已开启</b><span>坎伯兰星的三个野外区域会出现奥多亚克，所有船员一起击退它们。在航行日志和坎伯兰星的「星球任务」里查看。</span></div>'
-        : '<p>坎伯兰星被染成了血一样的红色。</p><p class="hint">第十九段「玫瑰之战」已经开放。</p>') +
+        : calm ? '<p>玫瑰星云沉入了海底。</p><p>坎伯兰星，恢复了原本的蓝色。</p>' : '<p>坎伯兰星被染成了血一样的红色。</p><p class="hint">第十九段「玫瑰之战」已经开放。</p>') +
       '<div class="soc-foot">' + (war ? '<button type="button" class="btn" data-fallenlog="1">去看看</button>' : '') + '<button type="button" class="btn primary" data-fallenx="1">知道了</button></div></div>';
     document.body.appendChild(d);
     d.addEventListener('click', function (e) { if (e.target.closest('[data-fallenlog]')) { d.remove(); go('log'); } });
@@ -6960,7 +6963,7 @@
     var intro = ex.mode === 'intro';
     if (!$('vn-end')) { if (R || chPaid) renderRes(); return; }   // 已经离开剧情画面了
     if (ex.site === 'flora6' && firstDone) setTimeout(floraFallenNotice, 600);
-    if ((ex.site === 'kb6' || ex.site === 'kb7') && firstDone) { fields = {}; var kbTo = ex.site === 'kb7' ? 4 : 2; setTimeout(function () { kbShiftNotice(kbTo); }, 600); }
+    if ((ex.site === 'kb6' || ex.site === 'kb7' || ex.site === 'kb8') && firstDone) { fields = {}; var kbTo = ex.site === 'kb8' ? 0 : ex.site === 'kb7' ? 4 : 2; setTimeout(function () { kbShiftNotice(kbTo); }, 600); }
     if (ex.site === 'flora7' && firstDone) { fields = {}; if (mmLive()) setTimeout(mmEventPop, 900); }   // 芙罗拉星恢复：野外场景重建；弹出新活动   // 第一次读完第十段：芙罗拉星被腐化的提示
     if (chPaid) renderRes();
     if (R && ready()) renderRes();
