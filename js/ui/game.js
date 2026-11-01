@@ -5826,7 +5826,7 @@
         '<div class="qty"><button type="button" class="btn ghost" data-fq="' + r.id + '|-1" aria-label="减少"' + (q <= 1 ? ' disabled' : '') + '>−</button><span aria-live="polite">' + q + '</span><button type="button" class="btn ghost" data-fq="' + r.id + '|1" aria-label="增加"' + (q >= Math.min(FORGE_Q, Math.max(1, max)) ? ' disabled' : '') + '>+</button></div>' +
         '<button type="button" class="btn primary" data-smelt="' + r.id + '"' + (ok ? '' : ' disabled') + '>' + (ok ? '合成' : '材料不足') + '</button></div></article>';
     }).join('');
-    $('pg-explore').innerHTML = exHead('星砂合成加强捕捉装置，圣晶石合成华为捕捉装置，药草合成 hp药水，活力花卉炼成 pp药水，米饭盛成一碗饭，叶子喵的叶片凝成精元，圣晶石和星砂还能做形态切换装置，赫菲角片做奇声号角；各星球特产也能在这里互相转换。这些都不在商城出售。') +
+    $('pg-explore').innerHTML = exHead('') +
       '<div class="crumb"><button type="button" class="btn ghost" id="forge-back">‹ 返回冶炼工坊</button><b>黄石 · 冶炼坊</b></div>' +
       tabs + '<div class="shop-grid">' + cards + '</div>';
   }
@@ -6539,7 +6539,7 @@
   function qTodo(tab) { if (tab === 'daily') { var D = daily(); return D ? D.list.filter(function (t) { return !t.c; }).length : 0; } return qList(tab).filter(function (id) { var st = qState(id); return st === 'todo' || st === 'doing' || st === 'claim'; }).length; }
   function holoHead(hint) { return '<div class="page-head ex-head holo-head"><h2 class="sec">全息作战 · 明明教官的试炼</h2><p class="hint">' + hint + '</p></div>'; }   // 明明教官的试炼不管从哪里进，标题都是「全息作战」
   function exHead(hint) {
-    return '<div class="page-head ex-head"><h2 class="sec">' + (shipCtx() ? '飞船终端' : '星际探索') + '</h2><p class="hint">' + hint + '</p></div>';
+    return '<div class="page-head ex-head"><h2 class="sec">' + (shipCtx() ? '飞船终端' : '星际探索') + '</h2>' + (hint ? '<p class="hint">' + hint + '</p>' : '') + '</div>';
   }
   function qName(id) { var W = wq(id); return W ? W.n : SITES[id].chapter.split(' · ')[1]; }
   function qWhere(id) {
