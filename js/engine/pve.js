@@ -807,7 +807,7 @@ var PVE = (function () {
       var foes = fightTeam(F, a).map(function (x) { return resolveFoeEntry(x, env.rand); });
       fightTeam(F, a).forEach(function (x) { if (SPMAP[x.sid] && !SPMAP[x.sid].nodex) ACC.seeMon(a, x.sid, x.lv); });
       var site = String(args.site || ''); if (typeof STY !== 'undefined' && !(STY.FIGHT_OF[site] && STY.FIGHT_OF[site].indexOf(String(args.key)) >= 0)) site = STY.SITE_OF[String(args.key)] || '';   // 这场对战属于哪段剧情（打完记 bt）
-      return { p: p, a: foes, ctx: { key: args.key, slots: slots, site: site }, dirty: true, preStrike: !!F.preStrike, S: { env: F.env || null, coreRevive: F.coreRevive ? 1 : null }, opt: { foe: F.foe, bgm: F.bgm || null } };
+      return { p: p, a: foes, ctx: { key: args.key, slots: slots, site: site }, dirty: true, preStrike: !!F.preStrike, S: { env: F.env || null, coreRevive: F.coreRevive ? 1 : null, coreReplay: F.coreRevive && site && a.story && a.story[site] && a.story[site].done ? 1 : null, coreFree: F.coreRevive && a.coreFree !== dayStr(env.now) ? 1 : null }, opt: { foe: F.foe, bgm: F.bgm || null } };
     },
     end: function (a, c, B, env) {
       var rep = { key: c.key, res: B.res, own: c.slots.some(function (u) { return u != null; }) };

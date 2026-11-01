@@ -1516,11 +1516,11 @@ var RAND_ST = ['害怕', '石化', '睡眠', '麻痹', '冰冻', '寄生', '溺�
 function cblText(k) { return '体力上限 +' + Math.round(200 * k) + '，物攻、特攻 +' + Math.round(50 * k) + '%，受到的伤害减免 ' + (25 * k) + '%，每回合结束恢复 ' + Math.round(100 * k) + ' 体力'; }
 var NEB_CB1 = [['cb', '别慌。这里是坎伯兰星——是我的领土。'], ['cb', '只要还站在这片海上，我就能把力量借给你们！'], ['n', '一股温暖的海流涌向了你的每一只精灵。全员获得了【Cumberland】！']];
 var NEB_CB2 = [['cb', '你知道，这片土地为什么叫 Cumberland 吗？'], ['cb', '因为它就是我两百年经营的伟大之土！'], ['cb', '在我的土地上，谁也不许倒下——都给我站起来！'], ['n', '倒下的精灵全部站了起来。【Cumberland】的力量再次增幅了！']];
-function coreRevive(S, evs) {   // 花 1 个圣晶石：全员复活（扣圣晶石在服务器 / 本机存档那边做）
+function coreRevive(S, evs, free) {   // free：剧情回顾 / 每天一次的免费复活（不碎圣晶石）   // 花 1 个圣晶石：全员复活（扣圣晶石在服务器 / 本机存档那边做）
   evs = evs || []; if (!S.needCore) return evs;
   S.needCore = 0; S.coreUsed = (S.coreUsed || 0) + 1;
   S.sides[0].team.forEach(function (m) { if (m.fainted) { m.fainted = false; clearVolatile(m); } m.hp = m.maxhp; });
-  log(S, evs, '圣晶石碎裂开来，耀眼的光芒笼罩了码头——你的精灵全部复活了！', 'good');
+  log(S, evs, free ? '耀眼的光芒笼罩了码头——你的精灵全部复活了！' : '圣晶石碎裂开来，耀眼的光芒笼罩了码头——你的精灵全部复活了！', 'good');
   E(S, evs, 'heal', { side: 0, amount: act(S, 0).hp }); E(S, evs, 'stage', { side: 0 });
   return evs;
 }

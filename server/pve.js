@@ -200,9 +200,13 @@ A.use(function (req, res, url) {
       } else if (op === 'core') {   // 2026-11-01：全员倒下时花 1 个圣晶石全员复活（第十九段的玫瑰星云）
         if (!S2.needCore) return A.reply(res, 409, { error: '现在不需要复活' });
         var uc = A.loadUser(name), ac = uc && accOf(uc);
-        if (!ac || !ac.items || !(ac.items.g_core > 0)) return A.reply(res, 400, { error: '圣晶石不够了' });
-        ac.items.g_core--;
-        evs = E.coreRevive(S2, []);
+        if (!ac) return A.reply(res, 400, { error: '存档还没同步到服务器' });
+        var today = E.PVE.dayStr(Date.now());
+        var freeC = 0;
+        if (S2.coreReplay) freeC = 1;   // 剧情回顾：免费、不限次
+        else if (ac.coreFree !== today) { ac.coreFree = today; S2.coreFree = 0; freeC = 1; }   // 每天一次免费复活
+        else { if (!ac.items || !(ac.items.g_core > 0)) return A.reply(res, 400, { error: '圣晶石不够了' }); ac.items.g_core--; S2.coreFree = 0; }
+        evs = E.coreRevive(S2, [], freeC);
         var outC = { ok: true, evs: evs, S: S2, rev: saveAcc(uc, ac), acc: uc.save.data['hs-account-v1'] };
         outC = JSON.parse(E.battleJSON(S2, outC)); sess.seq = seq || sess.seq + 1; sess.last = outC;
         return A.reply(res, 200, outC);

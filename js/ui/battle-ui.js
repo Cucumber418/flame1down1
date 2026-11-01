@@ -1161,8 +1161,9 @@
   function coreAsk() {
     var old = $('core-ask'); if (old) old.remove();
     var n = window.HS_CORE ? HS_CORE() : 0, d = document.createElement('div'); d.className = 'core-ask'; d.id = 'core-ask';
-    d.innerHTML = '<div class="ca-box" role="dialog" aria-label="全员复活"><b>你的精灵全部倒下了……</b><p>要用 <b>1 个圣晶石</b>让全员复活、继续战斗吗？</p><p class="hint">持有圣晶石：' + n + ' 个</p>' +
-      '<div class="ca-btns"><button type="button" class="btn ghost" data-cax="1">放弃</button><button type="button" class="btn primary" data-cago="1"' + (n > 0 ? '' : ' disabled') + '>' + (n > 0 ? '用 1 个圣晶石复活' : '圣晶石不够了') + '</button></div></div>';
+    var S1 = app.S, free = S1.coreReplay ? 'replay' : S1.coreFree ? 'day' : '', ok = free || n > 0;   // 剧情回顾免费不限次；每天第一次免费
+    d.innerHTML = '<div class="ca-box" role="dialog" aria-label="全员复活"><b>你的精灵全部倒下了……</b><p>' + (free === 'replay' ? '剧情回顾中，可以<b>免费</b>让全员复活、继续战斗。' : free === 'day' ? '今天还有 <b>1 次免费复活</b>机会，要让全员复活、继续战斗吗？' : '要用 <b>1 个圣晶石</b>让全员复活、继续战斗吗？') + '</p>' + (free ? '' : '<p class="hint">今天的免费复活已经用过了 · 持有圣晶石：' + n + ' 个</p>') +
+      '<div class="ca-btns"><button type="button" class="btn ghost" data-cax="1">放弃</button><button type="button" class="btn primary" data-cago="1"' + (ok ? '' : ' disabled') + '>' + (free ? '免费复活' : n > 0 ? '用 1 个圣晶石复活' : '圣晶石不够了') + '</button></div></div>';
     $('field').appendChild(d);
     d.addEventListener('click', async function (e) {
       if (e.target.closest('[data-cago]')) {
@@ -1173,8 +1174,8 @@
           if (r.acc && window.HS_ADOPT) HS_ADOPT(r.acc);
           app.S = r.S; await play(r.evs || []); busy = false; afterTurn(); return;
         }
-        if (!(window.HS_USECORE && HS_USECORE())) { addLog('圣晶石不够了', 'bad'); afterTurn(); return; }
-        await play(coreRevive(app.S, [])); busy = false; afterTurn(); return;
+        var fr = 0; if (app.S.coreReplay) fr = 1; else if (app.S.coreFree) { app.S.coreFree = 0; fr = 1; } else if (!(window.HS_USECORE && HS_USECORE())) { addLog('圣晶石不够了', 'bad'); afterTurn(); return; }
+        await play(coreRevive(app.S, [], fr)); busy = false; afterTurn(); return;
       }
       if (e.target.closest('[data-cax]')) { d.remove(); addLog('你放弃了这场战斗。', 'bad'); busy = false; if (remote) rApply({ op: 'quit' }); else { app.S.over = 'lose'; app.S.quit = true; showEnd(); } }
     });
