@@ -902,7 +902,7 @@
   var INS_ITEMS = {}, INS_KEYS = Object.keys(SUMMON.INS);
   INS_KEYS.forEach(function (k) { var I0 = SUMMON.INS[k]; INS_ITEMS[k] = { name: I0.name, d: SUMMON.insDesc(k) + '。' + (I0.lim ? '圣晶石召唤 · 限定刻印。' : '常规刻印。') + '在精灵资料的「刻印」里装备，装备后和那只精灵绑定，只在 PVE 对战中生效。' }; });
   INS_ITEMS.insChip = { name: '刻印激活晶片', d: '开启一只精灵的第 3 个刻印槽。在精灵资料的「刻印」里使用。圣晶石召唤有 2% 的概率获得。' };
-  INS_ITEMS.fPt = { name: '友情点', d: '友情点召唤用的点数。社交里每天可以给一位好友送经验（双方各 200 点）；借用好友的助战精灵，双方各 100 点（每天最多 1000 点）。' };
+  INS_ITEMS.fPt = { name: '友情点', d: '友情点召唤用的点数。社交里每天可以给每位好友各送一次经验（双方各 200 点，自己每天从送礼最多拿 2000 点）；借用好友的助战精灵，双方各 100 点（每天最多 1000 点）。' };
   INS_ITEMS.sumTok = { name: '召唤代币', d: '每次圣晶石召唤送 10 个，抽到当期 UP 再送 200 个。可以在召唤代币商店兑换圣晶石、UP 精灵的专属道具和限定刻印。' };
   var MAT_ORDER = SUM_ESS.concat(['m_lcleaf', 'e_leafcat', 'e_pluto', 'e_odo', 'm_psac', 'm_hfhorn', 'm_horn', 'm_mcry', 'm_cu', 'm_fe', 'ctTicket']);
   // 太空种植园只种药草。min 是成熟分钟，yield 是收获数量。收获时退回种子。
@@ -2590,7 +2590,7 @@
     } else if (tab === 'friend') {
       var fUsed = S.fsDay === today;
       body = '<section class="sum-banner friend"><div class="sb-glow"></div><div class="sb-pile">' + ['exp', 'floraJade', 'kbDrop', 'g_sand', 'fruit2', 'ins_atk1'].map(function (k) { return '<span>' + H.itemIcon(k) + '</span>'; }).join('') + '</div>' +
-        '<div class="sb-txt"><span class="sb-kicker">常驻</span><h3>友情点召唤</h3><p>经验、星球特产、星砂、精灵道具和常规刻印</p><p class="sb-sub">每天第一次十连免费 · 友情点：社交里给好友送经验（每天一次，双方各 200）、借好友的助战精灵（双方各 100，每天最多 1000）</p></div></section>' +
+        '<div class="sb-txt"><span class="sb-kicker">常驻</span><h3>友情点召唤</h3><p>经验、星球特产、星砂、精灵道具和常规刻印</p><p class="sb-sub">每天第一次十连免费 · 友情点：社交里给好友送经验（每位好友每天一次，双方各 200，自己每天最多 2000）、借好友的助战精灵（双方各 100，每天最多 1000）</p></div></section>' +
         '<div class="sum-stat"><span>' + H.itemIcon('fPt') + '友情点 <b>' + fmt(fp) + '</b></span><span>今日免费十连：<b>' + (fUsed ? '已使用' : '可用') + '</b></span></div>' +
         '<div class="sum-btns">' + (fUsed ? '' : '<button type="button" class="sum-btn free" data-sumgo="friend|10|free"><b>免费十连</b><small>每天一次</small></button>') +
         '<button type="button" class="sum-btn" data-sumgo="friend|1"' + (fp >= SUMMON.FRIEND_COST ? '' : ' disabled') + '><b>召唤 ×1</b><small>' + H.itemIcon('fPt') + '消耗 友情点 ' + SUMMON.FRIEND_COST + '</small></button>' +
