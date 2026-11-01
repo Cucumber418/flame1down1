@@ -1371,7 +1371,7 @@
     { id: 'kamble', name: '坎伯兰星', d: '水系星球。整颗星球都被海洋覆盖，从水面一直往下，是浅水区和深不见底的深海区。', sites: ['kb2', 'kb3', 'kb4', 'kb5', 'kb6', 'kb7', 'kb8'], storyIds: ['kb1', 'kb2', 'kb3', 'kb4', 'kb5', 'kb6', 'kb7', 'kb8'], storyEmpty: '第二章 · 坎伯兰星：读完第十一段「盐碱地之下」后，到荆楚号 · 随州 · 编钟通讯站开始。', wild: true, ptype: '水系星球', color: ['#8cc6ea', '#2a6fb0'], get img() { return 'images/planets/kamble_' + kbStage() + '.webp?v=2'; }, after: 'flora1' },
     { id: 'pompeii', name: '庞贝星', d: '火系星球。火山终年喷发，地面被熔岩烤得发烫。', sites: [], wild: true, ptype: '火系星球', color: ['#f2a46b', '#b3401f'], img: 'images/planets/pompeii.webp', after: 'flora1' },
     { id: 'laiting', name: '莱汀陨石带', d: '电系区域。无数陨石在雷暴中漂浮。', sites: [], wild: true, ptype: '电系陨石带', color: ['#f1dd73', '#7a6a1a'], belt: true, img: 'images/planets/laiting.webp', after: 'flora1' },
-    { id: 'white', name: '白之星', d: '冰系星球。离太阳最远，整颗星球都裹在冰雪里。', sites: ['iceYado'], storyIds: ['iceYado'], storyEmpty: '读完第一章 · 芙罗拉星后开放世界任务「冰封深处的小精灵？」。', wild: true, ptype: '冰系星球', color: ['#e4f2fa', '#6aa6c8'], after: 'flora1' },
+    { id: 'white', name: '白之星', d: '冰系星球。离太阳最远，整颗星球都裹在冰雪里。', sites: ['iceYado'], storyIds: ['iceYado'], storyEmpty: '读完第一章 · 芙罗拉星后开放世界任务「冰封深处的小精灵？」。', wild: true, ptype: '冰系星球', color: ['#e4f2fa', '#6aa6c8'], img: 'images/planets/white.webp', after: 'flora1' },
     { id: 'kongyan', name: '空岩星', d: '地面系和飞行系的星球。', sites: [], wild: true, ptype: '地面 · 飞行星球', color: ['#e2cfa8', '#8a6a45'], soon: true },
     { id: 'ivy', name: '常春藤前哨站', d: '常春藤在马亚尔星系的据点。', sites: [], ptype: '据点', ivy: true, soon: true }
   ];

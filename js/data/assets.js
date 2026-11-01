@@ -138,8 +138,8 @@ var BG = {
   "greenhouse_p": "images/backgrounds/greenhouse_p.jpg",
   "pp_lake": "images/backgrounds/pp_lake.jpg",
   "kb_dock": "images/backgrounds/kb_dock.jpg",
-  "wh_ice": "images/backgrounds/wh_ice.jpg",
-  "wh_snow": "images/backgrounds/wh_snow.jpg", "wh_deep": "images/backgrounds/wh_deep.jpg", "fl_meadow_snow": "images/backgrounds/fl_meadow_snow.jpg",   // 2026-11-01：白之星冰原、冰窟；梦里下雪的草甸
+  "wh_ice": "images/backgrounds/wh_ice.jpg?v=2",
+  "wh_snow": "images/backgrounds/wh_snow.jpg?v=2", "wh_deep": "images/backgrounds/wh_deep.jpg?v=2", "fl_meadow_snow": "images/backgrounds/fl_meadow_snow.jpg",   // 2026-11-01：白之星冰原、冰窟；梦里下雪的草甸
   "kb_isle": "images/backgrounds/kb_isle.jpg",
   "black": "images/backgrounds/black.jpg",
   "kb_shore": "images/backgrounds/kb_shore.jpg",
