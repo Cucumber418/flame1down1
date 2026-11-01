@@ -756,16 +756,27 @@
       '<p class="hint">' + stageLabel(s, f.stage) + (!isFin(s, f.stage) ? ' · 最终进化为' + (s.placeholder || s.tbdForms ? '？' : s.name) : '') +
       (ts.length ? ' · ' + ts.map(function (x) { return TEAM_NAME[x.t] + (x.lead ? '首发' : ''); }).join('、') : ' · 未加入配队') + '</p>' +
       (f.d ? '<p class="formdesc">' + esc(f.d) + '</p>' : '') + evoLine(m) + formSwitchHTML(m) + (s.placeholder ? '<p class="placeholder-note" style="margin-top:6px">数值和技能还是占位，二阶和最终形态还没画出来</p>' : s.tbdForms ? '<p class="placeholder-note" style="margin-top:6px">二阶和最终形态还没画出来</p>' : '') + '</div></div>' +
-      expBox(m) + stats +
-      '<div class="trait"><p><b>特性 · ' + esc(s.ability.n) + '</b>　<span class="blue">' + esc(s.ability.d) + '</span></p>' + (s.ability.extra ? '<p class="blue" style="font-size:13px">' + esc(s.ability.extra) + '</p>' : '') +
-      (acc.emblems && acc.emblems[m.sid] && EMBLEMS[m.sid] ? '<p><b>纹章 · ' + EMBLEMS[m.sid].m + '</b>　<span class="blue">' + esc(EMBLEMS[m.sid].d) + '</span></p>' : '') + '</div>' +
-      insHTML(m) + monItemsHTML(m) +
-      '<div><div class="moves-head"><h4>出战技能 <span class="' + (n === 4 ? 'blue' : 'red') + '">' + n + '/4</span></h4>' +
+      mdFold('exp', '经验', '', expBox(m)) + mdFold('stats', '能力', '性格 · ' + m.nat, stats) +
+      mdFold('trait', '特性', esc(s.ability.n), '<div class="trait"><p><b>特性 · ' + esc(s.ability.n) + '</b>　<span class="blue">' + esc(s.ability.d) + '</span></p>' + (s.ability.extra ? '<p class="blue" style="font-size:13px">' + esc(s.ability.extra) + '</p>' : '') +
+      (acc.emblems && acc.emblems[m.sid] && EMBLEMS[m.sid] ? '<p><b>纹章 · ' + EMBLEMS[m.sid].m + '</b>　<span class="blue">' + esc(EMBLEMS[m.sid].d) + '</span></p>' : '') + '</div>') +
+      mdFold('ins', '刻印', (Array.isArray(m.ins) ? m.ins.filter(Boolean).length : 0) + ' / 3', insHTML(m)) + (monItemsHTML(m) ? mdFold('items', '精灵道具', '', monItemsHTML(m)) : '') +
+      mdFold('moves', '出战技能', n + ' / 4', '<div><div class="moves-head"><h4>出战技能 <span class="' + (n === 4 ? 'blue' : 'red') + '">' + n + '/4</span></h4>' +
       '<span class="hint">普通技能 LV1 学会第 1 个，之后每 5 级学会一个；隐藏技能要在战斗中满足特定条件才能领悟</span></div>' +
       (odoOn ? odoTabs(odoF, 'data-odof="' + m.u + '" data-of') : '') +
-      '<div class="mlist">' + s.moves.concat(s.hidden).filter(function (mv) { return a.indexOf(mv) >= 0; }).map(row).join('') + '</div>' + nextMoveHint(m) + '</div>' +
+      '<div class="mlist">' + s.moves.concat(s.hidden).filter(function (mv) { return a.indexOf(mv) >= 0; }).map(row).join('') + '</div>' + nextMoveHint(m) + '</div>') +
       '<div class="d-actions">' + acts + '</div>';
   }
+  // 精灵资料的各个板块可以折叠（2026-11-01）：折叠状态记在本机，背包、仓库共用
+  var MD_FOLD = {}; try { MD_FOLD = JSON.parse(localStorage.getItem('hs-mdfold') || '{}') || {}; } catch (e) {}
+  function mdFold(k, title, sub, inner) {
+    if (!inner) return '';
+    return '<details class="md-fold" data-mdfold="' + k + '"' + (MD_FOLD[k] ? '' : ' open') + '><summary><b>' + title + '</b>' + (sub ? '<span class="mdf-sub">' + sub + '</span>' : '') + '</summary><div class="mdf-body">' + inner + '</div></details>';
+  }
+  document.addEventListener('toggle', function (e) {
+    var d = e.target; if (!d || !d.dataset || !d.dataset.mdfold) return;
+    var k = d.dataset.mdfold; if (d.open) delete MD_FOLD[k]; else MD_FOLD[k] = 1;
+    try { localStorage.setItem('hs-mdfold', JSON.stringify(MD_FOLD)); } catch (e2) {}
+  }, true);
   // 下一个技能在几级学会（不透露技能名）
   function nextMoveHint(m) {
     var s = SPMAP[m.sid], nx = 0;

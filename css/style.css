@@ -3220,3 +3220,16 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .it-ic.it-ess { display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; background: radial-gradient(circle, #fff8d0 0%, #ffd86b 45%, rgba(255,200,80,0) 72%); }
 .it-ic.it-ess.up { background: radial-gradient(circle, #fff 0%, #e8c8ff 40%, rgba(170,120,255,0) 72%); }
 .it-ic.it-ess img { width: 86%; height: 86%; object-fit: contain; }
+/* 精灵资料的折叠板块（2026-11-01） */
+.md-fold { margin: 8px 0; border: 1.5px solid var(--ink); border-radius: 10px; background: var(--paper); }
+.md-fold > summary { display: flex; align-items: center; gap: 10px; padding: 7px 12px; cursor: pointer; list-style: none; user-select: none; }
+.md-fold > summary::-webkit-details-marker { display: none; }
+.md-fold > summary::after { content: '▾'; margin-left: auto; transition: transform .2s; }
+.md-fold:not([open]) > summary::after { transform: rotate(-90deg); }
+.md-fold > summary b { font-size: 15px; }
+.mdf-sub { font-size: 13px; color: var(--muted, #666); }
+.mdf-body { padding: 0 12px 10px; }
+.mdf-body > .ins-box, .mdf-body > .md-items { margin: 0; border: 0; padding: 0; background: none; }
+.mdf-body .ins-head h4, .mdf-body .moves-head h4 { display: none; }
+.mdf-body > .md-items > h4 { font-size: 0; margin: 0 0 6px; } .mdf-body > .md-items > h4 .hint { font-size: 13px; }
+.mdf-body > .trait { margin: 0; }
