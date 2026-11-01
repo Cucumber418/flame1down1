@@ -326,7 +326,7 @@
     });
   }
   function go(p) { if (typeof SPA !== 'undefined' && SPA.on && page === 'explore' && ex.view === 'spa' && p !== 'explore') { spaLeaveAsk(function () { go(p); }); return; }
-    if (ex.mode === 'replay' && p !== 'explore') { stopTimers(); ex.mode = null; ex.view = 'sites'; } PAGE_Y[page] = window.scrollY; page = p; ui.pick = -1; savePage(); renderTop(); var y0 = PAGE_Y[p] || 0; window.scrollTo(0, y0); requestAnimationFrame(function () { if (page === p) window.scrollTo(0, Math.min(y0, document.documentElement.scrollHeight)); }); }
+    if (ex.mode === 'replay' && p !== 'explore') { stopTimers(); ex.mode = null; ex.view = 'sites'; } PAGE_Y[page] = window.scrollY; if (p === 'log' && page !== 'log') ui.logSel = null; page = p; ui.pick = -1; savePage(); renderTop(); var y0 = PAGE_Y[p] || 0; window.scrollTo(0, y0); requestAnimationFrame(function () { if (page === p) window.scrollTo(0, Math.min(y0, document.documentElement.scrollHeight)); }); }
   var PAGE_Y = {};   // 2026-11-01：切换大栏时记住每一栏的滚动位置，回来时停在原来的地方
   $('mainnav').addEventListener('click', function (e) {
     var b = e.target.closest('[data-page]'); if (!b || b.disabled) return;
@@ -4548,7 +4548,7 @@
     return E;
   }
   function renderLog() {
-    var E = logEntries(), sel = E.filter(function (x) { return x.t === ui.logSel; })[0] ? ui.logSel : E[0].t;
+    var E = logEntries(), sel = E.filter(function (x) { return x.t === ui.logSel; })[0] ? ui.logSel : (E[1] || E[0]).t;   // 每次进入航行日志默认显示第二条
     ui.logSel = sel;
     $('pg-log').innerHTML = '<div class="page-head"><h2 class="sec">航行日志</h2><p class="hint">荆楚号的公告板：新玩法、限时活动、全服任务和更新公告。点左边的标题查看内容。</p></div>' +
       '<div class="log-split"><nav class="log-nav" role="tablist" aria-label="航行日志">' + E.map(function (x) { var p = x.t.split('-'), ty = p.length > 1 ? p.shift() : '', nm = p.join('-'), on = x.t === sel; return '<button type="button" role="tab" class="log-nv' + (on ? ' on' : '') + '" aria-selected="' + on + '" data-logsel="' + esc(x.t) + '">' + (ty ? '<small>' + esc(ty) + '</small>' : '') + '<b>' + esc(nm) + '</b></button>'; }).join('') + '</nav>' +
