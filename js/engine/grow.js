@@ -248,17 +248,17 @@ var GROW = (function () {
   });
 
   /* ---------- 放生（2026-11-01）：经验只看等级，放生点数只看稀有度 ----------
-   * 稀有度按获得途径定：野外常见 = 普通；野外少见（中等 / 较低、只在某个场景出现）= 少见；野外标了 rare、奇声号角、神秘精灵 = 稀有；精元孵化（奥多亚克除外）、冰块里的亚哆 = 珍贵
+   * 稀有度按获得途径定：野外常见 / 少见（包括只在某个场景出现的）= 常见（2026-11-01 普通、少见合并）；野外标了 rare、奇声号角、神秘精灵 = 稀有；精元孵化（奥多亚克除外）、冰块里的亚哆 = 珍贵
    * 拿不到第二只的精灵（剧情 / 奖励送的）不能放生；开局选的主宠（那个种类里最早获得的一只）不能放生；在配队里的要先移出配队 */
-  var REL_TIER = [{ n: '普通', pt: 1 }, { n: '少见', pt: 3 }, { n: '稀有', pt: 10 }, { n: '珍贵', pt: 30 }], REL_SHINY = 3, REL_MAX = 60;
+  var REL_TIER = [{ n: '常见', pt: 2 }, { n: '稀有', pt: 10 }, { n: '珍贵', pt: 30 }], REL_SHINY = 3, REL_MAX = 60;
   function relTier(sid) {
-    if (sid === 'wild') return 3;
+    if (sid === 'wild') return 2;
     if (sid === 'odo') return -1;   // 2026-11-01：奥多亚克只能获得一只，不能放生
-    for (var hk in HATCH) if (HATCH[hk].sid === sid) return 3;
+    for (var hk in HATCH) if (HATCH[hk].sid === sid) return 2;
     var t = -1, pools = typeof WILD_POOLS !== 'undefined' ? WILD_POOLS : {}, scene = typeof WILD_SCENE !== 'undefined' ? WILD_SCENE : {};
-    Object.keys(pools).forEach(function (k) { pools[k].forEach(function (w) { if (w.sid === sid) t = Math.max(t, w.rare ? 2 : w.tag === '中等' || w.tag === '较低' ? 1 : 0); }); });
-    Object.keys(scene).forEach(function (k) { scene[k].forEach(function (w) { if (w.sid === sid) t = Math.max(t, 1); }); });
-    if (typeof PVE !== 'undefined' && ((PVE.HORN && PVE.HORN.sid === sid) || (PVE.MYSTERY && PVE.MYSTERY.sid === sid))) t = Math.max(t, 2);
+    Object.keys(pools).forEach(function (k) { pools[k].forEach(function (w) { if (w.sid === sid) t = Math.max(t, w.rare ? 1 : 0); }); });
+    Object.keys(scene).forEach(function (k) { scene[k].forEach(function (w) { if (w.sid === sid) t = Math.max(t, 0); }); });
+    if (typeof PVE !== 'undefined' && ((PVE.HORN && PVE.HORN.sid === sid) || (PVE.MYSTERY && PVE.MYSTERY.sid === sid))) t = Math.max(t, 1);
     return t;   // -1：只能拥有一只
   }
   function relExp(lv) { return Math.max(20, Math.floor(ACC.expAt(lv) * 0.1)); }

@@ -1275,7 +1275,7 @@
   });
 
   /* ---------- 精灵放生（2026-11-01）：规则在 js/engine/grow.js 的 release ---------- */
-  var REL_TC = ['#8a8f98', '#3f8fd2', '#b36ad9', '#e0962a'];
+  var REL_TC = ['#3f8fd2', '#b36ad9', '#e0962a'];
   function relSel() { return ui.rel || (ui.rel = {}); }
   function relPicked() { var s = relSel(); return acc.mons.filter(function (m) { return s[m.u] && !GROW.relBlock(acc, m); }); }
   function relTag(m) { var t = GROW.relTier(m.sid); return t < 0 ? '' : '<span class="rel-tier" style="--rc:' + REL_TC[t] + '">' + GROW.REL_TIER[t].n + (m.shiny ? ' · 异色' : '') + '</span>'; }
@@ -1284,7 +1284,7 @@
     var pick = relPicked(), ex0 = 0, pt0 = 0; pick.forEach(function (m) { ex0 += GROW.relExp(m.lv); pt0 += GROW.relPt(m); });
     var html = monsTabs('release') + '<div class="page-head"><h2 class="sec">精灵放生</h2><p class="hint">放生后，精灵会回到野外，<b>不能找回</b>。获得的经验只看等级，放生点数只看稀有度（异色 ×' + GROW.REL_SHINY + '）。主宠、只能拥有一只的精灵不能放生；在配队里的精灵要先移出配队。</p></div>' +
       '<div class="rel-bar"><span class="rel-have">' + H.itemIcon('relPt') + '放生点数 <b>' + fmt((acc.items && acc.items.relPt) || 0) + '</b></span><span class="rel-legend">' + GROW.REL_TIER.map(function (T, i) { return '<span class="rel-tier" style="--rc:' + REL_TC[i] + '">' + T.n + ' ' + T.pt + ' 点</span>'; }).join('') + '</span></div>' +
-      '<div class="rel-act"><span>已选 <b>' + pick.length + '</b> 只' + (pick.length ? ' · 可获得 <b>' + fmt(ex0) + '</b> 经验、<b>' + fmt(pt0) + '</b> 放生点数' : '') + '</span><span class="rel-btns"><button type="button" class="btn ghost" data-relall="1">选中全部普通精灵</button><button type="button" class="btn ghost" data-relclr="1"' + (pick.length ? '' : ' disabled') + '>清空</button><button type="button" class="btn primary" data-relgo="1"' + (pick.length ? '' : ' disabled') + '>放生</button></span></div>' +
+      '<div class="rel-act"><span>已选 <b>' + pick.length + '</b> 只' + (pick.length ? ' · 可获得 <b>' + fmt(ex0) + '</b> 经验、<b>' + fmt(pt0) + '</b> 放生点数' : '') + '</span><span class="rel-btns"><button type="button" class="btn ghost" data-relall="1">选中全部常见精灵</button><button type="button" class="btn ghost" data-relclr="1"' + (pick.length ? '' : ' disabled') + '>清空</button><button type="button" class="btn primary" data-relgo="1"' + (pick.length ? '' : ' disabled') + '>放生</button></span></div>' +
       '<div class="dex-grid rel-grid">' + list.map(function (m) {
         var why = GROW.relBlock(acc, m), on = !why && s[m.u];
         return '<button type="button" class="card rel' + (on ? ' sel' : '') + (why ? ' lock' : '') + '" data-relu="' + m.u + '"' + (why ? ' aria-disabled="true"' : ' aria-pressed="' + !!on + '"') + '>' + (on ? '<span class="rel-ck" aria-hidden="true">✓</span>' : '') +
