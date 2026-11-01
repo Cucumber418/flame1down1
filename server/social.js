@@ -129,7 +129,7 @@ function homeOf(acc) {
   // 茶室音乐：大厅（默认）/ 地球 / 芙罗拉星（主线第一章通关后才有）
   var flora = !!((acc.chapters && acc.chapters.ch1) || (acc.mailSeen && acc.mailSeen['barren-bgm']));   // 主线第一章通关（之前击败普通荒芜拿到的也保留）
   var cg = acc.chalGot || {}, cbgm = { floraGrass: 30, floraForest: 60, floraFallen: 90, kbSurface: 'kb:30', kbShallow: 'kb:60', kbDeep: 'kb:90' };   // 坎伯兰星的挑战路线也有（2026-11-01）   // 芙罗拉星挑战累计星数奖励的茶室音乐
-  var bgm = h.bgm === 'earth' || (cbgm[h.bgm] && cg[cbgm[h.bgm]]) ? h.bgm : 'ui';   // 「芙罗拉星」2026-10-17 移除
+  var bgm = h.bgm === 'earth' || h.bgm === 'ui' || (cbgm[h.bgm] && cg[cbgm[h.bgm]]) ? h.bgm : 'base';   // 2026-11-01：没选过的用基地默认音乐 Base   // 「芙罗拉星」2026-10-17 移除
   var L = h.layout && typeof h.layout === 'object' ? h.layout : {}, rooms = (acc.baseInv && acc.baseInv.rooms) || {};   // 2026-10-31：基地的房型和摆件（拜访时显示）
   var layout = { room: /^r[1-4]$/.test(L.room) && (L.room === 'r1' || rooms[L.room]) ? L.room : 'r1', deco: (Array.isArray(L.deco) ? L.deco : []).slice(0, 40).filter(function (d) { return d && /^d\d+$/.test(d.k); }).map(function (d) { return { k: d.k, x: +d.x || 50, y: +d.y || 80, f: d.f ? 1 : 0 }; }) };
   return { open: open, name: str(h.name, 10) || '我的基地', mons: open ? mons : [], bgm: bgm, layout: layout };

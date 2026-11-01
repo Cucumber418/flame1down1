@@ -1490,7 +1490,7 @@
   window.HSBRAWL = { render: renderBrawl };
   window.HSSOCIAL = { render: function () { if (!st.players) load(); render(); },
     // 正在拜访的基地的主人选的基地音乐（game.js 选界面音乐时用）
-    visitBgm: function () { var d = st.view && st.view.data; return d && d.open && !d.noChar ? d.bgm || 'ui' : null; },
+    visitBgm: function () { var d = st.view && st.view.data; return d && d.open && !d.noChar ? d.bgm || 'base' : null; },
     // 基地信息栏与留言板（game.js 的「我的基地」页面调用，不传参数就是自己的基地）
     homeBoard: function (owner, kind) { return hbSlot(owner || meUser(), kind); },
     homeNew: function () { return hb.newN || 0; }, friendBases: friendBases, online: function () { return !!online; },

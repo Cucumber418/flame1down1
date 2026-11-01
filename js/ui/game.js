@@ -5046,7 +5046,7 @@
    * 主线（按章节，可以一口气连播）、支线（含世界任务）、画廊（所有 CG）、音乐鉴赏（只列出听过的曲子）、角色立绘（只显示见过的角色，资料按剧情进度揭示） */
   var ARC_TABS = [['main', '主线任务'], ['side', '支线任务'], ['world', '世界任务'], ['event', '活动任务'], ['cg', '画廊'], ['music', '音乐鉴赏'], ['chars', '角色立绘']];
   var MUSIC = [
-    ['ui', '大厅 · HMS_JC', '主界面'], ['uiOld', '大厅（旧版）', '主界面（旧版）'], ['arena', '竞技大厅', '竞技对战'], ['earth', '地球', '地球的剧情'],
+    ['ui', '大厅 · HMS_JC', '主界面'], ['base', '基地', '基地'], ['uiOld', '大厅（旧版）', '主界面（旧版）'], ['arena', '竞技大厅', '竞技对战'], ['earth', '地球', '地球的剧情'],
     ['faceEnemy', '遇敌', '剧情对战开场'], ['normal', '寻常', '野外与剧情对战'], ['stage', '关卡', '星球挑战'], ['pvp', 'PVP', '竞技对战与切磋'],
     ['boss', 'Boss', '简单难度BOSS战'], ['boss2', 'Boss2', '普通难度BOSS战'], ['boss3', 'Boss3', '困难难度BOSS战与每周挑战'], ['tigerFinal', '东北的往事', '？'],
     ['flora', 'FloraBackground', '芙罗拉星'], ['floraGrass', 'Flora1', '芙罗拉星 · 草甸'], ['floraForest', 'Flora2', '芙罗拉星 · 丛林'], ['floraFallen', 'Flora3 · The Great Cover', '瘴气化之后的芙罗拉星'],
@@ -5941,7 +5941,8 @@
   /* 茶室音乐：自己和来拜访的船员在茶室里都会听到（曲子见 js/ui/audio.js）
    * 大厅（默认，和陆羽茶室大厅一样）和地球一开始就有；芙罗拉星是击败普通难度荒芜的奖励 */
   var HOME_BGM = [
-    { k: 'ui', n: '大厅', d: '默认' },
+    { k: 'base', n: '基地', d: '默认' },   // 2026-11-01：基地默认音乐换成 Base
+    { k: 'ui', n: '大厅', d: '自动解锁' },
     { k: 'earth', n: '地球', d: '自动解锁' },
     { k: 'floraGrass', n: 'Flora1', d: '芙罗拉星挑战路线累计 30 颗星后领取', own: function () { return chalGot(30); } },
     { k: 'floraForest', n: 'Flora2', d: '芙罗拉星挑战路线累计 60 颗星后领取', own: function () { return chalGot(60); } },
@@ -5952,7 +5953,7 @@
   ];
   function bgmName(k) { var b = HOME_BGM.filter(function (x) { return x.k === k; })[0]; return b ? b.n : k; }
   function bgmOwned(k) { var b = HOME_BGM.filter(function (x) { return x.k === k; })[0]; return !!b && (!b.own || b.own()); }
-  function homeBgm() { var k = acc && acc.home && acc.home.bgm; return k && bgmOwned(k) ? k : 'ui'; }
+  function homeBgm() { var k = acc && acc.home && acc.home.bgm; return k && bgmOwned(k) ? k : 'base'; }
   // 茶室音乐（2026-10-17 改成一个按钮）：点开后列出所有已解锁的曲目，点一首就换上
   function openBgmPicker() {
     var old = $('bgm-dlg'); if (old) old.remove();
