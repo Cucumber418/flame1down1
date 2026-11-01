@@ -3268,3 +3268,20 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
   .sum-banner .sb-rays { top: 110px; }
 }
 @media (max-width: 640px) { .sum-banner .sb-c { height: 340px; top: -10px; } .sum-banner .sb-s:not(.back) { z-index: 4; } }
+/* 航行日志改版（2026-11-01）：左边一竖条标题，右边显示内容 */
+.log-split { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 14px; align-items: start; }
+.log-nav { position: sticky; top: 8px; display: flex; flex-direction: column; gap: 4px; max-height: calc(100vh - 24px); overflow: auto; padding: 6px; border: 1.5px solid var(--ink); border-radius: 12px; background: var(--paper); }
+.log-nv { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 7px 10px; border: 0; border-left: 4px solid transparent; border-radius: 8px; background: transparent; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.log-nv small { font-size: 11px; color: #c42f3a; font-weight: 700; }
+.log-nv b { font-size: 14px; line-height: 1.3; }
+.log-nv:hover { background: rgba(0,0,0,.04); }
+.log-nv.on { background: #23222b; color: #fff; border-left-color: #c42f3a; }
+.log-nv.on small { color: #ffb3b3; }
+.log-view .log-sec > .log-card, .log-view .log-sec > .pt-card { margin: 0; max-width: none; }
+.log-view .log-war { margin-bottom: 10px; flex-wrap: wrap; }
+@media (max-width: 760px) {
+  .log-split { grid-template-columns: 1fr; }
+  .log-nav { position: static; flex-direction: row; overflow-x: auto; max-height: none; }
+  .log-nv { flex: 0 0 auto; border-left: 0; border-bottom: 3px solid transparent; }
+  .log-nv.on { border-bottom-color: #c42f3a; }
+}

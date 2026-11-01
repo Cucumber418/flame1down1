@@ -4508,27 +4508,57 @@
         '<div class="soc-foot"><button type="button" class="btn primary" data-gift="' + id + '">立即领取</button></div></article>';
     }).join('');
   }
-  function renderLog() {
-    var now = new Date(), h = now.getHours(), on = mysteryTime();
+  /* 航行日志（2026-11-01 改版）：左边一竖条标题（类型-名称），点标题在右边显示内容。每日任务不放在这里；更新公告在最下面 */
+  function summonLogHTML() {
+    var B = SUMMON.banner(Date.now()), nm = SPMAP[B.up].evo[0].n;
+    return '<article class="log-card wide sum-log"><span class="tape l"></span><span class="chip log-tag">新玩法</span><h3>圣晶石召唤</h3>' +
+      '<div class="next-art"><img src="' + SPRITES[B.up] + '" alt=""></div>' +
+      '<p>荆楚号上开放了「召唤」！用圣晶石召唤，可以抽到当期 UP 精灵<b>' + esc(nm) + '</b>的精元（5%，第 50 次必出）、稀有精灵的精元、限定刻印、刻印激活晶片、性格重置胶囊等丰厚奖励。每次召唤送召唤代币，可以在代币商店兑换。</p>' +
+      '<p>还有<b>友情点召唤</b>：每天免费十连一次。给好友送经验、借好友的助战精灵都能得到友情点。</p>' +
+      '<p>全新的<b>刻印</b>系统：每只精灵可以装 3 个刻印，只在 PVE 对战中生效。</p>' +
+      '<button type="button" class="btn primary" data-golog="summon">去召唤</button></article>';
+  }
+  function logEntries() {
+    var E = [], add = function (t, h) { if (h) E.push({ t: t, h: h }); };
+    var now = new Date(), on = mysteryTime();
     var wait = on ? '' : (function () { var t = new Date(now); t.setHours(MYSTERY.from, 0, 0, 0); var m = Math.max(0, Math.round((t - now) / 60000)); return '距离今天的活动开始还有 ' + Math.floor(m / 60) + ' 小时 ' + (m % 60) + ' 分钟'; })();
-    $('pg-log').innerHTML = '<div class="page-head"><h2 class="sec">航行日志</h2><p class="hint">荆楚号的公告板：更新公告、限时活动、每日任务和新BOSS。</p></div>' +
-      '<div class="log-grid">' + '<article class="log-card wide qq-card"><span class="tape l"></span><span class="tape r"></span><div class="qq-txt"><span class="chip log-tag">船员交流</span><h3>QQ 群：<b class="qq-no">' + QQ_GROUP + '</b></h3><p class="hint">攻略、组队切磋、bug 反馈、新精灵立绘抢先看，都在群里。</p></div><button type="button" class="btn primary" data-copyqq="1">复制群号</button></article></div>' +
-      '<div class="log-tiles" id="log-tiles"></div>' + changelogMini() + '<div class="log-store" id="log-store" hidden>' + giftLogHTML() + monChangesHTML() + changelogHTML() +
-      mmLogHTML() + pwCardHTML('log') + contestLogHTML() + odoLogHTML() + travelLogHTML() + pickHTML() + coreLogHTML() + hornLogHTML() + riceLogHTML() +   // 立绘更新投票已结束移除（2026-10-17）；荒芜放在更新公告正下方
-      '<article class="log-card ev"><span class="tape l"></span><span class="chip log-tag">限时活动</span><h3>神秘精灵出没</h3>' +
+    add('船员交流-QQ群', '<article class="log-card wide qq-card"><span class="tape l"></span><span class="tape r"></span><div class="qq-txt"><span class="chip log-tag">船员交流</span><h3>QQ 群：<b class="qq-no">' + QQ_GROUP + '</b></h3><p class="hint">攻略、组队切磋、bug 反馈、新精灵立绘抢先看，都在群里。</p></div><button type="button" class="btn primary" data-copyqq="1">复制群号</button></article>');
+    add('新玩法-圣晶石召唤', summonLogHTML());
+    add('限时活动-明明教官的试炼', mmLogHTML());
+    var war = ui.logWar === 'pw' ? 'pw' : 'kbw';
+    add('全服任务-坎伯兰星保卫战', '<div class="fparts log-war" role="tablist">' + [['kbw', '坎伯兰星保卫战'], ['pw', '瘴气驱逐战']].map(function (x) { return '<button type="button" role="tab" class="tab' + (war === x[0] ? ' on' : '') + '" aria-selected="' + (war === x[0]) + '" data-logwar="' + x[0] + '">' + x[1] + '</button>'; }).join('') + '</div>' + (war === 'pw' ? pwCardHTML('log') : kbwCardHTML('log')));
+    add('获取精灵-旅行精灵叶子喵', travelLogHTML());
+    add('获取精灵-冥岛的歌声', hornLogHTML());
+    add('获取精灵-爱吃米饭的米饭火鸡', riceLogHTML());
+    add('精灵推荐-' + PICK.title, pickHTML());
+    // 其他公告：标题按卡片里的类型标签和标题自动拼
+    [giftLogHTML(), monChangesHTML(), contestLogHTML(), odoLogHTML(), coreLogHTML(), '<article class="log-card ev"><span class="tape l"></span><span class="chip log-tag">限时活动</span><h3>神秘精灵出没</h3>' +
         '<p>每天 <b>16:00–24:00</b>，在星际探索的任何场景，都有 <b>3%</b> 的概率刷出一只神秘精灵！</p><p class="hint">它是什么？只有遇到过的人才知道。</p>' +
-        '<p class="log-st ' + (on ? 'on' : '') + '">' + (on ? '活动进行中，今天 24:00 结束' : wait) + '</p></article>' +
-      (function () {   // 困难泰戈尔上线：按玩家进度提示下一步（不剧透隐藏特效）
+        '<p class="log-st ' + (on ? 'on' : '') + '">' + (on ? '活动进行中，今天 24:00 结束' : wait) + '</p></article>',       (function () {   // 困难泰戈尔上线：按玩家进度提示下一步（不剧透隐藏特效）
         var h = levelOpen('tiger', 2), won = bossWon('tiger', 2), tip = won ? '你已经击败了困难难度的泰戈尔，每周挑战已开放。' : h ? '在荆楚号 · 襄阳 · 古城防卫部挑战。' : bossWon('tiger', 1) ? '' : bossOpen('tiger') ? '先击败普通难度的泰戈尔，困难难度就会开放。' : '读完荆楚号 · 襄阳 · 古城防卫部的支线「东北来的泰戈尔」后，就能开始挑战泰戈尔。';
         return '<article class="log-card next tiger-hard"><span class="tape l"></span><span class="chip log-tag">BOSS挑战</span><h3>泰戈尔 · 困难难度已上线</h3>' +
           '<div class="next-art"><img src="' + SPRITES.tagore + '" alt=""></div><p>古城防卫部的泰戈尔终于拿出了真本事！这是它最强的状态，来看看你的队伍能不能接住它的全力一击。</p>' +
           '<p>首次击败获得称号<b>「原力掌控者」</b>、泰戈尔性格药剂 ×3、累积经验 ×50,000，并开放每周挑战。</p><p class="hint">据说……它还藏着一手。' + tip + '</p>' +
           (h ? '<button type="button" class="btn" data-golog="boss-tiger">去挑战</button>' : '') + '</article>';
-      })() +
-      '<article class="log-card wide"><span class="tape l"></span><span class="chip log-tag">每日任务</span><h3>今天的任务</h3>' + dailyHTML() + '</article>' +
-      '</div>';
-    logTiles();
+      })()].forEach(function (h) {
+      if (!h) return; var tmp = document.createElement('div'); tmp.innerHTML = h;
+      tmp.querySelectorAll('.log-card, .pt-card').forEach(function (el) { var tg = el.querySelector('.log-tag'), h3 = el.querySelector('h3'); add((tg ? tg.textContent.replace(/\s*·.*$/, '') : '公告') + '-' + (h3 ? h3.textContent.replace(/^🎁\s*/, '') : ''), el.outerHTML); });
+    });
+    add('更新公告-近期改动', changelogHTML());
+    return E;
   }
+  function renderLog() {
+    var E = logEntries(), sel = E.filter(function (x) { return x.t === ui.logSel; })[0] ? ui.logSel : E[0].t;
+    ui.logSel = sel;
+    $('pg-log').innerHTML = '<div class="page-head"><h2 class="sec">航行日志</h2><p class="hint">荆楚号的公告板：新玩法、限时活动、全服任务和更新公告。点左边的标题查看内容。</p></div>' +
+      '<div class="log-split"><nav class="log-nav" role="tablist" aria-label="航行日志">' + E.map(function (x) { var p = x.t.split('-'), ty = p.length > 1 ? p.shift() : '', nm = p.join('-'), on = x.t === sel; return '<button type="button" role="tab" class="log-nv' + (on ? ' on' : '') + '" aria-selected="' + on + '" data-logsel="' + esc(x.t) + '">' + (ty ? '<small>' + esc(ty) + '</small>' : '') + '<b>' + esc(nm) + '</b></button>'; }).join('') + '</nav>' +
+      '<div class="log-view">' + E.map(function (x) { return '<section class="log-sec" data-logsec="' + esc(x.t) + '"' + (x.t === sel ? '' : ' hidden') + '>' + x.h + '</section>'; }).join('') + '</div></div>';
+  }
+  $('pg-log').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-logsel]');
+    if (b) { ui.logSel = b.dataset.logsel; [].forEach.call(document.querySelectorAll('#pg-log .log-nv'), function (x) { var on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-selected', on); }); [].forEach.call(document.querySelectorAll('#pg-log .log-sec'), function (x) { x.hidden = x.dataset.logsec !== ui.logSel; }); if (window.innerWidth <= 760) { var v = document.querySelector('#pg-log .log-view'); if (v) v.scrollIntoView({ behavior: 'smooth', block: 'start' }); } return; }
+    var w = e.target.closest('[data-logwar]'); if (w) { ui.logWar = w.dataset.logwar; renderLog(); return; }
+  });
   /* 航行日志（2026-11-01）：各个内容先显示成小板块，点开才是完整面板；完整的卡片放在隐藏的 #log-store 里
    * （很多卡片会按 id 原地刷新，所以打开面板时把卡片节点搬进面板，关掉再搬回去）。更新公告放在最下面，只显示最新一条的摘要 */
   var LOG_OPEN = null;
@@ -4651,6 +4681,7 @@
       return;
     }
     var g = e.target.closest('[data-golog]'); if (g) { if (g.dataset.golog === 'boss-barren') { ex.view = 'boss'; ex.boss = 'barren'; go('explore'); return; } if (g.dataset.golog === 'boss-odo') { ex.view = 'boss'; ex.boss = 'odo'; go('explore'); return; }
+      if (g.dataset.golog === 'summon') { ex.view = 'summon'; ex.planet = 'jingchu'; go('explore'); return; }
       if (g.dataset.golog === 'flora-catch') { ex.planet = 'flora'; ex.view = 'sites'; ex.fpart = 'catch'; go('explore'); renderExplore(); return; }
       if (g.dataset.golog === 'travelcat') { ex.planet = 'flora'; ex.view = 'sites'; ex.fpart = 'story'; ex.flSt = 'side'; go('explore'); renderExplore(); return; }
       if (g.dataset.golog === 'boss-tiger') { ex.view = 'boss'; ex.boss = 'tiger'; ex.bossK = 'tiger'; ex.bossD = 2; go('explore'); return; } go(g.dataset.golog); }
