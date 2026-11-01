@@ -297,7 +297,7 @@
     syncBattle();
     deliverMail(); checkRankRewards(); daily(); homeSettle();
     setTimeout(function () { storyNewsCheck(); newsCheck(); }, 1500);
-    ['holo', 'arena', 'log', 'bag', 'store', 'dex', 'items', 'social', 'explore'].forEach(function (p) { $('pg-' + p).hidden = p !== page; });
+    ['holo', 'arena', 'log', 'bag', 'store', 'release', 'dex', 'items', 'social', 'explore'].forEach(function (p) { $('pg-' + p).hidden = p !== page; });
     renderRename();
     if (page === 'arena' && window.HSBATTLE && window.HSBATTLE.renderMode && $('battle').hidden) window.HSBATTLE.renderMode();
     if (page === 'social') { if (window.HSSOCIAL) window.HSSOCIAL.render(); }
@@ -305,6 +305,7 @@
     else if (page === 'log') renderLog();
     else if (page === 'dex') renderDex2();
     else if (page === 'store') renderStore();
+    else if (page === 'release') renderRelease();
     else if (page === 'items') renderItems();
     else if (page === 'explore') renderExplore();
     else if (page === 'holo') renderHolo();
@@ -320,7 +321,7 @@
   function navSync() {
     var holo = page === 'explore' && typeof ex !== 'undefined' && (ex.view === 'mmArena' || ex.view === 'mmGacha'), ship = shipCtx();
     [].forEach.call(document.querySelectorAll('#mainnav .nav'), function (b) {
-      var pg = b.dataset.page, on = holo ? pg === 'holo' : ship ? pg === 'ship' : pg === page || (page === 'arena' && pg === 'explore') || ((page === 'store' || page === 'dex') && pg === 'bag');   // 精灵仓库、图鉴在「精灵一览」里；荆楚号在「飞船终端」里
+      var pg = b.dataset.page, on = holo ? pg === 'holo' : ship ? pg === 'ship' : pg === page || (page === 'arena' && pg === 'explore') || ((page === 'store' || page === 'release' || page === 'dex') && pg === 'bag');   // 精灵仓库、图鉴在「精灵一览」里；荆楚号在「飞船终端」里
       b.classList.toggle('on', on); b.setAttribute('aria-selected', on);
     });
   }
@@ -864,7 +865,8 @@
     g_core: { name: '圣晶石', d: '雷暴和永冻里凝出来的七彩晶石，10 颗可以合成一个华为捕捉装置。', from: '活动「明明教官的试炼」每关每个难度首次通过', n: 1 }
   };
   GATHER_ITEMS.grail = { name: '圣杯', d: '通关一章主线时获得的金色圣杯。精灵 80 级以后，每突破 2 级等级上限，都要用掉 1 个圣杯。', from: '通关每一章主线（之前通关的已补发）', n: 1 };   // 2026-11-01
-  var GATHER_ORDER = ['g_sand', 'g_core', 'grail'];
+  GATHER_ITEMS.relPt = { name: '放生点数', d: '放生精灵时获得的点数。稀有度越高的精灵，放生时给的点数越多（异色 ×3）。', from: '精灵一览 · 放生', n: 1 };   // 2026-11-01
+  var GATHER_ORDER = ['g_sand', 'g_core', 'grail', 'relPt'];
   // 精灵素材：旅行精灵掉落的叶片，以及合成出来的精元（精元放进神农架 · 精灵保育仓孵化，见 NURSERY）
   var MATS = {
     m_lcleaf: { name: '叶子喵的叶片', d: '旅行精灵叶子喵身上掉下来的叶片，还带着一点光。5 片可以在冶炼坊合成叶子喵的精元。' },
@@ -1223,7 +1225,7 @@
   var LV_PRE = [[1, 100, '全部'], [1, 24, 'LV1–24'], [25, 49, 'LV25–49'], [50, 100, 'LV50–100']];
   // 精灵一览（2026-10-27）：背包、仓库合成一栏，上面切换
   function monsTabs(cur) {
-    return '<div class="fparts mons-tabs" role="tablist">' + [['bag', '背包'], ['store', '仓库'], ['dex', '图鉴']].map(function (x) { var lk = x[0] === 'dex' && !dexOpen(); return '<button type="button" role="tab" class="tab' + (x[0] === cur ? ' on' : '') + '" aria-selected="' + (x[0] === cur) + '" data-mtab="' + x[0] + '"' + (lk ? ' title="读完荆楚号 · 学院部的剧情后开放"' : '') + '>' + x[1] + (lk ? ' 🔒' : '') + '</button>'; }).join('') + '</div>';
+    return '<div class="fparts mons-tabs" role="tablist">' + [['bag', '背包'], ['store', '仓库'], ['release', '放生'], ['dex', '图鉴']].map(function (x) { var lk = x[0] === 'dex' && !dexOpen(); return '<button type="button" role="tab" class="tab' + (x[0] === cur ? ' on' : '') + '" aria-selected="' + (x[0] === cur) + '" data-mtab="' + x[0] + '"' + (lk ? ' title="读完荆楚号 · 学院部的剧情后开放"' : '') + '>' + x[1] + (lk ? ' 🔒' : '') + '</button>'; }).join('') + '</div>';
   }
   // 还能解锁的下一个配队
   function teamLockHTML() {
@@ -1270,6 +1272,54 @@
     }
     if (t.id === 'f-sort') { ui.f.sort = t.value; renderStore(); return; }
     if (t.closest('#store-detail')) onDetailChange(e);
+  });
+
+  /* ---------- 精灵放生（2026-11-01）：规则在 js/engine/grow.js 的 release ---------- */
+  var REL_TC = ['#8a8f98', '#3f8fd2', '#b36ad9', '#e0962a'];
+  function relSel() { return ui.rel || (ui.rel = {}); }
+  function relPicked() { var s = relSel(); return acc.mons.filter(function (m) { return s[m.u] && !GROW.relBlock(acc, m); }); }
+  function relTag(m) { var t = GROW.relTier(m.sid); return t < 0 ? '' : '<span class="rel-tier" style="--rc:' + REL_TC[t] + '">' + GROW.REL_TIER[t].n + (m.shiny ? ' · 异色' : '') + '</span>'; }
+  function renderRelease() {
+    var s = relSel(), list = acc.mons.slice().sort(function (a, b) { var ba = GROW.relBlock(acc, a) ? 1 : 0, bb = GROW.relBlock(acc, b) ? 1 : 0; return ba - bb || a.lv - b.lv || a.u - b.u; });
+    var pick = relPicked(), ex0 = 0, pt0 = 0; pick.forEach(function (m) { ex0 += GROW.relExp(m.lv); pt0 += GROW.relPt(m); });
+    var html = monsTabs('release') + '<div class="page-head"><h2 class="sec">精灵放生</h2><p class="hint">放生后，精灵会回到野外，<b>不能找回</b>。获得的经验只看等级，放生点数只看稀有度（异色 ×' + GROW.REL_SHINY + '）。主宠、只能拥有一只的精灵不能放生；在配队里的精灵要先移出配队。</p></div>' +
+      '<div class="rel-bar"><span class="rel-have">' + H.itemIcon('relPt') + '放生点数 <b>' + fmt((acc.items && acc.items.relPt) || 0) + '</b></span><span class="rel-legend">' + GROW.REL_TIER.map(function (T, i) { return '<span class="rel-tier" style="--rc:' + REL_TC[i] + '">' + T.n + ' ' + T.pt + ' 点</span>'; }).join('') + '</span></div>' +
+      '<div class="rel-act"><span>已选 <b>' + pick.length + '</b> 只' + (pick.length ? ' · 可获得 <b>' + fmt(ex0) + '</b> 经验、<b>' + fmt(pt0) + '</b> 放生点数' : '') + '</span><span class="rel-btns"><button type="button" class="btn ghost" data-relall="1">选中全部普通精灵</button><button type="button" class="btn ghost" data-relclr="1"' + (pick.length ? '' : ' disabled') + '>清空</button><button type="button" class="btn primary" data-relgo="1"' + (pick.length ? '' : ' disabled') + '>放生</button></span></div>' +
+      '<div class="dex-grid rel-grid">' + list.map(function (m) {
+        var why = GROW.relBlock(acc, m), on = !why && s[m.u];
+        return '<button type="button" class="card rel' + (on ? ' sel' : '') + (why ? ' lock' : '') + '" data-relu="' + m.u + '"' + (why ? ' aria-disabled="true"' : ' aria-pressed="' + !!on + '"') + '>' + (on ? '<span class="rel-ck" aria-hidden="true">✓</span>' : '') +
+          '<img src="' + form(m).img + '" alt="' + esc(form(m).name) + '"><span class="nm">' + esc(form(m).name) + '</span><span class="lv">LV' + m.lv + '</span>' + relTag(m) +
+          '<span class="meta">' + (why ? '🔒 ' + why : '+' + fmt(GROW.relExp(m.lv)) + ' 经验 · +' + GROW.relPt(m) + ' 点') + '</span></button>';
+      }).join('') + '</div>';
+    $('pg-release').innerHTML = html;
+  }
+  function releaseAsk() {
+    var pick = relPicked(); if (!pick.length) return;
+    var ex0 = 0, pt0 = 0; pick.forEach(function (m) { ex0 += GROW.relExp(m.lv); pt0 += GROW.relPt(m); });
+    if (pick.length > GROW.REL_MAX) { toast('一次最多放生 ' + GROW.REL_MAX + ' 只。'); return; }
+    var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'rel-dlg';
+    d.innerHTML = '<div class="soc-box" role="dialog" aria-modal="true" aria-label="确认放生"><span class="tape l"></span><span class="tape r"></span><span class="step">放生</span><h2>要放生这 ' + pick.length + ' 只精灵吗？</h2>' +
+      '<p class="rel-names">' + pick.slice(0, 12).map(function (m) { return esc(form(m).name) + ' LV' + m.lv; }).join('、') + (pick.length > 12 ? ' 等' : '') + '</p>' +
+      '<p>将获得 <b>' + fmt(ex0) + '</b> 经验、<b>' + fmt(pt0) + '</b> 放生点数。</p><p class="hint">放生后不能找回。</p>' +
+      '<div class="soc-foot"><button type="button" class="btn ghost" data-relx="1">再想想</button><button type="button" class="btn primary" data-relok="1">确认放生</button></div></div>';
+    document.body.appendChild(d);
+    d.addEventListener('click', function (e) {
+      if (e.target === d || e.target.closest('[data-relx]')) { d.remove(); return; }
+      if (!e.target.closest('[data-relok]')) return;
+      d.remove();
+      txRun('release', { us: pick.map(function (m) { return m.u; }) }, function (res) { ui.rel = {}; if (pick.some(function (m) { return m.u === ui.sel; })) ui.sel = null; renderRes(); renderRelease(); toast('放生了 ' + res.n + ' 只精灵，获得 ' + fmt(res.exp) + ' 经验、' + fmt(res.pt) + ' 放生点数。'); });
+    });
+  }
+  $('pg-release').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.mtab) { if (b.dataset.mtab === 'dex' && !dexOpen()) { toast('读完星际探索 · 荆楚号 · 学院部的剧情后，「黄冈秘鉴」才会开放。', prog('board').done ? '前往学院部' : '', '黄冈'); return; } go(b.dataset.mtab); return; }
+    var s = relSel(), y = window.scrollY;
+    if (b.dataset.relu) { var m = mon(+b.dataset.relu), why = m && GROW.relBlock(acc, m); if (why) { toast(why === '在配队里' ? '这只精灵在配队里，先把它移出配队才能放生。' : why === '主宠' ? '主宠是你最初的伙伴，不能放生。' : '这只精灵只能拥有一只，不能放生。'); return; } s[m.u] = !s[m.u]; }
+    else if (b.dataset.relall) acc.mons.forEach(function (m) { if (!GROW.relBlock(acc, m) && GROW.relTier(m.sid) === 0 && !m.shiny) s[m.u] = true; });
+    else if (b.dataset.relclr) ui.rel = {};
+    else if (b.dataset.relgo) { releaseAsk(); return; }
+    else return;
+    renderRelease(); window.scrollTo(0, y);
   });
 
   /* ---------- 黄冈秘鉴：按进化系点亮 ---------- */
@@ -7182,7 +7232,7 @@
   var TEA_DAILY = PVE.TEA_DAILY, TEA_EXP = PVE.TEA_EXP;
   function teaLeft() { var t = acc && acc.teaFight; return t && t.d === todayKey() ? Math.max(0, TEA_DAILY - (t.n || 0)) : TEA_DAILY; }
   function teaFight(opt) {
-    if (srvMode() && opt.user) return pveRemote('tea', { owner: opt.user }, { bg: BG.tea_p, back: '基地', pre: function () { ['holo', 'log', 'bag', 'store', 'dex', 'items', 'social', 'explore'].forEach(function (pg) { $('pg-' + pg).hidden = true; }); $('who-menu').hidden = true; } }, function (e, res) {
+    if (srvMode() && opt.user) return pveRemote('tea', { owner: opt.user }, { bg: BG.tea_p, back: '基地', pre: function () { ['holo', 'log', 'bag', 'store', 'release', 'dex', 'items', 'social', 'explore'].forEach(function (pg) { $('pg-' + pg).hidden = true; }); $('who-menu').hidden = true; } }, function (e, res) {
       ex.fighting = false; document.body.classList.remove('story-fight');
       var r = e && e.rep, msg = '', quit = !!(e && e.quit);
       if (!r) msg = res === 'void' ? '这场对战作废了，不计入奖励次数。' : '';
@@ -7197,7 +7247,7 @@
     if (!team.length) team = acc.mons.slice(0, 1);
     var p = team.slice(0, TEAM_SIZE).map(storyMon);
     stopTimers(); ex.fighting = true; document.body.classList.add('story-fight');
-    ['holo', 'log', 'bag', 'store', 'dex', 'items', 'social', 'explore'].forEach(function (pg) { $('pg-' + pg).hidden = true; });
+    ['holo', 'log', 'bag', 'store', 'release', 'dex', 'items', 'social', 'explore'].forEach(function (pg) { $('pg-' + pg).hidden = true; });
     $('pg-arena').hidden = false; $('who-menu').hidden = true;
     window.HSBATTLE.start({ p: p, a: opt.foe, foe: opt.owner + '的基地', bg: BG.tea_p, back: '基地', onEnd: function (res, seen, downs, quit) {
       ex.fighting = false; document.body.classList.remove('story-fight');
@@ -7275,7 +7325,7 @@
     // 联网切磋：像剧情对战一样切到对战画面，锁住其他大栏
     enterBattle: function () {
       stopTimers(); ex.fighting = true; document.body.classList.add('story-fight');
-      ['holo', 'log', 'bag', 'store', 'dex', 'items', 'social', 'explore'].forEach(function (p) { $('pg-' + p).hidden = true; });
+      ['holo', 'log', 'bag', 'store', 'release', 'dex', 'items', 'social', 'explore'].forEach(function (p) { $('pg-' + p).hidden = true; });
       $('pg-arena').hidden = false; $('who-menu').hidden = true;
     },
     leaveBattle: function () { ex.fighting = false; document.body.classList.remove('story-fight'); go('social'); }

@@ -247,6 +247,45 @@ var GROW = (function () {
     return no('不支持的操作');
   });
 
+  /* ---------- 放生（2026-11-01）：经验只看等级，放生点数只看稀有度 ----------
+   * 稀有度按获得途径定：野外常见 = 普通；野外少见（中等 / 较低、只在某个场景出现）= 少见；野外标了 rare、奇声号角、神秘精灵 = 稀有；精元孵化、冰块里的亚哆 = 珍贵
+   * 拿不到第二只的精灵（剧情 / 奖励送的）不能放生；开局选的主宠（那个种类里最早获得的一只）不能放生；在配队里的要先移出配队 */
+  var REL_TIER = [{ n: '普通', pt: 1 }, { n: '少见', pt: 3 }, { n: '稀有', pt: 10 }, { n: '珍贵', pt: 30 }], REL_SHINY = 3, REL_MAX = 60;
+  function relTier(sid) {
+    if (sid === 'wild') return 3;
+    for (var hk in HATCH) if (HATCH[hk].sid === sid) return 3;
+    var t = -1, pools = typeof WILD_POOLS !== 'undefined' ? WILD_POOLS : {}, scene = typeof WILD_SCENE !== 'undefined' ? WILD_SCENE : {};
+    Object.keys(pools).forEach(function (k) { pools[k].forEach(function (w) { if (w.sid === sid) t = Math.max(t, w.rare ? 2 : w.tag === '中等' || w.tag === '较低' ? 1 : 0); }); });
+    Object.keys(scene).forEach(function (k) { scene[k].forEach(function (w) { if (w.sid === sid) t = Math.max(t, 1); }); });
+    if (typeof PVE !== 'undefined' && ((PVE.HORN && PVE.HORN.sid === sid) || (PVE.MYSTERY && PVE.MYSTERY.sid === sid))) t = Math.max(t, 2);
+    return t;   // -1：只能拥有一只
+  }
+  function relExp(lv) { return Math.max(20, Math.floor(ACC.expAt(lv) * 0.1)); }
+  function relPt(m) { var t = relTier(m.sid); return t < 0 ? 0 : REL_TIER[t].pt * (m.shiny ? REL_SHINY : 1); }
+  function starterU(a) { var u = null; (a.mons || []).forEach(function (m) { if (m.sid === a.starter && (u == null || m.u < u)) u = m.u; }); return u; }
+  function relBlock(a, m) {   // 不能放生的原因；能放生返回 ''
+    if (!m || !SPMAP[m.sid] || SPMAP[m.sid].nodex || m.sid === 'dummy') return '不能放生';
+    if (m.u === starterU(a)) return '主宠';
+    if (relTier(m.sid) < 0) return '只能拥有一只';
+    if ((a.teams || []).some(function (t) { return t && t.indexOf(m.u) >= 0; })) return '在配队里';
+    return '';
+  }
+  // { us: [编号, ...] }
+  TX.add('release', function (a, args, env) {
+    var us = Array.isArray(args.us) ? args.us.map(int).filter(function (u, i, L) { return L.indexOf(u) === i; }) : [];
+    if (!us.length) return no('还没有选要放生的精灵');
+    if (us.length > REL_MAX) return no('一次最多放生 ' + REL_MAX + ' 只');
+    var ms = us.map(function (u) { return ACC.mon(a, u); });
+    for (var i = 0; i < ms.length; i++) { if (!ms[i]) return no('找不到这只精灵'); var why = relBlock(a, ms[i]); if (why) return no('有精灵不能放生（' + why + '）'); }
+    var exp = 0, pt = 0;
+    ms.forEach(function (m) { exp += relExp(m.lv); pt += relPt(m); });
+    a.mons = a.mons.filter(function (m) { return us.indexOf(m.u) < 0; });
+    if (a.home && Array.isArray(a.home.mons)) a.home.mons = a.home.mons.filter(function (x) { return us.indexOf(typeof x === 'number' ? x : x && x.u) < 0; });
+    if (a.spa && Array.isArray(a.spa.u)) a.spa.u = a.spa.u.map(function (u) { return us.indexOf(u) >= 0 ? null : u; });
+    a.exp = (a.exp || 0) + exp; var I = items(a); I.relPt = (I.relPt || 0) + pt;
+    return { ok: true, n: ms.length, exp: exp, pt: pt };
+  });
+
   /* ---------- 精灵保育仓：精元放进孵化槽，过一段时间孵化出精灵 ---------- */
   var NURSERY_N = 3;
   var HATCH = { e_odo: { sid: 'odo', lv: 1, min: 480 }, e_leafcat: { sid: 'leafcat', lv: 1, min: 480 }, e_pluto: { sid: 'pluto', lv: 1, min: 720 }, e_leiming: { sid: 'leiming', lv: 1, min: 480, shiny: 0.1 } };   // shiny：孵出异色的概率
@@ -413,7 +452,7 @@ var GROW = (function () {
     return { ok: true, want: want, give: give, today: had + give, cap: BRAWL_CAP, none: !!rec.none, r: rec.r, daily: dh };
   });
 
-  return { FORGE: FORGE, FORGE_Q: FORGE_Q, GX_KEYS: GX_KEYS, GX_IN: GX_IN, GX_OUT: GX_OUT, GX_SRC: GX_SRC, gxOut: gxOut, FARM_N: FARM_N, FARM_EXTRA_MAX: FARM_EXTRA_MAX, PLOT_PRICE: PLOT_PRICE, SEED_PRICE: SEED_PRICE, SEED_SHOP: SEED_SHOP, SEED_SHOP_MAX: SEED_SHOP_MAX, farmN: farmN, SEEDS: SEEDS, HELP_RW: HELP_RW, BRAWL_WIN: BRAWL_WIN, BRAWL_LOSE: BRAWL_LOSE, BRAWL_CAP: BRAWL_CAP, SPA_GAP: SPA_GAP, spaMons: spaMons, HOME_CAP_H: HOME_CAP_H, AUTO_DAYS: AUTO_DAYS, DAY_MS: DAY_MS, HATCH: HATCH, STORY_GIFT: STORY_GIFT, RANK_GIFT: RANK_GIFT, USE_ITEMS: USE_ITEMS, CAP_STEPS: CAP_STEPS, GEM_OF: GEM_OF, CAP_SID: CAP_SID, capGem: capGem, capNext: capNext, formLabel: formLabel, natText: natText,
+  return { REL_TIER: REL_TIER, REL_SHINY: REL_SHINY, REL_MAX: REL_MAX, relTier: relTier, relExp: relExp, relPt: relPt, relBlock: relBlock, starterU: starterU, FORGE: FORGE, FORGE_Q: FORGE_Q, GX_KEYS: GX_KEYS, GX_IN: GX_IN, GX_OUT: GX_OUT, GX_SRC: GX_SRC, gxOut: gxOut, FARM_N: FARM_N, FARM_EXTRA_MAX: FARM_EXTRA_MAX, PLOT_PRICE: PLOT_PRICE, SEED_PRICE: SEED_PRICE, SEED_SHOP: SEED_SHOP, SEED_SHOP_MAX: SEED_SHOP_MAX, farmN: farmN, SEEDS: SEEDS, HELP_RW: HELP_RW, BRAWL_WIN: BRAWL_WIN, BRAWL_LOSE: BRAWL_LOSE, BRAWL_CAP: BRAWL_CAP, SPA_GAP: SPA_GAP, spaMons: spaMons, HOME_CAP_H: HOME_CAP_H, AUTO_DAYS: AUTO_DAYS, DAY_MS: DAY_MS, HATCH: HATCH, STORY_GIFT: STORY_GIFT, RANK_GIFT: RANK_GIFT, USE_ITEMS: USE_ITEMS, CAP_STEPS: CAP_STEPS, GEM_OF: GEM_OF, CAP_SID: CAP_SID, capGem: capGem, capNext: capNext, formLabel: formLabel, natText: natText,
     itemFits: itemFits, jadeMoves: jadeMoves, formOpts: formOpts, evRoom: evRoom, applyMonItem: applyMonItem };
 })();
 if (typeof module !== 'undefined') module.exports = GROW;
