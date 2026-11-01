@@ -5805,9 +5805,13 @@
       return '<span>' + itemName(k) + ' <b>' + (acc.items[k] || 0) + '</b></span>';
     }).join('') + '</div>';
   }
+  // 2026-11-01：冶炼坊按种类分栏（一次只显示一个种类），不再列出持有的材料
+  var FORGE_CAT = [['cap', '捕捉装置', ['cap2', 'cap3']], ['med', '药剂', ['pot100', 'pot200', 'pp10', 'pp20', 'antidote']], ['ess', '精元', ['lcEssence']], ['tool', '道具', null], ['gx', '特产互换', []]];
+  function forgeCatOf(r) { for (var i = 0; i < FORGE_CAT.length; i++) if (FORGE_CAT[i][2] && FORGE_CAT[i][2].indexOf(r.id) >= 0) return FORGE_CAT[i][0]; return 'tool'; }   // 没归类的配方都算「道具」
   function renderForge() {
-    var stock = stockBar('采集物', GATHER_ORDER) + stockBar('作物', CROP_ORDER) + stockBar('精灵素材', MAT_ORDER);
-    var cards = FORGE.map(function (r) {
+    if (!FORGE_CAT.some(function (c) { return c[0] === ex.fgCat; })) ex.fgCat = 'cap';
+    var tabs = '<div class="fparts forge-tabs" role="tablist">' + FORGE_CAT.map(function (c) { var on = c[0] === ex.fgCat; return '<button type="button" role="tab" class="tab' + (on ? ' on' : '') + '" aria-selected="' + on + '" data-fgcat="' + c[0] + '">' + c[1] + '</button>'; }).join('') + '</div>';
+    var cards = ex.fgCat === 'gx' ? gxHTML() : FORGE.filter(function (r) { return forgeCatOf(r) === ex.fgCat; }).map(function (r) {
       var max = forgeMax(r), q = Math.max(1, Math.min(FORGE_Q, shopQty['fg-' + r.id] || 1));
       if (q > max && max > 0) q = max;
       var ok = max >= q;
@@ -5821,10 +5825,10 @@
         '<div class="si-buy"><span class="si-price">合成</span>' +
         '<div class="qty"><button type="button" class="btn ghost" data-fq="' + r.id + '|-1" aria-label="减少"' + (q <= 1 ? ' disabled' : '') + '>−</button><span aria-live="polite">' + q + '</span><button type="button" class="btn ghost" data-fq="' + r.id + '|1" aria-label="增加"' + (q >= Math.min(FORGE_Q, Math.max(1, max)) ? ' disabled' : '') + '>+</button></div>' +
         '<button type="button" class="btn primary" data-smelt="' + r.id + '"' + (ok ? '' : ' disabled') + '>' + (ok ? '合成' : '材料不足') + '</button></div></article>';
-    }).join('') + gxHTML();
+    }).join('');
     $('pg-explore').innerHTML = exHead('星砂合成加强捕捉装置，圣晶石合成华为捕捉装置，药草合成 hp药水，活力花卉炼成 pp药水，米饭盛成一碗饭，叶子喵的叶片凝成精元，圣晶石和星砂还能做形态切换装置，赫菲角片做奇声号角；各星球特产也能在这里互相转换。这些都不在商城出售。') +
       '<div class="crumb"><button type="button" class="btn ghost" id="forge-back">‹ 返回冶炼工坊</button><b>黄石 · 冶炼坊</b></div>' +
-      stock + '<div class="shop-grid">' + cards + '</div>';
+      tabs + '<div class="shop-grid">' + cards + '</div>';
   }
   function forgeCraft(id) {
     var r = forgeOf(id); if (!r) return;
@@ -6790,6 +6794,7 @@
     if (b.dataset.forge) { ex.view = 'forge'; ex.area = '黄石'; ex.planet = 'jingchu'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
     if (b.dataset.fq) { var fq = b.dataset.fq.split('|'), fr = forgeOf(fq[0]); if (fr && !b.disabled) { shopQty['fg-' + fq[0]] = Math.max(1, Math.min(FORGE_Q, (shopQty['fg-' + fq[0]] || 1) + +fq[1])); renderForge(); } return; }
     if (b.dataset.smelt) { forgeCraft(b.dataset.smelt); return; }
+    if (b.dataset.fgcat) { ex.fgCat = b.dataset.fgcat; renderForge(); return; }
     if (b.dataset.gxfrom) { ex.gxFrom = b.dataset.gxfrom; if (ex.gxTo === ex.gxFrom) ex.gxTo = null; shopQty.gx = 1; renderForge(); return; }
     if (b.dataset.gxto) { ex.gxTo = b.dataset.gxto; renderForge(); return; }
     if (b.dataset.gxq) { if (!b.disabled) { shopQty.gx = Math.max(1, Math.min(FORGE_Q, (shopQty.gx || 1) + +b.dataset.gxq)); renderForge(); } return; }
