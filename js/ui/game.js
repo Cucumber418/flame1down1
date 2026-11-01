@@ -4752,7 +4752,7 @@
       stopTimers(); ex.fighting = true; document.body.classList.add('story-fight'); syncBattle();
       if (ui.pre) ui.pre(); else $('pg-explore').hidden = true;
       $('pg-arena').hidden = false;
-      window.HSBATTLE.start({ S: r.S, remote: CLOUD.pve, foe: o.foe, diff: o.diff, bgm: o.bgm || null, bgmAt: o.bgmAt || null, back: ui.back || null, bg: ui.bg || null, corrupt: !!ui.corrupt, cuts: ui.cuts || null, stars: ui.stars || null, preEvs: r.pre || null, env: ui.env || null, wild: r.S.wild || null, onItem: useInv,
+      window.HSBATTLE.start({ S: r.S, seq: r.seq || 0, resume: !!r.resume, remote: CLOUD.pve, foe: o.foe, diff: o.diff, bgm: o.bgm || null, bgmAt: o.bgmAt || null, back: ui.back || null, bg: ui.bg || null, corrupt: !!ui.corrupt, cuts: ui.cuts || null, stars: ui.stars || null, preEvs: r.pre || null, env: ui.env || null, wild: r.S.wild || null, onItem: useInv,
         onSrvEnd: function (e) { endE = e; if (e && e.acc) adoptAcc(e.acc); },
         onEnd: function (res, seen, downs, quit, endS) {
           var e = endE || (endS && endS.srvEnd) || null;

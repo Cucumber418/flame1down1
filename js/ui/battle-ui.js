@@ -730,7 +730,7 @@
     // FaceTheEnemy（遇敌曲）只在剧情对话里遇敌前后用来渲染气氛（剧本行 bgm: 'faceEnemyScene'），进入战斗后不再放（2026-10-17）
     bgm(opt.bgm || 'normal');
     // opt.remote：由服务器结算的对战（2026-10-24，先驱之塔）。opt.S 是服务器开好的对战，出招都交给 opt.remote(body) 发给服务器
-    remote = opt.remote || null; rSeq = 0; srvEnd = opt.onSrvEnd || null;
+    remote = opt.remote || null; rSeq = opt.seq || 0; srvEnd = opt.onSrvEnd || null;   // seq：断点续打时接着上次的请求编号
     app.S = opt.S || newBattle(opt.p, opt.a); app.S.story = { foe: opt.foe, back: opt.back || null, diff: opt.diff || null };
     app.S.noLimit = true;   // 2026-10-24：所有 PVE（剧情、野外、BOSS、挑战、先驱之塔、茶室等）不限回合
     if (opt.items && !remote) app.S.items = opt.items;
@@ -752,6 +752,10 @@
     showTab('moves'); refreshCmd();
     window.scrollTo({ top: 0, behavior: 'smooth' });
     storyCuts = (opt.cuts || []).map(function (c) { return { hp: c.hp, lines: c.lines, done: false }; });
+    if (opt.resume) {   // 剧情对战断点续打（2026-11-01）：接着上次的进度，已经播过的插话不再播
+      var fr = app.S.sides[1].team[app.S.sides[1].active]; storyCuts.forEach(function (c) { if (fr && fr.hp <= c.hp) c.done = true; });
+      addLog('接着上次的进度继续对战（第 ' + app.S.turn + ' 回合）', 'turn'); drawStars(); afterTurn(); return;
+    }
     if (remote && opt.preEvs && opt.preEvs.length) prePlay(opt.preEvs); else if (opt.preStrike && !remote) preStrike();
     drawStars();
     if (app.S.sides[1].team.some(function (m) { return m.id === 'rosette'; })) nebulaReveal();   // 每次和玫瑰星云开战，先放「星云显现」（2026-11-01）
