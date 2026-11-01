@@ -3298,3 +3298,11 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .sum-gift { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 10px 0; padding: 10px 12px; border: 2px dashed #c9a227; border-radius: 12px; background: #fff8e1; }
 .sum-gift .it-ic { width: 36px; height: 36px; }
 .sum-gift span { flex: 1 1 200px; }
+/* 手机横屏模式（2026-11-01，js/ui/land.js） */
+.land-btn { display: none; }
+@media (pointer: coarse) { .land-btn { display: inline-flex; } }
+html.land .land-btn { display: inline-flex; }
+.land-btn.on { background: #23222b; color: #fff; }
+html.land-rot, html.land-rot body { overflow: hidden; height: 100%; }
+html.land-rot body { position: fixed; top: 0; left: 0; transform-origin: 0 0; overflow: hidden; }   /* 尺寸、zoom、旋转由 land.js 按屏幕算 */
+html.land-rot .sheet { height: 100%; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }   /* 转过来以后在 .sheet 里滚动，弹窗（挂在 body 上）始终在画面里 */
