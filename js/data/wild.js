@@ -49,7 +49,7 @@ var WILD_POOLS = {
   // 白之星（冰系）
   wh_snow: [
     { sid: 'frost', lv: [12, 18], w: 99.5, rate: 0.55, tag: '中等' },
-    { sid: 'wild', lv: [20, 20], w: 0.5, rate: 0.35, tag: '较低', rare: true }
+    { sid: 'wild', lv: [20, 20], w: 0, rate: 0.35, tag: '较低', rare: true }   // 2026-11-01：亚哆不再自然刷新（读完世界任务「冰封深处的小精灵？」后，冰原上偶尔会出现封着亚哆的冰块）
   ]
 };
 // 只在某个场景出现的精灵（按背景键）：和所在区域的野外表合在一起抽。w 按区域表总权重 100 来算，11.1 ≈ 这个场景里 10%
@@ -70,5 +70,5 @@ var WILD_REGIONS = [
   { id: 'pp_lava', planet: 'pompeii', name: '熔岩原', en: 'Lava Field', d: '熔浆汇成的大湖一眼望不到边，湖岸上是堆满熔渣的旧矿区。赫菲喜欢在热气里打盹。', pool: 'pp_lava', bgs: ['pp_lake', 'pp_slag'] },
   { id: 'pp_city', planet: 'pompeii', name: '饮火城', en: 'Firedrink City', d: '熔岩湖中央矗立着一座古老的堡垒，再往里走就是星球炙热的核心。赫菲在这里长得更壮实。', pool: 'pp_city', bgs: ['pp_fort', 'pp_core'] },
   { id: 'lt_belt', planet: 'laiting', name: '雷暴陨石群', en: 'Storm Belt', d: '大大小小的陨石在电弧里漂浮，到处噼啪作响。锰怪和雷元素在石头之间穿梭。', pool: 'lt_belt', bgs: ['lt_field', 'lt_jupiter'] },
-  { id: 'wh_snow', planet: 'white', name: '永冻冰原', en: 'Permafrost', d: '一望无际的白色冰原，风里夹着冰晶。铸冰者在冰面下游荡，传说还有一只很少露面的亚哆。', pool: 'wh_snow' }
+  { id: 'wh_snow', planet: 'white', name: '永冻冰原', en: 'Permafrost', d: '一望无际的白色冰原，风里夹着冰晶。铸冰者在冰面下游荡；据说冰层深处，还封着一些很少有人见过的小精灵。', pool: 'wh_snow', bgs: ['wh_snow', 'wh_ice'] }
 ];

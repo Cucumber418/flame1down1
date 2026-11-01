@@ -115,7 +115,7 @@ function saveAcc(u, acc) {
 // 开一场其他模式的对战
 function startMode(E, res, name, kind, u, acc, args) {
   delete args._helper; delete args._foes; delete args._owner; delete args._sp;
-  if (kind === 'wild' && args.travel == null && args.odo == null) {   // 野外：按编号取出服务器刷出来的那只（旅行精灵、保卫战的奥多亚克按时间表算，不用编号）
+  if (kind === 'wild' && args.travel == null && args.odo == null && !args.ice) {   // 野外：按编号取出服务器刷出来的那只（旅行精灵、保卫战的奥多亚克按时间表算，不用编号）
     var W = wildSp[name], sp = W && W.list[args.id | 0];
     if (!sp) return A.reply(res, 400, { error: '它已经离开了。' });
     delete W.list[args.id | 0]; args._sp = sp;

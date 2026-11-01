@@ -81,7 +81,7 @@ function clean(c) {
  * 返回 { data: 要保存的存档（enforce 模式下可能改过）, fixed: 修正说明（没改就是空） } */
 // 把塔的进度改回服务器上的（服务器那份没有的字段就删掉）
 // 只由服务器改的字段（「对象.字段」或整个顶层字段）：上传的存档里改了，悄悄改回服务器的
-var OWNED = ['tower.f', 'tower.cp', 'tower.best', 'tower.clears', 'tower.death', 'tower.day', 'bosses', 'permit', 'chal', 'mm.clr', 'mm.wins', 'cumberFt', 'npcWin', 'teaFight', 'purge', 'pwd', 'travel', 'kbw', 'kbwd', 'kbwK', 'kbwM', 'kbwS', 'rankExp', 'farm', 'nursery', 'home.mons', 'brawlExp', 'giftGot',
+var OWNED = ['tower.f', 'tower.cp', 'tower.best', 'tower.clears', 'tower.death', 'tower.day', 'bosses', 'permit', 'chal', 'mm.clr', 'mm.wins', 'cumberFt', 'npcWin', 'teaFight', 'purge', 'pwd', 'travel', 'kbw', 'kbwd', 'kbwK', 'kbwM', 'kbwS', 'iceH', 'rankExp', 'farm', 'nursery', 'home.mons', 'brawlExp', 'giftGot',
   'gather', 'mine', 'drill', 'jade', 'hornDay', 'herbSeed', 'xcq',   // 野外每日产出（js/engine/world.js，2026-10-25）
   'daily', 'quests', 'stats.wildWins',   // 每日任务、世界任务（js/engine/quest.js）
   'chapters', 'starter', 'rival', 'split8',   // 剧情（js/engine/story.js）；a.story 另外处理（storyFix）

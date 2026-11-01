@@ -840,7 +840,7 @@
     if (m.lv < BASE_CAP) return '';
     var nx = capNext(m), g = capGem(m), have = nx ? acc.items[nx.k] || 0 : 0;
     return '<div class="cap-box"><b>等级上限 LV' + capLv(m) + '</b>' +
-      (nx ? '<span class="hint">' + (CAP_SID[m.sid] ? form(m).name : USE_ITEMS[nx.k].gem + '系精灵') + '可以用「' + itemName(nx.k) + '」解锁更高的等级上限。</span><button type="button" class="btn' + (have >= nx.jade ? ' primary' : '') + '" data-lvcap="1"' + (have >= nx.jade ? '' : ' disabled') + '>用 ' + nx.jade + ' 个' + itemName(nx.k) + '解锁 LV' + nx.lv + ' 上限</button><span class="hint">' + itemName(nx.k) + '：' + fmt(have) + ' 个</span>'
+      (nx ? '<span class="hint">' + (CAP_SID[m.sid] ? form(m).name : USE_ITEMS[nx.k].gem + '系精灵') + '可以用「' + itemName(nx.k) + '」解锁更高的等级上限。</span><button type="button" class="btn' + (have >= nx.jade ? ' primary' : '') + '" data-lvcap="1"' + (have >= nx.jade && (acc.items.grail || 0) >= (nx.grail || 0) ? '' : ' disabled') + '>用 ' + nx.jade + ' 个' + itemName(nx.k) + (nx.grail ? ' + ' + nx.grail + ' 个圣杯' : '') + '解锁 LV' + nx.lv + ' 上限</button><span class="hint">' + itemName(nx.k) + '：' + fmt(have) + ' 个</span>'
         : '<span class="hint">' + (g ? '已经解锁到目前的最高上限 LV' + CAP_STEPS[CAP_STEPS.length - 1].lv + '，暂时无法再提高。' : '这只精灵目前最高 LV' + capLv(m) + '。提高等级上限的方法，以后会陆续开放。') + '</span>') + '</div>';
   }
   function flash(t) { var el = document.querySelector('.page:not([hidden]) .flash'); if (el) { el.textContent = t; el.classList.add('red'); } }
@@ -863,7 +863,8 @@
     g_sand: { name: '星砂', d: '从星球表面收来的矿砂，冶炼坊用来装配加强捕捉装置。', from: '芙罗拉星的丛林和草甸、坎伯兰星的水面、浅水区和深海区、庞贝星的熔岩原', n: 12 },
     g_core: { name: '圣晶石', d: '雷暴和永冻里凝出来的七彩晶石，10 颗可以合成一个华为捕捉装置。', from: '活动「明明教官的试炼」每关每个难度首次通过', n: 1 }
   };
-  var GATHER_ORDER = ['g_sand', 'g_core'];
+  GATHER_ITEMS.grail = { name: '圣杯', d: '通关一章主线时获得的金色圣杯。精灵 80 级以后，每突破 2 级等级上限，都要用掉 1 个圣杯。', from: '通关每一章主线（之前通关的已补发）', n: 1 };   // 2026-11-01
+  var GATHER_ORDER = ['g_sand', 'g_core', 'grail'];
   // 精灵素材：旅行精灵掉落的叶片，以及合成出来的精元（精元放进神农架 · 精灵保育仓孵化，见 NURSERY）
   var MATS = {
     m_lcleaf: { name: '叶子喵的叶片', d: '旅行精灵叶子喵身上掉下来的叶片，还带着一点光。5 片可以在冶炼坊合成叶子喵的精元。' },
@@ -1370,7 +1371,7 @@
     { id: 'kamble', name: '坎伯兰星', d: '水系星球。整颗星球都被海洋覆盖，从水面一直往下，是浅水区和深不见底的深海区。', sites: ['kb2', 'kb3', 'kb4', 'kb5', 'kb6', 'kb7', 'kb8'], storyIds: ['kb1', 'kb2', 'kb3', 'kb4', 'kb5', 'kb6', 'kb7', 'kb8'], storyEmpty: '第二章 · 坎伯兰星：读完第十一段「盐碱地之下」后，到荆楚号 · 随州 · 编钟通讯站开始。', wild: true, ptype: '水系星球', color: ['#8cc6ea', '#2a6fb0'], get img() { return 'images/planets/kamble_' + kbStage() + '.webp?v=2'; }, after: 'flora1' },
     { id: 'pompeii', name: '庞贝星', d: '火系星球。火山终年喷发，地面被熔岩烤得发烫。', sites: [], wild: true, ptype: '火系星球', color: ['#f2a46b', '#b3401f'], img: 'images/planets/pompeii.webp', after: 'flora1' },
     { id: 'laiting', name: '莱汀陨石带', d: '电系区域。无数陨石在雷暴中漂浮。', sites: [], wild: true, ptype: '电系陨石带', color: ['#f1dd73', '#7a6a1a'], belt: true, img: 'images/planets/laiting.webp', after: 'flora1' },
-    { id: 'white', name: '白之星', d: '冰系星球。离太阳最远，整颗星球都裹在冰雪里。', sites: [], wild: true, ptype: '冰系星球', color: ['#e4f2fa', '#6aa6c8'], after: 'flora1' },
+    { id: 'white', name: '白之星', d: '冰系星球。离太阳最远，整颗星球都裹在冰雪里。', sites: ['iceYado'], storyIds: ['iceYado'], storyEmpty: '读完第一章 · 芙罗拉星后开放世界任务「冰封深处的小精灵？」。', wild: true, ptype: '冰系星球', color: ['#e4f2fa', '#6aa6c8'], after: 'flora1' },
     { id: 'kongyan', name: '空岩星', d: '地面系和飞行系的星球。', sites: [], wild: true, ptype: '地面 · 飞行星球', color: ['#e2cfa8', '#8a6a45'], soon: true },
     { id: 'ivy', name: '常春藤前哨站', d: '常春藤在马亚尔星系的据点。', sites: [], ptype: '据点', ivy: true, soon: true }
   ];
@@ -1434,6 +1435,7 @@
     core: { name: '三峡能源核心', planet: 'jingchu', dept: '宜昌', chapter: '支线 · 三峡能源核心', side: true, bg: 'energy_core', spot: '三峡能源核心', d: '宜昌的能源核心主人日透骨消，好像有事要拜托新船员。读完后开放「星球采矿」：领挖矿钻头、挖矿、换能量。', after: 'board', pos: [32, 62] },
     spa: { name: '温泉生活区', planet: 'jingchu', dept: '咸宁', chapter: '支线 · 温泉疗养', side: true, bg: 'cabin_p', d: 'Vanber 发现荆楚号的咸宁居然藏着一片温泉疗养区，非要拉你去泡一泡。读完后开放「温泉疗养」。', after: 'flora1', pos: [30, 62] },
     plant: { name: '生态舱', planet: 'jingchu', dept: '恩施', chapter: '支线 · 伟大的种植园', side: true, bg: 'greenhouse_p', d: 'Threego 在地球上最爱种菜，被大家叫作「叶伯伯」。她把荆楚号生态舱的种植业研究了个遍，迫不及待地想带你参观。读完后开放「太空种植园」。', after: 'flora1', pos: [26, 62] },
+    iceYado: { name: '永冻冰原', planet: 'white', chapter: '世界任务 · 冰封深处的小精灵？', side: true, bg: 'wh_ice', d: '在基地里做了一个下雪的梦。第二天，Jager 上尉把你派去了白之星……', after: 'flora7' },   // 2026-11-01：读完第一章后开放
     barrenMys: { name: '地下实验室', planet: 'flora', chapter: '世界任务 · 荒芜的谜团？', side: true, bg: 'fl_lab', d: 'Cumber 的话让 Bttp 一直放不下心。和她一起回芙罗拉星，查一查荒芜的来历。', after: 'kb8' },   // 2026-11-01：读完第二章后开放
     travelcat: { name: '山毛榉林', planet: 'flora', chapter: '世界任务 · 旅行猫', side: true, bg: 'fl_beech', spot: '林子深处', d: '独自在芙罗拉星做调研的你，听见山毛榉林深处传来一阵打斗声……读完后，旅行精灵叶子喵会开始在各个星球出现。', after: 'flora2' },
     xiaogan: { name: '孝感大厅', planet: 'jingchu', dept: '孝感', chapter: '支线 · 孝感大厅', side: true, bg: 'xiaogan', d: '舰上切磋对战的地方。听说那里有个奇怪的家伙在等着新船员。读完后开放「竞技对战」。', after: 'board', pos: [50, 66] }
@@ -1460,6 +1462,7 @@
     ai: { name: function () { return '舰载广播'; }, color: '#2a7bd8' },
     mm: { name: function () { return '明明教官'; }, color: '#4a6a8a', tall: 1.0, img: 'mm' },   // 2026-10-24：暂定立绘
     tg: { name: function () { return '泰戈尔'; }, color: '#b0702a', tall: 0.92, spr: 'tagore' },
+    yd: { name: function () { return '亚哆'; }, color: '#5b8fb8', tall: 0.55, spr: 'wild', sprLv: 15 },   // 2026-11-01：冰层里救出来的亚哆
     kr: { name: function () { return '卡罗'; }, color: '#4f9159', tall: 0.55, spr: 'wind', sprLv: 3 },     // 戴上精灵翻译器之后能听懂的卡罗
     kl: { name: function () { return '卡莱'; }, color: '#3f6d3a', tall: 0.7, spr: 'kaleo', sprLv: 15 },
     lc: { name: function () { return '叶子喵'; }, color: '#5f9a3e', tall: 0.8, spr: 'leafcat', sprLv: 30 },   // 世界任务「旅行猫」里的叶子喵（戴着翻译器能听懂）
@@ -2510,6 +2513,23 @@
    * 在坎伯兰星 · 水面的「冥岛」场景吹响号角，场景里会来一只可以捕捉的塞米；和它进入战斗时号角用掉（没打就离开，号角还在）。 */
   var HORN = PVE.HORN;
   function hornMonIn(F, si) { return F.scenes[si] && F.scenes[si].slots.some(function (sl) { return sl.mon && sl.mon.horn && !sl.mon.out; }); }
+  // 白之星的冰块（2026-11-01）：每个场景 1% 概率出现，封着一只亚哆；出战配队里同时有草、火、水系精灵才能化开
+  function iceHTML(R, F, si) {
+    var sc = F.scenes[si]; if (!sc || !sc.ice) return '';
+    return '<button type="button" class="wf-node ice-node" data-iceblk="1" style="left:46%;top:72%"><img src="images/items/ice_ancient.webp" alt=""><span>封着精灵的冰块</span></button>';
+  }
+  function iceBreak(el) {
+    var R = regionById(ex.region), F = R && fields[R.id]; if (!F) return;
+    if (!teamHasType(['草', '火', '水'])) { toast('冰块冻得太结实了：出战配队里要同时有草系（提供燃料）、火系（点火）、水系（给冰里的精灵降温）精灵。'); return; }
+    if (!srvMode()) { toast('需要用服务器网址打开游戏并登录后才能化开冰块。'); return; }
+    var sc = F.scenes[F.scene], box = $('wf-scene'); if (el) el.disabled = true;
+    var fx = document.createElement('div'); fx.className = 'ice-melt'; fx.innerHTML = '<img src="images/items/ice_ancient.webp" alt=""><i class="im-fire"></i><i class="im-steam"></i><b>草系精灵铺好燃料，火系精灵点火，水系精灵在一旁给冰里的小精灵降温……</b>';
+    if (box) box.appendChild(fx);
+    setTimeout(function () {
+      sc.ice = false; stopField();
+      startWildRemote({ ice: 1 }, { sid: 'wild', lv: 20, bg: sc.bg || null, back: R.name, where: '白之星 · ' + R.name + ' · 冰封深处' });
+    }, 1900);
+  }
   function hornHTML(R, F, si) {
     var sc = F.scenes[si]; if (!sc || sc.bgKey !== HORN.bg || !(acc.items.m_horn > 0) || hornMonIn(F, si)) return '';
     return '<button type="button" class="wf-bowl put" data-horn="1"><span class="wf-bowl-ic" aria-hidden="true">📯</span><span>吹响奇声号角（' + acc.items.m_horn + '）</span></button>';
@@ -2861,7 +2881,7 @@
       if (fallen && !R.record) { bgs = bgs.map(floraBg); if (R.id === 'forest') bgs.push('fl_jungle_corrupt'); }   // 瘴气化之后：每个场景换成画了深紫色脉络的 *_mia 版本，丛林再多一张瘴气丛林
       var F = fields[rid] = { seq: 0, scene: Math.floor(Math.random() * n), scenes: [] };
       for (var i = 0; i < n; i++) {
-        var sc = { bgKey: bgs.length ? bgs[i % bgs.length] : '', bg: bgs.length ? BG[bgs[i % bgs.length]] : '', flip: i >= bgs.length && i % 2 === 1, corrupt: fallen && !/_mia$|_corrupt$/.test(bgs[i % bgs.length] || ''), slots: FIELD_SLOTS.map(function (s) { return { hx: s.hx, hy: s.hy, r: s.r, mon: null, next: 0 }; }) };
+        var sc = { ice: R.id === 'wh_snow' && prog('iceYado').done && Math.random() < 0.01, bgKey: bgs.length ? bgs[i % bgs.length] : '', bg: bgs.length ? BG[bgs[i % bgs.length]] : '', flip: i >= bgs.length && i % 2 === 1, corrupt: fallen && !/_mia$|_corrupt$/.test(bgs[i % bgs.length] || ''), slots: FIELD_SLOTS.map(function (s) { return { hx: s.hx, hy: s.hy, r: s.r, mon: null, next: 0 }; }) };
         sc.slots.forEach(function (sl) { sl.si = i; sl.bgKey = sc.bgKey; if (R.pool) fillSlot(R, F, sl, now, true); });
         F.scenes.push(sc);
       }
@@ -2902,7 +2922,7 @@
     var spareTip = R.pool && R.planet === 'flora' && spareActive() ? '<div class="spare-note"><span class="tape l"></span><b>主线任务 · 引出猎杀者</b>　手下留情：这些精灵不会倒下，体力剩 1 点时就会逃走，算作「假装击败」。已完成 <b>' + spareN() + ' / ' + SPARE_N + '</b>。</div>' : '';
     $('pg-explore').innerHTML = exHead(R.pool ? '点击场景里走动的精灵，就会和它开战。' : '这里没有野生精灵。点击场景里的BOSS就能挑战它。') +
       '<div class="crumb"><button type="button" class="btn ghost" id="field-back">‹ 返回' + esc(P.name) + '</button><b>' + esc(P.name) + ' · ' + esc(R.name) + '</b>' + (n > 1 ? '<span class="hint">场景 ' + (F.scene + 1) + ' / ' + n + (BG_NAME[sc.bgKey] ? ' · ' + BG_NAME[sc.bgKey] : '') + '</span>' : '') + '</div>' +
-      invLine() + spareTip + '<div class="wf-scene' + (sc.corrupt ? ' miasma-bg' : '') + '" id="wf-scene">' + bg + mons + gatherNodesHTML(R.id, F.scene, n) + jadeHTML(R.id, F.scene) + riceBowlHTML(R, F.scene) + oreHTML(R, F, F.scene) + hornHTML(R, F, F.scene) + travelHTML(R, F.scene) + kbwHTML(R, F.scene) + storyGatherHTML(R, F.scene) + fmNpcHTML(F, F.scene) + fieldBossHTML(R, F.scene) + nav + '</div>' +
+      invLine() + spareTip + '<div class="wf-scene' + (sc.corrupt ? ' miasma-bg' : '') + '" id="wf-scene">' + bg + mons + gatherNodesHTML(R.id, F.scene, n) + jadeHTML(R.id, F.scene) + riceBowlHTML(R, F.scene) + oreHTML(R, F, F.scene) + hornHTML(R, F, F.scene) + iceHTML(R, F, F.scene) + travelHTML(R, F.scene) + kbwHTML(R, F.scene) + storyGatherHTML(R, F.scene) + fmNpcHTML(F, F.scene) + fieldBossHTML(R, F.scene) + nav + '</div>' +
       (R.pool ? '<p class="hint">点左右两边的箭头可以切换场景。每只精灵在自己的一小片范围里走动，待一会儿就会离开，过一阵又会有新的精灵出现，各走各的。点中哪只，就和哪只对战；打完、抓到或逃走之后，这只离开，过一会儿会有新的一只补上。采集点固定在场景里，每个每天可以采集 1 次：芙罗拉、坎伯兰、庞贝采到星砂 ×12，莱汀和白之星采到圣晶石 ×1。' + (RICE.regions.indexOf(R.id) >= 0 ? '带着「一碗饭」来的话，可以在任意一个场景里放下它。' : '') + '</p>' : '');
     startFieldMove();
   }
@@ -3003,6 +3023,8 @@
         if (r.trav) msg.push('击败了旅行精灵叶子喵！获得累积经验 ×' + fmt(r.trav.exp) + (r.trav.leaf ? '，她留下了一片「叶子喵的叶片」' : '') + '。');
         if (r.psac) msg.push('它掉下了蘑菇毒囊 ×' + r.psac + '，已放入储存箱（加 5 个药草可以合成解毒药剂）。');
         if (r.horn) msg.push('它掉下了赫菲角片 ×' + r.horn + '，已放入储存箱（60 片可以合成奇声号角）。');
+        if (r.iceGot) msg.push('化开的冰块里凿下了远古冰块 ×' + r.iceGot + '，已放入储存箱。');
+        if (r.iceDrop) msg.push('它掉下了远古冰块 ×' + r.iceDrop + '，已放入储存箱（100 个可以让亚哆领悟隐藏技能）。');
         if (r.disk) msg.push('它掉下了星盘 ×' + r.disk + '，已放入储存箱（100 个可以让一只幽灵鱼一系领悟隐藏技能）。');
         if (r.bowl) msg.push('放在熔岩原的那碗米饭被吃得一粒不剩。');
         if (r.seeds) msg.push('它掉下了水稻种子 ×' + r.seeds + '，已放入储存箱。');
@@ -6425,6 +6447,7 @@
     { id: 'w_hunt', n: '荒野试炼', d: '多和野生精灵交手，伙伴们才会变强。', where: '芙罗拉星 · 丛林 / 草甸', steps: [{ t: '在芙罗拉星击败 10 只野生精灵', k: 'wins', n: 10 }], after: 'flora1', go: 'flora' },
     { id: 'w_kaleo', n: '丛林里的掠食者', d: '有人在丛林深处见过一只卡莱。它只在丛林出现，而且很少露面。', where: '芙罗拉星 · 丛林', steps: [{ t: '捕捉 1 只卡莱', k: 'own:kaleo', n: 1 }], after: 'flora1', go: 'flora' },
     { id: 'w_travel', n: '旅行猫', d: '叶子喵是芙罗拉星上很少见的精灵。听说最近有人在山毛榉林里见过一只……', where: '芙罗拉星 · 剧情', steps: [{ t: '读完芙罗拉星的剧情「旅行猫」', k: 'story:travelcat', n: 1 }], after: 'flora2', go: 'flora', fpart: 'story' },
+    { id: 'w_yado', n: '冰封深处的小精灵？', d: '白之星的冰层深处，好像有精灵的信号……', where: '白之星 · 剧情', steps: [{ t: '读完白之星的世界任务「冰封深处的小精灵？」', k: 'story:iceYado', n: 1 }], after: 'flora7', go: 'white', fpart: 'story' },
     { id: 'w_barren', n: '荒芜的谜团？', d: 'Cumber 说，芙罗拉星的瘴气是莠去津的变种。那只荒芜，到底是什么？', where: '芙罗拉星 · 剧情', steps: [{ t: '读完芙罗拉星的世界任务「荒芜的谜团？」', k: 'story:barrenMys', n: 1 }], after: 'kb8', go: 'flora', fpart: 'story' },
     { id: 'w_dex', n: '见习做题家', d: '黄冈秘鉴里亮起的页数越多，做题家就越受人尊敬。', where: '黄冈秘鉴', steps: [{ t: '在黄冈秘鉴中点亮 3 类精灵', k: 'lit', n: 3 }], after: 'academy', go: 'dex' }
   ];
@@ -6740,6 +6763,7 @@
     if (b.dataset.travel) { engageTravel(+b.dataset.travel); return; }
     if (b.dataset.kbw) { engageOdo(+b.dataset.kbw); return; }
     if (b.dataset.sgk) { storyGather(b.dataset.sgsite, b.dataset.sgk, b); return; }
+    if (b.dataset.iceblk) { iceBreak(b); return; }
     if (b.dataset.fmnpc) { fmNpcTalk(); return; }
     if (b.dataset.wfid) { engageField(+b.dataset.wfid); return; }
     if (b.dataset.wfnav) { fieldNav(+b.dataset.wfnav); return; }
@@ -6980,8 +7004,9 @@
       '<button type="button" class="btn primary" data-vn="pay"' + (ok ? '' : ' disabled') + '>交出</button></div>';
   }
   // 剧本里要求配队里有某种属性的精灵（needType）：没有就停在这里，调整配队后点「重新检查」继续
-  function teamHasType(t) { return (acc.teams[acc.active] || []).map(mon).filter(Boolean).some(function (m) { return SPMAP[m.sid] && SPMAP[m.sid].types.indexOf(t) >= 0; }); }
+  function teamHasType(t) { if (Array.isArray(t)) return t.every(teamHasType); return (acc.teams[acc.active] || []).map(mon).filter(Boolean).some(function (m) { return SPMAP[m.sid] && SPMAP[m.sid].types.indexOf(t) >= 0; }); }   // t 可以是数组：每种属性都要有
   function openNeedType(t) {
+    if (Array.isArray(t)) { var miss = t.filter(function (x) { return !teamHasType(x); }); t = miss.join('系、'); }
     var el = $('vn-pick'); el.hidden = false; $('vn-box').classList.add('wait');
     el.innerHTML = '<div class="vn-fight"><b>需要一只' + t + '系精灵</b><p>在当前出战配队（' + TEAM_NAME[acc.active] + '）里放一只' + t + '系精灵，再继续剧情。</p><p class="hint">可以先点右上角「退出」，到「精灵背包」调整配队，回来时会从这里接着读。</p><button type="button" class="btn primary" data-vn="needok">重新检查</button></div>';
   }
@@ -7112,7 +7137,7 @@
       if (a === 'replay') { startVN(ex.site, 'replay', ex.host, true); return; }
       if (a === 'next' && ex.arc && ex.arcQ && ex.arcQ[0] === b.dataset.nx) ex.arcQ.shift();
       if (a === 'next') { startVN(b.dataset.nx, 'replay', ex.host, prog(b.dataset.nx).done || !prog(b.dataset.nx).at); return; }
-      if (a === 'needok') { var nst = SCRIPT[ex.site][ex.i]; if (nst && nst.needType && !teamHasType(nst.needType)) { toast('出战配队里还没有' + nst.needType + '系精灵。'); return; } $('vn-pick').hidden = true; $('vn-box').classList.remove('wait'); next(); return; }
+      if (a === 'needok') { var nst = SCRIPT[ex.site][ex.i]; if (nst && nst.needType && !teamHasType(nst.needType)) { toast('出战配队里还没有' + [].concat(nst.needType).filter(function (x) { return !teamHasType(x); }).join('系、') + '系精灵。'); return; } $('vn-pick').hidden = true; $('vn-box').classList.remove('wait'); next(); return; }
       if (a === 'pay') {
         var pst = SCRIPT[ex.site][ex.i]; if (!pst || !pst.pay) return;
         if (paidOk(pst.pay)) { $('vn-pick').hidden = true; $('vn-box').classList.remove('wait'); next(); return; }

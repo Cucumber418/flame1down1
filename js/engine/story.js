@@ -45,7 +45,8 @@ var STY = (function () {
     core: { after: 'board' }, spa: { after: 'flora1' }, plant: { after: 'flora1' }, travelcat: { after: 'flora2' }, xiaogan: { after: 'board' },
     kb1: { after: 'flora7' }, kb2: { after: 'kb1' }, kb3: { after: 'kb2' }, kb4: { after: 'kb3' }, kb5: { after: 'kb4' }, kb6: { after: 'kb5' },
     kb8: { after: 'kb7' },
-    barrenMys: { after: 'kb8' },   // 2026-11-01：世界任务「荒芜的谜团？」   // 2026-11-01：第十九段 · 玫瑰之战（必须在码头击败玫瑰星云）
+    barrenMys: { after: 'kb8' },
+    iceYado: { after: 'flora7' },   // 2026-11-01：世界任务「冰封深处的小精灵？」（读完第一章后开放）   // 2026-11-01：世界任务「荒芜的谜团？」   // 2026-11-01：第十九段 · 玫瑰之战（必须在码头击败玫瑰星云）
     kb7: { after: 'kb6', need: function (a) { return (a.kbwK | 0) >= PVE.KBW.need || !!(a.story && a.story.kb7 && a.story.kb7.at > 0); } }   // 坎伯兰星保卫战：本账号累计击破 5 只奥多亚克   // 2026-10-31：第二章 · 坎伯兰星
   };
   function unlocked(a, site, env) { var S = SITES[site]; return !!S && (!S.after || done(a, S.after)) && (!S.need || S.need(a, env)); }
@@ -67,7 +68,7 @@ var STY = (function () {
       if (a.chapters && a.chapters[C.id]) return;
       if (!C.sites.every(function (s) { return done(a, s); })) return;
       if (!a.chapters) a.chapters = {}; a.chapters[C.id] = now;
-      give(a, RW.CHAPTER[C.id]); out.push(C.id);
+      give(a, RW.CHAPTER[C.id]); a.chapters[C.id + '_gr'] = now; out.push(C.id);   // 章节大奖里的圣杯（2026-11-01 起）记在 _gr
     });
     return out;
   }
@@ -98,6 +99,8 @@ var STY = (function () {
     MAIN.forEach(function (id) { var q = a.story && a.story[id]; if (!q || !q.done || !q.rewarded || q.core) return; q.core = 1; var I2 = items(a); I2.g_core = (I2.g_core || 0) + 1; out.items.g_core = (out.items.g_core || 0) + 1; });
     // 2026-11-01：第一章大奖新加了 10 个圣晶石，之前已经领过第一章大奖的补发（记在 chapters.ch1g）
     if (a.chapters && a.chapters.ch1 && !a.chapters.ch1g) { a.chapters.ch1g = now; var I3 = items(a); I3.g_core = (I3.g_core || 0) + 10; out.items.g_core = (out.items.g_core || 0) + 10; }
+    // 2026-11-01：每章通关送 1 个圣杯；之前就领过章节大奖的补发
+    CHAPTERS.forEach(function (C) { if (a.chapters && a.chapters[C.id] && !a.chapters[C.id + '_gr']) { a.chapters[C.id + '_gr'] = now; var I4 = items(a); I4.grail = (I4.grail || 0) + 1; out.items.grail = (out.items.grail || 0) + 1; } });
     out.chapters = chapterPay(a, now);
     out.chapters.forEach(function (id) { var R = RW.CHAPTER[id]; out.exp += R.exp || 0; out.energy += R.energy || 0; Object.keys(R.items || {}).forEach(function (k) { out.items[k] = (out.items[k] || 0) + R.items[k]; }); });
     return out;
@@ -125,6 +128,7 @@ var STY = (function () {
       var p2 = prog(a, site); if (!p2.gave) p2.gave = {};
       if (p2.gave[g.id]) return { ok: true, again: true };
       p2.gave[g.id] = 1; give(a, g);
+      if (g.mon) { var gm = ACC.giveMon(a, g.mon.sid, g.mon.lv, env); return { ok: true, g: g, u: gm.m.u, added: gm.added }; }   // 剧情里送精灵（世界任务「冰封深处的小精灵？」的亚哆）
       return { ok: true, g: g };
     }
     if (args.a === 'pay') {   // 剧本里写的 pay（每个存档只交一次）

@@ -3092,3 +3092,15 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .mm-txt ul { list-style: none; padding: 0; margin: 6px 0 0; display: grid; gap: 6px; }
 .mm-txt li { padding: 6px 10px; border: 1.5px dashed var(--rule); border-radius: 10px; background: #fffaf0; font-size: 13.5px; }
 @media (max-width: 560px) { .mm-por { grid-template-columns: 1fr; } .mm-frame { max-width: 240px; margin: 0 auto; } }
+
+/* 白之星的冰块（2026-11-01） */
+.wf-node.ice-node img { width: 58px; height: 58px; object-fit: contain; filter: drop-shadow(0 0 8px rgba(160, 220, 255, .9)); animation: iceGlow 2.4s ease-in-out infinite; }
+@keyframes iceGlow { 50% { filter: drop-shadow(0 0 16px rgba(200, 240, 255, 1)); transform: translateY(-3px); } }
+.ice-melt { position: absolute; inset: 0; z-index: 300; display: grid; place-items: center; background: rgba(15, 30, 50, .45); }
+.ice-melt img { width: 160px; animation: iceMelt 1.9s ease-in forwards; }
+.ice-melt .im-fire { position: absolute; width: 180px; height: 70px; top: calc(50% + 40px); left: calc(50% - 90px); border-radius: 50%; background: radial-gradient(ellipse at 50% 100%, #fff3b0, #ff9a3c 45%, rgba(255, 80, 30, 0) 70%); animation: fireUp 1.9s ease-in-out forwards; }
+.ice-melt .im-steam { position: absolute; width: 200px; height: 200px; top: calc(50% - 180px); left: calc(50% - 100px); border-radius: 50%; background: radial-gradient(circle, rgba(255, 255, 255, .8), rgba(255, 255, 255, 0) 65%); opacity: 0; animation: steam 1.9s ease-out forwards; }
+.ice-melt b { position: absolute; bottom: 12%; left: 8%; right: 8%; text-align: center; color: #fff; font-size: 14px; text-shadow: 0 1px 3px rgba(0,0,0,.8); }
+@keyframes iceMelt { 0% { transform: scale(1); opacity: 1; } 60% { transform: scale(1.04) translateY(4px); filter: brightness(1.3); } 100% { transform: scale(.6) translateY(30px); opacity: 0; } }
+@keyframes fireUp { 0% { transform: scaleY(.2); opacity: 0; } 30% { opacity: 1; } 100% { transform: scaleY(1.3); opacity: .2; } }
+@keyframes steam { 0%, 40% { opacity: 0; transform: translateY(20px) scale(.6); } 100% { opacity: .9; transform: translateY(-30px) scale(1.2); } }

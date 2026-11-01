@@ -941,6 +941,13 @@ var PVE = (function () {
         if (!q.p) { if (!a.kbw || a.kbw.h !== q.h || !Array.isArray(a.kbw.k)) a.kbw = { h: q.h, k: [] }; a.kbw.k.push(q.k); }   // 先遣的不记（输了可以再打）
         R = regionById(q.rid);
         o = { sid: 'odo', lv: q.m.lv, rate: 0, noCatch: true, odo: q.m, odoP: q.p ? q.k - 100 : null, foe: '坎伯兰星保卫战', tag: ' · ' + (q.p ? '先遣' : '') + q.m.n, rid: R.id };
+      } else if (args.ice) {   // 2026-11-01：白之星冰原上的冰块（封着亚哆）：击碎得 80～120 个远古冰块，然后和亚哆对战（可以捕捉）
+        var Rw = regionById('wh_snow'), T5 = ACC.team(a), ty = {}; T5.forEach(function (m) { (SPMAP[m.sid] ? SPMAP[m.sid].types : []).forEach(function (t) { ty[t] = 1; }); });
+        if (!Rw || !regionOpen(a, Rw) || !done(a, 'iceYado')) return { err: '冰块纹丝不动。' };
+        if (!(ty['草'] && ty['火'] && ty['水'])) return { err: '出战配队里要同时有草系、火系、水系精灵，才能化开冰块。' };
+        var hh = Math.floor(env.now / 3600000); if (a.iceH === hh) return { err: '冰块已经化开过了，过一会儿再来找找吧。' };
+        a.iceH = hh; var nIce = 80 + Math.floor(env.rand() * 41); ACC.addItems(a, { iceAncient: nIce });
+        R = Rw; o = { sid: 'wild', lv: 20 + Math.floor(env.rand() * 6), rate: 0.35, foe: '冰封的亚哆', tag: ' · 冰封深处', rid: R.id, ice: nIce };
       } else if (args.travel != null) {
         var t = travelAt(env.now);
         if (!done(a, 'travelcat') || !t.active || t.h !== (args.travel | 0)) return { err: '叶子喵已经背起行囊，去别的地方旅行了。' };
@@ -1001,6 +1008,8 @@ var PVE = (function () {
         if (a.kbwd.n < KBW.cap) { a.kbwd.n++; var kw = env.kbw ? env.kbw() : null; a.exp = (a.exp || 0) + KBW.exp; rep.kbw = { n: a.kbwd.n, cap: KBW.cap, exp: KBW.exp, me: a.kbwK, need: KBW.need, data: kw }; }
         else rep.kbw = { full: true, cap: KBW.cap, me: a.kbwK, need: KBW.need };
       }
+      if (o.rid === 'wh_snow' && n && env.rand() < 0.1) { var di = 10 + Math.floor(env.rand() * 11); ACC.addItems(a, { iceAncient: di }); rep.iceDrop = di; }   // 白之星的野怪：10% 掉 10～20 个远古冰块
+      if (o.ice) rep.iceGot = o.ice;
       if (o.travel && n) { var lf = env.rand() < TRAVEL.leaf; a.exp = (a.exp || 0) + TRAVEL.exp; if (lf) ACC.addItems(a, { m_lcleaf: 1 }); rep.trav = { exp: TRAVEL.exp, leaf: lf }; }
       if (o.sid === 'hephaestus' && n) { var hn = 0; downs.forEach(function () { hn += hornDrop(env.rand); }); ACC.addItems(a, { m_hfhorn: hn }); rep.horn = hn; }
       if (o.sid === 'mush' && n) { var ps = 0; downs.forEach(function () { if (env.rand() < 0.1) ps++; }); if (ps) { ACC.addItems(a, { m_psac: ps }); rep.psac = ps; } }   // 2026-10-27：玛西一族 10% 掉落蘑菇毒囊
