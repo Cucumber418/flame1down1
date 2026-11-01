@@ -4497,8 +4497,8 @@
       (bossOpen('odo') ? '<button type="button" class="btn" data-golog="boss-odo">去看看</button>' : '') + '</article>';
   }
   // 补偿大礼包（2026-10-28）：航行日志最上面，每人领一次，领完卡片消失（服务器结算：js/engine/tx.js 的 compGift）
-  function giftLogHTML() {
-    return ['base1', 'comp1'].map(function (id) {
+  function giftLogHTML(only) {
+    return (only ? [only] : ['base1', 'comp1']).map(function (id) {
       var G = TX.D.GIFTS[id]; if (!G || (acc.gifts && acc.gifts[id])) return '';
       var list = rwList({ exp: G.exp, energy: G.energy, items: G.items }).concat(Object.keys(G.deco || {}).map(function (k) { return '摆件「' + TX.D.BASE_DECO[k].n + '」×' + G.deco[k]; }));
       var intro = id === 'base1' ? '茶室升级成了「基地」！为了庆祝基地改版，送每位船员一套纪念摆件——三只初始精灵的小形态，镀了一层淡淡的金属光泽。领取后在基地点「编辑基地」就能摆出来；基地商城里也可以用 3,000 能量继续购买。' : '感谢各位船员的耐心！这份补偿每个账号都能领一次：';
@@ -4523,6 +4523,7 @@
     var E = [], add = function (t, h) { if (h) E.push({ t: t, h: h }); };
     var now = new Date(), on = mysteryTime();
     var wait = on ? '' : (function () { var t = new Date(now); t.setHours(MYSTERY.from, 0, 0, 0); var m = Math.max(0, Math.round((t - now) / 60000)); return '距离今天的活动开始还有 ' + Math.floor(m / 60) + ' 小时 ' + (m % 60) + ' 分钟'; })();
+    ['base1', 'comp1'].forEach(function (id) { var G0 = TX.D.GIFTS[id]; if (G0 && !(acc.gifts && acc.gifts[id])) add('限时领取-' + G0.name, giftLogHTML(id)); });   // 还没领的礼包放在最上面（领完自动消失）
     add('船员交流-QQ群', '<article class="log-card wide qq-card"><span class="tape l"></span><span class="tape r"></span><div class="qq-txt"><span class="chip log-tag">船员交流</span><h3>QQ 群：<b class="qq-no">' + QQ_GROUP + '</b></h3><p class="hint">攻略、组队切磋、bug 反馈、新精灵立绘抢先看，都在群里。</p></div><button type="button" class="btn primary" data-copyqq="1">复制群号</button></article>');
     add('新玩法-圣晶石召唤', summonLogHTML());
     add('限时活动-明明教官的试炼', mmLogHTML());
@@ -4533,7 +4534,7 @@
     add('获取精灵-爱吃米饭的米饭火鸡', riceLogHTML());
     add('精灵推荐-' + PICK.title, pickHTML());
     // 其他公告：标题按卡片里的类型标签和标题自动拼
-    [giftLogHTML(), monChangesHTML(), contestLogHTML(), odoLogHTML(), coreLogHTML(), '<article class="log-card ev"><span class="tape l"></span><span class="chip log-tag">限时活动</span><h3>神秘精灵出没</h3>' +
+    [monChangesHTML(), contestLogHTML(), odoLogHTML(), coreLogHTML(), '<article class="log-card ev"><span class="tape l"></span><span class="chip log-tag">限时活动</span><h3>神秘精灵出没</h3>' +
         '<p>每天 <b>16:00–24:00</b>，在星际探索的任何场景，都有 <b>3%</b> 的概率刷出一只神秘精灵！</p><p class="hint">它是什么？只有遇到过的人才知道。</p>' +
         '<p class="log-st ' + (on ? 'on' : '') + '">' + (on ? '活动进行中，今天 24:00 结束' : wait) + '</p></article>',       (function () {   // 困难泰戈尔上线：按玩家进度提示下一步（不剧透隐藏特效）
         var h = levelOpen('tiger', 2), won = bossWon('tiger', 2), tip = won ? '你已经击败了困难难度的泰戈尔，每周挑战已开放。' : h ? '在荆楚号 · 襄阳 · 古城防卫部挑战。' : bossWon('tiger', 1) ? '' : bossOpen('tiger') ? '先击败普通难度的泰戈尔，困难难度就会开放。' : '读完荆楚号 · 襄阳 · 古城防卫部的支线「东北来的泰戈尔」后，就能开始挑战泰戈尔。';
@@ -4549,7 +4550,7 @@
     return E;
   }
   function renderLog() {
-    var E = logEntries(), sel = E.filter(function (x) { return x.t === ui.logSel; })[0] ? ui.logSel : (E[1] || E[0]).t;   // 每次进入航行日志默认显示第二条
+    var E = logEntries(), sel = E.filter(function (x) { return x.t === ui.logSel; })[0] ? ui.logSel : (E.filter(function (x) { return x.t === '新玩法-圣晶石召唤'; })[0] || E[0]).t;   // 每次进入航行日志默认显示「新玩法-圣晶石召唤」
     ui.logSel = sel;
     $('pg-log').innerHTML = '<div class="page-head"><h2 class="sec">航行日志</h2><p class="hint">荆楚号的公告板：新玩法、限时活动、全服任务和更新公告。点左边的标题查看内容。</p></div>' +
       '<div class="log-split"><nav class="log-nav" role="tablist" aria-label="航行日志">' + E.map(function (x) { var p = x.t.split('-'), ty = p.length > 1 ? p.shift() : '', nm = p.join('-'), on = x.t === sel; return '<button type="button" role="tab" class="log-nv' + (on ? ' on' : '') + '" aria-selected="' + on + '" data-logsel="' + esc(x.t) + '">' + (ty ? '<small>' + esc(ty) + '</small>' : '') + '<b>' + esc(nm) + '</b></button>'; }).join('') + '</nav>' +
