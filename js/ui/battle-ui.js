@@ -957,22 +957,26 @@
     var trn = app.S && app.S.training, nol = trn || (app.S && app.S.noLimit);
     $('turnNo').textContent = nol ? sn.turn : Math.min(sn.turn, MAX_TURNS);
     var left = nol ? 999 : MAX_TURNS - sn.turn; $('turnMax').textContent = trn ? '训练 · 不限回合' : nol ? '不限回合' : left <= 0 ? '最后一回合' : '上限 ' + MAX_TURNS; $('turnMax').className = 'tmax' + (!trn && left <= 10 ? ' warn' : '');
+    // 多管体力（第十九段的玫瑰星云）：每管颜色不同，血条底色是下一管的颜色
+    function mbCls(sd) { var b = sd.bars; return 'hpbar' + (b ? ' mb mb' + b[0] + (b[0] < b[1] - 1 ? ' mbn' : '') : ''); }
+    function mbFill(sd) { return sd.bars ? ' nb' + sd.bars[0] : ''; }
+    function hpTxt(sd) { return sd.dummy ? '体力 ∞' : sd.hp + ' / ' + sd.maxhp + (sd.bars ? ' · 第 ' + (sd.bars[0] + 1) + '/' + sd.bars[1] + ' 管' : ''); }
     sn.sides.forEach(function (sd, i) {
       var pl = $('plate' + i);
       var html = '<span class="tape ' + (i ? 'r' : 'l') + '"></span>' +
         '<div class="row1"><span class="pn">' + esc(sd.name) + '</span>' + typeTips(sd, sn.sides[1 - i]) + statTip(sd, i === 1 && rankOn()) +
           (sd.id === 'rosette' && sd.ability.n === '星云' ? '<span class="abil" tabindex="0" aria-label="特性 未知">特性 · ？？？<span class="tip" role="tooltip"><b>特性 · ？？？</b>？？？</span></span>' : '<span class="abil" tabindex="0" aria-label="特性 ' + esc(sd.ability.n) + '：' + esc(sd.ability.d) + '">特性 · ' + esc(sd.ability.n) +
           '<span class="tip" role="tooltip"><b>特性 · ' + esc(sd.ability.n) + '</b>' + esc(sd.ability.d) + (sd.ability.extra ? '<span class="tipx">' + esc(sd.ability.extra) + '</span>' : '') + '<span class="tipx">当前是否生效，看血条下方状态栏里的特性</span></span></span>') + '<span class="who">' + esc(sd.dummy ? '训练木桩' : i ? (pvp ? pvp.foe : app.S && app.S.story ? app.S.story.foe + (app.S.story.diff ? ' · ' + app.S.story.diff : '') : '对手') : '你') + '</span></div>' +
-        '<div class="hpbar"><i class="' + hpClass(sd.hp, sd.maxhp) + '" style="width:' + (sd.hp / sd.maxhp * 100) + '%"></i></div>' +
-        '<div class="hprow"><span>' + (sd.dummy ? '体力 ∞' : sd.hp + ' / ' + sd.maxhp) + '</span><span class="pips">' +
+        '<div class="' + mbCls(sd) + '"><i class="' + hpClass(sd.hp, sd.maxhp) + mbFill(sd) + '" style="width:' + (sd.hp / sd.maxhp * 100) + '%"></i></div>' +
+        '<div class="hprow"><span>' + hpTxt(sd) + '</span><span class="pips">' +
         sd.team.map(function (t) { var hide = i === 1 && rankOn() && !t.seen; return '<span class="' + (hide ? 'unk' : t.fainted ? 'dead' : '') + (t.active ? ' cur' : '') + '" title="' + esc(hide ? '还没派出' : t.nick || SPMAP[t.id].name) + '">' + (hide ? '?' : '') + '</span>'; }).join('') + '</span></div>' +
         '<div class="chips">' + sd.chips.map(function (c) { return '<span class="chip sc ' + c.k + '" tabindex="0">' + esc(c.t) + (c.d ? '<span class="tip" role="tooltip"><b>' + esc(c.h || c.t) + '</b>' + esc(c.d) + '</span>' : '') + '</span>'; }).join('') + '</div>';
       // 只更新内容，保留血条动画：首次整块写入，之后逐项更新
       var pkey = sd.id + '|' + sd.types.join(',') + '|' + sn.sides[1 - i].id + '|' + sn.sides[1 - i].types.join(',');
       if (!pl.dataset.ready || pl.dataset.id !== pkey) { pl.innerHTML = html; pl.dataset.ready = '1'; pl.dataset.id = pkey; }
       else {
-        var bar = pl.querySelector('.hpbar i'); bar.style.width = (sd.hp / sd.maxhp * 100) + '%'; bar.className = hpClass(sd.hp, sd.maxhp);
-        pl.querySelector('.hprow > span').textContent = sd.dummy ? '体力 ∞' : sd.hp + ' / ' + sd.maxhp;
+        var bar = pl.querySelector('.hpbar i'); bar.style.width = (sd.hp / sd.maxhp * 100) + '%'; bar.className = hpClass(sd.hp, sd.maxhp) + mbFill(sd); pl.querySelector('.hpbar').className = mbCls(sd);
+        pl.querySelector('.hprow > span').textContent = hpTxt(sd);
         var pn = pl.querySelector('.pn'); if (pn && pn.textContent !== sd.name) pn.textContent = sd.name;   // 改名（比如泰戈尔复活后变成「热血·泰戈尔」）
         var tmp = document.createElement('div'); tmp.innerHTML = html;
         pl.querySelector('.pips').innerHTML = tmp.querySelector('.pips').innerHTML;

@@ -110,7 +110,7 @@ function aiChoose(S) {
   var banned = function (slot) { return (early && (slot.n === '自我崩坏' || slot.n === '元神崩坏')) || (healCd && M[slot.n] && M[slot.n].heal) || (noPctHeal && pctHeal(slot)); };   // healCd：回血技能隔这么多回合才能再用
   // 2026-10-24：BOSS奥多亚克（简单 / 普通）从第 2 回合起每 2 回合切换一次形态；困难难度三只是固定形态，不带形态技能
   if (me.boss && me.boss.neb) {   // 玫瑰星云（第十九段）：每 5 回合放一次强烈恒星风，其余回合用氢-α发射线
-    var want = S.turn % 5 === 0 ? '强烈恒星风' : '氢-α发射线', ni = me.moves.findIndex(function (slot) { return slot.n === want; });
+    var want = S.nebP3 != null && (S.turn - S.nebP3) % 5 === 0 ? 'O型星超温辐射' : S.turn % 5 === 0 ? '强烈恒星风' : '氢-α发射线', ni = me.moves.findIndex(function (slot) { return slot.n === want; });
     if (ni >= 0) return { kind: 'move', i: ni };
   }
   if (me.boss && me.id === 'odo' && S.turn >= 2 && S.turn % 2 === 0) {

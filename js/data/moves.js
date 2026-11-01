@@ -209,6 +209,7 @@ var M = {
   幽冥结界: { type: '暗影', cat: '变化', custom: 'halfPhys5', pp: 10, d: '5回合内受到物理伤害减半' },
   // 玫瑰星云专属（第十九段 · 码头决战，2026-11-01）
   强烈恒星风: { type: '暗影', cat: '特攻', power: 100, fixed: 100, tgtStage: { def: -3, spd: -3 }, pp: 10, d: '威力100，降低对方3级物防、特防，并附加100点固定伤害（玫瑰星云：开局释放，之后每5回合使用一次）' },
+  'O型星超温辐射': { type: '暗影', cat: '特攻', power: 80, custom: 'oStar', pp: 5, d: '威力80，同时对对方背包里所有精灵造成伤害（玫瑰星云第三管体力：每5回合使用一次）' },
   '氢-α发射线': { type: '暗影', cat: '特攻', power: 80, custom: 'randStatus', pp: 20, d: '威力80，50%几率让对方随机陷入一种异常状态' },
   黑雾潮汐: { type: '暗影', cat: '特攻', power: 65, hidden: true, custom: 'tide', pp: 10, d: '威力65，使用后从下回合起，连续4回合在每回合行动结束后额外发动一次【黑雾潮汐】' },
   混沌水域: { type: '水', cat: '变化', hidden: true, selfStage: { spa: 2 }, custom: 'chaosWater', pp: 10, d: '提升2级特攻，吸取对方1/5当前体力值' },

@@ -335,6 +335,8 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .hpbar { height: 14px; border: 1.5px solid var(--ink); border-radius: 99px; background: var(--paper); overflow: hidden; }
 .hpbar i { display: block; height: 100%; width: 100%; background: var(--hp-ok); transition: width .45s ease, background-color .3s; }
 .hpbar i.mid { background: var(--hp-mid); } .hpbar i.low { background: var(--hp-low); }
+.hpbar.mb i.nb0 { background: #e5688c; } .hpbar.mb i.nb1 { background: #9b5fd8; } .hpbar.mb i.nb2 { background: #d8442e; }   /* 多管体力（玫瑰星云） */
+.hpbar.mb0.mbn { background: #9b5fd8; } .hpbar.mb1.mbn { background: #d8442e; }
 .hprow { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-variant-numeric: tabular-nums; font-size: 13px; }
 .pips { display: flex; gap: 4px; }
 .pips span { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--ink); background: var(--hp-ok); }
