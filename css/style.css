@@ -3285,3 +3285,13 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
   .log-nv { flex: 0 0 auto; border-left: 0; border-bottom: 3px solid transparent; }
   .log-nv.on { border-bottom-color: #c42f3a; }
 }
+/* 航行日志：左右等高，左边标题栏用滚轮滚动，右边内容区也在框里滚动（2026-11-01） */
+.log-split { --log-h: min(560px, calc(100vh - 160px)); align-items: stretch; }
+.log-nav { position: static; height: var(--log-h); max-height: none; overscroll-behavior: contain; scrollbar-width: thin; }
+.log-view { height: var(--log-h); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; border-radius: 12px; }
+.log-view .log-sec { min-height: 100%; display: flex; flex-direction: column; }
+.log-view .log-sec[hidden] { display: none; }
+.log-view .log-sec > .log-card, .log-view .log-sec > .pt-card { flex: 1 0 auto; }
+@media (max-width: 760px) { .log-nav, .log-view { height: auto; } .log-view .log-sec { min-height: 0; } }
+.sum-log .next-art { background: radial-gradient(ellipse at 50% 60%, #3b6fd9 0%, #13235a 60%, #070b22 100%); }
+.sum-log .next-art img { filter: drop-shadow(0 0 14px rgba(190,140,255,.9)) !important; }
