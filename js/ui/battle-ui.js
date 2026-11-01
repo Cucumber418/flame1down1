@@ -163,6 +163,10 @@
     else if (shape === 'box') t = '<rect x="10" y="14" width="44" height="38" rx="6" fill="' + c + '"/><rect x="18" y="22" width="28" height="14" rx="3" fill="#e6f1ff"/>' + txt(48, 11, '#fff');
     return o + t + '</g></svg>';
   }
+  function insBadge(c, ch, lim) {   // 刻印徽章：六边形底座 + 中间一个字
+    return '<svg class="it-ic" viewBox="0 0 64 64" aria-hidden="true"><g stroke="#23222b" stroke-width="2.5" stroke-linejoin="round"><path d="M32 4 56 18v28L32 60 8 46V18z" fill="' + c + '"/><path d="M32 12 49 22v20L32 52 15 42V22z" fill="' + (lim ? '#fff8e1' : '#f4f6f8') + '" stroke-width="2"/>' +
+      (lim ? '<path d="M32 4l4 6h-8zM56 18l-2 7-5-5zM8 18l7 2-5 5z" fill="#fff4b0" stroke-width="1.5"/>' : '') + '</g><text x="32" y="40" text-anchor="middle" font-size="20" font-weight="700" fill="#23222b" font-family="sans-serif">' + ch + '</text></svg>';
+  }
   function itemIcon(k) {
     // 2026-10-25：活力花卉、药草、hp 药水、pp 药水换成像素小图；药水右下角的小标写着回复多少
     var PX = { exp: 'exp', energy: 'energy', c_flower: 'flower', c_herb: 'herb', pot100: ['hp_potion', '100'], pot200: ['hp_potion', '200'], pp5: ['pp_potion', '5'], pp10: ['pp_potion', '10'], pp15: ['pp_potion', '15'], pp20: ['pp_potion', '20'], m_psac: 'poison_sac', antidote: 'antidote', ev50: ['ev_potion', '50'], evAny: ['ev_potion', '100'] }[k];
@@ -186,8 +190,13 @@
     if (k === 'rename') return '<svg class="it-ic" viewBox="0 0 64 64" aria-hidden="true"><g stroke="#23222b" stroke-width="2.5" stroke-linejoin="round">' +
       '<rect x="8" y="14" width="48" height="36" rx="6" fill="#fbfaf3"/><path d="M8 24h48" /><rect x="14" y="31" width="14" height="13" rx="3" fill="#e8d080"/>' +
       '<path d="M33 34h16M33 41h10" stroke-linecap="round"/><path d="M44 50l12-12 4 4-12 12h-4z" fill="#c42f3a" stroke-width="2"/></g></svg>';
+    // 刻印（2026-11-01）：常规刻印是银色 / 金色的徽章，限定刻印按属性着色
+    if (typeof GROW !== 'undefined' && GROW.HATCH[k] && GROW.HATCH[k].sum && SPMAP[GROW.HATCH[k].sid]) return '<span class="it-ic it-ess' + (GROW.HATCH[k].sum === 'up' ? ' up' : '') + '"><img src="' + formImg(SPMAP[GROW.HATCH[k].sid], 0) + '" alt=""></span>';   // 召唤的精元：带光晕的一阶立绘
+    if (typeof SUMMON !== 'undefined' && SUMMON.INS[k]) { var Ik = SUMMON.INS[k], LC = { grass: '#4caf50', water: '#3b8fd9', fire: '#e8603c', elec: '#e8b830', ice: '#7fd3ef' }; return insBadge(Ik.lim ? LC[Ik.fx] : Ik.tier === 2 ? '#d9a62e' : '#9aa3ad', Ik.ch, !!Ik.lim); }
     // 2026-10-19：储存箱整理，各类道具补上图标（同一类用同一种形状，按颜色区分）
     var G = {
+      insChip: ['box', '#7b5ac8'], natRand: ['pill', '#c95fd0', '随'], phLeaf: ['leaf', '#7a3fa0'], fPt: ['coin', '#e86a8a', '友'], sumTok: ['coin', '#c9a227', '召'],
+      e_phantom: ['orb', '#8f4fd0', '精'], e_kaleo: ['orb', '#5d8a3c', '精'], e_leaf: ['orb', '#4caf50', '精'], e_squid: ['orb', '#3b8fd9', '精'], e_shroom: ['orb', '#e8603c', '精'], e_turkey: ['orb', '#d9773a', '精'], e_siren: ['orb', '#4aa8c8', '精'], e_hauris: ['orb', '#7b5ac8', '精'],
       floraJade: ['gem', '#4caf50'], kbDrop: ['drop', '#3b8fd9'], ppAsh: ['pile', '#7a5d4a', '#ff8a3d'], ltOrb: ['orb', '#f2c94c', '⚡'], whFrost: ['gem', '#9fe3f5'], earthShard: ['orb', '#3aa7a0', '🌏'],
       moonStone: ['moon', '#9b87e6'], boneDust: ['pile', '#d9d4c7', '#fff'], tgPearl: ['orb', '#f0a43a'], brTwig: ['twig', '#8b6b3f'], deathTok: ['coin', '#2b2a33', '死'],
       ivMoon: ['flask', '#e86fb2', '天'], ivBone: ['flask', '#b07ad9', '天'], ivReroll: ['flask', '#e86fb2', '重'], evAny: ['flask', '#d9534f', '学'], evTagore: ['flask', '#e08a2e', '学'],

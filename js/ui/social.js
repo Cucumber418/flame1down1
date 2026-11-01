@@ -61,6 +61,7 @@
   function load() {
     if (!online || loading) return;
     loading = true;
+    api('GET', '/api/fp-state').then(function (r) { if (r && r.ok) { st.fpSent = r.sent || null; st.fpOk = true; } }).catch(function () {});   // 2026-11-01：今天给好友送过经验没有
     api('GET', '/api/players').then(function (r) {
       loading = false;
       if (r._code !== 200) { st.err = r.error || '读取失败'; render(); return; }
@@ -106,6 +107,7 @@
         '<button type="button" class="btn ghost" data-home="' + esc(p.user) + '"' + (p.homeOpen ? '' : ' disabled title="对方还没有开放基地"') + '>基地' + (p.homeN ? ' · ' + p.homeN : '') + '</button>' +
         '<button type="button" class="btn' + (p.friend ? ' on' : '') + '" data-friend="' + esc(p.user) + '" aria-pressed="' + !!p.friend + '">' + (p.friend ? '★ 好友' : '＋ 加好友') + '</button>' +
         (p.friend && !p.noChar ? '<button type="button" class="btn dm-btn" data-dm="' + esc(p.user) + '">💬 私信' + (dmUnreadOf(p.user) ? '<i class="q-badge">' + dmUnreadOf(p.user) + '</i>' : '') + '</button>' : '') +
+        (p.friend && !p.noChar && st.fpOk ? '<button type="button" class="btn fp-gift" data-fpgift="' + esc(p.user) + '"' + (st.fpSent ? ' disabled title="' + (st.fpSent === p.user ? '今天已经送过 Ta 了' : '今天已经送过别的好友了') + '"' : ' title="送 Ta 10000 经验，双方各得 200 友情点（每天一次）"') + '>🎁 ' + (st.fpSent === p.user ? '已送' : '送经验') + '</button>' : '') +
         (canWatch(p) ? watchBtn(p) : '<button type="button" class="btn primary" data-fight="' + esc(p.user) + '"' + (canFight ? '' : ' disabled title="' + (p.noChar ? '对方还没有创建角色' : p.busy ? '对方正在对战中' + (p.friend ? '' : '，加为好友后可以观战') : '对方不在线') + '"') + '>切磋</button>')) +
       '</span></article>';
   }
@@ -335,6 +337,14 @@
         return;
       }
       if ((t = e.target.closest('[data-friend]'))) { toggleFriend(t.dataset.friend); return; }
+      if ((t = e.target.closest('[data-fpgift]'))) {   // 2026-11-01：给好友送经验（每天一次，双方各 200 友情点）
+        if (t.disabled) return; var gu = t.dataset.fpgift; t.disabled = true;
+        api('POST', '/api/fp-gift', { user: gu }).then(function (r) {
+          if (r._code !== 200) { A.toast(r.error || '没送出去'); t.disabled = false; return; }
+          st.fpSent = gu; render(); A.toast('已送给 @' + gu + ' 10000 经验！你们各得 200 友情点。'); if (window.HS_FPCLAIM) HS_FPCLAIM();
+        }).catch(function () { A.toast('连不上服务器'); t.disabled = false; });
+        return;
+      }
       if ((t = e.target.closest('[data-fight]'))) { if (!t.disabled) askFight(t.dataset.fight); return; }
       if ((t = e.target.closest('[data-watch]'))) { watchStart(t.dataset.watch); return; }
       if ((t = e.target.closest('[data-dm]'))) { dmOpen(t.dataset.dm); return; }

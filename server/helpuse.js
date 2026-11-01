@@ -58,6 +58,7 @@ A.use(function (req, res, url) {
     var p = d.pend[o.name] || (d.pend[o.name] = {}), r = p[me.name] || (p[me.name] = { name: '', n: 0 });
     r.name = dispName(me); r.n++;
     store(d);
+    try { require('./friendpt').helpFp(me.name, o.name); } catch (e) {}   // 2026-11-01：借助战双方各 +100 友情点
     A.reply(res, 200, { ok: true });
   });
   return true;

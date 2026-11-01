@@ -271,6 +271,7 @@ function chipsOf(m, foe) {
   if (m.fx.leiyin) c.push({ t: '引雷', k: 'st', h: '引雷', d: '下一次受到的伤害提升20%' });
   if (m.fx.sureHit && !m.fx.sureCrit) c.push({ t: '下次必中', k: 'fx', h: '下次必中', d: '下一次攻击必定命中' });
   if (m.perm && m.perm.melt) c.push({ t: '熔化 ×' + m.perm.melt, k: 'st', h: '熔化 · ' + m.perm.melt + ' 层', d: '受到的伤害提升 ' + m.perm.melt * 20 + '%（每层20%，最多5层），持续到战斗结束，换下场也不会消失' });
+  if (m.insFx && typeof SUMMON !== 'undefined') Object.keys(m.insFx).forEach(function (f) { var I = SUMMON.INS[m.insFx[f]]; if (I) c.push({ t: '刻印 · ' + I.name, k: 'fx on', h: '刻印 · ' + I.name, d: I.fd }); });   // 2026-11-01
   if (m.cbl) c.push({ t: 'Cumberland', k: 'fx on', h: 'Cumberland' + (m.cbl > 1 ? ' · 增幅' : ''), d: cblText(m.cbl) });   // 第十九段：Cumber 给的加成
   if (m.onlyHit) c.push({ t: '元素亲和', k: 'fx', h: 'BOSS · 元素亲和', d: '只有' + m.onlyHit.join('、') + '系技能才能命中它，其他属性的技能都会被挡下' });
   if (m.boss) BOSS_FX.forEach(function (f) {
@@ -408,6 +409,7 @@ function applyDamage(S, evs, j, amount, src, o) {
   o = o || {};
   var t = act(S, j); if (t.fainted || (t.boss && t.boss.broken)) return 0;
   if (t.cbl) amount = amount * (1 - 0.25 * t.cbl);   // Cumberland：受到的伤害减免 25%（增幅后 37.5%）
+  if (t.insFx && t.insFx.ice && src != null && src !== j && amount > 0 && RNG() < 0.2) { amount = Math.max(0, amount - 20); log(S, evs, nm(t) + '的刻印「肃穆之冰」减免了 20 点伤害', 'fxl'); }   // 2026-11-01
   var amt = Math.floor(amount), excess = 0;
   if (t.tm.cap > 0 && amt > 250 && src != null) { excess = amt - 250; amt = 250; }
   var willEx = 0; if (t.boss && t.boss.odoWill && amt > 200 && src != null && src !== j) { willEx = amt - 200; amt = 200; RV(t, 'odoWill'); }   // 护阵意志：单次受伤不超过 200，超出的反弹
@@ -425,6 +427,7 @@ function applyDamage(S, evs, j, amount, src, o) {
   amt = Math.min(t.hp, amt); t.hp -= amt; S.lastShown = shown;
   if (amt > 0 && t.st['睡眠'] > 0 && src != null) { delete t.st['睡眠']; log(S, evs, nm(t) + '被打醒了'); }
   E(S, evs, 'hit', { side: j, amount: shown, crit: o.crit, eff: o.eff, kind: o.eff === undefined && !o.crit ? 'fixed' : undefined });
+  if (t.insFx && t.insFx.water && src != null && src !== j && amt > 0 && !t.fainted && t.hp > 0 && !act(S, src).fainted && RNG() < 0.2) { var wk = RNG() < 0.5 ? { atk: -1 } : { spa: -1 }; log(S, evs, nm(t) + '的刻印「幽静之水」发动了', 'fxl'); changeStages(S, evs, src, wk, j); }   // 2026-11-01
   if (t.boss && t.boss.thorn && src != null && src !== j && amt > 0 && !act(S, src).fainted) { var th = Math.max(1, Math.floor(amt * 0.15)); RV(t, 'thorn'); loseHp(S, evs, src, th, nm(t) + '的「荆棘」反弹了 ' + th + ' 点伤害'); }
   if (excess > 0) {
     log(S, evs, nm(t) + '的龙之逆鳞把 ' + excess + ' 点伤害反馈给了对方！', 'fxl');
@@ -446,6 +449,7 @@ function applyDamage(S, evs, j, amount, src, o) {
 function heal(S, evs, i, amount) {
   var m = act(S, i); if (m.fainted || (m.boss && m.boss.broken)) return 0;
   if (m.tm.noHeal > 0) { if (Math.floor(amount) > 0 && m.hp < m.maxhp) log(S, evs, nm(m) + '处于禁疗状态，无法恢复体力', 'bad'); return 0; }
+  if (m.insFx && m.insFx.grass) amount *= 1.15;   // 刻印「灵魄之草」（2026-11-01）：恢复量 +15%
   var a = Math.min(m.maxhp - m.hp, Math.floor(amount));
   if (a <= 0) return 0;
   m.hp += a; E(S, evs, 'heal', { side: i, amount: a });
@@ -648,6 +652,7 @@ function resolveTurn(S, acts) {
   S.turnActed = [false, false]; S.silenced = [false, false]; S.order = [];
   S.sides.forEach(function (sd) { sd.team.forEach(function (m) { if (m.fx) m.fx.lateNow = 0; }); });   // 歼灭速率：「这回合被抢先出手」只算当回合
   log(S, evs, '第 ' + S.turn + ' 回合', 'turn');
+  [0, 1].forEach(function (i) { var em = act(S, i); if (!em.fainted && em.insFx && em.insFx.elec && RNG() < 0.2) { log(S, evs, nm(em) + '的刻印「迅疾之电」发动了', 'fxl'); changeStages(S, evs, i, { spe: 1 }); } });   // 2026-11-01
   if (S.turn === 1 && !S.ambushed) { S.ambushed = 1; var amb = act(S, 1); if (amb.boss && amb.boss.ambush && !act(S, 0).fainted) { RV(amb, 'ambush'); log(S, evs, nm(amb) + '使用了「突然袭击」！', 'use'); E(S, evs, 'use', { side: 1, move: '突然袭击', type: typesOf(amb)[0] }); applyDamage(S, evs, 0, amb.boss.ambush, null, {}); if (act(S, 0).fainted && !S.over) { checkOver(S, evs); } } }
   if (S.turn === 1 && !S.nebOpen) { var nb = act(S, 1); if (nb.boss && nb.boss.neb && !act(S, 0).fainted && M['强烈恒星风']) { S.nebOpen = 1; log(S, evs, nm(nb) + '一现身，就释放了恒星风暴！', 'crit'); useMove(S, evs, 1, M['强烈恒星风'], -1, true); checkOver(S, evs); if (S.over) { S.turn++; return evs; } } }   // 玫瑰星云：开局先放一次强烈恒星风
   if (acts[0].kind === 'item') { useItem(S, evs, 0, acts[0].key); S.turnActed[0] = true; if (S.over) { S.turn++; return evs; } }
@@ -871,6 +876,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
       else if (mv.custom === 'riceHits') hits = Math.min(15, rint(mv.hits[0], mv.hits[1]) + (me.perm.rice || 0));   // 非凡连击：每吃过一口米饭 +1 次
       else if (mv.hits[0] === 2 && mv.hits[1] === 5) { var r = RNG(); hits = r < 0.35 ? 2 : r < 0.7 ? 3 : r < 0.85 ? 4 : 5; }
       else hits = rint(mv.hits[0], mv.hits[1]);
+      if (me.insFx && me.insFx.fire && RNG() < 0.15) { hits++; log(S, evs, nm(me) + '的刻印「不息之火」：连击数 +1', 'fxl'); }   // 2026-11-01
     }
     for (var h = 0; h < hits && foe.hp > 0; h++) {
       var res = calcDamage(me, foe, mv, firstMover, false);
@@ -1055,6 +1061,7 @@ function doStatus(S, evs, i, mv) {
     log(S, evs, nm(me) + '想要闪避，却被' + nm(foe) + '的灵耳谛听听穿了！下一次受到的攻击威力翻倍', 'bad');
   }
   if (c === 'burnout' && !(foe.perm && foe.perm.melt > 0)) { log(S, evs, '但是对方没有熔化状态，技能失败了'); return; }
+  if (c === 'fold') { var fl = Math.floor(me.hp / 2); if (fl > 0) loseHp(S, evs, i, fl, nm(me) + '折叠了自己的生命，损失了 ' + fl + ' 点体力'); if (me.fainted) return; }   // 生命折叠（2026-11-01）：损失一半当前体力
   if (mv.selfCleanse) {   // 净化之焰：移除自身的异常状态
     if (hasStatus(me)) { for (var sk in me.st) if (ST_DESC[sk]) delete me.st[sk]; E(S, evs, 'stage', { side: i }); log(S, evs, nm(me) + '的火焰净化了自身的异常状态', 'fxl'); }
   }
@@ -1333,7 +1340,7 @@ function hqKO(S, evs, me, foe, mv) {
     唤潮之佑: !!(by['浪花'] && by['海浪']) && foe.stages.acc <= -3,
     戳刺: n === '至高剑锋' && !!(fu['盾墙'] || fu['坚不可摧'] || fu['勇猛盾击']),
     生命榨取: (q.h['幻境汲取'] || 0) >= me.maxhp * 0.5,
-    万灵封印: fu['生命遁迹'] > 0 && me.stages.spa >= 3 && me.stages.def >= 3 && me.stages.spd >= 3,
+    万灵封印: fu['生命折叠'] > 0 && me.stages.def >= 4 && me.stages.spd >= 4,   // 2026-11-01：生命遁迹改为生命折叠
     淬命之焰: n === '火焰车' && (me.fx.hqRaw || 0) > foe.maxhp,
     烈焰风暴: n === '烈焰云' && foe.st['烧伤'] > 0,
     余烬涅槃: Math.min(me.fx.fieldT || 0, foe.fx.fieldT || 0) >= 10

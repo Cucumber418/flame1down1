@@ -38,13 +38,15 @@ var GROW = (function () {
     formDev: { name: '形态切换装置', sid: null, kind: 'form', sd: '给一只精灵永久解锁一个可以切换的外观形态。', d: '黄石 · 冶炼坊用圣晶石和星砂合成的装置。用在一只精灵身上，给这只精灵永久解锁一个它已经长到过的更小形态的样子（比如让最终形态变回第一形态的样子）。解锁之后，在精灵资料的「外观形态」里，原本的形态和解锁过的形态之间随时免费切换。只改变外观，数值、技能都不变；每只精灵分开解锁。' },
     floraJade: { name: '芙罗拉玉', gem: '草', sd: '芙罗拉星的特产。可以让芙罗拉星的普通野生精灵领悟隐藏技能，也能提高草系精灵的等级上限。', sid: null, sids: ['mush', 'wind', 'kaleo'], kind: 'jade', cost: 100, d: '芙罗拉星深处凝成的绿色玉石。100 个可以让一只玛西露姆、六尾风王、卡莱奥丹一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能，不用再满足战斗里的领悟条件。隐藏技能要到 LV' + HIDDEN_MIN_LV + ' 才能装备。瘴气驱逐战的全服奖励会发放；芙罗拉星的丛林、草甸里，每天也有机会捡到少量。', none: '你还没有玛西露姆、六尾风王或卡莱奥丹（进化前的形态也算）。去芙罗拉星的丛林、草甸捕捉吧。' }
   };
+  USE_ITEMS.natRand = { name: '性格重置胶囊', sid: null, kind: 'natRand', sd: '把一只精灵的性格随机换成另一种。', d: '把你的任意一只精灵的性格随机换成另一种性格（不会和原来的一样）。圣晶石召唤获得。' };   // 2026-11-01
+  USE_ITEMS.phLeaf = { name: '魔化之叶', sid: null, sids: ['phantom'], kind: 'jade', cost: 100, sd: '叶粒魔种一系的专属道具。可以让幻境叶果领悟隐藏技能，也能提高它的等级上限。', d: '叶粒魔种一系的专属道具。100 个可以让一只叶粒魔种一系领悟一个隐藏技能，也用来提高幻境叶果的等级上限。召唤代币商店兑换。' };
   USE_ITEMS.iceAncient = { name: '远古冰块', sid: null, sids: ['wild'], kind: 'jade', cost: 100, sd: '亚哆一系的专属道具。可以让亚哆领悟隐藏技能，也能提高亚哆的等级上限。', d: '从白之星冰层深处凿下来的冰块，冻着比冰更古老的东西。100 个可以让一只亚哆一系领悟一个隐藏技能；也用来提高亚哆一系的等级上限。击碎封着亚哆的冰块时获得 80～120 个，击败白之星的野生精灵有 10% 几率掉落 10～20 个。' };   // 2026-11-01
   USE_ITEMS.mmEye = { name: '雷明之眼', sid: null, sids: ['leiming'], kind: 'jade', cost: 100, sd: '雷明灯一系的专属道具。100 个可以让一只雷明灯一系领悟一个隐藏技能。', d: '明明代币抽奖从第 5 个奖池起，每逢 5 的倍数的奖池里有 50 个。100 个可以让一只雷明灯一系（进化前的形态也可以）领悟一个还没领悟的隐藏技能。' };
   // 等级上限：喂经验最高到 LV70；用星球特产 / BOSS专属道具解锁到 75、80
   var CAP_STEPS = [{ lv: 75, jade: 500 }, { lv: 80, jade: 1000 }];
   for (var cl = 82; cl <= 100; cl += 2) CAP_STEPS.push({ lv: cl, jade: 500, grail: 1 });   // 2026-11-01：80 级以后每 2 级突破一次，要 500 个对应道具和 1 个圣杯
   var GEM_OF = { 草: 'floraJade', 水: 'kbDrop', 火: 'ppAsh', 电: 'ltOrb', 冰: 'whFrost' };
-  var CAP_SID = { tagore: 'tgPearl', barren: 'brTwig', odo: 'odoFin', wild: 'iceAncient', leaf: 'earthShard', squid: 'earthShard', shroom: 'earthShard', moon: 'moonStone', bone: 'boneDust' };
+  var CAP_SID = { tagore: 'tgPearl', barren: 'brTwig', odo: 'odoFin', wild: 'iceAncient', phantom: 'phLeaf', leaf: 'earthShard', squid: 'earthShard', shroom: 'earthShard', moon: 'moonStone', bone: 'boneDust' };
   function capGem(m) { if (CAP_SID[m.sid]) return CAP_SID[m.sid]; var t = SPMAP[m.sid] ? SPMAP[m.sid].types : []; for (var i = 0; i < t.length; i++) if (GEM_OF[t[i]]) return GEM_OF[t[i]]; return null; }
   function capNext(m) { var g = capGem(m); if (!g) return null; var c = ACC.capLv(m); for (var i = 0; i < CAP_STEPS.length; i++) if (CAP_STEPS[i].lv > c) return { lv: CAP_STEPS[i].lv, jade: CAP_STEPS[i].jade, grail: CAP_STEPS[i].grail || 0, k: g }; return null; }
   function formLabel(s, i) { var n = formRawName(s, i); return n ? n.replace('?', '') : s.name + '·' + stageLabel(s, i); }
@@ -82,6 +84,10 @@ var GROW = (function () {
       if (!Array.isArray(m.fu)) m.fu = []; m.fu.push(v); m.fs = v;
       I[k]--;
       return { ok: true, msg: '这只' + SPMAP[m.sid].name + '永久解锁了「' + formLabel(SPMAP[m.sid], v) + '」的样子，已经换上。以后在精灵资料的「外观形态」里随时免费切换。' };
+    }
+    if (it.kind === 'natRand') {   // 性格重置胶囊：随机换成另一种性格
+      var old0 = m.nat, L0 = ACC.NAT_KEYS.filter(function (x) { return x !== m.nat; }); m.nat = L0[Math.floor(rand() * L0.length)]; I[k]--;
+      return { ok: true, msg: name + ' 的性格从「' + old0 + '」变成了「' + m.nat + '」（' + natText(m.nat) + '）。' };
     }
     if (it.kind === 'nat') {
       if (!nat || !(nat in NATURES)) return no('先选一个性格。');
@@ -254,7 +260,7 @@ var GROW = (function () {
   function relTier(sid) {
     if (sid === 'wild') return 2;
     if (sid === 'odo') return -1;   // 2026-11-01：奥多亚克只能获得一只，不能放生
-    for (var hk in HATCH) if (HATCH[hk].sid === sid) return 2;
+    for (var hk in HATCH) if (HATCH[hk].sid === sid && HATCH[hk].sum !== 'rare') return 2;
     var t = -1, pools = typeof WILD_POOLS !== 'undefined' ? WILD_POOLS : {}, scene = typeof WILD_SCENE !== 'undefined' ? WILD_SCENE : {};
     Object.keys(pools).forEach(function (k) { pools[k].forEach(function (w) { if (w.sid === sid) t = Math.max(t, w.rare ? 1 : 0); }); });
     Object.keys(scene).forEach(function (k) { scene[k].forEach(function (w) { if (w.sid === sid) t = Math.max(t, 0); }); });
@@ -290,6 +296,9 @@ var GROW = (function () {
   /* ---------- 精灵保育仓：精元放进孵化槽，过一段时间孵化出精灵 ---------- */
   var NURSERY_N = 3;
   var HATCH = { e_odo: { sid: 'odo', lv: 1, min: 480 }, e_leafcat: { sid: 'leafcat', lv: 1, min: 480 }, e_pluto: { sid: 'pluto', lv: 1, min: 720 }, e_leiming: { sid: 'leiming', lv: 1, min: 480, shiny: 0.1 } };   // shiny：孵出异色的概率
+  // 2026-11-01 圣晶石召唤：当期 UP 精灵的精元（sum: 'up'，算珍贵）和稀有精灵的精元（sum: 'rare'，不改变这些精灵的稀有度）
+  HATCH.e_phantom = { sid: 'phantom', lv: 1, min: 480, sum: 'up' };
+  ['kaleo', 'leaf', 'squid', 'shroom', 'turkey', 'siren', 'hauris'].forEach(function (s) { HATCH['e_' + s] = { sid: s, lv: 1, min: 480, sum: 'rare' }; });
   function nurseryRec(a) { if (!a.nursery || !Array.isArray(a.nursery.slots)) a.nursery = { slots: [] }; while (a.nursery.slots.length < NURSERY_N) a.nursery.slots.push(null); return a.nursery; }
   // { a: 'put', i, k } / { a: 'hatch', i }
   TX.add('hatch', function (a, args, env) {

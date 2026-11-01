@@ -32,6 +32,7 @@ require('./cheatfix');   // 2026-10-22：找出改档的账号并恢复到改档
 require('./restore11');   // 2026-10-21：恢复 @11 被重置前的存档（只运行一次）
 require('./pwreset');   // 2026-10-25：一次性重置 Cucumber418 的密码
 require('./helpuse');   // 助战使用记录（上线领取奖励）
+require('./friendpt');   // 2026-11-01：友情点、好友送经验
 require('./dm');   // 私信   // BOSS攻略板（已通过的玩家、攻略、评分、点赞）
 var txs = require('./tx');   // 交易结算（商城、代币商店、抽奖……），规则在 js/engine/tx.js
 var pve = require('./pve');   // 单人对战由服务器结算（目前：先驱之塔），规则在 js/engine/pve.js

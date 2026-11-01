@@ -3124,3 +3124,99 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 /* 冶炼坊分栏（2026-11-01） */
 .forge-tabs { flex-wrap: wrap; margin: 6px 0 12px; }
 .forge-tabs .tab { padding: 6px 16px; }
+/* ---------- 刻印（2026-11-01） ---------- */
+.ins-box { margin: 10px 0; padding: 10px 12px; border: 1.5px solid var(--ink); border-radius: 10px; background: var(--paper); }
+.ins-head { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; margin-bottom: 8px; }
+.ins-head h4 { margin: 0; }
+.ins-slots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 640px) { .ins-slots { grid-template-columns: 1fr; } }
+.ins-slot { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-height: 64px; padding: 8px; border: 1.5px dashed #9aa3ad; border-radius: 10px; background: transparent; text-align: left; font: inherit; color: inherit; cursor: pointer; }
+.ins-slot.on { flex-direction: row; align-items: center; border-style: solid; border-color: var(--ink); background: #f7f9fb; }
+.ins-slot.on.lim { background: linear-gradient(135deg, #fffaf0, #f1ecff); }
+.ins-slot.lock { cursor: default; opacity: .75; }
+.ins-slot.lock .btn { margin-top: 4px; font-size: 12px; padding: 3px 8px; }
+.ins-slot span { font-size: 13px; color: var(--muted, #666); }
+.ins-ic .it-ic { width: 36px; height: 36px; }
+.ins-t { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.ins-t small { font-size: 12px; color: var(--muted, #666); line-height: 1.35; }
+.ins-chg { font-size: 12px; color: #c42f3a !important; white-space: nowrap; }
+.ins-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; max-height: 50vh; overflow: auto; margin: 8px 0; }
+.ins-opt { display: flex; gap: 8px; align-items: center; padding: 8px; border: 1.5px solid var(--ink); border-radius: 10px; background: #fff; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.ins-opt.lim { background: linear-gradient(135deg, #fffaf0, #f1ecff); }
+.ins-opt.armed { outline: 3px solid #c42f3a; }
+.ins-ok { color: #c42f3a; font-style: normal; font-size: 12px; }
+
+/* ---------- 召唤（2026-11-01） ---------- */
+.sum-banner { position: relative; overflow: hidden; display: flex; align-items: flex-end; min-height: 220px; margin: 4px 0 12px; padding: 16px 18px; border: 2px solid #c9a227; border-radius: 14px; color: #fff; box-shadow: 0 0 0 3px #23222b, 0 6px 18px rgba(0,0,0,.25); }
+.sum-banner.saint { background: radial-gradient(ellipse at 30% 40%, #3b6fd9 0%, #13235a 55%, #070b22 100%); }
+.sum-banner.friend { background: radial-gradient(ellipse at 70% 40%, #e8889a 0%, #8a3a5a 55%, #2a1020 100%); border-color: #f2c0cc; }
+.sum-banner .sb-glow { position: absolute; inset: 0; background: repeating-linear-gradient(115deg, rgba(120,200,255,.08) 0 2px, transparent 2px 28px), radial-gradient(circle at 75% 20%, rgba(255,255,255,.25), transparent 40%); pointer-events: none; }
+.sum-banner .sb-mon { position: absolute; right: 4%; bottom: -6%; height: 118%; max-width: 55%; object-fit: contain; filter: drop-shadow(0 0 18px rgba(170,120,255,.8)); }
+.sum-banner .sb-ins { position: absolute; right: 2%; top: 10px; display: flex; gap: 4px; }
+.sum-banner .sb-ins .it-ic { width: 30px; height: 30px; }
+.sum-banner .sb-pile { position: absolute; right: 4%; top: 50%; transform: translateY(-50%); display: grid; grid-template-columns: repeat(3, 56px); gap: 8px; }
+.sum-banner .sb-pile .it-ic { width: 52px; height: 52px; filter: drop-shadow(0 0 8px rgba(255,255,255,.6)); }
+.sum-banner .sb-txt { position: relative; max-width: 58%; text-shadow: 0 2px 4px rgba(0,0,0,.6); }
+.sum-banner h3 { margin: 2px 0 6px; font-size: 30px; letter-spacing: 2px; background: linear-gradient(180deg, #fff 30%, #ffd86b); -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: none; filter: drop-shadow(0 2px 2px rgba(0,0,0,.6)); }
+.sum-banner p { margin: 2px 0; font-size: 14px; }
+.sum-banner .sb-sub { font-size: 12px; opacity: .9; }
+.sb-kicker { display: inline-block; padding: 1px 10px; border-radius: 99px; background: #c42f3a; font-size: 12px; font-weight: 700; }
+@media (max-width: 640px) { .sum-banner .sb-txt { max-width: 64%; } .sum-banner h3 { font-size: 24px; } .sum-banner .sb-pile { grid-template-columns: repeat(2, 44px); } .sum-banner .sb-pile .it-ic { width: 40px; height: 40px; } }
+.sum-stat { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; margin: 0 0 12px; font-size: 14px; }
+.sum-stat > span { display: inline-flex; align-items: center; gap: 4px; }
+.sum-stat .it-ic { width: 22px; height: 22px; }
+.sum-btns { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+.sum-btn { flex: 1 1 180px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 10px; border: 2px solid #23222b; border-radius: 12px; background: linear-gradient(180deg, #5aa0f0, #2f63b8); color: #fff; font: inherit; cursor: pointer; box-shadow: 0 3px 0 #23222b; }
+.sum-btn b { font-size: 20px; letter-spacing: 2px; }
+.sum-btn small { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; }
+.sum-btn small .it-ic { width: 18px; height: 18px; }
+.sum-btn.ten { background: linear-gradient(180deg, #f0b84a, #c4801c); }
+.sum-btn.free { background: linear-gradient(180deg, #6fcf7a, #2f9a45); }
+.sum-btn:disabled { opacity: .45; cursor: not-allowed; }
+.sum-rates { margin: 0 0 16px; font-size: 13px; }
+.sum-rates summary { cursor: pointer; font-weight: 700; }
+.sum-rates ul { margin: 6px 0 0; padding-left: 20px; line-height: 1.6; }
+/* 召唤动画：召唤阵越转越快，最后爆出光（金光 = 稀有精灵，彩光 = 当期 UP） */
+.sum-anim { position: fixed; inset: 0; z-index: 3000; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(ellipse at 50% 60%, #0d2a5a 0%, #050a1c 60%, #000 100%); overflow: hidden; }
+.sum-anim::before { content: ''; position: absolute; inset: 0; background-image: radial-gradient(1px 1px at 10% 20%, #fff, transparent), radial-gradient(1px 1px at 30% 70%, #9fd8ff, transparent), radial-gradient(1.5px 1.5px at 70% 30%, #fff, transparent), radial-gradient(1px 1px at 85% 80%, #9fd8ff, transparent), radial-gradient(1px 1px at 55% 50%, #fff, transparent); background-size: 220px 220px; opacity: .7; }
+.sum-anim.fr { background: radial-gradient(ellipse at 50% 60%, #5a1a3a 0%, #1c0712 60%, #000 100%); }
+.sa-stage { position: relative; width: min(80vw, 460px); aspect-ratio: 1; perspective: 700px; }
+.sa-circle { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotateX(58deg); fill: none; stroke: #7fd6ff; stroke-width: 2.5; filter: drop-shadow(0 0 6px #4fb8ff) drop-shadow(0 0 16px #2a7fff); }
+.fr .sa-circle { stroke: #ffb3c8; filter: drop-shadow(0 0 6px #ff7fa8) drop-shadow(0 0 16px #ff4f8a); }
+.sa-circle text { fill: #bfeaff; stroke: none; font-size: 15px; text-anchor: middle; dominant-baseline: middle; }
+.sa-r1, .sa-r2, .sa-r3 { transform-origin: 200px 200px; }
+.sa-r1 { animation: saSpin 3s cubic-bezier(.55, 0, .9, .4) forwards; }
+.sa-r2 { animation: saSpinR 3s cubic-bezier(.55, 0, .9, .4) forwards; }
+.sa-r3 { animation: saSpin 3s cubic-bezier(.6, 0, 1, .3) forwards; }
+@keyframes saSpin { from { transform: rotate(0); } to { transform: rotate(2160deg); } }
+@keyframes saSpinR { from { transform: rotate(0); } to { transform: rotate(-1800deg); } }
+.sa-core { position: absolute; left: 50%; top: 50%; width: 30px; height: 30px; margin: -15px 0 0 -15px; border-radius: 50%; background: #fff; box-shadow: 0 0 30px 12px #6fc8ff, 0 0 80px 30px #2a7fff; animation: saCore 2.7s ease-in forwards; }
+.fr .sa-core { box-shadow: 0 0 30px 12px #ff9fbf, 0 0 80px 30px #ff4f8a; }
+@keyframes saCore { 0% { transform: scale(.2); opacity: .4; } 85% { transform: scale(1.6); opacity: 1; } 100% { transform: scale(3); opacity: 1; } }
+.sa-flash { position: fixed; inset: 0; opacity: 0; pointer-events: none; background: radial-gradient(circle, #fff 0%, #9fdcff 35%, rgba(42,127,255,0) 70%); }
+.sum-anim.gold .sa-flash { background: radial-gradient(circle, #fff 0%, #ffe08a 35%, rgba(255,170,0,0) 72%); }
+.sum-anim.up .sa-flash { background: radial-gradient(circle, #fff 0%, rgba(255,255,255,.6) 20%, transparent 72%), conic-gradient(#ff5a5a, #ffb84a, #fff35a, #5aff8a, #5ad8ff, #8a6aff, #ff5ad8, #ff5a5a); }
+.sum-anim.burst .sa-flash { animation: saFlash .8s ease-out forwards; }
+.sum-anim.gold.burst .sa-core { box-shadow: 0 0 40px 18px #ffd86b, 0 0 120px 50px #ffaa00; }
+.sum-anim.up.burst .sa-core { box-shadow: 0 0 40px 18px #ff7fd8, 0 0 120px 50px #7f8aff; animation: saCore 2.7s ease-in forwards, saHue .6s linear infinite; }
+@keyframes saFlash { 0% { opacity: 0; } 30% { opacity: 1; } 100% { opacity: .15; } }
+@keyframes saHue { to { filter: hue-rotate(360deg); } }
+.sum-anim.done .sa-stage { display: none; }
+.sa-res { position: relative; width: min(94vw, 760px); max-height: 86vh; overflow: auto; padding: 16px; border-radius: 14px; background: rgba(10, 20, 50, .82); border: 2px solid #7fd6ff; color: #fff; }
+.fr .sa-res { border-color: #ffb3c8; background: rgba(50, 10, 30, .82); }
+.sa-res h3 { margin: 0 0 12px; text-align: center; letter-spacing: 4px; }
+.sa-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 640px) { .sa-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.sa-card { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 6px; border-radius: 10px; background: linear-gradient(180deg, #2a3a5a, #18233a); border: 2px solid #8fa3c0; text-align: center; font-size: 12px; animation: saCard .45s ease-out both; }
+.sa-card .it-ic { width: 46px; height: 46px; }
+.sa-card.mid { border-color: #6fb8ff; }
+.sa-card.hi { border-color: #b08aff; background: linear-gradient(180deg, #3a2a6a, #1e1840); box-shadow: 0 0 12px rgba(176,138,255,.6); }
+.sa-card.gold { border-color: #ffd86b; background: linear-gradient(180deg, #6a4a10, #2a1c06); box-shadow: 0 0 16px rgba(255,200,80,.8); }
+.sa-card.up { border: 2px solid transparent; background: linear-gradient(180deg, #4a2a6a, #1a1030) padding-box, conic-gradient(#ff5a5a, #ffb84a, #fff35a, #5aff8a, #5ad8ff, #8a6aff, #ff5ad8, #ff5a5a) border-box; box-shadow: 0 0 22px rgba(255,140,255,.8); }
+.sa-card i { position: absolute; top: -8px; right: -6px; padding: 0 6px; border-radius: 99px; background: #c42f3a; font-style: normal; font-weight: 700; font-size: 11px; }
+@keyframes saCard { from { opacity: 0; transform: translateY(14px) scale(.9); } to { opacity: 1; transform: none; } }
+.sa-foot { display: flex; justify-content: center; margin-top: 14px; }
+.sa-skip { position: absolute; right: 16px; bottom: 16px; color: #fff; border-color: #fff; background: rgba(0,0,0,.3); }
+.it-ic.it-ess { display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; background: radial-gradient(circle, #fff8d0 0%, #ffd86b 45%, rgba(255,200,80,0) 72%); }
+.it-ic.it-ess.up { background: radial-gradient(circle, #fff 0%, #e8c8ff 40%, rgba(170,120,255,0) 72%); }
+.it-ic.it-ess img { width: 86%; height: 86%; object-fit: contain; }
