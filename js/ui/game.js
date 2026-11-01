@@ -5520,7 +5520,7 @@
         dailyHit('pve');
         if (r.res === 'win') {
           msg.push('通过了' + (fin ? '「明明的最终试炼」' : key + '系关卡（' + MM_DIFF[d].n + '）') + '！获得明明代币 ×' + r.tok + '。');
-          if (r.first) msg.push('首次通过奖励：明明代币 ×' + r.first.tok + '、累积经验 ×' + fmt(r.first.exp) + '、圣晶石 ×1。');
+          if (r.first) msg.push('首次通过奖励：明明代币 ×' + r.first.tok + '、累积经验 ×' + fmt(r.first.exp) + '、圣晶石 ×' + (r.first.core || 1) + '。');
         }
         msg = msg.concat(xpMsg(r.xp));
         save();
@@ -5565,8 +5565,8 @@
           msg.push('通过了' + (fin ? '「明明的最终试炼」' : key + '系关卡（' + MM_DIFF[d].n + '）') + '！获得明明代币 ×' + tok + '。');
           if (!R.clr[ck]) {
             R.clr[ck] = Date.now(); var F = fin ? MM_FINAL.first : MM_DIFF[d].first;
-            earn('mmFirst', ck, { exp: F.exp, items: { mmTok: F.tok, g_core: 1 } });
-            msg.push('首次通过奖励：明明代币 ×' + F.tok + '、累积经验 ×' + fmt(F.exp) + '、圣晶石 ×1。');
+            var gc = fin ? PVE.MM_CORE.fin : PVE.MM_CORE.lv; earn('mmFirst', ck, { exp: F.exp, items: { mmTok: F.tok, g_core: gc } });
+            msg.push('首次通过奖励：明明代币 ×' + F.tok + '、累积经验 ×' + fmt(F.exp) + '、圣晶石 ×' + gc + '。');
           }
           earn('mm', '', { items: it });
         }

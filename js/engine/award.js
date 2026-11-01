@@ -201,6 +201,14 @@ var AWD = (function () {
       send(a, { id: 'login-' + td, title: '每日登录奖励', body: '{name}，今天也欢迎登船！\n每天登录都能领取累积经验 ×' + fmt(LOGIN_EXP) + '，请领取附件。', att: { exp: LOGIN_EXP } }, now);
       a.loginDay = td;
     }
+    // 2026-11-01：明明教官的试炼首次通过的圣晶石改成每关 3 个、最终试炼 10 个（原来都是 1 个），之前通过的补发差额
+    if (!seen['mm-core'] && typeof PVE !== 'undefined' && PVE.MM_CORE) {
+      var C0 = PVE.MM_CORE, clr = (a.mm && a.mm.clr) || {}, nl = 0, nf = 0;
+      Object.keys(clr).forEach(function (k) { if (!(clr[k] < C0.at)) return; if (k === 'final') nf++; else nl++; });
+      var owe = nl * (C0.lv - 1) + nf * (C0.fin - 1);
+      if (owe > 0) send(a, { id: 'mm-core', from: '明明教官', title: '全息作战 · 圣晶石补发', body: '{name}，你好！\n全息作战（明明教官的试炼）每个关卡首次通过的奖励，圣晶石从 1 个提高到了 3 个，最终试炼提高到了 10 个。\n你之前已经首次通过了 ' + nl + ' 个关卡' + (nf ? '和最终试炼' : '') + '，这是补发的差额：圣晶石 ×' + owe + '，请领取附件。', att: { items: { g_core: owe } } }, now);
+      else a.mailSeen['mm-core'] = now;
+    }
     // 全服邮件（js/data/mail.js）
     (typeof MAILS !== 'undefined' ? MAILS : []).forEach(function (M0) {
       if (!M0 || !M0.id || seen[M0.id]) return;

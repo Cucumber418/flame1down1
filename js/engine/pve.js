@@ -554,6 +554,7 @@ var PVE = (function () {
     { n: '高难', lv: [75, 75, 75], tok: [60, 80], first: { tok: 80, exp: 50000 }, fx: [{ mmGift: 1, pp: 99 }, { mmGift: 1, pp: 99 }, { mmGift: 1, dr: 0.25, focus: 1, pp: 99 }], lv3: 80, hp3: 3500 }
   ];
   var MM_FINAL = { tok: [50, 60], first: { tok: 120, exp: 80000 } };
+  var MM_CORE = { lv: 3, fin: 10, at: Date.UTC(2026, 10, 1, 16, 0, 0) };   // 2026-11-01：首次通过送的圣晶石 1 → 每关 3、最终试炼 10；at 之前通过的在邮件里补差额（award.js）
   function mmDay(t) { return Math.floor((t - MM.start) / BJ_DAY); }
   function mmLive(t) { return t >= MM.start && t < MM.end; }
   function mmOpen(a, t) { return done(a, 'mmTrial') && mmLive(t); }
@@ -589,7 +590,7 @@ var PVE = (function () {
         R.wins = (R.wins || 0) + 1; ACC.addItems(a, { mmTok: tok }); rep.tok = tok;
         if (!R.clr[ck]) {
           R.clr[ck] = env.now; var F = fin ? MM_FINAL.first : MM_DIFF[c.d].first;
-          a.exp = (a.exp || 0) + F.exp; ACC.addItems(a, { mmTok: F.tok, g_core: 1 }); rep.first = { tok: F.tok, exp: F.exp };
+          a.exp = (a.exp || 0) + F.exp; ACC.addItems(a, { mmTok: F.tok, g_core: fin ? MM_CORE.fin : MM_CORE.lv }); rep.first = { tok: F.tok, exp: F.exp, core: fin ? MM_CORE.fin : MM_CORE.lv };
         }
       }
       rep.xp = lineXp(a, c, B, env);
@@ -1098,7 +1099,7 @@ var PVE = (function () {
   };
 
   return { MODES: MODES, RANK_EXP: RANK_EXP, RANK_EXP_N: RANK_EXP_N, RANK_TOKEN: RANK_TOKEN, rankState: rankState, rankApply: rankApply, newDraft: newDraft, readKey: readKey, regionById: regionById, regionOpen: regionOpen, floraFallen: floraFallen, regionFallen: regionFallen, sceneCount: sceneCount, rollShiny: rollShiny, rollWild: rollWild,
-    MYSTERY: MYSTERY, mysteryTime: mysteryTime, RICE: RICE, HORN: HORN, TRAVEL: TRAVEL, travelAt: travelAt, KBW: KBW, kbwAt: kbwAt, kbwOpen: kbwOpen, kbwFought: kbwFought, PURGE: PURGE, purgeRec: purgeRec, purgeActive: purgeActive, SPARE_N: SPARE_N, spareActive: spareActive, PW: PW, wildRoll: wildRoll, LEAF_ALLY: LEAF_ALLY, FIGHTS: FIGHTS, fightTeam: fightTeam, resolveFoeEntry: resolveFoeEntry, CUMBER: CUMBER, NPC_WIN_EXP: NPC_WIN_EXP, NPC_HOURS: NPC_HOURS, NPC_FROM: NPC_FROM, NPC_TO: NPC_TO, NPC_AI_RANK: NPC_AI_RANK, NPC: NPC, NPC_SECRET: NPC_SECRET, NPC_POOL: NPC_POOL, npcPlan: npcPlan, bjDay: bjDay, TEA_DAILY: TEA_DAILY, TEA_EXP: TEA_EXP, MM: MM, MM_NICK: MM_NICK, MM_TEAM: MM_TEAM, MM_TEAM_HARD: MM_TEAM_HARD, MM_DIFF: MM_DIFF, MM_FINAL: MM_FINAL, mmFoes: mmFoes, mmDay: mmDay, CHAL: CHAL, starOk: starOk, chalLevelOpen: chalLevelOpen, chalTotal: chalTotal, MM_HELPER: MM_HELPER, ONLY3: ONLY3, BOSSES: BOSSES, BOSS_CRY: BOSS_CRY, WEEKLIES: WEEKLIES, EWK: EWK, PERMIT: PERMIT, SECRET_FX: SECRET_FX,
+    MM_CORE: MM_CORE, MYSTERY: MYSTERY, mysteryTime: mysteryTime, RICE: RICE, HORN: HORN, TRAVEL: TRAVEL, travelAt: travelAt, KBW: KBW, kbwAt: kbwAt, kbwOpen: kbwOpen, kbwFought: kbwFought, PURGE: PURGE, purgeRec: purgeRec, purgeActive: purgeActive, SPARE_N: SPARE_N, spareActive: spareActive, PW: PW, wildRoll: wildRoll, LEAF_ALLY: LEAF_ALLY, FIGHTS: FIGHTS, fightTeam: fightTeam, resolveFoeEntry: resolveFoeEntry, CUMBER: CUMBER, NPC_WIN_EXP: NPC_WIN_EXP, NPC_HOURS: NPC_HOURS, NPC_FROM: NPC_FROM, NPC_TO: NPC_TO, NPC_AI_RANK: NPC_AI_RANK, NPC: NPC, NPC_SECRET: NPC_SECRET, NPC_POOL: NPC_POOL, npcPlan: npcPlan, bjDay: bjDay, TEA_DAILY: TEA_DAILY, TEA_EXP: TEA_EXP, MM: MM, MM_NICK: MM_NICK, MM_TEAM: MM_TEAM, MM_TEAM_HARD: MM_TEAM_HARD, MM_DIFF: MM_DIFF, MM_FINAL: MM_FINAL, mmFoes: mmFoes, mmDay: mmDay, CHAL: CHAL, starOk: starOk, chalLevelOpen: chalLevelOpen, chalTotal: chalTotal, MM_HELPER: MM_HELPER, ONLY3: ONLY3, BOSSES: BOSSES, BOSS_CRY: BOSS_CRY, WEEKLIES: WEEKLIES, EWK: EWK, PERMIT: PERMIT, SECRET_FX: SECRET_FX,
     wkKey: wkKey, recKey: recKey, bossRec: bossRec, bossWon: bossWon, levelOpen: levelOpen, wkOpen: wkOpen, weeklyOpen: weeklyOpen, wkNum: wkNum, ewkPool: ewkPool, ewkType: ewkType, ewkSid: ewkSid, ewkFoes: ewkFoes, ewkDrop: ewkDrop,
     permits: permits, seedSeenFx: seedSeenFx, chalStars: chalStars, myTeam: myTeam,
     TOWER: TOWER, twLv: twLv, twExp: twExp, twTok: twTok, twFloor: twFloor, seeded: seeded, foeMoves: foeMoves, storyMon: storyMon,
