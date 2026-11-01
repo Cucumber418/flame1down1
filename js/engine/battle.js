@@ -649,7 +649,7 @@ function resolveTurn(S, acts) {
   S.sides.forEach(function (sd) { sd.team.forEach(function (m) { if (m.fx) m.fx.lateNow = 0; }); });   // 歼灭速率：「这回合被抢先出手」只算当回合
   log(S, evs, '第 ' + S.turn + ' 回合', 'turn');
   if (S.turn === 1 && !S.ambushed) { S.ambushed = 1; var amb = act(S, 1); if (amb.boss && amb.boss.ambush && !act(S, 0).fainted) { RV(amb, 'ambush'); log(S, evs, nm(amb) + '使用了「突然袭击」！', 'use'); E(S, evs, 'use', { side: 1, move: '突然袭击', type: typesOf(amb)[0] }); applyDamage(S, evs, 0, amb.boss.ambush, null, {}); if (act(S, 0).fainted && !S.over) { checkOver(S, evs); } } }
-  if (S.turn === 1 && !S.nebOpen) { var nb = act(S, 1); if (nb.boss && nb.boss.neb && !act(S, 0).fainted && M['强烈恒星风']) { S.nebOpen = 1; RV(nb, 'bars'); log(S, evs, nm(nb) + '一现身，就释放了恒星风暴！', 'crit'); useMove(S, evs, 1, M['强烈恒星风'], -1, true); checkOver(S, evs); if (S.over) { S.turn++; return evs; } } }   // 玫瑰星云：开局先放一次强烈恒星风
+  if (S.turn === 1 && !S.nebOpen) { var nb = act(S, 1); if (nb.boss && nb.boss.neb && !act(S, 0).fainted && M['强烈恒星风']) { S.nebOpen = 1; log(S, evs, nm(nb) + '一现身，就释放了恒星风暴！', 'crit'); useMove(S, evs, 1, M['强烈恒星风'], -1, true); checkOver(S, evs); if (S.over) { S.turn++; return evs; } } }   // 玫瑰星云：开局先放一次强烈恒星风
   if (acts[0].kind === 'item') { useItem(S, evs, 0, acts[0].key); S.turnActed[0] = true; if (S.over) { S.turn++; return evs; } }
   [0, 1].forEach(function (i) { if (acts[i].kind === 'switch') doSwitch(S, evs, i, acts[i].to, true); });
   // BOSS「瘴毒傀儡」：占用BOSS这一回合，下场并召唤傀儡
@@ -1362,7 +1362,6 @@ var BOSS_FX = [
   { k: 'rainbow', t: '虹霓暴走', h: '虹霓暴走', d: function () { return '物攻、特攻提升 50%。对你每累计造成 1000 点伤害（不计溢出）就爆破一次：自身损失 500 体力，并对你造成 500 点固定伤害'; } },
   { k: 'odoSwap', t: '形态切换', h: '形态切换', d: function () { return '歼灭形态和护阵形态每 2 回合主动切换一次；两种形态都被击败后，化为虹霓暴走'; } },
   { k: 'stRes', t: '稀薄粒子', h: '稀薄粒子', nm: function (m) { return m.id === 'rosette' ? '稀薄粒子' : '异常抗性'; }, d: function (m) { return '异常状态造成的持续伤害只有原来的 ' + Math.round((1 - m.boss.stRes) * 100) + '%（寄生被吸走的体力也一样）；异常状态本身照常生效'; } },
-  { k: 'bars', t: '三管体力', h: '三管体力', d: function (m) { return '体力分为 ' + m.boss.bars.length + ' 管（血条颜色不同），当前是第 ' + ((m.boss.bar || 0) + 1) + ' 管。每击破一管，溢出的伤害不会生效，下回合自动换上下一管'; } },   // 玫瑰星云（第十九段）
   { k: 'cl', t: '疏散星团', h: '疏散星团', nm: function (m) { return CL_NAME[m.boss.bar || 0]; }, d: function (m) { return CL_DESC[m.boss.bar || 0]; } },
   { k: 'dust', t: '尘埃柱', h: '尘埃柱', d: function () { return '每回合结束时有 30% 的概率让对方陷入混乱 2 回合（攻击时有 40% 的概率攻击自己）'; } },   // 玫瑰星云（第十九段）
   { k: 'bok', t: '博克球状体', h: '博克球状体', d: function (m) { return m.boss.bokUsed ? '已经发动过了' : '体力低于 2000 时，恢复 500 体力并对对方造成 200 点固定伤害（只发动一次）'; } },
@@ -1587,11 +1586,16 @@ function nebCumber(S, evs) {
         var had = 0; for (var sk in pm.st) if (pm.st[sk] > 0 && ST_DESC[sk]) { delete pm.st[sk]; had++; }
         if (pm.fx) delete pm.fx.poison;
         if (had) log(S, evs, nm(pm) + '身上的异常状态都被冲走了', 'good');
-        E(S, evs, 'stage', { side: 0 }); heal(S, evs, 0, 200);
+        heal(S, evs, 0, 200);
+        pm.tm.immune = Math.max(pm.tm.immune || 0, 2); log(S, evs, nm(pm) + '被净化之水包裹，2 回合内免疫异常状态', 'good'); E(S, evs, 'stage', { side: 0 });   // 2026-11-01：戈耳贡另送 2 回合异常免疫
       }
     } else {
       E(S, evs, 'scene', { side: 0, lines: [['cb', '坎克托斯啊，冲散你的敌人吧！']] }); log(S, evs, 'Cumber：坎克托斯啊，冲散你的敌人吧！', 'crit');
       applyDamage(S, evs, 1, 500, null, {});
+      if (!nb.fainted && !nb.boss.broken) {   // 2026-11-01：坎克托斯另外随机降低星云双攻双防中的两项各 1 级
+        var pool = ['atk', 'spa', 'def', 'spd'], dn = {}; for (var q = 0; q < 2; q++) dn[pool.splice(Math.floor(RNG() * pool.length), 1)[0]] = -1;
+        changeStages(S, evs, 1, dn, 0); E(S, evs, 'stage', { side: 1 });
+      }
     }
   }
 }
