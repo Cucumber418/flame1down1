@@ -3246,3 +3246,25 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .sa-core { width: 44px; height: 44px; margin: -22px 0 0 -22px; }
 @media (max-width: 640px) { .sum-banner.saint { padding-top: 168px; } .sum-banner .sb-cast { height: 150px; top: 8px; } .sum-banner .sb-c { height: 150px; } .sum-banner.saint .sb-ins { display: none; } .sum-banner .sb-side { gap: 0; } }
 .sa-stage { width: min(96vw, 860px, 105vh); }
+/* 圣晶石召唤横幅 v3（2026-11-01）：上半身特写 + 错落的陪衬 + 光芒 */
+.sum-banner.saint { min-height: 310px; padding-top: 200px; }
+.sum-banner .sb-rays { position: absolute; left: 50%; top: 130px; width: 900px; height: 900px; margin: -450px 0 0 -450px; background: repeating-conic-gradient(rgba(190,160,255,.22) 0deg 6deg, transparent 6deg 18deg); -webkit-mask: radial-gradient(circle, #000 0%, rgba(0,0,0,.6) 30%, transparent 62%); mask: radial-gradient(circle, #000 0%, rgba(0,0,0,.6) 30%, transparent 62%); animation: sbRays 60s linear infinite; pointer-events: none; }
+@keyframes sbRays { to { transform: rotate(360deg); } }
+.sum-banner .sb-c { position: absolute; left: 50%; top: -46px; height: 580px; max-width: none; transform: translateX(-50%); z-index: 3; filter: drop-shadow(0 0 26px rgba(200,150,255,.95)); animation: sbBreath 6s ease-in-out infinite; pointer-events: none; }
+@keyframes sbBreath { 0%, 100% { transform: translateX(-50%) translateY(0) scale(1); } 50% { transform: translateX(-50%) translateY(-6px) scale(1.015); } }
+.sum-banner .sb-s { position: absolute; width: var(--sz); height: var(--sz); object-fit: contain; z-index: 2; transform: rotate(var(--rot)); filter: drop-shadow(0 0 8px rgba(120,190,255,.75)); animation: sbFloat 4.5s ease-in-out infinite; pointer-events: none; }
+.sum-banner .sb-s.back { z-index: 1; opacity: .7; filter: blur(.8px) drop-shadow(0 0 6px rgba(120,190,255,.5)); }
+@keyframes sbFloat { 0%, 100% { translate: 0 0; } 50% { translate: 0 -8px; } }
+.sum-banner .sb-spark { position: absolute; width: 6px; height: 6px; border-radius: 50%; background: #fff; box-shadow: 0 0 8px 3px rgba(190,220,255,.9); z-index: 2; animation: sbTw 2.4s ease-in-out infinite; pointer-events: none; }
+@keyframes sbTw { 0%, 100% { opacity: 0; transform: scale(.4); } 50% { opacity: 1; transform: scale(1); } }
+.sum-banner .sb-band { position: absolute; left: 0; right: 0; bottom: 0; height: 130px; z-index: 4; background: linear-gradient(180deg, transparent, rgba(5,10,35,.85) 55%); pointer-events: none; }
+.sum-banner.saint .sb-txt { z-index: 5; }
+.sum-banner.saint .sb-ins { z-index: 5; }
+.sum-banner .sb-cast { display: none; }
+@media (max-width: 640px) {
+  .sum-banner.saint { min-height: 280px; padding-top: 170px; }
+  .sum-banner .sb-c { height: 400px; top: -24px; }
+  .sum-banner .sb-s { width: calc(var(--sz) * .55); height: calc(var(--sz) * .55); }
+  .sum-banner .sb-rays { top: 110px; }
+}
+@media (max-width: 640px) { .sum-banner .sb-c { height: 340px; top: -10px; } .sum-banner .sb-s:not(.back) { z-index: 4; } }
