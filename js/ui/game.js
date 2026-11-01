@@ -4386,7 +4386,7 @@
   }
   var QQ_GROUP = '1124145809';   // 航行日志最上方显示的船员 QQ 群
   $('pg-log').addEventListener('click', function (e) {
-    var gb = e.target.closest('[data-gift]'); if (gb && !gb.disabled && ready()) { gb.disabled = true; txRun('compGift', { id: gb.dataset.gift }, function () { toast(gb.dataset.gift === 'base1' ? '领取了基地改版纪念礼包！三个纪念摆件已经放进基地的摆件库。' : '领取了补偿大礼包！经验已放进经验背包，道具已放入储存箱。'); renderRes(); renderLog(); }, function () { gb.disabled = false; }); return; }
+    var gb = e.target.closest('[data-gift]'); if (gb && !gb.disabled && ready()) { gb.disabled = true; txRun('compGift', { id: gb.dataset.gift }, function () { toast(gb.dataset.gift === 'sum1' ? '领取了召唤上线纪念：圣晶石 ×30！去荆楚号的「召唤」试试手气吧。' : gb.dataset.gift === 'base1' ? '领取了基地改版纪念礼包！三个纪念摆件已经放进基地的摆件库。' : '领取了补偿大礼包！经验已放进经验背包，道具已放入储存箱。'); renderRes(); renderLog(); }, function () { gb.disabled = false; }); return; }
     if (!e.target.closest('[data-copyqq]')) return;
     var done = function () { toast('群号 ' + QQ_GROUP + ' 已复制，打开 QQ 搜索加群即可。'); };
     // 网站是 http 打开的，浏览器不给用新的剪贴板接口，先用老办法复制
@@ -4516,7 +4516,8 @@
       '<p>荆楚号上开放了「召唤」！用圣晶石召唤，可以抽到当期 UP 精灵<b>' + esc(nm) + '</b>的精元（5%，第 50 次必出）、稀有精灵的精元、限定刻印、刻印激活晶片、性格重置胶囊等丰厚奖励。每次召唤送召唤代币，可以在代币商店兑换。</p>' +
       '<p>还有<b>友情点召唤</b>：每天免费十连一次。给好友送经验、借好友的助战精灵都能得到友情点。</p>' +
       '<p>全新的<b>刻印</b>系统：每只精灵可以装 3 个刻印，只在 PVE 对战中生效。</p>' +
-      '<button type="button" class="btn primary" data-golog="summon">去召唤</button></article>';
+      (acc.gifts && acc.gifts.sum1 ? '<p class="log-st">已领取召唤上线纪念：圣晶石 ×30</p>' : '<div class="sum-gift">' + H.itemIcon('g_core') + '<span><b>召唤上线纪念</b>：圣晶石 ×30（每位船员一次）</span><button type="button" class="btn primary" data-gift="sum1">领取</button></div>') +
+      '<button type="button" class="btn' + (acc.gifts && acc.gifts.sum1 ? ' primary' : '') + '" data-golog="summon">去召唤</button></article>';
   }
   function logEntries() {
     var E = [], add = function (t, h) { if (h) E.push({ t: t, h: h }); };

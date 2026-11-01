@@ -3295,3 +3295,6 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 @media (max-width: 760px) { .log-nav, .log-view { height: auto; } .log-view .log-sec { min-height: 0; } }
 .sum-log .next-art { background: radial-gradient(ellipse at 50% 60%, #3b6fd9 0%, #13235a 60%, #070b22 100%); }
 .sum-log .next-art img { filter: drop-shadow(0 0 14px rgba(190,140,255,.9)) !important; }
+.sum-gift { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 10px 0; padding: 10px 12px; border: 2px dashed #c9a227; border-radius: 12px; background: #fff8e1; }
+.sum-gift .it-ic { width: 36px; height: 36px; }
+.sum-gift span { flex: 1 1 200px; }
