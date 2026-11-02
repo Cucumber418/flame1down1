@@ -147,7 +147,10 @@ var ENDLESS = (function () {
     var L = (typeof SP !== 'undefined' ? SP : []).concat(typeof EXTRA_SP !== 'undefined' ? EXTRA_SP : []);
     return L.filter(function (s) { return s && s.id && s.id !== 'dummy' && !s.placeholder && typeof SPRITES !== 'undefined' && SPRITES[s.id] && s.base; }).map(function (s) { return s.id; });
   }
-  function foeLv(R) { var D = depth(R); return Math.max(40, Math.min(80, Math.round(40 + 25 * D.dd + 15 * D.p))); }
+  // 敌人等级（2026-11-02 改）：只跟这次作战的进度有关，从 LV40 涨到 LV80（最后的 BOSS）；难度只影响增益和能力。
+  // 例外：难度 7、8 最高到 LV100；难度 9 到 LV120、难度 10 到 LV140（超过 100 级显示「LV.??」）
+  function lvTop(d) { return d >= 10 ? 140 : d >= 9 ? 120 : d >= 7 ? 100 : 80; }
+  function foeLv(R) { var D = depth(R); return Math.round(40 + (lvTop(R.d) - 40) * D.p); }
   function makeFoes(R, t, r) {
     var D = depth(R), lv = foeLv(R), P = spPool(), n = 1, out = [];
     if (t === 'battle') n = prog(R) < 4 ? 1 : Math.min(4, 1 + Math.floor(D.p * 2 + D.dd + r() * 0.9));
@@ -158,7 +161,7 @@ var ENDLESS = (function () {
       else if (t === 'elite') nb = Math.min(5, 1 + Math.floor(D.p * 2.5 + D.dd * 2 + r()));
       else nb = Math.min(6, 2 + Math.floor(D.p * 2.5 + D.dd * 2 + r()));
       var b = rollBuffs(nb, D.q, big, r);
-      var x = { id: sid, lv: lv, moves: t === 'battle' ? ACC.foeMoves(sid, lv, null, r) : ACC.defaultMoves(sid, lv), nick: (t === 'boss' ? '首领 · ' : t === 'elite' ? '精英 · ' : '') + f.name, img: f.img, boss: b };
+      var x = { id: sid, lv: lv, lvq: lv > 100 ? 1 : 0, moves: t === 'battle' ? ACC.foeMoves(sid, lv, null, r) : ACC.defaultMoves(sid, lv), nick: (t === 'boss' ? '首领 · ' : t === 'elite' ? '精英 · ' : '') + f.name, img: f.img, boss: b };
       if (t !== 'battle') { x.boss.pp = 99; x.mult = t === 'boss' ? 1.2 + 0.15 * D.dd : 1.1 + 0.1 * D.dd; }
       if (t === 'boss') x.maxhp = Math.round((1400 + 1100 * R.st) * (1 + 1.2 * D.dd));
       if (t === 'elite') x.hpMul = 2.5;
@@ -423,6 +426,6 @@ var ENDLESS = (function () {
   };
 
   return { D_MAX: D_MAX, STAGES: STAGES, NODES: NODES, GEM0: GEM0, ROSTER_MAX: ROSTER_MAX, LINE_MAX: LINE_MAX, IT: IT, TIER_NAME: TIER_NAME, KIND_NAME: KIND_NAME, NODE: NODE, BUFF_NAME: BUFF_NAME, buffText: buffText,
-    rec: rec, run: run, alive: alive, prog: prog, foeLv: foeLv, optName: optName, PLANETS: PLANETS, VB_TALK: VB_TALK, VB_SHOP: VB_SHOP, TOK_SHOP: TOK_SHOP };
+    lvTop: lvTop, rec: rec, run: run, alive: alive, prog: prog, foeLv: foeLv, optName: optName, PLANETS: PLANETS, VB_TALK: VB_TALK, VB_SHOP: VB_SHOP, TOK_SHOP: TOK_SHOP };
 })();
 if (typeof module !== 'undefined') module.exports = ENDLESS;

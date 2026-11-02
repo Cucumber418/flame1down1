@@ -2646,11 +2646,11 @@
     var d = enUi.d && enUi.d <= E.maxD ? enUi.d : E.maxD; enUi.d = d;
     var mons = acc.mons.slice().sort(function (a, b) { return b.lv - a.lv; }), n = Object.keys(enUi.pick).filter(function (u) { return enUi.pick[u] && mon(+u); }).length;
     var diffs = ''; for (var i = 1; i <= EN.D_MAX; i++) diffs += '<button type="button" class="en-d' + (i === d ? ' on' : '') + (i > E.maxD ? ' locked' : '') + '"' + (i > E.maxD ? ' disabled title="通关难度 ' + (i - 1) + ' 后解锁"' : ' data-end="' + i + '"') + '><b>' + (i > E.maxD ? '🔒' : i) + '</b><small>' + (E.clr[i] ? '通关 ' + E.clr[i] + ' 次' : E.best[i] ? '最远 ' + E.best[i] + ' 关' : i > E.maxD ? '未解锁' : '未挑战') + '</small></button>';
-    var lvA = 40 + Math.round(25 * (d - 1) / 9), lvB = Math.min(80, lvA + 15);
+    var lvB = EN.lvTop(d);
     return '<section class="en-intro"><h3>无尽作战</h3><p>一次作战有 <b>3 个大关卡</b>，每个大关卡 15 关，最后一关是 BOSS。通关全部 3 个大关卡，解锁下一级难度（共 10 级）。</p>' +
       '<ul><li>开局从你的精灵里挑最多 <b>20 只</b>，练度在开局时固定；每场战斗派最多 5 只。</li><li>体力不会在战斗之间回满（PP 会），倒下的精灵这次作战里不能再上场，装备会脱落回背包。</li>' +
       '<li>每赢一关，选择下一个节点：战斗 / 精英 / 奖励 / 商店 / 碰碰运气。战斗胜利得到无尽宝石，并从奖励里挑选。</li><li>失败回到这个大关卡的起点。随时可以结束作战，按走到的最远进度获得经验和无尽代币。</li></ul></section>' +
-      '<h4 class="en-h">选择难度</h4><div class="en-diffs">' + diffs + '</div><p class="hint">难度 ' + d + '：敌人 LV' + lvA + ' ~ LV' + lvB + '，越往后敌人越多、增益越强。开局带 ' + EN.GEM0 + ' 颗无尽宝石。</p>' +
+      '<h4 class="en-h">选择难度</h4><div class="en-diffs">' + diffs + '</div><p class="hint">难度 ' + d + '：敌人 LV40 ~ ' + (lvB > 100 ? 'LV.??' : 'LV' + lvB) + '，难度越高，敌人的增益和能力越强。开局带 ' + EN.GEM0 + ' 颗无尽宝石。</p>' +
       '<h4 class="en-h">挑选参战精灵 <span class="hint">已选 ' + n + ' / ' + EN.ROSTER_MAX + '</span><button type="button" class="btn ghost" data-enauto="1">按等级自动选</button><button type="button" class="btn ghost" data-enclr="1">清空</button></h4>' +
       '<div class="en-pickgrid">' + mons.map(function (m) { var f = form(m), on = !!enUi.pick[m.u]; return '<button type="button" class="en-pk' + (on ? ' on' : '') + '" data-enpk="' + m.u + '"><img src="' + f.img + '" alt=""><b>' + esc(f.name) + '</b><small>LV' + m.lv + '</small></button>'; }).join('') + '</div>' +
       '<div class="en-start"><button type="button" class="btn primary big" data-enstart="1"' + (n ? '' : ' disabled') + '>开始作战（难度 ' + d + '）</button></div>' +
@@ -2717,7 +2717,7 @@
     if (!enUi.line.length) enUi.line = live.slice().sort(function (a, b) { return (R.ros[b].hpr || 0) - (R.ros[a].hpr || 0); }).slice(0, EN.LINE_MAX);
     return '<section class="en-panel"><h3>' + EN.NODE[C.t].ic + ' ' + EN.NODE[C.t].n + ' · 敌人 ' + C.foes.length + ' 只</h3><div class="en-foes">' + C.foes.map(function (f) {
       var bt = EN.buffText(f.boss);
-      return '<div class="en-foe"><img src="' + esc(f.img) + '" alt=""><div><b>' + esc(f.nick) + '</b><small>LV' + f.lv + (f.maxhp ? ' · 体力 ' + fmt(f.maxhp) : f.hpMul ? ' · 体力 ×' + f.hpMul : '') + '</small>' + tchips(SPMAP[f.id].types) + '<div class="en-buffs">' + (bt.length ? bt.map(function (b) { return '<span>' + esc(b) + '</span>'; }).join('') : '<span class="none">没有增益</span>') + '</div></div></div>';
+      return '<div class="en-foe"><img src="' + esc(f.img) + '" alt=""><div><b>' + esc(f.nick) + '</b><small>' + (f.lv > 100 ? 'LV.??' : 'LV' + f.lv) + (f.maxhp ? ' · 体力 ' + fmt(f.maxhp) : f.hpMul ? ' · 体力 ×' + f.hpMul : '') + '</small>' + tchips(SPMAP[f.id].types) + '<div class="en-buffs">' + (bt.length ? bt.map(function (b) { return '<span>' + esc(b) + '</span>'; }).join('') : '<span class="none">没有增益</span>') + '</div></div></div>';
     }).join('') + '</div><p class="hint">在下方名单里点精灵调整出战顺序（最多 ' + EN.LINE_MAX + ' 只，第 1 只首发）。已选 ' + enUi.line.length + ' 只。</p>' +
       '<div class="soc-foot"><button type="button" class="btn primary big" data-enfight="1"' + (enUi.line.length ? '' : ' disabled') + '>开战</button></div></section>';
   }
