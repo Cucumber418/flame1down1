@@ -2692,9 +2692,7 @@
     if (enUi.panel && (!main || (canHide && enUi.hide))) {
       var eqBag = '<h4>装备背包</h4><div class="en-its">' + (R.bag.length ? R.bag.map(function (k, b) { return '<button type="button" class="en-bagit' + (enUi.eqB === b ? ' on' : '') + '" data-enbag="' + b + '">' + enIt(k) + '</button>'; }).join('') : '<span class="hint">没有闲置的装备。</span>') + '</div>' +
         (enUi.eqB != null && R.bag[enUi.eqB] ? '<p class="hint red">点下面一只精灵，把「' + esc(EN.IT[R.bag[enUi.eqB]].n) + '」装上去（每只最多 3 件）。</p>' : R.bag.length ? '<p class="hint">点装备，再点精灵就能装上；点精灵身上的装备可以卸下。</p>' : '');
-      var body = enUi.panel === 'ros' ? '<section class="en-panel"><h3>🐾 参战精灵 <span class="hint">存活 ' + EN.alive(R).length + ' / ' + R.ros.length + '</span></h3>' + eqBag + '<div class="en-roster">' + R.ros.map(function (x, i) { return enRosCard(x, i, R, ''); }).join('') + '</div></section>'
-        : '<section class="en-panel en-bag"><h3>🎒 道具</h3><h4>能力</h4><div class="en-its">' + (R.abil.length ? R.abil.map(function (k) { return enIt(k); }).join('') : '<span class="hint">还没有能力。</span>') + '</div>' +
-          '<h4>消耗品</h4><div class="en-its">' + (Object.keys(R.cons).length ? Object.keys(R.cons).map(function (k) { return enIt(k, R.cons[k]); }).join('') : '<span class="hint">没有消耗品。</span>') + '</div>' + eqBag + '</section>';
+      var body = enUi.panel === 'ros' ? '<section class="en-panel"><h3>🐾 参战精灵 <span class="hint">存活 ' + EN.alive(R).length + ' / ' + R.ros.length + '</span></h3><p class="hint">点精灵身上的装备可以卸下；在「道具 → 装备」里给精灵装备。</p><div class="en-roster">' + R.ros.map(function (x, i) { return enRosCard(x, i, R, ''); }).join('') + '</div></section>' : enBagPanel(R);
       main = (main || '') + '<div class="en-pop' + (enUi.popK === 'p' + enUi.panel ? ' still' : '') + '" data-enpanelbg="1"><div class="en-popbox"><button type="button" class="en-popx" data-enpanel="">关闭 ✕</button>' + body + '</div></div>';
       enUi.popK = 'p' + enUi.panel;
     }
@@ -2727,6 +2725,26 @@
     w.addEventListener('pointermove', function (e) { if (!st) return; var dx = e.clientX - st.x; if (Math.abs(dx) > 5) { st.moved = true; w.classList.add('drag'); } if (st.moved) w.scrollLeft = st.l - dx; });
     var end = function () { if (st && st.moved) { enUi.noClick = Date.now(); } st = null; w.classList.remove('drag'); };
     w.addEventListener('pointerup', end); w.addEventListener('pointerleave', end); w.addEventListener('pointercancel', end);
+  }
+  // 道具面板（2026-11-02 改）：能力 / 消耗品 / 装备三个分页，左边列表，右边介绍；装备可以直接选精灵装上、卸下
+  function enBagPanel(R) {
+    var tab = enUi.btab || 'abil', list = [];
+    if (tab === 'abil') list = R.abil.map(function (k) { return { id: 'a:' + k, k: k }; });
+    else if (tab === 'cons') list = Object.keys(R.cons).map(function (k) { return { id: 'c:' + k, k: k, n: R.cons[k] }; });
+    else { list = R.bag.map(function (k, b) { return { id: 'b:' + b, k: k, b: b }; }); R.ros.forEach(function (x, ri) { x.eq.forEach(function (k, si) { list.push({ id: 'e:' + ri + ':' + si, k: k, ri: ri, si: si }); }); }); }
+    var sel = list.filter(function (x) { return x.id === enUi.bsel; })[0] || list[0];
+    var tabs = '<div class="en-btabs">' + [['abil', '能力', R.abil.length], ['cons', '消耗品', Object.keys(R.cons).reduce(function (n, k) { return n + R.cons[k]; }, 0)], ['equip', '装备', R.bag.length + R.ros.reduce(function (n, x) { return n + x.eq.length; }, 0)]].map(function (t) { return '<button type="button" class="en-btab' + (t[0] === tab ? ' on' : '') + '" data-enbtab="' + t[0] + '">' + t[1] + ' <i>' + t[2] + '</i></button>'; }).join('') + '</div>';
+    var left = list.length ? list.map(function (x) { var I = EN.IT[x.k]; return '<button type="button" class="en-bl' + (sel && x.id === sel.id ? ' on' : '') + '" data-enbsel="' + x.id + '">' + H.itemIcon(x.k) + '<span><b class="t' + I.tier + '">' + esc(I.n) + '</b><small>' + (x.n > 1 ? '×' + x.n : x.ri != null ? '装备在 ' + esc(R.ros[x.ri].spec.nick) + ' 身上' : x.b != null ? '背包中' : EN.TIER_NAME[I.tier]) + '</small></span></button>'; }).join('') : '<p class="hint">' + ({ abil: '还没有能力。', cons: '没有消耗品。', equip: '没有装备。' })[tab] + '</p>';
+    var right = '';
+    if (sel) {
+      var I = EN.IT[sel.k];
+      right = '<div class="en-bd-h">' + H.itemIcon(sel.k) + '<div><b class="t' + I.tier + '">' + esc(I.n) + '</b><small>' + EN.TIER_NAME[I.tier] + ' · ' + EN.KIND_NAME[I.kind] + (sel.n ? ' · 持有 ' + sel.n : '') + '</small></div></div><p class="en-bd-d">' + esc(I.d) + '</p>';
+      if (sel.b != null) {
+        var ok = R.ros.map(function (x, ri) { return { x: x, ri: ri }; }).filter(function (o) { return !o.x.dead; });
+        right += '<h4>装备给</h4><div class="en-eqto">' + ok.map(function (o) { var full = o.x.eq.length >= 3; return '<button type="button" class="en-eqm"' + (full ? ' disabled title="装备槽已满"' : ' data-enequip="' + sel.b + '|' + o.ri + '"') + '><img src="' + esc(o.x.spec.img) + '" alt=""><b>' + esc(o.x.spec.nick) + '</b><small>' + o.x.eq.length + ' / 3</small></button>'; }).join('') + '</div>';
+      } else if (sel.ri != null) right += '<p class="hint">装备在 ' + esc(R.ros[sel.ri].spec.nick) + ' 身上。</p><button type="button" class="btn" data-enuq="' + sel.ri + '|' + sel.si + '">卸下</button>';
+    }
+    return '<section class="en-panel en-bag"><h3>🎒 道具</h3>' + tabs + '<div class="en-bwrap"><div class="en-blist">' + left + '</div><div class="en-bdet">' + (right || '<p class="hint">选择左边的道具查看介绍。</p>') + '</div></div></section>';
   }
   function enPrep(R) {
     var C = R.cur, live = R.ros.map(function (x, i) { return x.dead ? -1 : i; }).filter(function (i) { return i >= 0; });
@@ -2812,9 +2830,12 @@
     if (D.enleave) { enTx('enLeave'); return; }
     if (D.enchat) { enVbChat(); return; }
     if (D.enbag != null) { enUi.eqB = enUi.eqB === +D.enbag ? null : +D.enbag; renderEndless(); return; }
-    if (D.enuq) { var q = D.enuq.split('|'); e.stopPropagation(); enTx('enUneq', { r: +q[0], s: +q[1] }); return; }
+    if (D.enuq) { var q = D.enuq.split('|'); e.stopPropagation(); enUi.bsel = null; enTx('enUneq', { r: +q[0], s: +q[1] }); return; }
     if (D.enfight) { enFight(); return; }
     if (D.enpanel != null) { enUi.panel = D.enpanel || null; enUi.eqB = null; renderEndless(); return; }
+    if (D.enbtab) { enUi.btab = D.enbtab; enUi.bsel = null; renderEndless(); return; }
+    if (D.enbsel) { enUi.bsel = D.enbsel; renderEndless(); return; }
+    if (D.enequip) { var qq = D.enequip.split('|'); enUi.bsel = null; enTx('enEquip', { b: +qq[0], r: +qq[1] }, function () { toast('装备好了'); }); return; }
     if (D.enreset) { enUi.line = []; renderEndless(); return; }
     if (D.enmv) { var L0 = enUi.line, j0 = L0.indexOf(+D.k2), j1 = j0 + (+D.enmv); if (j0 >= 0 && j1 >= 0 && j1 < L0.length) { L0[j0] = L0[j1]; L0[j1] = +D.k2; } renderEndless(); return; }
     if (D.enlead) { var kk = +D.enlead; enUi.line = [kk].concat(enUi.line.filter(function (x) { return x !== kk; })); renderEndless(); return; }
