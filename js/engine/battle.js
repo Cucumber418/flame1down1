@@ -8,11 +8,11 @@ var STG_NAME = { atk: '物攻', def: '物防', spa: '特攻', spd: '特防', spe
 var BASE_NAME = { hp: '体力', atk: '物攻', def: '物防', spa: '特攻', spd: '特防', spe: '速度' };
 var TM_NAME = { odoAtk: '全弹搭载', odoDef: '强效外壳', brandCd: '烙印冷却', etchCd: '蚀迹冷却', lmE: '雷明·电', lmL: '雷明·光', tcloud: '闪电云', cap: '逆鳞', genggu: '恒压', green: '绿色幻境', immune: '免疫异常', reflect: '风王结界', dodge: '光滑皮肤',
   noSwitch: '无法切换', prio: '先制+1', rain: '祈雨', tri: '三相归元', soul: '收魂',
-  voidPhys: '虚空化', induct: '电磁感应', vortex: '闪电漩涡', fenglei: '风雷滚滚', darkside: '月之暗面', hail: '冰雹', noBoost: '禁止强化',
+  voidPhys: '虚空化', induct: '电磁感应', vortex: '闪电漩涡', fenglei: '风雷滚滚', counter: '反击风暴', parryBan: '被招架', noStat: '禁用变化', darkside: '月之暗面', hail: '冰雹', noBoost: '禁止强化',
   seal: '万灵封印', liuhuo: '流火', calm: '静谧水域', halfPhys: '物伤减半', tide: '黑雾潮汐', vuln: '易伤', weak: '伤害-30%',
   swamp: '孢子沼泽', mist: '白雾', jungle: '丛林法则', siren: '海妖之歌', sirenOn: '海妖之歌', dr40: '减伤40%', crit2: '必定暴击', retal: '寂灭幽映',
   block: '坚不可摧', recoil: '磁暴反冲', sure3: '谛听', ear: '灵耳谛听', noHeal: '禁疗' };
-var FOE_TM = { sirenOn: 1, brandCd: 1, etchCd: 1, noSwitch: 1, soul: 1, noBoost: 1, seal: 1, vuln: 1, weak: 1, noHeal: 1 };
+var FOE_TM = { parryBan: 1, noStat: 1, sirenOn: 1, brandCd: 1, etchCd: 1, noSwitch: 1, soul: 1, noBoost: 1, seal: 1, vuln: 1, weak: 1, noHeal: 1 };
 /* 进化链长度不固定（三阶或两阶），最后一阶是最终形态 */
 function evoLast(s) { return s && s.evo ? s.evo.length - 1 : 0; }
 function isFin(s, i) { return !s || !s.evo || i === s.evo.length - 1; }
@@ -29,7 +29,7 @@ function mvType(me, mv) {
 var CANYUE_BASE = 20, CANYUE_MAX = 160;
 function canyuePow(n) { return Math.min(CANYUE_MAX, CANYUE_BASE * Math.pow(2, n)); }
 var STAR_MAX = 125;   // 星星魔法的最高威力（2026-10-12 从 200 削弱到 125；达到后命中有 50% 概率降低对方 1 级速度）
-function moveBlocked(me, slot) { return !!(slot && M[slot.n] && ((me.perm && me.perm.moonFull && M[slot.n].custom === 'darkside') || (me.flags && me.flags.sy && M[slot.n].cat === '变化'))); }
+function moveBlocked(me, slot) { return !!(slot && M[slot.n] && ((me.perm && me.perm.moonFull && M[slot.n].custom === 'darkside') || (me.flags && me.flags.sy && M[slot.n].cat === '变化') || (me.tm && me.tm.parryBan === 1 && me.fx && me.fx.banMv === slot.n) || (me.tm && me.tm.noStat === 1 && M[slot.n].cat === '变化'))); }   // parryBan：被「招架」的技能；noStat：压制弧光（都写 2，回合结束减成 1 时才生效，即只禁「下回合」）
 // 技能为什么不能用（界面上显示）：光影之月 / 沈阳大街（复活后的困难泰戈尔的场地效果，变化技能都不能用）
 function blockWhy(me, slot) { return !moveBlocked(me, slot) ? '' : me.flags && me.flags.sy && M[slot.n].cat === '变化' ? '沈阳大街中不可用' : '光影之月中不可用'; }
 // 处于月之暗面时，「月之暗面」变为「月之亮面」
@@ -178,6 +178,7 @@ var TM_DESC = {
   dodge: '每次受到攻击有40%概率闪避', noSwitch: '无法切换精灵', prio: '所有技能先制+1',
   rain: '每回合结束对对方附加30点固定伤害', tri: '使用草、水、火系技能时额外恢复1/3体力',
   soul: '受到的伤害提升20%', voidPhys: '闪避物理攻击', induct: '主动攻击命中后提升1级特攻',
+  counter: '受到主动攻击时，把25%的伤害反弹给对方', parryBan: '被招架的技能这回合不能使用', noStat: '不能使用变化类技能',
   vortex: '每回合结束降低对方1级命中', fenglei: '每回合结束一半概率降低对方1级速度，否则提升自身1级速度', darkside: '精灵属性和技能属性都变成暗影系',
   hail: '每回合结束对对方造成其1/10最大体力的伤害', noBoost: '无法提升能力等级',
   seal: '无法提升能力等级；强行提升会损失1/4当前体力', liuhuo: '火系技能威力+5', calm: '每回合恢复1/5最大体力',
@@ -233,6 +234,7 @@ function abilityLive(m, foe) {
     case '月蚀': return m.perm.moonFull ? '已转化为光影之月' + (m.fx.moonNext ? '；下一次攻击伤害+15%' : '') :
       '月升 ' + (m.fx.moon || 0) + ' / 5' + (m.fx.moonNext ? '；下一次攻击伤害+15%' : '');
     case '冰刺': return f && f.st['冰冻'] > 0 ? '对手冰冻中：其能力提升已被解除' : '待触发：使对手冰冻时，解除其所有能力提升';
+    case '招架': return f && f.tm && f.tm.parryBan === 1 ? '生效中：对手这回合不能使用「' + f.fx.banMv + '」' : '待触发：用心眼刀或至高之术化解成功后，对手下回合不能使用被化解的技能';
     case '疾驰': if (!f) return '对手不在场，暂不生效';
       return '待触发：攻击命中时附加 ' + Math.floor(Math.abs(speedOf(m) - speedOf(f)) * 0.1) + ' 点固定伤害（速度 ' + Math.round(speedOf(m)) + ' / 对手 ' + Math.round(speedOf(f)) + '）';
     case '起源': if (!f) return '对手不在场，暂不生效';
@@ -430,6 +432,7 @@ function applyDamage(S, evs, j, amount, src, o) {
   if (amt > 0 && t.st['睡眠'] > 0 && src != null) { delete t.st['睡眠']; log(S, evs, nm(t) + '被打醒了'); }
   E(S, evs, 'hit', { side: j, amount: shown, crit: o.crit, eff: o.eff, kind: o.eff === undefined && !o.crit ? 'fixed' : undefined });
   if (t.insFx && t.insFx.water && src != null && src !== j && amt > 0 && !t.fainted && t.hp > 0 && !act(S, src).fainted && RNG() < 0.2) { var wk = RNG() < 0.5 ? { atk: -1 } : { spa: -1 }; log(S, evs, nm(t) + '的刻印「幽静之水」发动了', 'fxl'); changeStages(S, evs, src, wk, j); }   // 2026-11-01
+  if (t.tm.counter > 0 && src != null && src !== j && amt > 0 && !act(S, src).fainted) { var cs0 = Math.max(1, Math.floor(amt * 0.25)); loseHp(S, evs, src, cs0, nm(t) + '的反击风暴反弹了 ' + cs0 + ' 点伤害'); }   // 2026-11-02
   if (t.boss && t.boss.thorn && src != null && src !== j && amt > 0 && !act(S, src).fainted) { var th = Math.max(1, Math.floor(amt * 0.15)); RV(t, 'thorn'); loseHp(S, evs, src, th, nm(t) + '的「荆棘」反弹了 ' + th + ' 点伤害'); }
   if (excess > 0) {
     log(S, evs, nm(t) + '的龙之逆鳞把 ' + excess + ' 点伤害反馈给了对方！', 'fxl');
@@ -669,6 +672,7 @@ function resolveTurn(S, acts) {
   });
   info.sort(function (a, b) { return b.pri - a.pri || b.spe - a.spe || a.r - b.r; });
   S.order = info.map(function (x) { return x.i; });
+  S.parry = [null, null]; info.forEach(function (x) { if (x.mv && (x.mv.custom === 'parryTm' || x.mv.custom === 'parryAtk')) S.parry[x.i] = { k: x.mv.custom, ok: 0 }; });   // 心眼刀 / 至高之术：这回合准备化解（2026-11-02）
   [0, 1].forEach(function (i) { if (acts[i].kind === 'switch') S.turnActed[i] = true; });
   for (var q = 0; q < info.length; q++) {
     if (S.over) break;
@@ -807,7 +811,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   mv = liveMove(me, mv);
   if (me.fainted || (me.boss && me.boss.broken)) return;
   if (!extra && cantAct(S, evs, me)) return;
-  if (slotIdx >= 0 && moveBlocked(me, me.moves[slotIdx])) { log(S, evs, (me.flags && me.flags.sy && mv.cat === '变化' ? '沈阳大街上不讲究这些花架子，' + nm(me) + '无法使用「' : nm(me) + '处于光影之月，无法使用「') + mv.name + '」'); return; }
+  if (slotIdx >= 0 && moveBlocked(me, me.moves[slotIdx])) { log(S, evs, (me.tm && me.tm.parryBan === 1 && me.fx.banMv === mv.name ? nm(me) + '的「' + mv.name + '」刚被招架过，这回合无法使用' : me.tm && me.tm.noStat === 1 && mv.cat === '变化' ? nm(me) + '被压制弧光压制，无法使用「' + mv.name + '」' : (me.flags && me.flags.sy && mv.cat === '变化' ? '沈阳大街上不讲究这些花架子，' + nm(me) + '无法使用「' : nm(me) + '处于光影之月，无法使用「') + mv.name + '」'), 'bad'); return; }
   if (!mv.struggle && slotIdx >= 0 && !(me.boss && ((me.boss.immortal && !me.boss.ppLim) || me.boss.ppInf))) me.moves[slotIdx].pp--;
   if (me.boss && me.boss.healCd && mv.heal && !extra) S.bossHealAt = S.turn;   // 回血技能的冷却（见 ai.js 的 aiChoose）
   // ppLim：先驱之塔的死神虽有「不朽」，PP 也有限   // 「不朽」：PP 无限
@@ -819,6 +823,10 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   E(S, evs, 'use', { side: i, move: mv.name, type: mt });
   S.hqMv = mv.name; if (!extra) hqUse(me, mv.name);
   log(S, evs, nm(me) + (extra ? '额外发动了「' : '使用了「') + mv.name + '」！', 'use');
+  var PR = !extra && S.parry && S.parry[j];   // 对方这回合在招架：至高之术化解主动攻击，心眼刀化解回合类效果（变化技能里写着「N回合」的）
+  if (PR && !PR.ok && !act(S, j).fainted && ((PR.k === 'parryAtk' && mv.cat !== '变化') || (PR.k === 'parryTm' && mv.cat === '变化' && /\d+\s*回合/.test(mv.d || '')))) {
+    PR.ok = 1; PR.mv = mv.name; log(S, evs, nm(act(S, j)) + '看穿了「' + mv.name + '」，将它化解了！', 'crit'); me.fx.boostNext = 0; return;
+  }
   if (!extra && me.perm.moonFull && slotIdx >= 0) {
     var got = 0; me.moves.forEach(function (sl, k) { if (k !== slotIdx && sl.pp < sl.max) { sl.pp++; got++; } });
     if (got) log(S, evs, '光影之月：其余技能各恢复1点PP', 'fxl');
@@ -867,7 +875,8 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
     });
     E(S, evs, 'stage', { side: j });
   }
-  var total = 0, shownT = 0, lastEff = 1, n = 0, hits = 1, raw = 0, burnX = 0;
+  var total = 0, shownT = 0, lastEff = 1, n = 0, hits = 1, raw = 0, burnX = 0, pBoost = 1;
+  if (mv.custom === 'swiftPierce' && firstMover && foe.stages.def > 0) { var dcl = foe.stages.def; foe.stages.def = 0; pBoost = 1 + 0.75 * dcl; E(S, evs, 'stage', { side: j }); log(S, evs, '迅捷刺击清空了' + nm(foe) + '的 ' + dcl + ' 级物防强化，这次伤害 +' + Math.round(75 * dcl) + '%', 'fxl'); }
   function dmgAdd(v) { total += v; shownT += S.lastShown != null ? S.lastShown : v; S.lastShown = null; }
   if (mv.fixedOnly) {
     var fa = fixedAmount(me, foe, mv);
@@ -883,6 +892,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
     }
     for (var h = 0; h < hits && foe.hp > 0; h++) {
       var res = calcDamage(me, foe, mv, firstMover, false);
+      if (pBoost !== 1) res.dmg = Math.floor(res.dmg * pBoost);
       lastEff = res.eff; n++; raw += res.dmg;
       if (mv.custom === 'burnExtend' && foe.st['烧伤'] > 0 && foe.hp > res.dmg) { foe.st['烧伤']++; burnX = (burnX || 0) + 1; }   // 烈焰风暴：每次命中延长 1 回合烧伤
       if (res.crit) log(S, evs, '致命一击！', 'crit');
@@ -1005,6 +1015,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   }
   switch (mv.custom) {
     case 'moonBlade': if (total < 180) changeStages(S, evs, i, { atk: 1 }); break;
+    case 'suppressArc': if (!foe.fainted && foe.stages.atk > 0) { foe.stages.atk = 0; foe.tm.noStat = 2; E(S, evs, 'stage', { side: j }); log(S, evs, '压制弧光清空了' + nm(foe) + '的物攻强化，下回合它不能使用变化类技能！', 'fxl'); } break;
     case 'boneCut': if (total > 200) { changeStages(S, evs, i, { spe: 1 }); hqGet(S, evs, me, '骨斩肉断'); } break;
     case 'vortex': if (!extra) { me.tm.vortex = 3; E(S, evs, 'stage', { side: i }); log(S, evs, '闪电漩涡缠住了战场（3回合）', 'fxl'); } break;
     case 'liuhuo': me.tm.liuhuo = 5; E(S, evs, 'stage', { side: i }); log(S, evs, nm(me) + '的火系技能威力提升5点（5回合）', 'fxl'); break;
@@ -1118,6 +1129,16 @@ function doStatus(S, evs, i, mv) {
     case 'noSwitch': foeTimer('noSwitch', 5, nm(foe) + '被傲慢震慑，5回合内无法切换精灵'); break;
     case 'priorityUp': timer('prio', 5, nm(me) + '与水天融为一色：5回合内技能先制+1'); break;
     case 'dodge': timer('dodge', 3, nm(me) + '的皮肤变得光滑（3回合）'); break;
+    case 'x2next': me.fx.x2Next = 1; E(S, evs, 'stage', { side: i }); log(S, evs, nm(me) + '蓄势待发，下一次攻击伤害翻倍！', 'fxl'); break;
+    case 'counterStorm': timer('counter', 5, nm(me) + '摆出了反击的架势（5回合）'); break;
+    case 'parryTm': case 'parryAtk':
+      var P2 = S.parry && S.parry[i];
+      if (!P2 || !P2.ok) { log(S, evs, '但是对方没有可以化解的' + (c === 'parryTm' ? '回合类效果' : '主动攻击')); break; }
+      if (c === 'parryTm') { var sh = Math.floor((me.lv || LV) * 2.5); me.fx.shield = Math.max(me.fx.shield || 0, sh); log(S, evs, nm(me) + '获得了 ' + sh + ' 点护盾', 'good'); }
+      else if (!foe.fainted) { var pd = Math.floor((me.lv || LV) * 2); log(S, evs, '至高之术反击，造成 ' + pd + ' 点固定伤害', 'fxl'); applyDamage(S, evs, j, pd, i, {}); }
+      var ps = me.moves.filter(function (x) { return x.n === mv.name; })[0]; if (ps && ps.pp < ps.max) { ps.pp++; log(S, evs, '「' + mv.name + '」回复了 1 点 PP', 'fxl'); }
+      if (ability(me) === '招架' && !foe.fainted && P2.mv) { foe.fx.banMv = P2.mv; foe.tm.parryBan = 2; log(S, evs, nm(me) + '的「招架」：' + nm(foe) + '下回合不能使用「' + P2.mv + '」', 'fxl'); }
+      E(S, evs, 'stage', { side: i }); E(S, evs, 'stage', { side: j }); break;
     case 'fenglei': timer('fenglei', 5, '风雷滚滚！' + nm(me) + '身边卷起了风与雷（5回合）'); break;   // 2026-11-02
     case 'absDef': me.fx.absDef = 1; flag(nm(me) + '摆出了绝对防御的架势'); break;
     case 'cave': me.fx.cave = S.turn; flag(nm(me) + '躲进了岩洞，这一回合的攻击都打不到它'); break;

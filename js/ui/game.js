@@ -867,7 +867,7 @@
    * 一般道具：捕捉装置、补药（对战中用）、改名卡、自律训练装置、挑战许可
    * 储存箱（主菜单，黄冈秘鉴和社交中间）列出所有道具 */
   var USE_ITEMS = GROW.USE_ITEMS;   // 精灵道具的数据和用法在 js/engine/grow.js（服务器和浏览器共用，2026-10-25）
-  var MON_ORDER = ['formDev', 'earthShard', 'floraJade', 'kbDrop', 'ppAsh', 'ltOrb', 'whFrost', 'moonStone', 'boneDust', 'tgPearl', 'brTwig', 'odoFin', 'hrDisk', 'phLeaf', 'deathTok', 'ivMoon', 'ivBone', 'ivReroll', 'ev50', 'evAny', 'evTagore', 'natAny', 'natRand', 'natTagore', 'evReset', 'fruit1', 'fruit2'], GEN_ORDER = ['trans', 'helmet', 'dive', 'auto', 'rename', 'cap1', 'cap2', 'cap3', 'pot1', 'pot2', 'pot200'];
+  var MON_ORDER = ['formDev', 'earthShard', 'floraJade', 'kbDrop', 'ppAsh', 'ltOrb', 'whFrost', 'moonStone', 'boneDust', 'tgPearl', 'brTwig', 'odoFin', 'hrDisk', 'phLeaf', 'fencArc', 'deathTok', 'ivMoon', 'ivBone', 'ivReroll', 'ev50', 'evAny', 'evTagore', 'natAny', 'natRand', 'natTagore', 'evReset', 'fruit1', 'fruit2'], GEN_ORDER = ['trans', 'helmet', 'dive', 'auto', 'rename', 'cap1', 'cap2', 'cap3', 'pot1', 'pot2', 'pot200'];
   // 剧情道具：主线里拿到的，不能使用也不会消耗
   var KEY_ITEMS = {
     trans: { name: '精灵翻译器', d: '汉街总部国际A座的情报显示，这个翻译器能凭一己之力考到雅思 6.5 分。这样一来，翻译精灵的语言也一定能行吧……', img: 'translator' },
@@ -981,7 +981,7 @@
     m_cu: ['在野外挖到的马亚尔煤炭。', '在荆楚号 · 宜昌的三峡能源核心换成能量（每块 150 能量，每天有上限）。', '芙罗拉星、坎伯兰星野外的矿点，每处每天挖 1 次（要挖矿钻头）。'],
     m_fe: ['在野外挖到的马亚尔铁矿石，比煤炭更值钱。', '在荆楚号 · 宜昌的三峡能源核心换成能量（每块 250 能量，每天有上限）。', '芙罗拉星、坎伯兰星野外的矿点，每处每天挖 1 次（要挖矿钻头）。'],
     mmTok: ['活动「明明教官的试炼」的代币。', '在全息作战场地或航行日志里抽奖：10 个抽一次，100 个十连。', '通过活动「明明教官的试炼」的关卡（首次通过另有奖励）；明明代币抽奖里也能抽到；读完活动任务「明明教官的试炼」送 500 个。'],
-    ctTicket: ['做题大王争霸赛的参赛奖励。', '能兑换什么精灵，之后揭晓。先好好收着。', '参加做题大王争霸赛，比赛结束后按名次发放。'],
+    ctTicket: ['第一届做题大王争霸赛的参赛奖励。', '在储存箱里使用：1 张兑换一只 LV10 的战斗系精灵「尖盔虫」，同时获得 200 个花剑圆弧（解锁它的隐藏技能用）。', '参加做题大王争霸赛，比赛结束后按名次发放。'],
     // 其他
     rename: ['一张可以重写名字的卡片。', '点右上角的名字，在菜单里使用，修改做题家名字（最多 ' + NAME_MAX + ' 个字）。', '荆门 · 物资仓储的商城（1,000 能量）。'],
     auto: ['装在茶室精灵身上的小装置。', '装在茶室里展示中的一只精灵身上：它每训练满 1 天就自动结算经验，再开始下一天，一共 7 天，不用每天回来收。', '天门 · 陆羽茶室大厅的茶室商店（1,500 能量）。'],
@@ -1112,6 +1112,7 @@
       var it = USE_ITEMS[k] && USE_ITEMS[k].kind ? USE_ITEMS[k] : null, inf = itemInfo(k), act = '', body = '';
       if (k === 'permit') act = '<p class="hint">当前 ' + pn + ' 枚 · ' + permitNext() + '</p><button type="button" class="btn" data-itgo="weekly">去每周挑战</button>';
       else if (k === 'rename') act = '<button type="button" class="btn primary" data-ituse="rename">使用改名卡</button>';
+      else if (k === 'ctTicket') act = '<button type="button" class="btn primary" data-ituse="ctTicket">兑换尖盔虫（LV10）+ 200 花剑圆弧</button>';
       else if (k === 'auto') act = '<button type="button" class="btn" data-itgo="home">去我的茶室装上</button>';
       else if (KEY_ITEMS[k] && KEY_ITEMS[k].img && ITEM_IMG[KEY_ITEMS[k].img]) act = '<img class="ib-big" src="' + ITEM_IMG[KEY_ITEMS[k].img] + '" alt="">';
       else if (SEEDS[k]) act = GROW.SEED_SHOP.indexOf(k) >= 0 ? '<button type="button" class="btn" data-itgo="seedshop">去种子商店</button>' : '';
@@ -1150,6 +1151,7 @@
   }
   function useBagItem(k) {
     if (k === 'rename') { setTimeout(function () { renaming = true; renderRename(); $('who-menu').hidden = false; $('who-btn').setAttribute('aria-expanded', true); window.scrollTo(0, 0); }, 0); return; }   // 等这次点击处理完再打开名字菜单，免得被「点别处关闭」立刻关上
+    if (k === 'ctTicket') { txRun('ctRedeem', {}, function (r) { ui.itMsg = '兑换成功！获得 LV10 尖盔虫和 200 个花剑圆弧' + (r && r.added ? '，尖盔虫已加入配队。' : '，尖盔虫在精灵仓库里。'); if (!acc.items.ctTicket) ui.itSel = null; renderItems(); toast(ui.itMsg); }); return; }
     var sel = $('it-nat');
     applyMonItem(k, mon(ui.itTarget), sel && sel.value, function (r) {
       ui.itMsg = r.msg; if (r.ok) ui.itNat = null;
@@ -1958,7 +1960,7 @@
   var CONTEST = { id: 'quiz1', name: '第一届做题大王争霸赛' }, CT = { data: null, busy: false, err: '', at: 0 };
   var CT_RW = [{ exp: 300000, t: 1 }, { exp: 200000, t: 1 }, { exp: 150000, t: 1 }, { exp: 120000, t: 1 }];   // 第 1~4 名；之后都按 CT_RW0（兑换券每人 1 张）
   var CT_RW0 = { exp: 80000, t: 1 };
-  MATS.ctTicket = { name: '神秘精灵兑换券', d: '做题大王争霸赛的参赛奖励。能兑换什么精灵？之后揭晓。' };   // 2026-10-24：改回待定（之后补充新精灵），不再兑换雷明灯
+  MATS.ctTicket = { name: '神秘精灵兑换券', d: '第一届做题大王争霸赛的参赛奖励。在储存箱里使用，1 张兑换一只 LV10 的尖盔虫（战斗系），外加 200 个花剑圆弧。' };   // 2026-11-02 揭晓：尖盔虫   // 2026-10-24：改回待定（之后补充新精灵），不再兑换雷明灯
   function contestMe() { return !!(acc && acc.contest && acc.contest[CONTEST.id]) || !!(CT.data && CT.data.mine); }
   function ctName(u) { return (CT.data && CT.data.names && CT.data.names[u]) || u; }
   function bjText(t) { var d = new Date(t + 8 * 3600 * 1000); return (d.getUTCMonth() + 1) + ' 月 ' + d.getUTCDate() + ' 日 ' + ('0' + d.getUTCHours()).slice(-2) + ':' + ('0' + d.getUTCMinutes()).slice(-2); }

@@ -195,7 +195,7 @@
     if (typeof SUMMON !== 'undefined' && SUMMON.INS[k]) { var Ik = SUMMON.INS[k], LC = { grass: '#4caf50', water: '#3b8fd9', fire: '#e8603c', elec: '#e8b830', ice: '#7fd3ef' }; return insBadge(Ik.lim ? LC[Ik.fx] : Ik.tier === 2 ? '#d9a62e' : '#9aa3ad', Ik.ch, !!Ik.lim); }
     // 2026-10-19：储存箱整理，各类道具补上图标（同一类用同一种形状，按颜色区分）
     var G = {
-      insChip: ['box', '#7b5ac8'], natRand: ['pill', '#c95fd0', '随'], phLeaf: ['leaf', '#7a3fa0'], fPt: ['coin', '#e86a8a', '友'], sumTok: ['coin', '#c9a227', '召'],
+      insChip: ['box', '#7b5ac8'], natRand: ['pill', '#c95fd0', '随'], phLeaf: ['leaf', '#7a3fa0'], fencArc: ['gem', '#b5452c'], fPt: ['coin', '#e86a8a', '友'], sumTok: ['coin', '#c9a227', '召'],
       e_phantom: ['orb', '#8f4fd0', '精'], e_kaleo: ['orb', '#5d8a3c', '精'], e_leaf: ['orb', '#4caf50', '精'], e_squid: ['orb', '#3b8fd9', '精'], e_shroom: ['orb', '#e8603c', '精'], e_turkey: ['orb', '#d9773a', '精'], e_siren: ['orb', '#4aa8c8', '精'], e_hauris: ['orb', '#7b5ac8', '精'],
       floraJade: ['gem', '#4caf50'], kbDrop: ['drop', '#3b8fd9'], ppAsh: ['pile', '#7a5d4a', '#ff8a3d'], ltOrb: ['orb', '#f2c94c', '⚡'], whFrost: ['gem', '#9fe3f5'], earthShard: ['orb', '#3aa7a0', '🌏'],
       moonStone: ['moon', '#9b87e6'], boneDust: ['pile', '#d9d4c7', '#fff'], tgPearl: ['orb', '#f0a43a'], brTwig: ['twig', '#8b6b3f'], deathTok: ['coin', '#2b2a33', '死'],
