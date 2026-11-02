@@ -2687,7 +2687,7 @@
     var P = R.pend, pips = '';
     for (var s0 = 0; s0 < EN.STAGES; s0++) pips += '<i class="' + (s0 < R.st ? 'done' : s0 === R.st ? 'on' : '') + '"></i>';
     var nCons = Object.keys(R.cons).reduce(function (n, k) { return n + R.cons[k]; }, 0);
-    var hud = '<section class="en-hud"><div class="en-hud-l"><span class="en-dbadge"><small>难度</small><b>' + R.d + '</b></span>' +
+    var hud = '<section class="en-hud"><span class="tape l"></span><span class="tape r"></span><div class="en-hud-l"><span class="en-dbadge"><small>难度</small><b>' + R.d + '</b></span>' +
       '<div class="en-hud-prog"><span class="en-pips" title="大关卡">' + pips + '</span><b>第 ' + (R.st + 1) + ' 大关卡</b><small>第 ' + Math.min(EN.NODES, R.n + 1) + ' / ' + EN.NODES + ' 关</small></div>' +
       '<span class="en-gemc"><i>💎</i><b>' + fmt(R.gems) + '</b><small>无尽宝石</small></span>' +
       (R.vbOn ? '<span class="en-vbc' + (R.vbDone ? ' full' : '') + '"><i>❤</i><b>' + (R.vbDone ? '满' : (R.vb || 0)) + '</b><small>Vanber 好感</small></span>' : '') + '</div>' +
