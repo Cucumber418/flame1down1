@@ -311,7 +311,9 @@
     else if (page === 'holo') renderHolo();
     if (typeof bgmScene === 'function') bgmScene();
   }
-  function renderRes() { $('res').innerHTML = '<span class="res-chip" title="经验背包里的累积经验，可分配给精灵"><img class="res-ic" src="images/items/exp.png" alt="">经验 <b>' + fmt(acc.exp) + '</b></span><span class="res-chip en" title="能量（货币）"><img class="res-ic" src="images/items/energy.png" alt="">能量 <b>' + fmt(acc.energy) + '</b></span>'; setTimeout(renderQBadge, 0); }
+  function renderRes() {   /* 2026-11-02：顺便刷新小红点 */
+    if (typeof navDots === 'function') setTimeout(navDots, 0);
+    $('res').innerHTML = '<span class="res-chip" title="经验背包里的累积经验，可分配给精灵"><img class="res-ic" src="images/items/exp.png" alt="">经验 <b>' + fmt(acc.exp) + '</b></span><span class="res-chip en" title="能量（货币）"><img class="res-ic" src="images/items/energy.png" alt="">能量 <b>' + fmt(acc.energy) + '</b></span>'; setTimeout(renderQBadge, 0); }
   // 导航高亮：明明教官的试炼（全息作战场地、代币抽奖）不管从哪里进，都亮「全息作战」；竞技对战（在太空竞技场里）亮「星际探索」
   // 现在是不是在荆楚号里（舰体图、区域、区域里的设施）：导航亮「飞船终端」
   var SHIP_VIEWS = { summon: 1, area: 1, shop: 1, forge: 1, nursery: 1, medal: 1, farm: 1, seedshop: 1, spa: 1, home: 1, room: 1, teashop: 1, baseshop: 1 };
@@ -324,6 +326,7 @@
       var pg = b.dataset.page, on = holo ? pg === 'holo' : ship ? pg === 'ship' : pg === page || (page === 'arena' && pg === 'explore') || ((page === 'store' || page === 'release' || page === 'dex') && pg === 'bag');   // 精灵仓库、图鉴在「精灵一览」里；荆楚号在「飞船终端」里
       b.classList.toggle('on', on); b.setAttribute('aria-selected', on);
     });
+    setTimeout(navDots, 0);
   }
   function go(p) { if (typeof SPA !== 'undefined' && SPA.on && page === 'explore' && ex.view === 'spa' && p !== 'explore') { spaLeaveAsk(function () { go(p); }); return; }
     if (ex.mode === 'replay' && p !== 'explore') { stopTimers(); ex.mode = null; ex.view = 'sites'; } PAGE_Y[page] = window.scrollY; if (p === 'log' && page !== 'log') ui.logSel = null; page = p; ui.pick = -1; savePage(); renderTop(); var y0 = PAGE_Y[p] || 0; window.scrollTo(0, y0); requestAnimationFrame(function () { if (page === p) window.scrollTo(0, Math.min(y0, document.documentElement.scrollHeight)); }); }
@@ -1833,6 +1836,26 @@
     { k: 'nursery', ic: '🥚', t: '孵化', area: '神农架', open: function () { return true; } },
     { k: 'shop', ic: '🛒', t: '商城', area: '荆门', open: function () { return shopOpen(); }, lock: '读完支线「物资仓储」后开放' }
   ];
+  function dotHatch() { if (!acc || !acc.nursery || !Array.isArray(acc.nursery.slots)) return false; return acc.nursery.slots.some(function (x) { var H = x && MATS[x.k] && MATS[x.k].hatch; return !!(H && Date.now() - x.t >= H.min * 60000); }); }
+  function dotFarm() { return !!acc && farmOpen() && farm().plots.some(farmReady); }
+  function dotSummon() { if (!acc) return false; var S0 = acc.sum || {}; return S0.fsDay !== ACC.dayStr(Date.now()) || (S0.free | 0) > 0; }
+  var SHIP_DOTS = { nursery: dotHatch, farm: dotFarm, summon: dotSummon };
+  function shipDot() { return Object.keys(SHIP_DOTS).some(function (k) { return SHIP_DOTS[k](); }); }
+  // 主导航上的小红点：航行日志（没读过的）、飞船终端（有东西可以领 / 免费）
+  function navDots() {
+    if (!acc) return;
+    var want = { log: logUnread() > 0, ship: shipDot() };
+    Object.keys(want).forEach(function (pg) {
+      var b = document.querySelector('#mainnav .nav[data-page="' + pg + '"]'); if (!b) return;
+      var d = b.querySelector('.red-dot');
+      if (want[pg] && !d) b.insertAdjacentHTML('beforeend', '<i class="red-dot nav-dot" aria-label="有新内容"></i>'); else if (!want[pg] && d) d.remove();
+    });
+    [].forEach.call(document.querySelectorAll('[data-smq], [data-summon]'), function (b) {
+      var k = b.dataset.smq || (b.dataset.summon ? 'summon' : ''), on = SHIP_DOTS[k] && SHIP_DOTS[k](), d = b.querySelector('.red-dot');
+      if (on && !d) b.insertAdjacentHTML('beforeend', '<i class="red-dot" aria-label="可以领取"></i>'); else if (!on && d) d.remove();
+    });
+  }
+  setInterval(navDots, 15000);
   function shipQuick() {
     return '<div class="sm-quick">' + SHIP_QUICK.map(function (q) { var op = q.open(); return '<button type="button" class="sm-q' + (op ? '' : ' locked') + '" data-smq="' + q.k + '"' + (op ? '' : ' title="' + q.lock + '"') + '><span>' + q.ic + '</span><b>' + q.t + '</b></button>'; }).join('') + '</div>';
   }
@@ -2575,7 +2598,7 @@
   }
   function renderSummon() {
     var tab = ex.sumTab || 'saint', S = sumRec(), B = SUMMON.banner(Date.now()), I = acc.items, core = I.g_core || 0, fp = I.fPt || 0, tok = I.sumTok || 0, today = ACC.dayStr(Date.now());
-    var tabs = '<div class="fparts forge-tabs" role="tablist">' + [['saint', '圣晶石召唤'], ['friend', '友情点召唤'], ['shop', '召唤代币商店']].map(function (t) { var on = t[0] === tab; return '<button type="button" role="tab" class="tab' + (on ? ' on' : '') + '" aria-selected="' + on + '" data-sumtab="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>';
+    var tabs = '<div class="fparts forge-tabs" role="tablist">' + [['saint', '圣晶石召唤'], ['friend', '友情点召唤'], ['shop', '召唤代币商店']].map(function (t) { var on = t[0] === tab; var dt = (t[0] === 'saint' && (S.free | 0) > 0) || (t[0] === 'friend' && S.fsDay !== today); return '<button type="button" role="tab" class="tab' + (on ? ' on' : '') + '" aria-selected="' + on + '" data-sumtab="' + t[0] + '" style="position:relative">' + t[1] + (dt ? '<i class="red-dot" aria-label="有免费召唤"></i>' : '') + '</button>'; }).join('') + '</div>';
     var body = '';
     if (tab === 'saint') {
       var upName = SPMAP[B.up].evo[0].n, left = SUMMON.PITY_HARD - (S.pity || 0), toFree = SUMMON.FREE_EVERY - ((S.n || 0) % SUMMON.FREE_EVERY);
@@ -4560,16 +4583,23 @@
     add('更新公告-近期改动', changelogHTML());
     return E;
   }
+  // 小红点（2026-11-02）：航行日志没读过的条目、飞船终端里可以领取 / 免费的东西
+  function logKeyOf(t) { return t === '更新公告-近期改动' && typeof CHANGELOG !== 'undefined' && CHANGELOG[0] ? t + '|' + CHANGELOG[0].date + CHANGELOG[0].title : t; }
+  function logRead() { return acc.logRead || (acc.logRead = {}); }
+  var LOG_KEYS = null;   // 上次算出来的全部条目（算航行日志的小红点用）
+  function logUnread() { if (!acc) return 0; if (!LOG_KEYS) { try { LOG_KEYS = logEntries().map(function (x) { return logKeyOf(x.t); }); } catch (e) { LOG_KEYS = []; } } var R = logRead(); return LOG_KEYS.filter(function (k) { return !R[k]; }).length; }
+  function logMarkRead(t) { var k = logKeyOf(t), R = logRead(); if (!R[k]) { R[k] = Date.now(); save(); navDots(); } }
   function renderLog() {
     var E = logEntries(), sel = E.filter(function (x) { return x.t === ui.logSel; })[0] ? ui.logSel : (E.filter(function (x) { return x.t === '新玩法-圣晶石召唤'; })[0] || E[0]).t;   // 每次进入航行日志默认显示「新玩法-圣晶石召唤」
-    ui.logSel = sel;
+    ui.logSel = sel; LOG_KEYS = E.map(function (x) { return logKeyOf(x.t); });
+    logMarkRead(sel);
     $('pg-log').innerHTML = '<div class="page-head"><h2 class="sec">航行日志</h2><p class="hint">荆楚号的公告板：新玩法、限时活动、全服任务和更新公告。点左边的标题查看内容。</p></div>' +
-      '<div class="log-split"><nav class="log-nav" role="tablist" aria-label="航行日志">' + E.map(function (x) { var p = x.t.split('-'), ty = p.length > 1 ? p.shift() : '', nm = p.join('-'), on = x.t === sel; return '<button type="button" role="tab" class="log-nv' + (on ? ' on' : '') + '" aria-selected="' + on + '" data-logsel="' + esc(x.t) + '">' + (ty ? '<small>' + esc(ty) + '</small>' : '') + '<b>' + esc(nm) + '</b></button>'; }).join('') + '</nav>' +
+      '<div class="log-split"><nav class="log-nav" role="tablist" aria-label="航行日志">' + E.map(function (x) { var p = x.t.split('-'), ty = p.length > 1 ? p.shift() : '', nm = p.join('-'), on = x.t === sel; return '<button type="button" role="tab" class="log-nv' + (on ? ' on' : '') + '" aria-selected="' + on + '" data-logsel="' + esc(x.t) + '">' + (ty ? '<small>' + esc(ty) + '</small>' : '') + '<b>' + esc(nm) + '</b>' + (!logRead()[logKeyOf(x.t)] && x.t !== sel ? '<i class="red-dot" aria-label="未读"></i>' : '') + '</button>'; }).join('') + '</nav>' +
       '<div class="log-view">' + E.map(function (x) { return '<section class="log-sec" data-logsec="' + esc(x.t) + '"' + (x.t === sel ? '' : ' hidden') + '>' + x.h + '</section>'; }).join('') + '</div></div>';
   }
   $('pg-log').addEventListener('click', function (e) {
     var b = e.target.closest('[data-logsel]');
-    if (b) { ui.logSel = b.dataset.logsel; [].forEach.call(document.querySelectorAll('#pg-log .log-nv'), function (x) { var on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-selected', on); }); [].forEach.call(document.querySelectorAll('#pg-log .log-sec'), function (x) { x.hidden = x.dataset.logsec !== ui.logSel; }); if (window.innerWidth <= 760) { var v = document.querySelector('#pg-log .log-view'); if (v) v.scrollIntoView({ behavior: 'smooth', block: 'start' }); } return; }
+    if (b) { ui.logSel = b.dataset.logsel; logMarkRead(ui.logSel); var rd = b.querySelector('.red-dot'); if (rd) rd.remove(); [].forEach.call(document.querySelectorAll('#pg-log .log-nv'), function (x) { var on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-selected', on); }); [].forEach.call(document.querySelectorAll('#pg-log .log-sec'), function (x) { x.hidden = x.dataset.logsec !== ui.logSel; }); if (window.innerWidth <= 760) { var v = document.querySelector('#pg-log .log-view'); if (v) v.scrollIntoView({ behavior: 'smooth', block: 'start' }); } return; }
     var w = e.target.closest('[data-logwar]'); if (w) { ui.logWar = w.dataset.logwar; renderLog(); return; }
   });
   /* 航行日志（2026-11-01）：各个内容先显示成小板块，点开才是完整面板；完整的卡片放在隐藏的 #log-store 里
