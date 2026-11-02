@@ -2641,6 +2641,7 @@
     if (!R) html += enLobby(E); else html += enRun(R);
     $('pg-explore').innerHTML = html;
     enMapBind();
+    var eo = $('en-order'); if (eo) H.sortable(eo, function (keys) { enUi.line = keys.map(Number); renderEndless(); });
   }
   function enLobby(E) {
     var d = enUi.d && enUi.d <= E.maxD ? enUi.d : E.maxD; enUi.d = d;
@@ -2730,13 +2731,20 @@
   function enPrep(R) {
     var C = R.cur, live = R.ros.map(function (x, i) { return x.dead ? -1 : i; }).filter(function (i) { return i >= 0; });
     enUi.line = enUi.line.filter(function (i) { return live.indexOf(i) >= 0; });
-    if (!enUi.line.length) enUi.line = live.slice().sort(function (a, b) { return (R.ros[b].hpr || 0) - (R.ros[a].hpr || 0); }).slice(0, EN.LINE_MAX);
+    var ck = R.st + ':' + R.n; if (enUi.lineFor !== ck) { enUi.lineFor = ck; enUi.step = 'pick'; if (!enUi.line.length) enUi.line = live.slice().sort(function (a, b) { return (R.ros[b].hpr || 0) - (R.ros[a].hpr || 0); }).slice(0, EN.LINE_MAX); }
+    if (!enUi.line.length) enUi.step = 'pick';
     return '<section class="en-panel"><h3>' + EN.NODE[C.t].ic + ' ' + EN.NODE[C.t].n + ' · 敌人 ' + C.foes.length + ' 只</h3><div class="en-foes">' + C.foes.map(function (f) {
       var bt = EN.buffText(f.boss);
       return '<div class="en-foe"><img src="' + esc(f.img) + '" alt=""><div><b>' + esc(f.nick) + '</b><small>' + (f.lv > 100 ? 'LV.??' : 'LV' + f.lv) + (f.maxhp ? ' · 体力 ' + fmt(f.maxhp) : f.hpMul ? ' · 体力 ×' + f.hpMul : '') + '</small>' + tchips(SPMAP[f.id].types) + '<div class="en-buffs">' + (bt.length ? bt.map(function (b) { return '<span>' + esc(b) + '</span>'; }).join('') : '<span class="none">没有增益</span>') + '</div></div></div>';
-    }).join('') + '</div><p class="hint">在下方名单里点精灵调整出战顺序（最多 ' + EN.LINE_MAX + ' 只，第 1 只首发）。已选 ' + enUi.line.length + ' 只。</p>' +
-      '<div class="en-roster">' + R.ros.map(function (x, i) { return enRosCard(x, i, R, 'line'); }).join('') + '</div>' +
-      '<div class="soc-foot"><button type="button" class="btn primary big" data-enfight="1"' + (enUi.line.length ? '' : ' disabled') + '>开战</button></div></section>';
+    }).join('') + '</div>' + (enUi.step === 'order'
+      // 第二步：拖动调整出战顺序（2026-11-02）
+      ? '<h4>出战顺序 <span class="hint">按住拖动、或点 ‹ › 调整，排在第一个的就是首发</span></h4><ol class="lu-list" id="en-order">' + enUi.line.map(function (i, k) { var x = R.ros[i], n = enUi.line.length;
+          return '<li class="lu-card' + (k ? '' : ' lead') + '" data-k="' + i + '"><span class="lu-no">' + (k ? '第 ' + (k + 1) + ' 位' : '首发') + '</span><img src="' + esc(x.spec.img) + '" alt="" draggable="false"><b>' + esc(x.spec.nick) + '</b><small>LV' + x.spec.lv + ' · 体力 ' + Math.round((x.hpr || 0) * 100) + '%</small>' + tchips(SPMAP[x.sid].types) +
+            '<span class="tp-btns">' + (k ? '<button type="button" class="btn ghost lu-lead" data-enmv="-1" data-k2="' + i + '" aria-label="往前挪">‹</button><button type="button" class="btn ghost lu-lead" data-enlead="' + i + '">设为首发</button>' : '') + (k < n - 1 ? '<button type="button" class="btn ghost lu-lead" data-enmv="1" data-k2="' + i + '" aria-label="往后挪">›</button>' : '') + '</span></li>'; }).join('') + '</ol>' +
+        '<div class="soc-foot"><button type="button" class="btn ghost" data-enstep="pick">重新选择</button><button type="button" class="btn primary big" data-enfight="1">开战</button></div></section>'
+      // 第一步：选出战的精灵
+      : '<h4>选择出战的精灵 <span class="hint">已选 ' + enUi.line.length + ' / ' + EN.LINE_MAX + '</span></h4><div class="en-roster">' + R.ros.map(function (x, i) { return enRosCard(x, i, R, 'line'); }).join('') + '</div>' +
+        '<div class="soc-foot"><button type="button" class="btn ghost" data-enreset="1"' + (enUi.line.length ? '' : ' disabled') + '>重置</button><button type="button" class="btn primary big" data-enstep="order"' + (enUi.line.length ? '' : ' disabled') + '>确认</button></div></section>');
   }
   function enEvent(R, P) {
     var N = EN_NPC[P.k], img = CHARS[N[1]] || '', body = '', btns = '';
@@ -2807,12 +2815,16 @@
     if (D.enuq) { var q = D.enuq.split('|'); e.stopPropagation(); enTx('enUneq', { r: +q[0], s: +q[1] }); return; }
     if (D.enfight) { enFight(); return; }
     if (D.enpanel != null) { enUi.panel = D.enpanel || null; enUi.eqB = null; renderEndless(); return; }
+    if (D.enreset) { enUi.line = []; renderEndless(); return; }
+    if (D.enmv) { var L0 = enUi.line, j0 = L0.indexOf(+D.k2), j1 = j0 + (+D.enmv); if (j0 >= 0 && j1 >= 0 && j1 < L0.length) { L0[j0] = L0[j1]; L0[j1] = +D.k2; } renderEndless(); return; }
+    if (D.enlead) { var kk = +D.enlead; enUi.line = [kk].concat(enUi.line.filter(function (x) { return x !== kk; })); renderEndless(); return; }
+    if (D.enstep) { enUi.step = D.enstep; renderEndless(); return; }
     if (D.enhide) { enUi.hide = true; renderEndless(); return; }
     if (D.enshow) { enUi.hide = false; renderEndless(); return; }
     if (D.enr != null) {
       var ri = +D.enr, x = R.ros[ri]; if (!x || x.dead) return;
       if (enUi.eqB != null && R.bag[enUi.eqB]) { var bb = enUi.eqB; enUi.eqB = null; enTx('enEquip', { b: bb, r: ri }); return; }
-      if (R.cur && !R.pend) { var k = enUi.line.indexOf(ri); if (k >= 0) enUi.line.splice(k, 1); else if (enUi.line.length < EN.LINE_MAX) enUi.line.push(ri); else toast('最多派 ' + EN.LINE_MAX + ' 只'); renderEndless(); }
+      if (R.cur && !R.pend && enUi.step !== 'order' && !enUi.panel) { var k = enUi.line.indexOf(ri); if (k >= 0) enUi.line.splice(k, 1); else if (enUi.line.length < EN.LINE_MAX) enUi.line.push(ri); else toast('最多派 ' + EN.LINE_MAX + ' 只'); renderEndless(); }
     }
   });
   function enVbChat() {

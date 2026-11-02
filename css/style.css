@@ -3470,3 +3470,11 @@ html.land-rot .sheet { height: 100%; overflow-y: auto; overflow-x: hidden; -webk
 .en-stat .en-pbtn + .btn.ghost { margin-left: 0; }
 .en-stat .btn { margin-left: 0; }
 .en-stat .en-pbtn:first-of-type { margin-left: auto; }
+
+/* 无尽作战：出战顺序（2026-11-02） */
+.en-order { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.en-order li { display: grid; grid-template-columns: 28px 56px 1fr auto; gap: 10px; align-items: center; border: 1.5px solid var(--ink); border-radius: 12px; background: #fff; padding: 6px 10px; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
+.en-order li img { width: 56px; height: 56px; object-fit: contain; pointer-events: none; }
+.en-on { width: 26px; height: 26px; border-radius: 50%; background: var(--red); color: #fff; font-weight: 800; display: grid; place-items: center; font-size: 13px; }
+.en-order li:first-child .en-on { background: #c9a227; }
+.en-grip { font-size: 20px; color: #999; }
