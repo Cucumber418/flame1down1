@@ -672,7 +672,7 @@ function resolveTurn(S, acts) {
   });
   info.sort(function (a, b) { return b.pri - a.pri || b.spe - a.spe || a.r - b.r; });
   S.order = info.map(function (x) { return x.i; });
-  S.parry = [null, null]; info.forEach(function (x) { if (x.mv && (x.mv.custom === 'parryTm' || x.mv.custom === 'parryAtk')) S.parry[x.i] = { k: x.mv.custom, ok: 0 }; });   // 心眼刀 / 至高之术：这回合准备化解（2026-11-02）
+  S.parry = [null, null];   // 心眼刀 / 至高之术：用出后本回合内处于化解架势（2026-11-02）
   [0, 1].forEach(function (i) { if (acts[i].kind === 'switch') S.turnActed[i] = true; });
   for (var q = 0; q < info.length; q++) {
     if (S.over) break;
@@ -805,6 +805,15 @@ function cantAct(S, evs, me) {
   return false;
 }
 
+// 心眼刀 / 至高之术化解成功：对方的技能失效后立刻结算（2026-11-02）
+function parryWin(S, evs, p, k, banName) {
+  var me = act(S, p), q = 1 - p, foe = act(S, q), P = S.parry && S.parry[p];
+  if (k === 'parryTm') { var sh = Math.floor((me.lv || LV) * 2.5); me.fx.shield = Math.max(me.fx.shield || 0, sh); log(S, evs, nm(me) + '获得了 ' + sh + ' 点护盾', 'good'); }
+  else if (!foe.fainted) { var pd = Math.floor((me.lv || LV) * 2); log(S, evs, '至高之术反击，造成 ' + pd + ' 点固定伤害', 'fxl'); applyDamage(S, evs, q, pd, p, {}); }
+  var ps = P && me.moves.filter(function (x) { return x.n === P.mv; })[0]; if (ps && ps.pp < ps.max) { ps.pp++; log(S, evs, '「' + P.mv + '」回复了 1 点 PP', 'fxl'); }
+  if (ability(me) === '招架' && !foe.fainted) { foe.fx.banMv = banName; foe.tm.parryBan = 2; log(S, evs, nm(me) + '的「招架」：' + nm(foe) + '下回合不能使用「' + banName + '」', 'fxl'); }
+  E(S, evs, 'stage', { side: p }); E(S, evs, 'stage', { side: q });
+}
 function useMove(S, evs, i, mv, slotIdx, extra) {
   if (!extra) RV(act(S, i), 'mute');
   var me = act(S, i), j = 1 - i, foe = act(S, j);
@@ -825,7 +834,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   log(S, evs, nm(me) + (extra ? '额外发动了「' : '使用了「') + mv.name + '」！', 'use');
   var PR = !extra && S.parry && S.parry[j];   // 对方这回合在招架：至高之术化解主动攻击，心眼刀化解回合类效果（变化技能里写着「N回合」的）
   if (PR && !PR.ok && !act(S, j).fainted && ((PR.k === 'parryAtk' && mv.cat !== '变化') || (PR.k === 'parryTm' && mv.cat === '变化' && /\d+\s*回合/.test(mv.d || '')))) {
-    PR.ok = 1; PR.mv = mv.name; log(S, evs, nm(act(S, j)) + '看穿了「' + mv.name + '」，将它化解了！', 'crit'); me.fx.boostNext = 0; return;
+    PR.ok = 1; log(S, evs, nm(act(S, j)) + '看穿了「' + mv.name + '」，将它化解了！', 'crit'); me.fx.boostNext = 0; parryWin(S, evs, j, PR.k, mv.name); return;
   }
   if (!extra && me.perm.moonFull && slotIdx >= 0) {
     var got = 0; me.moves.forEach(function (sl, k) { if (k !== slotIdx && sl.pp < sl.max) { sl.pp++; got++; } });
@@ -1132,13 +1141,9 @@ function doStatus(S, evs, i, mv) {
     case 'x2next': me.fx.x2Next = 1; E(S, evs, 'stage', { side: i }); log(S, evs, nm(me) + '蓄势待发，下一次攻击伤害翻倍！', 'fxl'); break;
     case 'counterStorm': timer('counter', 5, nm(me) + '摆出了反击的架势（5回合）'); break;
     case 'parryTm': case 'parryAtk':
-      var P2 = S.parry && S.parry[i];
-      if (!P2 || !P2.ok) { log(S, evs, '但是对方没有可以化解的' + (c === 'parryTm' ? '回合类效果' : '主动攻击')); break; }
-      if (c === 'parryTm') { var sh = Math.floor((me.lv || LV) * 2.5); me.fx.shield = Math.max(me.fx.shield || 0, sh); log(S, evs, nm(me) + '获得了 ' + sh + ' 点护盾', 'good'); }
-      else if (!foe.fainted) { var pd = Math.floor((me.lv || LV) * 2); log(S, evs, '至高之术反击，造成 ' + pd + ' 点固定伤害', 'fxl'); applyDamage(S, evs, j, pd, i, {}); }
-      var ps = me.moves.filter(function (x) { return x.n === mv.name; })[0]; if (ps && ps.pp < ps.max) { ps.pp++; log(S, evs, '「' + mv.name + '」回复了 1 点 PP', 'fxl'); }
-      if (ability(me) === '招架' && !foe.fainted && P2.mv) { foe.fx.banMv = P2.mv; foe.tm.parryBan = 2; log(S, evs, nm(me) + '的「招架」：' + nm(foe) + '下回合不能使用「' + P2.mv + '」', 'fxl'); }
-      E(S, evs, 'stage', { side: i }); E(S, evs, 'stage', { side: j }); break;
+      if (!S.parry) S.parry = [null, null];
+      S.parry[i] = { k: c, ok: 0, mv: mv.name };
+      log(S, evs, nm(me) + '摆出了化解的架势，准备看破对方的' + (c === 'parryTm' ? '回合类效果' : '主动攻击'), 'fxl'); break;
     case 'fenglei': timer('fenglei', 5, '风雷滚滚！' + nm(me) + '身边卷起了风与雷（5回合）'); break;   // 2026-11-02
     case 'absDef': me.fx.absDef = 1; flag(nm(me) + '摆出了绝对防御的架势'); break;
     case 'cave': me.fx.cave = S.turn; flag(nm(me) + '躲进了岩洞，这一回合的攻击都打不到它'); break;
