@@ -5487,7 +5487,7 @@
   }
   function openWiki() {
     var old = $('wiki-dlg'); if (old) old.remove();
-    var list = SP.concat(EXTRA_SP).filter(function (s) { return s && s.id && s.id !== 'dummy' && !s.placeholder && SPRITES[s.id]; }).sort(function (a, b) { return wikiNo(a) - wikiNo(b); });
+    var list = SP.concat(EXTRA_SP).filter(function (s) { return s && s.id && s.id !== 'dummy' && !s.placeholder && SPRITES[s.id]; }).sort(function (a, b) { var x = wikiNo(a), y = wikiNo(b); return (x === 9999) - (y === 9999) || y - x; });
     var types = []; list.forEach(function (s) { s.types.forEach(function (t) { if (types.indexOf(t) < 0) types.push(t); }); });
     if (!WK.sel || !SPMAP[WK.sel]) WK.sel = list[0] && list[0].id;
     var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'wiki-dlg';
