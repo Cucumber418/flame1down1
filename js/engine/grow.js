@@ -330,6 +330,14 @@ var GROW = (function () {
   function rankBest(data) { try { var R = JSON.parse((data && data['hs-rank-v1']) || 'null'); return R ? Math.max(R.best || 0, R.r || 0) : 0; } catch (e) { return 0; } }
   // 神秘精灵兑换券（第一届做题大王争霸赛）：1 张换一只 LV10 的尖盔虫 + 200 个花剑圆弧（2026-11-02）
   var CT_REDEEM = { sid: 'tiago', lv: 10, items: { fencArc: 200 } };
+  // S1争霸赛精灵分享券（2026-11-02）：送一只 LV10 尖盔虫 + 200 花剑圆弧给一位好友（服务器记下，对方下次同步邮箱时收到邮件）
+  TX.add('ctShare', function (a, args, env) {
+    if (!a.items || !(a.items.ctShare >= 1)) return no('没有精灵分享券');
+    var r = env.fetch ? env.fetch('ctShare', String(args.to || '')) : null;
+    if (!r || !r.ok) return no((r && r.err) || '要联网登录后才能分享');
+    a.items.ctShare--; if (!a.items.ctShare) delete a.items.ctShare;
+    return { ok: true, to: r.to, name: r.name };
+  });
   TX.add('ctRedeem', function (a, args, env) {
     if (!a.items || !(a.items.ctTicket >= 1)) return no('没有神秘精灵兑换券');
     a.items.ctTicket--; if (!a.items.ctTicket) delete a.items.ctTicket;
@@ -344,6 +352,7 @@ var GROW = (function () {
     else if (k === 'mail') {
       var M0 = (typeof MAILS !== 'undefined' ? MAILS : []).filter(function (x) { return x.id === id; })[0];
       if (M0) { if (M0.to && M0.to.indexOf(a.name) < 0 && M0.to.indexOf(env.user) < 0) return no('这封邮件不是给你的'); list = M0.att && M0.att.mons; }   // to 里写登录账号名或做题家名字都行
+      else if (/^ctshare-/.test(id)) { if (!(a.mail || []).some(function (y) { return y && y.id === id; })) return no('没有这封邮件'); list = [{ sid: 'tiago', lv: 10 }]; }   // 好友用「S1争霸赛精灵分享券」送来的尖盔虫（2026-11-02）
       else if (/-king-gift$/.test(id)) { if (rankBest(env.data) < 10) return no('还没达到王者段位'); list = RANK_GIFT[10]; }
     }
     else if (k === 'rank') { var r = int(+id.split(':').pop()); if (!(rankBest(env.data) >= r)) return no('还没达到这个段位'); list = RANK_GIFT[r]; }

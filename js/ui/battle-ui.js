@@ -205,7 +205,7 @@
       natAny: ['pill', '#8e6fd6', '性'], natTagore: ['flask', '#8e6fd6', '性'], evReset: ['pill', '#9aa0a6', '退'], fruit1: ['fruit', '#e74c3c'], fruit2: ['fruit', '#f39c12', '✦'],
       g_sand: ['pile', '#f2d58a', '#fff6c8'], g_core: ['orb', '#ff8a3d', '✦'], s_herb: ['seed', '#8bc34a'], s_flower: ['seed', '#4a90e2'], s_rice: ['seed', '#e8d9a8'], c_herb: ['leaf', '#4caf50'], c_flower: ['flower', '#5aa2f0'], c_rice: ['grain', '#f5f0dc'],
       mmTok: ['coin', '#4a6a8a', '明'], mmEye: ['orb', '#f2c94c', '眼'], e_leiming: ['orb', '#e8b830', '精'], e_odo: ['orb', '#5a7aa8', '精'], odoFin: ['gem', '#6a86b8'], hrDisk: ['coin', '#7b5ac8', '✦'], exp: ['orb', '#3b8fd9', '经'], energy: ['orb', '#e0a020', '能'],
-      e_pluto: ['orb', '#5b4a8a', '精'], ctTicket: ['ticket', '#f2c94c', '券'], permit: ['ticket', '#c42f3a', '许'], auto: ['box', '#5b8fd0', '自']
+      e_pluto: ['orb', '#5b4a8a', '精'], ctTicket: ['ticket', '#f2c94c', '券'], ctShare: ['ticket', '#b5452c', '享'], permit: ['ticket', '#c42f3a', '许'], auto: ['box', '#5b8fd0', '自']
     }[k];
     if (G) return genIcon(G[0], G[1], G[2]);
     var C = { cap1: ['#7c97b8', '#e8eef6'], cap2: ['#c42f3a', '#f6e4e2'], cap3: ['#2b2a33', '#f3d36b'], pot1: ['#5aa469', '#e4f2e2'], pot2: ['#e08a2e', '#fbead4'], pot200: ['#2f8f86', '#d7f3ef'], pp5: ['#7fb6f2', '#e3effc'], pp10: ['#3f86dc', '#dbe8fa'], pp15: ['#2a4ca0', '#d6def5'] }[k] || ['#999', '#eee'];

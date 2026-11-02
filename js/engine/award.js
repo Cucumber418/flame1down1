@@ -309,8 +309,12 @@ var AWD = (function () {
       if (!a.ctPlace) a.ctPlace = {};
       if (a.ctPlace[CONTEST.id] == null) a.ctPlace[CONTEST.id] = k2;
       var R = CT_RW[k2] || CT_RW0, place = k2 === 0 ? '冠军' : k2 === 1 ? '亚军' : '第 ' + (k2 + 1) + ' 名', ttl = k2 === 0 ? 'S1做题大王' : k2 === 1 ? 'S1做题小王' : 'S1做题区';
+      send(a, { id: 'contest-' + CONTEST.id + '-share', title: 'S1争霸赛精灵分享券', body: '{name}，你好！\n感谢参加' + CONTEST.name + '！附件里是一张「S1争霸赛精灵分享券」。\n在储存箱里使用，可以选一位好友，送 Ta 一只 LV10 的尖盔虫和 200 个花剑圆弧。', att: { items: { ctShare: 1 } } }, now);   // 2026-11-02：所有参赛选手
       send(a, { id: 'contest-' + CONTEST.id + '-rw', title: CONTEST.name + ' · ' + place + '奖励', body: '{name}，你好！\n' + CONTEST.name + '圆满结束，你获得了' + place + '，并获得称号「' + ttl + '」（点右上角的名字即可佩戴）！感谢参赛，请领取附件里的奖励。\n神秘精灵兑换券能兑换什么，之后揭晓。', att: { exp: R.exp, items: { ctTicket: R.t } } }, now);
     }
+    // 好友用分享券送来的尖盔虫（server/friendpt.js 记账）
+    var shIn = env.fetch ? env.fetch('ctShareIn') : null;
+    if (Array.isArray(shIn)) shIn.forEach(function (x) { if (!x || !x.id) return; send(a, { id: 'ctshare-' + x.id, from: String(x.name || x.from || '好友').slice(0, 20), title: '好友的精灵分享：尖盔虫', body: '{name}，你好！\n你的好友「' + String(x.name || x.from || '').slice(0, 20) + '」用 S1争霸赛精灵分享券送了你一只 LV10 的尖盔虫，还有 200 个花剑圆弧（解锁它的隐藏技能用）。请领取附件！', att: { mons: [{ sid: 'tiago', lv: 10 }], items: { fencArc: 200 } } }, now); });
     return a.mail.length - n0;
   }
   function claim(a, m, env) {   // 领一封邮件的附件

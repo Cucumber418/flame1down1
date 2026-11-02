@@ -908,7 +908,7 @@
   INS_ITEMS.insChip = { name: '刻印激活晶片', d: '开启一只精灵的第 3 个刻印槽。在精灵资料的「刻印」里使用。圣晶石召唤有 2% 的概率获得。' };
   INS_ITEMS.fPt = { name: '友情点', d: '友情点召唤用的点数。社交里每天可以给每位好友各送一次经验（双方各 200 点，自己每天从送礼最多拿 2000 点）；借用好友的助战精灵，双方各 100 点（每天最多 1000 点）。' };
   INS_ITEMS.sumTok = { name: '召唤代币', d: '每次圣晶石召唤送 10 个，抽到当期 UP 再送 200 个。可以在召唤代币商店兑换圣晶石、UP 精灵的专属道具和限定刻印。' };
-  var MAT_ORDER = SUM_ESS.concat(['m_lcleaf', 'e_leafcat', 'e_pluto', 'e_odo', 'm_psac', 'm_hfhorn', 'm_horn', 'm_mcry', 'm_cu', 'm_fe', 'ctTicket']);
+  var MAT_ORDER = SUM_ESS.concat(['m_lcleaf', 'e_leafcat', 'e_pluto', 'e_odo', 'm_psac', 'm_hfhorn', 'm_horn', 'm_mcry', 'm_cu', 'm_fe', 'ctTicket', 'ctShare']);
   // 太空种植园只种药草。min 是成熟分钟，yield 是收获数量。收获时退回种子。
   var SEEDS = GROW.SEEDS;   // 在 js/engine/grow.js
 
@@ -982,6 +982,7 @@
     m_cu: ['在野外挖到的马亚尔煤炭。', '在荆楚号 · 宜昌的三峡能源核心换成能量（每块 150 能量，每天有上限）。', '芙罗拉星、坎伯兰星野外的矿点，每处每天挖 1 次（要挖矿钻头）。'],
     m_fe: ['在野外挖到的马亚尔铁矿石，比煤炭更值钱。', '在荆楚号 · 宜昌的三峡能源核心换成能量（每块 250 能量，每天有上限）。', '芙罗拉星、坎伯兰星野外的矿点，每处每天挖 1 次（要挖矿钻头）。'],
     mmTok: ['活动「明明教官的试炼」的代币。', '在全息作战场地或航行日志里抽奖：10 个抽一次，100 个十连。', '通过活动「明明教官的试炼」的关卡（首次通过另有奖励）；明明代币抽奖里也能抽到；读完活动任务「明明教官的试炼」送 500 个。'],
+    ctShare: ['第一届做题大王争霸赛所有参赛选手的纪念。', '在储存箱里使用：选一位好友，送 Ta 一只 LV10 的尖盔虫和 200 个花剑圆弧（对方会收到邮件）。', '参加做题大王争霸赛，通过邮件发放。'],
     ctTicket: ['第一届做题大王争霸赛的参赛奖励。', '在储存箱里使用：1 张兑换一只 LV10 的战斗系精灵「尖盔虫」，同时获得 200 个花剑圆弧（解锁它的隐藏技能用）。', '参加做题大王争霸赛，比赛结束后按名次发放。'],
     // 其他
     rename: ['一张可以重写名字的卡片。', '点右上角的名字，在菜单里使用，修改做题家名字（最多 ' + NAME_MAX + ' 个字）。', '荆门 · 物资仓储的商城（1,000 能量）。'],
@@ -1113,6 +1114,7 @@
       var it = USE_ITEMS[k] && USE_ITEMS[k].kind ? USE_ITEMS[k] : null, inf = itemInfo(k), act = '', body = '';
       if (k === 'permit') act = '<p class="hint">当前 ' + pn + ' 枚 · ' + permitNext() + '</p><button type="button" class="btn" data-itgo="weekly">去每周挑战</button>';
       else if (k === 'rename') act = '<button type="button" class="btn primary" data-ituse="rename">使用改名卡</button>';
+      else if (k === 'ctShare') act = '<button type="button" class="btn primary" data-ituse="ctShare">分享给好友</button>';
       else if (k === 'ctTicket') act = '<button type="button" class="btn primary" data-ituse="ctTicket">兑换尖盔虫（LV10）+ 200 花剑圆弧</button>';
       else if (k === 'auto') act = '<button type="button" class="btn" data-itgo="home">去我的茶室装上</button>';
       else if (KEY_ITEMS[k] && KEY_ITEMS[k].img && ITEM_IMG[KEY_ITEMS[k].img]) act = '<img class="ib-big" src="' + ITEM_IMG[KEY_ITEMS[k].img] + '" alt="">';
@@ -1169,6 +1171,7 @@
   }
   function useBagItem(k) {
     if (k === 'rename') { setTimeout(function () { renaming = true; renderRename(); $('who-menu').hidden = false; $('who-btn').setAttribute('aria-expanded', true); window.scrollTo(0, 0); }, 0); return; }   // 等这次点击处理完再打开名字菜单，免得被「点别处关闭」立刻关上
+    if (k === 'ctShare') { ctShareDlg(); return; }
     if (k === 'ctTicket') { txRun('ctRedeem', {}, function (r) { ui.itMsg = '兑换成功！获得 LV10 尖盔虫和 200 个花剑圆弧' + (r && r.added ? '，尖盔虫已加入配队。' : '，尖盔虫在精灵仓库里。'); if (!acc.items.ctTicket) ui.itSel = null; renderItems(); toast(ui.itMsg); }); return; }
     var sel = $('it-nat');
     applyMonItem(k, mon(ui.itTarget), sel && sel.value, function (r) {
@@ -1981,6 +1984,27 @@
   var CONTEST = { id: 'quiz1', name: '第一届做题大王争霸赛' }, CT = { data: null, busy: false, err: '', at: 0 };
   var CT_RW = [{ exp: 300000, t: 1 }, { exp: 200000, t: 1 }, { exp: 150000, t: 1 }, { exp: 120000, t: 1 }];   // 第 1~4 名；之后都按 CT_RW0（兑换券每人 1 张）
   var CT_RW0 = { exp: 80000, t: 1 };
+  MATS.ctShare = { name: 'S1争霸赛精灵分享券', d: '第一届做题大王争霸赛所有参赛选手的纪念。在储存箱里使用，可以送一位好友一只 LV10 的尖盔虫和 200 个花剑圆弧。' };   // 2026-11-02
+  // 分享券：选一位好友（好友列表从服务器取）
+  function ctShareDlg() {
+    if (!window.CLOUD || !CLOUD.user || !CLOUD.user()) { toast('要联网登录后才能分享'); return; }
+    var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'cts-dlg';
+    var draw = function (list, err) {
+      d.innerHTML = '<div class="soc-box" role="dialog" aria-modal="true" style="max-width:480px"><span class="step">S1争霸赛精灵分享券</span><h2>分享给哪位好友？</h2><p>Ta 会收到一封邮件：LV10 尖盔虫 + 200 个花剑圆弧。</p>' +
+        (err ? '<p class="hint red">' + esc(err) + '</p>' : !list ? '<p class="hint">正在读取好友列表……</p>' : !list.length ? '<p class="hint">还没有好友。去「社交 → 玩家」里加好友吧。</p>' :
+          '<div class="cts-list">' + list.map(function (p) { return '<button type="button" class="btn ghost cts-f" data-ctsto="' + esc(p.user) + '"><b>' + esc(p.name || p.user) + '</b>' + (p.online ? '<small>在线</small>' : '') + '</button>'; }).join('') + '</div>') +
+        '<div class="soc-foot"><button type="button" class="btn ghost" data-ctsx="1">取消</button></div></div>';
+    };
+    draw(null); document.body.appendChild(d);
+    CLOUD.api('GET', '/api/players').then(function (r) { draw(r && r.players ? r.players.filter(function (p) { return p.friend && !p.me; }) : null, r && r.players ? '' : '读取好友失败，请稍后再试'); }, function () { draw(null, '读取好友失败，请稍后再试'); });
+    d.addEventListener('click', function (e) {
+      if (e.target === d || e.target.closest('[data-ctsx]')) { d.remove(); return; }
+      var b = e.target.closest('[data-ctsto]'); if (!b) return;
+      var to = b.dataset.ctsto, nm0 = b.querySelector('b').textContent;
+      d.remove();
+      txRun('ctShare', { to: to }, function (r) { ui.itMsg = '已分享给「' + (r && r.name || nm0) + '」！Ta 会收到一封邮件。'; if (!acc.items.ctShare) ui.itSel = null; renderItems(); toast(ui.itMsg); });
+    });
+  }
   MATS.ctTicket = { name: '神秘精灵兑换券', d: '第一届做题大王争霸赛的参赛奖励。在储存箱里使用，1 张兑换一只 LV10 的尖盔虫（战斗系），外加 200 个花剑圆弧。' };   // 2026-11-02 揭晓：尖盔虫   // 2026-10-24：改回待定（之后补充新精灵），不再兑换雷明灯
   function contestMe() { return !!(acc && acc.contest && acc.contest[CONTEST.id]) || !!(CT.data && CT.data.mine); }
   function ctName(u) { return (CT.data && CT.data.names && CT.data.names[u]) || u; }

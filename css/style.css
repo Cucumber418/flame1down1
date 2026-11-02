@@ -3500,3 +3500,5 @@ html.land-rot .sheet { height: 100%; overflow-y: auto; overflow-x: hidden; -webk
 .en-eqm img { width: 48px; height: 48px; object-fit: contain; } .en-eqm small { color: #777; }
 .en-eqm:hover:not([disabled]) { border-color: var(--red); } .en-eqm[disabled] { opacity: .4; cursor: not-allowed; }
 @media (max-width: 640px) { .en-bwrap { grid-template-columns: 1fr; } }
+.cts-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px; max-height: 50vh; overflow-y: auto; }
+.cts-f { display: grid; justify-items: start; text-align: left; } .cts-f small { color: #3a9a4a; font-size: 11px; }

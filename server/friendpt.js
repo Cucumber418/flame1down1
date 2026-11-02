@@ -23,7 +23,7 @@ var A = require('./accounts');
 var FILE = path.join(A.DATA_DIR, 'friendpt.json');
 var GIFT_EXP = 10000, GIFT_FP = 200, GIFT_CAP = 2000, HELP_FP = 100, HELP_CAP = 1000, BJ = 8 * 3600 * 1000;
 
-function load() { try { var d = JSON.parse(fs.readFileSync(FILE, 'utf8')); if (d && typeof d === 'object') { d.pend = d.pend || {}; d.sent = d.sent || {}; d.help = d.help || {}; d.gfp = d.gfp || {}; return d; } } catch (e) {} return { pend: {}, sent: {}, help: {}, gfp: {} }; }
+function load() { try { var d = JSON.parse(fs.readFileSync(FILE, 'utf8')); if (d && typeof d === 'object') { d.pend = d.pend || {}; d.sent = d.sent || {}; d.help = d.help || {}; d.gfp = d.gfp || {}; d.share = d.share || {}; return d; } } catch (e) {} return { pend: {}, sent: {}, help: {}, gfp: {}, share: {} }; }
 function store(d) { var tmp = FILE + '.tmp'; fs.writeFileSync(tmp, JSON.stringify(d)); fs.renameSync(tmp, FILE); }
 function today() { return new Date(Date.now() + BJ).toISOString().slice(0, 10); }
 function prune(d) { var t = today(); ['sent', 'help', 'gfp'].forEach(function (k) { Object.keys(d[k]).forEach(function (x) { if (x.slice(0, 10) !== t) delete d[k][x]; }); }); }
@@ -47,6 +47,21 @@ function take(name) {
   return { fp: p.fp | 0, exp: p.exp | 0, gifts: (p.gifts || []).slice(0, 50) };
 }
 require('./tx').hook('fp', function (u) { return take(u.name); });
+// S1争霸赛精灵分享券（2026-11-02）：交易 ctShare 来登记（检查是不是好友），对方同步邮箱时（交易 mail · sync）取走，发成邮件
+//   share: { 收礼人: [{ id, from, name, t }] }
+require('./tx').hook('ctShare', function (u, to) {
+  var o = A.loadUser(String(to || ''));
+  if (!o || o.name === u.name) return { ok: false, err: '找不到这位船员' };
+  if (!(Array.isArray(u.friends) && u.friends.indexOf(o.name) >= 0)) return { ok: false, err: '只能分享给好友' };
+  var d = load(); if (!d.share[o.name]) d.share[o.name] = [];
+  if (d.share[o.name].length >= 50) return { ok: false, err: 'Ta 还有很多分享没收，稍后再试' };
+  d.share[o.name].push({ id: u.name + '-' + Date.now().toString(36), from: u.name, name: dispName(u), t: Date.now() }); store(d);
+  return { ok: true, to: o.name, name: dispName(o) };
+});
+require('./tx').hook('ctShareIn', function (u) {
+  var d = load(), L = d.share[u.name]; if (!L || !L.length) return [];
+  delete d.share[u.name]; store(d); return L;
+});
 
 A.use(function (req, res, url) {
   if (url !== '/api/fp-state' && url !== '/api/fp-gift') return false;
