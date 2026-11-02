@@ -2680,7 +2680,12 @@
       '<h4>消耗品</h4><div class="en-its">' + (Object.keys(R.cons).length ? Object.keys(R.cons).map(function (k) { return enIt(k, R.cons[k]); }).join('') : '<span class="hint">没有消耗品。消耗品在对战里使用，用完就没了。</span>') + '</div>' +
       '<h4>装备背包</h4><div class="en-its">' + (R.bag.length ? R.bag.map(function (k, b) { return '<button type="button" class="en-bagit' + (enUi.eqB === b ? ' on' : '') + '" data-enbag="' + b + '">' + enIt(k) + '</button>'; }).join('') : '<span class="hint">没有闲置的装备。</span>') + '</div>' +
       (enUi.eqB != null && R.bag[enUi.eqB] ? '<p class="hint red">点下面一只精灵，把「' + esc(EN.IT[R.bag[enUi.eqB]].n) + '」装上去（每只最多 3 件）。</p>' : R.bag.length ? '<p class="hint">点装备，再点精灵就能装上；点精灵身上的装备可以卸下。</p>' : '') + '</section>';
-    var ros = '<section class="en-panel"><h4>参战名单 <span class="hint">存活 ' + EN.alive(R).length + ' / ' + R.ros.length + '</span></h4><div class="en-roster">' + R.ros.map(function (x, i) { return enRosCard(x, i, R, R.cur && !P ? 'line' : ''); }).join('') + '</div></section>';
+    var ros = '<section class="en-panel"><h4>参战名单 <span class="hint">存活 ' + EN.alive(R).length + ' / ' + R.ros.length + '</span></h4><div class="en-roster">' + R.ros.map(function (x, i) { return enRosCard(x, i, R, ''); }).join('') + '</div></section>';
+    // 2026-11-02：节点的内容（剧情、对战、奖励、商店、碰碰运气）都在弹出面板里显示；对战准备可以先收起，回地图调整装备
+    var canHide = !!(R.cur && !P);
+    var pk = (P ? P.t : 'cur') + R.st + ':' + R.n, still = enUi.popK === pk; enUi.popK = main ? pk : null;   // 同一个面板重新渲染时不再播弹出动画
+    if (main && !(canHide && enUi.hide)) main = '<div class="en-pop' + (still ? ' still' : '') + '"><div class="en-popbox">' + (canHide ? '<button type="button" class="en-popx" data-enhide="1" aria-label="收起">收起 ▾</button>' : '') + main + '</div></div>';
+    else if (main) main = '<div class="en-reopen"><button type="button" class="btn primary" data-enshow="1">▶ 继续：' + EN.NODE[R.cur.t].n + '</button></div>';
     return top + main + bag + ros;
   }
   // 大地图（2026-11-02，参考杀戮尖塔）：横向，可以拖动；闪烁的节点是现在能走的
@@ -2719,6 +2724,7 @@
       var bt = EN.buffText(f.boss);
       return '<div class="en-foe"><img src="' + esc(f.img) + '" alt=""><div><b>' + esc(f.nick) + '</b><small>' + (f.lv > 100 ? 'LV.??' : 'LV' + f.lv) + (f.maxhp ? ' · 体力 ' + fmt(f.maxhp) : f.hpMul ? ' · 体力 ×' + f.hpMul : '') + '</small>' + tchips(SPMAP[f.id].types) + '<div class="en-buffs">' + (bt.length ? bt.map(function (b) { return '<span>' + esc(b) + '</span>'; }).join('') : '<span class="none">没有增益</span>') + '</div></div></div>';
     }).join('') + '</div><p class="hint">在下方名单里点精灵调整出战顺序（最多 ' + EN.LINE_MAX + ' 只，第 1 只首发）。已选 ' + enUi.line.length + ' 只。</p>' +
+      '<div class="en-roster">' + R.ros.map(function (x, i) { return enRosCard(x, i, R, 'line'); }).join('') + '</div>' +
       '<div class="soc-foot"><button type="button" class="btn primary big" data-enfight="1"' + (enUi.line.length ? '' : ' disabled') + '>开战</button></div></section>';
   }
   function enEvent(R, P) {
@@ -2779,7 +2785,7 @@
       else if (P0.k === 'bttp') toast(r.left ? '你悄悄溜走了。' : r.got ? 'Bttp 迷迷糊糊地塞给你「' + EN.IT[r.got].n + '」' + (r.woke ? '，然后彻底醒了，伸着懒腰走开了。' : '，又睡着了。') : 'Bttp 嘟囔了一句「神还在思考」，又睡着了……');
       else if (P0.k === 'cumber') toast('获得「' + EN.IT[r.got].n + '」，已放进装备背包。');
     }); return; }
-    if (D.engo != null) { enUi.line = []; enTx('enGo', { i: +D.engo }); return; }
+    if (D.engo != null) { enUi.line = []; enUi.hide = false; enTx('enGo', { i: +D.engo }); return; }
     if (D.enpick != null) { enTx('enPick', { i: +D.enpick }, function (r) { if (r && r.stage) toast('进入第 ' + (r.stage + 1) + ' 个大关卡！'); }); return; }
     if (D.enskip) { enTx('enPick', { skip: 1 }, function (r) { if (r && r.stage) toast('进入第 ' + (r.stage + 1) + ' 个大关卡！'); }); return; }
     if (D.enbuy != null) { enTx('enBuy', { i: +D.enbuy }); return; }
@@ -2788,6 +2794,8 @@
     if (D.enbag != null) { enUi.eqB = enUi.eqB === +D.enbag ? null : +D.enbag; renderEndless(); return; }
     if (D.enuq) { var q = D.enuq.split('|'); e.stopPropagation(); enTx('enUneq', { r: +q[0], s: +q[1] }); return; }
     if (D.enfight) { enFight(); return; }
+    if (D.enhide) { enUi.hide = true; renderEndless(); return; }
+    if (D.enshow) { enUi.hide = false; renderEndless(); return; }
     if (D.enr != null) {
       var ri = +D.enr, x = R.ros[ri]; if (!x || x.dead) return;
       if (enUi.eqB != null && R.bag[enUi.eqB]) { var bb = enUi.eqB; enUi.eqB = null; enTx('enEquip', { b: bb, r: ri }); return; }
