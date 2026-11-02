@@ -1422,6 +1422,8 @@
   }
   function seenForm(s) { return form({ sid: s.id, lv: s.evo[acc.seen[s.id]].lv }); }
   var dexSel = null;
+  // 图鉴排序（2026-11-02）：按编号倒序（新的在前），没有编号的放在最后
+  function dexOrder() { var no = function (s) { var v = parseInt((s.evo && s.evo[0] && s.evo[0].no) || '', 10); return isNaN(v) ? -1 : v; }; return DEX_ALL.map(function (s, i) { return { s: s, i: i, n: no(s) }; }).sort(function (a, b) { return (a.n < 0) - (b.n < 0) || b.n - a.n || a.i - b.i; }).map(function (x) { return x.s; }); }
   function renderDex2() {
     syncSeen();
     var n = litCount(), T = TITLES[0];
@@ -1430,7 +1432,7 @@
     var html = monsTabs('dex') + '<div class="page-head"><h2 class="sec">黄冈秘鉴</h2><p class="hint">荆楚号学院部收藏的精灵图鉴。带回某一类精灵后，它那一页就会点亮；在剧情里见过或交过手的精灵，会先记下名字。</p></div>' +
       '<div class="dex-prog"><span class="tape l"></span><div><b>' + n + '</b> / ' + DEX_ALL.length + ' 类已点亮' + (ns ? '<small class="seen-n">　另有 ' + ns + ' 类见过</small>' : '') + '</div><div class="pbar2"><i style="width:' + (n / DEX_ALL.length * 100) + '%"></i></div>' +
       '<span class="hint">' + ((acc.titles || []).indexOf(T.id) >= 0 ? '已获得称号「' + T.n + '」' : '再点亮 ' + Math.max(0, 3 - n) + ' 类，可获得称号「' + T.n + '」') + '</span></div>' +
-      '<div class="build"><div class="dex-grid hg-grid">' + DEX_ALL.map(function (s) {
+      '<div class="build"><div class="dex-grid hg-grid">' + dexOrder().map(function (s) {
         var on = owned(s.id), best = 0;
         acc.mons.forEach(function (m) { if (m.sid === s.id) best = Math.max(best, stageOf(s, m.lv)); });
         var seen = !on && acc.seen && acc.seen[s.id] !== undefined, sf = seen ? seenForm(s) : null;
