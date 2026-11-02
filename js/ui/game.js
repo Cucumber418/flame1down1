@@ -329,7 +329,7 @@
     });
     setTimeout(navDots, 0);
   }
-  function go(p) { if (typeof SPA !== 'undefined' && SPA.on && page === 'explore' && ex.view === 'spa' && p !== 'explore') { spaLeaveAsk(function () { go(p); }); return; }
+  function go(p) { if (p !== 'explore' && $('en-modal')) $('en-modal').remove(); if (typeof SPA !== 'undefined' && SPA.on && page === 'explore' && ex.view === 'spa' && p !== 'explore') { spaLeaveAsk(function () { go(p); }); return; }
     if (ex.mode === 'replay' && p !== 'explore') { stopTimers(); ex.mode = null; ex.view = 'sites'; } PAGE_Y[page] = window.scrollY; if (p === 'log' && page !== 'log') ui.logSel = null; page = p; ui.pick = -1; savePage(); renderTop(); var y0 = PAGE_Y[p] || 0; window.scrollTo(0, y0); requestAnimationFrame(function () { if (page === p) window.scrollTo(0, Math.min(y0, document.documentElement.scrollHeight)); }); }
   var PAGE_Y = {};   // 2026-11-01：切换大栏时记住每一栏的滚动位置，回来时停在原来的地方
   $('mainnav').addEventListener('click', function (e) {
@@ -1773,6 +1773,7 @@
   function carry(i, key, def) { var arr = SCRIPT[ex.site], p = prog(ex.site), v = def; for (var k = 0; k <= i && k < arr.length; k++) if (arr[k][key] !== undefined && !(arr[k].only && arr[k].only !== p.ch)) v = arr[k][key]; return v; }
 
   function renderExplore() {
+    if (ex.view !== 'endless' && $('en-modal')) enModalOff();
     if (ex.shipBack && !shipBackOn()) ex.shipBack = null;
     navSync();
     if (ex.mode === 'intro') return;
@@ -2654,18 +2655,18 @@
     var x = EN.IT[o.k]; return H.itemIcon(o.k) + '<b>' + esc(x.n) + '</b><em class="en-tier t' + x.tier + '">' + EN.TIER_NAME[x.tier] + ' · ' + EN.KIND_NAME[x.kind] + '</em><small>' + esc(x.d) + '</small>';
   }
   function enHp(x) { var p = Math.max(0, Math.min(1, x.hpr || 0)); return '<div class="hpbar"><i class="' + (p > 0.5 ? '' : p > 0.2 ? 'mid' : 'low') + '" style="width:' + (p * 100).toFixed(1) + '%"></i></div>'; }
-  function enRosCard(x, i, R, mode) {
-    var sp = x.spec, on = mode === 'line' && enUi.line.indexOf(i) >= 0;
-    return '<div class="en-ros' + (x.dead ? ' dead' : '') + (on ? ' on' : '') + '" data-enr="' + i + '"><img src="' + esc(sp.img) + '" alt=""><div class="en-rt"><b>' + esc(sp.nick) + '</b><small>LV' + sp.lv + (x.dead ? ' · 已倒下' : ' · ' + Math.round((x.hpr || 0) * 100) + '%') + '</small>' + enHp(x) +
-      '<div class="en-eq">' + [0, 1, 2].map(function (s) { var q = x.eq[s]; return q ? '<button type="button" class="en-slot full" data-enuq="' + i + '|' + s + '" title="' + esc(EN.IT[q].n + '：' + EN.IT[q].d + '（点击卸下）') + '">' + H.itemIcon(q) + '</button>' : '<span class="en-slot"></span>'; }).join('') + '</div></div>' +
+  function enRosCard(x, i, R, mode) {   // mode：'line' 选出战（点了切换选中）/ 'open' 名单（点了打开精灵面板）
+    var sp = x.spec, on = mode === 'line' && enUi.line.indexOf(i) >= 0, S0 = SPMAP[x.sid], p = Math.round(Math.max(0, Math.min(1, x.hpr || 0)) * 100);
+    return '<div class="en-ros' + (x.dead ? ' dead' : '') + (on ? ' on' : '') + '" data-enr="' + i + '" style="--tc:' + (TYPE_COLOR[S0.types[0]] || '#888') + '"><div class="en-rpic"><img src="' + esc(sp.img) + '" alt="">' + (x.dead ? '<span class="en-stamp">倒下</span>' : '') + '</div>' +
+      '<div class="en-rt"><b>' + esc(sp.nick) + '</b><small>LV' + sp.lv + ' · ' + (x.dead ? '已倒下' : p + '%') + '</small>' + enHp(x) +
+      '<div class="en-eq">' + [0, 1, 2].map(function (s) { var q = x.eq[s]; return q ? '<span class="en-slot full t' + EN.IT[q].tier + '" title="' + esc(EN.IT[q].n) + '">' + H.itemIcon(q) + '</span>' : '<span class="en-slot"></span>'; }).join('') + '</div></div>' +
       (on ? '<span class="en-ord">' + (enUi.line.indexOf(i) + 1) + '</span>' : '') + '</div>';
   }
   function renderEndless() {
     var E = EN.rec(acc), R = E.run, html = exHead('') + '<div class="crumb"><button type="button" class="btn ghost" id="en-back">‹ 返回飞船终端</button><b>荆楚号 · 无尽作战</b></div>';
     if (!R) html += enLobby(E); else html += enRun(R);
-    $('pg-explore').innerHTML = html;
-    enMapBind();
-    var eo = $('en-order'); if (eo) H.sortable(eo, function (keys) { enUi.line = keys.map(Number); renderEndless(); });
+    if (enUi.pageHtml !== html || !$('pg-explore').querySelector('.crumb #en-back')) { var w0 = $('en-mapw'), sl = w0 ? w0.scrollLeft : null; $('pg-explore').innerHTML = html; enUi.pageHtml = html; enMapBind(sl); }   // 页面没变就不重画（免得闪）
+    enModal(R);
   }
   function enLobby(E) {
     var d = enUi.d && enUi.d <= E.maxD ? enUi.d : E.maxD; enUi.d = d;
@@ -2682,45 +2683,94 @@
       '<h4 class="en-h">无尽代币商店 <span class="hint">' + H.itemIcon('enTok') + ' 无尽代币 ' + fmt(acc.items.enTok || 0) + '</span></h4><div class="shop-grid">' +
       EN.TOK_SHOP.map(function (T) { var I = SUMMON.INS[T.k]; return '<article class="shop-it">' + H.itemIcon(T.k) + '<div class="si-txt"><b>' + esc(I.name) + '</b><p class="hint">限定刻印 · 体力 +25，' + esc(I.fd) + '</p><p class="si-own">持有 ' + (acc.items[T.k] || 0) + '</p></div><div class="si-buy"><span class="si-price">' + H.itemIcon('enTok') + T.price + '</span><button type="button" class="btn primary" data-entok="' + T.k + '"' + ((acc.items.enTok || 0) >= T.price ? '' : ' disabled') + '>兑换</button></div></article>'; }).join('') + '</div>';
   }
-  function enRun(R) {
-    var P = R.pend, path = R.path[R.st] || [], slots = '';
-    for (var i = 0; i < EN.NODES; i++) {
-      var t = i < path.length ? path[i] : i === EN.NODES - 1 ? 'boss' : null, cur = i === R.n && R.cur;
-      slots += '<span class="en-node' + (i < path.length ? ' done' : '') + (cur ? ' cur' : '') + (i === EN.NODES - 1 ? ' boss' : '') + '" title="' + (t ? EN.NODE[t].n : '第 ' + (i + 1) + ' 关') + '">' + (cur ? EN.NODE[R.cur.t].ic : t ? EN.NODE[t].ic : i + 1) + '</span>';
+  function enRun(R) {   // 页面：顶部信息条 + 大地图（节点内容、精灵、道具都在弹出层里，见 enModal）
+    var P = R.pend, pips = '';
+    for (var s0 = 0; s0 < EN.STAGES; s0++) pips += '<i class="' + (s0 < R.st ? 'done' : s0 === R.st ? 'on' : '') + '"></i>';
+    var nCons = Object.keys(R.cons).reduce(function (n, k) { return n + R.cons[k]; }, 0);
+    var hud = '<section class="en-hud"><div class="en-hud-l"><span class="en-dbadge"><small>难度</small><b>' + R.d + '</b></span>' +
+      '<div class="en-hud-prog"><span class="en-pips" title="大关卡">' + pips + '</span><b>第 ' + (R.st + 1) + ' 大关卡</b><small>第 ' + Math.min(EN.NODES, R.n + 1) + ' / ' + EN.NODES + ' 关</small></div>' +
+      '<span class="en-gemc"><i>💎</i><b>' + fmt(R.gems) + '</b><small>无尽宝石</small></span>' +
+      (R.vbOn ? '<span class="en-vbc' + (R.vbDone ? ' full' : '') + '"><i>❤</i><b>' + (R.vbDone ? '满' : (R.vb || 0)) + '</b><small>Vanber 好感</small></span>' : '') + '</div>' +
+      '<div class="en-hud-r"><button type="button" class="en-hbtn" data-enpanel="ros"><i>🐾</i><span>精灵<small>' + EN.alive(R).length + ' / ' + R.ros.length + '</small></span>' + (R.bag.length ? '<em class="en-badge">' + R.bag.length + '</em>' : '') + '</button>' +
+      '<button type="button" class="en-hbtn" data-enpanel="bag"><i>🎒</i><span>道具<small>' + (R.abil.length + nCons + R.bag.length) + ' 件</small></span></button>' +
+      '<button type="button" class="en-hbtn quit" data-enquit="1"><i>⏏</i><span>结束<small>结算</small></span></button></div></section>';
+    var reopen = R.cur && !P && enUi.hide ? '<div class="en-reopen"><button type="button" class="btn primary big" data-enshow="1">▶ 继续：' + EN.NODE[R.cur.t].n + '</button></div>' : '';
+    return hud + (R.map ? enMapHTML(R) : '') + reopen;
+  }
+  // 弹出层：节点内容（剧情、对战准备、奖励、商店、碰碰运气）和精灵 / 道具面板。返回 { key, html, close }
+  function enModalOf(R) {
+    var P = R.pend, key = '', html = '', close = false, wide = false;
+    if (P && P.t === 'ev') { key = 'ev' + R.st; html = enEvent(R, P); }
+    else if (P && P.t === 'pick') { key = 'pick' + R.st + ':' + R.n; html = enPickHTML(R, P); }
+    else if (P && P.t === 'shop') { key = 'shop' + R.st + ':' + R.n; html = enShopHTML(R, P); wide = true; }
+    else if (P && P.t === 'msg') { key = 'msg' + R.st + ':' + R.n; html = '<section class="en-card en-gam"><div class="en-ch"><span>🎲</span><h3>碰碰运气</h3></div><div class="en-cb"><p class="en-msg">' + esc(P.text) + '</p>' + (P.got ? '<div class="en-gamgot">' + H.itemIcon(P.got) + '<b class="t' + EN.IT[P.got].tier + '">' + esc(EN.IT[P.got].n) + '</b></div>' : '') + '</div><div class="en-cf"><button type="button" class="btn primary big" data-enleave="1">继续前进</button></div></section>'; }
+    else if (R.cur && !enUi.hide) { key = 'cur' + R.st + ':' + R.n; html = enPrep(R); wide = true; }
+    if (!html && enUi.panel) {
+      close = true; wide = true; key = 'p:' + enUi.panel;
+      html = enUi.panel === 'mon' ? enMonPanel(R) : enUi.panel === 'bag' ? enBagPanel(R) : enRosPanel(R);
     }
-    var top = '<section class="en-top"><div class="en-stat"><b>难度 ' + R.d + '</b><span>第 ' + (R.st + 1) + ' / ' + EN.STAGES + ' 大关卡</span><span>第 ' + Math.min(EN.NODES, R.n + 1) + ' / ' + EN.NODES + ' 关</span><span class="en-gem">💎 ' + fmt(R.gems) + '</span>' +
-      (R.vbOn ? '<span class="en-vb" title="好感满了，Vanber 会送你 500 宝石和 1 件传奇道具">Vanber 好感 ' + (R.vbDone ? '已满 ❤' : (R.vb || 0) + ' / 100') + '</span>' : '') +
-      '<button type="button" class="btn en-pbtn" data-enpanel="ros">🐾 精灵 ' + EN.alive(R).length + ' / ' + R.ros.length + (R.bag.length ? '<i class="red-dot"></i>' : '') + '</button><button type="button" class="btn en-pbtn" data-enpanel="bag">🎒 道具 ' + (R.abil.length + Object.keys(R.cons).reduce(function (n, k) { return n + R.cons[k]; }, 0) + R.bag.length) + '</button>' +
-      '<button type="button" class="btn ghost" data-enquit="1">结束作战并结算</button></div>' + (R.map ? enMapHTML(R) : '<div class="en-map">' + slots + '</div>') + '</section>';
-    var main = '';
-    if (P && P.t === 'ev') main = enEvent(R, P);
-    else if (P && P.t === 'pick') main = '<section class="en-panel"><h3>' + (P.from === 'boss' ? '击败首领！从 4 件传奇道具中选 2 件' : P.from === 'reward' ? '奖励：5 选 1' : '胜利！选择 ' + P.need + ' 项奖励') + '</h3><p class="hint">已选 ' + P.got.filter(function (g) { return g >= 0; }).length + ' / ' + P.need + '</p><div class="en-opts">' +
-      P.opts.map(function (o, k) { var got = P.got.indexOf(k) >= 0; return '<button type="button" class="en-opt' + (got ? ' got' : '') + '"' + (got ? ' disabled' : ' data-enpick="' + k + '"') + '>' + enOpt(o) + (got ? '<span class="en-gotmark">已选</span>' : '') + '</button>'; }).join('') + '</div><div class="soc-foot"><button type="button" class="btn ghost" data-enskip="1">跳过剩下的</button></div></section>';
-    else if (P && P.t === 'shop') main = '<section class="en-panel"><h3>商店 <span class="hint">💎 ' + fmt(R.gems) + '</span></h3>' + (P.vb && !P.chat ? '<div class="en-vbshop"><img src="' + CHARS.vanber_smile + '" alt=""><div><p>Vanber 也在这家商店里！</p><button type="button" class="btn" data-enchat="peek">和 Vanber 聊聊</button></div></div>' : '') + '<div class="en-shop">' +
+    return { key: key, html: html, close: close, wide: wide };
+  }
+  function enModal(R) {
+    var el = $('en-modal'), M = R ? enModalOf(R) : { html: '' };
+    if (!M.html) { if (el) el.remove(); enUi.mKey = null; return; }
+    if (!el || enUi.mKey !== M.key) {
+      if (el) el.remove();
+      el = document.createElement('div'); el.id = 'en-modal'; el.className = 'en-modal';
+      el.innerHTML = '<div class="en-mbox"></div>'; document.body.appendChild(el);
+      el.addEventListener('click', function (e) { if (e.target === el && enUi.mClose) { enUi.panel = null; renderEndless(); return; } enClick(e); });
+      enUi.mKey = M.key; enUi.mHtml = null;
+    }
+    enUi.mClose = M.close; el.classList.toggle('wide', !!M.wide);
+    var box = el.querySelector('.en-mbox');
+    if (enUi.mHtml !== M.html) { var sc = box.scrollTop, ls = box.querySelector('.en-blist'), lsc = ls ? ls.scrollTop : 0; box.innerHTML = M.html; box.scrollTop = sc; var ls2 = box.querySelector('.en-blist'); if (ls2) ls2.scrollTop = lsc; enUi.mHtml = M.html; }
+    var eo = $('en-order'); if (eo && !eo._sortable) H.sortable(eo, function (keys) { enUi.line = keys.map(Number); renderEndless(); });
+  }
+  function enModalOff() { var el = $('en-modal'); if (el) el.remove(); enUi.mKey = null; enUi.mHtml = null; }
+  function enPickHTML(R, P) {
+    var got = P.got.filter(function (g) { return g >= 0; }).length;
+    return '<section class="en-card"><div class="en-ch"><span>' + (P.from === 'boss' ? '👑' : P.from === 'reward' ? '🎁' : '🏆') + '</span><h3>' + (P.from === 'boss' ? '击败首领！' : P.from === 'reward' ? '奖励' : '胜利！') + '</h3><em class="en-cnt">' + got + ' / ' + P.need + '</em></div>' +
+      '<div class="en-cb"><p class="en-sub">' + (P.from === 'boss' ? '从 4 件传奇道具中选 2 件' : '选择 ' + P.need + ' 项') + '</p><div class="en-opts">' +
+      P.opts.map(function (o, k) { var g = P.got.indexOf(k) >= 0, x = EN.IT[o.k]; return '<button type="button" class="en-opt' + (g ? ' got' : '') + (x ? ' t' + x.tier : '') + '"' + (g ? ' disabled' : ' data-enpick="' + k + '"') + '>' + enOpt(o) + (g ? '<span class="en-gotmark">✓ 已选</span>' : '') + '</button>'; }).join('') +
+      '</div></div><div class="en-cf"><button type="button" class="btn ghost" data-enskip="1">跳过剩下的</button></div></section>';
+  }
+  function enShopHTML(R, P) {
+    return '<section class="en-card"><div class="en-ch"><span>🛒</span><h3>商店</h3><em class="en-cnt">💎 ' + fmt(R.gems) + '</em></div><div class="en-cb">' +
+      (P.vb && !P.chat ? '<div class="en-vbshop"><img src="' + CHARS.vanber_smile + '" alt=""><div><p>Vanber 也在这家商店里！</p><button type="button" class="btn" data-enchat="peek">和 Vanber 聊聊</button></div></div>' : '') + '<div class="en-shop">' +
       P.list.map(function (L, k) { var x = EN.IT[L.k], owned = x && x.kind === 'abil' && R.abil.indexOf(L.k) >= 0; return '<div class="en-sh' + (L.sold ? ' sold' : '') + (x ? ' t' + x.tier : '') + '">' + enOpt(L.k === 'heal' ? { k: 'heal', n: L.n } : L) + '<div class="en-buy"><span>💎 ' + L.price + '</span><button type="button" class="btn primary" data-enbuy="' + k + '"' + (L.sold || owned || R.gems < L.price ? ' disabled' : '') + '>' + (L.sold ? '已售出' : owned ? '已拥有' : '购买') + '</button></div></div>'; }).join('') +
-      '</div><div class="soc-foot"><button type="button" class="btn primary" data-enleave="1">离开商店</button></div></section>';
-    else if (P && P.t === 'msg') main = '<section class="en-panel"><h3>🎲 碰碰运气</h3><p class="en-msg">' + esc(P.text) + '</p>' + (P.got ? '<p>' + enIt(P.got) + '</p>' : '') + '<div class="soc-foot"><button type="button" class="btn primary" data-enleave="1">继续前进</button></div></section>';
-    else if (R.cur) main = enPrep(R);
-    else if (R.next && !R.map) main = '<section class="en-panel"><h3>选择下一个节点</h3><div class="en-next">' + R.next.map(function (t, k) { var N = EN.NODE[t]; return '<button type="button" class="en-nx ' + t + '" data-engo="' + k + '"><span>' + N.ic + '</span><b>' + N.n + '</b></button>'; }).join('') + '</div></section>';
-    var bag = '<section class="en-panel en-bag"><h4>能力</h4><div class="en-its">' + (R.abil.length ? R.abil.map(function (k) { return enIt(k); }).join('') : '<span class="hint">还没有能力。能力在对战里像道具一样使用，每场战斗可以发动一次。</span>') + '</div>' +
-      '<h4>消耗品</h4><div class="en-its">' + (Object.keys(R.cons).length ? Object.keys(R.cons).map(function (k) { return enIt(k, R.cons[k]); }).join('') : '<span class="hint">没有消耗品。消耗品在对战里使用，用完就没了。</span>') + '</div>' +
-      '<h4>装备背包</h4><div class="en-its">' + (R.bag.length ? R.bag.map(function (k, b) { return '<button type="button" class="en-bagit' + (enUi.eqB === b ? ' on' : '') + '" data-enbag="' + b + '">' + enIt(k) + '</button>'; }).join('') : '<span class="hint">没有闲置的装备。</span>') + '</div>' +
-      (enUi.eqB != null && R.bag[enUi.eqB] ? '<p class="hint red">点下面一只精灵，把「' + esc(EN.IT[R.bag[enUi.eqB]].n) + '」装上去（每只最多 3 件）。</p>' : R.bag.length ? '<p class="hint">点装备，再点精灵就能装上；点精灵身上的装备可以卸下。</p>' : '') + '</section>';
-    var ros = '<section class="en-panel"><h4>参战名单 <span class="hint">存活 ' + EN.alive(R).length + ' / ' + R.ros.length + '</span></h4><div class="en-roster">' + R.ros.map(function (x, i) { return enRosCard(x, i, R, ''); }).join('') + '</div></section>';
-    // 2026-11-02：节点的内容（剧情、对战、奖励、商店、碰碰运气）都在弹出面板里显示；对战准备可以先收起，回地图调整装备
-    var canHide = !!(R.cur && !P);
-    var pk = (P ? P.t : 'cur') + R.st + ':' + R.n, still = enUi.popK === pk; enUi.popK = main ? pk : null;   // 同一个面板重新渲染时不再播弹出动画
-    if (main && !(canHide && enUi.hide)) main = '<div class="en-pop' + (still ? ' still' : '') + '"><div class="en-popbox">' + (canHide ? '<button type="button" class="en-popx" data-enhide="1" aria-label="收起">收起 ▾</button>' : '') + main + '</div></div>';
-    else if (main) main = '<div class="en-reopen"><button type="button" class="btn primary" data-enshow="1">▶ 继续：' + EN.NODE[R.cur.t].n + '</button></div>';
-    // 2026-11-02：精灵和道具不再直接铺在页面上，点上方的按钮弹出面板
-    if (enUi.panel && (!main || (canHide && enUi.hide))) {
-      var eqBag = '<h4>装备背包</h4><div class="en-its">' + (R.bag.length ? R.bag.map(function (k, b) { return '<button type="button" class="en-bagit' + (enUi.eqB === b ? ' on' : '') + '" data-enbag="' + b + '">' + enIt(k) + '</button>'; }).join('') : '<span class="hint">没有闲置的装备。</span>') + '</div>' +
-        (enUi.eqB != null && R.bag[enUi.eqB] ? '<p class="hint red">点下面一只精灵，把「' + esc(EN.IT[R.bag[enUi.eqB]].n) + '」装上去（每只最多 3 件）。</p>' : R.bag.length ? '<p class="hint">点装备，再点精灵就能装上；点精灵身上的装备可以卸下。</p>' : '');
-      var body = enUi.panel === 'ros' ? '<section class="en-panel"><h3>🐾 参战精灵 <span class="hint">存活 ' + EN.alive(R).length + ' / ' + R.ros.length + '</span></h3><p class="hint">点精灵身上的装备可以卸下；在「道具 → 装备」里给精灵装备。</p><div class="en-roster">' + R.ros.map(function (x, i) { return enRosCard(x, i, R, ''); }).join('') + '</div></section>' : enBagPanel(R);
-      main = (main || '') + '<div class="en-pop' + (enUi.popK === 'p' + enUi.panel ? ' still' : '') + '" data-enpanelbg="1"><div class="en-popbox"><button type="button" class="en-popx" data-enpanel="">关闭 ✕</button>' + body + '</div></div>';
-      enUi.popK = 'p' + enUi.panel;
-    }
-    return top + main;
+      '</div></div><div class="en-cf"><button type="button" class="btn primary big" data-enleave="1">离开商店</button></div></section>';
+  }
+  // 精灵名单（点一只打开它的面板，在面板里配置装备）
+  function enRosPanel(R) {
+    return '<section class="en-card"><div class="en-ch"><span>🐾</span><h3>参战精灵</h3><em class="en-cnt">存活 ' + EN.alive(R).length + ' / ' + R.ros.length + '</em><button type="button" class="en-x" data-enpanel="" aria-label="关闭">✕</button></div>' +
+      '<div class="en-cb"><div class="en-roster">' + R.ros.map(function (x, i) { return enRosCard(x, i, R, 'open'); }).join('') + '</div>' + (R.bag.length ? '<p class="en-sub">背包里有 ' + R.bag.length + ' 件装备还没装上。</p>' : '') + '</div></section>';
+  }
+  function enStats(x) {
+    var sp = x.spec, bm = makeMon(sp.id, sp.moves, 1, sp.lv, sp.ev, sp.nat, sp.iv);
+    if (typeof SUMMON !== 'undefined' && x.im) SUMMON.insApply(bm, x.im);
+    var mul = 1; x.eq.forEach(function (q) { if (q === 'eq_gorgon') mul += 0.3; if (q === 'eq_hp10') mul += 0.1; });
+    bm.maxhp = Math.round(bm.maxhp * mul); return bm;
+  }
+  function enMonPanel(R) {
+    var i = enUi.monI | 0, x = R.ros[i]; if (!x) { enUi.panel = 'ros'; return enRosPanel(R); }
+    var sp = x.spec, bm = enStats(x), S0 = SPMAP[x.sid], hp = Math.round(bm.maxhp * Math.max(0, Math.min(1, x.hpr || 0)));
+    var stats = [['hp', '体力', bm.maxhp], ['atk', '物攻', bm.stats.atk], ['def', '物防', bm.stats.def], ['spa', '特攻', bm.stats.spa], ['spd', '特防', bm.stats.spd], ['spe', '速度', bm.stats.spe]];
+    var mx = Math.max.apply(null, stats.slice(1).map(function (q) { return q[2]; }).concat([1]));
+    var moves = sp.moves.map(function (n) { var m = M[n]; if (!m) return ''; return '<span class="en-mv" style="--tc:' + (TYPE_COLOR[m.type] || '#888') + '"><b>' + esc(n) + '</b><small>' + m.type + ' · ' + m.cat + (m.power ? ' · ' + m.power : '') + '</small></span>'; }).join('');
+    var slots = [0, 1, 2].map(function (s) {
+      var q = x.eq[s], I = q && EN.IT[q];
+      return q ? '<div class="en-eqs full t' + I.tier + '">' + H.itemIcon(q) + '<div><b>' + esc(I.n) + '</b><small>' + esc(I.d.replace(/^装备：/, '')) + '</small></div><button type="button" class="btn ghost" data-enuq="' + i + '|' + s + '">卸下</button></div>'
+        : '<div class="en-eqs empty"><span class="en-eqplus">＋</span><div><b>空装备槽</b><small>' + (x.dead ? '倒下的精灵不能装备' : R.bag.length ? '从下方背包里选一件装上' : '背包里没有装备') + '</small></div></div>';
+    }).join('');
+    var full = x.eq.length >= 3, bag = R.bag.length ? '<div class="en-eqbag">' + R.bag.map(function (k, b) { var I = EN.IT[k]; return '<div class="en-eqb t' + I.tier + '">' + H.itemIcon(k) + '<div><b>' + esc(I.n) + '</b><small>' + esc(I.d.replace(/^装备：/, '')) + '</small></div><button type="button" class="btn primary" data-enequip="' + b + '|' + i + '"' + (full || x.dead ? ' disabled' : '') + '>装上</button></div>'; }).join('') + '</div>' : '<p class="en-sub">背包里没有闲置的装备。战斗奖励、商店里可以拿到装备。</p>';
+    var nav = '<button type="button" class="en-nav" data-enmon="' + ((i - 1 + R.ros.length) % R.ros.length) + '" aria-label="上一只">‹</button><button type="button" class="en-nav" data-enmon="' + ((i + 1) % R.ros.length) + '" aria-label="下一只">›</button>';
+    return '<section class="en-card en-monp"><div class="en-ch"><button type="button" class="en-back" data-enpanel="ros">‹ 名单</button><h3>' + esc(sp.nick) + '</h3><em class="en-cnt">' + (i + 1) + ' / ' + R.ros.length + '</em>' + nav + '<button type="button" class="en-x" data-enpanel="" aria-label="关闭">✕</button></div>' +
+      '<div class="en-cb en-monb"><div class="en-mon-l' + (x.dead ? ' dead' : '') + '"><div class="en-stage" style="--tc:' + (TYPE_COLOR[S0.types[0]] || '#888') + '"><img src="' + esc(sp.img) + '" alt="">' + (x.dead ? '<span class="en-stamp">已倒下</span>' : '') + '</div>' +
+        '<div class="en-mon-id"><b>' + esc(sp.nick) + '</b><span>LV' + sp.lv + '</span>' + tchips(S0.types) + '</div>' +
+        '<div class="en-hpline"><span>体力</span>' + enHp(x) + '<b>' + hp + ' / ' + bm.maxhp + '</b></div>' +
+        '<div class="en-stats">' + stats.slice(1).map(function (q) { return '<span>' + q[1] + '</span><i><em style="width:' + Math.round(q[2] / mx * 100) + '%"></em></i><b>' + q[2] + '</b>'; }).join('') + '</div>' +
+        '<h4>技能</h4><div class="en-mvs">' + moves + '</div></div>' +
+      '<div class="en-mon-r"><h4>装备 <small>' + x.eq.length + ' / 3</small></h4><div class="en-eqslots">' + slots + '</div><h4>背包里的装备</h4>' + bag + '</div></div></section>';
   }
   // 大地图（2026-11-02，参考杀戮尖塔）：横向，可以拖动；闪烁的节点是现在能走的
   var EN_CX = 116, EN_H = 400;
@@ -2740,10 +2790,10 @@
     return '<div class="en-mapw" id="en-mapw"><svg class="en-svg" width="' + W + '" height="' + EN_H + '" viewBox="0 0 ' + W + ' ' + EN_H + '">' + lines + nodes + '</svg></div>' +
       '<div class="en-legend">' + ['battle', 'elite', 'reward', 'shop', 'gamble', 'boss'].map(function (t) { return '<span>' + EN.NODE[t].ic + ' ' + EN.NODE[t].n + '</span>'; }).join('') + '</div>';
   }
-  function enMapBind() {
+  function enMapBind(keep) {
     var w = $('en-mapw'), R = EN.run(acc); if (!w || !R || !R.map) return;
     var col = Math.max(0, Math.min(R.map.cols.length - 1, R.n)), x = 60 + col * EN_CX;
-    w.scrollLeft = Math.max(0, x - w.clientWidth / 2 + (enUi.mapDx || 0)); enUi.mapDx = 0;
+    w.scrollLeft = keep != null && enUi.mapCol === col ? keep : Math.max(0, x - w.clientWidth / 2); enUi.mapCol = col;
     var st = null;
     w.addEventListener('pointerdown', function (e) { st = { x: e.clientX, l: w.scrollLeft, moved: false }; });
     w.addEventListener('pointermove', function (e) { if (!st) return; var dx = e.clientX - st.x; if (Math.abs(dx) > 5) { st.moved = true; w.classList.add('drag'); } if (st.moved) w.scrollLeft = st.l - dx; });
@@ -2768,14 +2818,14 @@
         right += '<h4>装备给</h4><div class="en-eqto">' + ok.map(function (o) { var full = o.x.eq.length >= 3; return '<button type="button" class="en-eqm"' + (full ? ' disabled title="装备槽已满"' : ' data-enequip="' + sel.b + '|' + o.ri + '"') + '><img src="' + esc(o.x.spec.img) + '" alt=""><b>' + esc(o.x.spec.nick) + '</b><small>' + o.x.eq.length + ' / 3</small></button>'; }).join('') + '</div>';
       } else if (sel.ri != null) right += '<p class="hint">装备在 ' + esc(R.ros[sel.ri].spec.nick) + ' 身上。</p><button type="button" class="btn" data-enuq="' + sel.ri + '|' + sel.si + '">卸下</button>';
     }
-    return '<section class="en-panel en-bag"><h3>🎒 道具</h3>' + tabs + '<div class="en-bwrap"><div class="en-blist">' + left + '</div><div class="en-bdet">' + (right || '<p class="hint">选择左边的道具查看介绍。</p>') + '</div></div></section>';
+    return '<section class="en-card en-bag"><div class="en-ch"><span>🎒</span><h3>道具</h3><button type="button" class="en-x" data-enpanel="" aria-label="关闭">✕</button></div><div class="en-cb">' + tabs + '<div class="en-bwrap"><div class="en-blist">' + left + '</div><div class="en-bdet">' + (right || '<p class="hint">选择左边的道具查看介绍。</p>') + '</div></div></div></section>';
   }
   function enPrep(R) {
     var C = R.cur, live = R.ros.map(function (x, i) { return x.dead ? -1 : i; }).filter(function (i) { return i >= 0; });
     enUi.line = enUi.line.filter(function (i) { return live.indexOf(i) >= 0; });
     var ck = R.st + ':' + R.n; if (enUi.lineFor !== ck) { enUi.lineFor = ck; enUi.step = 'pick'; if (!enUi.line.length) enUi.line = live.slice().sort(function (a, b) { return (R.ros[b].hpr || 0) - (R.ros[a].hpr || 0); }).slice(0, EN.LINE_MAX); }
     if (!enUi.line.length) enUi.step = 'pick';
-    return '<section class="en-panel"><h3>' + EN.NODE[C.t].ic + ' ' + EN.NODE[C.t].n + ' · 敌人 ' + C.foes.length + ' 只</h3><div class="en-foes">' + C.foes.map(function (f) {
+    return '<section class="en-card en-prep ' + C.t + '"><div class="en-ch"><span>' + EN.NODE[C.t].ic + '</span><h3>' + EN.NODE[C.t].n + '</h3><em class="en-cnt">敌人 ' + C.foes.length + ' 只</em><button type="button" class="en-back" data-enhide="1">收起 ▾</button></div><div class="en-cb"><div class="en-foes">' + C.foes.map(function (f) {
       var bt = EN.buffText(f.boss);
       return '<div class="en-foe"><img src="' + esc(f.img) + '" alt=""><div><b>' + esc(f.nick) + '</b><small>' + (f.lv > 100 ? 'LV.??' : 'LV' + f.lv) + (f.maxhp ? ' · 体力 ' + fmt(f.maxhp) : f.hpMul ? ' · 体力 ×' + f.hpMul : '') + '</small>' + tchips(SPMAP[f.id].types) + '<div class="en-buffs">' + (bt.length ? bt.map(function (b) { return '<span>' + esc(b) + '</span>'; }).join('') : '<span class="none">没有增益</span>') + '</div></div></div>';
     }).join('') + '</div>' + (enUi.step === 'order'
@@ -2783,10 +2833,10 @@
       ? '<h4>出战顺序 <span class="hint">按住拖动、或点 ‹ › 调整，排在第一个的就是首发</span></h4><ol class="lu-list" id="en-order">' + enUi.line.map(function (i, k) { var x = R.ros[i], n = enUi.line.length;
           return '<li class="lu-card' + (k ? '' : ' lead') + '" data-k="' + i + '"><span class="lu-no">' + (k ? '第 ' + (k + 1) + ' 位' : '首发') + '</span><img src="' + esc(x.spec.img) + '" alt="" draggable="false"><b>' + esc(x.spec.nick) + '</b><small>LV' + x.spec.lv + ' · 体力 ' + Math.round((x.hpr || 0) * 100) + '%</small>' + tchips(SPMAP[x.sid].types) +
             '<span class="tp-btns">' + (k ? '<button type="button" class="btn ghost lu-lead" data-enmv="-1" data-k2="' + i + '" aria-label="往前挪">‹</button><button type="button" class="btn ghost lu-lead" data-enlead="' + i + '">设为首发</button>' : '') + (k < n - 1 ? '<button type="button" class="btn ghost lu-lead" data-enmv="1" data-k2="' + i + '" aria-label="往后挪">›</button>' : '') + '</span></li>'; }).join('') + '</ol>' +
-        '<div class="soc-foot"><button type="button" class="btn ghost" data-enstep="pick">重新选择</button><button type="button" class="btn primary big" data-enfight="1">开战</button></div></section>'
+        '</div><div class="en-cf"><button type="button" class="btn ghost" data-enstep="pick">重新选择</button><button type="button" class="btn primary big" data-enfight="1">开战</button></div></section>'
       // 第一步：选出战的精灵
       : '<h4>选择出战的精灵 <span class="hint">已选 ' + enUi.line.length + ' / ' + EN.LINE_MAX + '</span></h4><div class="en-roster">' + R.ros.map(function (x, i) { return enRosCard(x, i, R, 'line'); }).join('') + '</div>' +
-        '<div class="soc-foot"><button type="button" class="btn ghost" data-enreset="1"' + (enUi.line.length ? '' : ' disabled') + '>重置</button><button type="button" class="btn primary big" data-enstep="order"' + (enUi.line.length ? '' : ' disabled') + '>确认</button></div></section>');
+        '</div><div class="en-cf"><button type="button" class="btn ghost" data-enreset="1"' + (enUi.line.length ? '' : ' disabled') + '>重置</button><button type="button" class="btn primary big" data-enstep="order"' + (enUi.line.length ? '' : ' disabled') + '>确认</button></div></section>');
   }
   function enEvent(R, P) {
     var N = EN_NPC[P.k], img = CHARS[N[1]] || '', body = '', btns = '';
@@ -2794,7 +2844,7 @@
     else if (P.k === 'threego') { body = '<p>Threego 拦住了你，眼睛红红的。</p><p class="en-say">「你……有没有点点的消息？' + esc(EN.PLANETS[P.ans].hint) + '你觉得他会在哪？」</p>'; btns = P.two.map(function (pi, k) { return '<button type="button" class="btn" data-enev="' + k + '">' + esc(EN.PLANETS[pi].n) + '</button>'; }).join(''); }
     else if (P.k === 'bttp') { img = CHARS.bttp || img; body = '<p>Bttp 在补给站的长椅上睡得正香，怀里抱着一个鼓鼓的箱子。</p>' + (P.tries ? '<p>已经叫了 ' + P.tries + ' 次' + (P.got.length ? '，得到了 ' + P.got.map(function (k) { return enIt(k); }).join('') : '，他翻了个身……') + '</p>' : ''); btns = '<button type="button" class="btn primary" data-enev="0">尝试叫醒他</button><button type="button" class="btn ghost" data-enev="1">直接开溜</button>'; }
     else { body = '<p>Cumber 通过通讯器联系了你。</p><p class="en-say">「前面的路不好走，我让我的伙伴给你一点祝福吧。选一个。」</p>'; btns = '<button type="button" class="btn" data-enev="0">戈尔贡的祝福</button><button type="button" class="btn" data-enev="1">坎克托斯的祝福</button>'; }
-    return '<section class="en-panel en-ev"><img class="en-npc" src="' + img + '" alt=""><div><h3>' + N[0] + '</h3>' + body + '<div class="en-evbtn">' + btns + '</div></div></section>';
+    return '<section class="en-card en-ev"><div class="en-evpic"><img class="en-npc" src="' + img + '" alt=""></div><div class="en-evt"><h3>' + N[0] + '</h3>' + body + '<div class="en-evbtn">' + btns + '</div></div></section>';
   }
   function enEndMsg(e) {
     if (!e) return;
@@ -2808,6 +2858,7 @@
   function enTx(op, args, then) { txRun(op, args || {}, function (r) { if (then) then(r); renderEndless(); renderRes && renderRes(); if (r && r.end) enEndMsg(r.end); }); }
   function enFight() {
     var R = EN.run(acc); if (!R || !R.cur) return;
+    enModalOff();
     pveRemote('endless', { line: enUi.line.slice() }, { bg: BG.mayar || BG.bridge_p, back: '无尽作战' }, function (e, res) {
       var r = e && e.rep;
       ex.fighting = false; document.body.classList.remove('story-fight');
@@ -2819,13 +2870,12 @@
       else if (res === 'void') toast('这场对战作废了。');
     });
   }
-  $('pg-explore').addEventListener('click', function (e) {
-    if (ex.view !== 'endless') return;
-    if (e.target.dataset && e.target.dataset.enpanelbg) { enUi.panel = null; enUi.eqB = null; renderEndless(); return; }   // 点面板外面关闭
-    var b = e.target.closest('button, [data-enr], [data-engo]'); if (!b) return;
+  $('pg-explore').addEventListener('click', function (e) { if (ex.view === 'endless') enClick(e); });
+  function enClick(e) {
+    var b = e.target.closest('button, [data-enr], [data-engo]'); if (!b || b.disabled) return;
     if (b.dataset.engo != null && enUi.noClick && Date.now() - enUi.noClick < 300) return;   // 刚拖动完地图，不算点击
     var R = EN.run(acc), D = b.dataset;
-    if (b.id === 'en-back') { ex.view = 'sites'; ex.planet = 'jingchu'; renderExplore(); return; }
+    if (b.id === 'en-back') { enModalOff(); enUi.panel = null; ex.view = 'sites'; ex.planet = 'jingchu'; renderExplore(); return; }
     if (D.end) { enUi.d = +D.end; renderEndless(); return; }
     if (D.enpk) { var u = +D.enpk; if (enUi.pick[u]) delete enUi.pick[u]; else if (Object.keys(enUi.pick).length < EN.ROSTER_MAX) enUi.pick[u] = 1; else toast('最多选 ' + EN.ROSTER_MAX + ' 只'); renderEndless(); return; }
     if (D.enauto) { enUi.pick = {}; acc.mons.slice().sort(function (a, b2) { return b2.lv - a.lv; }).slice(0, EN.ROSTER_MAX).forEach(function (m) { enUi.pick[m.u] = 1; }); renderEndless(); return; }
@@ -2853,13 +2903,13 @@
     if (D.enbuy != null) { enTx('enBuy', { i: +D.enbuy }); return; }
     if (D.enleave) { enTx('enLeave'); return; }
     if (D.enchat) { enVbChat(); return; }
-    if (D.enbag != null) { enUi.eqB = enUi.eqB === +D.enbag ? null : +D.enbag; renderEndless(); return; }
     if (D.enuq) { var q = D.enuq.split('|'); e.stopPropagation(); enUi.bsel = null; enTx('enUneq', { r: +q[0], s: +q[1] }); return; }
     if (D.enfight) { enFight(); return; }
-    if (D.enpanel != null) { enUi.panel = D.enpanel || null; enUi.eqB = null; renderEndless(); return; }
+    if (D.enpanel != null) { enUi.panel = D.enpanel || null; renderEndless(); return; }
+    if (D.enmon != null) { enUi.monI = +D.enmon; renderEndless(); return; }
     if (D.enbtab) { enUi.btab = D.enbtab; enUi.bsel = null; renderEndless(); return; }
     if (D.enbsel) { enUi.bsel = D.enbsel; renderEndless(); return; }
-    if (D.enequip) { var qq = D.enequip.split('|'); enUi.bsel = null; enTx('enEquip', { b: +qq[0], r: +qq[1] }, function () { toast('装备好了'); }); return; }
+    if (D.enequip) { var qq = D.enequip.split('|'); enUi.bsel = null; enTx('enEquip', { b: +qq[0], r: +qq[1] }); return; }
     if (D.enreset) { enUi.line = []; renderEndless(); return; }
     if (D.enmv) { var L0 = enUi.line, j0 = L0.indexOf(+D.k2), j1 = j0 + (+D.enmv); if (j0 >= 0 && j1 >= 0 && j1 < L0.length) { L0[j0] = L0[j1]; L0[j1] = +D.k2; } renderEndless(); return; }
     if (D.enlead) { var kk = +D.enlead; enUi.line = [kk].concat(enUi.line.filter(function (x) { return x !== kk; })); renderEndless(); return; }
@@ -2867,11 +2917,13 @@
     if (D.enhide) { enUi.hide = true; renderEndless(); return; }
     if (D.enshow) { enUi.hide = false; renderEndless(); return; }
     if (D.enr != null) {
-      var ri = +D.enr, x = R.ros[ri]; if (!x || x.dead) return;
-      if (enUi.eqB != null && R.bag[enUi.eqB]) { var bb = enUi.eqB; enUi.eqB = null; enTx('enEquip', { b: bb, r: ri }); return; }
-      if (R.cur && !R.pend && enUi.step !== 'order' && !enUi.panel) { var k = enUi.line.indexOf(ri); if (k >= 0) enUi.line.splice(k, 1); else if (enUi.line.length < EN.LINE_MAX) enUi.line.push(ri); else toast('最多派 ' + EN.LINE_MAX + ' 只'); renderEndless(); }
+      var ri = +D.enr, x = R.ros[ri]; if (!x) return;
+      if (enUi.panel === 'ros' && (!R.cur || enUi.hide)) { enUi.panel = 'mon'; enUi.monI = ri; renderEndless(); return; }
+      if (x.dead) return;
+      if (enUi.panel === 'ros' && (!R.cur || enUi.hide)) { enUi.panel = 'mon'; enUi.monI = ri; renderEndless(); return; }
+      if (R.cur && !R.pend && enUi.step !== 'order') { var k = enUi.line.indexOf(ri); if (k >= 0) enUi.line.splice(k, 1); else if (enUi.line.length < EN.LINE_MAX) enUi.line.push(ri); else toast('最多派 ' + EN.LINE_MAX + ' 只'); renderEndless(); }
     }
-  });
+  }
   function enVbChat() {
     txRun('enChat', { peek: 1 }, function (r) {
       var T = EN.VB_SHOP[r.q]; if (!T) return;
