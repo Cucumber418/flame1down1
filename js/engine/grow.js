@@ -296,9 +296,9 @@ var GROW = (function () {
   /* ---------- 精灵保育仓：精元放进孵化槽，过一段时间孵化出精灵 ---------- */
   var NURSERY_N = 3;
   var HATCH = { e_odo: { sid: 'odo', lv: 1, min: 480 }, e_leafcat: { sid: 'leafcat', lv: 1, min: 480 }, e_pluto: { sid: 'pluto', lv: 1, min: 720 }, e_leiming: { sid: 'leiming', lv: 1, min: 480, shiny: 0.1 } };   // shiny：孵出异色的概率
-  // 2026-11-01 圣晶石召唤：当期 UP 精灵的精元（sum: 'up'，算珍贵）和稀有精灵的精元（sum: 'rare'，不改变这些精灵的稀有度）
+  // 2026-11-01 圣晶石召唤：当期 UP 精灵的精元（sum: 'up'，算珍贵）和稀有精灵的精元（sum: 'rare'，不改变这些精灵的稀有度）。召唤池按这份名单，新出的稀有精灵不会自动加进来
   HATCH.e_phantom = { sid: 'phantom', lv: 1, min: 480, sum: 'up' };
-  ['kaleo', 'leaf', 'squid', 'shroom', 'turkey', 'siren', 'hauris', 'leibniz'].forEach(function (s) { HATCH['e_' + s] = { sid: s, lv: 1, min: 480, sum: 'rare' }; });
+  ['kaleo', 'leaf', 'squid', 'shroom', 'turkey', 'siren', 'hauris'].forEach(function (s) { HATCH['e_' + s] = { sid: s, lv: 1, min: 480, sum: 'rare' }; });
   function nurseryRec(a) { if (!a.nursery || !Array.isArray(a.nursery.slots)) a.nursery = { slots: [] }; while (a.nursery.slots.length < NURSERY_N) a.nursery.slots.push(null); return a.nursery; }
   // { a: 'put', i, k } / { a: 'hatch', i }
   TX.add('hatch', function (a, args, env) {
