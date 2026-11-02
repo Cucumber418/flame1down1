@@ -46,7 +46,8 @@ var TX = (function () {
     BASE_ROOMS: { r1: { n: '星空甲板', price: 0 }, r2: { n: '海底穹顶', price: 30000 }, r3: { n: '沙海舰桥', price: 30000 }, r4: { n: '雪原树屋', price: 30000 } },
     BASE_DECO: { d1: { n: 'Unicorn', price: 5000, layer: 'floor' }, d2: { n: 'OCT', price: 5000, layer: 'floor' }, d3: { n: 'Ace', price: 5000, layer: 'floor' }, d4: { n: 'May', price: 5000, layer: 'floor' },
       d5: { n: '叶粒种子发现纪念', price: 3000, layer: 'floor' }, d6: { n: '水臂乌贼发现纪念', price: 3000, layer: 'floor' }, d7: { n: '方头蘑菇发现纪念', price: 3000, layer: 'floor' },
-      d8: { n: '精元转化仪', price: 10000, layer: 'floor' }, d9: { n: '明明画像', price: 5000, layer: 'wall' }, d10: { n: '留言板', price: 10000, layer: 'wall' } },   // d8–d10：2026-11-01（精元转化仪点击打开孵化，留言板点击打开留言）   // d5–d7：2026-10-31 基地改版纪念
+      d8: { n: '精元转化仪', price: 10000, layer: 'floor' }, d9: { n: '明明画像', price: 5000, layer: 'wall' }, d10: { n: '留言板', price: 10000, layer: 'wall' },
+      d11: { n: '第一届做题大王争霸赛冠军奖杯', price: 0, layer: 'wall', noShop: 1 } },   // d11：2026-11-02 冠军奖杯（邮件发给冠军，商城不卖）   // d8–d10：2026-11-01（精元转化仪点击打开孵化，留言板点击打开留言）   // d5–d7：2026-10-31 基地改版纪念
     BASE_DECO_MAX: 40,   // 基地里最多同时摆 40 个
     // 补偿礼包（2026-10-28）：每个账号每个礼包只能领一次（acc.gifts[礼包] 记领取时间）
     GIFTS: { comp1: { name: '补偿大礼包', exp: 300000, energy: 50000, items: { m_mcry: 500, tgPearl: 200, brTwig: 200 } },
@@ -155,7 +156,7 @@ var TX = (function () {
         acc.energy = num(acc.energy) - R.price; B.rooms[a.k] = env.now;
         return { ok: true, t: 'room', k: a.k, cost: R.price };
       }
-      var X = D.BASE_DECO[a.k], n = cnt(a.n, 20); if (!X || !n) return no('没有这个摆件');
+      var X = D.BASE_DECO[a.k], n = cnt(a.n, 20); if (!X || !n || X.noShop) return no('没有这个摆件');
       var cost = X.price * n; if (num(acc.energy) < cost) return no('能量不足');
       acc.energy = num(acc.energy) - cost; B.deco[a.k] = (B.deco[a.k] | 0) + n;
       return { ok: true, t: 'deco', k: a.k, n: n, cost: cost };

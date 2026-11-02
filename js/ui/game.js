@@ -4473,12 +4473,13 @@
   var MAIL_MAX = 100;
   function dayStr() { return ACC.dayStr(Date.now()); }   // 北京时间的日期（2026-10-25 起和服务器一致）
   function mails() { if (!Array.isArray(acc.mail)) acc.mail = []; if (!acc.mailSeen) acc.mailSeen = {}; return acc.mail; }
-  function hasAtt(a) { return !!(a && (a.exp || a.energy || a.merit || a.tokens || a.twTok || (a.items && Object.keys(a.items).length) || (a.mons && a.mons.length))); }
+  function hasAtt(a) { return !!(a && (a.exp || a.energy || a.merit || a.tokens || a.twTok || (a.items && Object.keys(a.items).length) || (a.mons && a.mons.length) || (a.deco && Object.keys(a.deco).length))); }
   function attList(a) {
     var r = []; if (!a) return r;
     if (a.exp) r.push('累积经验 ×' + fmt(a.exp)); if (a.energy) r.push('能量 ×' + fmt(a.energy)); if (a.merit) r.push('功勋点 ×' + fmt(a.merit)); if (a.tokens) r.push('竞技代币 ×' + fmt(a.tokens)); if (a.twTok) r.push('先驱代币 ×' + fmt(a.twTok));
     if (a.items) for (var k in a.items) r.push(itemName(k) + ' ×' + a.items[k]);
     (a.mons || []).forEach(function (g) { if (SPMAP[g.sid]) r.push((g.shiny ? '异色' : '') + form(g).name + ' LV' + g.lv); });
+    for (var dk in a.deco || {}) if (TX.D.BASE_DECO[dk]) r.push('基地摆件「' + TX.D.BASE_DECO[dk].n + '」×' + a.deco[dk]);
     return r;
   }
   function sendMail(m) {
@@ -6774,9 +6775,9 @@
     r3: { img: 'images/base/room3.jpg', floor: [[[33,47],[67,47],[85,61],[88,70],[90,82],[91,100],[9,100],[10,82],[12,70],[15,61]]], wall: [[[17,8],[29,2],[25,20],[23,43],[17,43]],[[71,2],[83,8],[83,43],[77,43],[75,20]],[[4,36],[15,30],[15,58],[11,74],[5,70]],[[85,30],[96,36],[95,70],[89,74],[85,58]]], block: [[[45,47],[55,47],[55,56],[45,56]]], mons: [[22,88],[47,82],[74,72],[32,68],[62,64],[80,92],[18,74]] },
     r4: { img: 'images/base/room4.jpg', floor: [[[24,42],[31,34],[45,30],[58,29],[70,32],[80,39],[86,46],[90,56],[92,70],[90,82],[84,90],[72,94],[66,100],[22,100],[20,92],[13,76],[10,66],[16,60],[22,58],[26,52]]], wall: [[[22,8],[40,4],[60,0],[82,0],[86,12],[88,30],[85,40],[80,37],[70,30],[58,27],[45,28],[30,32],[24,37],[22,26]]], block: [], mons: [[26,90],[74,88],[80,66],[26,68],[62,40],[44,42],[20,78]] }
   };
-  var DECO_IMG = { d1: 'images/base/deco1.webp', d2: 'images/base/deco2.webp', d3: 'images/base/deco3.webp', d4: 'images/base/deco4.webp', d5: 'images/base/deco5.webp', d6: 'images/base/deco6.webp', d7: 'images/base/deco7.webp', d8: 'images/base/deco8.webp', d9: 'images/base/deco9.webp', d10: 'images/base/deco10.webp' };
+  var DECO_IMG = { d1: 'images/base/deco1.webp', d2: 'images/base/deco2.webp', d3: 'images/base/deco3.webp', d4: 'images/base/deco4.webp', d5: 'images/base/deco5.webp', d6: 'images/base/deco6.webp', d7: 'images/base/deco7.webp', d8: 'images/base/deco8.webp', d9: 'images/base/deco9.webp', d10: 'images/base/deco10.webp', d11: 'images/base/deco11.webp' };
   // 可以点的摆件（2026-11-01）：发现纪念弹出说明；精元转化仪打开孵化；留言板打开留言
-  var DECO_ACT = { d5: '叶粒种子', d6: '水臂乌贼', d7: '方头蘑菇', d8: 'nursery', d9: 'mm', d10: 'msg' };
+  var DECO_ACT = { d5: '叶粒种子', d6: '水臂乌贼', d7: '方头蘑菇', d8: 'nursery', d9: 'mm', d10: 'msg', d11: 'cup' };
   var DECO_SIZE = { d8: 1.75 };   // 精元转化仪画得大一些（2026-11-01）
   // 明明画像的面板：大图 + 荣誉（2026-11-01）
   var MM_HONORS = ['军衔：少校', '湖北理科高考优胜者', '华中科技大学光学与电子信息学院优秀毕业生', '荆楚号古城防卫部总教官'];
@@ -6878,6 +6879,19 @@
       var dm = document.createElement('div'); dm.className = 'soc-dlg'; dm.innerHTML = '<div class="soc-box bp-box mm-box" role="dialog" aria-modal="true">' + mmPortraitBody() + '<div class="soc-foot"><button type="button" class="btn primary" data-decox="1">关闭</button></div></div>';
       document.body.appendChild(dm); dm.addEventListener('click', function (ev) { if (ev.target === dm || ev.target.closest('[data-decox]')) dm.remove(); }); return;
     }
+    if (A === 'cup') {   // 冠军奖杯（2026-11-02）：冠军和夺冠主力精灵由服务器按决赛的回放算（server/contest.js）
+      var dc = document.createElement('div'); dc.className = 'soc-dlg'; dc.id = 'cup-dlg';
+      var cupDraw = function (txt) { dc.innerHTML = '<div class="soc-box deco-box cup-box" role="dialog" aria-modal="true"><img src="' + DECO_IMG.d11 + '" alt=""><h3>' + esc(TX.D.BASE_DECO.d11.n) + '</h3><p>' + txt + '</p><div class="soc-foot"><button type="button" class="btn primary" data-decox="1">关闭</button></div></div>'; };
+      cupDraw('正在读取冠军资料……'); document.body.appendChild(dc);
+      dc.addEventListener('click', function (ev) { if (ev.target === dc || ev.target.closest('[data-decox]')) dc.remove(); });
+      var C0 = window.CLOUD; if (!C0 || !C0.api) { cupDraw('要联网后才能查看冠军资料。'); return; }
+      C0.api('GET', '/api/contest/champ').then(function (r) {
+        if (!r || !r.name) { cupDraw('冠军资料暂时读不到。'); return; }
+        var ms = (r.mons || []).map(function (x) { return x.nick || (SPMAP[x.id] && SPMAP[x.id].name) || x.id; });
+        cupDraw('<b>' + esc(r.name) + '</b> 获得了第一届做题大王争霸赛的冠军' + (ms.length ? '，' + (r.gender === 'f' ? '她' : '他') + '的夺冠主力精灵是 <b>' + ms.map(esc).join('</b>、<b>') + '</b>' : '') + '。');
+      }, function () { cupDraw('冠军资料暂时读不到。'); });
+      return;
+    }
     if (A === 'msg') { if (!mine) { toast('留言板在下面，给主人留句话吧。'); return; } if (!baseOnline()) { toast('留言板需要联网：用服务器网址打开游戏并登录后才能用。'); return; } ex.bpanel = 'msg'; renderHome(); return; }
     var old = $('deco-dlg'); if (old) old.remove();
     var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'deco-dlg';
@@ -6923,7 +6937,7 @@
         return '<article class="bs-room"><span class="tape r"></span><img src="' + BASE_UI[k].img + '" alt=""><div class="bs-txt"><b>' + esc(R.n) + '</b>' +
           (own ? '<span class="hint">' + (R.price ? '已拥有' : '默认房型') + '</span>' : '<button type="button" class="btn primary" data-bbuy="room|' + k + '"' + (acc.energy >= R.price ? '' : ' disabled') + '>' + (acc.energy >= R.price ? '购买 · ' + fmt(R.price) + ' 能量' : '能量不足（' + fmt(R.price) + '）') + '</button>') + '</div></article>';
       }).join('') + '</div>' +
-      '<h3 class="sec bs-h">摆件</h3><div class="shop-grid">' + Object.keys(TX.D.BASE_DECO).map(function (k) {
+      '<h3 class="sec bs-h">摆件</h3><div class="shop-grid">' + Object.keys(TX.D.BASE_DECO).filter(function (k) { return !TX.D.BASE_DECO[k].noShop; }).map(function (k) {
         var X = TX.D.BASE_DECO[k], n = q(k), cost = X.price * n, ok = acc.energy >= cost;
         return '<article class="shop-it"><span class="tape r"></span><img class="bs-deco" src="' + DECO_IMG[k] + '" alt=""><div class="si-txt"><b>' + esc(X.n) + '</b><p class="hint">' + (X.layer === 'wall' ? '墙壁摆件' : '地板摆件') + '，可以买很多个。</p><p class="si-own">持有 <b>' + decoOwn(k) + '</b></p></div>' +
           '<div class="si-buy"><span class="si-price">' + fmt(X.price) + ' <small>能量</small></span>' +

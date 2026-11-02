@@ -341,4 +341,30 @@ A.use(function (req, res, url) {
 
 module.exports = { savePart: savePart, rematchable: rematchable, voidPair: voidPair, pairOf: pairOf, report: report, saveReplay: saveReplay, tick: tick, standings: standings, FILE: FILE, NAME: NAME, _test: { pairRound: pairRound, bjAt: bjAt, roundDeadline: roundDeadline, swissRounds: swissRounds, closeRound: closeRound, doDraw: doDraw } };
 // 交易里查争霸赛名次（js/engine/award.js 的邮箱投递、称号）：结束了返回名次（0 是冠军），没参赛或没结束返回 null
+// 冠军奖杯（2026-11-02）：冠军、性别、夺冠主力精灵（决赛回放里冠军在场时间最多的 2~4 只）。GET /api/contest/champ
+var champCache = null;
+function champInfo() {
+  var c = loadAll()[CUR]; if (!c || c.status !== 'done' || !Array.isArray(c.ranks) || !c.ranks[0]) return null;
+  if (champCache && champCache.u === c.ranks[0]) return champCache.v;
+  var champ = c.ranks[0], cname = gname(champ), u = A.loadUser(champ), gender = 'm';
+  try { var acc = JSON.parse(((u && u.save && u.save.data) || {})['hs-account-v1'] || 'null'); if (acc && acc.gender === 'f') gender = 'f'; } catch (e) {}
+  var cnt = {}, nick = {}, R = c.rounds.filter(function (r) { return r.final; }).pop(), reps = [];
+  c.rounds.forEach(function (r) { r.pairs.forEach(function (p) { if ((p.a === champ || p.b === champ) && Array.isArray(p.replays)) reps = reps.concat(r === R ? p.replays.concat(p.replays) : p.replays); }); });   // 决赛的回放算两遍（权重更高）
+  reps.forEach(function (x) {
+    try {
+      var rec = JSON.parse(fs.readFileSync(path.join(REP_DIR, String(x.id).replace(/[^0-9a-f]/g, '') + '.json'), 'utf8'));
+      var side = (rec.names || []).indexOf(cname); if (side < 0) return;
+      (rec.frames || []).forEach(function (f) { var sn = f && f[1]; if (!sn || !sn.sides || !sn.sides[side]) return; (sn.sides[side].team || []).forEach(function (t) { if (t.active && t.id) { cnt[t.id] = (cnt[t.id] || 0) + 1; if (t.nick) nick[t.id] = t.nick; } }); });
+    } catch (e) {}
+  });
+  var ids = Object.keys(cnt).sort(function (a, b) { return cnt[b] - cnt[a]; }), tot = ids.reduce(function (n, k) { return n + cnt[k]; }, 0);
+  var pick = ids.filter(function (k, i) { return i < 2 || (i < 4 && cnt[k] >= tot * 0.15); });
+  var v = { name: cname, gender: gender, mons: pick.map(function (k) { return { id: k, nick: nick[k] || null }; }) };
+  champCache = { u: champ, v: v }; return v;
+}
+A.use(function (req, res, url) {
+  if (url !== '/api/contest/champ' || req.method !== 'GET') return false;
+  var who = A.whoIs(req); if (!who) { A.reply(res, 401, { error: '登录已失效，请重新登录' }); return true; }
+  A.reply(res, 200, champInfo() || { name: null }); return true;
+});
 require('./tx').hook('ctPlace', function (u) { var c = loadAll().quiz1; if (!c || c.status !== 'done' || !Array.isArray(c.ranks)) return null; var k = c.ranks.indexOf(u.name); return k >= 0 ? k : null; });

@@ -22,6 +22,7 @@ var AWD = (function () {
     ['exp', 'energy', 'tokens', 'merit', 'meritXp'].forEach(function (f) { if (R[f] > 0) a[f] = (a[f] || 0) + R[f]; });
     if (R.twTok > 0) { if (!a.tower) a.tower = { f: 1, cp: 1, best: 0, clears: 0, death: 0, tok: 0 }; a.tower.tok = (a.tower.tok || 0) + R.twTok; }
     var I = items(a); for (var k in R.items || {}) if (R.items[k] > 0) I[k] = (I[k] || 0) + R.items[k];
+    if (R.deco) { if (!a.baseInv || typeof a.baseInv !== 'object') a.baseInv = {}; if (!a.baseInv.deco) a.baseInv.deco = {}; for (var dk in R.deco) if (R.deco[dk] > 0) a.baseInv.deco[dk] = (a.baseInv.deco[dk] | 0) + R.deco[dk]; }   // 基地摆件（2026-11-02，冠军奖杯）
   }
   function rankBest(data) { try { var R = JSON.parse((data && data['hs-rank-v1']) || 'null'); return R ? Math.max(R.best || 0, R.r || 0) : 0; } catch (e) { return 0; } }
   function lvCount(a, lv) { return (a.mons || []).filter(function (m) { return m && m.lv >= lv; }).length; }
@@ -153,7 +154,7 @@ var AWD = (function () {
   /* ---------- 邮箱：a.mail（新的在前），a.mailSeen（投递过的编号，删掉了也不会重发） ---------- */
   var MAIL_MAX = 100, OFFLINE_GAP = 20 * 60000, OFFLINE_RATE = 6, OFFLINE_MAX_MIN = 3 * 24 * 60, LOGIN_EXP = 3000;
   var CONTEST = { id: 'quiz1', name: '第一届做题大王争霸赛' }, CT_RW = [{ exp: 300000, t: 1 }, { exp: 200000, t: 1 }, { exp: 150000, t: 1 }, { exp: 120000, t: 1 }], CT_RW0 = { exp: 80000, t: 1 };
-  function hasAtt(x) { return !!(x && (x.exp || x.energy || x.merit || x.tokens || x.twTok || (x.items && Object.keys(x.items).length) || (x.mons && x.mons.length))); }
+  function hasAtt(x) { return !!(x && (x.exp || x.energy || x.merit || x.tokens || x.twTok || (x.items && Object.keys(x.items).length) || (x.mons && x.mons.length) || (x.deco && Object.keys(x.deco).length))); }
   function durText(min) { var h = Math.floor(min / 60), mm = min % 60; return (h ? h + ' 小时 ' : '') + mm + ' 分钟'; }
   function mailList(a) { if (!Array.isArray(a.mail)) a.mail = []; if (!a.mailSeen || typeof a.mailSeen !== 'object') a.mailSeen = {}; return a.mail; }
   function send(a, m, now) {
@@ -309,6 +310,7 @@ var AWD = (function () {
       if (!a.ctPlace) a.ctPlace = {};
       if (a.ctPlace[CONTEST.id] == null) a.ctPlace[CONTEST.id] = k2;
       var R = CT_RW[k2] || CT_RW0, place = k2 === 0 ? '冠军' : k2 === 1 ? '亚军' : '第 ' + (k2 + 1) + ' 名', ttl = k2 === 0 ? 'S1做题大王' : k2 === 1 ? 'S1做题小王' : 'S1做题区';
+      if (k2 === 0) send(a, { id: 'contest-' + CONTEST.id + '-cup', title: CONTEST.name + ' · 冠军奖杯', body: '{name}，恭喜你成为' + CONTEST.name + '的冠军！\n附件是本届的冠军奖杯，领取后可以在基地里挂到墙上。来访的船员点一下奖杯，就能看到你的夺冠荣誉。', att: { deco: { d11: 1 } } }, now);   // 2026-11-02
       send(a, { id: 'contest-' + CONTEST.id + '-share', title: 'S1争霸赛精灵分享券', body: '{name}，你好！\n感谢参加' + CONTEST.name + '！附件里是一张「S1争霸赛精灵分享券」。\n在储存箱里使用，可以选一位好友，送 Ta 一只 LV10 的尖盔虫和 200 个花剑圆弧。', att: { items: { ctShare: 1 } } }, now);   // 2026-11-02：所有参赛选手
       send(a, { id: 'contest-' + CONTEST.id + '-rw', title: CONTEST.name + ' · ' + place + '奖励', body: '{name}，你好！\n' + CONTEST.name + '圆满结束，你获得了' + place + '，并获得称号「' + ttl + '」（点右上角的名字即可佩戴）！感谢参赛，请领取附件里的奖励。\n神秘精灵兑换券能兑换什么，之后揭晓。', att: { exp: R.exp, items: { ctTicket: R.t } } }, now);
     }
@@ -319,7 +321,7 @@ var AWD = (function () {
   }
   function claim(a, m, env) {   // 领一封邮件的附件
     var x = m.att || {};
-    give(a, { exp: x.exp, energy: x.energy, tokens: x.tokens, twTok: x.twTok, merit: x.merit, meritXp: x.merit, items: x.items });
+    give(a, { exp: x.exp, energy: x.energy, tokens: x.tokens, twTok: x.twTok, merit: x.merit, meritXp: x.merit, items: x.items, deco: x.deco });
     var mons = [];
     if (x.mons && x.mons.length) { var g = TX.run(a, 'gift', { k: 'mail', id: m.id }, env); if (g && g.ok) mons = g.mons || []; }
     m.got = true; m.read = true;

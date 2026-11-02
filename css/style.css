@@ -3614,3 +3614,4 @@ html.land-rot .sheet { height: 100%; overflow-y: auto; overflow-x: hidden; -webk
   .en-rt { width: 100%; } .en-eq { justify-content: center; }
   .en-mbox { max-height: calc(100vh - 20px); } .en-modal { padding: 10px; }
 }
+.cup-box { max-width: 400px; } .cup-box img { width: 240px; height: auto; }
