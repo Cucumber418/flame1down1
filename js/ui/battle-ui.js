@@ -194,6 +194,8 @@
     if (typeof GROW !== 'undefined' && GROW.HATCH[k] && GROW.HATCH[k].sum && SPMAP[GROW.HATCH[k].sid]) return '<span class="it-ic it-ess' + (GROW.HATCH[k].sum === 'up' ? ' up' : '') + '"><img src="' + formImg(SPMAP[GROW.HATCH[k].sid], 0) + '" alt=""></span>';   // 召唤的精元：带光晕的一阶立绘
     if (typeof SUMMON !== 'undefined' && SUMMON.INS[k]) { var Ik = SUMMON.INS[k], LC = { grass: '#4caf50', water: '#3b8fd9', fire: '#e8603c', elec: '#e8b830', ice: '#7fd3ef' }; return insBadge(Ik.lim ? LC[Ik.fx] : Ik.tier === 2 ? '#d9a62e' : '#9aa3ad', Ik.ch, !!Ik.lim); }
     // 2026-10-19：储存箱整理，各类道具补上图标（同一类用同一种形状，按颜色区分）
+    if (typeof ENDLESS !== 'undefined' && ENDLESS.IT[k]) { var EI = ENDLESS.IT[k].ic; return genIcon(EI[0], EI[1], EI[2]); }   // 无尽作战的道具（2026-11-02）
+    if (k === 'enTok') return genIcon('coin', '#2f3d6b', '尽');
     var G = {
       insChip: ['box', '#7b5ac8'], natRand: ['pill', '#c95fd0', '随'], phLeaf: ['leaf', '#7a3fa0'], fencArc: ['gem', '#b5452c'], fPt: ['coin', '#e86a8a', '友'], sumTok: ['coin', '#c9a227', '召'],
       e_phantom: ['orb', '#8f4fd0', '精'], e_kaleo: ['orb', '#5d8a3c', '精'], e_leaf: ['orb', '#4caf50', '精'], e_squid: ['orb', '#3b8fd9', '精'], e_shroom: ['orb', '#e8603c', '精'], e_turkey: ['orb', '#d9773a', '精'], e_siren: ['orb', '#4aa8c8', '精'], e_hauris: ['orb', '#7b5ac8', '精'],
@@ -1130,11 +1132,11 @@
     var its = S.items;
     $('tab-items').hidden = !its;
     if (!its && tab === 'items') showTab('moves');
-    if (its) $('igrid').innerHTML = ITEM_ORDER.map(function (k) {
+    if (its) $('igrid').innerHTML = (S.endless ? Object.keys(its).filter(function (k) { return ITEMS[k]; }) : ITEM_ORDER).map(function (k) {   // 无尽作战：只列这次作战的能力和消耗品
       var it = ITEMS[k], n = its[k] || 0, cap = !!it.cap, dis = lock || needMe || n <= 0 || (cap && (!S.wild || S.wild.noCatch)) || (it.heal && me.hp >= me.maxhp) || (it.cure && !(me.st[it.cure] > 0)) || (it.pp && ppFull(me));
       var rate = cap && S.wild && S.wild.noCatch ? '<span class="rate">被瘴气污染，无法捕捉</span>' : cap && S.wild && n > 0 ? '<span class="rate">当前成功率约 ' + Math.round(catchChance(S, k) * 100) + '%</span>' : cap && !S.wild ? '<span class="rate">只能对野生精灵使用</span>' : '';
       return '<button type="button" class="tm it" data-it="' + k + '"' + (dis ? ' disabled' : '') + ' title="' + esc(it.d) + '">' + itemIcon(k) +
-        '<span class="it-t"><b>' + it.name + '</b><span class="cnt">持有 ' + n + '</span>' + rate + '</span></button>';
+        '<span class="it-t"><b>' + it.name + '</b><span class="cnt">' + (S.endless && k.indexOf('ab_') === 0 ? (n > 0 ? '本场可发动' : '本场已发动') : '持有 ' + n) + '</span>' + rate + '</span></button>';
     }).join('');
     var hint = $('cmd-hint');
     hint.className = 'hint';

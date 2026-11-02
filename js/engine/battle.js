@@ -8,7 +8,7 @@ var STG_NAME = { atk: '物攻', def: '物防', spa: '特攻', spd: '特防', spe
 var BASE_NAME = { hp: '体力', atk: '物攻', def: '物防', spa: '特攻', spd: '特防', spe: '速度' };
 var TM_NAME = { odoAtk: '全弹搭载', odoDef: '强效外壳', brandCd: '烙印冷却', etchCd: '蚀迹冷却', lmE: '雷明·电', lmL: '雷明·光', tcloud: '闪电云', cap: '逆鳞', genggu: '恒压', green: '绿色幻境', immune: '免疫异常', reflect: '风王结界', dodge: '光滑皮肤',
   noSwitch: '无法切换', prio: '先制+1', rain: '祈雨', tri: '三相归元', soul: '收魂',
-  voidPhys: '虚空化', induct: '电磁感应', vortex: '闪电漩涡', fenglei: '风雷滚滚', counter: '反击风暴', parryBan: '被招架', noStat: '禁用变化', darkside: '月之暗面', hail: '冰雹', noBoost: '禁止强化',
+  voidPhys: '虚空化', induct: '电磁感应', vortex: '闪电漩涡', fenglei: '风雷滚滚', counter: '反击风暴', parryBan: '被招架', noStat: '禁用变化', enCrit: '引爆', darkside: '月之暗面', hail: '冰雹', noBoost: '禁止强化',
   seal: '万灵封印', liuhuo: '流火', calm: '静谧水域', halfPhys: '物伤减半', tide: '黑雾潮汐', vuln: '易伤', weak: '伤害-30%',
   swamp: '孢子沼泽', mist: '白雾', jungle: '丛林法则', siren: '海妖之歌', sirenOn: '海妖之歌', dr40: '减伤40%', crit2: '必定暴击', retal: '寂灭幽映',
   block: '坚不可摧', recoil: '磁暴反冲', sure3: '谛听', ear: '灵耳谛听', noHeal: '禁疗' };
@@ -29,7 +29,7 @@ function mvType(me, mv) {
 var CANYUE_BASE = 20, CANYUE_MAX = 160;
 function canyuePow(n) { return Math.min(CANYUE_MAX, CANYUE_BASE * Math.pow(2, n)); }
 var STAR_MAX = 125;   // 星星魔法的最高威力（2026-10-12 从 200 削弱到 125；达到后命中有 50% 概率降低对方 1 级速度）
-function moveBlocked(me, slot) { return !!(slot && M[slot.n] && ((me.perm && me.perm.moonFull && M[slot.n].custom === 'darkside') || (me.flags && me.flags.sy && M[slot.n].cat === '变化') || (me.tm && me.tm.parryBan === 1 && me.fx && me.fx.banMv === slot.n) || (me.tm && me.tm.noStat === 1 && M[slot.n].cat === '变化'))); }   // parryBan：被「招架」的技能；noStat：压制弧光（都写 2，回合结束减成 1 时才生效，即只禁「下回合」）
+function moveBlocked(me, slot) { return !!(slot && M[slot.n] && ((me.perm && me.perm.moonFull && M[slot.n].custom === 'darkside') || (me.flags && me.flags.sy && M[slot.n].cat === '变化') || (me.tm && me.tm.parryBan === 1 && me.fx && me.fx.banMv === slot.n) || (me.tm && me.tm.noStat === 1 && M[slot.n].cat === '变化') || (me.enNS && M[slot.n].cat === '变化'))); }   // parryBan：被「招架」的技能；noStat：压制弧光（都写 2，回合结束减成 1 时才生效，即只禁「下回合」）
 // 技能为什么不能用（界面上显示）：光影之月 / 沈阳大街（复活后的困难泰戈尔的场地效果，变化技能都不能用）
 function blockWhy(me, slot) { return !moveBlocked(me, slot) ? '' : me.flags && me.flags.sy && M[slot.n].cat === '变化' ? '沈阳大街中不可用' : '光影之月中不可用'; }
 // 处于月之暗面时，「月之暗面」变为「月之亮面」
@@ -178,7 +178,7 @@ var TM_DESC = {
   dodge: '每次受到攻击有40%概率闪避', noSwitch: '无法切换精灵', prio: '所有技能先制+1',
   rain: '每回合结束对对方附加30点固定伤害', tri: '使用草、水、火系技能时额外恢复1/3体力',
   soul: '受到的伤害提升20%', voidPhys: '闪避物理攻击', induct: '主动攻击命中后提升1级特攻',
-  counter: '受到主动攻击时，把25%的伤害反弹给对方', parryBan: '被招架的技能这回合不能使用', noStat: '不能使用变化类技能',
+  enCrit: '攻击必定致命一击', counter: '受到主动攻击时，把25%的伤害反弹给对方', parryBan: '被招架的技能这回合不能使用', noStat: '不能使用变化类技能',
   vortex: '每回合结束降低对方1级命中', fenglei: '每回合结束一半概率降低对方1级速度，否则提升自身1级速度', darkside: '精灵属性和技能属性都变成暗影系',
   hail: '每回合结束对对方造成其1/10最大体力的伤害', noBoost: '无法提升能力等级',
   seal: '无法提升能力等级；强行提升会损失1/4当前体力', liuhuo: '火系技能威力+5', calm: '每回合恢复1/5最大体力',
@@ -276,6 +276,8 @@ function chipsOf(m, foe) {
   if (m.fx.sureHit && !m.fx.sureCrit) c.push({ t: '下次必中', k: 'fx', h: '下次必中', d: '下一次攻击必定命中' });
   if (m.perm && m.perm.melt) c.push({ t: '熔化 ×' + m.perm.melt, k: 'st', h: '熔化 · ' + m.perm.melt + ' 层', d: '受到的伤害提升 ' + m.perm.melt * 20 + '%（每层20%，最多5层），持续到战斗结束，换下场也不会消失' });
   if (m.insFx && typeof SUMMON !== 'undefined') Object.keys(m.insFx).forEach(function (f) { var I = SUMMON.INS[m.insFx[f]]; if (I) c.push({ t: '刻印 · ' + I.name, k: 'fx on', h: '刻印 · ' + I.name, d: I.fd }); });   // 2026-11-01
+  if (m.eq && m.eq.length) c.push({ t: '装备 ×' + m.eq.length, k: 'fx on', h: '无尽作战 · 装备', d: m.eq.map(function (q) { return ITEMS[q] ? ITEMS[q].name + '：' + ITEMS[q].d : q; }).join('；') });   // 2026-11-02
+  if (m.enDmg) c.push({ t: '增伤 +' + Math.round(m.enDmg * 100) + '%', k: 'fx on', h: '无尽作战 · 增伤', d: '能力、消耗品、装备带来的伤害提升，合计 +' + Math.round(m.enDmg * 100) + '%' });
   if (m.cbl) c.push({ t: 'Cumberland', k: 'fx on', h: 'Cumberland' + (m.cbl > 1 ? ' · 增幅' : ''), d: cblText(m.cbl) });   // 第十九段：Cumber 给的加成
   if (m.onlyHit) c.push({ t: '元素亲和', k: 'fx', h: 'BOSS · 元素亲和', d: '只有' + m.onlyHit.join('、') + '系技能才能命中它，其他属性的技能都会被挡下' });
   if (m.boss) BOSS_FX.forEach(function (f) {
@@ -389,6 +391,7 @@ function faint(S, evs, j) {
   if (t.boss && t.boss.bars && (t.boss.bar || 0) < t.boss.bars.length - 1 && !S.pvp) { t.hp = 0; if (!t.boss.broken) { t.boss.broken = 1; E(S, evs, 'hit', { side: j, amount: 0 }); log(S, evs, nm(t) + '的第 ' + ((t.boss.bar || 0) + 1) + ' 管体力被击破了！', 'good'); } return; }   // 玫瑰星云（第十九段）的多管体力：击破一管后溢出伤害无效，回合结束换下一管（nebPhase）
   t.fainted = true; t.hp = 0;
   E(S, evs, 'faint', { side: j }); log(S, evs, nm(t) + '倒下了！', 'bad');
+  if (j === 1 && S.en && S.en.on && S.en.on.ab_soul && !act(S, 0).fainted) { var sh0 = Math.floor(t.maxhp * 0.3); log(S, evs, '超度形态：吸收了' + nm(t) + '的生命', 'fxl'); heal(S, evs, 0, sh0); }
 }
 // S.cs：我方（side 0）这场战斗的表现统计，星球挑战的星级要求用（2026-10-17）
 function CS(S) { return S.cs || (S.cs = { crit: 0, st: {}, up6: 0, down6: 0, heal: 0, maxHit: 0, oneShot: 0, dotKO: 0, items: 0, sw: 0 }); }
@@ -398,7 +401,9 @@ function dotKind(why) { for (var i = 0; i < DOT_KINDS.length; i++) if (why && wh
 function loseHp(S, evs, j, amt, why) {
   var t = act(S, j); if (t.fainted || amt <= 0 || (t.boss && t.boss.broken)) return 0;
   if (t.id === 'dummy' && !t.breakable) { amt = Math.floor(amt); recordDummy(S, amt, why ? (S.curMove && why.indexOf('混沌水域') < 0 && why.indexOf('额外吸取') < 0 ? S.curMove : dotLabel(why)) : null); E(S, evs, 'hit', { side: j, amount: amt }); if (why) log(S, evs, why + '（' + amt + '）'); return amt; }
-  if (t.boss && t.boss.stRes && why && dotKind(why) !== 'fixed') { amt = Math.max(1, amt * (1 - t.boss.stRes)); RV(t, 'stRes'); }   // 玫瑰星云「稀薄粒子」：异常状态的持续伤害只有两成（2026-11-01）
+  if (t.boss && t.boss.stRes && why && dotKind(why) !== 'fixed') { amt = Math.max(1, amt * (1 - t.boss.stRes)); RV(t, 'stRes'); }
+  if (t.boss && t.boss.eSt && why && dotKind(why) !== 'fixed') { amt = Math.max(1, amt * (1 - t.boss.eSt)); RV(t, 'eSt'); }   // 无尽作战「异常抗性」
+  if (t.boss && t.boss.fixRes && dotKind(why) === 'fixed') { amt = Math.max(1, amt * (1 - t.boss.fixRes)); RV(t, 'fixRes'); }   // 玫瑰星云「稀薄粒子」：异常状态的持续伤害只有两成（2026-11-01）
   amt = Math.min(t.hp, Math.floor(amt)); t.hp -= amt;
   E(S, evs, 'hit', { side: j, amount: amt, kind: dotKind(why) });
   if (why) log(S, evs, why);
@@ -414,6 +419,7 @@ function applyDamage(S, evs, j, amount, src, o) {
   var t = act(S, j); if (t.fainted || (t.boss && t.boss.broken)) return 0;
   if (t.cbl) amount = amount * (1 - 0.25 * t.cbl);   // Cumberland：受到的伤害减免 25%（增幅后 37.5%）
   if (t.insFx && t.insFx.ice && src != null && src !== j && amount > 0 && RNG() < 0.2) { amount = Math.max(0, amount - 20); log(S, evs, nm(t) + '的刻印「肃穆之冰」减免了 20 点伤害', 'fxl'); }   // 2026-11-01
+  if (t.boss && t.boss.fixRes && o.eff === undefined && !o.crit && amount > 0) { amount *= 1 - t.boss.fixRes; RV(t, 'fixRes'); }   // 无尽作战「固伤减免」
   var amt = Math.floor(amount), excess = 0;
   if (t.tm.cap > 0 && amt > 250 && src != null) { excess = amt - 250; amt = 250; }
   var willEx = 0; if (t.boss && t.boss.odoWill && amt > 200 && src != null && src !== j) { willEx = amt - 200; amt = 200; RV(t, 'odoWill'); }   // 护阵意志：单次受伤不超过 200，超出的反弹
@@ -433,6 +439,10 @@ function applyDamage(S, evs, j, amount, src, o) {
   E(S, evs, 'hit', { side: j, amount: shown, crit: o.crit, eff: o.eff, kind: o.eff === undefined && !o.crit ? 'fixed' : undefined });
   if (t.insFx && t.insFx.water && src != null && src !== j && amt > 0 && !t.fainted && t.hp > 0 && !act(S, src).fainted && RNG() < 0.2) { var wk = RNG() < 0.5 ? { atk: -1 } : { spa: -1 }; log(S, evs, nm(t) + '的刻印「幽静之水」发动了', 'fxl'); changeStages(S, evs, src, wk, j); }   // 2026-11-01
   if (t.tm.counter > 0 && src != null && src !== j && amt > 0 && !act(S, src).fainted) { var cs0 = Math.max(1, Math.floor(amt * 0.25)); loseHp(S, evs, src, cs0, nm(t) + '的反击风暴反弹了 ' + cs0 + ' 点伤害'); }   // 2026-11-02
+  if (t.boss && src === 0 && j === 1 && amt > 0 && !act(S, src).fainted && (t.boss.eRef || t.boss.rPhys || t.boss.rSpec)) {   // 无尽作战：反弹 / 反弹物攻 / 反弹特攻
+    var rcat = S.curMove && M[S.curMove] ? M[S.curMove].cat : '', rk = t.boss.eRef ? 'eRef' : rcat === '物攻' && t.boss.rPhys ? 'rPhys' : rcat === '特攻' && t.boss.rSpec ? 'rSpec' : '';
+    if (rk) { var rf = Math.max(1, Math.floor(amt * t.boss[rk])); RV(t, rk); loseHp(S, evs, src, rf, nm(t) + '反弹了 ' + rf + ' 点伤害'); }
+  }
   if (t.boss && t.boss.thorn && src != null && src !== j && amt > 0 && !act(S, src).fainted) { var th = Math.max(1, Math.floor(amt * 0.15)); RV(t, 'thorn'); loseHp(S, evs, src, th, nm(t) + '的「荆棘」反弹了 ' + th + ' 点伤害'); }
   if (excess > 0) {
     log(S, evs, nm(t) + '的龙之逆鳞把 ' + excess + ' 点伤害反馈给了对方！', 'fxl');
@@ -519,6 +529,7 @@ function addStatus(S, evs, j, k, turns, src, noReflect, refresh) {
     else log(S, evs, nm(t) + '已经处于' + k + '状态');
     return;
   }
+  if (t.boss && t.boss.eSt) { turns = Math.max(1, Math.ceil(turns * (1 - t.boss.eSt))); RV(t, 'eSt'); }   // 无尽作战「异常抗性」：持续回合减少
   // 控制类状态：如果对方本回合已经行动过，额外+1回合，保证真的能控住
   t.st[k] = turns + (CONTROL[k] && S.turnActed[j] ? 1 : 0);
   if (j === 1 && src === 0) { var cst = CS(S).st; cst[k] = (cst[k] || 0) + 1; }
@@ -571,7 +582,7 @@ function calcDamage(me, foe, mv, firstMover, est) {
     var cr = (mv.crit === 'high' ? 0.25 : 1 / 16) * (ab === '虚空' ? 2 : 1);
     if (mv.alwaysCrit) crit = true;   // 淬命之焰：必定致命一击（不消耗「下次必暴」）
     else if (me.fx.sureCrit) { crit = true; me.fx.sureCrit = 0; }
-    else if (me.tm.crit2 > 0) crit = true;
+    else if (me.tm.crit2 > 0 || me.tm.enCrit > 0) crit = true;
     else crit = RNG() < cr;
     if (crit) mod *= 1.5;
     if (crit && foe.st['石化'] > 0) mod *= 2;   // 2026-10-27：石化中被暴击，这次暴击伤害翻倍（之后解除石化）
@@ -606,6 +617,10 @@ function calcDamage(me, foe, mv, firstMover, est) {
   if (me.tm.jungle > 0 && foe.hp / foe.maxhp < me.hp / me.maxhp) mod *= 1.7;
   if (me.fx.boostNext) mod *= 1.5;
   if (me.fx.x2Next) mod *= 2;   // 岩洞藏匿成功后的下一次直接攻击
+  if (me.enDmg) mod *= 1 + me.enDmg;   // 无尽作战（2026-11-02）：能力 / 消耗品 / 装备的增伤
+  if (me.enCombo) mod *= 1 + 0.2 * me.enCombo;   // 凡响连击
+  if (me.boss && me.boss.eAtk) { mod *= 1 + me.boss.eAtk; if (!est) RV(me, 'eAtk'); }
+  if (foe.boss && foe.boss.eDr) { mod *= 1 - foe.boss.eDr; if (!est) RV(foe, 'eDr'); }
   if (me.tm.weak > 0) mod *= 0.7;
   if (me.st['溺水'] > 0) mod *= 0.3;
   if (foe.tm.soul > 0) mod *= 1.2;
@@ -661,6 +676,7 @@ function resolveTurn(S, acts) {
   [0, 1].forEach(function (i) { var em = act(S, i); if (!em.fainted && em.insFx && em.insFx.elec && RNG() < 0.2) { log(S, evs, nm(em) + '的刻印「迅疾之电」发动了', 'fxl'); changeStages(S, evs, i, { spe: 1 }); } });   // 2026-11-01
   if (S.turn === 1 && !S.ambushed) { S.ambushed = 1; var amb = act(S, 1); if (amb.boss && amb.boss.ambush && !act(S, 0).fainted) { RV(amb, 'ambush'); log(S, evs, nm(amb) + '使用了「突然袭击」！', 'use'); E(S, evs, 'use', { side: 1, move: '突然袭击', type: typesOf(amb)[0] }); applyDamage(S, evs, 0, amb.boss.ambush, null, {}); if (act(S, 0).fainted && !S.over) { checkOver(S, evs); } } }
   if (S.turn === 1 && !S.nebOpen) { var nb = act(S, 1); if (nb.boss && nb.boss.neb && !act(S, 0).fainted && M['强烈恒星风']) { S.nebOpen = 1; log(S, evs, nm(nb) + '一现身，就释放了恒星风暴！', 'crit'); useMove(S, evs, 1, M['强烈恒星风'], -1, true); checkOver(S, evs); if (S.over) { S.turn++; return evs; } } }   // 玫瑰星云：开局先放一次强烈恒星风
+  if (S.en) enTurnStart(S, evs, acts);
   if (acts[0].kind === 'item') { useItem(S, evs, 0, acts[0].key); S.turnActed[0] = true; if (S.over) { S.turn++; return evs; } }
   [0, 1].forEach(function (i) { if (acts[i].kind === 'switch') doSwitch(S, evs, i, acts[i].to, true); });
   // BOSS「瘴毒傀儡」：占用BOSS这一回合，下场并召唤傀儡
@@ -676,11 +692,14 @@ function resolveTurn(S, acts) {
   [0, 1].forEach(function (i) { if (acts[i].kind === 'switch') S.turnActed[i] = true; });
   for (var q = 0; q < info.length; q++) {
     if (S.over) break;
+    if (S.en && info[q].i === 0) enPreMove(S, info[q].mv);
     useMove(S, evs, info[q].i, info[q].mv, info[q].slot);
     S.turnActed[info[q].i] = true;
+    if (S.en && info[q].i === 0) enPostMove(S, evs, info[q].mv);
     checkOver(S, evs);
   }
   if (!S.over) endOfTurn(S, evs);
+  if (!S.over && S.en) { enEndTurn(S, evs); checkOver(S, evs); }
   if (!S.over) nebCumber(S, evs);
   checkOver(S, evs);
   if (!S.over && !S.training && !S.noLimit && S.turn >= MAX_TURNS) timeUp(S, evs);   // noLimit：PVE 不限回合（2026-10-24），竞技对战仍是 60 回合
@@ -691,8 +710,68 @@ function resolveTurn(S, acts) {
       S.needSwitch = act(S, 0).fainted && !S.needCore;
     }
   }
+  if (S.en) enSync(S);
   S.turn++;
   return evs;
+}
+
+/* ---------- 无尽作战（2026-11-02）：S.en = { on: { 已激活的能力/消耗品 }, combo, cnt, aresQ, ghostT } ----------
+ * 能力、消耗品都放在 S.items 里（ITEMS 里 en: true 的那些），用掉占一回合。装备写在我方精灵的 eq 上（['eq_heal8', …]）。
+ * 具体数值见 js/engine/endless.js 的 EN_ITEMS（这里按 key 结算） */
+var EN_FX = { cs_flag: { dmg: 0.25 }, ab_pow15: { dmg: 0.15 }, ab_pow20: { dmg: 0.2 } };
+function enSync(S) {
+  if (!S.en) return;
+  var on = S.en.on || {}, d = 0; for (var k in on) if (on[k] && EN_FX[k]) d += EN_FX[k].dmg;
+  var f = act(S, 1), ns = !!(f && !f.fainted && f.boss && f.boss.noStatF);
+  if (ns) RV(f, 'noStatF');
+  S.sides[0].team.forEach(function (m) { var e = 0; (m.eq || []).forEach(function (q) { if (q === 'eq_ketos') e += 0.3; if (q === 'eq_dmg20') e += 0.2; }); m.enDmg = d + e; m.enNS = ns ? 1 : 0; });
+}
+function enTurnStart(S, evs, acts) {
+  var on = S.en.on || {};
+  if (on.ab_ghost && S.turn % 3 === 0) { S.en.ghostT = S.turn; log(S, evs, '幽灵形态：这回合必定闪避攻击', 'fxl'); }
+  if (acts[0].kind !== 'move') S.en.combo = 0;
+}
+function enPreMove(S, mv) { var me = act(S, 0); me.enCombo = S.en.on && S.en.on.ab_combo && mv.cat !== '变化' ? (S.en.combo || 0) : 0; }
+function enPostMove(S, evs, mv) {
+  var on = S.en.on || {}, me = act(S, 0); me.enCombo = 0;
+  if (mv.cat !== '变化') { S.en.combo = (S.en.combo || 0) + 1; if (on.ab_combo && S.en.combo > 1) log(S, evs, '凡响连击 ×' + S.en.combo + '（下次攻击伤害 +' + (20 * S.en.combo) + '%）', 'fxl'); }
+  else S.en.combo = 0;
+  if (mv.cat !== '变化' && !me.fainted) {
+    if (on.ab_ares2) S.en.aresQ = (S.en.aresQ || 0) + 100;
+    else if (on.ab_ares1 && RNG() < 0.5) S.en.aresQ = (S.en.aresQ || 0) + 60;
+  }
+  if (on.ab_echo && mv !== STRUGGLE && !S.over && !me.fainted) {
+    S.en.cnt = (S.en.cnt || 0) + 1;
+    if (S.en.cnt % 4 === 0 && !act(S, 1).fainted) { log(S, evs, '回响形态：「' + mv.name + '」再次释放！', 'crit'); enPreMove(S, mv); useMove(S, evs, 0, mv, -1, true); me.enCombo = 0; checkOver(S, evs); }
+  }
+}
+function enEndTurn(S, evs) {
+  var f = act(S, 1);
+  if (S.en.aresQ > 0 && !f.fainted && !act(S, 0).fainted) { var q = S.en.aresQ; S.en.aresQ = 0; log(S, evs, '阿瑞斯打击！造成 ' + q + ' 点固定伤害', 'crit'); applyDamage(S, evs, 1, q, 0, {}); if (f.hp <= 0 && !f.fainted) faint(S, evs, 1); }
+  S.en.aresQ = 0;
+  var me = act(S, 0); if (me.fainted) return;
+  var hp = 0, ppE = 0;
+  (me.eq || []).forEach(function (q) { if (q === 'eq_heal8') hp += 0.08; if (q === 'eq_heal12') hp += 0.12; if (q === 'eq_heal16') hp += 0.16; if (q === 'eq_pp3' && S.turn % 3 === 0) ppE++; if (q === 'eq_pp2' && S.turn % 2 === 0) ppE++; });
+  if (hp && me.hp < me.maxhp) { log(S, evs, nm(me) + '的愈疗装备恢复了体力', 'fxl'); heal(S, evs, 0, me.maxhp * hp); }
+  if (ppE) { var g = 0; me.moves.forEach(function (x) { var a = Math.min(ppE, x.max - x.pp); if (a > 0) { x.pp += a; g += a; } }); if (g) log(S, evs, nm(me) + '的轮盘装备恢复了 ' + g + ' 点 PP', 'fxl'); }
+}
+function enUse(S, evs, i, key) {
+  var it = ITEMS[key], me = act(S, 0), f = act(S, 1);
+  if (!S.en) S.en = { on: {} }; if (!S.en.on) S.en.on = {};
+  log(S, evs, '你使用了「' + it.name + '」', 'fxl');
+  switch (key) {
+    case 'cs_fumo': if (!f.fainted) { var fd = Math.floor(f.maxhp * 0.4); log(S, evs, 'fumo炸弹爆炸了！', 'crit'); applyDamage(S, evs, 1, fd, 0, {}); if (f.hp <= 0 && !f.fainted) faint(S, evs, 1); checkOver(S, evs); } break;
+    case 'cs_mia': S.sides[1].team.forEach(function (x) { if (!x.fainted) x.perm.miasma = (x.perm.miasma || 0) + 10; }); E(S, evs, 'stage', { side: 1 }); log(S, evs, '瘴气笼罩了对手全体（各 +10 层瘴气）', 'bad'); break;
+    case 'cs_burn5': addStatus(S, evs, 1, '烧伤', 5, 0); break;
+    case 'cs_burn10': addStatus(S, evs, 1, '烧伤', 10, 0); break;
+    case 'cs_poi2': addStatus(S, evs, 1, '中毒', 5, 0); if (f.st['中毒'] > 0) { f.fx.poison = Math.max(f.fx.poison || 1, 2); E(S, evs, 'stage', { side: 1 }); } break;
+    case 'cs_poi3': addStatus(S, evs, 1, '中毒', 7, 0); if (f.st['中毒'] > 0) { f.fx.poison = Math.max(f.fx.poison || 1, 3); E(S, evs, 'stage', { side: 1 }); } break;
+    case 'cs_crit': me.tm.enCrit = 3; E(S, evs, 'stage', { side: 0 }); log(S, evs, nm(me) + '的攻击 3 回合内必定致命一击', 'fxl'); break;
+    case 'cs_shield': var sh = Math.floor(me.maxhp * 0.25); me.fx.shield = Math.max(me.fx.shield || 0, sh); E(S, evs, 'stage', { side: 0 }); log(S, evs, nm(me) + '获得了 ' + sh + ' 点护盾', 'good'); break;
+    case 'cs_horn': changeStages(S, evs, 0, { spe: 2 }); break;
+    default: S.en.on[key] = 1; log(S, evs, '「' + it.name + '」本场战斗生效中', 'good');
+  }
+  enSync(S);
 }
 
 /* ---------- 道具：对战中使用（占用本回合） ----------
@@ -724,6 +803,7 @@ function catchChance(S, key) {
 function useItem(S, evs, i, key) {
   var it = ITEMS[key], m = act(S, i); if (!it) return;
   if (i === 0) CS(S).items++;
+  if (it.en) { enUse(S, evs, i, key); return; }
   if (it.pp) {
     log(S, evs, '你使用了「' + it.name + '」', 'fxl');
     var got = 0; m.moves.forEach(function (x) { var add = Math.min(it.pp, x.max - x.pp); if (add > 0) { x.pp += add; got += add; } });
@@ -820,7 +900,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   mv = liveMove(me, mv);
   if (me.fainted || (me.boss && me.boss.broken)) return;
   if (!extra && cantAct(S, evs, me)) return;
-  if (slotIdx >= 0 && moveBlocked(me, me.moves[slotIdx])) { log(S, evs, (me.tm && me.tm.parryBan === 1 && me.fx.banMv === mv.name ? nm(me) + '的「' + mv.name + '」刚被招架过，这回合无法使用' : me.tm && me.tm.noStat === 1 && mv.cat === '变化' ? nm(me) + '被压制弧光压制，无法使用「' + mv.name + '」' : (me.flags && me.flags.sy && mv.cat === '变化' ? '沈阳大街上不讲究这些花架子，' + nm(me) + '无法使用「' : nm(me) + '处于光影之月，无法使用「') + mv.name + '」'), 'bad'); return; }
+  if (slotIdx >= 0 && moveBlocked(me, me.moves[slotIdx])) { log(S, evs, (me.tm && me.tm.parryBan === 1 && me.fx.banMv === mv.name ? nm(me) + '的「' + mv.name + '」刚被招架过，这回合无法使用' : me.tm && me.tm.noStat === 1 && mv.cat === '变化' ? nm(me) + '被压制弧光压制，无法使用「' + mv.name + '」' : me.enNS && mv.cat === '变化' ? '对方的「禁止变化」生效中，' + nm(me) + '无法使用「' + mv.name + '」' : (me.flags && me.flags.sy && mv.cat === '变化' ? '沈阳大街上不讲究这些花架子，' + nm(me) + '无法使用「' : nm(me) + '处于光影之月，无法使用「') + mv.name + '」'), 'bad'); return; }
   if (!mv.struggle && slotIdx >= 0 && !(me.boss && ((me.boss.immortal && !me.boss.ppLim) || me.boss.ppInf))) me.moves[slotIdx].pp--;
   if (me.boss && me.boss.healCd && mv.heal && !extra) S.bossHealAt = S.turn;   // 回血技能的冷却（见 ai.js 的 aiChoose）
   // ppLim：先驱之塔的死神虽有「不朽」，PP 也有限   // 「不朽」：PP 无限
@@ -857,6 +937,8 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   if (foe.fainted) { log(S, evs, '但是没有目标'); return; }
   if (foe.boss && foe.boss.broken) { log(S, evs, nm(foe) + '的这管体力已经被击破，攻击没有效果', 'fxl'); me.fx.boostNext = 0; return; }
   if (hitBlocked(foe, mt)) { log(S, evs, nm(foe) + '毫发无伤！只有' + foe.onlyHit.join('、') + '系技能才能命中它', 'bad'); me.fx.boostNext = 0; return; }
+  if (foe.boss && ((foe.boss.noPhys && mv.cat === '物攻') || (foe.boss.noSpec && mv.cat === '特攻'))) { RV(foe, mv.cat === '物攻' ? 'noPhys' : 'noSpec'); log(S, evs, nm(foe) + '免疫' + (mv.cat === '物攻' ? '物理' : '特殊') + '攻击，毫发无伤！', 'bad'); me.fx.boostNext = 0; return; }   // 无尽作战
+  if (i === 1 && S.en && S.en.ghostT === S.turn && !act(S, 0).fainted) { log(S, evs, '幽灵形态：' + nm(foe) + '化作虚影，闪开了攻击！', 'fxl'); me.fx.boostNext = 0; return; }
   if (mv.custom === 'poisonHeart' && !(foe.st['中毒'] > 0)) { E(S, evs, 'miss', { side: j }); log(S, evs, '但是没有命中！（渗透孢子只能命中中毒的敌人）'); me.fx.boostNext = 0; return; }
   var sure = me.fx.sureHit; if (sure) me.fx.sureHit = 0;
   if (me.tm.sure3 > 0 || me.tm.ear > 0) sure = 1;
@@ -902,6 +984,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
     for (var h = 0; h < hits && foe.hp > 0; h++) {
       var res = calcDamage(me, foe, mv, firstMover, false);
       if (pBoost !== 1) res.dmg = Math.floor(res.dmg * pBoost);
+      if (foe.boss && foe.boss.noNormal) { if (!h) { RV(foe, 'noNormal'); log(S, evs, nm(foe) + '免疫常规伤害！只有固定伤害和异常状态能伤到它', 'bad'); } res.dmg = 0; res.crit = false; }
       lastEff = res.eff; n++; raw += res.dmg;
       if (mv.custom === 'burnExtend' && foe.st['烧伤'] > 0 && foe.hp > res.dmg) { foe.st['烧伤']++; burnX = (burnX || 0) + 1; }   // 烈焰风暴：每次命中延长 1 回合烧伤
       if (res.crit) log(S, evs, '致命一击！', 'crit');
@@ -1412,6 +1495,18 @@ var BOSS_FX = [
   { k: 'mute', t: '无法交流', h: '无法交流', d: function () { return '完全失去理智，只会使用攻击技能'; } },
   { k: 'purify', t: '净化光芒', h: '净化光芒', d: function () { return '对沾染瘴气的目标造成的伤害提升 100%'; } },
   { k: 'immortal', t: '不朽', h: '不朽', d: function (m) { return '免疫任何异常状态，也免疫自身能力等级的下降（提升不受影响）' + (m && m.boss && m.boss.ppLim ? '' : '；技能 PP 无限'); } },
+  // 无尽作战（2026-11-02）
+  { k: 'eAtk', t: '增伤', h: '增伤', d: function (m) { return '造成的伤害提升 ' + Math.round(m.boss.eAtk * 100) + '%'; } },
+  { k: 'eDr', t: '受伤减免', h: '受伤减免', d: function (m) { return '受到的伤害减少 ' + Math.round(m.boss.eDr * 100) + '%'; } },
+  { k: 'eRef', t: '反弹', h: '反弹', d: function (m) { return '受到攻击时，把这次伤害的 ' + Math.round(m.boss.eRef * 100) + '% 反弹给攻击者'; } },
+  { k: 'rPhys', t: '反弹物攻', h: '反弹物攻', d: function (m) { return '受到物理攻击时，把这次伤害的 ' + Math.round(m.boss.rPhys * 100) + '% 反弹给攻击者'; } },
+  { k: 'rSpec', t: '反弹特攻', h: '反弹特攻', d: function (m) { return '受到特殊攻击时，把这次伤害的 ' + Math.round(m.boss.rSpec * 100) + '% 反弹给攻击者'; } },
+  { k: 'noPhys', t: '免疫物攻', h: '免疫物攻', d: function () { return '物理攻击对它完全无效'; } },
+  { k: 'noSpec', t: '免疫特攻', h: '免疫特攻', d: function () { return '特殊攻击对它完全无效'; } },
+  { k: 'noStatF', t: '禁止变化', h: '禁止变化', d: function () { return '它在场时，对手不能使用变化类技能'; } },
+  { k: 'fixRes', t: '固伤减免', h: '固伤减免', d: function (m) { return '受到的固定伤害减少 ' + Math.round(m.boss.fixRes * 100) + '%'; } },
+  { k: 'noNormal', t: '免疫常规伤害', h: '免疫常规伤害', d: function () { return '技能造成的常规伤害对它无效，只有固定伤害和异常状态的伤害能伤到它'; } },
+  { k: 'eSt', t: '异常抗性', h: '异常抗性', d: function (m) { return '异常状态的持续回合和持续伤害都减少 ' + Math.round(m.boss.eSt * 100) + '%'; } },
   // 先驱之塔（2026-10-17）
   { k: 'regen', t: '再生', h: '再生', d: function (m) { return '每回合结束时恢复 ' + Math.round((m.boss.regen === true ? 0.06 : m.boss.regen) * 100) + '% 最大体力'; } },
   { k: 'thorn', t: '荆棘', h: '荆棘', d: function () { return '受到攻击时，把这次伤害的 15% 反弹给攻击者'; } },

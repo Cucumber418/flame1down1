@@ -164,7 +164,8 @@ function startMode(E, res, name, kind, u, acc, args) {
   if (st.S) Object.keys(st.S).forEach(function (k) { if (st.S[k] != null) S[k] = st.S[k]; });   // env、wild、ai、ordered 等
   var seenFx = acc.seenFx || {};   // 2026-11-01：这个账号触发过的BOSS特效，对战里一开始就直接显示（不再是「？？？」）
   S.sides[1].team.forEach(function (m) { if (!m.boss) return; m.boss.seen = m.boss.seen || {}; Object.keys(seenFx).forEach(function (k) { if (m.boss[k]) m.boss.seen[k] = 1; }); });
-  if (kind !== 'rank' && kind !== 'sandbox' && E.SUMMON) S.sides[0].team.forEach(function (bm) { var m0 = bm.u != null && !bm.helper && E.ACC.mon(acc, bm.u); if (m0 && m0.sid === bm.id && m0.lv === bm.lv) E.SUMMON.insApply(bm, m0); });   // 借来的助战精灵不算   // 2026-11-01：刻印只在 PVE 生效
+  if (E.PVE.MODES[kind].post) E.PVE.MODES[kind].post(S, st.ctx || {}, acc);   // 2026-11-02：模式自己的开场处理（无尽作战：刻印、装备、剩余体力）
+  if (kind !== 'rank' && kind !== 'sandbox' && kind !== 'endless' && E.SUMMON) S.sides[0].team.forEach(function (bm) { var m0 = bm.u != null && !bm.helper && E.ACC.mon(acc, bm.u); if (m0 && m0.sid === bm.id && m0.lv === bm.lv) E.SUMMON.insApply(bm, m0); });   // 借来的助战精灵不算   // 2026-11-01：刻印只在 PVE 生效
   var items0 = {}; E.ITEM_ORDER.forEach(function (k) { items0[k] = (acc.items && acc.items[k]) || 0; });
   if (!st.noItems) S.items = JSON.parse(JSON.stringify(items0));
   var out = { ok: true, S: S, opt: o };

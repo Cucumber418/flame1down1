@@ -1796,6 +1796,7 @@
     if (ex.view === 'shop') { if (shopOpen()) { renderShop(); return; } ex.view = 'area'; renderArea(); return; }
     if (ex.view === 'forge') { renderForge(); return; }
     if (ex.view === 'summon') { renderSummon(); return; }
+    if (ex.view === 'endless') { renderEndless(); return; }
     if (ex.view === 'nursery') { renderNursery(); return; }
     if (ex.view === 'medal') { if (medalOpen()) { renderMedal(); return; } ex.view = 'area'; ex.area = '黄冈'; }
     if (ex.view === 'farm') { if (farmOpen()) { renderFarm(); return; } ex.view = 'area'; ex.area = '恩施'; }
@@ -1906,6 +1907,7 @@
       item('data-goarena="1"', '⚔', '竞技对战', arenaOpen() ? '沙盒调试 · 平衡排位 · 精灵大乱斗' : '读完荆楚号 · 孝感大厅的支线后开放', arenaOpen()) +   // 2026-11-02：太空竞技场拆成两项
       item('data-planet="sarena"', sarenaSvg(), '争霸赛', planetOpen(sa) ? esc(CONTEST.name) : '读完「降临芙罗拉」后开放', planetOpen(sa)) +
       item('data-summon="1"', '<img src="images/items/saint_quartz.webp" alt="">', '召唤', '圣晶石召唤 · 友情点召唤', true) +
+      item('data-endless="1"', '♾', '无尽作战', EN.rec(acc).run ? '作战进行中 · 难度 ' + EN.rec(acc).run.d : '已解锁难度 ' + EN.rec(acc).maxD + ' / ' + EN.D_MAX, true) +   // 2026-11-02
       item('data-bosshub="1"', '<img src="' + SPRITES[BOSSES[bk[0]].sid] + '" alt="">', 'BOSS挑战', '已开放 ' + nOpen + ' / ' + bk.length, true) +
       item('data-wkhub="1"', wk ? '<span class="sm-pm">' + permits() + '</span>' : '🔒', '每周挑战', wk ? '挑战许可 ' + permits() + ' / ' + PERMIT.max : '击败困难难度的泰戈尔或荒芜后开放', wk) +
       '</div>';
@@ -2282,7 +2284,7 @@
       '<div class="wild-list"><h4>芙罗拉星的野生精灵</h4><ul>' + list + '</ul><p class="hint">进入丛林或草甸后，精灵会在场景里走动，点中哪只就和哪只对战。对战中可以在「道具」页使用捕捉装置和补药，使用道具会占用一回合；把它打虚弱、或让它陷入异常状态，更容易捕捉成功。打倒野生精灵会获得经验（对方等级越高越多），分给出战过的精灵，也有一部分放进经验背包；同时出战过的精灵获得学习力（对方 LV1–25 得 1 点，LV26–50 得 2 点，LV51–100 得 3 点）。捕捉不算击败，没有经验和学习力。</p></div>';
   }
   function invCopy() { var o = {}; ITEM_ORDER.forEach(function (k) { o[k] = acc.items[k] || 0; }); return o; }
-  function useInv(k) { acc.items[k] = Math.max(0, (acc.items[k] || 0) - 1); save(); }
+  function useInv(k) { if (ITEMS[k] && ITEMS[k].en) return; acc.items[k] = Math.max(0, (acc.items[k] || 0) - 1); save(); }
   // 每天通过 PVE 战斗直接获得的经验上限（击败精灵的经验，含进经验背包的那部分；BOSS首通、任务等奖励不算）
   var PVE_XP_CAP = 1000000;   // 2026-10-17：120000 → 200000；2026-10-18：→ 400000（静默调整）；2026-10-24：→ 1000000
   function pveLeft() { var d = dayStr(); if (!acc.pveXp || acc.pveXp.d !== d) acc.pveXp = { d: d, n: 0 }; return Math.max(0, PVE_XP_CAP - acc.pveXp.n); }
@@ -2617,6 +2619,163 @@
     var tot = 0; SUMMON.FRIEND_POOL.forEach(function (p) { tot += p.w; });
     var nm = function (p) { return p.k === 'gem' ? '星球特产 ×' + p.n + '（芙罗拉玉、不化水滴、火山灰烬、闪电球体、永久冻土，随机一种）' : p.k === 'monItem' ? '精灵道具（成长果实、迅速成长果实、50学习力合剂、学习力重置胶囊，随机一种）' : p.k === 'normIns' ? '常规刻印（初级 90%、强效 10%）' : p.exp ? '经验 ×' + fmt(p.exp) : Object.keys(p.items).map(function (k) { return itemName(k) + ' ×' + p.items[k]; }).join(''); };
     return '<details class="sum-rates"><summary>概率公示</summary><ul>' + SUMMON.FRIEND_POOL.map(function (p) { return '<li>' + esc(nm(p)) + '：' + (p.w / tot * 100).toFixed(1) + '%</li>'; }).join('') + '</ul></details>';
+  }
+  /* ---------- 无尽作战（2026-11-02，飞船终端右侧）：规则在 js/engine/endless.js ---------- */
+  var EN = ENDLESS, enUi = { d: null, pick: {}, line: [], eqB: null, tab: 'run' };
+  var EN_NPC = { vanber: ['Vanber', 'vanber'], threego: ['Threego', 'threego'], bttp: ['Bttp', 'bttp'], cumber: ['Cumber', 'cumber'] };
+  function enIt(k, n) { var x = EN.IT[k]; return '<span class="en-it t' + (x ? x.tier : 1) + '" title="' + esc(x ? x.d : '') + '">' + H.itemIcon(k) + '<b>' + esc(x ? x.n : k) + '</b>' + (n > 1 ? '<i>×' + n + '</i>' : '') + '</span>'; }
+  function enOpt(o) {
+    if (o.k === 'heal') return '<span class="en-ic">❤</span><b>补给</b><small>全员恢复 ' + Math.round(o.n * 100) + '% 最大体力（只对还能战斗的精灵）</small>';
+    if (o.k === 'gems') return '<span class="en-ic">💎</span><b>无尽宝石 ×' + o.n + '</b><small>在商店里买东西用</small>';
+    var x = EN.IT[o.k]; return H.itemIcon(o.k) + '<b>' + esc(x.n) + '</b><em class="en-tier t' + x.tier + '">' + EN.TIER_NAME[x.tier] + ' · ' + EN.KIND_NAME[x.kind] + '</em><small>' + esc(x.d) + '</small>';
+  }
+  function enHp(x) { var p = Math.max(0, Math.min(1, x.hpr || 0)); return '<div class="hpbar"><i class="' + (p > 0.5 ? '' : p > 0.2 ? 'mid' : 'low') + '" style="width:' + (p * 100).toFixed(1) + '%"></i></div>'; }
+  function enRosCard(x, i, R, mode) {
+    var sp = x.spec, on = mode === 'line' && enUi.line.indexOf(i) >= 0;
+    return '<div class="en-ros' + (x.dead ? ' dead' : '') + (on ? ' on' : '') + '" data-enr="' + i + '"><img src="' + esc(sp.img) + '" alt=""><div class="en-rt"><b>' + esc(sp.nick) + '</b><small>LV' + sp.lv + (x.dead ? ' · 已倒下' : ' · ' + Math.round((x.hpr || 0) * 100) + '%') + '</small>' + enHp(x) +
+      '<div class="en-eq">' + [0, 1, 2].map(function (s) { var q = x.eq[s]; return q ? '<button type="button" class="en-slot full" data-enuq="' + i + '|' + s + '" title="' + esc(EN.IT[q].n + '：' + EN.IT[q].d + '（点击卸下）') + '">' + H.itemIcon(q) + '</button>' : '<span class="en-slot"></span>'; }).join('') + '</div></div>' +
+      (on ? '<span class="en-ord">' + (enUi.line.indexOf(i) + 1) + '</span>' : '') + '</div>';
+  }
+  function renderEndless() {
+    var E = EN.rec(acc), R = E.run, html = exHead('') + '<div class="crumb"><button type="button" class="btn ghost" id="en-back">‹ 返回飞船终端</button><b>荆楚号 · 无尽作战</b></div>';
+    if (!R) html += enLobby(E); else html += enRun(R);
+    $('pg-explore').innerHTML = html;
+  }
+  function enLobby(E) {
+    var d = enUi.d && enUi.d <= E.maxD ? enUi.d : E.maxD; enUi.d = d;
+    var mons = acc.mons.slice().sort(function (a, b) { return b.lv - a.lv; }), n = Object.keys(enUi.pick).filter(function (u) { return enUi.pick[u] && mon(+u); }).length;
+    var diffs = ''; for (var i = 1; i <= EN.D_MAX; i++) diffs += '<button type="button" class="en-d' + (i === d ? ' on' : '') + (i > E.maxD ? ' locked' : '') + '"' + (i > E.maxD ? ' disabled title="通关难度 ' + (i - 1) + ' 后解锁"' : ' data-end="' + i + '"') + '><b>' + (i > E.maxD ? '🔒' : i) + '</b><small>' + (E.clr[i] ? '通关 ' + E.clr[i] + ' 次' : E.best[i] ? '最远 ' + E.best[i] + ' 关' : i > E.maxD ? '未解锁' : '未挑战') + '</small></button>';
+    var lvA = 40 + Math.round(25 * (d - 1) / 9), lvB = Math.min(80, lvA + 15);
+    return '<section class="en-intro"><h3>无尽作战</h3><p>一次作战有 <b>3 个大关卡</b>，每个大关卡 15 关，最后一关是 BOSS。通关全部 3 个大关卡，解锁下一级难度（共 10 级）。</p>' +
+      '<ul><li>开局从你的精灵里挑最多 <b>20 只</b>，练度在开局时固定；每场战斗派最多 5 只。</li><li>体力不会在战斗之间回满（PP 会），倒下的精灵这次作战里不能再上场，装备会脱落回背包。</li>' +
+      '<li>每赢一关，选择下一个节点：战斗 / 精英 / 奖励 / 商店 / 碰碰运气。战斗胜利得到无尽宝石，并从奖励里挑选。</li><li>失败回到这个大关卡的起点。随时可以结束作战，按走到的最远进度获得经验和无尽代币。</li></ul></section>' +
+      '<h4 class="en-h">选择难度</h4><div class="en-diffs">' + diffs + '</div><p class="hint">难度 ' + d + '：敌人 LV' + lvA + ' ~ LV' + lvB + '，越往后敌人越多、增益越强。开局带 ' + EN.GEM0 + ' 颗无尽宝石。</p>' +
+      '<h4 class="en-h">挑选参战精灵 <span class="hint">已选 ' + n + ' / ' + EN.ROSTER_MAX + '</span><button type="button" class="btn ghost" data-enauto="1">按等级自动选</button><button type="button" class="btn ghost" data-enclr="1">清空</button></h4>' +
+      '<div class="en-pickgrid">' + mons.map(function (m) { var f = form(m), on = !!enUi.pick[m.u]; return '<button type="button" class="en-pk' + (on ? ' on' : '') + '" data-enpk="' + m.u + '"><img src="' + f.img + '" alt=""><b>' + esc(f.name) + '</b><small>LV' + m.lv + '</small></button>'; }).join('') + '</div>' +
+      '<div class="en-start"><button type="button" class="btn primary big" data-enstart="1"' + (n ? '' : ' disabled') + '>开始作战（难度 ' + d + '）</button></div>' +
+      '<h4 class="en-h">无尽代币商店 <span class="hint">' + H.itemIcon('enTok') + ' 无尽代币 ' + fmt(acc.items.enTok || 0) + '</span></h4><div class="shop-grid">' +
+      EN.TOK_SHOP.map(function (T) { var I = SUMMON.INS[T.k]; return '<article class="shop-it">' + H.itemIcon(T.k) + '<div class="si-txt"><b>' + esc(I.name) + '</b><p class="hint">限定刻印 · 体力 +25，' + esc(I.fd) + '</p><p class="si-own">持有 ' + (acc.items[T.k] || 0) + '</p></div><div class="si-buy"><span class="si-price">' + H.itemIcon('enTok') + T.price + '</span><button type="button" class="btn primary" data-entok="' + T.k + '"' + ((acc.items.enTok || 0) >= T.price ? '' : ' disabled') + '>兑换</button></div></article>'; }).join('') + '</div>';
+  }
+  function enRun(R) {
+    var P = R.pend, path = R.path[R.st] || [], slots = '';
+    for (var i = 0; i < EN.NODES; i++) {
+      var t = i < path.length ? path[i] : i === EN.NODES - 1 ? 'boss' : null, cur = i === R.n && R.cur;
+      slots += '<span class="en-node' + (i < path.length ? ' done' : '') + (cur ? ' cur' : '') + (i === EN.NODES - 1 ? ' boss' : '') + '" title="' + (t ? EN.NODE[t].n : '第 ' + (i + 1) + ' 关') + '">' + (cur ? EN.NODE[R.cur.t].ic : t ? EN.NODE[t].ic : i + 1) + '</span>';
+    }
+    var top = '<section class="en-top"><div class="en-stat"><b>难度 ' + R.d + '</b><span>第 ' + (R.st + 1) + ' / ' + EN.STAGES + ' 大关卡</span><span>第 ' + Math.min(EN.NODES, R.n + 1) + ' / ' + EN.NODES + ' 关</span><span class="en-gem">💎 ' + fmt(R.gems) + '</span>' +
+      (R.vbOn ? '<span class="en-vb" title="好感满了，Vanber 会送你 500 宝石和 1 件传奇道具">Vanber 好感 ' + (R.vbDone ? '已满 ❤' : (R.vb || 0) + ' / 100') + '</span>' : '') +
+      '<button type="button" class="btn ghost" data-enquit="1">结束作战并结算</button></div><div class="en-map">' + slots + '</div></section>';
+    var main = '';
+    if (P && P.t === 'ev') main = enEvent(R, P);
+    else if (P && P.t === 'pick') main = '<section class="en-panel"><h3>' + (P.from === 'boss' ? '击败首领！从 4 件传奇道具中选 2 件' : P.from === 'reward' ? '奖励：5 选 1' : '胜利！选择 ' + P.need + ' 项奖励') + '</h3><p class="hint">已选 ' + P.got.filter(function (g) { return g >= 0; }).length + ' / ' + P.need + '</p><div class="en-opts">' +
+      P.opts.map(function (o, k) { var got = P.got.indexOf(k) >= 0; return '<button type="button" class="en-opt' + (got ? ' got' : '') + '"' + (got ? ' disabled' : ' data-enpick="' + k + '"') + '>' + enOpt(o) + (got ? '<span class="en-gotmark">已选</span>' : '') + '</button>'; }).join('') + '</div><div class="soc-foot"><button type="button" class="btn ghost" data-enskip="1">跳过剩下的</button></div></section>';
+    else if (P && P.t === 'shop') main = '<section class="en-panel"><h3>商店 <span class="hint">💎 ' + fmt(R.gems) + '</span></h3>' + (P.vb && !P.chat ? '<div class="en-vbshop"><img src="' + CHARS.vanber_smile + '" alt=""><div><p>Vanber 也在这家商店里！</p><button type="button" class="btn" data-enchat="peek">和 Vanber 聊聊</button></div></div>' : '') + '<div class="en-shop">' +
+      P.list.map(function (L, k) { var x = EN.IT[L.k], owned = x && x.kind === 'abil' && R.abil.indexOf(L.k) >= 0; return '<div class="en-sh' + (L.sold ? ' sold' : '') + (x ? ' t' + x.tier : '') + '">' + enOpt(L.k === 'heal' ? { k: 'heal', n: L.n } : L) + '<div class="en-buy"><span>💎 ' + L.price + '</span><button type="button" class="btn primary" data-enbuy="' + k + '"' + (L.sold || owned || R.gems < L.price ? ' disabled' : '') + '>' + (L.sold ? '已售出' : owned ? '已拥有' : '购买') + '</button></div></div>'; }).join('') +
+      '</div><div class="soc-foot"><button type="button" class="btn primary" data-enleave="1">离开商店</button></div></section>';
+    else if (P && P.t === 'msg') main = '<section class="en-panel"><h3>🎲 碰碰运气</h3><p class="en-msg">' + esc(P.text) + '</p>' + (P.got ? '<p>' + enIt(P.got) + '</p>' : '') + '<div class="soc-foot"><button type="button" class="btn primary" data-enleave="1">继续前进</button></div></section>';
+    else if (R.cur) main = enPrep(R);
+    else if (R.next) main = '<section class="en-panel"><h3>选择下一个节点</h3><div class="en-next">' + R.next.map(function (t, k) { var N = EN.NODE[t]; return '<button type="button" class="en-nx ' + t + '" data-engo="' + k + '"><span>' + N.ic + '</span><b>' + N.n + '</b><small>' + ({ battle: '普通敌人，胜利得到宝石和奖励（5 选 2）', elite: '更强的敌人，奖励更丰厚（5 选 2）', reward: '直接挑一件奖励（5 选 1）', shop: '用无尽宝石购买道具', gamble: '可能是好事，也可能是坏事', boss: '这个大关卡的首领，胜利后在 4 件传奇道具里选 2 件' })[t] + '</small></button>'; }).join('') + '</div></section>';
+    var bag = '<section class="en-panel en-bag"><h4>能力</h4><div class="en-its">' + (R.abil.length ? R.abil.map(function (k) { return enIt(k); }).join('') : '<span class="hint">还没有能力。能力在对战里像道具一样使用，每场战斗可以发动一次。</span>') + '</div>' +
+      '<h4>消耗品</h4><div class="en-its">' + (Object.keys(R.cons).length ? Object.keys(R.cons).map(function (k) { return enIt(k, R.cons[k]); }).join('') : '<span class="hint">没有消耗品。消耗品在对战里使用，用完就没了。</span>') + '</div>' +
+      '<h4>装备背包</h4><div class="en-its">' + (R.bag.length ? R.bag.map(function (k, b) { return '<button type="button" class="en-bagit' + (enUi.eqB === b ? ' on' : '') + '" data-enbag="' + b + '">' + enIt(k) + '</button>'; }).join('') : '<span class="hint">没有闲置的装备。</span>') + '</div>' +
+      (enUi.eqB != null && R.bag[enUi.eqB] ? '<p class="hint red">点下面一只精灵，把「' + esc(EN.IT[R.bag[enUi.eqB]].n) + '」装上去（每只最多 3 件）。</p>' : R.bag.length ? '<p class="hint">点装备，再点精灵就能装上；点精灵身上的装备可以卸下。</p>' : '') + '</section>';
+    var ros = '<section class="en-panel"><h4>参战名单 <span class="hint">存活 ' + EN.alive(R).length + ' / ' + R.ros.length + '</span></h4><div class="en-roster">' + R.ros.map(function (x, i) { return enRosCard(x, i, R, R.cur && !P ? 'line' : ''); }).join('') + '</div></section>';
+    return top + main + bag + ros;
+  }
+  function enPrep(R) {
+    var C = R.cur, live = R.ros.map(function (x, i) { return x.dead ? -1 : i; }).filter(function (i) { return i >= 0; });
+    enUi.line = enUi.line.filter(function (i) { return live.indexOf(i) >= 0; });
+    if (!enUi.line.length) enUi.line = live.slice().sort(function (a, b) { return (R.ros[b].hpr || 0) - (R.ros[a].hpr || 0); }).slice(0, EN.LINE_MAX);
+    return '<section class="en-panel"><h3>' + EN.NODE[C.t].ic + ' ' + EN.NODE[C.t].n + ' · 敌人 ' + C.foes.length + ' 只</h3><div class="en-foes">' + C.foes.map(function (f) {
+      var bt = EN.buffText(f.boss);
+      return '<div class="en-foe"><img src="' + esc(f.img) + '" alt=""><div><b>' + esc(f.nick) + '</b><small>LV' + f.lv + (f.maxhp ? ' · 体力 ' + fmt(f.maxhp) : f.hpMul ? ' · 体力 ×' + f.hpMul : '') + '</small>' + tchips(SPMAP[f.id].types) + '<div class="en-buffs">' + (bt.length ? bt.map(function (b) { return '<span>' + esc(b) + '</span>'; }).join('') : '<span class="none">没有增益</span>') + '</div></div></div>';
+    }).join('') + '</div><p class="hint">在下方名单里点精灵调整出战顺序（最多 ' + EN.LINE_MAX + ' 只，第 1 只首发）。已选 ' + enUi.line.length + ' 只。</p>' +
+      '<div class="soc-foot"><button type="button" class="btn primary big" data-enfight="1"' + (enUi.line.length ? '' : ' disabled') + '>开战</button></div></section>';
+  }
+  function enEvent(R, P) {
+    var N = EN_NPC[P.k], img = CHARS[N[1]] || '', body = '', btns = '';
+    if (P.k === 'vanber') { var T = EN.VB_TALK[P.i]; body = '<p>在走廊里遇到了 Vanber。</p><p class="en-say">「' + esc(T.q) + '」</p>'; btns = T.o.map(function (o, k) { return '<button type="button" class="btn" data-enev="' + k + '">' + esc(o[0]) + '</button>'; }).join(''); }
+    else if (P.k === 'threego') { body = '<p>Threego 拦住了你，眼睛红红的。</p><p class="en-say">「你……有没有点点的消息？' + esc(EN.PLANETS[P.ans].hint) + '你觉得他会在哪？」</p><p class="hint">答对了她会送你 300 颗无尽宝石；答错了她会难过地跑开，名单里存活的精灵各损失 15% 当前体力。</p>'; btns = P.two.map(function (pi, k) { return '<button type="button" class="btn" data-enev="' + k + '">' + esc(EN.PLANETS[pi].n) + '</button>'; }).join(''); }
+    else if (P.k === 'bttp') { img = CHARS.bttp || img; body = '<p>Bttp 在补给站的长椅上睡得正香，怀里抱着一个鼓鼓的箱子。</p><p class="hint">叫醒他：名单里存活的精灵各损失 5% 最大体力，每叫一次成功的机会都更大，成功会得到一件珍稀道具（最多 2 件）。</p>' + (P.tries ? '<p>已经叫了 ' + P.tries + ' 次' + (P.got.length ? '，得到了 ' + P.got.map(function (k) { return enIt(k); }).join('') : '，他翻了个身……') + '</p>' : ''); btns = '<button type="button" class="btn primary" data-enev="0">尝试叫醒他</button><button type="button" class="btn ghost" data-enev="1">直接开溜</button>'; }
+    else { body = '<p>Cumber 通过通讯器联系了你。</p><p class="en-say">「前面的路不好走，我让我的伙伴给你一点祝福吧。选一个。」</p>'; btns = '<button type="button" class="btn" data-enev="0" title="' + esc(EN.IT.eq_gorgon.d) + '">戈尔贡的祝福（最大体力 +30%）</button><button type="button" class="btn" data-enev="1" title="' + esc(EN.IT.eq_ketos.d) + '">坎克托斯的祝福（伤害 +30%）</button>'; }
+    return '<section class="en-panel en-ev"><img class="en-npc" src="' + img + '" alt=""><div><h3>' + N[0] + '</h3>' + body + '<div class="en-evbtn">' + btns + '</div></div></section>';
+  }
+  function enEndMsg(e) {
+    if (!e) return;
+    var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'en-end';
+    d.innerHTML = '<div class="soc-box" role="dialog" aria-modal="true" style="max-width:440px"><span class="step">无尽作战 · 结算</span><h2>' + (e.cleared ? '通关难度 ' + e.d + '！' : '作战结束') + '</h2>' +
+      '<p>走到第 ' + e.p + ' 关（完成 ' + e.sc + ' 个大关卡）。</p><p>获得 <b>' + fmt(e.exp) + '</b> 累积经验、<b>' + fmt(e.tok) + '</b> 无尽代币。</p>' + (e.unlock ? '<p class="red">解锁了难度 ' + (e.d + 1) + '！</p>' : '') +
+      '<div class="soc-foot"><button type="button" class="btn primary" data-enx="1">好的</button></div></div>';
+    document.body.appendChild(d);
+    d.addEventListener('click', function (ev) { if (ev.target === d || ev.target.closest('[data-enx]')) d.remove(); });
+  }
+  function enTx(op, args, then) { txRun(op, args || {}, function (r) { if (then) then(r); renderEndless(); renderRes && renderRes(); if (r && r.end) enEndMsg(r.end); }); }
+  function enFight() {
+    var R = EN.run(acc); if (!R || !R.cur) return;
+    pveRemote('endless', { line: enUi.line.slice() }, { bg: BG.mayar || BG.bridge_p, back: '无尽作战' }, function (e, res) {
+      var r = e && e.rep;
+      ex.fighting = false; document.body.classList.remove('story-fight');
+      ex.view = 'endless'; ex.planet = 'jingchu';
+      $('pg-arena').hidden = page !== 'arena'; $('pg-explore').hidden = page !== 'explore';
+      renderTop(); syncBattle(); renderEndless(); window.scrollTo(0, $('pg-explore').offsetTop - 8);
+      if (r && r.res === 'win') toast('胜利！获得 ' + r.gems + ' 颗无尽宝石' + (r.lost && r.lost.length ? '，有 ' + r.lost.length + ' 只精灵倒下了（装备已回到背包）' : '') + '。');
+      else if (r && r.back) toast('作战失败……回到了这个大关卡的起点。');
+      else if (res === 'void') toast('这场对战作废了。');
+    });
+  }
+  $('pg-explore').addEventListener('click', function (e) {
+    if (ex.view !== 'endless') return;
+    var b = e.target.closest('button, [data-enr]'); if (!b) return;
+    var R = EN.run(acc), D = b.dataset;
+    if (b.id === 'en-back') { ex.view = 'sites'; ex.planet = 'jingchu'; renderExplore(); return; }
+    if (D.end) { enUi.d = +D.end; renderEndless(); return; }
+    if (D.enpk) { var u = +D.enpk; if (enUi.pick[u]) delete enUi.pick[u]; else if (Object.keys(enUi.pick).length < EN.ROSTER_MAX) enUi.pick[u] = 1; else toast('最多选 ' + EN.ROSTER_MAX + ' 只'); renderEndless(); return; }
+    if (D.enauto) { enUi.pick = {}; acc.mons.slice().sort(function (a, b2) { return b2.lv - a.lv; }).slice(0, EN.ROSTER_MAX).forEach(function (m) { enUi.pick[m.u] = 1; }); renderEndless(); return; }
+    if (D.enclr) { enUi.pick = {}; renderEndless(); return; }
+    if (D.enstart) { var us = Object.keys(enUi.pick).map(Number).filter(function (u) { return mon(u); }); enUi.line = []; enUi.eqB = null; enTx('enStart', { d: enUi.d, us: us }); return; }
+    if (D.entok) { enTx('enShop', { k: D.entok }, function () { toast('兑换成功：' + SUMMON.INS[D.entok].name); }); return; }
+    if (!R) return;
+    if (D.enquit) {
+      var dd = document.createElement('div'); dd.className = 'soc-dlg';
+      dd.innerHTML = '<div class="soc-box" role="dialog" aria-modal="true" style="max-width:420px"><span class="step">结束作战</span><h2>现在结束并结算吗？</h2><p>按这次走到的最远进度（第 ' + Math.max(R.prog || 0, EN.prog(R)) + ' 关）发放经验和无尽代币，结束后不能继续。</p><div class="soc-foot"><button type="button" class="btn ghost" data-x="1">再想想</button><button type="button" class="btn primary" data-ok="1">结束作战</button></div></div>';
+      document.body.appendChild(dd);
+      dd.addEventListener('click', function (ev) { if (ev.target === dd || ev.target.closest('[data-x]')) { dd.remove(); return; } if (ev.target.closest('[data-ok]')) { dd.remove(); enTx('enQuit'); } });
+      return;
+    }
+    if (D.enev != null) { var P0 = R.pend; enTx('enEv', { o: +D.enev }, function (r) {
+      if (!r) return;
+      if (P0.k === 'vanber') toast('Vanber 好感 +' + r.vb + (r.vbGift ? '。好感满了！Vanber 送了你 500 颗无尽宝石和「' + EN.IT[r.vbGift].n + '」' : ''));
+      else if (P0.k === 'threego') toast(r.right ? 'Threego：「真的吗？我也这么觉得！」她塞给你 300 颗无尽宝石。' : 'Threego：「……我觉得不是那里。」她难过地跑开了，大家都有点受伤。');
+      else if (P0.k === 'bttp') toast(r.left ? '你悄悄溜走了。' : r.got ? 'Bttp 迷迷糊糊地塞给你「' + EN.IT[r.got].n + '」' + (r.woke ? '，然后彻底醒了，伸着懒腰走开了。' : '，又睡着了。') : 'Bttp 嘟囔了一句「神还在思考」，又睡着了……');
+      else if (P0.k === 'cumber') toast('获得「' + EN.IT[r.got].n + '」，已放进装备背包。');
+    }); return; }
+    if (D.engo != null) { enUi.line = []; enTx('enGo', { i: +D.engo }); return; }
+    if (D.enpick != null) { enTx('enPick', { i: +D.enpick }, function (r) { if (r && r.stage) toast('进入第 ' + (r.stage + 1) + ' 个大关卡！'); }); return; }
+    if (D.enskip) { enTx('enPick', { skip: 1 }, function (r) { if (r && r.stage) toast('进入第 ' + (r.stage + 1) + ' 个大关卡！'); }); return; }
+    if (D.enbuy != null) { enTx('enBuy', { i: +D.enbuy }); return; }
+    if (D.enleave) { enTx('enLeave'); return; }
+    if (D.enchat) { enVbChat(); return; }
+    if (D.enbag != null) { enUi.eqB = enUi.eqB === +D.enbag ? null : +D.enbag; renderEndless(); return; }
+    if (D.enuq) { var q = D.enuq.split('|'); e.stopPropagation(); enTx('enUneq', { r: +q[0], s: +q[1] }); return; }
+    if (D.enfight) { enFight(); return; }
+    if (D.enr != null) {
+      var ri = +D.enr, x = R.ros[ri]; if (!x || x.dead) return;
+      if (enUi.eqB != null && R.bag[enUi.eqB]) { var bb = enUi.eqB; enUi.eqB = null; enTx('enEquip', { b: bb, r: ri }); return; }
+      if (R.cur && !R.pend) { var k = enUi.line.indexOf(ri); if (k >= 0) enUi.line.splice(k, 1); else if (enUi.line.length < EN.LINE_MAX) enUi.line.push(ri); else toast('最多派 ' + EN.LINE_MAX + ' 只'); renderEndless(); }
+    }
+  });
+  function enVbChat() {
+    txRun('enChat', { peek: 1 }, function (r) {
+      var T = EN.VB_SHOP[r.q]; if (!T) return;
+      var d = document.createElement('div'); d.className = 'soc-dlg';
+      d.innerHTML = '<div class="soc-box en-ev" role="dialog" aria-modal="true" style="max-width:520px"><img class="en-npc" src="' + CHARS.vanber_smile + '" alt=""><div><h3>Vanber</h3><p class="en-say">' + esc(T.q) + '</p><div class="en-evbtn">' + T.o.map(function (o, k) { return '<button type="button" class="btn" data-vbo="' + k + '">' + esc(o[0]) + '</button>'; }).join('') + '</div></div></div>';
+      document.body.appendChild(d);
+      d.addEventListener('click', function (ev) {
+        if (ev.target === d) { d.remove(); return; }
+        var b = ev.target.closest('[data-vbo]'); if (!b) return; d.remove();
+        enTx('enChat', { o: +b.dataset.vbo }, function (r2) { if (r2) toast('Vanber 好感 +' + r2.vb + (r2.vbGift ? '。好感满了！Vanber 送了你 500 颗无尽宝石和「' + EN.IT[r2.vbGift].n + '」' : '')); });
+      });
+    });
   }
   function renderSummon() {
     var tab = ex.sumTab || 'saint', S = sumRec(), B = SUMMON.banner(Date.now()), I = acc.items, core = I.g_core || 0, fp = I.fPt || 0, tok = I.sumTok || 0, today = ACC.dayStr(Date.now());
@@ -7031,6 +7190,7 @@
     if (b.dataset.npctalk) { npcTalk(b.dataset.npctalk); return; }
     if (b.dataset.room) { ex.view = 'room'; ex.room = b.dataset.room; ex.area = '天门'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); mysteryRoll('荆楚号 · 陆羽茶室'); return; }
     if (b.dataset.home) { ex.view = 'home'; ex.area = '天门'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); mysteryRoll('荆楚号 · 陆羽茶室'); return; }
+    if (b.dataset.endless) { ex.view = 'endless'; ex.planet = 'jingchu'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
     if (b.dataset.summon) { ex.view = 'summon'; ex.planet = 'jingchu'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
     if (b.dataset.bosshub) { ex.view = 'bosshub'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
     if (b.dataset.boss) { var BB = BOSSES[b.dataset.boss]; ex.bossFrom = b.dataset.from || null; ex.view = 'boss'; ex.boss = b.dataset.boss; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); mysteryRoll(BB.dept ? '荆楚号 · ' + DEPTS[BB.dept][0] : bossWhere(BB)); return; }
