@@ -383,7 +383,7 @@ var ENDLESS = (function () {
       var t = R.cur.t, lab = '难度 ' + R.d + ' · 第 ' + (R.st + 1) + ' 大关 · 第 ' + (R.n + 1) + ' 关';
       return { p: L.map(function (v) { return clone(R.ros[v].spec); }), a: a2, noItems: true, S: { items: items, en: { on: {}, combo: 0 }, endless: 1 },
         ctx: { line: L, items0: clone(items), t: t, key: R.st + ':' + R.n },
-        opt: { foe: '无尽作战', diff: lab + (t === 'boss' ? ' · BOSS' : t === 'elite' ? ' · 精英' : ''), bgm: t === 'boss' ? 'boss3' : t === 'elite' ? 'boss2' : 'stage', back: '无尽作战' } };
+        opt: { foe: '无尽作战', diff: lab + (t === 'boss' ? ' · BOSS' : t === 'elite' ? ' · 精英' : ''), bgm: t === 'boss' ? (R.st >= STAGES - 1 ? 'mingFinal2' : 'mingFinal1') : t === 'elite' ? 'mingBattle2' : 'mingBattle1', back: '无尽作战' } };   // 2026-11-02：配乐用明明教官的试炼系列
     },
     post: function (S, c, a) {   // 开打后：刻印（开局时的）、装备、剩余体力
       var R = run(a); if (!R) return;

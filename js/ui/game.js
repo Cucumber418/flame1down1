@@ -7987,7 +7987,8 @@
     if (!ready()) return 'ui';
     if (document.querySelector('.sum-anim')) return 'summon';   // 2026-11-01：召唤曲只在召唤动画里放，召唤页面用默认的曲子
     if (page === 'arena') return 'arena';              // 竞技大厅
-    if (page === 'holo') return mmLive() ? 'mingTheme' : 'ui';   // 全息作战（大型活动展厅）
+    if (page === 'holo') return mmLive() ? 'mingTheme' : 'ui';
+    if (page === 'explore' && ex.view === 'endless') return 'mingTheme';   // 无尽作战（2026-11-02）   // 全息作战（大型活动展厅）
     if (page === 'explore' && ex.view === 'home') return homeBgm();
     if (page === 'explore' && ex.view === 'spa') return spaBgm();   // 温泉：默认 spa，休息室里可以解锁别的   // 自己的茶室：放自己选的茶室音乐
     if (page === 'social' && window.HSSOCIAL && HSSOCIAL.visitBgm) { var vb = HSSOCIAL.visitBgm(); if (vb) return vb; }   // 拜访别人的茶室：放主人选的
