@@ -3436,3 +3436,22 @@ html.land-rot .sheet { height: 100%; overflow-y: auto; overflow-x: hidden; -webk
   .en-map { grid-template-columns: repeat(8, minmax(0, 1fr)); }
   .en-ev { grid-template-columns: 1fr; } .en-npc { width: 110px; justify-self: center; }
 }
+
+/* 无尽作战 · 大地图（2026-11-02） */
+.en-mapw { overflow-x: auto; overflow-y: hidden; border: 1.5px solid var(--ink); border-radius: 14px; background: radial-gradient(ellipse at 30% 40%, #1f2a4a 0%, #0f1426 70%); cursor: grab; touch-action: pan-y; user-select: none; -webkit-user-select: none; scrollbar-width: thin; }
+.en-mapw.drag { cursor: grabbing; }
+.en-svg { display: block; }
+.en-svg line { stroke: #56607a; stroke-width: 2.5; stroke-dasharray: 6 6; }
+.en-svg line.on { stroke: #f2c94c; stroke-dasharray: none; stroke-width: 3.5; }
+.en-mn circle { fill: #e9e4d6; stroke: #23222b; stroke-width: 2.5; }
+.en-mn text { text-anchor: middle; pointer-events: none; }
+.en-mn.past { opacity: .35; }
+.en-mn.done circle { fill: #f2c94c; }
+.en-mn.cur circle { fill: #fff; stroke: #e05a4a; stroke-width: 4; }
+.en-mn.go { cursor: pointer; }
+.en-mn.go circle { fill: #fff; stroke: #f2c94c; stroke-width: 4; animation: enPulse 1.2s ease-in-out infinite; }
+.en-mn.go:hover circle { fill: #fff6d6; }
+.en-mn.boss circle { fill: #3a1f2a; stroke: #c9a227; stroke-width: 3; }
+.en-mn.elite circle { fill: #f4d4cc; }
+@keyframes enPulse { 0%, 100% { stroke-width: 3; } 50% { stroke-width: 7; } }
+.en-legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: #555; }

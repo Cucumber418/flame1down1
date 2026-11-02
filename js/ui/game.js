@@ -2640,6 +2640,7 @@
     var E = EN.rec(acc), R = E.run, html = exHead('') + '<div class="crumb"><button type="button" class="btn ghost" id="en-back">‹ 返回飞船终端</button><b>荆楚号 · 无尽作战</b></div>';
     if (!R) html += enLobby(E); else html += enRun(R);
     $('pg-explore').innerHTML = html;
+    enMapBind();
   }
   function enLobby(E) {
     var d = enUi.d && enUi.d <= E.maxD ? enUi.d : E.maxD; enUi.d = d;
@@ -2664,7 +2665,7 @@
     }
     var top = '<section class="en-top"><div class="en-stat"><b>难度 ' + R.d + '</b><span>第 ' + (R.st + 1) + ' / ' + EN.STAGES + ' 大关卡</span><span>第 ' + Math.min(EN.NODES, R.n + 1) + ' / ' + EN.NODES + ' 关</span><span class="en-gem">💎 ' + fmt(R.gems) + '</span>' +
       (R.vbOn ? '<span class="en-vb" title="好感满了，Vanber 会送你 500 宝石和 1 件传奇道具">Vanber 好感 ' + (R.vbDone ? '已满 ❤' : (R.vb || 0) + ' / 100') + '</span>' : '') +
-      '<button type="button" class="btn ghost" data-enquit="1">结束作战并结算</button></div><div class="en-map">' + slots + '</div></section>';
+      '<button type="button" class="btn ghost" data-enquit="1">结束作战并结算</button></div>' + (R.map ? enMapHTML(R) : '<div class="en-map">' + slots + '</div>') + '</section>';
     var main = '';
     if (P && P.t === 'ev') main = enEvent(R, P);
     else if (P && P.t === 'pick') main = '<section class="en-panel"><h3>' + (P.from === 'boss' ? '击败首领！从 4 件传奇道具中选 2 件' : P.from === 'reward' ? '奖励：5 选 1' : '胜利！选择 ' + P.need + ' 项奖励') + '</h3><p class="hint">已选 ' + P.got.filter(function (g) { return g >= 0; }).length + ' / ' + P.need + '</p><div class="en-opts">' +
@@ -2674,13 +2675,41 @@
       '</div><div class="soc-foot"><button type="button" class="btn primary" data-enleave="1">离开商店</button></div></section>';
     else if (P && P.t === 'msg') main = '<section class="en-panel"><h3>🎲 碰碰运气</h3><p class="en-msg">' + esc(P.text) + '</p>' + (P.got ? '<p>' + enIt(P.got) + '</p>' : '') + '<div class="soc-foot"><button type="button" class="btn primary" data-enleave="1">继续前进</button></div></section>';
     else if (R.cur) main = enPrep(R);
-    else if (R.next) main = '<section class="en-panel"><h3>选择下一个节点</h3><div class="en-next">' + R.next.map(function (t, k) { var N = EN.NODE[t]; return '<button type="button" class="en-nx ' + t + '" data-engo="' + k + '"><span>' + N.ic + '</span><b>' + N.n + '</b><small>' + ({ battle: '普通敌人，胜利得到宝石和奖励（5 选 2）', elite: '更强的敌人，奖励更丰厚（5 选 2）', reward: '直接挑一件奖励（5 选 1）', shop: '用无尽宝石购买道具', gamble: '可能是好事，也可能是坏事', boss: '这个大关卡的首领，胜利后在 4 件传奇道具里选 2 件' })[t] + '</small></button>'; }).join('') + '</div></section>';
+    else if (R.next && !R.map) main = '<section class="en-panel"><h3>选择下一个节点</h3><div class="en-next">' + R.next.map(function (t, k) { var N = EN.NODE[t]; return '<button type="button" class="en-nx ' + t + '" data-engo="' + k + '"><span>' + N.ic + '</span><b>' + N.n + '</b></button>'; }).join('') + '</div></section>';
     var bag = '<section class="en-panel en-bag"><h4>能力</h4><div class="en-its">' + (R.abil.length ? R.abil.map(function (k) { return enIt(k); }).join('') : '<span class="hint">还没有能力。能力在对战里像道具一样使用，每场战斗可以发动一次。</span>') + '</div>' +
       '<h4>消耗品</h4><div class="en-its">' + (Object.keys(R.cons).length ? Object.keys(R.cons).map(function (k) { return enIt(k, R.cons[k]); }).join('') : '<span class="hint">没有消耗品。消耗品在对战里使用，用完就没了。</span>') + '</div>' +
       '<h4>装备背包</h4><div class="en-its">' + (R.bag.length ? R.bag.map(function (k, b) { return '<button type="button" class="en-bagit' + (enUi.eqB === b ? ' on' : '') + '" data-enbag="' + b + '">' + enIt(k) + '</button>'; }).join('') : '<span class="hint">没有闲置的装备。</span>') + '</div>' +
       (enUi.eqB != null && R.bag[enUi.eqB] ? '<p class="hint red">点下面一只精灵，把「' + esc(EN.IT[R.bag[enUi.eqB]].n) + '」装上去（每只最多 3 件）。</p>' : R.bag.length ? '<p class="hint">点装备，再点精灵就能装上；点精灵身上的装备可以卸下。</p>' : '') + '</section>';
     var ros = '<section class="en-panel"><h4>参战名单 <span class="hint">存活 ' + EN.alive(R).length + ' / ' + R.ros.length + '</span></h4><div class="en-roster">' + R.ros.map(function (x, i) { return enRosCard(x, i, R, R.cur && !P ? 'line' : ''); }).join('') + '</div></section>';
     return top + main + bag + ros;
+  }
+  // 大地图（2026-11-02，参考杀戮尖塔）：横向，可以拖动；闪烁的节点是现在能走的
+  var EN_CX = 116, EN_H = 400;
+  function enXY(c, n) { return [60 + c * EN_CX, 34 + n.y * (EN_H - 68)]; }
+  function enMapHTML(R) {
+    var M = R.map, W = 60 * 2 + (M.cols.length - 1) * EN_CX, lines = '', nodes = '', tr = R.trail || [];
+    M.links.forEach(function (L, c) { L.forEach(function (js, i) { js.forEach(function (j) {
+      var p = enXY(c, M.cols[c][i]), q = enXY(c + 1, M.cols[c + 1][j]), on = tr[c] === i && tr[c + 1] === j;
+      lines += '<line x1="' + p[0] + '" y1="' + p[1] + '" x2="' + q[0] + '" y2="' + q[1] + '" class="' + (on ? 'on' : '') + '"/>';
+    }); }); });
+    M.cols.forEach(function (col, c) { col.forEach(function (n, i) {
+      var p = enXY(c, n), N = EN.NODE[n.t], boss = n.t === 'boss', cls = 'en-mn ' + n.t;
+      var canGo = !R.pend && !R.cur && c === R.n && R.next && R.next.indexOf(i) >= 0;
+      if (tr[c] === i && c < R.n) cls += ' done'; else if (R.cur && c === R.n && R.pos === i) cls += ' cur'; else if (canGo) cls += ' go'; else if (c < R.n) cls += ' past';
+      nodes += '<g class="' + cls + '"' + (canGo ? ' data-engo="' + i + '"' : '') + ' transform="translate(' + p[0] + ',' + p[1] + ')"><title>' + N.n + '</title><circle r="' + (boss ? 34 : 21) + '"/><text dy="' + (boss ? 10 : 7) + '" font-size="' + (boss ? 28 : 19) + '">' + N.ic + '</text></g>';
+    }); });
+    return '<div class="en-mapw" id="en-mapw"><svg class="en-svg" width="' + W + '" height="' + EN_H + '" viewBox="0 0 ' + W + ' ' + EN_H + '">' + lines + nodes + '</svg></div>' +
+      '<div class="en-legend">' + ['battle', 'elite', 'reward', 'shop', 'gamble', 'boss'].map(function (t) { return '<span>' + EN.NODE[t].ic + ' ' + EN.NODE[t].n + '</span>'; }).join('') + '</div>';
+  }
+  function enMapBind() {
+    var w = $('en-mapw'), R = EN.run(acc); if (!w || !R || !R.map) return;
+    var col = Math.max(0, Math.min(R.map.cols.length - 1, R.n)), x = 60 + col * EN_CX;
+    w.scrollLeft = Math.max(0, x - w.clientWidth / 2 + (enUi.mapDx || 0)); enUi.mapDx = 0;
+    var st = null;
+    w.addEventListener('pointerdown', function (e) { st = { x: e.clientX, l: w.scrollLeft, moved: false }; });
+    w.addEventListener('pointermove', function (e) { if (!st) return; var dx = e.clientX - st.x; if (Math.abs(dx) > 5) { st.moved = true; w.classList.add('drag'); } if (st.moved) w.scrollLeft = st.l - dx; });
+    var end = function () { if (st && st.moved) { enUi.noClick = Date.now(); } st = null; w.classList.remove('drag'); };
+    w.addEventListener('pointerup', end); w.addEventListener('pointerleave', end); w.addEventListener('pointercancel', end);
   }
   function enPrep(R) {
     var C = R.cur, live = R.ros.map(function (x, i) { return x.dead ? -1 : i; }).filter(function (i) { return i >= 0; });
@@ -2725,7 +2754,8 @@
   }
   $('pg-explore').addEventListener('click', function (e) {
     if (ex.view !== 'endless') return;
-    var b = e.target.closest('button, [data-enr]'); if (!b) return;
+    var b = e.target.closest('button, [data-enr], [data-engo]'); if (!b) return;
+    if (b.dataset.engo != null && enUi.noClick && Date.now() - enUi.noClick < 300) return;   // 刚拖动完地图，不算点击
     var R = EN.run(acc), D = b.dataset;
     if (b.id === 'en-back') { ex.view = 'sites'; ex.planet = 'jingchu'; renderExplore(); return; }
     if (D.end) { enUi.d = +D.end; renderEndless(); return; }

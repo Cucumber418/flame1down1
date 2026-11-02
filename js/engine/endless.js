@@ -102,19 +102,43 @@ var ENDLESS = (function () {
   function depth(R) { var g = prog(R) / (STAGES * NODES - 1), dd = (R.d - 1) / (D_MAX - 1); return { p: Math.min(1, g), dd: dd, q: Math.min(1, g) * 0.6 + dd }; }
   function snapshot(R) { var c = clone(R); delete c.ck; return c; }
   var NODE = { battle: { n: '战斗', ic: '⚔' }, elite: { n: '精英', ic: '☠' }, reward: { n: '奖励', ic: '🎁' }, shop: { n: '商店', ic: '🛒' }, gamble: { n: '碰碰运气', ic: '🎲' }, boss: { n: 'BOSS', ic: '👑' } };
-  function genNext(R, r) {
-    if (R.n >= NODES - 1) { R.next = ['boss']; return; }
-    if (R.n === 0) { R.next = ['battle', 'battle']; return; }   // 第一关先打一场
-    var W = [['battle', 44], ['elite', 13], ['reward', 12], ['shop', 13], ['gamble', 18]], out = [];
-    if (R.n === NODES - 2) W = [['shop', 30], ['reward', 25], ['battle', 30], ['gamble', 15]];   // BOSS 前一关多给补给
-    var k = 2 + (r() < 0.6 ? 1 : 0);
-    for (var i = 0; i < k; i++) {
-      var tot = W.reduce(function (s, x) { return s + x[1]; }, 0), x = r() * tot, ch = W[0][0];
-      for (var j = 0; j < W.length; j++) { x -= W[j][1]; if (x < 0) { ch = W[j][0]; break; } }
-      out.push(ch); W = W.filter(function (w) { return w[0] !== ch; });
+  /* 大地图（2026-11-02，参考杀戮尖塔）：每个大关卡开始时生成。cols[c] = [{ t, y }]（y：0~1 的纵向位置），
+   * links[c][i] = [下一列能走到的节点]。第 1 列都是战斗，最后一列是同一个 BOSS。R.pos：当前所在节点（这一列的序号），R.trail：走过的节点 */
+  function pickT(W, r) { var tot = W.reduce(function (s, x) { return s + x[1]; }, 0), x = r() * tot; for (var j = 0; j < W.length; j++) { x -= W[j][1]; if (x < 0) return W[j][0]; } return W[0][0]; }
+  function makeMap(r) {
+    var cols = [], links = [];
+    for (var c = 0; c < NODES; c++) {
+      if (c === NODES - 1) { cols.push([{ t: 'boss', y: 0.5 }]); break; }
+      var k = c === 0 ? 3 : 2 + Math.floor(r() * 3), col = [];
+      for (var i = 0; i < k; i++) {
+        var W = c === NODES - 2 ? [['shop', 30], ['reward', 25], ['battle', 30], ['gamble', 15]] : c < 3 ? [['battle', 60], ['reward', 12], ['shop', 10], ['gamble', 18]] : [['battle', 44], ['elite', 13], ['reward', 12], ['shop', 13], ['gamble', 18]];
+        col.push({ t: c === 0 ? 'battle' : pickT(W, r), y: k === 1 ? 0.5 : 0.1 + 0.8 * i / (k - 1) + (r() - 0.5) * 0.08 });
+      }
+      cols.push(col);
     }
-    if (out.indexOf('battle') < 0 && out.indexOf('elite') < 0) out[0] = 'battle';
-    R.next = out;
+    for (c = 0; c < cols.length - 1; c++) {
+      var A = cols[c], B = cols[c + 1], L = A.map(function () { return []; }), has = B.map(function () { return 0; });
+      A.forEach(function (n, i) {
+        var j = A.length === 1 ? 0 : Math.round(i * (B.length - 1) / (A.length - 1)); L[i].push(j); has[j] = 1;
+        if (r() < 0.35) { var j2 = Math.max(0, Math.min(B.length - 1, j + (r() < 0.5 ? -1 : 1))); if (L[i].indexOf(j2) < 0) { L[i].push(j2); has[j2] = 1; } }
+      });
+      has.forEach(function (h, j) { if (h) return; var best = 0, bd = 9; A.forEach(function (n, i) { var d = Math.abs(n.y - B[j].y); if (d < bd) { bd = d; best = i; } }); L[best].push(j); });
+      L.forEach(function (x) { x.sort(); });
+      links.push(L);
+    }
+    for (c = 1; c < cols.length - 1; c++) cols[c].forEach(function (n, i) {   // 精英不连续出现、商店不扎堆（简单处理：同一条路上前一个是精英就换成战斗）
+      if (n.t !== 'elite') return;
+      var prevElite = cols[c - 1].some(function (p, pi) { return p.t === 'elite' && links[c - 1][pi].indexOf(i) >= 0; });
+      if (prevElite) n.t = 'battle';
+    });
+    return { cols: cols, links: links };
+  }
+  function genNext(R, r) {
+    if (!R.map) { R.map = makeMap(r); R.pos = null; R.trail = []; }   // 旧版本开始的作战：补一张地图
+    var c = R.n, M = R.map;
+    if (c >= M.cols.length) { R.next = []; return; }
+    if (c === 0 || R.pos == null || !M.links[c - 1] || !M.links[c - 1][R.pos]) R.next = M.cols[c].map(function (x, i) { return i; });
+    else R.next = M.links[c - 1][R.pos].slice();
   }
   function gemsFor(R, t) { return t === 'boss' ? 220 + 40 * R.st : t === 'elite' ? 110 + 25 * R.st : 50 + 12 * R.st; }
 
@@ -213,7 +237,7 @@ var ENDLESS = (function () {
     if (R.vb >= 100) { R.vbDone = 1; R.gems += 500; var L = poolOf(3, null, R), k = pick(L, r); grant(R, k); return k; }
     return '';
   }
-  function stageStart(R, r) { R.n = 0; R.next = null; R.cur = null; R.vbOn = 0; R.path[R.st] = []; R.pend = newEvent(R, r); }
+  function stageStart(R, r) { R.n = 0; R.next = null; R.cur = null; R.vbOn = 0; R.path[R.st] = []; R.map = makeMap(r); R.pos = null; R.trail = []; R.pend = newEvent(R, r); }
   function afterEvent(R, r) { R.pend = null; genNext(R, r); R.ck = snapshot(R); }
 
   /* ---------- 结算 ---------- */
@@ -262,8 +286,9 @@ var ENDLESS = (function () {
     TX.add('enGo', function (a, args, env) {
       var R = run(a); if (!R) return no('现在没有进行中的无尽作战');
       if (R.pend || R.cur) return no('先处理完当前的节点');
-      var i = int(args.i); if (!R.next || !(i >= 0 && i < R.next.length)) return no('没有这个节点');
-      var t = R.next[i], r = env.rand, out = { ok: true, t: t }; R.next = null;
+      if (!R.map || (R.next && typeof R.next[0] === 'string')) genNext(R, env.rand);   // 旧版本开始的作战
+      var i = int(args.i); if (!R.next || R.next.indexOf(i) < 0 || !R.map.cols[R.n] || !R.map.cols[R.n][i]) return no('从这里走不到那个节点');
+      var t = R.map.cols[R.n][i].t, r = env.rand, out = { ok: true, t: t }; R.next = null; R.pos = i; R.trail.push(i);
       if (t === 'battle' || t === 'elite' || t === 'boss') { R.cur = { t: t, foes: makeFoes(R, t, r) }; return out; }
       R.path[R.st].push(t); R.n++; R.prog = Math.max(R.prog || 0, prog(R));
       if (t === 'reward') R.pend = pickOpts(R, 'reward', r);
