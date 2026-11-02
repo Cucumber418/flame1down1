@@ -44,7 +44,8 @@ var WILD_POOLS = {
   // 莱汀陨石带（电系）
   lt_belt: [
     { sid: 'leigong', lv: [10, 15], w: 55, rate: 0.6, tag: '较高', shiny: 0.03 },   // 3% 是异色（红色）
-    { sid: 'faraday', lv: [10, 15], w: 45, rate: 0.55, tag: '中等' }
+    { sid: 'faraday', lv: [10, 15], w: 44.75, rate: 0.55, tag: '中等' },
+    { sid: 'leibniz', lv: [10, 10], w: 0.25, rate: 0.45, tag: '中等', rare: true, shiny: 0.03 }   // 2026-11-02：莱克（稀有，3% 异色）
   ],
   // 白之星（冰系）
   wh_snow: [

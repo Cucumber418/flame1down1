@@ -3306,3 +3306,6 @@ html.land .land-btn { display: inline-flex; }
 html.land-rot, html.land-rot body { overflow: hidden; height: 100%; }
 html.land-rot body { position: fixed; top: 0; left: 0; transform-origin: 0 0; overflow: hidden; }   /* 尺寸、zoom、旋转由 land.js 按屏幕算 */
 html.land-rot .sheet { height: 100%; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }   /* 转过来以后在 .sheet 里滚动，弹窗（挂在 body 上）始终在画面里 */
+.lb-art { position: relative; background: radial-gradient(circle, #fff6c8, #f2d06b 70%); }
+.lb-art .lb-sh { position: absolute; right: -6px; bottom: -6px; width: 46%; filter: drop-shadow(0 0 6px rgba(80,170,255,.8)); }
+.lb-art > img:first-child { width: 100%; height: 100%; object-fit: contain; padding: 6px; box-sizing: border-box; }

@@ -210,6 +210,14 @@ var M = {
   // 玫瑰星云专属（第十九段 · 码头决战，2026-11-01）
   强烈恒星风: { type: '暗影', cat: '特攻', power: 100, fixed: 100, tgtStage: { def: -3, spd: -3 }, pp: 10, d: '威力100，降低对方3级物防、特防，并附加100点固定伤害（玫瑰星云：开局释放，之后每5回合使用一次）' },
   'O型星超温辐射': { type: '暗影', cat: '特攻', power: 80, custom: 'oStar', pp: 5, d: '威力80，同时对对方背包里所有精灵造成伤害（玫瑰星云第三管体力：每5回合使用一次）' },
+  // 2026-11-02：莱布尼茨（电 · 飞行）
+  带电撞击: { type: '电', cat: '物攻', power: 55, pp: 30, d: '威力55' },
+  御雷: { type: '电', cat: '变化', selfStage: { atk: 1 }, pp: 20, d: '提升1级物攻' },
+  飞撞: { type: '飞行', cat: '物攻', power: 60, tgtStage: { def: -1 }, tgtChance: 0.4, pp: 25, d: '威力60，40%概率降低对方1级物防' },
+  风雷滚滚: { type: '电', cat: '变化', custom: 'fenglei', pp: 10, d: '5回合内，自身在场时，每回合结束有一半概率降低对方1级速度，否则提升自身1级速度' },
+  霹雳冲击: { type: '电', cat: '物攻', power: 80, selfStage: { atk: 1 }, selfChance: 0.4, pp: 15, d: '威力80，40%概率提升1级物攻' },
+  翔月极闪: { type: '飞行', cat: '物攻', power: 90, hidden: true, selfStage: { atk: 1 }, selfChance: 0.4, firstSure: 1, custom: 'spdFix30', pp: 10, d: '威力90，40%概率提升1级物攻，先出手时必定提升；附加等同于双方速度差值30%的固定伤害' },
+  贯穿雷刃: { type: '电', cat: '物攻', power: 100, hidden: true, custom: 'pierceDef', pp: 10, d: '威力100，无视对方的物防提升' },
   '氢-α发射线': { type: '暗影', cat: '特攻', power: 80, custom: 'randStatus', pp: 20, d: '威力80，50%几率让对方随机陷入一种异常状态' },
   黑雾潮汐: { type: '暗影', cat: '特攻', power: 65, hidden: true, custom: 'tide', pp: 10, d: '威力65，使用后从下回合起，连续4回合在每回合行动结束后额外发动一次【黑雾潮汐】' },
   混沌水域: { type: '水', cat: '变化', hidden: true, selfStage: { spa: 2 }, custom: 'chaosWater', pp: 10, d: '提升2级特攻，吸取对方1/5当前体力值' },

@@ -4416,6 +4416,16 @@
       '</div></div><p class="log-st' + (travelOpen() && t.active && !travelDone(t.h) ? ' on' : '') + '">' + st + '</p>' + (!travelOpen() ? (prog('flora2').done ? '<button type="button" class="btn primary" data-golog="travelcat">去做世界任务「旅行猫」</button>' : '<p class="hint">读完芙罗拉星主线「卡罗的不安」后，世界任务「旅行猫」就会开放。</p>') : '') + '</article>';
   }
   // 航行日志 · 稀有野怪：爱吃米饭的米饭火鸡（规则见 RICE）
+  // 航行日志 · 新精灵莱克（2026-11-02）：莱汀陨石带的稀有精灵
+  function leibnizLogHTML() {
+    var s = SPMAP.leibniz, sh = SHINY_SPRITES.leibniz_s1;
+    return '<article class="log-card rice lb-log"><span class="tape l"></span><span class="chip log-tag">获取精灵</span><h3>陨石带的飞翼 · 莱克</h3>' +
+      '<div class="pick-row"><div class="pick-art lb-art"><img src="' + formImg(s, 0) + '" alt="莱克">' + (sh ? '<img class="lb-sh" src="' + sh + '" alt="异色莱克">' : '') + '</div><div class="pick-txt">' +
+      '<p>新精灵<b>莱克</b>（电 · 飞行）登场！它在陨石带中不断穿梭飞行，稍不留神就会撞到锰怪身上。</p>' +
+      '<p>莱克 → LV25 莱克蝠 → LV50 <b>莱布尼茨</b>。特性「疾驰」：攻击命中时，附加双方速度差 10% 的固定伤害。</p>' +
+      '<ol class="rice-steps"><li>在<b>莱汀陨石带</b>的野外，有很小的概率遇到莱克（稀有精灵）。</li><li>其中 <b>3%</b> 是蓝色的<b>异色</b>莱克！</li><li>隐藏技能和等级上限用<b>闪电球体</b>解锁。</li></ol>' +
+      '</div></div></article>';
+  }
   function riceLogHTML() {
     var f = form({ sid: RICE.sid, lv: RICE.lv }), b = acc && acc.riceBowl;
     var st = b ? '你已经在熔岩原放了一碗饭，去那里等等看吧。' : acc && acc.items.c_bowl > 0 ? '你手里有 ' + acc.items.c_bowl + ' 碗饭，带去庞贝星的熔岩原吧。' : '';
@@ -4526,6 +4536,7 @@
     ['base1', 'comp1'].forEach(function (id) { var G0 = TX.D.GIFTS[id]; if (G0 && !(acc.gifts && acc.gifts[id])) add('限时领取-' + G0.name, giftLogHTML(id)); });   // 还没领的礼包放在最上面（领完自动消失）
     add('船员交流-QQ群', '<article class="log-card wide qq-card"><span class="tape l"></span><span class="tape r"></span><div class="qq-txt"><span class="chip log-tag">船员交流</span><h3>QQ 群：<b class="qq-no">' + QQ_GROUP + '</b></h3><p class="hint">攻略、组队切磋、bug 反馈、新精灵立绘抢先看，都在群里。</p></div><button type="button" class="btn primary" data-copyqq="1">复制群号</button></article>');
     add('新玩法-圣晶石召唤', summonLogHTML());
+    add('获取精灵-陨石带的飞翼莱克', leibnizLogHTML());
     add('限时活动-明明教官的试炼', mmLogHTML());
     var war = ui.logWar === 'pw' ? 'pw' : 'kbw';
     add('全服任务-坎伯兰星保卫战', '<div class="fparts log-war" role="tablist">' + [['kbw', '坎伯兰星保卫战'], ['pw', '瘴气驱逐战']].map(function (x) { return '<button type="button" role="tab" class="tab' + (war === x[0] ? ' on' : '') + '" aria-selected="' + (war === x[0]) + '" data-logwar="' + x[0] + '">' + x[1] + '</button>'; }).join('') + '</div>' + (war === 'pw' ? pwCardHTML('log') : kbwCardHTML('log')));
