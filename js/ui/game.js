@@ -5998,9 +5998,24 @@
     var N = nursery(), x = N.slots[i]; if (!x || hatchLeft(x)) return;
     txRun('hatch', { a: 'hatch', i: i }, function (res) {   // 走交易（grow.js）：孵出的精灵由服务器生成
       var m = mon(res.u);
-      toast('精元裂开了——诞生了一只' + (res.shiny ? '异色的' : '') + form(m).name + '（LV' + m.lv + '，' + m.nat + '）！' + (res.added ? '已加入' + TEAM_NAME[acc.active] + '。' : '已收入精灵仓库。'));
       nurseryRefresh(); renderRes && renderRes();
+      if (m) hatchReveal(m, res);
     });
+  }
+  // 孵化完成的展示面板（2026-11-02）
+  function hatchReveal(m, res) {
+    var old = $('hatch-dlg'); if (old) old.remove();
+    var f = form(m), s = SPMAP[m.sid] || {}, iv = ivOf(m);
+    var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'hatch-dlg';
+    d.innerHTML = '<div class="soc-box hatch-box' + (res.shiny ? ' shiny' : '') + '" role="dialog" aria-modal="true" aria-label="孵化完成"><span class="tape l"></span><span class="tape r"></span><span class="step">孵化完成</span>' +
+      '<h2>诞生了' + (res.shiny ? '异色的' : '') + esc(f.name) + '！</h2>' +
+      '<div class="hatch-pic"><i class="hatch-glow"></i><img src="' + f.img + '" alt="' + esc(f.name) + '"></div>' +
+      '<div class="hatch-tags">' + (s.types || []).map(function (t) { return '<span class="hatch-t" style="--tc:' + (TYPE_COLOR[t] || '#888') + '">' + t + '</span>'; }).join('') + '<span>LV' + m.lv + '</span><span>' + esc(m.nat || '') + '性格</span>' + (s.ability ? '<span>特性 ' + esc(s.ability.n) + '</span>' : '') + '</div>' +
+      (iv ? '<p class="hatch-iv">天赋：' + STAT_KEYS.map(function (k) { return BASE_NAME[k] + ' <b>' + iv[k] + '</b>'; }).join('　') + '</p>' : '') +
+      '<p class="hint">' + (res.added ? '已加入' + esc(TEAM_NAME[acc.active]) + '。' : '配队已满，已收入精灵仓库。') + '</p>' +
+      '<div class="soc-foot"><button type="button" class="btn primary" data-hatchx="1">好的</button></div></div>';
+    document.body.appendChild(d);
+    d.addEventListener('click', function (e) { if (e.target === d || e.target.closest('[data-hatchx]')) d.remove(); });
   }
 
   /* ---------- 冶炼坊：黄石 · 冶炼工坊 ----------
