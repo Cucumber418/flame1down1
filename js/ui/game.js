@@ -2665,6 +2665,7 @@
     }
     var top = '<section class="en-top"><div class="en-stat"><b>难度 ' + R.d + '</b><span>第 ' + (R.st + 1) + ' / ' + EN.STAGES + ' 大关卡</span><span>第 ' + Math.min(EN.NODES, R.n + 1) + ' / ' + EN.NODES + ' 关</span><span class="en-gem">💎 ' + fmt(R.gems) + '</span>' +
       (R.vbOn ? '<span class="en-vb" title="好感满了，Vanber 会送你 500 宝石和 1 件传奇道具">Vanber 好感 ' + (R.vbDone ? '已满 ❤' : (R.vb || 0) + ' / 100') + '</span>' : '') +
+      '<button type="button" class="btn en-pbtn" data-enpanel="ros">🐾 精灵 ' + EN.alive(R).length + ' / ' + R.ros.length + (R.bag.length ? '<i class="red-dot"></i>' : '') + '</button><button type="button" class="btn en-pbtn" data-enpanel="bag">🎒 道具 ' + (R.abil.length + Object.keys(R.cons).reduce(function (n, k) { return n + R.cons[k]; }, 0) + R.bag.length) + '</button>' +
       '<button type="button" class="btn ghost" data-enquit="1">结束作战并结算</button></div>' + (R.map ? enMapHTML(R) : '<div class="en-map">' + slots + '</div>') + '</section>';
     var main = '';
     if (P && P.t === 'ev') main = enEvent(R, P);
@@ -2686,7 +2687,17 @@
     var pk = (P ? P.t : 'cur') + R.st + ':' + R.n, still = enUi.popK === pk; enUi.popK = main ? pk : null;   // 同一个面板重新渲染时不再播弹出动画
     if (main && !(canHide && enUi.hide)) main = '<div class="en-pop' + (still ? ' still' : '') + '"><div class="en-popbox">' + (canHide ? '<button type="button" class="en-popx" data-enhide="1" aria-label="收起">收起 ▾</button>' : '') + main + '</div></div>';
     else if (main) main = '<div class="en-reopen"><button type="button" class="btn primary" data-enshow="1">▶ 继续：' + EN.NODE[R.cur.t].n + '</button></div>';
-    return top + main + bag + ros;
+    // 2026-11-02：精灵和道具不再直接铺在页面上，点上方的按钮弹出面板
+    if (enUi.panel && (!main || (canHide && enUi.hide))) {
+      var eqBag = '<h4>装备背包</h4><div class="en-its">' + (R.bag.length ? R.bag.map(function (k, b) { return '<button type="button" class="en-bagit' + (enUi.eqB === b ? ' on' : '') + '" data-enbag="' + b + '">' + enIt(k) + '</button>'; }).join('') : '<span class="hint">没有闲置的装备。</span>') + '</div>' +
+        (enUi.eqB != null && R.bag[enUi.eqB] ? '<p class="hint red">点下面一只精灵，把「' + esc(EN.IT[R.bag[enUi.eqB]].n) + '」装上去（每只最多 3 件）。</p>' : R.bag.length ? '<p class="hint">点装备，再点精灵就能装上；点精灵身上的装备可以卸下。</p>' : '');
+      var body = enUi.panel === 'ros' ? '<section class="en-panel"><h3>🐾 参战精灵 <span class="hint">存活 ' + EN.alive(R).length + ' / ' + R.ros.length + '</span></h3>' + eqBag + '<div class="en-roster">' + R.ros.map(function (x, i) { return enRosCard(x, i, R, ''); }).join('') + '</div></section>'
+        : '<section class="en-panel en-bag"><h3>🎒 道具</h3><h4>能力</h4><div class="en-its">' + (R.abil.length ? R.abil.map(function (k) { return enIt(k); }).join('') : '<span class="hint">还没有能力。</span>') + '</div>' +
+          '<h4>消耗品</h4><div class="en-its">' + (Object.keys(R.cons).length ? Object.keys(R.cons).map(function (k) { return enIt(k, R.cons[k]); }).join('') : '<span class="hint">没有消耗品。</span>') + '</div>' + eqBag + '</section>';
+      main = (main || '') + '<div class="en-pop' + (enUi.popK === 'p' + enUi.panel ? ' still' : '') + '" data-enpanelbg="1"><div class="en-popbox"><button type="button" class="en-popx" data-enpanel="">关闭 ✕</button>' + body + '</div></div>';
+      enUi.popK = 'p' + enUi.panel;
+    }
+    return top + main;
   }
   // 大地图（2026-11-02，参考杀戮尖塔）：横向，可以拖动；闪烁的节点是现在能走的
   var EN_CX = 116, EN_H = 400;
@@ -2760,6 +2771,7 @@
   }
   $('pg-explore').addEventListener('click', function (e) {
     if (ex.view !== 'endless') return;
+    if (e.target.dataset && e.target.dataset.enpanelbg) { enUi.panel = null; enUi.eqB = null; renderEndless(); return; }   // 点面板外面关闭
     var b = e.target.closest('button, [data-enr], [data-engo]'); if (!b) return;
     if (b.dataset.engo != null && enUi.noClick && Date.now() - enUi.noClick < 300) return;   // 刚拖动完地图，不算点击
     var R = EN.run(acc), D = b.dataset;
@@ -2785,7 +2797,7 @@
       else if (P0.k === 'bttp') toast(r.left ? '你悄悄溜走了。' : r.got ? 'Bttp 迷迷糊糊地塞给你「' + EN.IT[r.got].n + '」' + (r.woke ? '，然后彻底醒了，伸着懒腰走开了。' : '，又睡着了。') : 'Bttp 嘟囔了一句「神还在思考」，又睡着了……');
       else if (P0.k === 'cumber') toast('获得「' + EN.IT[r.got].n + '」，已放进装备背包。');
     }); return; }
-    if (D.engo != null) { enUi.line = []; enUi.hide = false; enTx('enGo', { i: +D.engo }); return; }
+    if (D.engo != null) { enUi.line = []; enUi.hide = false; enUi.panel = null; enTx('enGo', { i: +D.engo }); return; }
     if (D.enpick != null) { enTx('enPick', { i: +D.enpick }, function (r) { if (r && r.stage) toast('进入第 ' + (r.stage + 1) + ' 个大关卡！'); }); return; }
     if (D.enskip) { enTx('enPick', { skip: 1 }, function (r) { if (r && r.stage) toast('进入第 ' + (r.stage + 1) + ' 个大关卡！'); }); return; }
     if (D.enbuy != null) { enTx('enBuy', { i: +D.enbuy }); return; }
@@ -2794,6 +2806,7 @@
     if (D.enbag != null) { enUi.eqB = enUi.eqB === +D.enbag ? null : +D.enbag; renderEndless(); return; }
     if (D.enuq) { var q = D.enuq.split('|'); e.stopPropagation(); enTx('enUneq', { r: +q[0], s: +q[1] }); return; }
     if (D.enfight) { enFight(); return; }
+    if (D.enpanel != null) { enUi.panel = D.enpanel || null; enUi.eqB = null; renderEndless(); return; }
     if (D.enhide) { enUi.hide = true; renderEndless(); return; }
     if (D.enshow) { enUi.hide = false; renderEndless(); return; }
     if (D.enr != null) {

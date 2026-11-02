@@ -3465,3 +3465,8 @@ html.land-rot .sheet { height: 100%; overflow-y: auto; overflow-x: hidden; -webk
 @keyframes enPopBg { from { opacity: 0; } to { opacity: 1; } }
 @keyframes enPopIn { from { transform: translateY(18px) scale(.96); opacity: 0; } to { transform: none; opacity: 1; } }
 .en-pop.still, .en-pop.still .en-popbox { animation: none; }
+.en-pbtn { position: relative; }
+.en-pbtn .red-dot { position: absolute; top: -3px; right: -3px; }
+.en-stat .en-pbtn + .btn.ghost { margin-left: 0; }
+.en-stat .btn { margin-left: 0; }
+.en-stat .en-pbtn:first-of-type { margin-left: auto; }
