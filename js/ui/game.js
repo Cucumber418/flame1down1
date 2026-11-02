@@ -9,7 +9,8 @@
   var H = window.HSUI, esc = H.esc, tchip = H.tchip, tchips = H.tchips, atkTip = H.atkTip;
   var KEY = 'hs-account-v1', PKEY = 'hs-page';
   var STARTERS = ['leaf', 'squid', 'shroom'], START_LV = 5, NAME_MAX = 20, TEAM_N = 3, TEAM_SIZE = 5;   // TEAM_N：免费的配队数（2026-10-27：2 → 3；第 4 ~ 10 个用能量解锁，见 TX.D.TEAM_PRICE）
-  var TEAM_NAME = ['配队一', '配队二', '配队三', '配队四', '配队五', '配队六', '配队七', '配队八', '配队九', '配队十'];
+  function tName(i) { var n = typeof acc !== 'undefined' && acc && acc.tNames && acc.tNames[i]; return n ? String(n) : TEAM_NAME0[i]; }   // 配队可以改名（2026-11-02，存在 acc.tNames）
+  var TEAM_NAME0 = ['配队一', '配队二', '配队三', '配队四', '配队五', '配队六', '配队七', '配队八', '配队九', '配队十'];
   var NAT_KEYS = Object.keys(NATURES), STAT_KEYS = ['hp', 'atk', 'def', 'spa', 'spd', 'spe'];
   var BASE_NAME = { hp: '体力', atk: '物攻', def: '物防', spa: '特攻', spd: '特防', spe: '速度' };
   var STAGE = ['一阶', '二阶', '最终形态'];
@@ -749,15 +750,15 @@
     };
     var acts = acc.teams.map(function (t, i) {
       var k = t.indexOf(m.u);
-      if (k >= 0) return (k > 0 ? '<button class="btn" type="button" data-lead="' + i + '">设为' + TEAM_NAME[i] + '首发</button>' : '') + '<button class="btn ghost" type="button" data-out="' + i + '">移出' + TEAM_NAME[i] + '</button>';
-      return '<button class="btn primary" type="button" data-in="' + i + '"' + (t.length >= TEAM_SIZE ? ' disabled title="' + TEAM_NAME[i] + '已满 5 只"' : '') + '>加入' + TEAM_NAME[i] + '</button>';
+      if (k >= 0) return (k > 0 ? '<button class="btn" type="button" data-lead="' + i + '">设为' + tName(i) + '首发</button>' : '') + '<button class="btn ghost" type="button" data-out="' + i + '">移出' + tName(i) + '</button>';
+      return '<button class="btn primary" type="button" data-in="' + i + '"' + (t.length >= TEAM_SIZE ? ' disabled title="' + tName(i) + '已满 5 只"' : '') + '>加入' + tName(i) + '</button>';
     }).join('');
     return '<span class="tape r"></span>' +
       '<div class="d-head"><button type="button" class="d-art" data-abig="' + m.sid + '|' + f.stage + '" title="点击查看大图" aria-label="查看' + esc(f.name) + '的大图"><img src="' + (odoF && !m.shiny ? odoImgAs(f.img, odoF) : f.img) + '" alt="' + esc(f.name) + '"></button><div>' +
       '<h3>' + (f.no ? '<span class="dexno">No.' + f.no + '</span>' : '') + esc(f.name) + (f.unsure ? '<i class="q" title="字迹没看清">?</i>' : '') + (m.shiny ? '<span class="shiny-tag big" title="异色精灵：和同类长得不一样的稀有配色">异色</span>' : '') + '</h3>' +
       '<p style="margin:0 0 6px"><span class="lvbig">LV' + m.lv + '</span>' + tchips(s.types) + '</p>' +
       '<p class="hint">' + stageLabel(s, f.stage) + (!isFin(s, f.stage) ? ' · 最终进化为' + (s.placeholder || s.tbdForms ? '？' : s.name) : '') +
-      (ts.length ? ' · ' + ts.map(function (x) { return TEAM_NAME[x.t] + (x.lead ? '首发' : ''); }).join('、') : ' · 未加入配队') + '</p>' +
+      (ts.length ? ' · ' + ts.map(function (x) { return tName(x.t) + (x.lead ? '首发' : ''); }).join('、') : ' · 未加入配队') + '</p>' +
       (f.d ? '<p class="formdesc">' + esc(f.d) + '</p>' : '') + evoLine(m) + formSwitchHTML(m) + (s.placeholder ? '<p class="placeholder-note" style="margin-top:6px">数值和技能还是占位，二阶和最终形态还没画出来</p>' : s.tbdForms ? '<p class="placeholder-note" style="margin-top:6px">二阶和最终形态还没画出来</p>' : '') + '</div></div>' +
       mdFold('exp', '经验', '', expBox(m)) + mdFold('stats', '能力', '性格 · ' + m.nat, stats) +
       mdFold('trait', '特性', esc(s.ability.n), '<div class="trait"><p><b>特性 · ' + esc(s.ability.n) + '</b>　<span class="blue">' + esc(s.ability.d) + '</span></p>' + (s.ability.extra ? '<p class="blue" style="font-size:13px">' + esc(s.ability.extra) + '</p>' : '') +
@@ -1149,6 +1150,23 @@
   function renderItems() {
     $('pg-items').innerHTML = '<div class="page-head"><h2 class="sec">储存箱</h2><p class="hint">你拥有的所有道具。点道具查看说明和使用方法。</p></div>' + itemsHTML();
   }
+  function teamRename(i) {
+    var old = $('tren-dlg'); if (old) old.remove();
+    var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'tren-dlg';
+    d.innerHTML = '<form class="soc-box" role="dialog" aria-modal="true" aria-label="配队改名" style="max-width:380px"><span class="step">配队改名</span><h2>' + esc(tName(i)) + '</h2>' +
+      '<input id="tren-in" maxlength="10" placeholder="' + TEAM_NAME0[i] + '" value="' + esc(acc.tNames && acc.tNames[i] || '') + '" aria-label="新名字"><p class="hint">最多 10 个字，留空恢复默认名字。</p>' +
+      '<div class="soc-foot"><button type="button" class="btn ghost" data-trenx="1">取消</button><button type="submit" class="btn primary">保存</button></div></form>';
+    document.body.appendChild(d);
+    var inp = $('tren-in'); inp.focus(); inp.select();
+    d.addEventListener('click', function (e) { if (e.target === d || e.target.closest('[data-trenx]')) d.remove(); });
+    d.querySelector('form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var v = inp.value.replace(/[<>]/g, '').trim().slice(0, 10);
+      if (!acc.tNames) acc.tNames = [];
+      acc.tNames[i] = v || null; if (!acc.tNames.some(function (x) { return x; })) delete acc.tNames;
+      save(); d.remove(); renderBag(); renderRes && renderRes(); toast(v ? '配队改名为「' + v + '」' : '已恢复默认名字');
+    });
+  }
   function useBagItem(k) {
     if (k === 'rename') { setTimeout(function () { renaming = true; renderRename(); $('who-menu').hidden = false; $('who-btn').setAttribute('aria-expanded', true); window.scrollTo(0, 0); }, 0); return; }   // 等这次点击处理完再打开名字菜单，免得被「点别处关闭」立刻关上
     if (k === 'ctTicket') { txRun('ctRedeem', {}, function (r) { ui.itMsg = '兑换成功！获得 LV10 尖盔虫和 200 个花剑圆弧' + (r && r.added ? '，尖盔虫已加入配队。' : '，尖盔虫在精灵仓库里。'); if (!acc.items.ctTicket) ui.itSel = null; renderItems(); toast(ui.itMsg); }); return; }
@@ -1173,7 +1191,7 @@
       var on = acc.active === i, body = '', open = on || ui.tOpen[i];
       if (!open) {   // 收起的配队：一行，显示名字、几只、精灵小图
         var mini = ''; for (var q = 0; q < TEAM_SIZE; q++) { var qm = mon(t[q]); mini += qm ? '<img src="' + form(qm).img + '" alt="' + esc(form(qm).name) + '">' : '<i></i>'; }
-        return '<section class="teambox fold"><div class="team-head"><button type="button" class="tm-fold" data-topen="' + i + '" aria-expanded="false"><span class="arr">▶</span><h3>' + TEAM_NAME[i] + '</h3><span class="cnt">' + t.length + ' / ' + TEAM_SIZE + '</span></button><span class="tm-mini">' + mini + '</span>' +
+        return '<section class="teambox fold"><div class="team-head"><button type="button" class="tm-fold" data-topen="' + i + '" aria-expanded="false"><span class="arr">▶</span><h3>' + esc(tName(i)) + '</h3><span class="cnt">' + t.length + ' / ' + TEAM_SIZE + '</span></button><button type="button" class="tm-ren" data-tren="' + i + '" title="给配队改名" aria-label="给' + esc(tName(i)) + '改名">✎</button><span class="tm-mini">' + mini + '</span>' +
           '<span class="act"><button class="btn" type="button" data-active="' + i + '"' + (t.length ? '' : ' disabled title="配队里至少要有 1 只精灵"') + '>设为出战配队</button></span></div></section>';
       }
       for (var k = 0; k < TEAM_SIZE; k++) {
@@ -1185,15 +1203,15 @@
       var picker = '';
       if (ui.pick === i) {
         var cand = acc.mons.filter(function (x) { return t.indexOf(x.u) < 0; }).sort(function (a, b) { return b.lv - a.lv; });
-        picker = '<div class="picker"><div class="picker-head"><b>从仓库选择加入' + TEAM_NAME[i] + '的精灵</b><button class="btn ghost" type="button" data-pickx="1">收起</button></div>' +
+        picker = '<div class="picker"><div class="picker-head"><b>从仓库选择加入' + tName(i) + '的精灵</b><button class="btn ghost" type="button" data-pickx="1">收起</button></div>' +
           (cand.length ? '<div class="picker-grid">' + cand.map(function (x) {
             var ts = teamsOf(x.u);
             return '<button type="button" class="dmon" data-padd="' + i + '" data-u="' + x.u + '"><img src="' + form(x).img + '" alt=""><span class="nm">' + esc(form(x).name) + '</span><span class="lv">LV' + x.lv + '</span><span class="tc">' + tchips(SPMAP[x.sid].types) + '</span>' +
-              (ts.length ? '<span class="intm">已在' + ts.map(function (y) { return TEAM_NAME[y.t]; }).join('、') + '</span>' : '') + '</button>';
+              (ts.length ? '<span class="intm">已在' + ts.map(function (y) { return tName(y.t); }).join('、') + '</span>' : '') + '</button>';
           }).join('') + '</div>' : '<p class="empty-note">仓库里没有可加入的精灵了。' + (acc.mons.length <= t.length ? '可以先在「精灵仓库」获取更多精灵。' : '') + '</p>') + '</div>';
       }
       return '<section class="teambox' + (on ? ' active' : '') + '"><span class="tape l"></span>' +
-        '<div class="team-head">' + (on ? '<h3>' + TEAM_NAME[i] + '</h3><span class="cnt">' + t.length + ' / ' + TEAM_SIZE + '</span>' : '<button type="button" class="tm-fold" data-topen="' + i + '" aria-expanded="true"><span class="arr">▶</span><h3>' + TEAM_NAME[i] + '</h3><span class="cnt">' + t.length + ' / ' + TEAM_SIZE + '</span></button>') +
+        '<div class="team-head">' + (on ? '<h3>' + esc(tName(i)) + '</h3><span class="cnt">' + t.length + ' / ' + TEAM_SIZE + '</span>' : '<button type="button" class="tm-fold" data-topen="' + i + '" aria-expanded="true"><span class="arr">▶</span><h3>' + esc(tName(i)) + '</h3><span class="cnt">' + t.length + ' / ' + TEAM_SIZE + '</span></button>') + '<button type="button" class="tm-ren" data-tren="' + i + '" title="给配队改名" aria-label="给' + esc(tName(i)) + '改名">✎</button>' +
         '<span class="act">' + (on ? '<span class="badge-on">当前出战</span>' : '<button class="btn" type="button" data-active="' + i + '"' + (t.length ? '' : ' disabled title="配队里至少要有 1 只精灵"') + '>设为出战配队</button>') + '</span></div>' +
         '<ol class="bag tbag" data-team="' + i + '">' + body + '</ol>' + picker + '</section>';
     }).join('') + teamLockHTML() + '</div>';
@@ -1208,7 +1226,8 @@
     if (b.closest('#bag-detail')) { onDetailClick(e); return; }
     if (b.dataset.rmt != null) { var tm = acc.teams[+b.dataset.rmt]; tm.splice(tm.indexOf(+b.dataset.u), 1); if (!tm.length && acc.active === +b.dataset.rmt) { var nz = acc.teams.findIndex(function (x) { return x.length; }); if (nz >= 0) acc.active = nz; } save(); renderBag(); return; }
     if (b.dataset.topen != null) { var ti = +b.dataset.topen; if (!ui.tOpen) ui.tOpen = {}; ui.tOpen[ti] = !ui.tOpen[ti]; if (!ui.tOpen[ti] && ui.pick === ti) ui.pick = -1; renderBag(); return; }
-    if (b.dataset.tunlock) { var tpz = TX.D.TEAM_PRICE[acc.teamX | 0]; if (!tpz) return; if ((acc.energy || 0) < tpz) { toast('能量不足：解锁需要 ' + fmt(tpz) + ' 能量。'); return; } txRun('teamSlot', {}, function (r) { while (acc.teams.length < r.n) acc.teams.push([]); if (!ui.tOpen) ui.tOpen = {}; ui.tOpen[r.n - 1] = true; save(); renderBag(); renderRes(); toast('解锁了' + TEAM_NAME[r.n - 1] + '！消耗 ' + fmt(r.cost) + ' 能量。'); }); return; }
+    if (b.dataset.tren != null) { teamRename(+b.dataset.tren); return; }
+    if (b.dataset.tunlock) { var tpz = TX.D.TEAM_PRICE[acc.teamX | 0]; if (!tpz) return; if ((acc.energy || 0) < tpz) { toast('能量不足：解锁需要 ' + fmt(tpz) + ' 能量。'); return; } txRun('teamSlot', {}, function (r) { while (acc.teams.length < r.n) acc.teams.push([]); if (!ui.tOpen) ui.tOpen = {}; ui.tOpen[r.n - 1] = true; save(); renderBag(); renderRes(); toast('解锁了' + tName(r.n - 1) + '！消耗 ' + fmt(r.cost) + ' 能量。'); }); return; }
     if (b.dataset.mtab) { if (b.dataset.mtab === 'dex' && !dexOpen()) { toast('读完星际探索 · 荆楚号 · 学院部的剧情后，「黄冈秘鉴」才会开放。', prog('board').done ? '前往学院部' : '', '黄冈'); return; } go(b.dataset.mtab); return; }
     if (b.dataset.pickt != null) { ui.pick = ui.pick === +b.dataset.pickt ? -1 : +b.dataset.pickt; renderBag(); return; }
     if (b.dataset.pickx) { ui.pick = -1; renderBag(); return; }
@@ -1294,7 +1313,7 @@
   function teamLockHTML() {
     var x = acc.teamX | 0, n = TEAM_N + x, p = TX.D.TEAM_PRICE[x];
     if (n >= TX.D.TEAM_MAX || !p) return '';
-    return '<div class="team-lock"><b>🔒 ' + TEAM_NAME[n] + '</b><span class="hint">还可以再解锁 ' + (TX.D.TEAM_MAX - n) + ' 个配队</span><button class="btn primary" type="button" data-tunlock="1"' + ((acc.energy || 0) < p ? ' disabled title="能量不足"' : '') + '>用 ' + fmt(p) + ' 能量解锁</button></div>';
+    return '<div class="team-lock"><b>🔒 ' + tName(n) + '</b><span class="hint">还可以再解锁 ' + (TX.D.TEAM_MAX - n) + ' 个配队</span><button class="btn primary" type="button" data-tunlock="1"' + ((acc.energy || 0) < p ? ' disabled title="能量不足"' : '') + '>用 ' + fmt(p) + ' 能量解锁</button></div>';
   }
   function renderStore() {
     var f = ui.f, list = filtered(), m = mon(ui.sel), ivSort = f.sort === 'ivd' || f.sort === 'iva';   // 按天赋排序时，卡片上直接显示天赋评级
@@ -1313,7 +1332,7 @@
       (list.length ? list.map(function (x) {
         var ts = teamsOf(x.u);
         return '<button type="button" class="card' + (ui.sel === x.u ? ' sel' : '') + '" data-u="' + x.u + '">' +
-          (ts.length ? '<span class="tms">' + ts.map(function (y) { return '<span class="' + (acc.active === y.t ? 'on' : '') + '">' + TEAM_NAME[y.t] + (y.lead ? '·首发' : '') + '</span>'; }).join('') + '</span>' : '') +
+          (ts.length ? '<span class="tms">' + ts.map(function (y) { return '<span class="' + (acc.active === y.t ? 'on' : '') + '">' + tName(y.t) + (y.lead ? '·首发' : '') + '</span>'; }).join('') + '</span>' : '') +
           '<img src="' + form(x).img + '" alt="' + esc(form(x).name) + '"><span class="nm">' + esc(form(x).name) + '</span><span class="lv">LV' + x.lv + (ivSort ? gradeTag(x) : '') + '</span><span class="meta">' + tchips(SPMAP[x.sid].types) + '</span></button>';
       }).join('') : '<p class="empty-note">没有符合条件的精灵。</p>') +
       '</div></div><article class="detail" id="store-detail">' + monDetail(m) + '</article></div>';
@@ -3051,7 +3070,7 @@
         fmSay(['嗯！跟着你，就再也不会冷了吧？我要跟你走！'], [['欢迎加入！', function () {
           txRun('gift', { k: 'fm', id: '1' }, function (res) {   // 走交易（grow.js）
             var g = res.mons[0], m = mon(g.u); renderField();
-            toast('火月鼠（LV' + m.lv + '，' + m.nat + '）加入了你！' + (g.added ? '已加入' + TEAM_NAME[acc.active] + '。' : '已收入精灵仓库。'));
+            toast('火月鼠（LV' + m.lv + '，' + m.nat + '）加入了你！' + (g.added ? '已加入' + tName(acc.active) + '。' : '已收入精灵仓库。'));
           });
         }]]);
       }]]);
@@ -3249,7 +3268,7 @@
       if (o.fieldRid) replaceFieldMon(o.fieldRid, o.fieldId);
       if (r) {
         if (r.spare != null) msg.push('主线任务「引出猎杀者」：已经「假装击败」' + r.spare + ' / ' + r.spareN + ' 只野生精灵。' + (r.spare >= r.spareN ? '天色渐渐暗了下来……去芙罗拉星的「剧情」页，继续主线「猎杀者」。' : ''));
-        if (r.caught) { var m = mon(r.caught.u); if (m) msg.push('捕捉到了 ' + (m.shiny ? '异色的' : '') + form(m).name + '（LV' + m.lv + '，' + m.nat + '）！' + (r.caught.added ? '已加入' + TEAM_NAME[acc.active] + '。' : '已收入精灵仓库。')); dailyHit('catch'); }
+        if (r.caught) { var m = mon(r.caught.u); if (m) msg.push('捕捉到了 ' + (m.shiny ? '异色的' : '') + form(m).name + '（LV' + m.lv + '，' + m.nat + '）！' + (r.caught.added ? '已加入' + tName(acc.active) + '。' : '已收入精灵仓库。')); dailyHit('catch'); }
         if (n) dailyHit('wildWin', n);
         if (r.caught) dailyNote('catch');
         if (r.purge) {
@@ -3317,7 +3336,7 @@
           var m = newMon(o.sid, o.lv), T = acc.teams[acc.active], added = T.length < TEAM_SIZE;
           if (o.shiny) m.shiny = shinyV(o.shiny);
           if (added) T.push(m.u);
-          msg.push('捕捉到了 ' + (m.shiny ? '异色的' : '') + form(m).name + '（LV' + o.lv + '，' + m.nat + '）！' + (added ? '已加入' + TEAM_NAME[acc.active] + '。' : '已收入精灵仓库。'));
+          msg.push('捕捉到了 ' + (m.shiny ? '异色的' : '') + form(m).name + '（LV' + o.lv + '，' + m.nat + '）！' + (added ? '已加入' + tName(acc.active) + '。' : '已收入精灵仓库。'));
           dailyHit('catch');
         }
         if (downs && downs.length) { if (!acc.stats) acc.stats = {}; acc.stats.wildWins = (acc.stats.wildWins || 0) + downs.length; dailyHit('wildWin', downs.length); }
@@ -3808,7 +3827,7 @@
     }).join('');
     var ge = Math.min(twExp(T.f), Math.max(0, TOWER.dayExp - T.day.exp)), gt = Math.min(twTok(T.f), Math.max(0, TOWER.dayTok - T.day.tok));
     var teamHTML = F.boss ? '<h4>出战精灵 <span class="hint">【肃穆】只能派一只精灵单挑，点一下选择</span></h4><div class="ch-mons">' + team.map(function (m) { var f = form(m), on = m.u === ex.twPick; return '<button type="button" class="ch-mon' + (on ? ' on' : '') + '" data-twpick="' + m.u + '" aria-pressed="' + on + '"><img src="' + f.img + '" alt=""><b>' + esc(f.name) + '</b><small>LV' + m.lv + '</small></button>'; }).join('') + '</div>'
-      : '<p class="hint">使用当前的出战配队（' + TEAM_NAME[acc.active] + '，' + team.length + ' 只）。战斗中可以使用补药。</p>';
+      : '<p class="hint">使用当前的出战配队（' + tName(acc.active) + '，' + team.length + ' 只）。战斗中可以使用补药。</p>';
     return '<div class="tw-cols">' + ladder + '<article class="tw-detail"><span class="tape r"></span><span class="sc-tag">' + (F.boss ? '塔顶 · 第 60 层' : F.gate ? '第 ' + T.f + ' 层 · 守层者' : '第 ' + T.f + ' 层') + '</span>' +
       '<h3>' + (F.boss ? '死神「帕努托尔」' : '第 ' + T.f + ' 层') + '</h3><ul class="tw-foes">' + foes + '</ul>' +
       '<p class="ch-rw"><b>通过奖励</b>　<span class="chip">累积经验 ×' + fmt(twExp(T.f)) + '</span> <span class="chip">先驱代币 ×' + twTok(T.f) + '</span>' + (F.boss ? ' <span class="chip">死神代币 ×1（' + T.death + ' / ' + TOWER.deathMax + '）</span> <span class="chip">称号「死神」</span>' : '') +
@@ -3829,7 +3848,7 @@
     team = F.boss ? [mon(ex.twPick) || team[0]] : team.slice(0, TEAM_SIZE);
     var d = document.createElement('div'); d.className = 'soc-dlg';
     d.innerHTML = '<div class="soc-box tw-confirm" role="dialog" aria-modal="true"><span class="tape l"></span><span class="tape r"></span><span class="step">先驱之塔 · ' + (F.boss ? '第 60 层 · 死神' : '第 ' + T.f + ' 层') + '</span><h2>确认出战阵容</h2>' +
-      '<p class="hint">' + (F.boss ? '塔顶只能派 1 只精灵。' : '当前出战配队（' + TEAM_NAME[acc.active] + '），按顺序出场，第 1 只首发。') + '失败或中途退出会回到最近的存档点。</p>' +
+      '<p class="hint">' + (F.boss ? '塔顶只能派 1 只精灵。' : '当前出战配队（' + tName(acc.active) + '），按顺序出场，第 1 只首发。') + '失败或中途退出会回到最近的存档点。</p>' +
       '<div class="twc-team">' + team.map(function (m, i) { var f = form(m); return '<div class="twc-mon"><span class="me-no">' + (i + 1) + '</span><img src="' + f.img + '" alt=""><b>' + esc(f.name) + '</b><small>LV' + m.lv + '</small></div>'; }).join('') + '</div>' +
       '<div class="soc-foot"><button type="button" class="btn ghost" data-twc="team">调整配队</button><button type="button" class="btn ghost" data-twc="x">取消</button><button type="button" class="btn primary" data-twc="go">开战</button></div></div>';
     document.body.appendChild(d);
@@ -4853,7 +4872,7 @@
       '<div class="boss-txt"><span class="chip boss-diff d' + d + '">' + (weekly ? '每周挑战 · ' : '') + L.diff + '难度</span><h3>' + B.name + '</h3><p class="hint">' + esc(B.d) + '</p>' +
       '<ul class="boss-rules"><li><b>等级</b>LV' + L.lv + '</li><li><b>体力</b>' + (L.hpText || fmt(L.hp)) + '</li>' + rules +
       '<li><b>奖励</b>' + rw + '</li><li><b>战绩</b>' + (rec.wins || 0) + ' 胜 / ' + (rec.tries || 0) + ' 次挑战</li></ul>' +
-      '<p class="hint">' + (weekly && srvMode() ? '开打前可以选择好友的助战精灵和出战顺序（精灵来自' + TEAM_NAME[acc.active] + '）。' : '会使用你当前的出战配队（' + TEAM_NAME[acc.active] + '）。') + (L.only ? '记得带上会' + L.only.join('、') + '系技能的精灵。' : '') + '对战中可以使用补药。</p>' +
+      '<p class="hint">' + (weekly && srvMode() ? '开打前可以选择好友的助战精灵和出战顺序（精灵来自' + tName(acc.active) + '）。' : '会使用你当前的出战配队（' + tName(acc.active) + '）。') + (L.only ? '记得带上会' + L.only.join('、') + '系技能的精灵。' : '') + '对战中可以使用补药。</p>' +
       btn + '</div></article>' + (weekly ? '' : '<section class="bsoc" id="bsoc"><p class="hint">读取攻略中……</p></section>');
     if (!weekly) bsocLoad(k, d);
   }
@@ -4941,7 +4960,7 @@
     if (R.mon) {
       var m = newMon(R.mon.sid, R.mon.lv), T = acc.teams[acc.active], added = T.length < TEAM_SIZE;
       if (added) T.push(m.u);
-      out.push('获得了 ' + form(m).name + '（LV' + R.mon.lv + '，' + m.nat + '）！' + (added ? '已加入' + TEAM_NAME[acc.active] + '。' : '已收入精灵仓库。'));
+      out.push('获得了 ' + form(m).name + '（LV' + R.mon.lv + '，' + m.nat + '）！' + (added ? '已加入' + tName(acc.active) + '。' : '已收入精灵仓库。'));
     }
     if (R.emblem) { if (!acc.emblems) acc.emblems = {}; acc.emblems[R.emblem] = 1; out.push('获得了「' + EMBLEMS[R.emblem].n + '」！以后你的' + SPMAP[R.emblem].name + '（包括还没进化的）都会带着它：' + EMBLEMS[R.emblem].d + '。'); }
     if (R.title && acc.titles.indexOf(R.title) < 0) { acc.titles.push(R.title); out.push('获得称号「' + titleName(R.title) + '」！点右上角的名字即可佩戴。'); }
@@ -5025,7 +5044,7 @@
   // BOSS首次击败奖励（服务器已经发了）写成提示，和 firstReward 的一样
   function firstMsg(fr) {
     var out = []; if (!fr) return out;
-    if (fr.mon) { var m = mon(fr.mon.u); if (m) out.push('获得了 ' + form(m).name + '（LV' + m.lv + '，' + m.nat + '）！' + (fr.mon.added ? '已加入' + TEAM_NAME[acc.active] + '。' : '已收入精灵仓库。')); }
+    if (fr.mon) { var m = mon(fr.mon.u); if (m) out.push('获得了 ' + form(m).name + '（LV' + m.lv + '，' + m.nat + '）！' + (fr.mon.added ? '已加入' + tName(acc.active) + '。' : '已收入精灵仓库。')); }
     if (fr.emblem) out.push('获得了「' + EMBLEMS[fr.emblem].n + '」！以后你的' + SPMAP[fr.emblem].name + '（包括还没进化的）都会带着它：' + EMBLEMS[fr.emblem].d + '。');
     if (fr.title) out.push('获得称号「' + titleName(fr.title) + '」！点右上角的名字即可佩戴。');
     if (fr.items) out.push('获得 ' + Object.keys(fr.items).map(function (k) { return itemName(k) + ' ×' + fr.items[k]; }).join('、') + '，可以在精灵资料或「储存箱」里使用。');
@@ -5240,7 +5259,7 @@
       '<div class="boss-txt"><span class="chip boss-diff d' + d + '">' + lb + ' · ' + L.diff + '难度</span><h3>' + esc(nm0) + '</h3><p class="hint">' + (T.team ? '三只轮流上场，打倒一只换下一只。' : '本周的' + T.t + '系BOSS，还剩 ' + ewkLeft() + ' 换下一只。') + '</p>' +
       '<ul class="boss-rules"><li><b>等级</b>LV' + L.lv + '</li><li><b>体力</b>' + (T.team ? '每只 ' + fmt(Math.round(L.hp * T.hpMul)) + '（共 ' + T.team.length + ' 只）' : fmt(L.hp)) + '</li>' + rules +
       '<li><b>奖励</b>每次击败获得' + itemName(T.item) + ' ×' + DR[0] + '–' + DR[1] + '、累积经验 ×' + fmt(L.exp) + '，另有经验和学习力</li><li><b>战绩</b>' + (rec.wins || 0) + ' 胜 / ' + (rec.tries || 0) + ' 次挑战</li></ul>' +
-      '<p class="hint">' + (srvMode() ? '开打前可以选择好友的助战精灵和出战顺序（精灵来自' + TEAM_NAME[acc.active] + '）。' : '会使用你当前的出战配队（' + TEAM_NAME[acc.active] + '）。') + '对战中可以使用补药。</p>' +
+      '<p class="hint">' + (srvMode() ? '开打前可以选择好友的助战精灵和出战顺序（精灵来自' + tName(acc.active) + '）。' : '会使用你当前的出战配队（' + tName(acc.active) + '）。') + '对战中可以使用补药。</p>' +
       '<button type="button" class="btn primary" data-ewkgo="1"' + (pn > 0 ? '' : ' disabled') + '>开始挑战（获胜时消耗 1 枚挑战许可）</button><p class="hint permit-line">挑战许可 <b>' + pn + '</b> / ' + PERMIT.max + ' · ' + permitNext() + '</p></div></article>';
   }
   function startEwkRemote(t, d, tp) {
@@ -5476,7 +5495,7 @@
     var jade = Object.keys(USE_ITEMS).filter(function (k) { return USE_ITEMS[k].kind === 'jade' && (USE_ITEMS[k].sids || []).indexOf(s.id) >= 0; });
     var cap = capGem({ sid: s.id });
     return '<span class="tape r"></span>' +
-      '<div class="d-head"><div class="d-art"><img src="' + vImg + '" alt=""></div><div><h3>' + (ev.no ? '<span class="dexno">No.' + ev.no + '</span>' : '') + esc(vName) + '</h3>' + tchips(s.types) +
+      '<div class="d-head"><div class="d-art wk-zoomable" data-wkzoom="1" title="点击查看大图"><img src="' + vImg + '" alt="' + esc(vName) + '"></div><div><h3>' + (ev.no ? '<span class="dexno">No.' + ev.no + '</span>' : '') + esc(vName) + '</h3>' + tchips(s.types) +
       (s.evo && !fin ? '<p class="formnote">' + stageLabel(s, v) + '形态 · 下方的能力、特性和技能按最终形态「' + esc(s.name) + '」显示</p>' : '') + (vLore ? '<p class="lore">' + esc(vLore) + '</p>' : '') + '</div></div>' +
       '<div class="wk-get2"><b>获得方式</b><span>' + esc(wikiGet(s.id)) + '</span></div>' + evo +
       '<div class="stats">' + stats + '</div>' +
@@ -5510,8 +5529,20 @@
       var b = e.target.closest('[data-wkt]'); if (b) { WK.t = b.dataset.wkt || ''; draw(false); return; }
       var c = e.target.closest('[data-wks]'); if (c) { WK.sel = c.dataset.wks; WK.v = null; WK.of = ''; draw(true); return; }
       var of = e.target.closest('[data-wkof]'); if (of) { WK.of = of.dataset.wkof || ''; draw(false); return; }
-      var v = e.target.closest('[data-wkv]'); if (v) { WK.v = +v.dataset.wkv; draw(false); }
+      var v = e.target.closest('[data-wkv]'); if (v) { WK.v = +v.dataset.wkv; draw(false); return; }
+      var z = e.target.closest('[data-wkzoom]'); if (z) { var zi = z.querySelector('img'); if (zi) wikiZoom(zi.src, zi.alt); }
     });
+  }
+  // Wiki 里点立绘看大图（2026-11-02）
+  function wikiZoom(src, name) {
+    var o = $('wk-zoom'); if (o) o.remove();
+    var z = document.createElement('div'); z.id = 'wk-zoom'; z.className = 'wk-zoom'; z.setAttribute('role', 'dialog'); z.setAttribute('aria-label', '精灵大图');
+    z.innerHTML = '<figure><img src="' + src + '" alt="' + esc(name || '') + '"><figcaption>' + esc(name || '') + '</figcaption></figure><button type="button" class="lb-close" aria-label="关闭">×</button>';
+    document.body.appendChild(z);
+    var close = function () { z.remove(); document.removeEventListener('keydown', key, true); };
+    var key = function (e) { if (e.key === 'Escape') { e.stopPropagation(); close(); } };
+    document.addEventListener('keydown', key, true);
+    z.addEventListener('click', close);
   }
   document.addEventListener('click', function (e) {   // 奥多亚克：背包 / 仓库资料里切换查看的形态
     var b = e.target.closest && e.target.closest('[data-odof]'); if (!b) return;
@@ -6012,7 +6043,7 @@
       '<div class="hatch-pic"><i class="hatch-glow"></i><img src="' + f.img + '" alt="' + esc(f.name) + '"></div>' +
       '<div class="hatch-tags">' + (s.types || []).map(function (t) { return '<span class="hatch-t" style="--tc:' + (TYPE_COLOR[t] || '#888') + '">' + t + '</span>'; }).join('') + '<span>LV' + m.lv + '</span><span>' + esc(m.nat || '') + '性格</span>' + (s.ability ? '<span>特性 ' + esc(s.ability.n) + '</span>' : '') + '</div>' +
       (iv ? '<p class="hatch-iv">天赋：' + STAT_KEYS.map(function (k) { return BASE_NAME[k] + ' <b>' + iv[k] + '</b>'; }).join('　') + '</p>' : '') +
-      '<p class="hint">' + (res.added ? '已加入' + esc(TEAM_NAME[acc.active]) + '。' : '配队已满，已收入精灵仓库。') + '</p>' +
+      '<p class="hint">' + (res.added ? '已加入' + esc(tName(acc.active)) + '。' : '配队已满，已收入精灵仓库。') + '</p>' +
       '<div class="soc-foot"><button type="button" class="btn primary" data-hatchx="1">好的</button></div></div>';
     document.body.appendChild(d);
     d.addEventListener('click', function (e) { if (e.target === d || e.target.closest('[data-hatchx]')) d.remove(); });
@@ -7327,7 +7358,7 @@
   function openNeedType(t) {
     if (Array.isArray(t)) { var miss = t.filter(function (x) { return !teamHasType(x); }); t = miss.join('系、'); }
     var el = $('vn-pick'); el.hidden = false; $('vn-box').classList.add('wait');
-    el.innerHTML = '<div class="vn-fight"><b>需要一只' + t + '系精灵</b><p>在当前出战配队（' + TEAM_NAME[acc.active] + '）里放一只' + t + '系精灵，再继续剧情。</p><p class="hint">可以先点右上角「退出」，到「精灵背包」调整配队，回来时会从这里接着读。</p><button type="button" class="btn primary" data-vn="needok">重新检查</button></div>';
+    el.innerHTML = '<div class="vn-fight"><b>需要一只' + t + '系精灵</b><p>在当前出战配队（' + tName(acc.active) + '）里放一只' + t + '系精灵，再继续剧情。</p><p class="hint">可以先点右上角「退出」，到「精灵背包」调整配队，回来时会从这里接着读。</p><button type="button" class="btn primary" data-vn="needok">重新检查</button></div>';
   }
   function openFight(key) {
     var F = FIGHTS[key], el = $('vn-pick'), fteam = fightTeam(F), f0 = fteam[0];
@@ -7336,7 +7367,7 @@
     var foeName = f0.nick || form({ sid: f0.sid, lv: f0.lv }).name;
     el.hidden = false;
     el.innerHTML = '<div class="vn-fight"><b>剧情对战</b><div class="vf-row"><img src="' + mineImg + '" alt=""><span class="vs">VS</span><img src="' + foeImg + '" alt=""></div>' +
-      '<p>' + (F.pteam ? esc(F.pteam[0].nick || SPMAP[F.pteam[0].sid].name) + '（LV' + F.pteam[0].lv + '）' : '你的出战配队（' + TEAM_NAME[acc.active] + '）') + '对阵 ' + (F.desc ? esc(F.desc) : esc(F.foe) + ' 的 ' + esc(foeName) + '（LV' + f0.lv + '）') + '</p>' +
+      '<p>' + (F.pteam ? esc(F.pteam[0].nick || SPMAP[F.pteam[0].sid].name) + '（LV' + F.pteam[0].lv + '）' : '你的出战配队（' + tName(acc.active) + '）') + '对阵 ' + (F.desc ? esc(F.desc) : esc(F.foe) + ' 的 ' + esc(foeName) + '（LV' + f0.lv + '）') + '</p>' +
       (F.allyMon && F.allyOpt ? '<label class="vf-ally"><input type="checkbox" data-vnally="1"' + (ex.allyOff ? '' : ' checked') + '> 带上' + esc(F.allyMon.nick || SPMAP[F.allyMon.sid].name) + '（LV' + F.allyMon.lv + '）助战' + (F.allyMon.boss && F.allyMon.boss.purify ? '　<span class="hint">剧情限定特性「净化光芒」：对瘴气精灵伤害 +100%</span>' : '') + '</label>' : '') +
       '<button type="button" class="btn primary" data-vn="fight" data-fk="' + key + '">开始对战</button></div>';
   }

@@ -3327,3 +3327,16 @@ html.land-rot .sheet { height: 100%; overflow-y: auto; overflow-x: hidden; -webk
 @keyframes hatchPop { from { transform: scale(.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 @keyframes hatchGlow { 0% { transform: scale(.2); opacity: 0; } 40% { opacity: 1; } 100% { transform: scale(1); opacity: .55; } }
 @keyframes hatchSpin { to { transform: rotate(360deg); } }
+
+/* 配队改名按钮（2026-11-02） */
+.tm-ren { border: 0; background: none; cursor: pointer; font-size: 15px; padding: 2px 6px; color: var(--ink); opacity: .55; }
+.tm-ren:hover { opacity: 1; }
+#tren-in { font: inherit; font-size: 16px; padding: 8px 10px; border: 1.5px solid var(--ink); border-radius: 10px; background: #fff; }
+
+/* Wiki 立绘大图（2026-11-02） */
+.wk-zoomable { cursor: zoom-in; }
+.wk-zoom { position: fixed; inset: 0; z-index: 9500; background: rgba(20, 18, 26, .82); display: grid; place-items: center; padding: 16px; cursor: zoom-out; animation: vnIn .2s ease-out; }
+.wk-zoom figure { margin: 0; display: grid; gap: 10px; justify-items: center; }
+.wk-zoom img { max-width: min(92vw, 900px); max-height: 82vh; object-fit: contain; filter: drop-shadow(0 8px 24px rgba(0,0,0,.45)); }
+.wk-zoom figcaption { color: #fff; font-size: 16px; font-weight: 700; }
+.wk-zoom .lb-close { position: absolute; top: 14px; right: 14px; }
