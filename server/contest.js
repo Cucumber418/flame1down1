@@ -150,7 +150,7 @@ function closeRound(c, now) {
 function doDraw(c, now) {
   c.order = shuffle(Object.keys(c.signups).sort(function (a, b) { return c.signups[a] - c.signups[b]; }));
   c.drawn = now; c.status = 'swiss';
-  notice(c, NAME + ' · 抽签完成', '共 ' + c.order.length + ' 名选手参赛，瑞士轮 ' + swissRounds(c.order.length) + ' 轮后，积分前两名进入决赛。抽签过程可以在太空竞技场回放。', { draw: true });
+  notice(c, NAME + ' · 抽签完成', '共 ' + c.order.length + ' 名选手参赛，瑞士轮 ' + swissRounds(c.order.length) + ' 轮后，积分前两名进入决赛。抽签过程可以在飞船终端的「争霸赛」里回放。', { draw: true });
   openRound(c, now, false);
   try { S().toAll({ type: 'ct-draw' }); } catch (e) {}
 }

@@ -323,7 +323,7 @@
   function navSync() {
     var holo = page === 'explore' && typeof ex !== 'undefined' && (ex.view === 'mmArena' || ex.view === 'mmGacha'), ship = shipCtx();
     [].forEach.call(document.querySelectorAll('#mainnav .nav'), function (b) {
-      var pg = b.dataset.page, on = holo ? pg === 'holo' : ship ? pg === 'ship' : pg === page || (page === 'arena' && pg === 'explore') || ((page === 'store' || page === 'release' || page === 'dex') && pg === 'bag');   // 精灵仓库、图鉴在「精灵一览」里；荆楚号在「飞船终端」里
+      var pg = b.dataset.page, on = holo ? pg === 'holo' : ship ? pg === 'ship' : pg === page || (page === 'arena' && pg === 'ship') || ((page === 'store' || page === 'release' || page === 'dex') && pg === 'bag');   // 精灵仓库、图鉴在「精灵一览」里；荆楚号在「飞船终端」里
       b.classList.toggle('on', on); b.setAttribute('aria-selected', on);
     });
     setTimeout(navDots, 0);
@@ -1478,7 +1478,7 @@
     { id: 'earth', name: '地球', d: '我们出发的地方。', sites: ['school', 'river', 'jiuquan'] },
     { id: 'jingchu', name: '荆楚号', d: '环绕地球运行的星际探索舰，轮廓和湖北省一模一样。', sites: ['board', 'xiaogan', 'academy', 'storage'], ship: true, after: 'jiuquan' },
     { id: 'station', name: '空间站', d: '停泊在荆楚号后方的空间站，先驱之塔就建在这里。', sites: [], station: true, after: 'flora1' },
-    { id: 'sarena', name: '太空竞技场', d: '空间站旁边新建的竞技场，各种比赛都在这里举办。', sites: [], sarena: true, after: 'flora1' },   // 2026-10-19
+    { id: 'sarena', name: '争霸赛', d: '精灵王争霸赛：报名、抽签、赛程和积分榜都在这里。', sites: [], sarena: true, after: 'flora1' },   // 2026-10-19
     { id: 'tower', name: '先驱之塔', d: '空间站里的一座高塔，共 60 层。每一层都守着一批强大的精灵，塔顶住着死神。', sites: [], tower: true, after: 'flora1', inStation: true },
     { id: 'flora', name: '芙罗拉星', d: '草系星球。丛林、草甸和盐碱地里栖息着许多野生精灵。', sites: ['flora1', 'flora2', 'flora3', 'flora4', 'flora5', 'flora6', 'flora7', 'travelcat', 'barrenMys'], wild: true, ptype: '草系星球', color: ['#9fd08a', '#3f7d4a'], get img() { return floraFallen() ? 'images/planets/flora_corrupt.webp?v=3' : 'images/planets/flora.webp?v=3'; }, after: 'board' },
     { id: 'kamble', name: '坎伯兰星', d: '水系星球。整颗星球都被海洋覆盖，从水面一直往下，是浅水区和深不见底的深海区。', sites: ['kb2', 'kb3', 'kb4', 'kb5', 'kb6', 'kb7', 'kb8'], storyIds: ['kb1', 'kb2', 'kb3', 'kb4', 'kb5', 'kb6', 'kb7', 'kb8'], storyEmpty: '第二章 · 坎伯兰星：读完第十一段「盐碱地之下」后，到荆楚号 · 随州 · 编钟通讯站开始。', wild: true, ptype: '水系星球', color: ['#8cc6ea', '#2a6fb0'], get img() { return 'images/planets/kamble_' + kbStage() + '.webp?v=2'; }, after: 'flora1' },
@@ -1882,7 +1882,8 @@
     var st = planetOf('station'), sa = planetOf('sarena'), bk = Object.keys(BOSSES), nOpen = bk.filter(bossOpen).length, wk = weeklyOpen();
     return '<div class="sm-side">' +
       item('data-planet="station"', '<img src="images/planets/station.webp" alt="">', '空间站', planetOpen(st) ? '先驱之塔 · 全息作战场地' : '读完「降临芙罗拉」后开放', planetOpen(st)) +
-      item('data-planet="sarena"', sarenaSvg(), '太空竞技场', planetOpen(sa) ? '争霸赛 · 竞技对战' : '读完「降临芙罗拉」后开放', planetOpen(sa)) +
+      item('data-goarena="1"', '⚔', '竞技对战', arenaOpen() ? '沙盒调试 · 平衡排位 · 精灵大乱斗' : '读完荆楚号 · 孝感大厅的支线后开放', arenaOpen()) +   // 2026-11-02：太空竞技场拆成两项
+      item('data-planet="sarena"', sarenaSvg(), '争霸赛', planetOpen(sa) ? esc(CONTEST.name) : '读完「降临芙罗拉」后开放', planetOpen(sa)) +
       item('data-summon="1"', '<img src="images/items/saint_quartz.webp" alt="">', '召唤', '圣晶石召唤 · 友情点召唤', true) +
       item('data-bosshub="1"', '<img src="' + SPRITES[BOSSES[bk[0]].sid] + '" alt="">', 'BOSS挑战', '已开放 ' + nOpen + ' / ' + bk.length, true) +
       item('data-wkhub="1"', wk ? '<span class="sm-pm">' + permits() + '</span>' : '🔒', '每周挑战', wk ? '挑战许可 ' + permits() + ' / ' + PERMIT.max : '击败困难难度的泰戈尔或荒芜后开放', wk) +
@@ -2046,16 +2047,14 @@
     if (!CT.busy && (!CT.data || Date.now() - CT.at > 15000)) contestLoad();
     clearInterval(ex.ctTick);
     ex.ctTick = setInterval(function () { if (!document.getElementById('ct-box')) { clearInterval(ex.ctTick); return; } contestLoad(); }, 20000);
-    var aOk = arenaOpen();
-    return '<div class="sa-opts"><button type="button" class="sa-opt on" aria-pressed="true"><span class="tape l"></span><b>争霸赛</b><small>' + esc(CONTEST.name) + '</small></button>' +   // 2026-10-27：太空竞技场两个选项：争霸赛（下面）、竞技对战（原来第一栏）
-      '<button type="button" class="sa-opt' + (aOk ? '' : ' locked') + '" data-goarena="1"><span class="tape r"></span><b>竞技对战</b><small>' + (aOk ? '沙盒调试 · 平衡排位 · 精灵大乱斗' : '读完荆楚号 · 孝感大厅的支线后开放') + '</small></button></div>' +
+    return '' +   // 2026-11-02：竞技对战搬到飞船终端，这里只剩争霸赛
       '<article class="log-card ct-card"><span class="tape l"></span><span class="chip log-tag">精灵王争霸赛</span><h3>' + CONTEST.name + '</h3><div id="ct-box">' + contestInner() + '</div></article>';
   }
   function contestLogHTML() {
     var D = CT.data, ns = D && D.notices ? D.notices.slice(-3).reverse() : [];
     return '<article class="log-card ct-card"><span class="tape l"></span><span class="chip log-tag">精灵王争霸赛</span><h3>' + CONTEST.name + '</h3>' +
-      '<p>' + esc(ctStatusText(D)) + '</p>' + (ns.length ? '<ul class="ct-news">' + ns.map(function (n) { return '<li><b>' + esc(n.title.replace(CONTEST.name + ' · ', '')) + '</b><small>' + bjText(n.t) + '</small><span>' + esc(n.text) + '</span></li>'; }).join('') + '</ul>' : '<p class="hint">空间站旁边的太空竞技场落成了！' + (contestMe() ? '你已经报名了。' : '快去报名吧。') + '</p>') +
-      '<div class="soc-foot"><button type="button" class="btn primary" data-gosarena="1">去太空竞技场</button></div></article>';
+      '<p>' + esc(ctStatusText(D)) + '</p>' + (ns.length ? '<ul class="ct-news">' + ns.map(function (n) { return '<li><b>' + esc(n.title.replace(CONTEST.name + ' · ', '')) + '</b><small>' + bjText(n.t) + '</small><span>' + esc(n.text) + '</span></li>'; }).join('') + '</ul>' : '<p class="hint">飞船终端里的「争霸赛」开张了！' + (contestMe() ? '你已经报名了。' : '快去报名吧。') + '</p>') +
+      '<div class="soc-foot"><button type="button" class="btn primary" data-gosarena="1">去争霸赛</button></div></article>';
   }
   // 抽签动画：报名的船员先按报名顺序摆开 → 翻面洗牌 → 按抽签结果排好 → 两两亮出第一轮对阵
   function ctDrawShow() {
@@ -2082,7 +2081,7 @@
     R1.pairs.forEach(function (p, k) { at(t1 + 400 + k * 700, function () { var li = document.createElement('li'); li.innerHTML = '<b>' + esc(ctName(p.a)) + '</b> vs <b>' + esc(ctName(p.b)) + '</b>'; el.querySelector('#ctd-pairs').appendChild(li); }); });
     at(t1 + 400 + R1.pairs.length * 700, function () {
       if (R1.bye) { var li = document.createElement('li'); li.innerHTML = '<b>' + esc(ctName(R1.bye)) + '</b> 第一轮轮空'; el.querySelector('#ctd-pairs').appendChild(li); }
-      el.querySelector('#ctd-msg').textContent = '第一轮对阵已经确定，去太空竞技场看看吧！'; el.querySelector('#ctd-x').textContent = '关闭';
+      el.querySelector('#ctd-msg').textContent = '第一轮对阵已经确定，去飞船终端的「争霸赛」看看吧！'; el.querySelector('#ctd-x').textContent = '关闭';
     });
     el.addEventListener('click', function (e) { if (e.target.id === 'ctd-x') close(); });
   }
@@ -2096,7 +2095,7 @@
     acc.ctSeen[n.id] = 1; save();
     var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'ct-dlg';
     d.innerHTML = '<div class="soc-box" role="dialog" aria-modal="true"><span class="tape l"></span><span class="tape r"></span><span class="step">全服公告 · 精灵王争霸赛</span><h2>' + esc(n.title) + '</h2><p>' + esc(n.text) + '</p>' +
-      '<div class="soc-foot"><button type="button" class="btn ghost" data-ctx="1">知道了</button><button type="button" class="btn primary" data-ctgo2="1">去太空竞技场</button></div></div>';
+      '<div class="soc-foot"><button type="button" class="btn ghost" data-ctx="1">知道了</button><button type="button" class="btn primary" data-ctgo2="1">去争霸赛</button></div></div>';
     document.body.appendChild(d);
     d.addEventListener('click', function (e) {
       if (e.target === d || e.target.closest('[data-ctx]')) { d.remove(); return; }
@@ -2543,8 +2542,8 @@
     if (unseen.length) { unseen.slice(0, -1).forEach(function (n) { acc.ctSeen[n.id] = 1; }); ctNoticePop(unseen[unseen.length - 1]); return; }
     if (D.status !== 'signup' || contestMe()) return;
     var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'ct-dlg';
-    d.innerHTML = '<div class="soc-box" role="dialog" aria-modal="true" aria-label="' + CONTEST.name + '"><span class="tape l"></span><span class="tape r"></span><span class="step">太空竞技场 · 精灵王争霸赛</span><h2>' + CONTEST.name + ' 报名中！</h2>' +
-      '<p>做题家们，比一比谁才是真正的做题大王！' + (D.drawAt ? '抽签将在 ' + bjText(D.drawAt) + ' 开始，开始即截止报名。' : '报名满 ' + D.min + ' 人后确定抽签时间。') + '</p><p class="hint">已报名 <b>' + (D.count || 0) + '</b> 人。所有参赛者都有神秘精灵兑换券和大量经验奖励。也可以之后在星图上空间站右边的「太空竞技场」报名。</p>' +
+    d.innerHTML = '<div class="soc-box" role="dialog" aria-modal="true" aria-label="' + CONTEST.name + '"><span class="tape l"></span><span class="tape r"></span><span class="step">飞船终端 · 争霸赛</span><h2>' + CONTEST.name + ' 报名中！</h2>' +
+      '<p>做题家们，比一比谁才是真正的做题大王！' + (D.drawAt ? '抽签将在 ' + bjText(D.drawAt) + ' 开始，开始即截止报名。' : '报名满 ' + D.min + ' 人后确定抽签时间。') + '</p><p class="hint">已报名 <b>' + (D.count || 0) + '</b> 人。所有参赛者都有神秘精灵兑换券和大量经验奖励。也可以之后在星图上空间站右边的「争霸赛」报名。</p>' +
       '<div class="soc-foot"><button type="button" class="btn ghost" data-ctx="1">稍后再说</button><button type="button" class="btn primary" data-ctgo="1">立即报名</button></div></div>';
     document.body.appendChild(d);
     d.addEventListener('click', function (e) {
@@ -5697,7 +5696,7 @@
     var ml = e.target.closest('[data-mmlog]'); if (ml) { var mk = ml.dataset.mmlog; if (mk === 'task') { ex.planet = 'jingchu'; go('explore'); teleport('襄阳'); return; } ex.mmFrom = 'holo'; ex.view = mk === 'gacha' ? 'mmGacha' : 'mmArena'; go('explore'); renderExplore(); return; }
     if (e.target.closest('[data-gosarena]')) { ex.planet = 'sarena'; ex.view = 'sites'; go('explore'); return; }
   });
-  $('arena-back').addEventListener('click', function () { ex.planet = 'sarena'; ex.view = 'sites'; go('explore'); });
+  $('arena-back').addEventListener('click', function () { ex.planet = 'jingchu'; ex.view = 'sites'; go('explore'); });   // 2026-11-02：竞技对战在飞船终端里
   function mmLogHTML() {
     if (!acc || !prog('flora7').done || !mmLive()) return '';
     var open = prog('mmTrial').done;
