@@ -5505,16 +5505,32 @@
       '<div class="wk-items2"><h4>培养道具</h4><p class="wk-lab">隐藏技能解锁</p>' + (jade.length ? jade.map(function (k) { return wikiItem(k, USE_ITEMS[k].cost + ' 个领悟一个'); }).join('') : '<p class="hint">' + (HL_GATED[s.id] ? '暂无' : '不需要道具，LV50 习得') + '</p>') +
       '<p class="wk-lab">等级上限提升</p>' + (cap ? wikiItem(cap, CAP_STEPS.map(function (c0) { return 'LV' + c0.lv + ' 需 ' + c0.jade + ' 个'; }).join('，')) : '<p class="hint">暂无（上限 LV' + BASE_CAP + '）</p>') + '</div>';
   }
+  // Wiki · 异常状态（2026-11-02）：说明取自对战引擎的 ST_DESC，相关技能只列精灵能学会的
+  var WK_ST_GROUP = [['控制类', '中了之后不能行动', ['害怕', '麻痹', '冰冻', '睡眠', '石化', '疲惫']], ['持续伤害类', '每回合结束时损失体力', ['烧伤', '冻伤', '中毒', '寄生', '溺水', '流血']], ['干扰类', '能行动，但会出岔子', ['失明', '混乱']]];
+  function wikiStatus() {
+    var learn = {}; SP.concat(EXTRA_SP).forEach(function (s) { if (!s || !s.id || s.placeholder) return; (s.moves || []).concat(s.hidden || []).forEach(function (n) { (learn[n] = learn[n] || []).indexOf(s.name) < 0 && learn[n].push(s.name); }); });
+    var rel = function (k) { return Object.keys(learn).filter(function (n) { var m = M[n]; return m && ((m.status && m.status.k === k) || (m.d && m.d.indexOf(k) >= 0)); }); };
+    var seen = {}, html = '<p class="hint">异常状态都有持续回合数，到期自动解除。同属性的精灵会免疫对应的状态（见各条说明）。点上方「精灵资料」可以查看会这些技能的精灵。</p>';
+    var card = function (k) { seen[k] = 1; var r = rel(k); return '<div class="wk-stc"><b>' + esc(k) + '</b><p>' + esc(ST_DESC[k]) + '</p>' + (r.length ? '<small>相关技能：' + r.map(function (n) { return '<span title="' + esc(learn[n].join('、')) + '">' + esc(n) + '</span>'; }).join('') + '</small>' : '') + '</div>'; };
+    WK_ST_GROUP.forEach(function (g) { var ks = g[2].filter(function (k) { return ST_DESC[k]; }); if (ks.length) html += '<h4 class="wk-sth">' + g[0] + '<span class="hint">' + g[1] + '</span></h4><div class="wk-stg">' + ks.map(card).join('') + '</div>'; });
+    var rest = Object.keys(ST_DESC).filter(function (k) { return !seen[k]; });
+    if (rest.length) html += '<h4 class="wk-sth">其他</h4><div class="wk-stg">' + rest.map(card).join('') + '</div>';
+    return html;
+  }
   function openWiki() {
     var old = $('wiki-dlg'); if (old) old.remove();
     var list = SP.concat(EXTRA_SP).filter(function (s) { return s && s.id && s.id !== 'dummy' && !s.placeholder && SPRITES[s.id]; }).sort(function (a, b) { var x = wikiNo(a), y = wikiNo(b); return (x === 9999) - (y === 9999) || y - x; });
     var types = []; list.forEach(function (s) { s.types.forEach(function (t) { if (types.indexOf(t) < 0) types.push(t); }); });
     if (!WK.sel || !SPMAP[WK.sel]) WK.sel = list[0] && list[0].id;
     var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'wiki-dlg';
-    d.innerHTML = '<div class="soc-box wiki-box" role="dialog" aria-modal="true" aria-label="Wiki"><span class="tape l"></span><span class="tape r"></span><div class="wk-top"><h2>Wiki · 精灵资料</h2><button type="button" class="btn ghost" data-wkx="1">关闭</button></div>' +
-      '<div class="wk-filter"></div><div class="build wk-build"><div><p class="hint" id="wk-cnt"></p><div class="dex-grid" id="wk-grid"></div></div><article class="detail" id="wk-detail"></article></div></div>';
+    d.innerHTML = '<div class="soc-box wiki-box" role="dialog" aria-modal="true" aria-label="Wiki"><span class="tape l"></span><span class="tape r"></span><div class="wk-top"><h2>Wiki</h2><div class="wk-parts" role="tablist"></div><button type="button" class="btn ghost" data-wkx="1">关闭</button></div>' +
+      '<div class="wk-st" hidden></div><div class="wk-filter"></div><div class="build wk-build"><div><p class="hint" id="wk-cnt"></p><div class="dex-grid" id="wk-grid"></div></div><article class="detail" id="wk-detail"></article></div></div>';
     document.body.appendChild(d);
     var draw = function (scroll) {
+      var st = WK.part === 'st';
+      d.querySelector('.wk-parts').innerHTML = [['mon', '精灵资料'], ['st', '异常状态']].map(function (x) { var on = (WK.part || 'mon') === x[0]; return '<button type="button" role="tab" aria-selected="' + on + '" class="chip' + (on ? ' on' : '') + '" data-wkpart="' + x[0] + '">' + x[1] + '</button>'; }).join('');
+      d.querySelector('.wk-st').hidden = !st; d.querySelector('.wk-filter').hidden = st; d.querySelector('.wk-build').hidden = st;
+      if (st) { d.querySelector('.wk-st').innerHTML = wikiStatus(); return; }
       var L = WK.t ? list.filter(function (s) { return s.types.indexOf(WK.t) >= 0; }) : list;
       d.querySelector('.wk-filter').innerHTML = '<button type="button" class="chip' + (WK.t ? '' : ' on') + '" data-wkt="">全部</button>' + types.map(function (t) { return '<button type="button" class="chip' + (WK.t === t ? ' on' : '') + '" data-wkt="' + esc(t) + '">' + esc(t) + '</button>'; }).join('');
       d.querySelector('#wk-cnt').textContent = '共 ' + L.length + ' 系精灵，按图鉴编号排列。';
@@ -5526,6 +5542,7 @@
     draw(false);
     d.addEventListener('click', function (e) {
       if (e.target === d || e.target.closest('[data-wkx]')) { d.remove(); return; }
+      var pt = e.target.closest('[data-wkpart]'); if (pt) { WK.part = pt.dataset.wkpart; draw(false); return; }
       var b = e.target.closest('[data-wkt]'); if (b) { WK.t = b.dataset.wkt || ''; draw(false); return; }
       var c = e.target.closest('[data-wks]'); if (c) { WK.sel = c.dataset.wks; WK.v = null; WK.of = ''; draw(true); return; }
       var of = e.target.closest('[data-wkof]'); if (of) { WK.of = of.dataset.wkof || ''; draw(false); return; }

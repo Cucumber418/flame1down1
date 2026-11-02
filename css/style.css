@@ -3340,3 +3340,14 @@ html.land-rot .sheet { height: 100%; overflow-y: auto; overflow-x: hidden; -webk
 .wk-zoom img { max-width: min(92vw, 900px); max-height: 82vh; object-fit: contain; filter: drop-shadow(0 8px 24px rgba(0,0,0,.45)); }
 .wk-zoom figcaption { color: #fff; font-size: 16px; font-weight: 700; }
 .wk-zoom .lb-close { position: absolute; top: 14px; right: 14px; }
+
+/* Wiki · 异常状态（2026-11-02） */
+.wk-parts { display: flex; gap: 6px; margin-right: auto; margin-left: 12px; }
+.wk-st { display: grid; gap: 10px; }
+.wk-sth { margin: 8px 0 0; font-size: 16px; display: flex; gap: 8px; align-items: baseline; }
+.wk-stg { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
+.wk-stc { border: 1.5px solid var(--ink); border-radius: 12px; background: #fff; padding: 10px 12px; display: grid; gap: 4px; }
+.wk-stc b { font-size: 15px; }
+.wk-stc p { font-size: 13px; }
+.wk-stc small { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; color: #666; }
+.wk-stc small span { border: 1px solid #ccc; border-radius: 999px; padding: 0 7px; background: var(--paper-2); color: var(--ink); cursor: help; }
