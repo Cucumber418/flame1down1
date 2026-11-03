@@ -228,7 +228,7 @@
       return '<div class="hm-fig' + (d.mons.length > 3 ? ' many' : '') + '" data-csid="' + esc(m.sid) + '" data-cst="' + (v.stage || 0) + '" data-cctx="home" data-fi="' + i + '" style="left:' + p[0] + '%;top:' + p[1] + '%' + (A.baseFigW ? ';--fw:' + A.baseFigW(m.sid, v.stage, d.layout && d.layout.room, p[1]) : '') + '"><button type="button" class="hm-poke" data-vmon="' + i + '" aria-label="' + esc(v.name) + '"><img src="' + v.img + '" alt=""></button><span class="hm-tip">' + esc(v.name) + ' · LV' + m.lv + '</span></div>';
     }).join('');
     var left = A.teaLeft(), mine = (A.acc().teams[A.acc().active] || []).map(A.mon).filter(Boolean);
-    return back + '<b class="home-name">' + esc(d.homeName) + '</b><span class="hint">' + esc(d.name) + ' 的基地' + (d.online ? ' · 主人在线' : '') + ' · 基地音乐「' + ({ ui: '大厅', earth: '地球', flora: '芙罗拉星' }[d.bgm] || '大厅') + '」</span></div>' +
+    return back + '<b class="home-name">' + esc(d.homeName) + '</b><span class="hint">' + esc(d.name) + ' 的基地' + (d.online ? ' · 主人在线' : '') + ' · 基地音乐「' + (window.HSTRACK ? HSTRACK(d.bgm || 'base') : (d.bgm || 'base')) + '」</span></div>' +
       (A.baseRoom ? A.baseRoom(d.layout, figs + (d.mons.length ? '' : '<p class="home-empty">基地里空荡荡的，主人还没有放精灵出来展示。</p>')) :   // 2026-10-31：基地改成基地，显示主人的房型和摆件
       '<div class="home-room"><img class="home-bg" src="' + BG.tea_p + '" alt="' + esc(d.homeName) + '">' + figs + '</div>') +
       (d.me ? '<p class="hint" style="margin-top:8px">这是你自己的基地。</p>' :
