@@ -43,6 +43,7 @@ images/
   characters/         剧情角色立绘、表情差分、图标
 audio/                背景音乐（界面：ui / arena / earth / flora / floraGrass / floraForest；战斗：normal / boss / boss2 / boss3 / tigerFinal / stage / pvp / faceEnemy）
   library/            还没接入游戏的原始音乐素材，先存着，接入时再搬进 audio/ 并在 js/ui/audio.js 的 TRACKS 里加一条
+desktop/              Windows 客户端（Electron 外壳，加载服务器上的游戏），见下面「Windows 客户端」
 ```
 
 `index.html` 最先加载 `js/net/cloud.js`，其他脚本写在它下面的 `CLOUD.boot([...])` 列表里，登录完成后按列表顺序加载。顺序是固定的：数据 → 引擎 → 界面。后面的文件会用到前面文件里定义的东西，所以不要调换顺序。新增 js 文件时，把路径按这个规则插进列表里合适的位置。
@@ -211,6 +212,25 @@ sudo git clone --depth 1 https://github.com/Cucumber418/flame1down1 /opt/flame1d
 **种子商店、活力花、PP 药水（2026-10-25）**：grow.js 的 `SEEDS` 多了 `s_flower`（活力花种子 → `c_flower` 活力花卉，8 小时 ×50），每种种子有 `back`（收获时掉落 1 颗种子的概率：药草、活力花 0.2，水稻 1）。交易 `seedShop`：`{ k: 种子, n }` 买种子（`SEED_PRICE` 100 能量），`{ k: 'plot' }` 买一块额外的田（`a.farm.extra`，`PLOT_PRICE` 2000/4000/8000/16000，最多 4 块；`farmN(a)` 是现在的田数）。冶炼坊新配方 `pp5` / `pp10` / `pp15`（活力花卉 2 / 3 / 4）。battle.js 的 `ITEMS` 多了 PP 药水（`pp` 字段：每个技能各恢复几点，`ppFull` 判断是否都满了）。种植园空田用下拉框（`data-sowsel`）选种子。
 
 **版本检查**：服务器启动时按网页、样式、脚本的内容算一个版本号（`GET /api/version`）。开着的页面每 3 分钟、以及切回页面时检查一次，发现服务器上的版本变了就弹窗提示刷新；用旧页面兑换东西时服务器会拒绝（不扣费）并提示刷新。
+
+## Windows 客户端（desktop/，2026-11-03）
+
+一个 Electron 外壳：打开后连服务器、加载服务器上的游戏网页，所以游戏更新后客户端不用重装，进度和网页版是同一份（都在服务器上）。比浏览器多的：
+
+- 独立窗口，记住大小、位置和缩放；按 Alt 显示菜单（刷新、全屏 F11、缩放 Ctrl+/-/0、修改服务器地址、检查客户端更新）。
+- 背景音乐不用先点一下页面就能播放；最小化时页面不降速（`backgroundThrottling: false`）。
+- 自带手写字体 Long Cang（`@fontsource/long-cang`，打包时由 `scripts/prepare.js` 复制）：`main.js` 截下发往 fonts.googleapis.com / fonts.gstatic.com 的请求，换成本地文件，国内连不上 Google 也能显示。
+- 关窗口前先调用 `CLOUD.flush()` 把没上传的进度传完（最多等 6 秒）。
+- 连不上服务器时显示断线页，每 15 秒自动重试；只能开一个窗口（两个窗口共用本机存档会互相覆盖）。
+- 游戏里能用 `navigator.userAgent` 里的 `Flame1DownClient/版本号` 判断是不是客户端（「关于」里据此显示客户端版本，不显示下载链接）。
+
+**服务器地址**：存在 `%APPDATA%\Flame1Down - 1\settings.json`。打包时设置了环境变量 `F1D_SERVER` 就写进 `default-server.json` 当默认地址；没写端口时依次试 `:8080`、`:80`（访问 `/ping`）。
+
+**打包和发布**：`.github/workflows/windows-client.yml`。`desktop/` 有改动推到 main 时，在 GitHub 的 Windows 机器上打包 NSIS 安装程序（`F1D_SERVER` 用 secret `DEPLOY_HOST`），再用 `DEPLOY_KEY` 传到服务器的 `/opt/flame1down-data/client/`（和存档目录放在一起，部署游戏时不会被删掉），同时写 `client.json`（版本、文件名、大小），只留最新两个安装包。发新版：改 `desktop/package.json` 的 `version` 推上来。也可以在 GitHub 的 Actions 页面手动运行「Windows 客户端」。
+
+**下载**：服务器的 `/download/windows` 跳到最新的安装包，`/download/client.json` 是版本信息（server.js 的 `serveDownload`，目录可用环境变量 `CLIENT_DIR` 改）。电脑浏览器里打开游戏「关于」会出现下载链接（服务器上有安装包时才显示）；客户端启动后也会查这个文件，有新版就提示下载（可以跳过某个版本）。
+
+**本地调试**：`cd desktop && npm install && npm start`。在 Linux 上打 Windows 包需要装 wine：`npm run dist`。安装包没有代码签名，Windows 第一次运行会提示「已保护你的电脑」，点「更多信息 → 仍要运行」。
 
 ## 小段位
 

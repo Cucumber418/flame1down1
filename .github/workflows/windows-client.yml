@@ -1,0 +1,116 @@
+# Windows 客户端：desktop/ 有改动推到 main 时，在 GitHub 的 Windows 机器上打包安装程序，
+# 再传到游戏服务器，玩家在游戏「关于」里点链接下载（地址 http://服务器/download/windows）。
+#
+# 用的是部署游戏的那两个 secret（DEPLOY_HOST、DEPLOY_KEY），不用另外设置：
+#   - DEPLOY_HOST 会写进客户端，装好第一次打开就直接连这台服务器（端口自动试 8080 和 80）
+#   - DEPLOY_KEY 用来把安装包传到服务器的 /opt/flame1down-data/client/
+# 没设置时只打包，打好的安装包可以在这次运行页面最下面的 Artifacts 里下载。
+#
+# 发新版客户端：改 desktop/package.json 里的 version，推上来就行。
+# 已经装了旧版的玩家，打开客户端时会提示下载新版。
+name: Windows 客户端
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'desktop/**'
+      - '.github/workflows/windows-client.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: windows-client
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 打包安装程序
+        env:
+          F1D_SERVER: ${{ secrets.DEPLOY_HOST }}
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: npm run dist
+
+      - name: 保存安装包
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-client
+          path: desktop/dist/*.exe
+          retention-days: 30
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: 检查是否已配置服务器
+        id: cfg
+        env:
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          KEY: ${{ secrets.DEPLOY_KEY }}
+        run: |
+          if [ -z "$HOST" ] || [ -z "$KEY" ]; then
+            echo "::notice title=没有上传::还没有设置 DEPLOY_HOST / DEPLOY_KEY，安装包只保存在这次运行的 Artifacts 里。"
+            echo "ok=no" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=yes" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/download-artifact@v4
+        if: steps.cfg.outputs.ok == 'yes'
+        with:
+          name: windows-client
+          path: out
+
+      - name: 准备 SSH 钥匙
+        if: steps.cfg.outputs.ok == 'yes'
+        env:
+          RAW_HOST: ${{ secrets.DEPLOY_HOST }}
+          KEY: ${{ secrets.DEPLOY_KEY }}
+        run: |
+          HOST=$(printf '%s' "$RAW_HOST" | tr -d '[:space:]' | sed -E 's#^[a-zA-Z]+://##; s#/.*$##; s#:[0-9]+$##')
+          echo "HOST=$HOST" >> "$GITHUB_ENV"
+          mkdir -p ~/.ssh
+          printf '%s\n' "$KEY" | tr -d '\r' > ~/.ssh/deploy && chmod 600 ~/.ssh/deploy
+          if ! ssh-keygen -y -f ~/.ssh/deploy >/dev/null 2>&1; then
+            BODY=$(printf '%s' "$KEY" | tr -d '\r\n' | sed -E 's/.*-----BEGIN OPENSSH PRIVATE KEY-----//; s/-----END OPENSSH PRIVATE KEY-----.*//' | tr -d ' ')
+            { echo '-----BEGIN OPENSSH PRIVATE KEY-----'; printf '%s' "$BODY" | fold -w 70; echo; echo '-----END OPENSSH PRIVATE KEY-----'; } > ~/.ssh/deploy
+          fi
+
+      - name: 上传到服务器
+        if: steps.cfg.outputs.ok == 'yes'
+        run: |
+          cd out
+          FILE=$(ls -1 *.exe | head -n 1)
+          VER=$(printf '%s' "$FILE" | sed -E 's/^Flame1Down-Setup-(.*)\.exe$/\1/')
+          SIZE=$(stat -c %s "$FILE")
+          printf '{"version":"%s","file":"%s","size":%s,"date":"%s"}\n' "$VER" "$FILE" "$SIZE" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > client.json
+          cat client.json
+          SSH="ssh -i $HOME/.ssh/deploy -o StrictHostKeyChecking=accept-new -o ServerAliveInterval=15 -o ConnectTimeout=30"
+          $SSH "ubuntu@$HOST" 'sudo mkdir -p /opt/flame1down-data/client'
+          for i in 1 2 3; do
+            rsync -a --partial -e "$SSH" --rsync-path="sudo rsync" "$FILE" "ubuntu@$HOST:/opt/flame1down-data/client/" && break
+            echo "第 $i 次上传失败，10 秒后重试"; sleep 10
+            [ "$i" = 3 ] && { echo "::error title=上传失败::安装包传到服务器失败了三次。"; exit 1; }
+          done
+          # 安装包传完再换版本信息，玩家不会下到传了一半的文件；只留最新的两个安装包
+          rsync -a -e "$SSH" --rsync-path="sudo rsync" client.json "ubuntu@$HOST:/opt/flame1down-data/client/"
+          $SSH "ubuntu@$HOST" 'cd /opt/flame1down-data/client && ls -1t Flame1Down-Setup-*.exe 2>/dev/null | tail -n +3 | xargs -r sudo rm -f; ls -l'
+          echo "::notice title=客户端已上传::v$VER 已经可以在游戏「关于」里下载了。"

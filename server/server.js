@@ -64,7 +64,7 @@ var MIME = {
   '.m4a': 'audio/mp4'
 };
 // 这些目录和文件不对外提供
-var HIDDEN = ['server', '.git', 'node_modules'];
+var HIDDEN = ['server', '.git', 'node_modules', 'desktop'];
 
 function send(res, code, type, body) {
   res.writeHead(code, { 'Content-Type': type, 'Cache-Control': 'no-cache' });
@@ -80,7 +80,10 @@ function serveFile(req, res) {
   if (file !== ROOT && file.indexOf(ROOT + path.sep) !== 0) return send(res, 403, 'text/plain; charset=utf-8', '禁止访问');
   var first = path.relative(ROOT, file).split(path.sep)[0];
   if (HIDDEN.indexOf(first) >= 0 || first.charAt(0) === '.') return send(res, 404, 'text/plain; charset=utf-8', '找不到');
+  streamFile(req, res, file, urlPath);
+}
 
+function streamFile(req, res, file, urlPath, extra) {
   fs.stat(file, function (err, st) {
     if (err || !st.isFile()) return send(res, 404, 'text/plain; charset=utf-8', '找不到：' + urlPath);
     var ext = path.extname(file).toLowerCase();
@@ -92,6 +95,7 @@ function serveFile(req, res) {
       // 每次都向服务器确认有没有更新：没变时只回 304，不会重新下载；换了图刷新就能看到
       'Cache-Control': 'no-cache'
     };
+    if (extra) Object.keys(extra).forEach(function (k) { headers[k] = extra[k]; });
     headers['Accept-Ranges'] = 'bytes';
     if (req.headers['if-none-match'] === etag) { res.writeHead(304, headers); return res.end(); }
     // 音乐文件要支持「分段下载」（Range），不然 iPhone / Safari 放不出声音，也没法边下边播
@@ -121,10 +125,34 @@ function backupInfo() {
   } catch (e) { return { count: 0, latest: null }; }
 }
 
+// Windows 客户端安装包（desktop/ 文件夹，由 GitHub 的「Windows 客户端」流程打包后传到这里）
+// 放在存档目录旁边，不放进游戏目录：每次部署游戏都会把游戏目录同步成仓库的样子，放在里面会被删掉
+//   /download/client.json   最新版本的信息 { version, file, size, date }
+//   /download/windows       下载最新的安装包
+var CLIENT_DIR = process.env.CLIENT_DIR || path.join(accounts.DATA_DIR, 'client');
+function serveDownload(req, res) {
+  var name = req.url.split('?')[0].replace(/^\/download\/?/, '');
+  var info = null;
+  try { info = JSON.parse(fs.readFileSync(path.join(CLIENT_DIR, 'client.json'), 'utf8')); } catch (e) { info = null; }
+  if (name === 'client.json') {
+    if (!info) return send(res, 404, 'application/json; charset=utf-8', '{"error":"还没有上传客户端"}');
+    return send(res, 200, 'application/json; charset=utf-8', JSON.stringify(info));
+  }
+  if (name === '' || name === 'windows') {
+    if (!info || !info.file) return send(res, 404, 'text/plain; charset=utf-8', '还没有上传 Windows 客户端');
+    res.writeHead(302, { 'Location': '/download/' + encodeURIComponent(info.file), 'Cache-Control': 'no-cache' });
+    return res.end();
+  }
+  try { name = decodeURIComponent(name); } catch (e) { return send(res, 400, 'text/plain; charset=utf-8', '地址有误'); }
+  if (!/^[A-Za-z0-9._-]+\.exe$/.test(name)) return send(res, 404, 'text/plain; charset=utf-8', '找不到');
+  streamFile(req, res, path.join(CLIENT_DIR, name), '/download/' + name, { 'Content-Disposition': 'attachment; filename="' + name + '"' });
+}
+
 var server = http.createServer(function (req, res) {
   if (accounts.handle(req, res)) return;
   if (req.method !== 'GET' && req.method !== 'HEAD') return send(res, 405, 'text/plain; charset=utf-8', '不支持');
   if (req.url === '/ping') return send(res, 200, 'text/plain; charset=utf-8', 'ok');
+  if (req.url === '/download' || req.url.indexOf('/download/') === 0) return serveDownload(req, res);
   if (req.url === '/status') {
     return send(res, 200, 'application/json; charset=utf-8', JSON.stringify({
       ok: true, since: STARTED.toISOString(), users: accounts.userCount(), players: social.onlineCount(), online: wss.clients.size, rooms: Object.keys(rooms).length, backups: backupInfo(), node: process.version, tx: txs.status(), wallet: accounts.walletStatus(), pve: pve.active()

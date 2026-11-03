@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; img-src 'self'">
+<title>Flame1Down - 1</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Long+Cang&display=swap">
+<style>
+  :root {
+    --desk: #e6e0d0; --paper: #fbfaf3; --grid: #dde5ee; --ink: #23222b; --pencil: #75737e;
+    --rule: #cdc7b6; --red: #c42f3a; --blue: #2a4ca0; --tape: rgba(232, 208, 128, 0.72);
+    --f-hand: "Long Cang", "KaiTi", "STKaiti", cursive;
+    --f-body: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    font: 14px/1.6 var(--f-body); color: var(--ink); background: var(--desk);
+    display: grid; place-items: center; padding: 24px; user-select: none;
+  }
+  .card {
+    position: relative; width: min(460px, 100%); padding: 40px 36px 28px;
+    background-color: var(--paper);
+    background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 22px 22px; background-position: -1px -1px;
+    border: 1.5px solid var(--ink); border-radius: 6px;
+    box-shadow: 4px 5px 0 rgba(35, 34, 43, 0.12);
+  }
+  .card::before {
+    content: ""; position: absolute; top: -12px; left: 50%; width: 120px; height: 24px;
+    transform: translateX(-50%) rotate(-2deg); background: var(--tape);
+  }
+  .logo { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+  .logo img { width: 52px; height: 52px; }
+  h1 { margin: 0; font: 34px/1.1 var(--f-hand); letter-spacing: .5px; }
+  .sub { color: var(--pencil); margin: 0 0 22px; }
+  h2 { margin: 0 0 6px; font: 26px/1.2 var(--f-hand); }
+  h2.bad { color: var(--red); }
+  label { display: block; font-weight: 600; margin-bottom: 6px; }
+  input {
+    width: 100%; padding: 10px 12px; font: 15px var(--f-body); color: var(--ink);
+    background: #fff; border: 1.5px solid var(--ink); border-radius: 4px; user-select: text;
+  }
+  input:focus { outline: 2px solid var(--blue); outline-offset: 1px; }
+  .hint { color: var(--pencil); font-size: 12.5px; margin: 6px 0 0; }
+  .msg { min-height: 1.6em; margin: 12px 0 0; color: var(--red); }
+  .msg.ok { color: var(--blue); }
+  .row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; flex-wrap: wrap; }
+  button {
+    font: 15px var(--f-body); padding: 8px 18px; border-radius: 4px; cursor: pointer;
+    border: 1.5px solid var(--ink); background: #fff; color: var(--ink);
+    box-shadow: 2px 2px 0 rgba(35, 34, 43, 0.15);
+  }
+  button.primary { background: var(--ink); color: var(--paper); }
+  button:disabled { opacity: .55; cursor: default; }
+  button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .addr { font-family: Consolas, monospace; background: rgba(42, 76, 160, .08); padding: 1px 6px; border-radius: 3px; }
+  .foot { margin-top: 22px; padding-top: 12px; border-top: 1px dashed var(--rule); color: var(--pencil); font-size: 12px; display: flex; justify-content: space-between; gap: 12px; }
+  .dots::after { content: ""; animation: dots 1.2s steps(4) infinite; }
+  @keyframes dots { 0% { content: ""; } 25% { content: "·"; } 50% { content: "··"; } 75% { content: "···"; } }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main class="card">
+  <div class="logo"><img src="build/icon.png" alt=""><div><h1>Flame1Down - 1</h1></div></div>
+  <p class="sub">荆楚号 · 登船终端</p>
+
+  <section id="v-setup" hidden>
+    <form id="f">
+      <label for="addr">服务器地址</label>
+      <input id="addr" autocomplete="off" spellcheck="false" placeholder="例如 123.45.67.89 或 123.45.67.89:8080">
+      <p class="hint">就是在浏览器里玩时打开的那个网址。没写端口时会自动试 8080 和 80。</p>
+      <p class="msg" id="setup-msg" role="status"></p>
+      <div class="row">
+        <button type="button" id="cancel" hidden>返回游戏</button>
+        <button type="submit" class="primary" id="go">连接</button>
+      </div>
+    </form>
+  </section>
+
+  <section id="v-connecting" hidden>
+    <h2>正在连接荆楚号<span class="dots"></span></h2>
+    <p class="hint" id="conn-addr"></p>
+  </section>
+
+  <section id="v-offline" hidden>
+    <h2 class="bad">连不上服务器</h2>
+    <p>服务器 <span class="addr" id="off-addr"></span> 没有回应。可能是网络断了，或者服务器正在更新（一般一两分钟就好）。</p>
+    <p class="hint" id="off-detail"></p>
+    <p class="msg ok" id="off-msg" role="status"></p>
+    <div class="row">
+      <button type="button" id="change">修改服务器地址</button>
+      <button type="button" class="primary" id="retry">重试</button>
+    </div>
+  </section>
+
+  <div class="foot"><span>按 Alt 显示菜单：刷新、全屏、缩放、服务器地址</span><span id="ver"></span></div>
+</main>
+
+<script>
+(function () {
+  var q = new URLSearchParams(location.search);
+  var $ = function (id) { return document.getElementById(id); };
+  var api = window.f1d;
+  var info = { server: '', fallback: '' };
+  var timer = null, left = 0;
+
+  function show(mode) {
+    ['setup', 'connecting', 'offline'].forEach(function (m) { $('v-' + m).hidden = m !== mode; });
+    clearInterval(timer);
+    if (mode === 'setup') {
+      var cur = info.server || info.fallback || '';
+      $('addr').value = cur.replace(/^http:\/\//, '');
+      $('cancel').hidden = !info.server;
+      setTimeout(function () { $('addr').focus(); $('addr').select(); }, 30);
+    }
+    if (mode === 'offline') {
+      $('off-addr').textContent = (info.server || info.fallback || '').replace(/^http:\/\//, '') || '（未设置）';
+      $('off-detail').textContent = q.get('detail') ? '错误信息：' + q.get('detail') : '';
+      left = 15; tick();
+      timer = setInterval(tick, 1000);
+    }
+  }
+  function tick() {
+    if (--left <= 0) { clearInterval(timer); retry(true); return; }
+    $('off-msg').textContent = left + ' 秒后自动重试';
+  }
+  function retry(auto) {
+    clearInterval(timer);
+    $('retry').disabled = true; $('off-msg').textContent = '正在重试…';
+    api.retry().then(function (r) {
+      if (r && r.ok) { $('off-msg').textContent = '连上了，正在进入游戏…'; return; }
+      $('retry').disabled = false;
+      $('off-msg').textContent = '还是连不上。';
+      left = auto ? 30 : 15; timer = setInterval(tick, 1000);
+    });
+  }
+
+  $('f').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var v = $('addr').value.trim();
+    $('go').disabled = true; $('setup-msg').className = 'msg ok'; $('setup-msg').textContent = '正在连接…';
+    api.connect(v).then(function (r) {
+      if (r && r.ok) { $('setup-msg').textContent = '连上了，正在进入游戏…'; return; }
+      $('go').disabled = false; $('setup-msg').className = 'msg';
+      $('setup-msg').textContent = (r && r.error) || '连不上这个地址。';
+    });
+  });
+  $('cancel').addEventListener('click', function () { api.back(); });
+  $('retry').addEventListener('click', function () { retry(false); });
+  $('change').addEventListener('click', function () { show('setup'); });
+
+  api.info().then(function (i) {
+    info = i || info;
+    $('ver').textContent = '客户端 v' + (info.version || '');
+    $('conn-addr').textContent = (info.server || info.fallback || '').replace(/^http:\/\//, '');
+    show(q.get('mode') || 'setup');
+  });
+})();
+</script>
+</body>
+</html>

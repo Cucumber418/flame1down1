@@ -43,9 +43,30 @@
       '<p>本作纯为热爱而生，不图分文之利，永不以之牟利。</p>' +
       '<h4 class="ab-h">致谢</h4>' +
       '<p>一舟行远，赖众桨同心。谨向每一位登船游玩的船员致以谢忱：诸位的每一场挑战、每一句意见，都是这艘船前行的风帆。你们的认可，是我们最大的动力。</p>' +
+      '<div id="ab-client" hidden></div>' +
       '<h4 class="ab-h">登船须知</h4>' +
       '<p class="ab-note">本舰尚在试航，暂不打算广而告之，登船采取<b>邀请制</b>。还望诸位珍重此间清净，<b>请尽量不要把网址发到任何大群里</b>。若有好友想来，欢迎当面相邀，同舟共济。</p>' +
       '<div class="soc-foot"><button type="button" class="btn primary" data-tx="1">好的</button></div>');
+    aboutClient();
+  }
+  // 电脑客户端：在客户端里显示版本；在电脑浏览器里显示下载链接（服务器上有安装包时才显示）
+  function aboutClient() {
+    var box = $('ab-client'); if (!box) return;
+    var m = /Flame1DownClient\/([\d.]+)/.exec(navigator.userAgent || '');
+    if (m) {
+      box.innerHTML = '<h4 class="ab-h">电脑客户端</h4><p>你正在使用 Windows 客户端 v' + esc(m[1]) + '。按 Alt 可以显示菜单：刷新、全屏、缩放、修改服务器地址。</p>';
+      box.hidden = false; return;
+    }
+    if (!/^https?:$/.test(location.protocol) || !/Windows/.test(navigator.userAgent || '')) return;
+    fetch('/download/client.json', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (info) {
+      if (!info || !info.version || !$('ab-client')) return;
+      var mb = info.size ? '，约 ' + Math.round(info.size / 1048576) + ' MB' : '';
+      box.innerHTML = '<h4 class="ab-h">电脑客户端</h4>' +
+        '<p>荆楚号另备 Windows 客户端：独立窗口、自带手写字体、背景音乐无需先点页面。进度与网页版同在服务器上，登录同一账号即可接着玩。</p>' +
+        '<p><a class="btn primary" href="/download/windows" style="display:inline-block;text-decoration:none;margin:2px 0">下载 Windows 客户端（v' + esc(info.version) + mb + '）</a></p>' +
+        '<p class="ab-note">安装时若 Windows 提示「已保护你的电脑」，点「更多信息」，再点「仍要运行」即可。</p>';
+      box.hidden = false;
+    }).catch(function () {});
   }
 
   /* ---------- 讨论 ---------- */
