@@ -22,6 +22,61 @@
   function ssDel(k) { try { sessionStorage.removeItem(k); } catch (e) {} }
   function setToken(t, remember) { st.token = t; st.remember = remember; if (remember) { lsSet(TOK, t); ssDel(TOK); } else { ssSet(TOK, t); lsDel(TOK); } }
   function clearToken() { st.token = null; lsDel(TOK); ssDel(TOK); }
+
+  /* ---------- 这台设备记住的账号（2026-11-03，参考赛尔号的登录：最多 3 个，登录时点头像选一个） ----------
+   * hs-cloud-accts = [{ user 账号名, tok 登录凭证, name 做题家名字, av 头像, t 最近使用时间 }]，最近用过的排在前面。
+   * 登录时勾了「记住密码」才会记进来。记住的是服务器发的登录凭证，不保存密码原文：选中账号后直接用凭证登录，
+   * 凭证失效（60 天没用过、或者在别的设备上改了密码）时卡片变成「需要输入密码」，再输一次就好。
+   * 记满 3 个后再记新账号，会挤掉最久没用的那个（顺便让它的凭证在服务器上作废）。 */
+  var ACCTS = 'hs-cloud-accts', MAX_ACCTS = 3, USER_RE = /^[一-龥A-Za-z0-9_]{2,16}$/;
+  function acctsGet() {
+    try {
+      var a = JSON.parse(lsGet(ACCTS) || '[]');
+      return Array.isArray(a) ? a.filter(function (x) { return x && typeof x.user === 'string' && USER_RE.test(x.user); }).slice(0, MAX_ACCTS) : [];
+    } catch (e) { return []; }
+  }
+  function acctsSet(a) { if (a.length) lsSet(ACCTS, JSON.stringify(a)); else lsDel(ACCTS); }
+  function acctFind(user) { return acctsGet().filter(function (x) { return x.user === user; })[0] || null; }
+  function acctEdit(e, patch) { Object.keys(patch).forEach(function (k) { if (patch[k] == null) delete e[k]; else e[k] = patch[k]; }); }
+  // 记下（或更新）一个账号，并把它挪到最前面；超过 3 个时挤掉最后面（最久没用）的
+  function acctPut(user, patch) {
+    var a = acctsGet(), i = -1;
+    a.forEach(function (x, j) { if (x.user === user) i = j; });
+    var e = i >= 0 ? a.splice(i, 1)[0] : { user: user };
+    acctEdit(e, patch || {}); e.t = Date.now(); a.unshift(e);
+    a.splice(MAX_ACCTS).forEach(function (x) { revoke(x.tok); });
+    acctsSet(a);
+  }
+  // 只更新已经记住的账号（不挪位置，没记住的不新增）
+  function acctPatch(user, patch) {
+    var a = acctsGet(), hit = false;
+    a.forEach(function (x) { if (x.user === user) { acctEdit(x, patch); hit = true; } });
+    if (hit) acctsSet(a);
+  }
+  function acctDel(user) { acctsSet(acctsGet().filter(function (x) { return x.user !== user; })); }
+  // 让一个不再用的登录凭证在服务器上作废（正在用的那个不动）
+  function revoke(tok) {
+    if (!tok || tok === st.token || !/^[0-9a-f]{64}$/.test(tok)) return;
+    try { fetch('/api/logout', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok }, body: '{}', cache: 'no-store' }).catch(function () {}); } catch (e) {}
+  }
+  // 头像只认游戏自己生成的两种写法（js/ui/game.js 的 faceHTML），别的一律不显示
+  function avOk(h) { return typeof h === 'string' && (/^<span class="av-face" style="[^"<>]*"><\/span>$/.test(h) || /^<img src="[^"<>]*" alt="">$/.test(h)) ? h : ''; }
+  function avHTML(x) { var h = avOk(x.av); return '<span class="pav' + (h ? ' img' : '') + '">' + (h || esc(Array.from(x.name || x.user)[0] || '?')) + '</span>'; }
+  // 游戏加载好以后：把做题家名字和头像记到账号卡片上，下次登录时显示
+  function syncProfile() {
+    if (!st.user || !window.HSACC || !HSACC.acc) return;
+    try {
+      var a = HSACC.acc(); if (!a) return;
+      var av = avOk(HSACC.avatarInner(HSACC.avatarSpec(), a.name));
+      var e = acctFind(st.user), name = String(a.name || '').slice(0, 20);
+      if (e && (e.name !== name || (e.av || '') !== av)) acctPatch(st.user, { name: name || null, av: av || null });
+    } catch (e) {}
+  }
+  // 账号功能上线前登录过的设备：把上次登录的账号名记成一张卡片
+  function acctMigrate() {
+    if (acctsGet().length || !USER_RE.test(lsGet(LAST) || '')) return;
+    acctPut(lsGet(LAST), lsGet(TOK) && lsGet(OWNER) === lsGet(LAST) ? { tok: lsGet(TOK) } : {});
+  }
   var $ = function (id) { return document.getElementById(id); };
   var st = { user: null, token: null, remember: true, rev: 0, applying: false, pushing: false, changeNo: 0, timer: null, retry: 0, scripts: [], status: '', ver: null, txing: false, txq: false, updShown: false };
 
@@ -104,7 +159,7 @@
           st.rev = r.rev; lsSet(REV, String(r.rev)); st.retry = 0; claimsDrop(sent);
           if (r.fixed && r.save) { takeCloud(r.save, '有些数值和服务器的记录对不上（' + (r.fixed || '') + '），已按服务器的记录修正。'); return; }
           if (r.fix && st.changeNo === no && window.HSACC && HSACC.patch) { st.applying = true; try { HSACC.patch(r.fix); } finally { st.applying = false; } }   // 服务器悄悄改回了它管的数值（精灵、塔进度、每日记录等）：只换这几项，不弹窗
-          if (st.changeNo === no) { lsDel(DIRTY); setStatus('ok'); } else schedule(1000);
+          if (st.changeNo === no) { lsDel(DIRTY); setStatus('ok'); syncProfile(); } else schedule(1000);
         } else if (r._code === 409) { setStatus('conflict'); takeCloud(r.save, r.cheat ? r.error : '这个账号在别的设备上保存过新的进度，已切换成服务器上的进度。'); }
         else if (r._code === 401) { setStatus('expired'); }
         else { setStatus('err', r.error); retryLater(); }
@@ -148,13 +203,15 @@
       '<p>登录账号：<b>' + esc(st.user) + '</b><br>进度会自动保存到服务器，换设备登录同一个账号就能接着玩。</p>' +
       '<button type="button" class="btn" id="cloud-relogin" hidden>重新登录</button>' +
       '<form id="cloud-pw" class="cl-pw"><b>修改密码</b><input type="password" id="cl-old" placeholder="原密码" autocomplete="current-password"><input type="password" id="cl-new" placeholder="新密码（至少 6 位）" autocomplete="new-password"><button class="btn" type="submit">确认修改</button><p id="cl-pw-msg"></p></form>' +
-      '<button type="button" class="btn danger" id="cloud-out">退出登录</button></div>';
+      '<button type="button" class="btn" id="cloud-switch">切换账号</button>' +
+      '<button type="button" class="btn danger" id="cloud-out">退出登录</button><p class="cl-menu-tip">切换账号：回到登录界面，这个账号记住的密码保留。<br>退出登录：这台设备不再记住这个账号的密码。</p></div>';
     mh.appendChild(bar);
     var pill = $('cloud-pill'), menu = $('cloud-menu');
     pill.addEventListener('click', function (e) { e.stopPropagation(); menu.hidden = !menu.hidden; pill.setAttribute('aria-expanded', String(!menu.hidden)); });
     menu.addEventListener('click', function (e) { e.stopPropagation(); });
     document.addEventListener('click', function () { if (!menu.hidden) { menu.hidden = true; pill.setAttribute('aria-expanded', 'false'); } });
-    $('cloud-out').addEventListener('click', logout);
+    $('cloud-out').addEventListener('click', function () { leave(true); });
+    $('cloud-switch').addEventListener('click', function () { leave(false); });
     $('cloud-relogin').addEventListener('click', function () { relogin(); });
     $('cloud-pw').addEventListener('submit', function (e) {
       e.preventDefault();
@@ -169,9 +226,12 @@
     setStatus(lsGet(DIRTY) === '1' ? 'wait' : 'ok');
   }
 
-  function logout() {
+  // 退出登录（forget = true：这台设备忘掉这个账号的密码）/ 切换账号（forget = false：记住的密码留着，回到登录界面选别的账号）
+  function leave(forget) {
     function bye() {
-      api('POST', '/api/logout', {}).catch(function () {}).then(function () {
+      var e = acctFind(st.user), keep = !forget && e && e.tok && e.tok === st.token;
+      (keep ? Promise.resolve() : api('POST', '/api/logout', {}).catch(function () {})).then(function () {
+        if (forget) acctPatch(st.user, { tok: null });
         clearToken(); lsDel(OWNER); lsDel(REV); lsDel(DIRTY); apply(null); location.reload();
       });
     }
@@ -232,49 +292,103 @@
     document.body.classList.add('cloud-auth');
     var host = $('cloud-auth');
     if (!host) { host = document.createElement('div'); host.id = 'cloud-auth'; var top = document.querySelector('.topbar'); top.parentNode.insertBefore(host, top.nextSibling); }
-    var mode = 'login', legacy = legacySave();
+    acctMigrate();
+    var mode = 'login', legacy = legacySave(), list0 = acctsGet();
+    var sel = list0.length ? list0[0].user : '';   // 选中的记住的账号（'' = 其他账号，自己输入）
+    var pwMode = false;                              // 选中了记住密码的账号，但想改用密码登录
     function draw() {
-      var reg = mode === 'register';
+      var reg = mode === 'register', list = reg ? [] : acctsGet();
+      if (sel && !acctFind(sel)) sel = '';
+      var e = !reg && sel ? acctFind(sel) : null, quick = !!(e && e.tok && !pwMode);
+      var cards = list.length ? '<div class="cl-accts" role="listbox" aria-label="这台设备记住的账号">' + list.map(function (x) {
+        var on = x.user === sel;
+        return '<div class="cl-acct' + (on ? ' on' : '') + '"><button type="button" class="cl-acct-b" data-u="' + esc(x.user) + '" role="option" aria-selected="' + on + '">' + avHTML(x) +
+          '<b>' + esc(x.name || x.user) + '</b><small>@' + esc(x.user) + '</small><small class="cl-acct-s' + (x.tok ? ' ok' : '') + '">' + (x.tok ? '已记住密码' : '需要输入密码') + '</small></button>' +
+          '<button type="button" class="cl-acct-x" data-x="' + esc(x.user) + '" title="从这台设备移除" aria-label="从这台设备移除账号 ' + esc(x.user) + '">×</button></div>';
+      }).join('') +
+        '<div class="cl-acct other' + (sel ? '' : ' on') + '"><button type="button" class="cl-acct-b" data-u="" role="option" aria-selected="' + !sel + '"><span class="pav">＋</span><b>其他账号</b><small>输入账号名和密码</small></button></div></div>' : '';
+      var full = !reg && !sel && list.length >= MAX_ACCTS ? list[list.length - 1] : null;
+      var userVal = reg ? '' : (sel || (list.length ? '' : (lsGet(LAST) || '')));
       host.innerHTML = '<div class="onboard cl-card"><span class="tape l"></span><span class="tape r"></span>' +
         '<span class="step">船员登记</span><h2>' + (reg ? '注册新账号' : '登录荆楚号') + '</h2>' +
         '<div class="cl-tabs" role="tablist"><button type="button" role="tab" class="sub' + (reg ? '' : ' on') + '" data-m="login" aria-selected="' + !reg + '">登录</button><button type="button" role="tab" class="sub' + (reg ? ' on' : '') + '" data-m="register" aria-selected="' + reg + '">注册</button></div>' +
         (note ? '<p class="cl-note">' + esc(note) + '</p>' : '') +
+        cards +
         '<form id="cl-form" class="cl-form" novalidate>' +
-        '<label>账号名<input id="cl-user" name="username" type="text" autocomplete="username" autocapitalize="off" spellcheck="false" maxlength="16" placeholder="2–16 个字：汉字、字母、数字、下划线" value="' + esc(reg ? '' : (lsGet(LAST) || '')) + '"></label>' +
-        '<label>密码<input id="cl-pass" name="password" type="password" autocomplete="' + (reg ? 'new-password' : 'current-password') + '" placeholder="' + (reg ? '至少 6 位' : '') + '"></label>' +
+        '<label>账号名<input id="cl-user" name="username" type="text" autocomplete="username" autocapitalize="off" spellcheck="false" maxlength="16" placeholder="2–16 个字：汉字、字母、数字、下划线" value="' + esc(userVal) + '"' + (sel && !reg ? ' readonly' : '') + '></label>' +
+        (quick ? '<div class="cl-saved"><span>🔑 已记住这个账号的密码，直接点「登录」就行。</span><button type="button" class="cl-link" id="cl-usepw">改用密码登录</button></div>'
+          : '<label>密码<input id="cl-pass" name="password" type="password" autocomplete="' + (reg ? 'new-password' : 'current-password') + '" placeholder="' + (reg ? '至少 6 位' : '') + '"></label>') +
         (reg ? '<label>再输一次密码<input id="cl-pass2" type="password" autocomplete="new-password"></label>' : '') +
         (reg && legacy ? '<label class="cl-chk"><input type="checkbox" id="cl-legacy" checked> 把这台设备上已有的存档（做题家「' + esc(legacy.name) + '」，' + legacy.mons.length + ' 只精灵）带到新账号</label>' : '') +
-        '<label class="cl-chk"><input type="checkbox" id="cl-remember" checked> 自动登录：下次打开不用再输密码（在别人的电脑上请取消勾选）</label>' +
+        '<div class="cl-chks"><label class="cl-chk"><input type="checkbox" id="cl-rem" checked> 记住密码</label><label class="cl-chk"><input type="checkbox" id="cl-auto"> 自动登录</label></div>' +
+        '<p class="hint cl-chk-tip">记住密码：账号会出现在上面，下次点一下就能登录（这台设备最多记住 ' + MAX_ACCTS + ' 个）。自动登录：下次打开直接进游戏。在别人的电脑上请都不要勾。</p>' +
+        (full ? '<p class="hint cl-full">已经记住了 ' + MAX_ACCTS + ' 个账号，再记住新账号会替换掉最久没用的「' + esc(full.name || full.user) + '」。</p>' : '') +
         '<p class="cl-err" id="cl-err" role="alert"></p>' +
         '<div class="ob-foot"><p class="hint">' + (reg ? '账号名用来登录，和游戏里的做题家名字是分开的。' : '换设备时用同一个账号登录，进度就会跟过来。') + '</p><button class="btn primary" type="submit" id="cl-go">' + (reg ? '注册并开始' : '登录') + '</button></div>' +
         '</form>' +
         '<p class="hint cl-warn">这个网站目前用的是 http 连接，请不要用和微信、银行等其他地方相同的密码。忘记密码可以找管理员重设。</p></div>';
-      host.querySelectorAll('.cl-tabs .sub').forEach(function (b) { b.addEventListener('click', function () { mode = b.getAttribute('data-m'); note = ''; draw(); }); });
+      host.querySelectorAll('.cl-tabs .sub').forEach(function (b) { b.addEventListener('click', function () { mode = b.getAttribute('data-m'); note = ''; pwMode = false; draw(); }); });
+      host.querySelectorAll('.cl-acct-b').forEach(function (b) { b.addEventListener('click', function () { sel = b.getAttribute('data-u'); pwMode = false; note = ''; draw(); }); });
+      host.querySelectorAll('.cl-acct-x').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var u = b.getAttribute('data-x'), x = acctFind(u); if (!x) return;
+          if (!confirm('从这台设备移除账号「' + (x.name || u) + '」（@' + u + '）？\n账号和进度不会受影响，以后输入密码还能登录。')) return;
+          revoke(x.tok); acctDel(u); if (sel === u) { var r = acctsGet(); sel = r.length ? r[0].user : ''; } pwMode = false; draw();
+        });
+      });
+      var rem = $('cl-rem'), auto = $('cl-auto');
+      function syncChk() { auto.disabled = !rem.checked; if (!rem.checked) auto.checked = false; }
+      rem.addEventListener('change', syncChk); syncChk();
+      if (quick) $('cl-usepw').addEventListener('click', function () { pwMode = true; draw(); });
       $('cl-form').addEventListener('submit', submit);
-      ($('cl-user').value ? $('cl-pass') : $('cl-user')).focus();
+      if (quick) $('cl-go').focus(); else ($('cl-user').value ? $('cl-pass') : $('cl-user')).focus();
     }
-    function submit(e) {
-      e.preventDefault();
-      var reg = mode === 'register', user = $('cl-user').value.trim(), pass = $('cl-pass').value, err = $('cl-err'), go = $('cl-go');
-      if (!/^[一-龥A-Za-z0-9_]{2,16}$/.test(user)) { err.textContent = '账号名要 2–16 个字，只能用汉字、字母、数字和下划线'; return; }
+    function busy(on) { var go = $('cl-go'); if (!go) return; go.disabled = on; go.textContent = on ? '请稍候…' : (mode === 'register' ? '注册并开始' : '登录'); }
+    function finish(user, save) {
+      var proceed = function () { host.remove(); document.body.classList.remove('cloud-auth'); onDone(); };
+      adopt(user, save, proceed);
+    }
+    // 选了记住密码的账号：直接用记住的登录凭证
+    function quickLogin(e, auto) {
+      var err = $('cl-err'), tok = e.tok;
+      err.textContent = ''; busy(true); st.token = tok;
+      api('GET', '/api/me').then(function (r) {
+        if (r._code === 200) { setToken(tok, auto); lsSet(LAST, r.user); acctPut(r.user, { tok: tok }); finish(r.user, r.save); return; }
+        st.token = null; busy(false);
+        if (r._code === 401) {
+          acctPatch(e.user, { tok: null }); pwMode = false;
+          note = '「' + (e.name || e.user) + '」记住的密码已经失效（太久没登录，或者在别的设备上改过密码），请输入密码登录。';
+          draw(); return;
+        }
+        err.textContent = r.error || '出错了';
+      }).catch(function () { st.token = null; busy(false); err.textContent = '连不上服务器，请检查网络后再试'; });
+    }
+    function submit(ev) {
+      ev.preventDefault();
+      var reg = mode === 'register', err = $('cl-err');
+      var rem = $('cl-rem').checked, auto = rem && $('cl-auto').checked;
+      var e = !reg && sel ? acctFind(sel) : null;
+      if (e && e.tok && !pwMode) return quickLogin(e, auto);
+      var user = $('cl-user').value.trim(), pass = $('cl-pass').value;
+      if (!USER_RE.test(user)) { err.textContent = '账号名要 2–16 个字，只能用汉字、字母、数字和下划线'; return; }
       if (pass.length < 6) { err.textContent = '密码至少 6 位'; return; }
       if (reg && pass !== $('cl-pass2').value) { err.textContent = '两次输入的密码不一样'; return; }
       var body = { user: user, pass: pass };
       var bring = reg && $('cl-legacy') && $('cl-legacy').checked;
       if (bring) body.data = collect();
-      err.textContent = ''; go.disabled = true; go.textContent = '请稍候…';
+      err.textContent = ''; busy(true);
       api('POST', reg ? '/api/register' : '/api/login', body).then(function (r) {
-        go.disabled = false; go.textContent = reg ? '注册并开始' : '登录';
+        busy(false);
         if (r._code !== 200) { err.textContent = r.error || '出错了'; return; }
-        var remember = $('cl-remember').checked;
-        setToken(r.token, remember); lsSet(LAST, r.user);
-        rememberPassword(user, pass, remember);
+        setToken(r.token, auto);
+        if (rem) { lsSet(LAST, r.user); var old = acctFind(r.user); if (old && old.tok !== r.token) revoke(old.tok); acctPut(r.user, { tok: r.token }); }
+        else { lsDel(LAST); acctPatch(r.user, { tok: null }); }
+        rememberPassword(user, pass, rem);
         // 注册时已经决定好旧存档带不带：不带就另存一份备用，之后不再问
         if (reg && !bring && legacySave()) backupLegacy();
         if (reg) { lsSet(OWNER, r.user); lsDel(DIRTY); }
-        var proceed = function () { host.remove(); document.body.classList.remove('cloud-auth'); onDone(); };
-        adopt(r.user, r.save, proceed);
-      }).catch(function () { go.disabled = false; go.textContent = reg ? '注册并开始' : '登录'; err.textContent = '连不上服务器，请检查网络后再试'; });
+        finish(r.user, r.save);
+      }).catch(function () { busy(false); err.textContent = '连不上服务器，请检查网络后再试'; });
     }
     draw();
   }
@@ -290,6 +404,7 @@
           e.preventDefault();
           api('POST', '/api/login', { user: keep, pass: d.querySelector('#rl-pass').value }).then(function (r) {
             if (r._code !== 200) { d.querySelector('#rl-err').textContent = r.error || '登录失败'; return; }
+            var e0 = acctFind(keep); if (e0 && e0.tok) acctPatch(keep, { tok: r.token });   // 记住的旧凭证已经失效：换成新的
             setToken(r.token, st.remember); close();
             if (r.save && r.save.rev !== st.rev) takeCloud(r.save, '这个账号在别的设备上保存过新的进度，已切换成服务器上的进度。'); else { setStatus('wait'); push(); }
           }).catch(function () { d.querySelector('#rl-err').textContent = '连不上服务器'; });
@@ -303,7 +418,7 @@
     var L = window.LOADER ? LOADER.show('正在登船～', { delay: 250 }) : null;   // 加载面板（js/ui/loader.js）：按已经加载的脚本数走进度条
     (function next() {
       if (L) L.set((total - list.length) / total);
-      if (!list.length) { if (L) L.done(); if (st.user) renderBar(); return; }
+      if (!list.length) { if (L) L.done(); if (st.user) { renderBar(); setTimeout(syncProfile, 1500); } return; }
       var s = document.createElement('script'); s.src = list.shift();
       s.onload = next;
       s.onerror = function () { if (L) L.close(); alert('加载 ' + s.src + ' 失败，请刷新页面重试'); };
@@ -322,7 +437,7 @@
         .catch(function (e) { if (e.noapi) loadGame(); else showLogin('连不上服务器，请检查网络后刷新页面。', start); });
     }
     api('GET', '/api/me').then(function (r) {
-      if (r._code === 200) return adopt(r.user, r.save, start);
+      if (r._code === 200) { if (st.remember) acctPut(r.user, { tok: st.token }); return adopt(r.user, r.save, start); }
       clearToken(); showLogin('登录已过期，请重新登录。', start);
     }).catch(function (e) {
       if (e.noapi) return loadGame();
