@@ -29,7 +29,7 @@
  * ========================================================== */
 (function () {
   'use strict';
-  var V = '?v=4';
+  var V = '?v=5';   // 2026-11-03：统一响度后换版本号，免得浏览器还用旧文件
   var TRACKS = {
     normal: 'audio/bgm_normal.mp3', boss: 'audio/bgm_boss.mp3', boss2: 'audio/bgm_boss2.mp3', boss3: 'audio/bgm_boss3.mp3', tigerFinal: 'audio/bgm_tiger_final.mp3',
     stage: 'audio/bgm_stage.mp3', pvp: 'audio/bgm_pvp.mp3', faceEnemy: 'audio/bgm_face_enemy.mp3', disCommunication: 'audio/bgm_dis_communication.mp3',
