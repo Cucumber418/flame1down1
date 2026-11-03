@@ -44,7 +44,7 @@
     disComScene: 'audio/bgm_dis_communication.mp3', faceEnemyScene: 'audio/bgm_face_enemy.mp3',
     // 2026-10-24 上传，用法之后再定：FloraLab、MingTraining 系列（MingTheme / MingBattle1、2 / MingFinalBattle1、2）、PompeiiCity
     floraLab: 'audio/bgm_flora_lab.mp3', mingTheme: 'audio/bgm_ming_theme.mp3', mingBattle1: 'audio/bgm_ming_battle1.mp3', mingBattle2: 'audio/bgm_ming_battle2.mp3',
-    mingFinal1: 'audio/bgm_ming_final1.mp3', mingFinal2: 'audio/bgm_ming_final2.mp3', pompeiiCity: 'audio/bgm_pompeii_city.mp3'
+    mingFinal1: 'audio/bgm_ming_final1.mp3', mingFinal2: 'audio/bgm_ming_final2.mp3', pompeiiCity: 'audio/bgm_pompeii_city2.mp3'
   };
   // silence：剧情里「音乐突然停止」，没有曲子
   var SCENES = { base: 1, summon: 1, finalStar: 1, decision: 1, vitalVoyage: 1, kbDeep: 1, kbDeep2: 1, kbDeep3: 1, floraLab: 1, pompeiiCity: 1, mingTheme: 1, kb: 1, kbShallow: 1, kbSurface: 1, temple: 1, spa: 1, ui: 1, arena: 1, earth: 1, flora: 1, floraGrass: 1, floraForest: 1, floraFallen: 1, grassTalk: 1, memory: 1, saver: 1, disComScene: 1, faceEnemyScene: 1, silence: 1 };
