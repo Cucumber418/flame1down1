@@ -3683,7 +3683,6 @@ html.land-rot .sheet { height: 100%; overflow-y: auto; overflow-x: hidden; -webk
 .fp-empty .fp-lab { background: rgba(40, 120, 70, .9); }
 .fp-lock .fp-bub { filter: grayscale(.7); opacity: .8; }
 .fp-lock .fp-lab { background: rgba(60, 60, 70, .82); }
-.fp-beam { position: absolute; transform: translateX(-50%); width: 5%; background: linear-gradient(to bottom, rgba(120, 255, 160, 0), rgba(120, 255, 160, .32) 35%, rgba(120, 255, 160, .32)); pointer-events: none; z-index: 1; }
 @keyframes fpBob { 0%, 100% { transform: translate(-50%, -50%); } 50% { transform: translate(-50%, -62%); } }
 @keyframes fpSway { 0%, 100% { transform: translateX(-50%) rotate(-4deg); } 50% { transform: translateX(-50%) rotate(4deg); } }
 @keyframes fpPop { 0% { transform: translate(-50%, -50%) scale(1); } 40% { transform: translate(-50%, -50%) scale(1.12); } 100% { transform: translate(-50%, -50%) scale(1); } }
@@ -3702,7 +3701,6 @@ html.land-rot .sheet { height: 100%; overflow-y: auto; overflow-x: hidden; -webk
 .sg-dot { position: absolute; top: -5px; right: -5px; width: 12px; height: 12px; border-radius: 50%; background: var(--red); border: 2px solid #fff; }
 .base-room.editing .scene-go { display: none; }
 @media (max-width: 560px) { .scene-go { left: 6px; bottom: 6px; padding: 4px 8px; font-size: 11.5px; gap: 4px; } .sg-ic { font-size: 14px; } .fp-bub { border-width: 1.5px; } }
-@media (min-width: 761px) { .farm-side { top: 10px; transform: none; } }   /* 种植园：菜单放左上角，免得挡住最左边那块田的气泡 */
 @container (max-width: 620px) {   /* 手机：两排气泡离得近，不显示气泡下面的文字（点气泡会提示剩余时间），气泡大一点好点 */
   .fp-lab { display: none; }
   .fp-bub { width: 8.4%; }

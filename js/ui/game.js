@@ -6526,12 +6526,11 @@
     return (h ? h + ' 小时 ' : '') + (h || m ? m + ' 分 ' : '') + s + ' 秒';
   }
   /* 2026-11-04：种植园改成和基地一样的场景（背景 images/base/farm.jpg），左边是功能菜单，左下角「前往基地」。
-   * 8 块田按背景图摆：t 是田的中心，b 是田上方的气泡（正好盖住原图里手套图标的位置）；还没开的田显示锁。
-   * 田的顺序就是存档里 acc.farm.plots 的顺序：前 4 块是基础的，后 4 块是种子商店扩建的。 */
+   * 6 块田按背景图摆：t 是田的中心，b 是田上方的气泡（正好盖住原图里手套图标的位置）；还没开的田显示锁。
+   * 田的顺序就是存档里 acc.farm.plots 的顺序：前 4 块是基础的，后 2 块是种子商店扩建的（2026-11-04 起一共 6 块）。 */
   var FARM_POS = [
     { t: [41.1, 61.7], b: [40.9, 38.5] }, { t: [59.6, 61.7], b: [58.7, 38.5] }, { t: [75.5, 61.7], b: [75.9, 38.5] },
-    { t: [33.6, 73.9], b: [33.4, 50.5] }, { t: [52.0, 73.9], b: [52.0, 50.5] }, { t: [70.5, 73.9], b: [70.9, 50.5] },
-    { t: [14.7, 74.6], b: [14.7, 50.5], beam: 1 }, { t: [89.3, 74.6], b: [89.3, 50.5], beam: 1 }
+    { t: [33.6, 73.9], b: [33.4, 50.5] }, { t: [52.0, 73.9], b: [52.0, 50.5] }, { t: [70.5, 73.9], b: [70.9, 50.5] }
   ];
   var SPROUT_SVG = '<svg class="it-ic" viewBox="0 0 64 64" aria-hidden="true"><g stroke="#23422b" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"><path d="M32 58V30" fill="none"/><path d="M32 38c-2-10-10-14-20-13 1 10 8 15 20 13z" fill="#7cc95a"/><path d="M32 31c2-11 11-16 22-15-1 11-10 16-22 15z" fill="#5fb548"/></g></svg>';
   function farmReadyN() { if (!acc || !farmOpen()) return 0; return farm().plots.filter(farmReady).length; }
@@ -6546,7 +6545,6 @@
     var lab = st === 'lock' ? '扩建' : st === 'empty' ? '种植' : st === 'ready' ? '收获' : farmClock(p);
     var tip = '田 ' + (i + 1) + (st === 'lock' ? '：还没开，可以在种子商店扩建' : st === 'empty' ? '：空着，点一下种植' : st === 'ready' ? ' · ' + itemName(p.seed) + '：成熟了，点一下收获「' + itemName(S.crop) + '」×' + S.yield : ' · ' + itemName(p.seed) + '：还要 ' + farmLeftText(p));
     return '<div class="fp fp-' + st + '" data-fp="' + i + '">' +
-      (P.beam && st !== 'lock' ? '<i class="fp-beam" style="left:' + P.t[0] + '%;top:' + P.b[1] + '%;height:' + (P.t[1] - P.b[1] - 4).toFixed(1) + '%"></i>' : '') +
       '<button type="button" class="fp-soil" data-fpi="' + i + '" style="left:' + P.t[0] + '%;top:' + P.t[1] + '%" aria-label="' + esc(tip) + '">' + (st === 'grow' || st === 'ready' ? '<span class="fp-crop' + (st === 'ready' ? ' ripe' : '') + '">' + (st === 'ready' ? H.itemIcon(S.crop) : SPROUT_SVG) + '</span>' : '') + '</button>' +
       '<button type="button" class="fp-bub" data-fpi="' + i + '" style="left:' + P.b[0] + '%;top:' + P.b[1] + '%" title="' + esc(tip) + '" aria-label="' + esc(tip) + '"><span class="fp-ic">' + ic + '</span><span class="fp-lab" data-fpclock="' + i + '">' + lab + '</span></button></div>';
   }

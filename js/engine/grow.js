@@ -457,8 +457,8 @@ var GROW = (function () {
 
   /* ---------- 太空种植园：种下种子，到时间收获 ----------
    * 药草、活力花卉收获时有 20% 的概率掉 1 颗种子（back），水稻种子一定退回。种子在生态舱的种子商店用能量买（seedShop），
-   * 商店还卖额外的种植栏位：基础 4 块田，最多再加 4 块（a.farm.extra） */
-  var FARM_N = 4, FARM_EXTRA_MAX = 4, PLOT_PRICE = [2000, 4000, 8000, 16000], SEED_PRICE = 100, SEED_SHOP = ['s_herb', 's_flower'], SEED_SHOP_MAX = 99;
+   * 商店还卖额外的种植栏位：基础 4 块田，最多再加 2 块（a.farm.extra；2026-11-04 起一共 6 块，原来最多 8 块，多买的由 award.js 退还） */
+  var FARM_N = 4, FARM_EXTRA_MAX = 2, PLOT_PRICE = [2000, 4000, 8000, 16000], SEED_PRICE = 100, SEED_SHOP = ['s_herb', 's_flower'], SEED_SHOP_MAX = 99;
   var SEEDS = {
     s_herb: { name: '药草种子', d: '绿色的药草籽，在恩施 · 生态舱的种子商店出售。种下去要 8 小时，收获药草；收获时有 20% 的概率掉落 1 颗药草种子。', crop: 'c_herb', min: 480, yield: 50, back: 0.2 },
     s_flower: { name: '活力花种子', d: '蓝色的花籽，在恩施 · 生态舱的种子商店出售。种下去要 8 小时，收获活力花卉；收获时有 20% 的概率掉落 1 颗活力花种子。', crop: 'c_flower', min: 480, yield: 50, back: 0.2 },

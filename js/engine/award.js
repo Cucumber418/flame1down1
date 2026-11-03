@@ -231,6 +231,22 @@ var AWD = (function () {
         (oldAcc ? '\n另外送上累积经验 ×50,000 作为补偿。' : '') + '\n请领取附件。', att: { exp: oldAcc ? 50000 : 0, energy: pe, items: pn ? { pot200: pn } : undefined } }, now);
       else seen['pot-swap'] = now;
     }
+    // 2026-11-04：太空种植园改成 6 块田（基础 4 块 + 最多扩建 2 块）。之前买了第 7、8 块田的：退还买这两块田的能量，
+    // 田里种着的照常给（成熟了给作物，没成熟退种子），然后把多出来的田收掉
+    var FM = a.farm, FMAX = GROW.FARM_N + GROW.FARM_EXTRA_MAX;
+    if (FM && typeof FM === 'object' && ((FM.extra | 0) > GROW.FARM_EXTRA_MAX || (Array.isArray(FM.plots) && FM.plots.length > FMAX))) {
+      var fx = FM.extra | 0, fe = 0, fit = {};
+      for (var fi = GROW.FARM_EXTRA_MAX; fi < Math.min(fx, GROW.PLOT_PRICE.length); fi++) fe += GROW.PLOT_PRICE[fi];
+      (Array.isArray(FM.plots) ? FM.plots.slice(FMAX) : []).forEach(function (p) {
+        var S = p && GROW.SEEDS[p.seed]; if (!S) return;
+        if (now - p.t >= S.min * 60000) { fit[S.crop] = (fit[S.crop] || 0) + S.yield; if (S.back >= 1) fit[p.seed] = (fit[p.seed] || 0) + 1; }
+        else fit[p.seed] = (fit[p.seed] || 0) + 1;
+      });
+      FM.extra = Math.min(fx, GROW.FARM_EXTRA_MAX); if (Array.isArray(FM.plots)) FM.plots = FM.plots.slice(0, FMAX);
+      if (fe || Object.keys(fit).length) send(a, { id: 'farm6', title: '太空种植园改为 6 块田 · 退还', body: '{name}，你好！\n太空种植园改版后一共 6 块田（基础 4 块，最多扩建 2 块）。' +
+        (fe ? '\n你之前多扩建的田已经收回，退还买田的能量 ×' + fmt(fe) + '。' : '') + (Object.keys(fit).length ? '\n那几块田里种着的作物（成熟了的照常收获，没成熟的退回种子）一并放在附件里。' : '') + '\n请领取附件。',
+        att: { energy: fe, items: Object.keys(fit).length ? fit : undefined } }, now);
+    }
     // 2026-10-21：先驱之塔奖励提高，给之前爬过塔的船员补差额
     if (!seen['tower-x10']) {
       var TW0 = a.tower, nf = TW0 ? (TW0.clears || 0) * PVE.TOWER.top + Math.max(0, (TW0.f || 1) - 1) : 0, ce = 0, ct = 0;
