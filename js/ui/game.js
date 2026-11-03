@@ -5657,7 +5657,7 @@
     ['grassTalk', '剧情'], ['memory', '剧情'], ['saver', '剧情'], ['disCommunication', '瘴气化之后的野外对战'], ['beforeEnd', '？'],
     ['spa', '温泉疗养'], ['kb', '坎伯兰星'], ['kbSurface', '坎伯兰星 · 水面'], ['kbShallow', '坎伯兰星 · 浅海'], ['kbDeep', '坎伯兰星 · 深海'], ['kbDeep2', '坎伯兰星保卫战'], ['kbDeep3', '星云显现之后的坎伯兰星'],
     ['temple', '坎伯兰星 · 古代神殿'], ['vitalVoyage', '？'], ['finalStar', '剧情'], ['decision', '剧情'], ['ngc2237', '玫瑰星云'],
-    ['pompeiiCity', '庞贝星 · 饮火城'], ['mingTheme', '明明教官的试炼 · 无尽作战'], ['mingBattle1', '明明教官的试炼 · 关卡'], ['mingBattle2', '明明教官的试炼 · 高难 / 最终试炼'], ['mingFinal1', '明明教官的试炼 · 通常 · 第三只精灵'], ['mingFinal2', '明明教官的试炼 · 高难 / 最终试炼 · 第三只精灵']
+    ['pompeii', '庞贝星'], ['pompeiiField', '庞贝星 · 熔岩原'], ['pompeiiCity', '庞贝星 · 饮火城'], ['warriorsCity', '庞贝星 · 标题画面'], ['mingTheme', '明明教官的试炼 · 无尽作战'], ['mingBattle1', '明明教官的试炼 · 关卡'], ['mingBattle2', '明明教官的试炼 · 高难 / 最终试炼'], ['mingFinal1', '明明教官的试炼 · 通常 · 第三只精灵'], ['mingFinal2', '明明教官的试炼 · 高难 / 最终试炼 · 第三只精灵']
   ].map(function (m) { return [m[0], window.HSTRACK ? HSTRACK(m[0]) : m[0], m[1]]; });
   var MUSIC_ALIAS = { disComScene: 'disCommunication', faceEnemyScene: 'faceEnemy' };
   window.HSHEARD = function (k) {
@@ -8042,6 +8042,8 @@
       if (vnSite === 'kamble') return 'kb';
       if (ex.view === 'mmArena' || ex.view === 'mmGacha') return 'mingTheme';
       if (ex.view === 'field' && ex.region === 'pp_city') return 'pompeiiCity';   // 2026-11-03：庞贝星 · 饮火城
+      if (ex.view === 'field' && ex.region === 'pp_lava') return 'pompeiiField';   // 庞贝星 · 熔岩原
+      if (ex.view === 'sites' && ex.planet === 'pompeii') return 'pompeii';   // 庞贝星主界面
       if (ex.view === 'field' && ex.region === 'fl_record') return 'floraFallen';
       if (ex.view === 'sites' && ex.planet === 'flora') return 'flora';
       if (ex.view === 'field' && fields[ex.region] && regionById(ex.region) && regionById(ex.region).planet === 'flora') {   // 芙罗拉星野外：草甸放 floraGrass，丛林放 floraForest

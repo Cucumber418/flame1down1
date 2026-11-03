@@ -44,7 +44,8 @@
     disComScene: 'audio/bgm_dis_communication.mp3', faceEnemyScene: 'audio/bgm_face_enemy.mp3',
     // 2026-10-24 上传，用法之后再定：FloraLab、MingTraining 系列（MingTheme / MingBattle1、2 / MingFinalBattle1、2）、PompeiiCity
     floraLab: 'audio/bgm_flora_lab.mp3', mingTheme: 'audio/bgm_ming_theme.mp3', mingBattle1: 'audio/bgm_ming_battle1.mp3', mingBattle2: 'audio/bgm_ming_battle2.mp3',
-    mingFinal1: 'audio/bgm_ming_final1.mp3', mingFinal2: 'audio/bgm_ming_final2.mp3', pompeiiCity: 'audio/bgm_pompeii_city2.mp3'
+    mingFinal1: 'audio/bgm_ming_final1.mp3', mingFinal2: 'audio/bgm_ming_final2.mp3', pompeiiCity: 'audio/bgm_pompeii_city2.mp3',
+    pompeii: 'audio/bgm_pompeii.mp3', pompeiiField: 'audio/bgm_pompeii_field.mp3', warriorsCity: 'audio/bgm_warriors_city.mp3'   // 2026-11-03：庞贝星主界面、熔岩原、庞贝星标题画面
   };
   // 曲名（2026-11-03 统一）：所有地方显示的曲名都从这里取（音乐鉴赏、基地音乐、温泉音乐、设置），统一格式：英文单词首字母大写、用空格分开，数字单独一节，不用连字符和下划线
   var NAMES = { ui: 'HMS JC', uiOld: 'Lobby', base: 'Base', summon: 'Summon', arena: 'Arena', earth: 'Earth', faceEnemy: 'Face The Enemy', faceEnemyScene: 'Face The Enemy',
@@ -52,12 +53,12 @@
     flora: 'Flora', floraGrass: 'Flora 1 Grassland', floraForest: 'Flora 2 Jungle', floraFallen: 'Flora 3 The Great Cover', floraLab: 'Flora Lab',
     grassTalk: 'Grass Talk', memory: 'Memory', saver: 'Saver', disCommunication: 'Dis Communication', disComScene: 'Dis Communication', beforeEnd: 'Before The End',
     spa: 'Spa', kb: 'Cumberland', kbSurface: 'Cumberland 1 Surface', kbShallow: 'Cumberland 2 Shallow', kbDeep: 'Cumberland 3 Deeps', kbDeep2: 'Cumberland 4 Deeps II', kbDeep3: 'Cumberland 5 Deeps III',
-    temple: 'Temple', vitalVoyage: 'Vital Voyage', finalStar: 'Final Star', decision: 'Decision', pompeiiCity: 'Pompeii City',
+    temple: 'Temple', vitalVoyage: 'Vital Voyage', finalStar: 'Final Star', decision: 'Decision', pompeii: 'Pompeii', pompeiiField: 'Pompeii 1 Field', pompeiiCity: 'Pompeii 2 City', warriorsCity: 'Warriors City',
     mingTheme: 'Ming Theme', mingBattle1: 'Ming Battle 1', mingBattle2: 'Ming Battle 2', mingFinal1: 'Ming Final Battle 1', mingFinal2: 'Ming Final Battle 2' };
   function trackName(k) { return NAMES[k] || k; }
   window.HSTRACK = trackName;
   // silence：剧情里「音乐突然停止」，没有曲子
-  var SCENES = { base: 1, summon: 1, finalStar: 1, decision: 1, vitalVoyage: 1, kbDeep: 1, kbDeep2: 1, kbDeep3: 1, floraLab: 1, pompeiiCity: 1, mingTheme: 1, kb: 1, kbShallow: 1, kbSurface: 1, temple: 1, spa: 1, ui: 1, arena: 1, earth: 1, flora: 1, floraGrass: 1, floraForest: 1, floraFallen: 1, grassTalk: 1, memory: 1, saver: 1, disComScene: 1, faceEnemyScene: 1, silence: 1 };
+  var SCENES = { base: 1, summon: 1, finalStar: 1, decision: 1, vitalVoyage: 1, kbDeep: 1, kbDeep2: 1, kbDeep3: 1, floraLab: 1, pompeiiCity: 1, pompeii: 1, pompeiiField: 1, warriorsCity: 1, mingTheme: 1, kb: 1, kbShallow: 1, kbSurface: 1, temple: 1, spa: 1, ui: 1, arena: 1, earth: 1, flora: 1, floraGrass: 1, floraForest: 1, floraFallen: 1, grassTalk: 1, memory: 1, saver: 1, disComScene: 1, faceEnemyScene: 1, silence: 1 };
   var ONESHOT = { faceEnemy: 1 };
   var FRESH = { disComScene: 1 };   // 每次开始放都从头放，不记上次停下的位置（剧情里的 dis-communication）   // 不循环；播完触发 chainNext 指定的下一首
   var KEY = 'hs-sound-v1';
