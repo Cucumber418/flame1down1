@@ -1369,7 +1369,7 @@
     var pick = relPicked(), ex0 = 0, pt0 = 0; pick.forEach(function (m) { ex0 += GROW.relExp(m.lv); pt0 += GROW.relPt(m); });
     var html = monsTabs('release') + '<div class="page-head"><h2 class="sec">精灵放生</h2><p class="hint">放生后，精灵会回到野外，<b>不能找回</b>。获得的经验只看等级，放生点数只看稀有度（异色 ×' + GROW.REL_SHINY + '）。主宠、只能拥有一只的精灵不能放生；在配队里的精灵要先移出配队。</p></div>' +
       '<div class="rel-bar"><span class="rel-have">' + H.itemIcon('relPt') + '放生点数 <b>' + fmt((acc.items && acc.items.relPt) || 0) + '</b></span><span class="rel-legend">' + GROW.REL_TIER.map(function (T, i) { return '<span class="rel-tier" style="--rc:' + REL_TC[i] + '">' + T.n + ' ' + T.pt + ' 点</span>'; }).join('') + '</span></div>' +
-      '<div class="rel-act"><span>已选 <b>' + pick.length + '</b> 只' + (pick.length ? ' · 可获得 <b>' + fmt(ex0) + '</b> 经验、<b>' + fmt(pt0) + '</b> 放生点数' : '') + '</span><span class="rel-btns"><button type="button" class="btn ghost" data-relall="1">选中全部常见精灵</button><button type="button" class="btn ghost" data-relclr="1"' + (pick.length ? '' : ' disabled') + '>清空</button><button type="button" class="btn primary" data-relgo="1"' + (pick.length ? '' : ' disabled') + '>放生</button></span></div>' +
+      '<div class="rel-act"><span>已选 <b>' + pick.length + '</b> 只' + (pick.length ? ' · 可获得 <b>' + fmt(ex0) + '</b> 经验、<b>' + fmt(pt0) + '</b> 放生点数' : '') + '</span><span class="rel-btns"><button type="button" class="btn ghost" data-relall="1" title="不包括异色和 30 级以上的精灵">选中全部常见精灵</button><button type="button" class="btn ghost" data-relclr="1"' + (pick.length ? '' : ' disabled') + '>清空</button><button type="button" class="btn primary" data-relgo="1"' + (pick.length ? '' : ' disabled') + '>放生</button></span></div>' +
       '<div class="dex-grid rel-grid">' + list.map(function (m) {
         var why = GROW.relBlock(acc, m), on = !why && s[m.u];
         return '<button type="button" class="card rel' + (on ? ' sel' : '') + (why ? ' lock' : '') + '" data-relu="' + m.u + '"' + (why ? ' aria-disabled="true"' : ' aria-pressed="' + !!on + '"') + '>' + (on ? '<span class="rel-ck" aria-hidden="true">✓</span>' : '') +
@@ -1400,7 +1400,7 @@
     if (b.dataset.mtab) { if (b.dataset.mtab === 'dex' && !dexOpen()) { toast('读完星际探索 · 荆楚号 · 学院部的剧情后，「黄冈秘鉴」才会开放。', prog('board').done ? '前往学院部' : '', '黄冈'); return; } go(b.dataset.mtab); return; }
     var s = relSel(), y = window.scrollY;
     if (b.dataset.relu) { var m = mon(+b.dataset.relu), why = m && GROW.relBlock(acc, m); if (why) { toast(why === '在配队里' ? '这只精灵在配队里，先把它移出配队才能放生。' : why === '主宠' ? '主宠是你最初的伙伴，不能放生。' : '这只精灵只能拥有一只，不能放生。'); return; } s[m.u] = !s[m.u]; }
-    else if (b.dataset.relall) acc.mons.forEach(function (m) { if (!GROW.relBlock(acc, m) && GROW.relTier(m.sid) === 0 && !m.shiny) s[m.u] = true; });
+    else if (b.dataset.relall) acc.mons.forEach(function (m) { if (!GROW.relBlock(acc, m) && GROW.relTier(m.sid) === 0 && !m.shiny && m.lv <= 30) s[m.u] = true; });   // 2026-11-03：超过 30 级的不一键选中（练过的精灵要手动选）
     else if (b.dataset.relclr) ui.rel = {};
     else if (b.dataset.relgo) { releaseAsk(); return; }
     else return;
