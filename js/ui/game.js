@@ -6635,9 +6635,9 @@
   function homeExp(x) { var m = mon(x.u); return m ? Math.floor(homeMins(x) * homeRate(m) / 60) : 0; }
   function durText(min) { var h = Math.floor(min / 60), mm = min % 60; return (h ? h + ' 小时 ' : '') + mm + ' 分钟'; }
   function homeTag(x) { var m = mon(x.u), f = form(m), min = homeMins(x); return esc(f.name) + ' · LV' + m.lv + '<small>已展示 ' + durText(min) + (min >= HOME_CAP_H * 60 ? '（已满）' : '') + ' · 经验 +' + fmt(homeExp(x)) + '</small>' + (x.auto ? '<small class="hm-auto">自律训练 · 还剩 ' + x.auto.left + ' 天' + (x.auto.got ? ' · 已结算 ' + fmt(x.auto.got) : '') + '</small>' : ''); }
-  // 2026-11-03：训练满 24 小时的精灵头上冒气泡，点一下收获经验、重新开始计时（装了自律装置的会自动结算，不冒）
-  function homeFull(x) { return !x.auto && homeMins(x) >= HOME_CAP_H * 60; }
-  function homeReadyBub(x) { return '<button type="button" class="hm-ready" data-hreap="' + x.u + '" title="训练满了！点一下收获经验并重新开始计时" aria-label="收获 ' + esc(form(mon(x.u)).name) + ' 的训练经验"><span aria-hidden="true">✨</span>+' + fmt(homeExp(x)) + '</button>'; }
+  // 2026-11-03：训练满 1 小时的精灵头上冒气泡，点一下收获经验、重新开始计时（经验最多算 24 小时；装了自律装置的会自动结算，不冒）
+  function homeFull(x) { return !x.auto && homeMins(x) >= 60; }
+  function homeReadyBub(x) { return '<button type="button" class="hm-ready" data-hreap="' + x.u + '" title="点一下收获经验并重新开始计时" aria-label="收获 ' + esc(form(mon(x.u)).name) + ' 的训练经验"><img src="images/items/exp.png" alt="">+' + fmt(homeExp(x)) + '</button>'; }
   function homeReap(u, el) {
     if (el) el.disabled = true;
     txRun('home', { a: 'reap', u: u }, function (res) {
@@ -6645,7 +6645,7 @@
       dailyNote('home');   // 进度由交易加（grow.js）
       renderHome(); renderRes();
       var f = document.querySelector('.hm-fig[data-hu="' + u + '"]'); if (f) { f.classList.remove('hop'); void f.offsetWidth; f.classList.add('hop'); }
-      toast(form(m).name + ' 训练满 ' + HOME_CAP_H + ' 小时，收获了经验，重新开始计时。' + (msg || ''));
+      toast(form(m).name + ' 训练了 ' + durText(res.min) + '，收获了经验，重新开始计时。' + (msg || ''));
     }, function (err) { if (el) el.disabled = false; if (err) toast(err); });
   }
   // 自律训练装置：每满 1 天自动结算一次（离线也算，下次打开游戏时补上）

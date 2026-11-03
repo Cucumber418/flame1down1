@@ -3647,14 +3647,15 @@ html.land-rot .sheet { height: 100%; overflow-y: auto; overflow-x: hidden; -webk
 .base-log .bl-th img { width: 100%; aspect-ratio: 1400 / 817; object-fit: cover; border-radius: 7px; display: block; }
 .base-log .bl-th.on { border-color: var(--red); box-shadow: 0 0 0 1.5px var(--red) inset; }
 .base-gift .bg-deco { display: flex; gap: 4px; } .base-gift .bg-deco img { width: 40px; height: 40px; object-fit: contain; }
-/* 基地：训练满 24 小时的精灵头上的收获气泡（2026-11-03），点一下收获经验、重新开始计时 */
+/* 基地：训练满 1 小时的精灵头上的收获气泡（2026-11-03），点一下收获经验、重新开始计时 */
 .hm-ready { position: absolute; left: 50%; bottom: 100%; z-index: 31; transform: translate(-50%, -6px); display: inline-flex; align-items: center; gap: 3px; width: max-content; padding: 4px 10px 4px 8px; border: 1.5px solid var(--ink); border-radius: 999px; background: #fff3c4; color: var(--ink); font: inherit; font-size: 12.5px; font-weight: 700; box-shadow: 2px 2px 0 rgba(35, 34, 43, .35); cursor: pointer; animation: hmReady 1.6s ease-in-out infinite; }
+.hm-ready img { width: 18px; height: 18px; object-fit: contain; flex: none; }
 .hm-ready::after { content: ''; position: absolute; left: 50%; top: 100%; margin-left: -6px; border: 6px solid transparent; border-top-color: var(--ink); }
 .hm-ready:hover, .hm-ready:focus-visible { background: #ffe58a; }
 .hm-ready:disabled { opacity: .6; cursor: default; animation: none; }
 @keyframes hmReady { 0%, 100% { transform: translate(-50%, -6px); } 50% { transform: translate(-50%, -12px); } }
 @media (prefers-reduced-motion: reduce) { .hm-ready { animation: none; } }
-@media (max-width: 560px) { .hm-ready { font-size: 11px; padding: 3px 8px 3px 6px; } }
+@media (max-width: 560px) { .hm-ready { font-size: 11px; padding: 3px 8px 3px 6px; } .hm-ready img { width: 15px; height: 15px; } }
 /* 黑洞家摆件的角色介绍（2026-11-03）：沿用明明画像的画框，立绘是透明底的小人，整张显示 */
 .ch-frame img { aspect-ratio: 1 / 1; object-fit: contain; object-position: 50% 50%; background: #f4ecd9; padding: 10px; }
 .ch-line { margin: 8px 0 0; font-size: 14px; line-height: 1.65; }

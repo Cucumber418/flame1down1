@@ -226,11 +226,11 @@ var GROW = (function () {
       var dh = min >= 60 && typeof QST !== 'undefined' ? QST.hit(a, 'home', 1, env.now) : [];   // 每日任务（js/engine/quest.js）
       return { ok: true, min: min, g: amt > 0 ? ACC.gainExp(a, mo, amt) : null, daily: dh };
     }
-    if (act === 'reap') {   // 2026-11-03：训练满 24 小时，点气泡收获经验，精灵留在原地重新开始计时
+    if (act === 'reap') {   // 2026-11-03：训练满 1 小时就能点气泡收获经验，精灵留在原地重新开始计时（经验照旧最多算 24 小时）
       if (i < 0) return no('它不在茶室里');
       var rx = H.mons[i], rm = ACC.mon(a, rx.u), rmin = homeMins(rx, env.now);
       if (rx.auto) return no('它装着自律训练装置，每满 1 天会自动结算');
-      if (rmin < HOME_CAP_H * 60) return no('还没训练满 ' + HOME_CAP_H + ' 小时');
+      if (rmin < 60) return no('训练满 1 小时才能收获');
       var ramt = Math.floor(rmin * homeRate(rm) / 60);
       rx.t = env.now;
       var rdh = typeof QST !== 'undefined' ? QST.hit(a, 'home', 1, env.now) : [];
