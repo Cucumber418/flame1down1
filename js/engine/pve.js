@@ -593,6 +593,7 @@ var PVE = (function () {
           a.exp = (a.exp || 0) + F.exp; ACC.addItems(a, { mmTok: F.tok, g_core: fin ? MM_CORE.fin : MM_CORE.lv }); rep.first = { tok: F.tok, exp: F.exp, core: fin ? MM_CORE.fin : MM_CORE.lv };
         }
       }
+      if (B.res === 'win' && !fin && a.mm && a.mm.clr && MM.order.every(function (k) { return a.mm.clr[k + ':0']; }) && !(a.mailSeen && a.mailSeen['mm-grail'])) rep.grail = true;   // 通常难度全部通过：圣杯走邮件（award.js）
       rep.xp = lineXp(a, c, B, env);
       return rep;
     }

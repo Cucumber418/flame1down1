@@ -64,7 +64,7 @@ function stageMult(n) { return n >= 0 ? (2 + n) / 2 : 2 / (2 - n); }
 var ACC_DOWN = [1, 0.8, 0.66, 0.54, 0.43, 0.33, 0.25];
 function accMult(n) { n = Math.max(-6, Math.min(6, Math.round(n) || 0)); return n >= 0 ? (3 + n) / 3 : ACC_DOWN[-n]; }
 var STAB = 1.2;      // 本系加成：技能属性与精灵属性相同时伤害 ×1.2
-var HP_MULT = 1.75;   // 体力在原公式基础上 ×1.75
+var HP_MULT = 1.3125;   // 体力在原公式基础上 ×1.75；2026-11-03 再调为原来的 75%（1.75 × 0.75）
 // iv：天赋（0~31），不传时按满天赋 31 计算（野怪、剧情对手、BOSS、平衡排位）
 function calcStat(b, k, lv, iv) { lv = lv || LV; var v = Math.floor((2 * b + (iv == null ? 31 : iv)) * lv / 100); return k === 'hp' ? Math.floor((v + lv + 10) * HP_MULT) : v + 5; }
 function blankStages() { var o = {}; STG.forEach(function (k) { o[k] = 0; }); return o; }

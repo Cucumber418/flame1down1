@@ -5933,6 +5933,7 @@
         if (r.res === 'win') {
           msg.push('通过了' + (fin ? '「明明的最终试炼」' : key + '系关卡（' + MM_DIFF[d].n + '）') + '！获得明明代币 ×' + r.tok + '。');
           if (r.first) msg.push('首次通过奖励：明明代币 ×' + r.first.tok + '、累积经验 ×' + fmt(r.first.exp) + '、圣晶石 ×' + (r.first.core || 1) + '。');
+          if (r.grail) msg.push('所有属性关卡的通常难度都通过了！明明教官送你 1 个圣杯，已经发到邮箱。');
         }
         msg = msg.concat(xpMsg(r.xp));
         save();

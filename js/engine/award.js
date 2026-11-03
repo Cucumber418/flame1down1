@@ -210,6 +210,9 @@ var AWD = (function () {
       if (owe > 0) send(a, { id: 'mm-core', from: '明明教官', title: '全息作战 · 圣晶石补发', body: '{name}，你好！\n全息作战（明明教官的试炼）每个关卡首次通过的奖励，圣晶石从 1 个提高到了 3 个，最终试炼提高到了 10 个。\n你之前已经首次通过了 ' + nl + ' 个关卡' + (nf ? '和最终试炼' : '') + '，这是补发的差额：圣晶石 ×' + owe + '，请领取附件。', att: { items: { g_core: owe } } }, now);
       else a.mailSeen['mm-core'] = now;
     }
+    // 2026-11-03：明明教官的试炼，所有属性关卡的「通常」难度都通过（不含最终试炼）送 1 个圣杯
+    if (!seen['mm-grail'] && typeof PVE !== 'undefined' && PVE.MM && a.mm && a.mm.clr && PVE.MM.order.every(function (k) { return a.mm.clr[k + ':0']; }))
+      send(a, { id: 'mm-grail', from: '明明教官', title: '全息作战 · 通常难度全部通过', body: '{name}，你好！\n你已经通过了明明教官的试炼里所有属性关卡的通常难度，干得漂亮！\n这是给你的奖励：圣杯 ×1。请领取附件。', att: { items: { grail: 1 } } }, now);
     // 全服邮件（js/data/mail.js）
     (typeof MAILS !== 'undefined' ? MAILS : []).forEach(function (M0) {
       if (!M0 || !M0.id || seen[M0.id]) return;
