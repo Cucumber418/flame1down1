@@ -6635,6 +6635,19 @@
   function homeExp(x) { var m = mon(x.u); return m ? Math.floor(homeMins(x) * homeRate(m) / 60) : 0; }
   function durText(min) { var h = Math.floor(min / 60), mm = min % 60; return (h ? h + ' 小时 ' : '') + mm + ' 分钟'; }
   function homeTag(x) { var m = mon(x.u), f = form(m), min = homeMins(x); return esc(f.name) + ' · LV' + m.lv + '<small>已展示 ' + durText(min) + (min >= HOME_CAP_H * 60 ? '（已满）' : '') + ' · 经验 +' + fmt(homeExp(x)) + '</small>' + (x.auto ? '<small class="hm-auto">自律训练 · 还剩 ' + x.auto.left + ' 天' + (x.auto.got ? ' · 已结算 ' + fmt(x.auto.got) : '') + '</small>' : ''); }
+  // 2026-11-03：训练满 24 小时的精灵头上冒气泡，点一下收获经验、重新开始计时（装了自律装置的会自动结算，不冒）
+  function homeFull(x) { return !x.auto && homeMins(x) >= HOME_CAP_H * 60; }
+  function homeReadyBub(x) { return '<button type="button" class="hm-ready" data-hreap="' + x.u + '" title="训练满了！点一下收获经验并重新开始计时" aria-label="收获 ' + esc(form(mon(x.u)).name) + ' 的训练经验"><span aria-hidden="true">✨</span>+' + fmt(homeExp(x)) + '</button>'; }
+  function homeReap(u, el) {
+    if (el) el.disabled = true;
+    txRun('home', { a: 'reap', u: u }, function (res) {
+      var m = mon(u), msg = res.g ? gainMsg(res.g) : null;
+      dailyNote('home');   // 进度由交易加（grow.js）
+      renderHome(); renderRes();
+      var f = document.querySelector('.hm-fig[data-hu="' + u + '"]'); if (f) { f.classList.remove('hop'); void f.offsetWidth; f.classList.add('hop'); }
+      toast(form(m).name + ' 训练满 ' + HOME_CAP_H + ' 小时，收获了经验，重新开始计时。' + (msg || ''));
+    }, function (err) { if (el) el.disabled = false; if (err) toast(err); });
+  }
   // 自律训练装置：每满 1 天自动结算一次（离线也算，下次打开游戏时补上）
   function homeSettle(quiet) {
     if (!acc || !acc.home || !Array.isArray(acc.home.mons)) return;
@@ -6700,7 +6713,7 @@
     var els = document.querySelectorAll('[data-cctx]'); if (!els.length) return;
     var talking = document.querySelectorAll('.chat-bub').length;
     Array.prototype.forEach.call(els, function (el) {
-      if (talking >= 2 || el.querySelector('.chat-bub') || !el.offsetParent || el.classList.contains('wf-out')) return;
+      if (talking >= 2 || el.querySelector('.chat-bub, .hm-ready') || !el.offsetParent || el.classList.contains('wf-out')) return;
       if (Math.random() > 0.05) return;
       var t = chatLine(el.dataset.csid, +el.dataset.cst || 0, el.dataset.cctx); if (!t) return;
       var b = document.createElement('span'); b.className = 'chat-bub'; b.textContent = t; b.setAttribute('aria-hidden', 'true');
@@ -6715,13 +6728,17 @@
     clearInterval(ex.homeTick);
     ex.homeTick = setInterval(function () {
       if (ex.view !== 'home' || !document.querySelector('.home-room')) { clearInterval(ex.homeTick); return; }
-      H.mons.forEach(function (x, i) { var t = document.querySelector('[data-htag="' + i + '"]'); if (t) t.innerHTML = homeTag(x); });
+      H.mons.forEach(function (x, i) {
+        var t = document.querySelector('[data-htag="' + i + '"]'); if (t) t.innerHTML = homeTag(x);
+        var f = document.querySelector('.home-room .hm-fig[data-hu="' + x.u + '"]');
+        if (f && homeFull(x) && !f.querySelector('.hm-ready') && !document.querySelector('.base-stage.editing')) f.insertAdjacentHTML('afterbegin', homeReadyBub(x));
+      });
     }, 20000);
     var E0 = ex.baseEdit, LY = E0 || baseLayout();
     // 2026-10-31：基地里的精灵只显示精灵本身；鼠标悬停看基本信息；点击是摸摸（2026-11-01 改回，面板在「精灵展示」里看）
     var figs = H.mons.map(function (x, i) {
       var m = mon(x.u), f = form(m), p = baseMonPos(LY.room, i);
-      return '<div class="hm-fig' + (H.mons.length > 3 ? ' many' : '') + '" data-csid="' + m.sid + '" data-cst="' + (f.stage || 0) + '" data-cctx="home" data-hu="' + m.u + '" style="left:' + p[0] + '%;top:' + p[1] + '%;--fw:' + baseFigW(m.sid, f.stage, LY.room, p[1]) + '"><button type="button" class="hm-poke" data-hpoke="1" aria-label="摸摸' + esc(f.name) + '"><img src="' + f.img + '" alt=""></button><span class="hm-tip" data-htag="' + i + '">' + homeTag(x) + '</span></div>';
+      return '<div class="hm-fig' + (H.mons.length > 3 ? ' many' : '') + '" data-csid="' + m.sid + '" data-cst="' + (f.stage || 0) + '" data-cctx="home" data-hu="' + m.u + '" style="left:' + p[0] + '%;top:' + p[1] + '%;--fw:' + baseFigW(m.sid, f.stage, LY.room, p[1]) + '">' + (homeFull(x) && !E0 ? homeReadyBub(x) : '') + '<button type="button" class="hm-poke" data-hpoke="1" aria-label="摸摸' + esc(f.name) + '"><img src="' + f.img + '" alt=""></button><span class="hm-tip" data-htag="' + i + '">' + homeTag(x) + '</span></div>';
     }).join('');
     var title = ex.homeEdit
       ? '<form class="home-edit" onsubmit="return false"><input id="home-name" maxlength="10" value="' + esc(H.name || '我的基地') + '" aria-label="基地名字"><button type="button" class="btn primary" id="home-ok">保存</button><button type="button" class="btn ghost" id="home-cancel">取消</button><span class="hint">最多 10 个字</span></form>'
@@ -6780,7 +6797,7 @@
     return '<div class="bpm-top"><img class="bpm-img" src="' + f.img + '" alt=""><div class="bpm-txt"><h2>' + esc(f.name) + '</h2><p class="bpm-lv">LV' + m.lv + '</p>' +
       '<ul class="bpm-st"><li>已展示 <b>' + durText(min) + '</b>' + (min >= HOME_CAP_H * 60 ? '（已满 ' + HOME_CAP_H + ' 小时）' : '') + '</li><li>现在收回可得 <b>+' + fmt(homeExp(x)) + '</b> 经验</li><li>每小时 <b>' + homeRate(m) + '</b> 经验</li>' +
       (x.auto ? '<li class="hm-auto">自律训练中 · 还剩 <b>' + x.auto.left + '</b> 天' + (x.auto.got ? ' · 已结算 ' + fmt(x.auto.got) + ' 经验' : '') + '</li>' : '') + '</ul></div></div>' +
-      '<div class="bpm-act"><button type="button" class="btn" data-hpoke2="' + u + '">摸摸它</button>' +
+      '<div class="bpm-act">' + (homeFull(x) ? '<button type="button" class="btn primary" data-hreap="' + u + '">收获经验并重新计时</button>' : '') + '<button type="button" class="btn" data-hpoke2="' + u + '">摸摸它</button>' +
       (x.auto ? '' : '<button type="button" class="btn" data-hauto="' + u + '"' + (nAuto ? '' : ' disabled') + '>装上自律装置（持有 ' + nAuto + '）</button>') +
       '<button type="button" class="btn ' + (armed ? 'primary' : 'ghost') + '" data-hm="' + u + '">' + (armed ? '再点一次收回（装置剩余天数作废）' : '收回') + '</button></div>';
   }
@@ -6796,12 +6813,24 @@
   };
   var DECO_IMG = { d1: 'images/base/deco1.webp', d2: 'images/base/deco2.webp', d3: 'images/base/deco3.webp', d4: 'images/base/deco4.webp', d5: 'images/base/deco5.webp', d6: 'images/base/deco6.webp', d7: 'images/base/deco7.webp', d8: 'images/base/deco8.webp', d9: 'images/base/deco9.webp', d10: 'images/base/deco10.webp', d11: 'images/base/deco11.webp' };
   // 可以点的摆件（2026-11-01）：发现纪念弹出说明；精元转化仪打开孵化；留言板打开留言
-  var DECO_ACT = { d5: '叶粒种子', d6: '水臂乌贼', d7: '方头蘑菇', d8: 'nursery', d9: 'mm', d10: 'msg', d11: 'cup' };
+  var DECO_ACT = { d1: 'char', d2: 'char', d3: 'char', d4: 'char', d5: '叶粒种子', d6: '水臂乌贼', d7: '方头蘑菇', d8: 'nursery', d9: 'mm', d10: 'msg', d11: 'cup' };
   var DECO_SIZE = { d8: 1.75 };   // 精元转化仪画得大一些（2026-11-01）
   // 明明画像的面板：大图 + 荣誉（2026-11-01）
   var MM_HONORS = ['军衔：少校', '湖北理科高考优胜者', '华中科技大学光学与电子信息学院优秀毕业生', '荆楚号古城防卫部总教官'];
   function mmPortraitBody() {
     return '<div class="mm-por"><div class="mm-frame"><img src="' + CHARS.mm + '" alt="明明教官"></div><div class="mm-txt"><h2>明明教官</h2><p class="hint">古城防卫部</p><h4>荣誉</h4><ul>' + MM_HONORS.map(function (t) { return '<li>🏅 ' + esc(t) + '</li>'; }).join('') + '</ul></div></div>';
+  }
+  // 黑洞家摆件的角色介绍（2026-11-03）：点摆件弹出，样式和明明画像一样
+  var DECO_CHAR = {
+    d1: { sub: '黑洞独角兽', t: ['世界上最后一只黑洞独角兽，耳朵里的黑洞直接连着多维宇宙；为了躲避宇宙猎人的追杀，被逃出孤儿院的山楂和 OCT 捡回了家。', '性格友好又容易害羞，平时忌讳使用魔法，却是个痴迷魔术的狂热爱好者，只是出人意料地没什么天赋。'] },
+    d2: { sub: '飞狼族', t: ['沿用了孤儿院里的名字 October，种族是飞狼族，但在孤儿院没机会练习，其实不太会飞，可能还有点恐高。', '家里最靠谱的那一个，总穿着家居服，把家务打理得井井有条，还喜欢偷偷买可爱的东西（但不承认）。'] },
+    d3: { sub: '牌牌', t: ['戴着高礼帽、眼睛上贴着扑克牌纹样眼罩的神秘人物，大家都叫他「牌牌」。', '关于他的事情知道得还不多，真实身份仍然是个谜。'] },
+    d4: { sub: '山楂', t: ['在孤儿院被赐名 May，更喜欢被叫作「山楂」；是只兔子，因为当年用女孩子的身份更容易混进孤儿院内部，习惯了穿女装。', '三无，身手很好，曾经是家务全能的女仆长；逃出孤儿院后放松下来变得懒散，最爱发呆睡觉，偶尔做点保安工作打打杂。'] }
+  };
+  function decoCharBody(k) {
+    var C = DECO_CHAR[k], X = TX.D.BASE_DECO[k] || {}; if (!C) return '';
+    return '<div class="mm-por ch-por"><div class="mm-frame ch-frame"><img src="' + DECO_IMG[k] + '" alt="' + esc(X.n || '') + '"></div><div class="mm-txt"><h2>' + esc(X.n || '') + '</h2><p class="hint">黑洞家 · ' + esc(C.sub) + '</p>' +
+      C.t.map(function (x) { return '<p class="ch-line">' + esc(x) + '</p>'; }).join('') + '</div></div>';
   }
   function baseInv() { var B = (acc && acc.baseInv) || {}; return { rooms: B.rooms || {}, deco: B.deco || {} }; }
   function roomOwned(k) { return k === 'r1' || !!baseInv().rooms[k]; }
@@ -6897,6 +6926,10 @@
       if (mine) { ex.bpanel = 'mm'; renderHome(); return; }
       var dm = document.createElement('div'); dm.className = 'soc-dlg'; dm.innerHTML = '<div class="soc-box bp-box mm-box" role="dialog" aria-modal="true">' + mmPortraitBody() + '<div class="soc-foot"><button type="button" class="btn primary" data-decox="1">关闭</button></div></div>';
       document.body.appendChild(dm); dm.addEventListener('click', function (ev) { if (ev.target === dm || ev.target.closest('[data-decox]')) dm.remove(); }); return;
+    }
+    if (A === 'char') {
+      var dch = document.createElement('div'); dch.className = 'soc-dlg'; dch.innerHTML = '<div class="soc-box bp-box mm-box" role="dialog" aria-modal="true">' + decoCharBody(k) + '<div class="soc-foot"><button type="button" class="btn primary" data-decox="1">关闭</button></div></div>';
+      document.body.appendChild(dch); dch.addEventListener('click', function (ev) { if (ev.target === dch || ev.target.closest('[data-decox]')) dch.remove(); }); return;
     }
     if (A === 'cup') {   // 冠军奖杯（2026-11-02）：冠军和夺冠主力精灵由服务器按决赛的回放算（server/contest.js）
       var dc = document.createElement('div'); dc.className = 'soc-dlg'; dc.id = 'cup-dlg';
@@ -7426,6 +7459,7 @@
     if (b.id === 'home-rn') { ex.homeEdit = true; renderHome(); var ip = $('home-name'); if (ip) { ip.focus(); ip.select(); } return; }
     if (b.id === 'home-ok') { saveHomeName(); return; }
     if (b.id === 'home-cancel') { ex.homeEdit = false; renderHome(); return; }
+    if (b.dataset.hreap) { homeReap(+b.dataset.hreap, b); return; }
     if (b.dataset.hm) { toggleHomeMon(+b.dataset.hm); return; }
     if (b.dataset.hauto) {
       var hx = home().mons.filter(function (x) { return x.u === +b.dataset.hauto; })[0];

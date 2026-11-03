@@ -206,7 +206,7 @@ var GROW = (function () {
   function homeMax(a) { return HOME_BASE + Math.min(4, (a.home && a.home.cap) || 0); }
   function homeRate(m) { return 30 + m.lv * 6; }
   function homeMins(x, now) { return Math.max(0, Math.min(HOME_CAP_H * 60, Math.floor((now - x.t) / 60000))); }
-  // { a: 'in' | 'out' | 'auto' | 'settle', u }
+  // { a: 'in' | 'out' | 'reap' | 'auto' | 'settle', u }
   TX.add('home', function (a, args, env) {
     var H = homeRec(a), act = String(args.a || ''), u = int(args.u);
     H.mons = H.mons.map(function (x) { return typeof x === 'number' ? { u: x, t: env.now } : x; }).filter(function (x) { return x && ACC.mon(a, x.u); });
@@ -225,6 +225,16 @@ var GROW = (function () {
       H.mons.splice(i, 1);
       var dh = min >= 60 && typeof QST !== 'undefined' ? QST.hit(a, 'home', 1, env.now) : [];   // 每日任务（js/engine/quest.js）
       return { ok: true, min: min, g: amt > 0 ? ACC.gainExp(a, mo, amt) : null, daily: dh };
+    }
+    if (act === 'reap') {   // 2026-11-03：训练满 24 小时，点气泡收获经验，精灵留在原地重新开始计时
+      if (i < 0) return no('它不在茶室里');
+      var rx = H.mons[i], rm = ACC.mon(a, rx.u), rmin = homeMins(rx, env.now);
+      if (rx.auto) return no('它装着自律训练装置，每满 1 天会自动结算');
+      if (rmin < HOME_CAP_H * 60) return no('还没训练满 ' + HOME_CAP_H + ' 小时');
+      var ramt = Math.floor(rmin * homeRate(rm) / 60);
+      rx.t = env.now;
+      var rdh = typeof QST !== 'undefined' ? QST.hit(a, 'home', 1, env.now) : [];
+      return { ok: true, min: rmin, g: ACC.gainExp(a, rm, ramt), daily: rdh };
     }
     if (act === 'auto') {
       if (i < 0) return no('它不在茶室里');
