@@ -46,6 +46,16 @@
     floraLab: 'audio/bgm_flora_lab.mp3', mingTheme: 'audio/bgm_ming_theme.mp3', mingBattle1: 'audio/bgm_ming_battle1.mp3', mingBattle2: 'audio/bgm_ming_battle2.mp3',
     mingFinal1: 'audio/bgm_ming_final1.mp3', mingFinal2: 'audio/bgm_ming_final2.mp3', pompeiiCity: 'audio/bgm_pompeii_city2.mp3'
   };
+  // 曲名（2026-11-03 统一）：所有地方显示的曲名都从这里取（音乐鉴赏、基地音乐、温泉音乐、设置），按上传时的曲名写法（驼峰）
+  var NAMES = { ui: 'HMS_JC', uiOld: 'Lobby', base: 'Base', summon: 'Summon', arena: 'Arena', earth: 'Earth', faceEnemy: 'FaceTheEnemy', faceEnemyScene: 'FaceTheEnemy',
+    normal: 'Normal', stage: 'Stage', pvp: 'PVP', boss: 'Boss1', boss2: 'Boss2', boss3: 'Boss3', tigerFinal: 'NortheastPast', ngc2237: 'NGC2237',
+    flora: 'FloraBackground', floraGrass: 'Flora1', floraForest: 'Flora2', floraFallen: 'Flora3-TheGreatCover', floraLab: 'FloraLab',
+    grassTalk: 'GrassTalk', memory: 'Memory', saver: 'Saver', disCommunication: 'Dis-communication', disComScene: 'Dis-communication', beforeEnd: 'BeforeTheEnd',
+    spa: 'Spa', kb: 'Cumberland', kbSurface: 'Cumberland1Surface', kbShallow: 'Cumberland2Shallow', kbDeep: 'Cumberland3Deeps', kbDeep2: 'Cumberland4DeepsII', kbDeep3: 'Cumberland5DeepsIII',
+    temple: 'Temple', vitalVoyage: 'VitalVoyage', finalStar: 'FinalStar', decision: 'Decision', pompeiiCity: 'PompeiiCity',
+    mingTheme: 'MingTheme', mingBattle1: 'MingBattle1', mingBattle2: 'MingBattle2', mingFinal1: 'MingFinalBattle1', mingFinal2: 'MingFinalBattle2' };
+  function trackName(k) { return NAMES[k] || k; }
+  window.HSTRACK = trackName;
   // silence：剧情里「音乐突然停止」，没有曲子
   var SCENES = { base: 1, summon: 1, finalStar: 1, decision: 1, vitalVoyage: 1, kbDeep: 1, kbDeep2: 1, kbDeep3: 1, floraLab: 1, pompeiiCity: 1, mingTheme: 1, kb: 1, kbShallow: 1, kbSurface: 1, temple: 1, spa: 1, ui: 1, arena: 1, earth: 1, flora: 1, floraGrass: 1, floraForest: 1, floraFallen: 1, grassTalk: 1, memory: 1, saver: 1, disComScene: 1, faceEnemyScene: 1, silence: 1 };
   var ONESHOT = { faceEnemy: 1 };
@@ -166,7 +176,7 @@
       '<label class="snd-row"><input type="checkbox" id="snd-music"' + (cfg.music ? ' checked' : '') + '> 战斗音乐</label>' +
       '<label class="snd-row"><input type="checkbox" id="snd-ui"' + (cfg.ui ? ' checked' : '') + '> 界面音乐</label>' +
       '<label class="snd-row snd-vol' + (any ? '' : ' off') + '">音量 <input type="range" id="snd-vol" min="0" max="100" step="5" value="' + cfg.vol + '"' + (any ? '' : ' disabled') + '><output id="snd-out">' + cfg.vol + '</output></label>' +
-      '<label class="snd-row">主界面 <select id="snd-uitrack"><option value="new"' + (cfg.uiOld ? '' : ' selected') + '>HMS_JC</option><option value="old"' + (cfg.uiOld ? ' selected' : '') + '>旧版</option></select></label>' +
+      '<label class="snd-row">主界面 <select id="snd-uitrack"><option value="new"' + (cfg.uiOld ? '' : ' selected') + '>' + NAMES.ui + '</option><option value="old"' + (cfg.uiOld ? ' selected' : '') + '>' + NAMES.uiOld + '</option></select></label>' +
       '<b class="set-h">对战</b><label class="snd-row"><input type="checkbox" id="set-fx"' + (fxOn ? ' checked' : '') + '> 技能特效</label>' +
       '<label class="snd-row"><input type="checkbox" id="set-shake"' + (window.HSFX && !HSFX.shake() ? '' : ' checked') + '> 普通命中抖动</label>';
   }

@@ -5648,15 +5648,17 @@
   /* ---------- 剧情回顾（2026-10-20）：星际探索第一排的入口，集中重温剧情 ----------
    * 主线（按章节，可以一口气连播）、支线（含世界任务）、画廊（所有 CG）、音乐鉴赏（只列出听过的曲子）、角色立绘（只显示见过的角色，资料按剧情进度揭示） */
   var ARC_TABS = [['main', '主线任务'], ['side', '支线任务'], ['world', '世界任务'], ['event', '活动任务'], ['cg', '画廊'], ['music', '音乐鉴赏'], ['chars', '角色立绘']];
+  // 2026-11-03：曲名统一从 audio.js 的 NAMES 取（HSTRACK），这里只写在哪里播放
   var MUSIC = [
-    ['ui', '大厅 · HMS_JC', '主界面'], ['base', '基地', '基地'], ['summon', '召唤', '荆楚号 · 召唤'], ['uiOld', '大厅（旧版）', '主界面（旧版）'], ['arena', '竞技大厅', '竞技对战'], ['earth', '地球', '地球的剧情'],
-    ['faceEnemy', '遇敌', '剧情对战开场'], ['normal', '寻常', '野外与剧情对战'], ['stage', '关卡', '星球挑战'], ['pvp', 'PVP', '竞技对战与切磋'],
-    ['boss', 'Boss', '简单难度BOSS战'], ['boss2', 'Boss2', '普通难度BOSS战'], ['boss3', 'Boss3', '困难难度BOSS战与每周挑战'], ['tigerFinal', '东北的往事', '？'],
-    ['flora', 'FloraBackground', '芙罗拉星'], ['floraGrass', 'Flora1', '芙罗拉星 · 草甸'], ['floraForest', 'Flora2', '芙罗拉星 · 丛林'], ['floraFallen', 'Flora3 · The Great Cover', '瘴气化之后的芙罗拉星'],
-    ['grassTalk', 'Grass Talk', '剧情'], ['memory', 'Memory', '剧情'], ['saver', 'Saver', '剧情'], ['disCommunication', 'Dis-communication', '瘴气化之后的野外对战'], ['beforeEnd', 'before the end', '？'],
-    ['spa', '温泉', '温泉疗养'], ['kb', '坎伯兰星', '坎伯兰星'], ['kbSurface', '坎伯兰星 · 水面', '坎伯兰星水面'], ['kbShallow', '坎伯兰星 · 浅海', '坎伯兰星浅海'], ['kbDeep', 'Cumberland Deeps', '坎伯兰星 · 深海'], ['temple', '古代神殿', '坎伯兰星 · 古代神殿'], ['vitalVoyage', 'Vital Voyage', '？'], ['finalStar', 'Final Star', '剧情'], ['decision', 'Decision', '剧情'], ['kbDeep2', 'Cumberland Deeps II', '坎伯兰星保卫战'], ['kbDeep3', 'Cumberland Deeps III', '？'], ['ngc2237', 'NGC 2237', '？'],
-    ['floraLab', 'Flora Lab', '盐碱地 · 地下实验室'], ['pompeiiCity', 'Pompeii City', '庞贝星 · 饮火城'], ['mingTheme', 'Ming Theme', '明明教官的试炼'], ['mingBattle1', 'Ming Battle 1', '明明教官的试炼 · 关卡'], ['mingBattle2', 'Ming Battle 2', '明明教官的试炼 · 高难 / 最终试炼'], ['mingFinal1', 'Ming Final Battle 1', '明明教官的试炼 · 通常 · 第三只精灵'], ['mingFinal2', 'Ming Final Battle 2', '明明教官的试炼 · 高难 / 最终试炼 · 第三只精灵']
-  ];
+    ['ui', '主界面'], ['uiOld', '主界面（旧版）'], ['base', '基地'], ['summon', '荆楚号 · 召唤'], ['arena', '竞技对战'], ['earth', '地球的剧情'],
+    ['faceEnemy', '剧情对战开场'], ['normal', '野外与剧情对战'], ['stage', '星球挑战'], ['pvp', '竞技对战与切磋'],
+    ['boss', '简单难度BOSS战'], ['boss2', '普通难度BOSS战'], ['boss3', '困难难度BOSS战与每周挑战'], ['tigerFinal', '？'],
+    ['flora', '芙罗拉星'], ['floraGrass', '芙罗拉星 · 草甸'], ['floraForest', '芙罗拉星 · 丛林'], ['floraFallen', '瘴气化之后的芙罗拉星'], ['floraLab', '盐碱地 · 地下实验室'],
+    ['grassTalk', '剧情'], ['memory', '剧情'], ['saver', '剧情'], ['disCommunication', '瘴气化之后的野外对战'], ['beforeEnd', '？'],
+    ['spa', '温泉疗养'], ['kb', '坎伯兰星'], ['kbSurface', '坎伯兰星 · 水面'], ['kbShallow', '坎伯兰星 · 浅海'], ['kbDeep', '坎伯兰星 · 深海'], ['kbDeep2', '坎伯兰星保卫战'], ['kbDeep3', '星云显现之后的坎伯兰星'],
+    ['temple', '坎伯兰星 · 古代神殿'], ['vitalVoyage', '？'], ['finalStar', '剧情'], ['decision', '剧情'], ['ngc2237', '玫瑰星云'],
+    ['pompeiiCity', '庞贝星 · 饮火城'], ['mingTheme', '明明教官的试炼 · 无尽作战'], ['mingBattle1', '明明教官的试炼 · 关卡'], ['mingBattle2', '明明教官的试炼 · 高难 / 最终试炼'], ['mingFinal1', '明明教官的试炼 · 通常 · 第三只精灵'], ['mingFinal2', '明明教官的试炼 · 高难 / 最终试炼 · 第三只精灵']
+  ].map(function (m) { return [m[0], window.HSTRACK ? HSTRACK(m[0]) : m[0], m[1]]; });
   var MUSIC_ALIAS = { disComScene: 'disCommunication', faceEnemyScene: 'faceEnemy' };
   window.HSHEARD = function (k) {
     if (!acc || !k || k === 'silence') return; k = MUSIC_ALIAS[k] || k;
@@ -6287,15 +6289,15 @@
         (price ? '<button type="button" class="btn primary" data-spabuy="slot"' + ((acc.energy || 0) >= price ? '' : ' disabled') + '>' + fmt(price) + ' 能量 · 扩建</button>' : '<button type="button" class="btn" disabled>已经扩建到最多了</button>') + '</article>' +
       '<article class="spa-good"><b>温泉音乐</b><p>选一首在温泉里放的曲子。</p><div class="spa-bgms">' + SPA_BGM.map(function (x) {
         var own = spaBgmOwn(x.k), cur = spaBgm() === x.k;
-        return own ? '<button type="button" class="btn' + (cur ? ' primary' : '') + '" data-spabgm="' + x.k + '">' + (cur ? '♪ ' : '') + x.n + (cur ? ' · 播放中' : '') + '</button>'
-          : '<button type="button" class="btn" data-spabgmbuy="' + x.k + '"' + ((acc.energy || 0) >= x.price ? '' : ' disabled') + '>🔒 ' + x.n + ' · ' + fmt(x.price) + ' 能量解锁</button>';
+        return own ? '<button type="button" class="btn' + (cur ? ' primary' : '') + '" data-spabgm="' + x.k + '">' + (cur ? '♪ ' : '') + HSTRACK(x.k) + (cur ? ' · 播放中' : '') + '</button>'
+          : '<button type="button" class="btn" data-spabgmbuy="' + x.k + '"' + ((acc.energy || 0) >= x.price ? '' : ' disabled') + '>🔒 ' + HSTRACK(x.k) + ' · ' + fmt(x.price) + ' 能量解锁</button>';
       }).join('') + '</div></article>' +
       '</div><div class="soc-foot"><button type="button" class="btn" data-spax="1">回到温泉</button></div></div>';
     document.body.appendChild(d);
     d.addEventListener('click', function (e) {
       var bg = e.target.closest('[data-spabgm]'), bb = e.target.closest('[data-spabgmbuy]');
       if (bg) { acc.spa.bgm = bg.dataset.spabgm; save(); bgmScene(); openSpaRoom(); return; }
-      if (bb) { var X = SPA_BGM.filter(function (x) { return x.k === bb.dataset.spabgmbuy; })[0]; if (!X || (acc.energy || 0) < X.price) return; txRun('spa', { k: 'bgm', m: X.k }, function () { renderRes(); bgmScene(); toast('解锁了温泉音乐「' + X.n + '」，已经换上。'); if (d.isConnected) openSpaRoom(); }); return; }
+      if (bb) { var X = SPA_BGM.filter(function (x) { return x.k === bb.dataset.spabgmbuy; })[0]; if (!X || (acc.energy || 0) < X.price) return; txRun('spa', { k: 'bgm', m: X.k }, function () { renderRes(); bgmScene(); toast('解锁了温泉音乐「' + HSTRACK(X.k) + '」，已经换上。'); if (d.isConnected) openSpaRoom(); }); return; }
       var b = e.target.closest('[data-spabuy]');
       if (b) {
         var k = b.dataset.spabuy;
@@ -6589,14 +6591,14 @@
   /* 茶室音乐：自己和来拜访的船员在茶室里都会听到（曲子见 js/ui/audio.js）
    * 大厅（默认，和陆羽茶室大厅一样）和地球一开始就有；芙罗拉星是击败普通难度荒芜的奖励 */
   var HOME_BGM = [
-    { k: 'base', n: '基地', d: '默认' },   // 2026-11-01：基地默认音乐换成 Base，「大厅」从基地音乐里移除（选过大厅的自动换成基地）
-    { k: 'earth', n: '地球', d: '自动解锁' },
-    { k: 'floraGrass', n: 'Flora1', d: '芙罗拉星挑战路线累计 30 颗星后领取', own: function () { return chalGot(30); } },
-    { k: 'floraForest', n: 'Flora2', d: '芙罗拉星挑战路线累计 60 颗星后领取', own: function () { return chalGot(60); } },
-    { k: 'floraFallen', n: 'Flora3', d: '芙罗拉星挑战路线累计 90 颗星后领取', own: function () { return chalGot(90); } },
-    { k: 'kbSurface', n: 'Cumberland1', d: '坎伯兰星挑战路线累计 30 颗星后领取', own: function () { return chalGot(30, 'kamble'); } },
-    { k: 'kbShallow', n: 'Cumberland2', d: '坎伯兰星挑战路线累计 60 颗星后领取', own: function () { return chalGot(60, 'kamble'); } },
-    { k: 'kbDeep', n: 'Cumberland3', d: '坎伯兰星挑战路线累计 90 颗星后领取', own: function () { return chalGot(90, 'kamble'); } }
+    { k: 'base', n: HSTRACK('base'), d: '默认' },   // 2026-11-01：基地默认音乐换成 Base，「大厅」从基地音乐里移除（选过大厅的自动换成基地）
+    { k: 'earth', n: HSTRACK('earth'), d: '自动解锁' },
+    { k: 'floraGrass', n: HSTRACK('floraGrass'), d: '芙罗拉星挑战路线累计 30 颗星后领取', own: function () { return chalGot(30); } },
+    { k: 'floraForest', n: HSTRACK('floraForest'), d: '芙罗拉星挑战路线累计 60 颗星后领取', own: function () { return chalGot(60); } },
+    { k: 'floraFallen', n: HSTRACK('floraFallen'), d: '芙罗拉星挑战路线累计 90 颗星后领取', own: function () { return chalGot(90); } },
+    { k: 'kbSurface', n: HSTRACK('kbSurface'), d: '坎伯兰星挑战路线累计 30 颗星后领取', own: function () { return chalGot(30, 'kamble'); } },
+    { k: 'kbShallow', n: HSTRACK('kbShallow'), d: '坎伯兰星挑战路线累计 60 颗星后领取', own: function () { return chalGot(60, 'kamble'); } },
+    { k: 'kbDeep', n: HSTRACK('kbDeep'), d: '坎伯兰星挑战路线累计 90 颗星后领取', own: function () { return chalGot(90, 'kamble'); } }
   ];
   function bgmName(k) { var b = HOME_BGM.filter(function (x) { return x.k === k; })[0]; return b ? b.n : k; }
   function bgmOwned(k) { var b = HOME_BGM.filter(function (x) { return x.k === k; })[0]; return !!b && (!b.own || b.own()); }
