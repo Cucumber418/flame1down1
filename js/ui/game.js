@@ -6632,9 +6632,9 @@
   // 展示经验：每小时 30 + LV × 6 点，按分钟累计，最多累计 24 小时（离线也照样计时）
   function homeRate(m) { return 30 + m.lv * 6; }
   function homeMins(x) { return Math.max(0, Math.min(HOME_CAP_H * 60, Math.floor((Date.now() - x.t) / 60000))); }
-  function homeExp(x) { var m = mon(x.u); return m ? Math.floor(homeMins(x) * homeRate(m) / 60) : 0; }
+  function homeExp(x) { var m = mon(x.u); return m ? Math.max(0, Math.floor(homeMins(x) * homeRate(m) / 60) - (x.st | 0)) : 0; }   // 2026-11-03：减去被好友偷走的（x.st，收获后清零）
   function durText(min) { var h = Math.floor(min / 60), mm = min % 60; return (h ? h + ' 小时 ' : '') + mm + ' 分钟'; }
-  function homeTag(x) { var m = mon(x.u), f = form(m), min = homeMins(x); return esc(f.name) + ' · LV' + m.lv + '<small>已展示 ' + durText(min) + (min >= HOME_CAP_H * 60 ? '（已满）' : '') + ' · 经验 +' + fmt(homeExp(x)) + '</small>' + (x.auto ? '<small class="hm-auto">自律训练 · 还剩 ' + x.auto.left + ' 天' + (x.auto.got ? ' · 已结算 ' + fmt(x.auto.got) : '') + '</small>' : ''); }
+  function homeTag(x) { var m = mon(x.u), f = form(m), min = homeMins(x); return esc(f.name) + ' · LV' + m.lv + '<small>已展示 ' + durText(min) + (min >= HOME_CAP_H * 60 ? '（已满）' : '') + ' · 经验 +' + fmt(homeExp(x)) + (x.st ? '（被偷走 ' + fmt(x.st) + '）' : '') + '</small>' + (x.auto ? '<small class="hm-auto">自律训练 · 还剩 ' + x.auto.left + ' 天' + (x.auto.got ? ' · 已结算 ' + fmt(x.auto.got) : '') + '</small>' : ''); }
   // 2026-11-03：训练满 1 小时的精灵头上冒气泡，点一下收获经验、重新开始计时（经验最多算 24 小时；装了自律装置的会自动结算，不冒）
   function homeFull(x) { return !x.auto && homeMins(x) >= 60; }
   function homeReadyBub(x) { return '<button type="button" class="hm-ready" data-hreap="' + x.u + '" title="点一下收获经验并重新开始计时" aria-label="收获 ' + esc(form(mon(x.u)).name) + ' 的训练经验"><img src="images/items/exp.png" alt="">+' + fmt(homeExp(x)) + '</button>'; }
@@ -6643,8 +6643,16 @@
     txRun('home', { a: 'reap', u: u }, function (res) {
       var m = mon(u), msg = res.g ? gainMsg(res.g) : null;
       dailyNote('home');   // 进度由交易加（grow.js）
-      renderHome(); renderRes();
-      var f = document.querySelector('.hm-fig[data-hu="' + u + '"]'); if (f) { f.classList.remove('hop'); void f.offsetWidth; f.classList.add('hop'); }
+      renderRes();
+      // 只改这一只精灵（不整页重画，别的精灵接着走，不会跳回原位）
+      var f = document.querySelector('.home-room .hm-fig[data-hu="' + u + '"]');
+      if (f) {
+        var bub = f.querySelector('.hm-ready'); if (bub) bub.remove();
+        var im = f.querySelector('.hm-poke img'), fm = form(m); if (im && im.getAttribute('src') !== fm.img) im.src = fm.img;   // 升级后进化了：换立绘
+        f.classList.remove('hop'); void f.offsetWidth; f.classList.add('hop');
+      }
+      home().mons.forEach(function (x, i) { var t = document.querySelector('[data-htag="' + i + '"]'); if (t) t.innerHTML = homeTag(x); });
+      var dl = document.querySelector('#pg-explore .bp-dlg'); if (dl && ex.bpanel) { var ph = basePanelHTML(ex.bpanel), top = dl.scrollTop; if (ph) { dl.outerHTML = ph; var d2 = document.querySelector('#pg-explore .bp-dlg'); if (d2) d2.scrollTop = top; } }
       toast(form(m).name + ' 训练了 ' + durText(res.min) + '，收获了经验，重新开始计时。' + (msg || ''));
     }, function (err) { if (el) el.disabled = false; if (err) toast(err); });
   }
@@ -6795,7 +6803,7 @@
     var H = home(), x = H.mons.filter(function (y) { return y.u === u; })[0], m = x && mon(u); if (!m) return '';
     var f = form(m), min = homeMins(x), nAuto = acc.items.auto || 0, armed = ex.hmArm === u;
     return '<div class="bpm-top"><img class="bpm-img" src="' + f.img + '" alt=""><div class="bpm-txt"><h2>' + esc(f.name) + '</h2><p class="bpm-lv">LV' + m.lv + '</p>' +
-      '<ul class="bpm-st"><li>已展示 <b>' + durText(min) + '</b>' + (min >= HOME_CAP_H * 60 ? '（已满 ' + HOME_CAP_H + ' 小时）' : '') + '</li><li>现在收回可得 <b>+' + fmt(homeExp(x)) + '</b> 经验</li><li>每小时 <b>' + homeRate(m) + '</b> 经验</li>' +
+      '<ul class="bpm-st"><li>已展示 <b>' + durText(min) + '</b>' + (min >= HOME_CAP_H * 60 ? '（已满 ' + HOME_CAP_H + ' 小时）' : '') + '</li><li>现在收回可得 <b>+' + fmt(homeExp(x)) + '</b> 经验</li>' + (x.st ? '<li>这一轮被好友偷走了 <b>' + fmt(x.st) + '</b> 经验（收获后重新计算）</li>' : '') + '<li>每小时 <b>' + homeRate(m) + '</b> 经验</li>' +
       (x.auto ? '<li class="hm-auto">自律训练中 · 还剩 <b>' + x.auto.left + '</b> 天' + (x.auto.got ? ' · 已结算 ' + fmt(x.auto.got) + ' 经验' : '') + '</li>' : '') + '</ul></div></div>' +
       '<div class="bpm-act">' + (homeFull(x) ? '<button type="button" class="btn primary" data-hreap="' + u + '">收获经验并重新计时</button>' : '') + '<button type="button" class="btn" data-hpoke2="' + u + '">摸摸它</button>' +
       (x.auto ? '' : '<button type="button" class="btn" data-hauto="' + u + '"' + (nAuto ? '' : ' disabled') + '>装上自律装置（持有 ' + nAuto + '）</button>') +
@@ -8011,7 +8019,17 @@
     goHome: function () { if (!homeOpen()) { toast('读完星际探索 · 荆楚号 · 天门「陆羽茶室」支线后，才有自己的茶室。'); return; } ex.planet = 'jingchu'; ex.area = '天门'; ex.view = 'home'; go('explore'); },
     // 参加过一次竞技征召（支线任务「竞技征召」用）
     noteDraft: function () { if (!acc.stats) acc.stats = {}; acc.stats.drafts = (acc.stats.drafts || 0) + 1; save(); },
-    teaFight: teaFight, teaLeft: teaLeft, TEA_DAILY: TEA_DAILY, TEA_EXP: TEA_EXP, homePos: HOME_POS, baseRoom: baseRoomHTML, baseMonPos: baseMonPos, baseFigW: baseFigW,
+    teaFight: teaFight, teaLeft: teaLeft, TEA_DAILY: TEA_DAILY, TEA_EXP: TEA_EXP,
+    // 去好友基地偷经验（2026-11-03，规则在 js/engine/grow.js）
+    homeStolen: function (u, user, n) {   // 好友刚偷走了基地里一只精灵的经验（服务器推送）：本机记录跟着扣，基地画面就地更新
+      if (!acc || !(n > 0)) return;
+      var H = home(), x = H.mons.filter(function (y) { return y && y.u === u; })[0]; if (!x) return;
+      x.st = (x.st | 0) + n; x.sb = (Array.isArray(x.sb) ? x.sb : []).concat([String(user || '')]).slice(-100); save();
+      if (ex.view !== 'home') return;
+      H.mons.forEach(function (y, i) { var t = document.querySelector('[data-htag="' + i + '"]'); if (t) t.innerHTML = homeTag(y); });
+      var b = document.querySelector('.home-room .hm-fig[data-hu="' + u + '"] .hm-ready'); if (b) b.outerHTML = homeReadyBub(x);
+    },
+    homeSteal: function (owner, u, ok, fail) { txRun('homeSteal', { owner: owner, u: u }, function (res) { renderRes(); if (ok) ok(res); }, fail); }, homePos: HOME_POS, baseRoom: baseRoomHTML, baseMonPos: baseMonPos, baseFigW: baseFigW,
     view: function (m) { var f = form(m); return { name: f.name, img: f.img, stage: f.stage, shiny: f.shiny }; },
     // 把服务器发来的精灵资料变成对战用的精灵（逐项检查，不信任外来数据）
     spec: function (raw) {

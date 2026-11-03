@@ -58,6 +58,15 @@ function visit(owner, user) {
   if (r.fresh) push(owner, { kind: 'visit', user: user, name: soc().gameName(user) });
 }
 
+// 2026-11-03：好友偷走了基地里精灵的经验（server/steal.js 调用）；s = { sid, lv, n }
+function steal(owner, user, s) {
+  if (!owner || !user || owner === user) return;
+  var d = load(), e = entry(d, owner, user).e;
+  e.steal = (e.steal || []).concat([{ sid: String(s.sid || ''), lv: s.lv | 0, n: s.n | 0, t: Date.now() }]).slice(-20);
+  store(d);
+  push(owner, { kind: 'steal', user: user, name: soc().gameName(user), u: s.u, sid: s.sid, lv: s.lv, n: s.n });
+}
+
 A.use(function (req, res, url) {
   if (url !== '/api/home-log' && url !== '/api/home-ev' && url !== '/api/home-msg' && url !== '/api/home-msg-del') return false;
   var who = A.whoIs(req), me = who && A.loadUser(who.user);
@@ -83,7 +92,7 @@ A.use(function (req, res, url) {
     if (mine) {
       var seen = d.seen[ou.name] || {};
       out.seen = { log: seen.log || 0, msg: seen.msg || 0 };
-      out.logs = (d.logs[ou.name] || []).slice(-60).reverse().map(function (e) { return { id: e.id, t: e.t, t2: e.t2, user: e.user, name: nm(e.user), avatar: av[e.user], poke: e.poke || {}, fights: e.fights || [] }; });
+      out.logs = (d.logs[ou.name] || []).slice(-60).reverse().map(function (e) { return { id: e.id, t: e.t, t2: e.t2, user: e.user, name: nm(e.user), avatar: av[e.user], poke: e.poke || {}, fights: e.fights || [], steal: e.steal || [] }; });
       d.seen[ou.name] = { log: Date.now(), msg: Date.now() }; store(d);
     }
     A.reply(res, 200, out);
@@ -136,4 +145,4 @@ A.use(function (req, res, url) {
   return true;
 });
 
-module.exports = { visit: visit, load: load, store: store, FILE: FILE };
+module.exports = { visit: visit, steal: steal, load: load, store: store, FILE: FILE };

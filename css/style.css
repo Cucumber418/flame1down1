@@ -3659,3 +3659,5 @@ html.land-rot .sheet { height: 100%; overflow-y: auto; overflow-x: hidden; -webk
 /* 黑洞家摆件的角色介绍（2026-11-03）：沿用明明画像的画框，立绘是透明底的小人，整张显示 */
 .ch-frame img { aspect-ratio: 1 / 1; object-fit: contain; object-position: 50% 50%; background: #f4ecd9; padding: 10px; }
 .ch-line { margin: 8px 0 0; font-size: 14px; line-height: 1.65; }
+.hm-ready.steal { background: #ffd9e1; }
+.hm-ready.steal:hover, .hm-ready.steal:focus-visible { background: #ffbccb; }

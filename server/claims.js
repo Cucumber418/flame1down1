@@ -86,13 +86,13 @@ var OWNED = ['endless', 'tower.f', 'tower.cp', 'tower.best', 'tower.clears', 'to
   'daily', 'quests', 'stats.wildWins',   // 每日任务、世界任务（js/engine/quest.js）
   'chapters', 'starter', 'rival', 'split8',   // 剧情（js/engine/story.js）；a.story 另外处理（storyFix）
   'titles', 'titleRw', 'milRank', 'milV', 'chalGot', 'rankRw', 'matsV', 'ctPlace', 'loginDay', 'created', 'pw', 'tokenBack', 'purgeX10',   // 称号、军衔、星数和段位奖励、邮箱投递记录（js/engine/award.js）
-  'spa.run', 'spa.got', 'spa.ms', 'spa.extra', 'spa.bgmOwn', 'spa.juice', 'home.cap', 'mm.g', 'pveXp', 'emblems', 'fmNpc', 'riceBowl'];   // 其他由交易、对战结算改的记录
+  'spa.run', 'spa.got', 'spa.ms', 'spa.extra', 'spa.bgmOwn', 'spa.juice', 'home.cap', 'mm.g', 'pveXp', 'emblems', 'fmNpc', 'riceBowl', 'stealD'];   // 其他由交易、对战结算改的记录
 var OWNED_KEYS = ['hs-rank-v1', 'hs-draft-v1'];   // 整个存档项只由服务器改：段位、平衡排位本局阵容（server/pve.js）
 function getP(o, p) { var k = p.split('.'); return k.length === 1 ? o[k[0]] : o[k[0]] && typeof o[k[0]] === 'object' ? o[k[0]][k[1]] : undefined; }
 function ownDiff(A, B) { return OWNED.filter(function (p) { var k = p.split('.'); if (k.length > 1 && (!A[k[0]] || !B[k[0]])) return false; var a = getP(A, p), b = getP(B, p); return JSON.stringify(a) !== JSON.stringify(b) && !(blankV(a) && blankV(b)) && !fresh(p, a, b, A); }); }
 function blankV(v) { return v == null || (typeof v === 'object' && !Object.keys(v).length); }   // 没有和空的 [] / {} 算一样（浏览器读的时候顺手建了个空记录）
 // 按天记的记录：浏览器跨天后自己清空成「今天、什么都没领」是正常的（服务器那份还是昨天的），不算改动
-var FRESH = { gather: 'day', mine: 'day', jade: 'd', 'tower.day': 'd', rankExp: 'd', npcWin: 'd', pwd: 'd', kbwd: 'd', brawlExp: 'd', pveXp: 'd' };
+var FRESH = { gather: 'day', mine: 'day', jade: 'd', 'tower.day': 'd', rankExp: 'd', npcWin: 'd', pwd: 'd', kbwd: 'd', brawlExp: 'd', pveXp: 'd', stealD: 'd' };
 function fresh(p, a, b, A) {
   var E = require('./tx').engine();
   if (p === 'daily' && E && E.QST && b && (!a || a.date !== b.date)) {   // 每日任务：浏览器跨天后按同样的规则抽了今天的一套（进度都是 0）

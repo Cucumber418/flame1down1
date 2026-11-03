@@ -218,6 +218,30 @@
       if (e.target === dl || e.target.closest('[data-vx]')) dl.remove();
     });
   }
+  // 2026-11-03：好友基地里训练满 1 小时的精灵头上冒经验气泡，点一下偷走它现存经验的 10%（规则在 js/engine/grow.js 的 homeSteal）
+  function stealBub(d, i, v) {
+    var S = d.steal && d.steal[i]; if (d.me || !S || !(S.n > 0)) return '';
+    return '<button type="button" class="hm-ready steal" data-vsteal="' + i + '" title="偷走 ' + A.fmt(S.n) + ' 经验" aria-label="偷走 ' + esc(v.name) + ' 的 ' + A.fmt(S.n) + ' 经验"><img src="images/items/exp.png" alt="">偷 +' + A.fmt(S.n) + '</button>';
+  }
+  function doSteal(i, btn) {
+    var d = st.view && st.view.data, S = d && d.steal && d.steal[i], m = d && d.mons[i]; if (!S || !m || !A.homeSteal) return;
+    btn.disabled = true;
+    var v = A.view({ sid: m.sid, lv: m.lv, shiny: m.shiny, fs: m.fs });
+    A.homeSteal(d.user, S.u, function (r) {
+      S.n = 0; S.why = 'done'; d.stealLeft = r.left;
+      btn.remove();   // 只去掉这个气泡，不重画整个基地
+      var fig = document.querySelector('#pg-social .hm-fig[data-fi="' + i + '"]'); if (fig) { fig.classList.remove('hop'); void fig.offsetWidth; fig.classList.add('hop'); }
+      var sl = document.querySelector('#pg-social [data-stealleft]'); if (sl) sl.textContent = A.fmt(r.left);
+      if (!r.left && d.steal) {   // 今天偷满了：其余气泡都收起来
+        d.steal.forEach(function (x) { if (x.n > 0) { x.n = 0; x.why = 'cap'; } });
+        document.querySelectorAll('#pg-social .hm-ready.steal').forEach(function (b) { b.remove(); });
+      }
+      A.toast('从 ' + d.name + ' 的' + v.name + '那里偷走了 ' + A.fmt(r.n) + ' 经验（进经验背包）。今天还能偷 ' + A.fmt(r.left) + '。');
+    }, function (err) {
+      btn.disabled = false; if (err) A.toast(err);
+      if (err && /一半|已经偷过|不在基地|上限|1 小时|自律/.test(err)) { S.n = 0; btn.remove(); }
+    });
+  }
   function homeHTML() {
     var V0 = st.view, d = V0.data, back = '<div class="crumb"><button type="button" class="btn ghost" data-back="1">‹ ' + (V0.from === 'base' ? '返回我的基地' : '返回社交') + '</button>';
     if (!d) return back + '</div><p class="hint soc-load">' + (V0.err ? esc(V0.err) : '正在前往基地……') + '</p>';
@@ -225,7 +249,7 @@
     if (!d.open) return back + '<b class="home-name">' + esc(d.name) + ' 的休息舱</b></div><div class="soc-empty"><p>' + esc(d.name) + ' 还没有读完「陆羽茶室」支线，基地还没开放。</p></div>';
     var pos = A.homePos, figs = d.mons.map(function (m, i) {
       var v = A.view({ sid: m.sid, lv: m.lv, shiny: m.shiny, fs: m.fs }), p = A.baseMonPos ? A.baseMonPos(d.layout && d.layout.room, i) : (pos[i] || pos[0]);
-      return '<div class="hm-fig' + (d.mons.length > 3 ? ' many' : '') + '" data-csid="' + esc(m.sid) + '" data-cst="' + (v.stage || 0) + '" data-cctx="home" data-fi="' + i + '" style="left:' + p[0] + '%;top:' + p[1] + '%' + (A.baseFigW ? ';--fw:' + A.baseFigW(m.sid, v.stage, d.layout && d.layout.room, p[1]) : '') + '"><button type="button" class="hm-poke" data-vmon="' + i + '" aria-label="' + esc(v.name) + '"><img src="' + v.img + '" alt=""></button><span class="hm-tip">' + esc(v.name) + ' · LV' + m.lv + '</span></div>';
+      return '<div class="hm-fig' + (d.mons.length > 3 ? ' many' : '') + '" data-csid="' + esc(m.sid) + '" data-cst="' + (v.stage || 0) + '" data-cctx="home" data-fi="' + i + '" style="left:' + p[0] + '%;top:' + p[1] + '%' + (A.baseFigW ? ';--fw:' + A.baseFigW(m.sid, v.stage, d.layout && d.layout.room, p[1]) : '') + '">' + stealBub(d, i, v) + '<button type="button" class="hm-poke" data-vmon="' + i + '" aria-label="' + esc(v.name) + '"><img src="' + v.img + '" alt=""></button><span class="hm-tip">' + esc(v.name) + ' · LV' + m.lv + '</span></div>';
     }).join('');
     var left = A.teaLeft(), mine = (A.acc().teams[A.acc().active] || []).map(A.mon).filter(Boolean);
     return back + '<b class="home-name">' + esc(d.homeName) + '</b><span class="hint">' + esc(d.name) + ' 的基地' + (d.online ? ' · 主人在线' : '') + ' · 基地音乐「' + (window.HSTRACK ? HSTRACK(d.bgm || 'base') : (d.bgm || 'base')) + '」</span></div>' +
@@ -235,7 +259,8 @@
       '<div class="tea-bar"><span class="tape l"></span><div class="tea-txt"><b>挑战基地</b>' +
       '<p class="hint">用你的出战配队（' + Math.min(5, mine.length) + ' 只）挑战基地里正在训练的 ' + d.mons.length + ' 只精灵，对手由电脑操控，用的是它们的真实等级和技能。' +
       '每天前 ' + A.TEA_DAILY + ' 场基地对战各奖励 ' + A.fmt(A.TEA_EXP) + ' 累积经验（进经验背包），赢输都算，认输不算，0 点刷新。</p>' +
-      '<p class="tea-left">今天还能领奖 <b>' + left + '</b> / ' + A.TEA_DAILY + ' 次</p></div>' +
+      '<p class="tea-left">今天还能领奖 <b>' + left + '</b> / ' + A.TEA_DAILY + ' 次</p>' +
+      (d.friend ? '<p class="hint">好友基地里训练满 1 小时的精灵头上会冒出经验气泡，点一下可以偷走它现存经验的 10%（每只每轮偷一次，最多被偷走一半）。今天还能偷 <b data-stealleft="1">' + A.fmt(d.stealLeft || 0) + '</b> / ' + A.fmt(d.stealDay || 30000) + ' 经验。</p>' : '') + '</div>' +
       '<button type="button" class="btn primary" data-teafight="1"' + (d.mons.length && mine.length ? '' : ' disabled') + '>' + (d.mons.length ? '挑战基地' : '没有可挑战的精灵') + '</button></div>') +
       hbSlot(d.user);
   }
@@ -323,6 +348,7 @@
       if ((t = e.target.closest('[data-reload]'))) { load(); return; }
       if ((t = e.target.closest('[data-back]'))) { var fromBase = st.view && st.view.from === 'base'; st.view = null; if (fromBase) { A.goHome(); return; } render(); load(); return; }
       if ((t = e.target.closest('[data-home]'))) { if (!t.disabled) openHome(t.dataset.home); return; }
+      if ((t = e.target.closest('[data-vsteal]'))) { doSteal(+t.dataset.vsteal, t); return; }
       if ((t = e.target.closest('[data-vmon]'))) { vmonPanel(+t.dataset.vmon); return; }
       if ((t = e.target.closest('[data-poke]'))) {
         var fig = t.closest('.hm-fig'); if (fig) { fig.classList.remove('hop'); void fig.offsetWidth; fig.classList.add('hop'); }
@@ -1396,6 +1422,8 @@
     var pk = Object.keys(e.poke || {}), F = e.fights || [], c = { win: 0, lose: 0, draw: 0, quit: 0 }, acts = [];
     F.forEach(function (f) { c[f.r] = (c[f.r] || 0) + 1; });
     if (pk.length) acts.push('摸了摸 ' + pk.map(function (n) { return esc(n) + (e.poke[n] > 1 ? ' ×' + e.poke[n] : ''); }).join('、'));
+    var SL = e.steal || [];
+    if (SL.length) acts.push('偷走了 ' + SL.map(function (x) { var v = x.sid ? A.view({ sid: x.sid, lv: x.lv || 1 }) : null; return esc(v ? v.name : '精灵') + ' 的 ' + A.fmt(x.n || 0) + ' 经验'; }).join('、'));
     if (F.length) acts.push('挑战了基地 ' + F.length + ' 场（' + [c.win ? '对方赢 ' + c.win + ' 场' : '', c.lose ? '你的精灵守住 ' + c.lose + ' 场' : '', c.draw ? '平局 ' + c.draw + ' 场' : '', c.quit ? '对方认输 ' + c.quit + ' 场' : ''].filter(Boolean).join('，') + '）');
     return '<li class="hb-ev' + (e.t2 > seen ? ' new' : '') + '">' + hbAv(e) + '<div><p class="hb-what"><b>' + esc(e.name || e.user) + '</b> 来访' + (acts.length ? '，' + acts.join('；') : '') + '</p>' +
       '<small>' + hbClock(e.t) + (e.t2 - e.t > 60000 ? ' ~ ' + hbClock(e.t2).replace(/^今天 /, '') : '') + ' · ' + ago(e.t2) + ' · <button type="button" class="linkbtn" data-hbcard="' + esc(e.user) + '">看名片</button></small></div></li>';
@@ -1477,8 +1505,10 @@
     var txt = m.kind === 'visit' ? m.name + ' 来拜访了你的基地' :
       m.kind === 'poke' ? m.name + ' 在你的基地里摸了摸' + (m.mon || '精灵') :
       m.kind === 'fight' ? m.name + ' 挑战了你的基地' + ({ win: '，赢了', lose: '，你的精灵守住了', draw: '，打成平局', quit: '，中途认输了' }[m.r] || '') :
-      m.kind === 'msg' ? m.name + ' 在你的基地留言：' + (m.text || '') : '';
+      m.kind === 'msg' ? m.name + ' 在你的基地留言：' + (m.text || '') :
+      m.kind === 'steal' ? m.name + ' 从你基地的' + (m.sid ? A.view({ sid: m.sid, lv: m.lv || 1 }).name : '精灵') + '那里偷走了 ' + A.fmt(m.n || 0) + ' 经验' : '';
     if (!txt) return;
+    if (m.kind === 'steal' && A.homeStolen) A.homeStolen(m.u, m.user, m.n);   // 本机的基地记录也跟着扣下（服务器那份已经扣了）
     var me = meUser();
     if ($('hboard') && hb.owner === me) hbLoad(me, true);
     else { hb.newN++; if (A.page() === 'social' && !st.view && st.tab !== 'mine') render(); }

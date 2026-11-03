@@ -125,14 +125,15 @@ function brawlOk(acc) { return !!(acc && acc.story && acc.story.brawl && acc.sto
 function homeOf(acc) {
   var open = !!(acc.story && acc.story.tea && acc.story.tea.done), h = acc.home || {};
   var cap = 3 + Math.min(4, int(h.cap, 0, 4));   // 茶室商店扩容：最多 7 只
-  var mons = (Array.isArray(h.mons) ? h.mons : []).slice(0, cap).map(function (x) { return monByU(acc, x && typeof x === 'object' ? x.u : x); }).filter(Boolean);
+  var raw = (Array.isArray(h.mons) ? h.mons : []).slice(0, cap).map(function (x) { var o = x && typeof x === 'object' ? x : { u: x }; return { x: o, m: monByU(acc, o.u) }; }).filter(function (r) { return r.m; });
+  var mons = raw.map(function (r) { return r.m; });
   // 茶室音乐：大厅（默认）/ 地球 / 芙罗拉星（主线第一章通关后才有）
   var flora = !!((acc.chapters && acc.chapters.ch1) || (acc.mailSeen && acc.mailSeen['barren-bgm']));   // 主线第一章通关（之前击败普通荒芜拿到的也保留）
   var cg = acc.chalGot || {}, cbgm = { floraGrass: 30, floraForest: 60, floraFallen: 90, kbSurface: 'kb:30', kbShallow: 'kb:60', kbDeep: 'kb:90' };   // 坎伯兰星的挑战路线也有（2026-11-01）   // 芙罗拉星挑战累计星数奖励的茶室音乐
   var bgm = h.bgm === 'earth' || (cbgm[h.bgm] && cg[cbgm[h.bgm]]) ? h.bgm : 'base';   // 2026-11-01：没选过的、选的是已移除的「大厅」，都用基地默认音乐 Base   // 「芙罗拉星」2026-10-17 移除
   var L = h.layout && typeof h.layout === 'object' ? h.layout : {}, rooms = (acc.baseInv && acc.baseInv.rooms) || {};   // 2026-10-31：基地的房型和摆件（拜访时显示）
   var layout = { room: /^r[1-4]$/.test(L.room) && (L.room === 'r1' || rooms[L.room]) ? L.room : 'r1', deco: (Array.isArray(L.deco) ? L.deco : []).slice(0, 40).filter(function (d) { return d && /^d\d+$/.test(d.k); }).map(function (d) { return { k: d.k, x: +d.x || 50, y: +d.y || 80, f: d.f ? 1 : 0 }; }) };
-  return { open: open, name: str(h.name, 10) || '我的基地', mons: open ? mons : [], bgm: bgm, layout: layout };
+  return { open: open, name: str(h.name, 10) || '我的基地', mons: open ? mons : [], raw: open ? raw : [], bgm: bgm, layout: layout };
 }
 var KING_R = 10;   // 王者（段位表见 js/engine/ranked.js 的 RANKS）
 // 军衔：新存档（milV 3）直接读；还没上线换算的旧存档按 game.js 的 milMigrate 同样的规则算出新阶级
@@ -816,7 +817,13 @@ A.use(function (req, res, url) {
     if (!ha || !ha.introDone) { A.reply(res, 200, { user: hu.name, noChar: true }); return true; }
     var hm = homeOf(ha);
     if (hm.open && hu.name !== me.name) require('./homelog').visit(hu.name, me.name);   // 记进主人的茶室动态
-    A.reply(res, 200, { user: hu.name, name: str(ha.name, 20), me: hu.name === me.name, open: hm.open, homeName: hm.name, bgm: hm.bgm, layout: hm.layout, mons: hm.mons.map(function (m) { return monOut(m, ha); }), online: isOnline(hu.name) });
+    // 2026-11-03：好友来访时，每只精灵现在能偷多少经验（规则在 js/engine/grow.js，偷走由交易 homeSteal 结算）
+    var steal = null, stealLeft = 0, isFriend = hu.name !== me.name && Array.isArray(me.friends) && me.friends.indexOf(hu.name) >= 0, E = require('./tx').engine();
+    if (isFriend && E && E.GROW) {
+      var ma = parseSave(me).acc, now = Date.now(); stealLeft = E.GROW.stealLeft(ma, now);
+      steal = hm.raw.map(function (r) { var v = E.GROW.stealView(r.x, r.m, me.name, stealLeft, now); return { u: r.m.u, n: v.n, why: v.why || null }; });
+    }
+    A.reply(res, 200, { user: hu.name, name: str(ha.name, 20), me: hu.name === me.name, open: hm.open, homeName: hm.name, bgm: hm.bgm, layout: hm.layout, mons: hm.mons.map(function (m) { return monOut(m, ha); }), online: isOnline(hu.name), friend: isFriend, steal: steal, stealLeft: stealLeft, stealDay: E && E.GROW ? E.GROW.STEAL_DAY : 0 });
     return true;
   }
   if (url === '/api/friends' && req.method === 'POST') {

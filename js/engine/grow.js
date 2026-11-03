@@ -206,6 +206,45 @@ var GROW = (function () {
   function homeMax(a) { return HOME_BASE + Math.min(4, (a.home && a.home.cap) || 0); }
   function homeRate(m) { return 30 + m.lv * 6; }
   function homeMins(x, now) { return Math.max(0, Math.min(HOME_CAP_H * 60, Math.floor((now - x.t) / 60000))); }
+  /* ---------- 去好友基地偷经验（2026-11-03） ----------
+   * 好友基地里训练满 1 小时的精灵（装了自律装置的除外），每人每轮可以偷一次：偷走它现存经验的 10%，进偷的人的经验背包。
+   * 被偷走的记在主人那边的 x.st（这一轮一直扣着，经验最多累计 24 小时，所以收获前补不回来），x.sb 是这一轮偷过的人；收获、收回后清零。
+   * 一只精灵这一轮最多被偷走一半（按它现在累计的经验算）；每人每天最多偷 30000（a.stealD = { d: 北京日期, n: 今天偷了多少 }）。 */
+  var STEAL_PCT = 0.1, STEAL_HALF = 0.5, STEAL_DAY = 30000, STEAL_MIN = 60;
+  function homeGross(x, mo, now) { return Math.floor(homeMins(x, now) * homeRate(mo) / 60); }
+  function homeNet(x, mo, now) { return Math.max(0, homeGross(x, mo, now) - (x.st | 0)); }
+  function stealLeft(a, now) { var S = a && a.stealD; return Math.max(0, STEAL_DAY - (S && S.d === TX.bjDay(now) ? S.n | 0 : 0)); }
+  // 现在 thief 能从这只精灵身上偷多少：{ n, why }（n = 0 时 why 说明原因）
+  function stealView(x, mo, thief, cap, now) {
+    if (!x || !mo || x.auto) return { n: 0, why: 'auto' };
+    if (homeMins(x, now) < STEAL_MIN) return { n: 0, why: 'young' };
+    if (Array.isArray(x.sb) && x.sb.indexOf(thief) >= 0) return { n: 0, why: 'done' };
+    var g = homeGross(x, mo, now), st = x.st | 0, room = Math.floor(g * STEAL_HALF) - st;
+    if (room <= 0) return { n: 0, why: 'half' };
+    if (!(cap > 0)) return { n: 0, why: 'cap' };
+    var n = Math.min(Math.floor((g - st) * STEAL_PCT), room, cap);
+    return n > 0 ? { n: n } : { n: 0, why: 'half' };
+  }
+  var STEAL_WHY = { auto: '这只精灵装着自律训练装置，偷不了', young: '训练满 1 小时才能偷', done: '这一轮你已经偷过它了，等主人收获以后再来吧', half: '这只精灵已经被偷走一半了，手下留情吧', cap: '今天偷的经验已经到 ' + STEAL_DAY + ' 的上限了' };
+  // 服务器在主人的存档上调用（server/steal.js）：扣下被偷的经验，返回 { n, sid, lv } 或 { err }
+  function stealFrom(oa, u, thief, cap, now) {
+    var H = oa && oa.home, x = null;
+    if (H && Array.isArray(H.mons)) H.mons.forEach(function (y) { if (y && typeof y === 'object' && y.u === u) x = y; });
+    var mo = x && ACC.mon(oa, u); if (!mo) return { err: '这只精灵已经不在基地里了' };
+    var r = stealView(x, mo, thief, cap, now); if (!r.n) return { err: STEAL_WHY[r.why] || '偷不了' };
+    x.st = (x.st | 0) + r.n; x.sb = (Array.isArray(x.sb) ? x.sb : []).concat([thief]).slice(-100);
+    return { n: r.n, sid: mo.sid, lv: mo.lv };
+  }
+  // 偷的人这边：{ owner, u }；被偷的那边由服务器改（env.fetch('steal')），这里只把经验放进经验背包、记今天偷了多少
+  TX.add('homeSteal', function (a, args, env) {
+    var cap = stealLeft(a, env.now); if (cap <= 0) return no(STEAL_WHY.cap);
+    var r = env.fetch ? env.fetch('steal', { owner: String(args.owner || ''), u: int(args.u), cap: cap }) : null;
+    if (!r) return no('要联网登录以后，才能去好友的基地偷经验');
+    if (r.err) return no(r.err);
+    var n = Math.max(0, Math.min(cap, r.n | 0)), d = TX.bjDay(env.now), S = a.stealD && a.stealD.d === d ? a.stealD : { d: d, n: 0 };
+    S.n = (S.n | 0) + n; a.stealD = S; a.exp = (a.exp || 0) + n;
+    return { ok: true, n: n, left: STEAL_DAY - S.n };
+  });
   // { a: 'in' | 'out' | 'reap' | 'auto' | 'settle', u }
   TX.add('home', function (a, args, env) {
     var H = homeRec(a), act = String(args.a || ''), u = int(args.u);
@@ -221,7 +260,7 @@ var GROW = (function () {
     }
     if (act === 'out') {
       if (i < 0) return no('它不在茶室里');
-      var x = H.mons[i], mo = ACC.mon(a, x.u), min = homeMins(x, env.now), amt = Math.floor(min * homeRate(mo) / 60);
+      var x = H.mons[i], mo = ACC.mon(a, x.u), min = homeMins(x, env.now), amt = homeNet(x, mo, env.now);
       H.mons.splice(i, 1);
       var dh = min >= 60 && typeof QST !== 'undefined' ? QST.hit(a, 'home', 1, env.now) : [];   // 每日任务（js/engine/quest.js）
       return { ok: true, min: min, g: amt > 0 ? ACC.gainExp(a, mo, amt) : null, daily: dh };
@@ -231,8 +270,8 @@ var GROW = (function () {
       var rx = H.mons[i], rm = ACC.mon(a, rx.u), rmin = homeMins(rx, env.now);
       if (rx.auto) return no('它装着自律训练装置，每满 1 天会自动结算');
       if (rmin < 60) return no('训练满 1 小时才能收获');
-      var ramt = Math.floor(rmin * homeRate(rm) / 60);
-      rx.t = env.now;
+      var ramt = homeNet(rx, rm, env.now);
+      rx.t = env.now; delete rx.st; delete rx.sb;   // 被偷的记录跟着清掉，下一轮重新算
       var rdh = typeof QST !== 'undefined' ? QST.hit(a, 'home', 1, env.now) : [];
       return { ok: true, min: rmin, g: ACC.gainExp(a, rm, ramt), daily: rdh };
     }
@@ -490,7 +529,7 @@ var GROW = (function () {
     return { ok: true, want: want, give: give, today: had + give, cap: BRAWL_CAP, none: !!rec.none, r: rec.r, daily: dh };
   });
 
-  return { REL_TIER: REL_TIER, REL_SHINY: REL_SHINY, REL_MAX: REL_MAX, relTier: relTier, relExp: relExp, relPt: relPt, relBlock: relBlock, starterU: starterU, FORGE: FORGE, FORGE_Q: FORGE_Q, GX_KEYS: GX_KEYS, GX_IN: GX_IN, GX_OUT: GX_OUT, GX_SRC: GX_SRC, gxOut: gxOut, FARM_N: FARM_N, FARM_EXTRA_MAX: FARM_EXTRA_MAX, PLOT_PRICE: PLOT_PRICE, SEED_PRICE: SEED_PRICE, SEED_SHOP: SEED_SHOP, SEED_SHOP_MAX: SEED_SHOP_MAX, farmN: farmN, SEEDS: SEEDS, HELP_RW: HELP_RW, BRAWL_WIN: BRAWL_WIN, BRAWL_LOSE: BRAWL_LOSE, BRAWL_CAP: BRAWL_CAP, SPA_GAP: SPA_GAP, spaMons: spaMons, HOME_CAP_H: HOME_CAP_H, AUTO_DAYS: AUTO_DAYS, DAY_MS: DAY_MS, HATCH: HATCH, STORY_GIFT: STORY_GIFT, RANK_GIFT: RANK_GIFT, USE_ITEMS: USE_ITEMS, CAP_STEPS: CAP_STEPS, GEM_OF: GEM_OF, CAP_SID: CAP_SID, capGem: capGem, capNext: capNext, formLabel: formLabel, natText: natText,
+  return { REL_TIER: REL_TIER, REL_SHINY: REL_SHINY, REL_MAX: REL_MAX, relTier: relTier, relExp: relExp, relPt: relPt, relBlock: relBlock, starterU: starterU, FORGE: FORGE, FORGE_Q: FORGE_Q, GX_KEYS: GX_KEYS, GX_IN: GX_IN, GX_OUT: GX_OUT, GX_SRC: GX_SRC, gxOut: gxOut, FARM_N: FARM_N, FARM_EXTRA_MAX: FARM_EXTRA_MAX, PLOT_PRICE: PLOT_PRICE, SEED_PRICE: SEED_PRICE, SEED_SHOP: SEED_SHOP, SEED_SHOP_MAX: SEED_SHOP_MAX, farmN: farmN, SEEDS: SEEDS, HELP_RW: HELP_RW, BRAWL_WIN: BRAWL_WIN, BRAWL_LOSE: BRAWL_LOSE, BRAWL_CAP: BRAWL_CAP, SPA_GAP: SPA_GAP, spaMons: spaMons, HOME_CAP_H: HOME_CAP_H, STEAL_DAY: STEAL_DAY, homeNet: homeNet, stealLeft: stealLeft, stealView: stealView, stealFrom: stealFrom, AUTO_DAYS: AUTO_DAYS, DAY_MS: DAY_MS, HATCH: HATCH, STORY_GIFT: STORY_GIFT, RANK_GIFT: RANK_GIFT, USE_ITEMS: USE_ITEMS, CAP_STEPS: CAP_STEPS, GEM_OF: GEM_OF, CAP_SID: CAP_SID, capGem: capGem, capNext: capNext, formLabel: formLabel, natText: natText,
     itemFits: itemFits, jadeMoves: jadeMoves, formOpts: formOpts, evRoom: evRoom, applyMonItem: applyMonItem };
 })();
 if (typeof module !== 'undefined') module.exports = GROW;

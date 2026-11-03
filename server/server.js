@@ -31,6 +31,7 @@ require('./hlrestore');   // 2026-10-18：小月亮、骨刃隐藏技能从备�
 require('./cheatfix');   // 2026-10-22：找出改档的账号并恢复到改档前（只运行一次）
 require('./restore11');   // 2026-10-21：恢复 @11 被重置前的存档（只运行一次）
 require('./pwreset');   // 2026-10-25：一次性重置 Cucumber418 的密码
+require('./steal');   // 去好友基地偷经验（交易 homeSteal 用到的服务器部分）
 require('./helpuse');   // 助战使用记录（上线领取奖励）
 require('./friendpt');   // 2026-11-01：友情点、好友送经验
 require('./dm');   // 私信   // BOSS攻略板（已通过的玩家、攻略、评分、点赞）
