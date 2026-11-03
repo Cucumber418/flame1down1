@@ -6525,59 +6525,154 @@
     var h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60;
     return (h ? h + ' 小时 ' : '') + (h || m ? m + ' 分 ' : '') + s + ' 秒';
   }
-  var farmSel = {};   // 每块空田的下拉框选的种子
+  /* 2026-11-04：种植园改成和基地一样的场景（背景 images/base/farm.jpg），左边是功能菜单，左下角「前往基地」。
+   * 8 块田按背景图摆：t 是田的中心，b 是田上方的气泡（正好盖住原图里手套图标的位置）；还没开的田显示锁。
+   * 田的顺序就是存档里 acc.farm.plots 的顺序：前 4 块是基础的，后 4 块是种子商店扩建的。 */
+  var FARM_POS = [
+    { t: [41.1, 61.7], b: [40.9, 38.5] }, { t: [59.6, 61.7], b: [58.7, 38.5] }, { t: [75.5, 61.7], b: [75.9, 38.5] },
+    { t: [33.6, 73.9], b: [33.4, 50.5] }, { t: [52.0, 73.9], b: [52.0, 50.5] }, { t: [70.5, 73.9], b: [70.9, 50.5] },
+    { t: [14.7, 74.6], b: [14.7, 50.5], beam: 1 }, { t: [89.3, 74.6], b: [89.3, 50.5], beam: 1 }
+  ];
+  var SPROUT_SVG = '<svg class="it-ic" viewBox="0 0 64 64" aria-hidden="true"><g stroke="#23422b" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"><path d="M32 58V30" fill="none"/><path d="M32 38c-2-10-10-14-20-13 1 10 8 15 20 13z" fill="#7cc95a"/><path d="M32 31c2-11 11-16 22-15-1 11-10 16-22 15z" fill="#5fb548"/></g></svg>';
+  function farmReadyN() { if (!acc || !farmOpen()) return 0; return farm().plots.filter(farmReady).length; }
+  function farmClock(p) {   // 气泡下面的短倒计时：2:05:33
+    var sec = Math.max(0, Math.ceil((SEEDS[p.seed].min * 60000 - (Date.now() - p.t)) / 1000)), h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), x = sec % 60;
+    return h + ':' + (m < 10 ? '0' : '') + m + ':' + (x < 10 ? '0' : '') + x;
+  }
+  function farmState(i, F) { var p = F.plots[i]; return i >= farmN() ? 'lock' : !p ? 'empty' : farmReady(p) ? 'ready' : 'grow'; }
+  function farmPlotHTML(i, F) {
+    F = F || farm(); var P = FARM_POS[i], st = farmState(i, F), p = F.plots[i], S = p && SEEDS[p.seed];
+    var ic = st === 'lock' ? '<span class="fp-sym">🔒</span>' : st === 'empty' ? '<span class="fp-sym">＋</span>' : H.itemIcon(st === 'ready' ? S.crop : p.seed);
+    var lab = st === 'lock' ? '扩建' : st === 'empty' ? '种植' : st === 'ready' ? '收获' : farmClock(p);
+    var tip = '田 ' + (i + 1) + (st === 'lock' ? '：还没开，可以在种子商店扩建' : st === 'empty' ? '：空着，点一下种植' : st === 'ready' ? ' · ' + itemName(p.seed) + '：成熟了，点一下收获「' + itemName(S.crop) + '」×' + S.yield : ' · ' + itemName(p.seed) + '：还要 ' + farmLeftText(p));
+    return '<div class="fp fp-' + st + '" data-fp="' + i + '">' +
+      (P.beam && st !== 'lock' ? '<i class="fp-beam" style="left:' + P.t[0] + '%;top:' + P.b[1] + '%;height:' + (P.t[1] - P.b[1] - 4).toFixed(1) + '%"></i>' : '') +
+      '<button type="button" class="fp-soil" data-fpi="' + i + '" style="left:' + P.t[0] + '%;top:' + P.t[1] + '%" aria-label="' + esc(tip) + '">' + (st === 'grow' || st === 'ready' ? '<span class="fp-crop' + (st === 'ready' ? ' ripe' : '') + '">' + (st === 'ready' ? H.itemIcon(S.crop) : SPROUT_SVG) + '</span>' : '') + '</button>' +
+      '<button type="button" class="fp-bub" data-fpi="' + i + '" style="left:' + P.b[0] + '%;top:' + P.b[1] + '%" title="' + esc(tip) + '" aria-label="' + esc(tip) + '"><span class="fp-ic">' + ic + '</span><span class="fp-lab" data-fpclock="' + i + '">' + lab + '</span></button></div>';
+  }
+  // 左边的功能菜单（样式和基地的一样）
+  function farmSideHTML() {
+    var F = farm(), nEmpty = F.plots.filter(function (p, i) { return !p && i < farmN(); }).length, nReady = F.plots.filter(farmReady).length, nSeed = SEED_ORDER.reduce(function (t, k) { return t + (acc.items[k] || 0); }, 0);
+    var it = function (attr, ic, t, sub, badge) { return '<button type="button" class="bs-it" ' + attr + ' title="' + t + '"><span class="bs-ic" aria-hidden="true">' + ic + (badge ? '<i class="bs-badge">' + badge + '</i>' : '') + '</span><span class="bs-t"><b>' + t + '</b>' + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</span></button>'; };
+    var hid = false; try { hid = localStorage.getItem('hs-fside-hide') === '1'; } catch (e) {}
+    return '<div class="base-side farm-side' + (hid ? ' hid' : '') + '"><button type="button" class="bs-tog" data-bstog="hs-fside-hide" aria-label="' + (hid ? '展开' : '收起') + '种植园菜单" title="' + (hid ? '展开' : '收起') + '"><span aria-hidden="true">◀</span></button><div class="bs-list">' +
+      it('data-fharvest="1"', '🧺', '一键收获', nReady ? nReady + ' 块成熟了' : '还没有成熟的', nReady) +
+      it('data-fpanel="sowall"', '🌱', '一键种植', nEmpty ? '空田 ' + nEmpty + ' 块' : '没有空田') +
+      it('data-fpanel="shop"', '🛍', '种子商店', '能量 ' + fmt(acc.energy)) +
+      it('data-fpanel="stock"', '📦', '作物仓库', '种子 ' + nSeed + ' 颗') + '</div></div>';
+  }
+  // 场景左下角的「前往基地 / 前往种植园」（有东西可以收的时候带红点）
+  function sceneGoHTML(to) {
+    if (to === 'farm') return farmOpen() ? '<button type="button" class="scene-go" data-gofarm="1" title="前往种植园"><span class="sg-ic" aria-hidden="true">🌱</span><b>前往种植园</b>' + (farmReadyN() ? '<i class="sg-dot" aria-label="有成熟的作物"></i>' : '') + '</button>' : '';
+    var dot = homeOpen() && home().mons.some(homeFull);
+    return homeOpen() ? '<button type="button" class="scene-go" data-gohome="1" title="前往基地"><span class="sg-ic" aria-hidden="true">🏠</span><b>前往基地</b>' + (dot ? '<i class="sg-dot" aria-label="有精灵可以收获经验"></i>' : '') + '</button>' : '';
+  }
   function renderFarm() {
-    var F = farm(), owned = SEED_ORDER.filter(function (k) { return acc.items[k] > 0; });
-    var plots = F.plots.map(function (p, i) {
-      if (!p) {
-        if (!owned.length) return '<article class="farm-plot"><b>田 ' + (i + 1) + '</b><p class="hint">空着</p><p class="hint">没有可种的种子。</p><div class="farm-acts"><button type="button" class="btn" data-seedshop="1">去种子商店</button></div></article>';
-        var sel = owned.indexOf(farmSel[i]) >= 0 ? farmSel[i] : owned[0];
-        return '<article class="farm-plot"><b>田 ' + (i + 1) + '</b><p class="hint">空着</p><div class="farm-acts farm-sow">' +
-          '<select class="farm-sel" data-sowsel="' + i + '" aria-label="田 ' + (i + 1) + ' 要种的种子">' + owned.map(function (k) { return '<option value="' + k + '"' + (k === sel ? ' selected' : '') + '>' + esc(itemName(k)) + '（' + acc.items[k] + '）</option>'; }).join('') + '</select>' +
-          '<button type="button" class="btn primary" data-sow="' + i + '">种下</button></div></article>';
-      }
-      var S = SEEDS[p.seed], ready = farmReady(p), seedTxt = S.back >= 1 ? '种子会退回' : '有 ' + Math.round(S.back * 100) + '% 的概率掉落 1 颗种子';
-      return '<article class="farm-plot' + (ready ? ' ready' : ' grow') + '"><b>田 ' + (i + 1) + ' · ' + itemName(p.seed) + '</b>' +
-        (ready ? '<p class="hint">成熟了，可以收获「' + itemName(S.crop) + '」×' + S.yield + '，' + seedTxt + '。</p><div class="farm-acts"><button type="button" class="btn primary" data-reap="' + i + '">收获</button></div>'
-          : '<p class="hint">还要 <span data-farmleft="' + i + '">' + farmLeftText(p) + '</span>，收获「' + itemName(S.crop) + '」×' + S.yield + '。</p>') + '</article>';
-    }).join('');
-    $('pg-explore').innerHTML = exHead('药草种子、活力花种子在生态舱的种子商店用能量买，8 小时成熟：药草 ×50（两份在冶炼坊合成一瓶 200hp药水），活力花卉 ×50（在冶炼坊炼成 PP 药水）；收获时有 20% 的概率掉落 1 颗种子。水稻种子 12 小时成熟，收获米饭 ×250（500 粒在冶炼坊盛成一碗饭），种子会退回，在芙罗拉星击败野生精灵时偶尔掉落。') +
-      '<div class="crumb"><button type="button" class="btn ghost" id="farm-back">‹ 返回生态舱</button><b>恩施 · 太空种植园</b><button type="button" class="btn" data-seedshop="1">种子商店</button></div>' +
-      stockBar('种子', SEED_ORDER) + stockBar('作物', CROP_ORDER) +
-      '<div class="farm-plots">' + plots + '</div>';
+    var F = farm(), plots = FARM_POS.map(function (P, i) { return farmPlotHTML(i, F); }).join('');
+    $('pg-explore').innerHTML = exHead('点田上方的气泡种植、收获。药草、活力花 8 小时成熟（各 ×50，收获时 20% 掉落 1 颗种子）；水稻 12 小时成熟（米饭 ×250，种子退回）。离开游戏也照常计时。') +
+      '<div class="crumb"><button type="button" class="btn ghost" id="farm-back">‹ 返回生态舱</button><b class="home-name">太空种植园</b><span class="hint">恩施 · 生态舱 · ' + farmN() + ' / ' + FARM_POS.length + ' 块田</span></div>' +
+      '<div class="base-stage"><div class="home-room farm-room" id="farm-room"><img class="home-bg" src="images/base/farm.jpg" alt="太空种植园">' + plots + farmSideHTML() + sceneGoHTML('home') + '</div></div>' +
+      (ex.fpanel ? farmPanelHTML(ex.fpanel) : '');
     clearInterval(ex.farmTick);
     ex.farmTick = setInterval(function () {
-      if (ex.view !== 'farm' || !document.querySelector('.farm-plots')) { clearInterval(ex.farmTick); return; }
-      var flip = false;
-      farm().plots.forEach(function (p, i) {
-        var el = document.querySelector('[data-farmleft="' + i + '"]');
-        if (!p) return;
-        if (farmReady(p)) flip = true;
-        else if (el) el.textContent = farmLeftText(p);
+      if (ex.view !== 'farm' || !$('farm-room')) { clearInterval(ex.farmTick); return; }
+      var F2 = farm(), flip = false;
+      F2.plots.forEach(function (p, i) {
+        if (!p || i >= farmN()) return;
+        var el = document.querySelector('[data-fpclock="' + i + '"]'), w = document.querySelector('#farm-room .fp[data-fp="' + i + '"]');
+        if (farmReady(p)) { if (w && !w.classList.contains('fp-ready')) { w.outerHTML = farmPlotHTML(i, F2); flip = true; } }
+        else if (el) el.textContent = farmClock(p);
       });
-      if (flip) renderFarm();
+      if (flip) farmSideRefresh();
     }, 1000);
   }
-  function farmPlant(i, seed) {
+  // 只更新改动的那几块田和左边菜单，不整页重画
+  function farmRefresh(list) {
+    if (ex.view !== 'farm' || !$('farm-room')) return;
     var F = farm();
-    if (i < 0 || i >= farmN() || F.plots[i] || !SEEDS[seed] || !(acc.items[seed] > 0)) return;
-    txRun('farm', { a: 'plant', i: i, seed: seed }, function () {   // 走交易（grow.js）：种下的时间由服务器记
-      toast('在田 ' + (i + 1) + ' 种下了「' + itemName(seed) + '」，' + growText(SEEDS[seed].min) + '后可以收获。');
-      renderFarm();
-    });
+    (list || FARM_POS.map(function (P, i) { return i; })).forEach(function (i) { var w = document.querySelector('#farm-room .fp[data-fp="' + i + '"]'); if (w) w.outerHTML = farmPlotHTML(i, F); });
+    farmSideRefresh();
+    var hn = document.querySelector('#pg-explore .crumb .hint'); if (hn) hn.textContent = '恩施 · 生态舱 · ' + farmN() + ' / ' + FARM_POS.length + ' 块田';
   }
-  function farmHarvest(i) {
+  function farmSideRefresh() { var sd = document.querySelector('#farm-room .farm-side'); if (sd) sd.outerHTML = farmSideHTML(); }
+  /* 种植园的弹窗：sow:i 给一块田选种子；sowall 一键种植；shop 种子商店；stock 作物仓库 */
+  function farmPanel(k) {
+    ex.fpanel = k || null;
+    var old = document.querySelector('#pg-explore .bp-dlg'), top = old ? old.scrollTop : 0, h = k ? farmPanelHTML(k) : '';
+    if (old) old.remove();
+    if (h) { $('pg-explore').insertAdjacentHTML('beforeend', h); var d = document.querySelector('#pg-explore .bp-dlg'); if (d && old) d.scrollTop = top; }
+  }
+  function farmPanelHTML(k) {
+    var body = '', ttl = '', cls = '', owned = SEED_ORDER.filter(function (s0) { return acc.items[s0] > 0; });
+    var seedBtn = function (attr, s0, extra) { var S = SEEDS[s0]; return '<button type="button" class="fs-seed" ' + attr + '>' + H.itemIcon(s0) + '<span><b>' + esc(itemName(s0)) + '</b><small>持有 ' + acc.items[s0] + ' 颗 · ' + growText(S.min) + '成熟，收获「' + esc(itemName(S.crop)) + '」×' + S.yield + (extra ? ' · ' + extra : '') + '</small></span></button>'; };
+    var noSeed = '<p class="hint">没有可以种的种子。药草种子、活力花种子在种子商店用能量买；水稻种子在芙罗拉星击败野生精灵时有 10% 的概率掉落。</p><div class="soc-foot" style="justify-content:flex-start"><button type="button" class="btn primary" data-fpanel="shop">去种子商店</button></div>';
+    if (k.indexOf('sow:') === 0) {
+      var i = +k.slice(4), F = farm(); if (farmState(i, F) !== 'empty') return '';
+      ttl = '田 ' + (i + 1) + ' · 种点什么？';
+      body = owned.length ? '<div class="fs-list">' + owned.map(function (s0) { return seedBtn('data-fsow="' + i + '|' + s0 + '"', s0); }).join('') + '</div>' : noSeed;
+    } else if (k === 'sowall') {
+      var empty = farm().plots.filter(function (p, j) { return !p && j < farmN(); }).length;
+      ttl = '一键种植';
+      body = !empty ? '<p class="hint">没有空着的田。</p>' : owned.length ? '<p class="hint">把空着的 ' + empty + ' 块田都种上同一种种子（种子不够时能种几块种几块）。</p><div class="fs-list">' + owned.map(function (s0) { return seedBtn('data-fsowall="' + s0 + '"', s0, '能种 ' + Math.min(empty, acc.items[s0]) + ' 块'); }).join('') + '</div>' : noSeed;
+    } else if (k === 'shop') { ttl = '种子商店'; cls = ' wide'; body = seedShopBody(); }
+    else if (k === 'stock') {
+      ttl = '作物仓库';
+      body = stockBar('种子', SEED_ORDER) + stockBar('作物', CROP_ORDER) + '<p class="hint">药草：黄石 · 冶炼坊 1 份合成 100hp药水、2 份合成 200hp药水。活力花卉：3 朵炼成 10PP 药水、5 朵炼成 20PP 药水。米饭：500 粒在冶炼坊盛成一碗饭，可以在庞贝星熔岩原引来米饭火鸡。</p>';
+    } else return '';
+    return '<div class="soc-dlg bp-dlg"><div class="soc-box bp-box' + cls + '" role="dialog" aria-modal="true" aria-label="' + ttl + '"><span class="tape l"></span><span class="tape r"></span><h2>' + ttl + '</h2>' + body +
+      '<div class="soc-foot"><button type="button" class="btn primary" data-bpx="1">关闭</button></div></div></div>';
+  }
+  function farmPlotClick(i) {
+    var F = farm(), st = farmState(i, F), p = F.plots[i];
+    if (st === 'lock') { farmPanel('shop'); toast('这块田还没开，可以在种子商店的「额外种植栏位」扩建。'); return; }
+    if (st === 'empty') { farmPanel('sow:' + i); return; }
+    if (st === 'ready') { farmHarvest(i); return; }
+    toast('田 ' + (i + 1) + ' 种着「' + itemName(p.seed) + '」，还要 ' + farmLeftText(p) + '，收获「' + itemName(SEEDS[p.seed].crop) + '」×' + SEEDS[p.seed].yield + '。');
+  }
+  function farmPlant(i, seed, quiet, done) {
+    var F = farm();
+    if (i < 0 || i >= farmN() || F.plots[i] || !SEEDS[seed] || !(acc.items[seed] > 0)) { if (done) done(false); return; }
+    txRun('farm', { a: 'plant', i: i, seed: seed }, function () {   // 走交易（grow.js）：种下的时间由服务器记
+      if (!quiet) toast('在田 ' + (i + 1) + ' 种下了「' + itemName(seed) + '」，' + growText(SEEDS[seed].min) + '后可以收获。');
+      if (ex.view === 'farm') farmRefresh([i]); if (done) done(true);
+    }, function (err) { if (err) toast(err); if (done) done(false); });
+  }
+  function farmHarvest(i, quiet, done) {
     var F = farm(), p = F.plots[i];
-    if (!p || !farmReady(p)) return;
+    if (!p || !farmReady(p)) { if (done) done(null); return; }
     txRun('farm', { a: 'harvest', i: i }, function (res) {   // 走交易（grow.js）
       var S0 = SEEDS[res.seed] || {};
-      toast('收获了「' + itemName(res.crop) + '」×' + res.n + '，' + (S0.back >= 1 ? '种子已退回。' : res.back ? '还掉落了 1 颗「' + itemName(res.seed) + '」！' : '这次没有掉落种子。'));
-      renderFarm();
+      if (!quiet) toast('收获了「' + itemName(res.crop) + '」×' + res.n + '，' + (S0.back >= 1 ? '种子已退回。' : res.back ? '还掉落了 1 颗「' + itemName(res.seed) + '」！' : '这次没有掉落种子。'));
+      if (ex.view === 'farm') {
+        farmRefresh([i]);
+        var w = document.querySelector('#farm-room .fp[data-fp="' + i + '"] .fp-soil'); if (w) { w.classList.remove('pop'); void w.offsetWidth; w.classList.add('pop'); }
+      }
+      if (done) done(res);
+    }, function (err) { if (err) toast(err); if (done) done(null); });
+  }
+  function farmHarvestAll() {
+    var list = []; farm().plots.forEach(function (p, i) { if (farmReady(p)) list.push(i); });
+    if (!list.length) { toast('还没有成熟的作物。'); return; }
+    var left = list.length, got = {}, seeds = {};
+    list.forEach(function (i) {
+      farmHarvest(i, true, function (res) {
+        if (res) { got[res.crop] = (got[res.crop] || 0) + res.n; if (res.back) seeds[res.seed] = (seeds[res.seed] || 0) + 1; }
+        if (--left) return;
+        var g = Object.keys(got).map(function (k) { return '「' + itemName(k) + '」×' + got[k]; }), sd = Object.keys(seeds).filter(function (k) { return (SEEDS[k] || {}).back < 1; }).map(function (k) { return '「' + itemName(k) + '」×' + seeds[k]; });
+        if (g.length) toast('收获了 ' + g.join('、') + (sd.length ? '，还掉落了 ' + sd.join('、') : '') + '。');
+      });
     });
+  }
+  function farmSowAll(seed) {
+    var empty = []; farm().plots.forEach(function (p, i) { if (!p && i < farmN()) empty.push(i); });
+    var n = Math.min(empty.length, acc.items[seed] || 0); if (!n) return;
+    farmPanel(null);
+    var left = n, ok = 0;
+    empty.slice(0, n).forEach(function (i) { farmPlant(i, seed, true, function (y) { if (y) ok++; if (!--left && ok) toast('种下了 ' + ok + ' 块「' + itemName(seed) + '」，' + growText(SEEDS[seed].min) + '后可以收获。'); }); });
   }
 
   /* ---------- 种子商店：恩施 · 生态舱（交易 seedShop，js/engine/grow.js）：药草种子、活力花种子各 100 能量，另卖额外的种植栏位 ---------- */
-  function renderSeedShop() {
+  function seedShopBody() {
     var cards = GROW.SEED_SHOP.map(function (k) {
       var q = shopQty['sd-' + k] || 1, cost = GROW.SEED_PRICE * q, ok = acc.energy >= cost, S = SEEDS[k];
       return '<article class="shop-it"><span class="tape r"></span>' + H.itemIcon(k) + '<div class="si-txt"><b>' + esc(S.name) + '</b><p class="hint">' + growText(S.min) + '成熟，收获「' + itemName(S.crop) + '」×' + S.yield + '；收获时有 ' + Math.round(S.back * 100) + '% 的概率掉落 1 颗种子。</p>' +
@@ -6591,17 +6686,20 @@
       '<div class="si-txt"><b>额外种植栏位</b><p class="hint">太空种植园多开一块田。基础 ' + GROW.FARM_N + ' 块，最多再开 ' + GROW.FARM_EXTRA_MAX + ' 块，每块越来越贵。</p><p class="si-own">现在 <b>' + farmN() + '</b> 块田</p></div>' +
       '<div class="si-buy"><span class="si-price">' + (full ? '已满' : fmt(price) + ' <small>能量</small>') + '</span>' +
       '<button type="button" class="btn primary" data-sdbuy="plot"' + (!full && acc.energy >= price ? '' : ' disabled') + '>' + (full ? '已经扩到最多了' : acc.energy >= price ? '购买 · ' + fmt(price) : '能量不足') + '</button></div></article>';
-    $('pg-explore').innerHTML = exHead('生态舱的种子商店：用能量买药草种子（绿色）和活力花种子（蓝色），还能给太空种植园多开几块田。') +
-      '<div class="crumb"><button type="button" class="btn ghost" id="farm-back">‹ 返回生态舱</button><b>恩施 · 种子商店</b><button type="button" class="btn" data-farm="1">太空种植园</button></div>' +
-      '<div class="shop-bal"><span class="tape l"></span>当前能量 <b>' + fmt(acc.energy) + '</b></div>' +
-      '<div class="shop-grid">' + cards + '</div>';
+    return '<div class="shop-bal"><span class="tape l"></span>当前能量 <b>' + fmt(acc.energy) + '</b></div><div class="shop-grid">' + cards + '</div>';
   }
+  function renderSeedShop() {
+    $('pg-explore').innerHTML = exHead('生态舱的种子商店：用能量买药草种子（绿色）和活力花种子（蓝色），还能给太空种植园多开几块田。') +
+      '<div class="crumb"><button type="button" class="btn ghost" id="farm-back">‹ 返回生态舱</button><b>恩施 · 种子商店</b><button type="button" class="btn" data-farm="1">太空种植园</button></div>' + seedShopBody();
+  }
+  // 买完东西：在种植园里就刷新弹窗和田，在种子商店页就重画商店
+  function seedShopRefresh() { if (ex.view === 'farm') { farmPanel('shop'); farmRefresh(); } else renderSeedShop(); }
   function seedShopClick(b) {
-    if (b.dataset.sdq) { var a = b.dataset.sdq.split('|'), key = 'sd-' + a[0]; shopQty[key] = Math.max(1, Math.min(GROW.SEED_SHOP_MAX, (shopQty[key] || 1) + +a[1])); renderSeedShop(); return; }
+    if (b.dataset.sdq) { var a = b.dataset.sdq.split('|'), key = 'sd-' + a[0]; shopQty[key] = Math.max(1, Math.min(GROW.SEED_SHOP_MAX, (shopQty[key] || 1) + +a[1])); seedShopRefresh(); return; }
     var k = b.dataset.sdbuy;
-    if (k === 'plot') { txRun('seedShop', { k: 'plot' }, function (r) { renderRes(); renderSeedShop(); toast('太空种植园多开了一块田，现在一共 ' + r.n + ' 块。消耗 ' + fmt(r.cost) + ' 能量。'); }); return; }
+    if (k === 'plot') { txRun('seedShop', { k: 'plot' }, function (r) { renderRes(); seedShopRefresh(); toast('太空种植园多开了一块田，现在一共 ' + r.n + ' 块。消耗 ' + fmt(r.cost) + ' 能量。'); }); return; }
     var n = shopQty['sd-' + k] || 1;
-    txRun('seedShop', { k: k, n: n }, function (r) { shopQty['sd-' + k] = 1; renderRes(); renderSeedShop(); toast('买到了「' + itemName(r.k) + '」×' + r.n + '，消耗 ' + fmt(r.cost) + ' 能量。'); });
+    txRun('seedShop', { k: k, n: n }, function (r) { shopQty['sd-' + k] = 1; renderRes(); seedShopRefresh(); toast('买到了「' + itemName(r.k) + '」×' + r.n + '，消耗 ' + fmt(r.cost) + ' 能量。'); });
   }
 
   /* ---------- 茶室（家园）：自定义名字，安排精灵在舱里休息 ---------- */
@@ -6756,6 +6854,7 @@
     clearInterval(ex.homeTick);
     ex.homeTick = setInterval(function () {
       if (ex.view !== 'home' || !document.querySelector('.home-room')) { clearInterval(ex.homeTick); return; }
+      var sg = document.querySelector('#pg-explore .scene-go[data-gofarm]'); if (sg) { var hasDot = !!sg.querySelector('.sg-dot'), want = farmReadyN() > 0; if (hasDot !== want) sg.outerHTML = sceneGoHTML('farm'); }   // 种植园有成熟的作物：亮红点
       H.mons.forEach(function (x, i) {
         var t = document.querySelector('[data-htag="' + i + '"]'); if (t) t.innerHTML = homeTag(x);
         var f = document.querySelector('.home-room .hm-fig[data-hu="' + x.u + '"]');
@@ -6775,7 +6874,7 @@
     if (!pan) ex.bpanel = null;
     $('pg-explore').innerHTML = exHead('你在荆楚号上的基地。点画面左边的按钮管理基地；点基地里的精灵可以看它的详细情况。') +
       '<div class="crumb"><button type="button" class="btn ghost" id="home-back">‹ 返回大厅</button>' + title + '</div>' +
-      '<div class="base-stage' + (E0 ? ' editing' : '') + '">' + baseRoomHTML(LY, figs + (H.mons.length || E0 ? '' : '<p class="home-empty">基地里空荡荡的。点左边的「精灵展示」放几只精灵出来，或者点「基地编辑」摆上摆件吧。</p>') + (E0 ? '' : baseSideHTML()), E0) + '</div>' +
+      '<div class="base-stage' + (E0 ? ' editing' : '') + '">' + baseRoomHTML(LY, figs + (H.mons.length || E0 ? '' : '<p class="home-empty">基地里空荡荡的。点左边的「精灵展示」放几只精灵出来，或者点「基地编辑」摆上摆件吧。</p>') + (E0 ? '' : baseSideHTML() + sceneGoHTML('farm')), E0) + '</div>' +
       (E0 ? baseEditBar() : '') + (!E0 && window.HSSOCIAL && HSSOCIAL.friendBases ? HSSOCIAL.friendBases() : '') + pan;
     var dl1 = document.querySelector('.bp-dlg'); if (dl1 && dl0) dl1.scrollTop = dlTop;
   }
@@ -6922,12 +7021,12 @@
     return d;
   }
   $('pg-explore').addEventListener('click', function (e) {
-    if (e.target.classList && e.target.classList.contains('bp-dlg')) { ex.bpanel = null; ex.hmArm = null; e.target.remove(); return; }
+    if (e.target.classList && e.target.classList.contains('bp-dlg')) { ex.bpanel = null; ex.fpanel = null; ex.hmArm = null; e.target.remove(); return; }
     var b = e.target.closest('button'); if (!b) return;
     if (b.dataset.bshop && ex.view === 'home') { ex.bpanel = 'shop'; renderHome(); return; }
-    if (b.dataset.bstog) { var sd = b.closest('.base-side'), h2 = sd.classList.toggle('hid'); try { localStorage.setItem('hs-bside-hide', h2 ? '1' : '0'); } catch (er) {} b.setAttribute('aria-label', (h2 ? '展开' : '收起') + '基地菜单'); b.title = h2 ? '展开' : '收起'; return; }
+    if (b.dataset.bstog) { var sd = b.closest('.base-side'), h2 = sd.classList.toggle('hid'), skey = b.dataset.bstog === '1' ? 'hs-bside-hide' : b.dataset.bstog; try { localStorage.setItem(skey, h2 ? '1' : '0'); } catch (er) {} b.setAttribute('aria-label', (h2 ? '展开' : '收起') + (skey === 'hs-bside-hide' ? '基地菜单' : '种植园菜单')); b.title = h2 ? '展开' : '收起'; return; }
     if (b.dataset.bpanel) { ex.bpanel = b.dataset.bpanel; renderHome(); return; }
-    if (b.dataset.bpx) { ex.bpanel = null; ex.hmArm = null; var dlx = document.querySelector('.bp-dlg'); if (dlx) dlx.remove(); return; }
+    if (b.dataset.bpx) { ex.bpanel = null; ex.fpanel = null; ex.hmArm = null; var dlx = document.querySelector('.bp-dlg'); if (dlx) dlx.remove(); return; }
     if (b.dataset.hmon) { ex.bpanel = 'mon:' + b.dataset.hmon; renderHome(); return; }
     if (b.dataset.hpoke2) {
       var fg = document.querySelector('#base-room .hm-fig[data-hu="' + b.dataset.hpoke2 + '"]'), im = document.querySelector('.bp-dlg .bpm-img');
@@ -7528,6 +7627,13 @@
     if (b.dataset.gxgo) { gxGo(); return; }
     if (b.id === 'forge-back') { ex.view = 'area'; ex.area = '黄石'; ex.planet = 'jingchu'; renderExplore(); return; }
     if (b.dataset.farm) { if (!farmOpen()) return; ex.view = 'farm'; ex.area = '恩施'; ex.planet = 'jingchu'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
+    if (b.dataset.fpi != null && b.dataset.fpi !== '') { farmPlotClick(+b.dataset.fpi); return; }
+    if (b.dataset.fpanel) { farmPanel(b.dataset.fpanel); return; }
+    if (b.dataset.fharvest) { farmHarvestAll(); return; }
+    if (b.dataset.fsow) { var fq = b.dataset.fsow.split('|'); farmPanel(null); farmPlant(+fq[0], fq[1]); return; }
+    if (b.dataset.fsowall) { farmSowAll(b.dataset.fsowall); return; }
+    if (b.dataset.gofarm) { if (!farmOpen()) return; ex.bpanel = null; ex.fpanel = null; ex.baseEdit = null; ex.view = 'farm'; ex.area = '恩施'; ex.planet = 'jingchu'; renderExplore(); return; }
+    if (b.dataset.gohome) { if (!homeOpen()) return; ex.bpanel = null; ex.fpanel = null; ex.view = 'home'; ex.area = '天门'; ex.planet = 'jingchu'; renderExplore(); return; }
     if (b.dataset.sow != null && b.dataset.sow !== '') { var si = +b.dataset.sow, sel = document.querySelector('[data-sowsel="' + si + '"]'); if (sel) farmPlant(si, sel.value); return; }
     if (b.dataset.seedshop) { if (!farmOpen()) return; ex.view = 'seedshop'; ex.area = '恩施'; ex.planet = 'jingchu'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
     if (b.dataset.sdq || b.dataset.sdbuy) { if (!b.disabled) seedShopClick(b); return; }

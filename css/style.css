@@ -3661,3 +3661,50 @@ html.land-rot .sheet { height: 100%; overflow-y: auto; overflow-x: hidden; -webk
 .ch-line { margin: 8px 0 0; font-size: 14px; line-height: 1.65; }
 .hm-ready.steal { background: #ffd9e1; }
 .hm-ready.steal:hover, .hm-ready.steal:focus-visible { background: #ffbccb; }
+/* ============ 太空种植园场景（2026-11-04）：和基地一样的场景，背景 images/base/farm.jpg ============ */
+.home-room.farm-room { aspect-ratio: 1192 / 697; container-type: inline-size; touch-action: pan-y; }
+.fp { display: contents; }
+.fp-soil { position: absolute; transform: translate(-50%, -50%); width: 15.5%; height: 10.5%; padding: 0; border: 0; border-radius: 40%; background: none; cursor: pointer; z-index: 3; }
+.fp-soil:hover, .fp-soil:focus-visible { background: radial-gradient(ellipse at center, rgba(255, 255, 255, .32), transparent 70%); outline: none; }
+.fp-lock .fp-soil { cursor: default; background: rgba(20, 30, 45, .38); border-radius: 30%; }
+.fp-crop { position: absolute; left: 50%; bottom: 35%; transform: translateX(-50%); width: 30%; aspect-ratio: 1; display: grid; place-items: end center; pointer-events: none; filter: drop-shadow(0 2px 0 rgba(0, 0, 0, .25)); }
+.fp-crop .it-ic { width: 100%; height: 100%; }
+.fp-crop.ripe { width: 36%; animation: fpSway 2.4s ease-in-out infinite; transform-origin: 50% 100%; }
+.fp-soil.pop .fp-crop, .fp-soil.pop { animation: fpPop .5s ease-out; }
+.fp-bub { position: absolute; transform: translate(-50%, -50%); width: 6.8%; aspect-ratio: 1; padding: 0; border: 2px solid rgba(255, 255, 255, .95); border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffffff, #e3f3ff 55%, #b8dcf5); box-shadow: 0 0 0 2px rgba(80, 170, 230, .35), 0 3px 8px rgba(0, 40, 80, .35); display: grid; place-items: center; cursor: pointer; z-index: 4; transition: filter .15s; }
+.fp-bub:hover, .fp-bub:focus-visible { filter: brightness(1.08); outline: none; box-shadow: 0 0 0 3px #8fd3ff, 0 3px 8px rgba(0, 40, 80, .35); }
+.fp-ic { width: 64%; height: 64%; display: grid; place-items: center; }
+.fp-ic .it-ic { width: 100%; height: 100%; }
+.fp-sym { font-size: 2.6cqw; font-weight: 800; color: #2a6fa8; line-height: 1; }
+.fp-lab { position: absolute; top: 100%; left: 50%; transform: translate(-50%, 3px); white-space: nowrap; padding: 1px 7px; border-radius: 999px; background: rgba(18, 40, 74, .86); color: #e8f4ff; font-size: clamp(9px, 1.15cqw, 13px); font-weight: 700; line-height: 1.5; font-variant-numeric: tabular-nums; }
+.fp-ready .fp-bub { background: radial-gradient(circle at 35% 30%, #fffef0, #fff1b8 55%, #ffd65a); box-shadow: 0 0 0 3px rgba(255, 210, 90, .55), 0 3px 10px rgba(0, 40, 80, .35); animation: fpBob 1.4s ease-in-out infinite; }
+.fp-ready .fp-lab { background: var(--red); color: #fff; }
+.fp-empty .fp-lab { background: rgba(40, 120, 70, .9); }
+.fp-lock .fp-bub { filter: grayscale(.7); opacity: .8; }
+.fp-lock .fp-lab { background: rgba(60, 60, 70, .82); }
+.fp-beam { position: absolute; transform: translateX(-50%); width: 5%; background: linear-gradient(to bottom, rgba(120, 255, 160, 0), rgba(120, 255, 160, .32) 35%, rgba(120, 255, 160, .32)); pointer-events: none; z-index: 1; }
+@keyframes fpBob { 0%, 100% { transform: translate(-50%, -50%); } 50% { transform: translate(-50%, -62%); } }
+@keyframes fpSway { 0%, 100% { transform: translateX(-50%) rotate(-4deg); } 50% { transform: translateX(-50%) rotate(4deg); } }
+@keyframes fpPop { 0% { transform: translate(-50%, -50%) scale(1); } 40% { transform: translate(-50%, -50%) scale(1.12); } 100% { transform: translate(-50%, -50%) scale(1); } }
+@media (prefers-reduced-motion: reduce) { .fp-ready .fp-bub, .fp-crop.ripe { animation: none; } }
+/* 种植园弹窗里的种子按钮 */
+.fs-list { display: grid; gap: 8px; }
+.fs-seed { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 12px; border: 1.5px solid var(--ink); border-radius: 12px; background: var(--paper); font: inherit; color: var(--ink); text-align: left; cursor: pointer; box-shadow: 2px 2px 0 var(--ink); }
+.fs-seed:hover { background: #f3f8ee; transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--ink); }
+.fs-seed .it-ic { width: 40px; height: 40px; flex: none; }
+.fs-seed span { display: grid; gap: 2px; min-width: 0; }
+.fs-seed b { font-size: 15px; } .fs-seed small { font-size: 12.5px; color: var(--pencil); }
+/* 场景左下角：前往种植园 / 前往基地（有东西可以收时带红点） */
+.scene-go { position: absolute; left: 10px; bottom: 10px; z-index: 210; display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border: 1.5px solid rgba(143, 211, 255, .7); border-radius: 12px; background: rgba(18, 40, 74, .84); color: #e8f4ff; font: inherit; font-size: 13.5px; cursor: pointer; backdrop-filter: blur(2px); transition: background .15s, transform .15s; }
+.scene-go:hover, .scene-go:focus-visible { background: rgba(40, 80, 140, .94); transform: translateY(-1px); outline: none; border-color: #8fd3ff; }
+.sg-ic { font-size: 18px; line-height: 1; }
+.sg-dot { position: absolute; top: -5px; right: -5px; width: 12px; height: 12px; border-radius: 50%; background: var(--red); border: 2px solid #fff; }
+.base-room.editing .scene-go { display: none; }
+@media (max-width: 560px) { .scene-go { left: 6px; bottom: 6px; padding: 4px 8px; font-size: 11.5px; gap: 4px; } .sg-ic { font-size: 14px; } .fp-bub { border-width: 1.5px; } }
+@media (min-width: 761px) { .farm-side { top: 10px; transform: none; } }   /* 种植园：菜单放左上角，免得挡住最左边那块田的气泡 */
+@container (max-width: 620px) {   /* 手机：两排气泡离得近，不显示气泡下面的文字（点气泡会提示剩余时间），气泡大一点好点 */
+  .fp-lab { display: none; }
+  .fp-bub { width: 8.4%; }
+  .fp-sym { font-size: 3.6cqw; }
+}
