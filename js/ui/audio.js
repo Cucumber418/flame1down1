@@ -49,7 +49,7 @@
   // 曲名（2026-11-03 统一）：所有地方显示的曲名都从这里取（音乐鉴赏、基地音乐、温泉音乐、设置），统一格式：英文单词首字母大写、用空格分开，数字单独一节，不用连字符和下划线
   var NAMES = { ui: 'HMS JC', uiOld: 'Lobby', base: 'Base', summon: 'Summon', arena: 'Arena', earth: 'Earth', faceEnemy: 'Face The Enemy', faceEnemyScene: 'Face The Enemy',
     normal: 'Normal', stage: 'Stage', pvp: 'PVP', boss: 'Boss 1', boss2: 'Boss 2', boss3: 'Boss 3', tigerFinal: 'Northeast Past', ngc2237: 'NGC 2237',
-    flora: 'Flora Background', floraGrass: 'Flora 1', floraForest: 'Flora 2', floraFallen: 'Flora 3 The Great Cover', floraLab: 'Flora Lab',
+    flora: 'Flora', floraGrass: 'Flora 1 Grassland', floraForest: 'Flora 2 Jungle', floraFallen: 'Flora 3 The Great Cover', floraLab: 'Flora Lab',
     grassTalk: 'Grass Talk', memory: 'Memory', saver: 'Saver', disCommunication: 'Dis Communication', disComScene: 'Dis Communication', beforeEnd: 'Before The End',
     spa: 'Spa', kb: 'Cumberland', kbSurface: 'Cumberland 1 Surface', kbShallow: 'Cumberland 2 Shallow', kbDeep: 'Cumberland 3 Deeps', kbDeep2: 'Cumberland 4 Deeps II', kbDeep3: 'Cumberland 5 Deeps III',
     temple: 'Temple', vitalVoyage: 'Vital Voyage', finalStar: 'Final Star', decision: 'Decision', pompeiiCity: 'Pompeii City',
