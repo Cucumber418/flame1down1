@@ -4895,11 +4895,24 @@
       (acc.gifts && acc.gifts.sum1 ? '<p class="log-st">已领取召唤上线纪念：圣晶石 ×30</p>' : '<div class="sum-gift">' + H.itemIcon('g_core') + '<span><b>召唤上线纪念</b>：圣晶石 ×30（每位船员一次）</span><button type="button" class="btn primary" data-gift="sum1">领取</button></div>') +
       '<button type="button" class="btn' + (acc.gifts && acc.gifts.sum1 ? ' primary' : '') + '" data-golog="summon">去召唤</button></article>';
   }
+  // 基地全面翻新（2026-11-03）：房型宣传图 + 纪念礼包 + 传送到自己的基地
+  function baseLogHTML() {
+    var R = TX.D.BASE_ROOMS, ks = Object.keys(R), cur = ks.indexOf(ui.logRoom) >= 0 ? ui.logRoom : ks[0], G = TX.D.GIFTS.base1, got = acc.gifts && acc.gifts.base1, op = homeOpen();
+    var gift = !G ? '' : got ? '<p class="log-st">已领取基地改版纪念礼包</p>' : '<div class="sum-gift base-gift"><span class="bg-deco">' + Object.keys(G.deco).map(function (k) { return '<img src="' + DECO_IMG[k] + '" alt="">'; }).join('') + '</span><span><b>' + esc(G.name) + '</b>：' + Object.keys(G.deco).map(function (k) { return '摆件「' + esc(TX.D.BASE_DECO[k].n) + '」'; }).join('、') + '（每位船员一次）</span><button type="button" class="btn primary" data-gift="base1">领取</button></div>';
+    return '<article class="log-card wide base-log"><span class="tape l"></span><span class="tape r"></span><span class="chip log-tag">版本更新</span><h3>基地全面翻新！</h3>' +
+      '<div class="bl-main"><img src="' + BASE_UI[cur].img + '" alt="' + esc(R[cur].n) + '"><span class="bl-cap">' + esc(R[cur].n) + (R[cur].price ? ' · ' + fmt(R[cur].price) + ' 能量' : ' · 默认房型') + '</span></div>' +
+      '<div class="bl-thumbs">' + ks.map(function (k) { return '<button type="button" class="bl-th' + (k === cur ? ' on' : '') + '" data-logroom="' + k + '"><img src="' + BASE_UI[k].img + '" alt=""><span>' + esc(R[k].n) + '</span></button>'; }).join('') + '</div>' +
+      '<p>原来的茶室升级成了<b>基地</b>！一共 ' + ks.length + ' 种房型：星空甲板、海底穹顶、沙海舰桥、雪原树屋，在基地商城里用能量购买，随时切换。</p>' +
+      '<p>点「编辑基地」可以自由摆放<b>摆件</b>：地板摆件放在地上，墙饰挂在墙上，按住拖动、左右转向，最多摆 40 个。精元转化仪可以直接孵化精元，留言板能收到好友的留言，展示的精灵也会在基地里走来走去。</p>' +
+      '<p>好友可以来拜访你的基地，在「社交」里点「基地」就能去看看大家布置得怎么样。</p>' + gift +
+      (op ? '<button type="button" class="btn primary" data-golog="myhome">前往我的基地</button>' : '<p class="hint">读完荆楚号 · 天门支线「陆羽茶室」后开放基地。</p>') + '</article>';
+  }
   function logEntries() {
     var E = [], add = function (t, h) { if (h) E.push({ t: t, h: h }); };
     var now = new Date(), on = mysteryTime();
     var wait = on ? '' : (function () { var t = new Date(now); t.setHours(MYSTERY.from, 0, 0, 0); var m = Math.max(0, Math.round((t - now) / 60000)); return '距离今天的活动开始还有 ' + Math.floor(m / 60) + ' 小时 ' + (m % 60) + ' 分钟'; })();
-    ['base1', 'comp1'].forEach(function (id) { var G0 = TX.D.GIFTS[id]; if (G0 && !(acc.gifts && acc.gifts[id])) add('限时领取-' + G0.name, giftLogHTML(id)); });   // 还没领的礼包放在最上面（领完自动消失）
+    ['comp1'].forEach(function (id) { var G0 = TX.D.GIFTS[id]; if (G0 && !(acc.gifts && acc.gifts[id])) add('限时领取-' + G0.name, giftLogHTML(id)); });   // 还没领的礼包放在最上面（领完自动消失）；基地改版纪念礼包改在「基地全面翻新！」里领（2026-11-03）
+    add('版本更新-基地全面翻新！', baseLogHTML());
     add('船员交流-QQ群', '<article class="log-card wide qq-card"><span class="tape l"></span><span class="tape r"></span><div class="qq-txt"><span class="chip log-tag">船员交流</span><h3>QQ 群：<b class="qq-no">' + QQ_GROUP + '</b></h3><p class="hint">攻略、组队切磋、bug 反馈、新精灵立绘抢先看，都在群里。</p></div><button type="button" class="btn primary" data-copyqq="1">复制群号</button></article>');
     add('新玩法-圣晶石召唤', summonLogHTML());
     add('获取精灵-陨石带的飞翼莱克', leibnizLogHTML());
@@ -4933,7 +4946,7 @@
   function logUnread() { if (!acc) return 0; if (!LOG_KEYS) { try { LOG_KEYS = logEntries().map(function (x) { return logKeyOf(x.t); }); } catch (e) { LOG_KEYS = []; } } var R = logRead(); return LOG_KEYS.filter(function (k) { return !R[k]; }).length; }
   function logMarkRead(t) { var k = logKeyOf(t), R = logRead(); if (!R[k]) { R[k] = Date.now(); save(); navDots(); } }
   function renderLog() {
-    var E = logEntries(), sel = E.filter(function (x) { return x.t === ui.logSel; })[0] ? ui.logSel : (E.filter(function (x) { return x.t === '新玩法-圣晶石召唤'; })[0] || E[0]).t;   // 每次进入航行日志默认显示「新玩法-圣晶石召唤」
+    var E = logEntries(), sel = E.filter(function (x) { return x.t === ui.logSel; })[0] ? ui.logSel : (E.filter(function (x) { return x.t === '版本更新-基地全面翻新！'; })[0] || E[0]).t;   // 每次进入航行日志默认显示「新玩法-圣晶石召唤」
     ui.logSel = sel; LOG_KEYS = E.map(function (x) { return logKeyOf(x.t); });
     logMarkRead(sel);
     $('pg-log').innerHTML = '<div class="page-head"><h2 class="sec">航行日志</h2><p class="hint">荆楚号的公告板：新玩法、限时活动、全服任务和更新公告。点左边的标题查看内容。</p></div>' +
@@ -5066,8 +5079,10 @@
       }).catch(function () { AV.busy = false; toast('连不上服务器，稍后再试'); });
       return;
     }
+    var lr = e.target.closest('[data-logroom]'); if (lr) { ui.logRoom = lr.dataset.logroom; var lv0 = document.querySelector('.log-view'), lsc = lv0 ? lv0.scrollTop : 0; renderLog(); var lv1 = document.querySelector('.log-view'); if (lv1) lv1.scrollTop = lsc; return; }   // 基地翻新：切换宣传图
     var g = e.target.closest('[data-golog]'); if (g) { if (g.dataset.golog === 'boss-barren') { ex.view = 'boss'; ex.boss = 'barren'; go('explore'); return; } if (g.dataset.golog === 'boss-odo') { ex.view = 'boss'; ex.boss = 'odo'; go('explore'); return; }
       if (g.dataset.golog === 'summon') { ex.view = 'summon'; ex.planet = 'jingchu'; go('explore'); return; }
+      if (g.dataset.golog === 'myhome') { ex.view = 'home'; ex.area = '天门'; ex.planet = 'jingchu'; go('explore'); renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
       if (g.dataset.golog === 'flora-catch') { ex.planet = 'flora'; ex.view = 'sites'; ex.fpart = 'catch'; go('explore'); renderExplore(); return; }
       if (g.dataset.golog === 'travelcat') { ex.planet = 'flora'; ex.view = 'sites'; ex.fpart = 'story'; ex.flSt = 'side'; go('explore'); renderExplore(); return; }
       if (g.dataset.golog === 'boss-tiger') { ex.view = 'boss'; ex.boss = 'tiger'; ex.bossK = 'tiger'; ex.bossD = 2; go('explore'); return; } go(g.dataset.golog); }
