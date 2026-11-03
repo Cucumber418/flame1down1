@@ -8115,5 +8115,7 @@
   function bgmScene() { if (window.HSAUDIO && HSAUDIO.scene) HSAUDIO.scene(sceneNow()); }
   setInterval(bgmScene, 500);
 
+  // 2026-11-03：每次打开游戏（登录后）默认进自己的基地；基地还没开放的照旧回到上次的页面
+  if (ready() && homeOpen()) { page = 'explore'; ex.planet = 'jingchu'; ex.area = '天门'; ex.view = 'home'; ex.mode = null; }
   renderTop(); syncBattle(); bgmScene();
 })();
