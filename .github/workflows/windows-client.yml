@@ -58,7 +58,9 @@ jobs:
   publish:
     needs: build
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # 从 GitHub 往国内服务器传 100 MB 很慢（实测 15 分钟传不完），给足时间；
+    # 中途断了也不要紧：没传完的部分留在服务器的 .partial 里，重新运行会接着传
+    timeout-minutes: 90
     steps:
       - name: 检查是否已配置服务器
         id: cfg
@@ -86,6 +88,7 @@ jobs:
           KEY: ${{ secrets.DEPLOY_KEY }}
         run: |
           HOST=$(printf '%s' "$RAW_HOST" | tr -d '[:space:]' | sed -E 's#^[a-zA-Z]+://##; s#/.*$##; s#:[0-9]+$##')
+          echo "::add-mask::$HOST"
           echo "HOST=$HOST" >> "$GITHUB_ENV"
           mkdir -p ~/.ssh
           printf '%s\n' "$KEY" | tr -d '\r' > ~/.ssh/deploy && chmod 600 ~/.ssh/deploy
@@ -105,10 +108,10 @@ jobs:
           cat client.json
           SSH="ssh -i $HOME/.ssh/deploy -o StrictHostKeyChecking=accept-new -o ServerAliveInterval=15 -o ConnectTimeout=30"
           $SSH "ubuntu@$HOST" 'sudo mkdir -p /opt/flame1down-data/client'
-          for i in 1 2 3; do
-            rsync -a --partial -e "$SSH" --rsync-path="sudo rsync" "$FILE" "ubuntu@$HOST:/opt/flame1down-data/client/" && break
+          for i in 1 2 3 4 5; do
+            rsync -a --partial-dir=.partial --timeout=120 -e "$SSH" --rsync-path="sudo rsync" "$FILE" "ubuntu@$HOST:/opt/flame1down-data/client/" && break
             echo "第 $i 次上传失败，10 秒后重试"; sleep 10
-            [ "$i" = 3 ] && { echo "::error title=上传失败::安装包传到服务器失败了三次。"; exit 1; }
+            [ "$i" = 5 ] && { echo "::error title=上传失败::安装包传到服务器失败了五次。重新运行这个流程会接着传。"; exit 1; }
           done
           # 安装包传完再换版本信息，玩家不会下到传了一半的文件；只留最新的两个安装包
           rsync -a -e "$SSH" --rsync-path="sudo rsync" client.json "ubuntu@$HOST:/opt/flame1down-data/client/"
