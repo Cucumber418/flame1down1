@@ -2741,9 +2741,10 @@
       '</div></div><div class="en-cf"><button type="button" class="btn primary big" data-enleave="1">离开商店</button></div></section>';
   }
   // 精灵名单（点一只打开它的面板，在面板里配置装备）
+  function enOrder(R) { return R.ros.map(function (x, i) { return i; }).sort(function (a, b) { return (R.ros[b].spec.lv - R.ros[a].spec.lv) || a - b; }); }   // 名单按等级从高到低（2026-11-03）
   function enRosPanel(R) {
     return '<section class="en-card"><div class="en-ch"><span>🐾</span><h3>参战精灵</h3><em class="en-cnt">存活 ' + EN.alive(R).length + ' / ' + R.ros.length + '</em><button type="button" class="en-x" data-enpanel="" aria-label="关闭">✕</button></div>' +
-      '<div class="en-cb"><div class="en-roster">' + R.ros.map(function (x, i) { return enRosCard(x, i, R, 'open'); }).join('') + '</div>' + (R.bag.length ? '<p class="en-sub">背包里有 ' + R.bag.length + ' 件装备还没装上。</p>' : '') + '</div></section>';
+      '<div class="en-cb"><div class="en-roster">' + enOrder(R).map(function (i) { return enRosCard(R.ros[i], i, R, 'open'); }).join('') + '</div>' + (R.bag.length ? '<p class="en-sub">背包里有 ' + R.bag.length + ' 件装备还没装上。</p>' : '') + '</div></section>';
   }
   function enStats(x) {
     var sp = x.spec, bm = makeMon(sp.id, sp.moves, 1, sp.lv, sp.ev, sp.nat, sp.iv);
@@ -2763,8 +2764,8 @@
         : '<div class="en-eqs empty"><span class="en-eqplus">＋</span><div><b>空装备槽</b><small>' + (x.dead ? '倒下的精灵不能装备' : R.bag.length ? '从下方背包里选一件装上' : '背包里没有装备') + '</small></div></div>';
     }).join('');
     var full = x.eq.length >= 3, bag = R.bag.length ? '<div class="en-eqbag">' + R.bag.map(function (k, b) { var I = EN.IT[k]; return '<div class="en-eqb t' + I.tier + '">' + H.itemIcon(k) + '<div><b>' + esc(I.n) + '</b><small>' + esc(I.d.replace(/^装备：/, '')) + '</small></div><button type="button" class="btn primary" data-enequip="' + b + '|' + i + '"' + (full || x.dead ? ' disabled' : '') + '>装上</button></div>'; }).join('') + '</div>' : '<p class="en-sub">背包里没有闲置的装备。战斗奖励、商店里可以拿到装备。</p>';
-    var nav = '<button type="button" class="en-nav" data-enmon="' + ((i - 1 + R.ros.length) % R.ros.length) + '" aria-label="上一只">‹</button><button type="button" class="en-nav" data-enmon="' + ((i + 1) % R.ros.length) + '" aria-label="下一只">›</button>';
-    return '<section class="en-card en-monp"><div class="en-ch"><button type="button" class="en-back" data-enpanel="ros">‹ 名单</button><h3>' + esc(sp.nick) + '</h3><em class="en-cnt">' + (i + 1) + ' / ' + R.ros.length + '</em>' + nav + '<button type="button" class="en-x" data-enpanel="" aria-label="关闭">✕</button></div>' +
+    var od = enOrder(R), oi = od.indexOf(i), nav = '<button type="button" class="en-nav" data-enmon="' + od[(oi - 1 + od.length) % od.length] + '" aria-label="上一只">‹</button><button type="button" class="en-nav" data-enmon="' + od[(oi + 1) % od.length] + '" aria-label="下一只">›</button>';
+    return '<section class="en-card en-monp"><div class="en-ch"><button type="button" class="en-back" data-enpanel="ros">‹ 名单</button><h3>' + esc(sp.nick) + '</h3><em class="en-cnt">' + (oi + 1) + ' / ' + R.ros.length + '</em>' + nav + '<button type="button" class="en-x" data-enpanel="" aria-label="关闭">✕</button></div>' +
       '<div class="en-cb en-monb"><div class="en-mon-l' + (x.dead ? ' dead' : '') + '"><div class="en-stage" style="--tc:' + (TYPE_COLOR[S0.types[0]] || '#888') + '"><img src="' + esc(sp.img) + '" alt="">' + (x.dead ? '<span class="en-stamp">已倒下</span>' : '') + '</div>' +
         '<div class="en-mon-id"><b>' + esc(sp.nick) + '</b><span>LV' + sp.lv + '</span>' + tchips(S0.types) + '</div>' +
         '<div class="en-hpline"><span>体力</span>' + enHp(x) + '<b>' + hp + ' / ' + bm.maxhp + '</b></div>' +
@@ -2823,7 +2824,7 @@
   function enPrep(R) {
     var C = R.cur, live = R.ros.map(function (x, i) { return x.dead ? -1 : i; }).filter(function (i) { return i >= 0; });
     enUi.line = enUi.line.filter(function (i) { return live.indexOf(i) >= 0; });
-    var ck = R.st + ':' + R.n; if (enUi.lineFor !== ck) { enUi.lineFor = ck; enUi.step = 'pick'; if (!enUi.line.length) enUi.line = live.slice().sort(function (a, b) { return (R.ros[b].hpr || 0) - (R.ros[a].hpr || 0); }).slice(0, EN.LINE_MAX); }
+    var ck = R.st + ':' + R.n; if (enUi.lineFor !== ck) { enUi.lineFor = ck; enUi.step = 'pick'; if (!enUi.line.length && R.lastLine) enUi.line = R.lastLine.filter(function (i) { return live.indexOf(i) >= 0; }).slice(0, EN.LINE_MAX); if (!enUi.line.length) enUi.line = live.slice().sort(function (a, b) { return (R.ros[b].hpr || 0) - (R.ros[a].hpr || 0); }).slice(0, EN.LINE_MAX); }
     if (!enUi.line.length) enUi.step = 'pick';
     return '<section class="en-card en-prep ' + C.t + '"><div class="en-ch"><span>' + EN.NODE[C.t].ic + '</span><h3>' + EN.NODE[C.t].n + '</h3><em class="en-cnt">敌人 ' + C.foes.length + ' 只</em><button type="button" class="en-back" data-enhide="1">收起 ▾</button></div><div class="en-cb"><div class="en-foes">' + C.foes.map(function (f) {
       var bt = EN.buffText(f.boss);
@@ -2835,7 +2836,7 @@
             '<span class="tp-btns">' + (k ? '<button type="button" class="btn ghost lu-lead" data-enmv="-1" data-k2="' + i + '" aria-label="往前挪">‹</button><button type="button" class="btn ghost lu-lead" data-enlead="' + i + '">设为首发</button>' : '') + (k < n - 1 ? '<button type="button" class="btn ghost lu-lead" data-enmv="1" data-k2="' + i + '" aria-label="往后挪">›</button>' : '') + '</span></li>'; }).join('') + '</ol>' +
         '</div><div class="en-cf"><button type="button" class="btn ghost" data-enstep="pick">重新选择</button><button type="button" class="btn primary big" data-enfight="1">开战</button></div></section>'
       // 第一步：选出战的精灵
-      : '<h4>选择出战的精灵 <span class="hint">已选 ' + enUi.line.length + ' / ' + EN.LINE_MAX + '</span></h4><div class="en-roster">' + R.ros.map(function (x, i) { return enRosCard(x, i, R, 'line'); }).join('') + '</div>' +
+      : '<h4>选择出战的精灵 <span class="hint">已选 ' + enUi.line.length + ' / ' + EN.LINE_MAX + '</span></h4><div class="en-roster">' + enOrder(R).map(function (i) { return enRosCard(R.ros[i], i, R, 'line'); }).join('') + '</div>' +
         '</div><div class="en-cf"><button type="button" class="btn ghost" data-enreset="1"' + (enUi.line.length ? '' : ' disabled') + '>重置</button><button type="button" class="btn primary big" data-enstep="order"' + (enUi.line.length ? '' : ' disabled') + '>确认</button></div></section>');
   }
   function enEvent(R, P) {

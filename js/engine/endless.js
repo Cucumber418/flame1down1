@@ -421,6 +421,7 @@ var ENDLESS = (function () {
         else R.cur = null;
         rep.back = true;
       }
+      if (rec(a).run) rec(a).run.lastLine = c.line.slice();   // 2026-11-03：记下这次的出战阵容，下一场默认沿用
       return rep;
     }
   };
