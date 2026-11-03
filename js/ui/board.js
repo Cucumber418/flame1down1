@@ -49,7 +49,7 @@
       '<div class="soc-foot"><button type="button" class="btn primary" data-tx="1">好的</button></div>');
     aboutClient();
   }
-  // 电脑客户端：在客户端里显示版本；在电脑浏览器里显示下载链接（服务器上有安装包时才显示）
+  // 电脑客户端：在客户端里显示版本；在电脑浏览器里介绍客户端（服务器上有安装包时给下载按钮，没有就指到 QQ 群文件）
   function aboutClient() {
     var box = $('ab-client'); if (!box) return;
     var m = /Flame1DownClient\/([\d.]+)/.exec(navigator.userAgent || '');
@@ -63,7 +63,8 @@
       var mb = info.size ? '，约 ' + Math.round(info.size / 1048576) + ' MB' : '';
       box.innerHTML = '<h4 class="ab-h">电脑客户端</h4>' +
         '<p>荆楚号另备 Windows 客户端：独立窗口、自带手写字体、背景音乐无需先点页面。进度与网页版同在服务器上，登录同一账号即可接着玩。</p>' +
-        '<p><a class="btn primary" href="/download/windows" style="display:inline-block;text-decoration:none;margin:2px 0">下载 Windows 客户端（v' + esc(info.version) + mb + '）</a></p>' +
+        (info.file ? '<p><a class="btn primary" href="/download/windows" style="display:inline-block;text-decoration:none;margin:2px 0">下载 Windows 客户端（v' + esc(info.version) + mb + '）</a></p>'
+          : '<p>最新版 v' + esc(info.version) + ' 的安装包在<b>船员 QQ 群的群文件</b>里。</p>') +
         '<p class="ab-note">安装时若 Windows 提示「已保护你的电脑」，点「更多信息」，再点「仍要运行」即可。</p>';
       box.hidden = false;
     }).catch(function () {});

@@ -135,11 +135,16 @@ function serveDownload(req, res) {
   var info = null;
   try { info = JSON.parse(fs.readFileSync(path.join(CLIENT_DIR, 'client.json'), 'utf8')); } catch (e) { info = null; }
   if (name === 'client.json') {
-    if (!info) return send(res, 404, 'application/json; charset=utf-8', '{"error":"还没有上传客户端"}');
+    // 服务器上没有安装包时（平时安装包发在 QQ 群文件里），只报仓库里 desktop/package.json 的版本号，
+    // 客户端据此提示「有新版，去群文件下载」，「关于」里也不显示下载按钮
+    var latest = null;
+    try { latest = JSON.parse(fs.readFileSync(path.join(ROOT, 'desktop', 'package.json'), 'utf8')).version; } catch (e) { latest = null; }
+    if (!info || (latest && info.version !== latest)) info = latest ? { version: latest, file: null } : null;
+    if (!info) return send(res, 404, 'application/json; charset=utf-8', '{"error":"没有客户端"}');
     return send(res, 200, 'application/json; charset=utf-8', JSON.stringify(info));
   }
   if (name === '' || name === 'windows') {
-    if (!info || !info.file) return send(res, 404, 'text/plain; charset=utf-8', '还没有上传 Windows 客户端');
+    if (!info || !info.file) return send(res, 200, 'text/html; charset=utf-8', '<!doctype html><meta charset="utf-8"><title>Flame1Down - 1 客户端</title><body style="font:16px/1.7 sans-serif;max-width:560px;margin:15vh auto;padding:0 16px;color:#23222b;background:#fbfaf3"><h2>Windows 客户端</h2><p>客户端安装包发在<b>船员 QQ 群的群文件</b>里，请到群文件下载最新版，装好后覆盖旧版即可，进度不受影响。</p></body>');
     res.writeHead(302, { 'Location': '/download/' + encodeURIComponent(info.file), 'Cache-Control': 'no-cache' });
     return res.end();
   }

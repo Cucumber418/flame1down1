@@ -279,14 +279,16 @@ async function checkClientUpdate(manual) {
     return;
   }
   if (!manual && cfg.skipVersion === info.version) return;
+  const hosted = !!info.file;   // 服务器上有安装包就直接下载，没有就去 QQ 群文件里找
   const r = await dialog.showMessageBox(win, {
     type: 'info', title: '客户端更新',
     message: '有新版客户端 v' + info.version + '（当前 v' + VERSION + '）',
-    detail: '游戏内容每次都从服务器加载，不更新客户端也能照常玩。新版客户端改进的是窗口、字体这类外壳功能。\n点「下载」会用浏览器下载安装包，装好后覆盖旧版即可，进度不受影响。',
-    buttons: ['下载', '以后再说', '跳过这个版本'], defaultId: 0, cancelId: 1
+    detail: '游戏内容每次都从服务器加载，不更新客户端也能照常玩。新版客户端改进的是窗口、字体这类外壳功能。\n' +
+      (hosted ? '点「下载」会用浏览器下载安装包，' : '新版安装包在船员 QQ 群的群文件里，') + '装好后覆盖旧版即可，进度不受影响。',
+    buttons: hosted ? ['下载', '以后再说', '跳过这个版本'] : ['知道了', '跳过这个版本'], defaultId: 0, cancelId: hosted ? 1 : 0
   });
-  if (r.response === 0) shell.openExternal(origin + '/download/windows');
-  else if (r.response === 2) { cfg.skipVersion = info.version; saveCfg(); }
+  if (hosted && r.response === 0) shell.openExternal(origin + '/download/windows');
+  else if (r.response === (hosted ? 2 : 1)) { cfg.skipVersion = info.version; saveCfg(); }
 }
 
 /* ---------------- 菜单（按 Alt 显示） ---------------- */

@@ -226,9 +226,11 @@ sudo git clone --depth 1 https://github.com/Cucumber418/flame1down1 /opt/flame1d
 
 **服务器地址**：存在 `%APPDATA%\Flame1Down - 1\settings.json`。打包时设置了环境变量 `F1D_SERVER` 就写进 `default-server.json` 当默认地址；没写端口时依次试 `:8080`、`:80`（访问 `/ping`）。
 
-**打包和发布**：`.github/workflows/windows-client.yml`。`desktop/` 有改动推到 main 时，在 GitHub 的 Windows 机器上打包 NSIS 安装程序（`F1D_SERVER` 用 secret `DEPLOY_HOST`），再用 `DEPLOY_KEY` 传到服务器的 `/opt/flame1down-data/client/`（和存档目录放在一起，部署游戏时不会被删掉），同时写 `client.json`（版本、文件名、大小），只留最新两个安装包。发新版：改 `desktop/package.json` 的 `version` 推上来。也可以在 GitHub 的 Actions 页面手动运行「Windows 客户端」。
+**打包和发布**：`.github/workflows/windows-client.yml`。`desktop/` 有改动推到 main 时，在 GitHub 的 Windows 机器上打包 NSIS 安装程序（`F1D_SERVER` 用 secret `DEPLOY_HOST`），安装包在这次运行页面最下面的 Artifacts（`windows-client`）里下载，再发到船员 QQ 群的群文件。发新版：改 `desktop/package.json` 的 `version` 推上来。
 
-**下载**：服务器的 `/download/windows` 跳到最新的安装包，`/download/client.json` 是版本信息（server.js 的 `serveDownload`，目录可用环境变量 `CLIENT_DIR` 改）。电脑浏览器里打开游戏「关于」会出现下载链接（服务器上有安装包时才显示）；客户端启动后也会查这个文件，有新版就提示下载（可以跳过某个版本）。
+传到游戏服务器默认不做：从 GitHub 往国内服务器传 100 MB 实测 90 分钟都传不完（2026-11-03 试过两次）。真要试，在 Actions 页面手动运行「Windows 客户端」并勾选「上传到游戏服务器」：用 `DEPLOY_KEY` 把安装包传到 `/opt/flame1down-data/client/`（可续传，没传完的在 `.partial` 里），传完写 `client.json`（版本、文件名、大小），只留最新两个安装包。
+
+**下载与新版提示**：server.js 的 `serveDownload`（目录可用环境变量 `CLIENT_DIR` 改）。`/download/client.json` 报最新版本：服务器上有同版本的安装包时带文件名，没有时只报仓库里 `desktop/package.json` 的版本（`file: null`）。`/download/windows` 有安装包就跳过去下载，没有就显示「去 QQ 群文件下载」。电脑浏览器里打开「关于」会介绍客户端（有安装包时给下载按钮）；客户端启动后也查这个文件，有新版就提示（可以跳过某个版本）。
 
 **本地调试**：`cd desktop && npm install && npm start`。在 Linux 上打 Windows 包需要装 wine：`npm run dist`。安装包没有代码签名，Windows 第一次运行会提示「已保护你的电脑」，点「更多信息 → 仍要运行」。
 
