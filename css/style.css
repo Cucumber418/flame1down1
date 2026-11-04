@@ -3701,8 +3701,9 @@ html.land-rot .sheet { height: 100%; overflow-y: auto; overflow-x: hidden; -webk
 .sg-dot { position: absolute; top: -5px; right: -5px; width: 12px; height: 12px; border-radius: 50%; background: var(--red); border: 2px solid #fff; }
 .base-room.editing .scene-go { display: none; }
 @media (max-width: 560px) { .scene-go { left: 6px; bottom: 6px; padding: 4px 8px; font-size: 11.5px; gap: 4px; } .sg-ic { font-size: 14px; } .fp-bub { border-width: 1.5px; } }
-@container (max-width: 620px) {   /* 手机：两排气泡离得近，不显示气泡下面的文字（点气泡会提示剩余时间），气泡大一点好点 */
-  .fp-lab { display: none; }
-  .fp-bub { width: 8.4%; }
+@container (max-width: 620px) {   /* 手机：两排气泡离得近，上排的文字挪到气泡上面，免得压住下排的气泡；气泡大一点好点 */
+  .fp-bub { width: 8.4%; border-width: 1.5px; }
   .fp-sym { font-size: 3.6cqw; }
+  .fp-lab { font-size: 9px; padding: 0 4px; line-height: 1.45; }
+  .fp-bub.up .fp-lab { top: auto; bottom: 100%; transform: translate(-50%, -2px); }
 }

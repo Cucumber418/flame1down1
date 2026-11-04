@@ -6546,7 +6546,7 @@
     var tip = '田 ' + (i + 1) + (st === 'lock' ? '：还没开，可以在种子商店扩建' : st === 'empty' ? '：空着，点一下种植' : st === 'ready' ? ' · ' + itemName(p.seed) + '：成熟了，点一下收获「' + itemName(S.crop) + '」×' + S.yield : ' · ' + itemName(p.seed) + '：还要 ' + farmLeftText(p));
     return '<div class="fp fp-' + st + '" data-fp="' + i + '">' +
       '<button type="button" class="fp-soil" data-fpi="' + i + '" style="left:' + P.t[0] + '%;top:' + P.t[1] + '%" aria-label="' + esc(tip) + '">' + (st === 'grow' || st === 'ready' ? '<span class="fp-crop' + (st === 'ready' ? ' ripe' : '') + '">' + (st === 'ready' ? H.itemIcon(S.crop) : SPROUT_SVG) + '</span>' : '') + '</button>' +
-      '<button type="button" class="fp-bub" data-fpi="' + i + '" style="left:' + P.b[0] + '%;top:' + P.b[1] + '%" title="' + esc(tip) + '" aria-label="' + esc(tip) + '"><span class="fp-ic">' + ic + '</span><span class="fp-lab" data-fpclock="' + i + '">' + lab + '</span></button></div>';
+      '<button type="button" class="fp-bub' + (P.b[1] < 45 ? ' up' : '') + '" data-fpi="' + i + '" style="left:' + P.b[0] + '%;top:' + P.b[1] + '%" title="' + esc(tip) + '" aria-label="' + esc(tip) + '"><span class="fp-ic">' + ic + '</span><span class="fp-lab" data-fpclock="' + i + '">' + lab + '</span></button></div>';
   }
   // 左边的功能菜单（样式和基地的一样）
   function farmSideHTML() {
