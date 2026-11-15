@@ -1151,7 +1151,7 @@
     return html + '</div></section>';
   }
   function renderItems() {
-    $('pg-items').innerHTML = '<div class="page-head storage-head"><h2 class="sec">储存箱</h2><span class="storage-energy"><img src="images/items/energy.png" alt="">能量 <b>' + fmt(acc.energy) + '</b></span></div><p class="hint">你拥有的所有道具。点道具查看说明和使用方法。</p>' + itemsHTML();
+    $('pg-items').innerHTML = '<div class="page-head storage-head"><h2 class="sec">储存箱</h2><span class="storage-energy"><img src="images/items/energy.png" alt="">能量 <b>' + fmt(acc.energy) + '</b></span></div>' + itemsHTML();
   }
   function teamRename(i) {
     var old = $('tren-dlg'); if (old) old.remove();
@@ -1398,7 +1398,7 @@
   function renderStore() {
     var f = ui.f, list = filtered(), m = mon(ui.sel), ivSort = f.sort === 'ivd' || f.sort === 'iva';   // 按天赋排序时，卡片上直接显示天赋评级
     var cnt = {}; acc.mons.forEach(function (x) { SPMAP[x.sid].types.forEach(function (t) { cnt[t] = (cnt[t] || 0) + 1; }); });
-    var html = monsTabs('store') + '<div class="page-head"><h2 class="sec">精灵仓库</h2><p class="hint flash">这里存放着你拥有的全部精灵，可按属性、等级检索。点击精灵查看资料，并可加入配队。</p></div>' +
+    var html = monsTabs('store') + '<div class="page-head"><h2 class="sec">精灵仓库</h2><p class="hint flash" role="status"></p></div>' +
       '<div class="filters" id="filters">' +
       '<div class="f-row"><span class="f-lab">属性</span><button type="button" class="fchip' + (!f.type ? ' on' : '') + '" data-ft="">全部<i>' + acc.mons.length + '</i></button>' +
       ALL_T.map(function (t) { return '<button type="button" class="fchip t' + (f.type === t ? ' on' : '') + (cnt[t] ? '' : ' zero') + '" style="--tc:' + TYPE_COLOR[t] + '" data-ft="' + t + '">' + t + '<i>' + (cnt[t] || 0) + '</i></button>'; }).join('') + '</div>' +
@@ -1444,7 +1444,7 @@
   function renderRelease() {
     var s = relSel(), list = acc.mons.slice().sort(function (a, b) { var ba = GROW.relBlock(acc, a) ? 1 : 0, bb = GROW.relBlock(acc, b) ? 1 : 0; return ba - bb || a.lv - b.lv || a.u - b.u; });
     var pick = relPicked(), ex0 = 0, pt0 = 0; pick.forEach(function (m) { ex0 += GROW.relExp(m.lv); pt0 += GROW.relPt(m); });
-    var html = monsTabs('release') + '<div class="page-head"><h2 class="sec">精灵放生</h2><p class="hint">放生后，精灵会回到野外，<b>不能找回</b>。获得的经验只看等级，放生点数只看稀有度（异色 ×' + GROW.REL_SHINY + '）。主宠、只能拥有一只的精灵不能放生；在配队里的精灵要先移出配队。</p></div>' +
+    var html = monsTabs('release') + '<div class="page-head"><h2 class="sec">精灵放生</h2></div>' +
       '<div class="rel-bar"><span class="rel-have">' + H.itemIcon('relPt') + '放生点数 <b>' + fmt((acc.items && acc.items.relPt) || 0) + '</b></span><span class="rel-legend">' + GROW.REL_TIER.map(function (T, i) { return '<span class="rel-tier" style="--rc:' + REL_TC[i] + '">' + T.n + ' ' + T.pt + ' 点</span>'; }).join('') + '</span></div>' +
       '<div class="rel-act"><span>已选 <b>' + pick.length + '</b> 只' + (pick.length ? ' · 可获得 <b>' + fmt(ex0) + '</b> 经验、<b>' + fmt(pt0) + '</b> 放生点数' : '') + '</span><span class="rel-btns"><button type="button" class="btn ghost" data-relall="1" title="不包括异色和超过 30 级的精灵">选中全部常见精灵</button><button type="button" class="btn ghost" data-relclr="1"' + (pick.length ? '' : ' disabled') + '>清空</button><button type="button" class="btn primary" data-relgo="1"' + (pick.length ? '' : ' disabled') + '>放生</button></span></div>' +
       '<div class="dex-grid rel-grid">' + list.map(function (m) {
@@ -1530,7 +1530,7 @@
     var n = litCount(), T = TITLES[0];
     var ns = DEX_ALL.filter(function (s) { return !owned(s.id) && acc.seen && acc.seen[s.id] !== undefined; }).length;
     if (dexSel && !owned(dexSel)) dexSel = null;
-    var html = monsTabs('dex') + '<div class="page-head"><h2 class="sec">黄冈秘鉴</h2><p class="hint">荆楚号学院部收藏的精灵图鉴。带回某一类精灵后，它那一页就会点亮；在剧情里见过或交过手的精灵，会先记下名字。</p></div>' +
+    var html = monsTabs('dex') + '<div class="page-head"><h2 class="sec">黄冈秘鉴</h2></div>' +
       '<div class="dex-prog"><span class="tape l"></span><div><b>' + n + '</b> / ' + DEX_ALL.length + ' 类已点亮' + (ns ? '<small class="seen-n">　另有 ' + ns + ' 类见过</small>' : '') + '</div><div class="pbar2"><i style="width:' + (n / DEX_ALL.length * 100) + '%"></i></div>' +
       '<span class="hint">' + ((acc.titles || []).indexOf(T.id) >= 0 ? '已获得称号「' + T.n + '」' : '再点亮 ' + Math.max(0, 3 - n) + ' 类，可获得称号「' + T.n + '」') + '</span></div>' +
       '<div class="build"><div class="dex-grid hg-grid">' + dexOrder().map(function (s) {
@@ -1884,7 +1884,7 @@
     if (ex.view === 'seedshop') { if (farmOpen()) { renderSeedShop(); return; } ex.view = 'area'; ex.area = '恩施'; }
     if (ex.view === 'spa') { if (spaOpen()) { renderSpa(); return; } ex.view = 'area'; ex.area = '咸宁'; }
     var Pp = ex.view === 'sites' && PLANETS.filter(function (p) { return p.id === ex.planet; })[0];
-    var html = exHead(ex.view === 'planets' ? '选择要前往的星球。' : Pp && Pp.ship ? '点击舰上的区域，即可传送过去。' : '选择要前往的地点。');
+    var html = exHead('');
     if (ex.view === 'planets') {
       // 2026-10-31：空间站、太空竞技场、BOSS挑战、每周挑战移到飞船终端（舰体图右边）
       html += '<div class="gx-rows">' + mayarMap() + '</div>' + arcBarHTML() +
@@ -2027,7 +2027,7 @@
         '<span class="mk-dot">' + (pr.done ? '✓' : open ? '!' : '锁') + '</span><span class="mk-lab"><b>' + S.chapter + '</b><small>' + st + '</small></span></button>';
     }).join('');
     var rw = ids.map(function (id) { var S = SITES[id], R = S.reward; return R ? '<li><b>' + S.chapter + '</b>：' + S.d + '<br><span class="hint">首次读完奖励：' + rwList(R).filter(Boolean).join('、') + (UNLOCK[id] ? '，并开放' + UNLOCK[id] : '') + (prog(id).rewarded ? '（已领取）' : '') + '</span></li>' : '<li><b>' + S.chapter + '</b>：' + S.d + '</li>'; }).join('');
-    $('pg-explore').innerHTML = exHead('点击场景中的剧情点开始剧情。') +
+    $('pg-explore').innerHTML = exHead('') +
       '<div class="crumb"><button type="button" class="btn ghost" id="ex-ship">‹ 返回舰体图</button><b>荆楚号 · ' + d[0] + '</b><span class="hint">' + n + ' · ' + d[1] + '</span></div>' +
       '<div class="area' + (ex.tp ? ' tp' : '') + '"><div class="area-scene">' +
       (bg ? '<img src="' + BG[bg] + '" alt="' + d[0] + '">' : '<div class="area-ph"><img src="' + CHARS.ship_icon + '" alt=""><b>' + d[0] + '</b><span>这片区域的具体样子还在建造中</span></div>') +
@@ -5026,7 +5026,7 @@
     var E = logEntries(), sel = E.filter(function (x) { return x.t === ui.logSel; })[0] ? ui.logSel : (E.filter(function (x) { return x.t === '版本更新-基地全面翻新！'; })[0] || E[0]).t;   // 每次进入航行日志默认显示「新玩法-圣晶石召唤」
     ui.logSel = sel; LOG_KEYS = E.map(function (x) { return logKeyOf(x.t); });
     logMarkRead(sel);
-    $('pg-log').innerHTML = '<div class="page-head"><h2 class="sec">航行日志</h2><p class="hint">荆楚号的公告板：新玩法、限时活动、全服任务和更新公告。点左边的标题查看内容。</p></div>' +
+    $('pg-log').innerHTML = '<div class="page-head"><h2 class="sec">航行日志</h2></div>' +
       '<div class="log-split"><nav class="log-nav" role="tablist" aria-label="航行日志">' + E.map(function (x) { var p = x.t.split('-'), ty = p.length > 1 ? p.shift() : '', nm = p.join('-'), on = x.t === sel; return '<button type="button" role="tab" class="log-nv' + (on ? ' on' : '') + '" aria-selected="' + on + '" data-logsel="' + esc(x.t) + '">' + (ty ? '<small>' + esc(ty) + '</small>' : '') + '<b>' + esc(nm) + '</b>' + (!logRead()[logKeyOf(x.t)] && x.t !== sel ? '<i class="red-dot" aria-label="未读"></i>' : '') + '</button>'; }).join('') + '</nav>' +
       '<div class="log-view">' + E.map(function (x) { return '<section class="log-sec" data-logsec="' + esc(x.t) + '"' + (x.t === sel ? '' : ' hidden') + '>' + x.h + '</section>'; }).join('') + '</div></div>';
   }
@@ -6118,7 +6118,7 @@
           : '<p class="hint">' + mmOpenText(i) + '</p>') + '</div></article>';
     };
     var finOpen = mmStageOpen(5);
-    $('pg-explore').innerHTML = holoHead('明明教官在空间站安置的全息作战场地。每天开放一个属性的关卡，打败对方的 3 只精灵就能获得明明代币。') +
+    $('pg-explore').innerHTML = holoHead('') +
       '<div class="crumb"><button type="button" class="btn ghost" id="mm-back">‹ 返回' + (ex.mmFrom === 'holo' ? '全息作战' : '空间站') + '</button><b>空间站 · 全息作战场地</b><span class="hint">限时活动 · ' + mmLeftText() + '</span></div>' +
       '<div class="mm-bar"><span>明明代币 <b>' + fmt(tok) + '</b></span><button type="button" class="btn primary" data-mmgacha="1">去抽奖</button></div>' +
       '<div class="mm-grid">' + MM.order.map(stage).join('') +
@@ -6175,7 +6175,7 @@
     el.innerHTML = '<div class="page-head holo-head"><h2 class="sec">全息作战 · 明明教官的试炼</h2></div>' +
       '<article class="holo-card' + (live ? ' live' : ' ended') + '"><span class="tape l"></span><span class="tape r"></span><span class="chip log-tag">' + (live ? '进行中' : Date.now() < MM.start ? '即将开始' : '已结束') + '</span>' +
       '<div class="holo-art"><img src="' + (CHARS.mm || '') + '" alt=""></div><div class="holo-txt"><h3>明明教官的试炼</h3>' +
-      '<p>明明教官在空间站安置了全息作战场地。每天开放一个属性的关卡（水 → 火 → 草 → 电 → 冰），最后还有「明明的最终试炼」。赢取明明代币，参加抽奖！</p>' +
+      '' +
       (live ? '<p class="hint">活动' + mmLeftText() + ' · ' + (f7 ? '先完成古城防卫部的活动任务「明明教官的试炼」' : '读完主线第十一段后参加') + '</p>' : '<p class="hint">活动已经结束了，下一次大型活动敬请期待。</p>') +
       '<div class="soc-foot">' + (live && f7 ? '<button type="button" class="btn primary" data-mmlog="task">去古城防卫部</button>' : (acc.mm ? '<button type="button" class="btn" data-mmlog="gacha">代币抽奖</button>' : '')) + '</div></div></article>';
   }
@@ -6188,7 +6188,7 @@
     if (!acc || !prog('flora7').done || !mmLive()) return '';
     var open = prog('mmTrial').done;
     return '<article class="log-card wide mm-card"><span class="tape l"></span><span class="tape r"></span><span class="chip log-tag">限时活动</span><h3>明明教官的试炼</h3>' +
-      '<p>明明教官在空间站安置了全息作战场地。每天开放一个属性的关卡（水 → 火 → 草 → 电 → 冰），最后还有「明明的最终试炼」。赢取明明代币，参加抽奖！</p>' +
+      '' +
       '<p class="hint">活动' + mmLeftText() + (open ? ' · 明明代币 ' + fmt(acc.items.mmTok || 0) : ' · 先完成古城防卫部的活动任务「明明教官的试炼」') + '</p>' +
       '<div class="soc-foot">' + (open ? '<button type="button" class="btn" data-mmlog="gacha">代币抽奖</button><button type="button" class="btn primary" data-mmlog="arena">传送到全息作战场地</button>' : '<button type="button" class="btn primary" data-mmlog="task">去古城防卫部</button>') + '</div></article>';
   }
@@ -6948,7 +6948,7 @@
       : '<b class="home-name">' + esc(H.name || '我的基地') + '</b><button type="button" class="btn ghost" id="home-rn">改名</button>';
     var dl0 = document.querySelector('.bp-dlg'), dlTop = dl0 ? dl0.scrollTop : 0, pan = ex.bpanel ? basePanelHTML(ex.bpanel) : '';
     if (!pan) ex.bpanel = null;
-    $('pg-explore').innerHTML = exHead('你在荆楚号上的基地。点画面左边的按钮管理基地；点基地里的精灵可以看它的详细情况。') +
+    $('pg-explore').innerHTML = exHead('') +
       '<div class="crumb"><button type="button" class="btn ghost" id="home-back">‹ 返回大厅</button>' + title + '</div>' +
       '<div class="base-stage' + (E0 ? ' editing' : '') + '">' + baseRoomHTML(LY, figs + (H.mons.length || E0 ? '' : '<p class="home-empty">基地里空荡荡的。点左边的「精灵展示」放几只精灵出来，或者点「基地编辑」摆上摆件吧。</p>') + (E0 ? '' : baseSideHTML() + sceneGoHTML('farm')), E0) + '</div>' +
       (E0 ? baseEditBar() : '') + (!E0 && window.HSSOCIAL && HSSOCIAL.friendBases ? HSSOCIAL.friendBases() : '') + pan;
@@ -7436,7 +7436,7 @@
   var QLAB = { lock: '未解锁', todo: '可进行', doing: '进行中', claim: '可领取', done: '已完成' };
   function qList(tab) { return tab === 'main' ? MAIN_Q : tab === 'side' ? SIDE_Q : tab === 'event' ? EVENT_Q.filter(function (id) { return id !== 'mmTrial' || mmLive() || prog(id).done; }) : tab === 'daily' ? [] : WQ.map(function (w) { return w.id; }); }
   function qTodo(tab) { if (tab === 'daily') { var D = daily(); return D ? D.list.filter(function (t) { return !t.c; }).length : 0; } return qList(tab).filter(function (id) { var st = qState(id); return st === 'todo' || st === 'doing' || st === 'claim'; }).length; }
-  function holoHead(hint) { return '<div class="page-head ex-head holo-head"><h2 class="sec">全息作战 · 明明教官的试炼</h2><p class="hint">' + hint + '</p></div>'; }   // 明明教官的试炼不管从哪里进，标题都是「全息作战」
+  function holoHead(hint) { return '<div class="page-head ex-head holo-head"><h2 class="sec">全息作战 · 明明教官的试炼</h2>' + (hint ? '<p class="hint">' + hint + '</p>' : '') + '</div>'; }   // 明明教官的试炼不管从哪里进，标题都是「全息作战」
   function exHead(hint) {
     return '<div class="page-head ex-head"><h2 class="sec">' + (shipCtx() ? '飞船终端' : '星际探索') + '</h2>' + (hint ? '<p class="hint">' + hint + '</p>' : '') + '</div>';
   }

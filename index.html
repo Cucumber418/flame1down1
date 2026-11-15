@@ -8,9 +8,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- 手写字体来自 Google Fonts，国内经常连不上；用 media=print 技巧异步加载，连不上也不会卡住页面，会自动用楷体代替 -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Long+Cang&display=swap" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="css/style.css">
-<link rel="stylesheet" href="css/battle-layout.css?v=20261115-2">
-<link rel="stylesheet" href="css/bag-layout.css?v=20261115-2">
+<link rel="stylesheet" href="css/style.css?v=20261115-3">
+<link rel="stylesheet" href="css/battle-layout.css?v=20261115-3">
+<link rel="stylesheet" href="css/bag-layout.css?v=20261115-3">
 </head>
 <body>
 
@@ -26,7 +26,6 @@
       <span class="res" id="res" hidden></span>
       <div class="qtop-wrap" id="qtop-wrap"><button type="button" class="mail-btn qtop-btn" id="qtop-btn" aria-haspopup="dialog" title="任务"><span aria-hidden="true">📜</span><b>任务</b><i class="q-badge" id="qtop-badge" hidden></i></button><div class="qtop-pop" id="qtop-pop" hidden></div></div>
       <button type="button" class="mail-btn fullscreen-btn" id="fullscreen-btn" aria-label="全屏显示游戏" aria-pressed="false" title="全屏显示游戏"><span aria-hidden="true">⛶</span><b>全屏</b></button>
-      <button type="button" class="mail-btn land-btn" id="land-btn" title="横屏模式：和电脑界面一样"><span aria-hidden="true">📱</span><b>横屏</b></button>
       <div class="who-menu" id="who-menu" hidden>
         <div class="gender-box" id="gender-box"></div>
         <div class="avatar-box" id="avatar-box"></div>
@@ -51,7 +50,6 @@
 
   <div class="page" id="pg-arena">
   <div class="crumb arena-crumb" id="arena-crumb"><button type="button" class="btn ghost" id="arena-back">‹ 返回飞船终端</button><b>飞船终端 · 竞技对战</b></div>
-  <p class="hint arena-sub">S1 赛季：沙盒调试 / 平衡排位 / 精灵大乱斗三种模式 · 背包最多 5 只，可随时切换。<br>平衡排位使用孝感大厅的模拟精灵（本赛季 24 只精灵组成精灵池）：一律满级、学习力为 0、性格平衡（无修正），与账号里的精灵互不影响。</p>
 
   <!-- ============ 选精灵 ============ -->
   <section id="builder">
@@ -197,8 +195,9 @@
 
 <!-- 脚本按顺序加载：数据 → 对战引擎 → 界面。顺序不能乱 -->
 <!-- cloud.js 先加载：用服务器打开时先登录、取回存档，再按下面的顺序加载游戏脚本（数据 → 引擎 → 界面，顺序不能调换） -->
-<script src="js/ui/viewport.js"></script>
-<script src="js/ui/skill-inspect.js?v=20261115-2"></script>
+<script src="js/ui/viewport.js?v=20261115-3"></script>
+<script src="js/ui/land.js?v=20261115-3"></script>
+<script src="js/ui/skill-inspect.js?v=20261115-3"></script>
 <script src="js/ui/loader.js"></script>
 <script src="js/net/cloud.js"></script>
 <script>
@@ -232,14 +231,13 @@ CLOUD.boot([
   'js/engine/summon.js',
   'js/engine/endless.js',
   'js/ui/audio.js',
-  'js/ui/battle-ui.js?v=20261115-2',
-  'js/ui/game.js?v=20261115-2',
-  'js/ui/social.js',
+  'js/ui/battle-ui.js?v=20261115-3',
+  'js/ui/game.js?v=20261115-3',
+  'js/ui/social.js?v=20261115-3',
   'js/ui/board.js',
-  'js/ui/land.js',
   'js/ui/display.js',
-  'js/ui/battle-layout.js?v=20261115-2',
-  'js/ui/bag-layout.js'
+  'js/ui/battle-layout.js?v=20261115-3',
+  'js/ui/bag-layout.js?v=20261115-3'
 ]);
 </script>
 </body>

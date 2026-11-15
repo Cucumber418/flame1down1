@@ -2,7 +2,7 @@
 (function () {
   'use strict';
   function scroller() {
-    return document.documentElement.classList.contains('land-rot') ? document.querySelector('.sheet') || window : window;
+    return document.documentElement.classList.contains('phone-portrait-rot') ? document.querySelector('.sheet') || window : window;
   }
   function y() {
     var s = scroller();

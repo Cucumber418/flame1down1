@@ -12,7 +12,7 @@
     if (!was) HSVIEW.to(0, 0); was = true;
     var z = parseFloat(body.style.zoom) || 1;
     var full = parseFloat(body.style.getPropertyValue('--game-view-height')) || (window.visualViewport ? visualViewport.height : root.clientHeight) / z;
-    var scale = root.classList.contains('land') ? z * (window.visualViewport ? visualViewport.scale : 1) : 1;
+    var scale = root.classList.contains('phone-portrait-rot') ? z * (window.visualViewport ? visualViewport.scale : 1) : 1;
     prop('--bag-full-height', full + 'px');
     prop('--bag-font-scale', String(1 / scale));
     var height = Math.max(120, full - HSVIEW.top(bag) - 12);

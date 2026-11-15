@@ -329,7 +329,7 @@
       body = list.length ? '<div class="plist">' + list.map(playerRow).join('') + '</div>' :
         '<div class="soc-empty"><p>' + (st.tab === 'friends' ? '还没有好友。去「玩家」里找到想关注的人，点「加好友」。' : '还没有其他船员。') + '</p></div>';
     }
-    pg.innerHTML = '<div class="soc-head"><h2 class="sec">社交</h2><p class="hint">荆楚号上的所有船员都在这里。点一位船员可以看他的名片；对方在线时可以直接发起切磋，切磋不消耗体力，也不影响经验和段位。</p></div>' +
+    pg.innerHTML = '<div class="soc-head"><h2 class="sec">社交</h2></div>' +
       '<div class="subbar soc-tabs" role="tablist">' +
       '<button type="button" class="sub' + (st.tab === 'players' ? ' on' : '') + '" data-tab="players" role="tab" aria-selected="' + (st.tab === 'players') + '">玩家 ' + (st.players ? P.length : '') + '</button>' +
       '<button type="button" class="sub' + (st.tab === 'friends' ? ' on' : '') + '" data-tab="friends" role="tab" aria-selected="' + (st.tab === 'friends') + '">好友 ' + (st.players ? friends.length : '') + '</button>' +
