@@ -148,6 +148,16 @@ body.battle-active .display-status {
   max-height: min(100px, 20%); overflow-y: auto; overscroll-behavior: contain;
   font-size: calc(12px * var(--battle-font-scale, 1));
 }
+/* 挑战的星级要求浮于战场内，展开时也不增加主网格的行或挤走技能。 */
+body.battle-active #battle .star-pull {
+  position: absolute; top: var(--battle-toast-top); left: var(--battle-toast-left);
+  width: var(--battle-toast-width); transform: translateX(-50%);
+}
+body.battle-active #battle .sp-tab { font-size: calc(12px * var(--battle-type-scale)); }
+body.battle-active #battle .sp-panel {
+  max-height: max(60px, calc(var(--battle-field-height) - 60px * var(--battle-type-scale)));
+  overflow-y: auto; overscroll-behavior: contain;
+}
 @media (max-width: 480px) {
   .battle-toolbar { gap: 4px; }
   .battle-toolbar > b { font-size: 12px; }

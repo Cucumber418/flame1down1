@@ -28,6 +28,7 @@
     property('--battle-toast-top', (field.offsetTop + 8) + 'px');
     property('--battle-toast-left', (field.offsetLeft + field.offsetWidth / 2) + 'px');
     property('--battle-toast-width', Math.max(0, field.offsetWidth - 16) + 'px');
+    property('--battle-field-height', field.offsetHeight + 'px');
     document.getElementById('battle-stats-toggle').hidden = stats.hidden;
     if (current === 'stats' && stats.hidden) close(false);
   }
