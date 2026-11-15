@@ -192,7 +192,7 @@
   function openHome(user, from) {
     st.view = { user: user, data: null, err: '', from: from || null };
     if (A.page() !== 'social') A.go('social'); else render();
-    window.scrollTo(0, 0);
+    HSVIEW.to(0, 0);
     api('GET', '/api/home?user=' + encodeURIComponent(user)).then(function (r) {
       if (!st.view || st.view.user !== user) return;
       if (r._code !== 200) st.view.err = r.error || '读取失败'; else st.view.data = r;

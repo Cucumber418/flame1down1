@@ -330,7 +330,7 @@
     setTimeout(navDots, 0);
   }
   function go(p) { if (p !== 'explore' && $('en-modal')) $('en-modal').remove(); if (typeof SPA !== 'undefined' && SPA.on && page === 'explore' && ex.view === 'spa' && p !== 'explore') { spaLeaveAsk(function () { go(p); }); return; }
-    if (ex.mode === 'replay' && p !== 'explore') { stopTimers(); ex.mode = null; ex.view = 'sites'; } PAGE_Y[page] = window.scrollY; if (p === 'log' && page !== 'log') ui.logSel = null; page = p; ui.pick = -1; savePage(); renderTop(); var y0 = PAGE_Y[p] || 0; window.scrollTo(0, y0); requestAnimationFrame(function () { if (page === p) window.scrollTo(0, Math.min(y0, document.documentElement.scrollHeight)); }); }
+    if (ex.mode === 'replay' && p !== 'explore') { stopTimers(); ex.mode = null; ex.view = 'sites'; } PAGE_Y[page] = HSVIEW.y(); if (p === 'log' && page !== 'log') ui.logSel = null; page = p; ui.pick = -1; savePage(); renderTop(); var y0 = PAGE_Y[p] || 0; HSVIEW.to(0, y0); requestAnimationFrame(function () { if (page === p) HSVIEW.to(0, y0); }); }
   var PAGE_Y = {};   // 2026-11-01：切换大栏时记住每一栏的滚动位置，回来时停在原来的地方
   $('mainnav').addEventListener('click', function (e) {
     var b = e.target.closest('[data-page]'); if (!b || b.disabled) return;
@@ -687,7 +687,7 @@
   $('onboard').addEventListener('click', function (e) { if (ex.mode === 'intro' && $('vn')) vnClick(e); });
   function createAccount(name) {
     acc = { v: 1, name: name, gender: ui.ob.gender === 'f' ? 'f' : 'm', created: Date.now(), starter: null, rival: null, next: 1, mons: [], teams: [[], []], active: 0, introDone: false, story: {}, exp: 0, energy: 0, items: {}, expV: expV(), matsV: 1, milV: 3, split8: 1, titles: [] };
-    save(); renderTop(); window.scrollTo(0, 0);
+    save(); renderTop(); HSVIEW.to(0, 0);
   }
   // 序章里选定初始精灵；Vanber 选克制主角的那只
   function rivalOf(sid) {
@@ -701,7 +701,7 @@
   function finishIntro() {
     acc.introDone = true; ex.mode = null; ex.view = 'planets'; stopTimers(); save();
     $('onboard').innerHTML = '';
-    ui.welcome = true; page = 'bag'; savePage(); renderTop(); window.scrollTo(0, 0);
+    ui.welcome = true; page = 'bag'; savePage(); renderTop(); HSVIEW.to(0, 0);
   }
 
   /* ---------- 共用：精灵卡片、资料面板 ---------- */
@@ -1170,7 +1170,7 @@
     });
   }
   function useBagItem(k) {
-    if (k === 'rename') { setTimeout(function () { renaming = true; renderRename(); $('who-menu').hidden = false; $('who-btn').setAttribute('aria-expanded', true); window.scrollTo(0, 0); }, 0); return; }   // 等这次点击处理完再打开名字菜单，免得被「点别处关闭」立刻关上
+    if (k === 'rename') { setTimeout(function () { renaming = true; renderRename(); $('who-menu').hidden = false; $('who-btn').setAttribute('aria-expanded', true); HSVIEW.to(0, 0); }, 0); return; }   // 等这次点击处理完再打开名字菜单，免得被「点别处关闭」立刻关上
     if (k === 'ctShare') { ctShareDlg(); return; }
     if (k === 'ctTicket') { txRun('ctRedeem', {}, function (r) { ui.itMsg = '兑换成功！获得 LV10 尖盔虫和 200 个花剑圆弧' + (r && r.added ? '，尖盔虫已加入配队。' : '，尖盔虫在精灵仓库里。'); if (!acc.items.ctTicket) ui.itSel = null; renderItems(); toast(ui.itMsg); }); return; }
     var sel = $('it-nat');
@@ -1398,13 +1398,13 @@
   $('pg-release').addEventListener('click', function (e) {
     var b = e.target.closest('button'); if (!b) return;
     if (b.dataset.mtab) { if (b.dataset.mtab === 'dex' && !dexOpen()) { toast('读完星际探索 · 荆楚号 · 学院部的剧情后，「黄冈秘鉴」才会开放。', prog('board').done ? '前往学院部' : '', '黄冈'); return; } go(b.dataset.mtab); return; }
-    var s = relSel(), y = window.scrollY;
+    var s = relSel(), y = HSVIEW.y();
     if (b.dataset.relu) { var m = mon(+b.dataset.relu), why = m && GROW.relBlock(acc, m); if (why) { toast(why === '在配队里' ? '这只精灵在配队里，先把它移出配队才能放生。' : why === '主宠' ? '主宠是你最初的伙伴，不能放生。' : '这只精灵只能拥有一只，不能放生。'); return; } s[m.u] = !s[m.u]; }
     else if (b.dataset.relall) acc.mons.forEach(function (m) { if (!GROW.relBlock(acc, m) && GROW.relTier(m.sid) === 0 && !m.shiny && m.lv <= 30) s[m.u] = true; });   // 2026-11-03：超过 30 级的不一键选中（练过的精灵要手动选）
     else if (b.dataset.relclr) ui.rel = {};
     else if (b.dataset.relgo) { releaseAsk(); return; }
     else return;
-    renderRelease(); window.scrollTo(0, y);
+    renderRelease(); HSVIEW.to(0, y);
   });
 
   /* ---------- 黄冈秘鉴：按进化系点亮 ---------- */
@@ -1736,7 +1736,7 @@
         host0.hidden = false; if (ex.mode === 'replay') $('pg-explore').hidden = false;
         if (bt === 'void') { toast('这场对战作废了，重新开始这一战吧。'); renderVN(); syncBattle(); return; }
         if (F.mustWin && bt !== 'win') { toast('没能打倒' + (F.foe || '对手') + '……调整一下配队，再来一次吧。'); renderVN(); syncBattle(); return; }   // mustWin：必须打赢才能往下读（第十九段）
-        ex.i++; renderVN(); syncBattle(); window.scrollTo(0, host0.offsetTop - 8);
+        ex.i++; renderVN(); syncBattle(); HSVIEW.to(0, HSVIEW.top(host0) - 8);
       });
     }
     if (F.pteam) {
@@ -1766,7 +1766,7 @@
       $('pg-arena').hidden = page !== 'arena' || ex.mode === 'intro' || ex.mode === 'replay';
       host.hidden = false; if (ex.mode === 'replay') $('pg-explore').hidden = false;
       if (F.mustWin && res !== 'win') { toast('没能打倒' + (F.foe || '对手') + '……调整一下配队，再来一次吧。'); renderVN(); syncBattle(); return; }
-      ex.i++; renderVN(); syncBattle(); window.scrollTo(0, host.offsetTop - 8);
+      ex.i++; renderVN(); syncBattle(); HSVIEW.to(0, HSVIEW.top(host) - 8);
     } });
   }
   function stepAt(i) { var arr = SCRIPT[ex.site], p = prog(ex.site); while (i < arr.length && skipStep(arr[i], p)) i++; return i; }
@@ -1890,8 +1890,8 @@
   function shipQuickGo(k) {
     var q = SHIP_QUICK.filter(function (x) { return x.k === k; })[0]; if (!q) return;
     if (!q.open()) { toast(q.lock); return; }
-    ex.shipBack = { k: q.k, y: window.scrollY };   // 从飞船终端点进来的：返回时直接回飞船终端（2026-11-01）
-    ex.view = q.k; ex.area = q.area; ex.planet = 'jingchu'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8);
+    ex.shipBack = { k: q.k, y: HSVIEW.y() };   // 从飞船终端点进来的：返回时直接回飞船终端（2026-11-01）
+    ex.view = q.k; ex.area = q.area; ex.planet = 'jingchu'; renderExplore(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8);
   }
   var SHIP_BACK = { home: { views: ['home'], btn: 'home-back' }, farm: { views: ['farm', 'seedshop'], btn: 'farm-back' }, forge: { views: ['forge'], btn: 'forge-back' }, nursery: { views: ['nursery'], btn: 'nursery-back' }, shop: { views: ['shop'], btn: 'ex-area' } };
   function shipBackOn() { var B = ex.shipBack && SHIP_BACK[ex.shipBack.k]; return B && B.views.indexOf(ex.view) >= 0 ? B : null; }
@@ -1900,7 +1900,7 @@
   $('pg-explore').addEventListener('click', function (e) {
     var b = e.target.closest('button'), B = shipBackOn(); if (!b || !B || b.id !== B.btn) return;
     e.stopImmediatePropagation(); var y = ex.shipBack.y; ex.shipBack = null;
-    ex.view = 'sites'; ex.planet = 'jingchu'; renderExplore(); window.scrollTo(0, y || 0);
+    ex.view = 'sites'; ex.planet = 'jingchu'; renderExplore(); HSVIEW.to(0, y || 0);
   }, true);
   // 舰体图右边（同一个黑框里）：空间站、太空竞技场、BOSS挑战、每周挑战（2026-10-31，从星际探索的星图页搬过来）
   function shipSide() {
@@ -2189,7 +2189,7 @@
     var g = setTimeout(end, 12000);   // 最多等 12 秒：网络很慢时不卡住
     imgs.forEach(function (im) { var one = function () { n++; L.set(n / tot); if (n >= tot) end(); }; im.addEventListener('load', one, { once: true }); im.addEventListener('error', one, { once: true }); });
   }
-  function teleport(n) { ex.view = 'area'; ex.area = n; ex.tp = true; renderExplore(); loadGate($('pg-explore'), '正在传送到' + DEPTS[n][0] + '～'); window.scrollTo(0, $('pg-explore').offsetTop - 8); mysteryRoll('荆楚号 · ' + DEPTS[n][0]); }
+  function teleport(n) { ex.view = 'area'; ex.area = n; ex.tp = true; renderExplore(); loadGate($('pg-explore'), '正在传送到' + DEPTS[n][0] + '～'); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8); mysteryRoll('荆楚号 · ' + DEPTS[n][0]); }
   function planetSvg(id) {
     var P = planetOf(id); if (P && P.ivy) return ivySvg(); if (P && P.img) return planetImg(P, 120); if (P && P.color) return planetSvgC(P, 120);
     return '<svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="36" fill="#cfe0f2" stroke="#23222b" stroke-width="3"/>' +
@@ -2865,7 +2865,7 @@
       ex.fighting = false; document.body.classList.remove('story-fight');
       ex.view = 'endless'; ex.planet = 'jingchu';
       $('pg-arena').hidden = page !== 'arena'; $('pg-explore').hidden = page !== 'explore';
-      renderTop(); syncBattle(); renderEndless(); window.scrollTo(0, $('pg-explore').offsetTop - 8);
+      renderTop(); syncBattle(); renderEndless(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8);
       if (r && r.res === 'win') toast('胜利！获得 ' + r.gems + ' 颗无尽宝石' + (r.lost && r.lost.length ? '，有 ' + r.lost.length + ' 只精灵倒下了（装备已回到背包）' : '') + '。');
       else if (r && r.back) toast('作战失败……回到了这个大关卡的起点。');
       else if (res === 'void') toast('这场对战作废了。');
@@ -3490,7 +3490,7 @@
     var R = regionById(rid); if (!R || !regionOpen(R)) return;
     loadField(rid);
     ex.view = 'field'; ex.region = rid; ex.planet = R.planet;
-    renderExplore(); loadGate($('pg-explore'), '正在进入' + R.name + '～'); window.scrollTo(0, $('pg-explore').offsetTop - 8);
+    renderExplore(); loadGate($('pg-explore'), '正在进入' + R.name + '～'); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8);
     setTimeout(cumberCheck, 400);
   }
   function fieldMonHTML(m, cls) {
@@ -3621,7 +3621,7 @@
       if (o.travel) setTimeout(function () { travelDlg(pickOne(n ? TRAVEL_TALK.win : r && r.res === 'lose' ? TRAVEL_TALK.lose : TRAVEL_TALK.quit), [['知道了', null]]); }, 700);   // 打完夸一句；她会留在原地，满 20 分钟才走
       ex.fighting = false; document.body.classList.remove('story-fight');
       $('pg-arena').hidden = page !== 'arena'; $('pg-explore').hidden = page !== 'explore';
-      renderTop(); syncBattle(); window.scrollTo(0, $('pg-explore').offsetTop - 8);
+      renderTop(); syncBattle(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8);
       if (msg.length) toast(msg.join(''));
     });
   }
@@ -3685,7 +3685,7 @@
         save();
         ex.fighting = false; document.body.classList.remove('story-fight');
         $('pg-arena').hidden = page !== 'arena'; $('pg-explore').hidden = page !== 'explore';
-        renderTop(); syncBattle(); window.scrollTo(0, $('pg-explore').offsetTop - 8);
+        renderTop(); syncBattle(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8);
         if (msg.length) toast(msg.join(''));
       } });
   }
@@ -3936,7 +3936,7 @@
         ex.fighting = false; document.body.classList.remove('story-fight');
         ex.view = 'sites'; ex.planet = P; ex.fpart = 'challenge';
         $('pg-arena').hidden = page !== 'arena'; $('pg-explore').hidden = page !== 'explore';
-        renderTop(); syncBattle(); window.scrollTo(0, $('pg-explore').offsetTop - 8);
+        renderTop(); syncBattle(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8);
         if (msg.length) toast(msg.join(''));
       } });
   }
@@ -3946,7 +3946,7 @@
     if (b.dataset.chal != null && b.dataset.chal !== undefined && !b.disabled) {
       var i = +b.dataset.chal; ex.chal = i;
       // 第一次点开第二关：插播支线「借来的力量」，读完自动选上明明教官的赫菲斯
-      if (i === 1 && chalP() === 'flora' && unlocked('fl_chal2') && !prog('fl_chal2').done) { ex.chalHelper = 'mm'; startVN('fl_chal2', 'replay', $('pg-explore'), true); window.scrollTo(0, $('pg-explore').offsetTop - 8); return true; }
+      if (i === 1 && chalP() === 'flora' && unlocked('fl_chal2') && !prog('fl_chal2').done) { ex.chalHelper = 'mm'; startVN('fl_chal2', 'replay', $('pg-explore'), true); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8); return true; }
       renderExplore(); return true;
     }
     if (b.dataset.chown) {
@@ -3961,7 +3961,7 @@
     }
     if (b.dataset.chgo) {
       var gi = +b.dataset.chgo;
-      if (gi === 1 && chalP() === 'flora' && unlocked('fl_chal2') && !prog('fl_chal2').done) { ex.chalHelper = 'mm'; startVN('fl_chal2', 'replay', $('pg-explore'), true); window.scrollTo(0, $('pg-explore').offsetTop - 8); return true; }   // 第二关：先强制播完明明教官的助战教学
+      if (gi === 1 && chalP() === 'flora' && unlocked('fl_chal2') && !prog('fl_chal2').done) { ex.chalHelper = 'mm'; startVN('fl_chal2', 'replay', $('pg-explore'), true); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8); return true; }   // 第二关：先强制播完明明教官的助战教学
       openLineup(chalP(), gi); return true;
     }
     return false;
@@ -4229,7 +4229,7 @@
         ex.fighting = false; document.body.classList.remove('story-fight');
         ex.view = 'sites'; ex.planet = 'tower'; ex.twTab = 'climb';
         $('pg-arena').hidden = page !== 'arena'; $('pg-explore').hidden = page !== 'explore';
-        renderTop(); syncBattle(); window.scrollTo(0, $('pg-explore').offsetTop - 8);
+        renderTop(); syncBattle(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8);
         if (msg.length) toast(msg.join(''));
       } });
   }
@@ -5082,7 +5082,7 @@
     var lr = e.target.closest('[data-logroom]'); if (lr) { ui.logRoom = lr.dataset.logroom; var lv0 = document.querySelector('.log-view'), lsc = lv0 ? lv0.scrollTop : 0; renderLog(); var lv1 = document.querySelector('.log-view'); if (lv1) lv1.scrollTop = lsc; return; }   // 基地翻新：切换宣传图
     var g = e.target.closest('[data-golog]'); if (g) { if (g.dataset.golog === 'boss-barren') { ex.view = 'boss'; ex.boss = 'barren'; go('explore'); return; } if (g.dataset.golog === 'boss-odo') { ex.view = 'boss'; ex.boss = 'odo'; go('explore'); return; }
       if (g.dataset.golog === 'summon') { ex.view = 'summon'; ex.planet = 'jingchu'; go('explore'); return; }
-      if (g.dataset.golog === 'myhome') { ex.view = 'home'; ex.area = '天门'; ex.planet = 'jingchu'; go('explore'); renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
+      if (g.dataset.golog === 'myhome') { ex.view = 'home'; ex.area = '天门'; ex.planet = 'jingchu'; go('explore'); renderExplore(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8); return; }
       if (g.dataset.golog === 'flora-catch') { ex.planet = 'flora'; ex.view = 'sites'; ex.fpart = 'catch'; go('explore'); renderExplore(); return; }
       if (g.dataset.golog === 'travelcat') { ex.planet = 'flora'; ex.view = 'sites'; ex.fpart = 'story'; ex.flSt = 'side'; go('explore'); renderExplore(); return; }
       if (g.dataset.golog === 'boss-tiger') { ex.view = 'boss'; ex.boss = 'tiger'; ex.bossK = 'tiger'; ex.bossD = 2; go('explore'); return; } go(g.dataset.golog); }
@@ -5394,7 +5394,7 @@
     ex.fighting = false; document.body.classList.remove('story-fight');
     ex.view = view; set();
     $('pg-arena').hidden = page !== 'arena'; $('pg-explore').hidden = page !== 'explore';
-    renderTop(); syncBattle(); window.scrollTo(0, $('pg-explore').offsetTop - 8);
+    renderTop(); syncBattle(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8);
   }
   /* ---------- 自选出战面板（2026-10-27）：每周挑战、明明教官的试炼开打前，选好友的助战精灵、调整出战顺序（排第一的是首发） ----------
    * 自己的精灵来自当前配队，可以让某只休息；带助战时自己最多 4 只。选好后 go({ line: [精灵编号 或 'h'], helper: { user, u } 或 null, key: 助战的 key }) */
@@ -5555,7 +5555,7 @@
         ex.fighting = false; document.body.classList.remove('story-fight');
         ex.view = weekly ? 'weekly' : 'boss'; ex.boss = k; ex.bossK = k; ex.bossD = first && !weekly && levelOpen(k, d + 1) ? d + 1 : d;   // 第一次打赢后自动切到下一档
         $('pg-arena').hidden = page !== 'arena'; $('pg-explore').hidden = page !== 'explore';
-        renderTop(); syncBattle(); window.scrollTo(0, $('pg-explore').offsetTop - 8);
+        renderTop(); syncBattle(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8);
         // 第一次打赢简单难度的泰戈尔：它有话要说（小剧情，介绍普通难度）
         if (first && !weekly && k === 'tiger' && d === 0 && page === 'explore' && unlocked('tiger2') && !prog('tiger2').done) {
           msg.push('泰戈尔好像有话要说……');
@@ -5641,7 +5641,7 @@
         ex.fighting = false; document.body.classList.remove('story-fight');
         ex.view = 'ewk'; ex.ewkT = t; ex.ewkD = d;
         $('pg-arena').hidden = page !== 'arena'; $('pg-explore').hidden = page !== 'explore';
-        renderTop(); syncBattle(); window.scrollTo(0, $('pg-explore').offsetTop - 8);
+        renderTop(); syncBattle(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8);
         if (msg.length) toast(msg.join(''));
       } });
   }
@@ -6026,7 +6026,7 @@
         ex.fighting = false; document.body.classList.remove('story-fight');
         ex.view = 'mmArena';
         $('pg-arena').hidden = page !== 'arena'; $('pg-explore').hidden = page !== 'explore';
-        renderTop(); syncBattle(); window.scrollTo(0, $('pg-explore').offsetTop - 8);
+        renderTop(); syncBattle(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8);
         if (msg.length) toast(msg.join(''));
       } });
   }
@@ -7031,8 +7031,8 @@
       [fg, im].forEach(function (z) { if (z) { z.classList.remove('hop'); void z.offsetWidth; z.classList.add('hop'); } }); return;
     }
     if (b.dataset.bemin) { ex.beMin = !ex.beMin; var bar0 = document.querySelector('.base-edit'); if (bar0) bar0.outerHTML = baseEditBar(); return; }
-    if (b.dataset.bshop) { if (ex.baseEdit && !confirmLeaveEdit()) return; ex.baseEdit = null; ex.view = 'baseshop'; ex.area = '天门'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
-    if (b.dataset.bedit) { ex.bpanel = null; var L0 = baseLayout(); ex.baseEdit = { room: L0.room, deco: L0.deco.map(function (d) { return { k: d.k, x: d.x, y: d.y, f: d.f ? 1 : 0 }; }), sel: -1 }; renderHome(); var rm = $('base-room'); if (rm) window.scrollTo(0, rm.getBoundingClientRect().top + window.scrollY - 10); return; }
+    if (b.dataset.bshop) { if (ex.baseEdit && !confirmLeaveEdit()) return; ex.baseEdit = null; ex.view = 'baseshop'; ex.area = '天门'; renderExplore(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8); return; }
+    if (b.dataset.bedit) { ex.bpanel = null; var L0 = baseLayout(); ex.baseEdit = { room: L0.room, deco: L0.deco.map(function (d) { return { k: d.k, x: d.x, y: d.y, f: d.f ? 1 : 0 }; }), sel: -1 }; renderHome(); var rm = $('base-room'); if (rm) HSVIEW.to(0, HSVIEW.top(rm) - 10); return; }
     var E0 = ex.baseEdit; if (!E0) return;
     if (b.dataset.becancel) { ex.baseEdit = null; renderHome(); return; }
     if (b.dataset.besave) { var H = home(); H.layout = { room: E0.room, deco: E0.deco.map(function (d) { return baseClamp({ k: d.k, x: d.x, y: d.y, f: d.f ? 1 : 0 }, E0.room); }) }; ex.baseEdit = null; save(); renderHome(); toast('基地布置已保存。'); return; }
@@ -7239,7 +7239,7 @@
       ex.fighting = false; document.body.classList.remove('story-fight');
       ex.view = 'room'; ex.room = k; ex.area = '天门';
       $('pg-arena').hidden = page !== 'arena'; $('pg-explore').hidden = page !== 'explore';
-      renderTop(); syncBattle(); window.scrollTo(0, $('pg-explore').offsetTop - 8);
+      renderTop(); syncBattle(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8);
       if (msg) toast(msg);
     });
     var N = NPC[k], team = (acc.teams[acc.active] || []).map(mon).filter(Boolean);
@@ -7263,7 +7263,7 @@
         ex.fighting = false; document.body.classList.remove('story-fight');
         ex.view = 'room'; ex.room = k; ex.area = '天门';
         $('pg-arena').hidden = page !== 'arena'; $('pg-explore').hidden = page !== 'explore';
-        renderTop(); syncBattle(); window.scrollTo(0, $('pg-explore').offsetTop - 8);
+        renderTop(); syncBattle(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8);
         if (msg) toast(msg);
       } });
   }
@@ -7439,13 +7439,13 @@
     var W = wq(id); closeQuests();
     if (W) {
       if (W.go === 'dex') { if (dexOpen()) go('dex'); return; }
-      ex.planet = W.go; ex.view = 'sites'; ex.fpart = W.fpart || 'catch'; go('explore'); renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return;
+      ex.planet = W.go; ex.view = 'sites'; ex.fpart = W.fpart || 'catch'; go('explore'); renderExplore(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8); return;
     }
-    if (id === 'mmTrial' && prog(id).done && mmOpen()) { ex.planet = 'station'; ex.view = 'mmArena'; go('explore'); renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }   // 读完活动任务后直接去全息作战场地
+    if (id === 'mmTrial' && prog(id).done && mmOpen()) { ex.planet = 'station'; ex.view = 'mmArena'; go('explore'); renderExplore(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8); return; }   // 读完活动任务后直接去全息作战场地
     var S = SITES[id]; ex.planet = S.planet; go('explore');
-    if (id === 'fl_chal' && prog('fl_chal').done) { if (chalStars('fl2') > 0 && !helperSet()) { go('social'); toast('在「我的名片」里选一只助战精灵，保存名片即可。'); return; } ex.planet = 'flora'; ex.view = 'sites'; ex.fpart = 'challenge'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
+    if (id === 'fl_chal' && prog('fl_chal').done) { if (chalStars('fl2') > 0 && !helperSet()) { go('social'); toast('在「我的名片」里选一只助战精灵，保存名片即可。'); return; } ex.planet = 'flora'; ex.view = 'sites'; ex.fpart = 'challenge'; renderExplore(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8); return; }
     if (S.dept) { teleport(S.dept); return; }
-    ex.view = 'sites'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8);
+    ex.view = 'sites'; renderExplore(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8);
   }
   function claimQuest(id) {
     var W = wq(id); if (!W || qState(id) !== 'claim') return;
@@ -7539,35 +7539,35 @@
     if (b.dataset.smq) { shipQuickGo(b.dataset.smq); return; }
     if (b.dataset.area) { teleport(b.dataset.area); return; }
     if (b.dataset.npctalk) { npcTalk(b.dataset.npctalk); return; }
-    if (b.dataset.room) { ex.view = 'room'; ex.room = b.dataset.room; ex.area = '天门'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); mysteryRoll('荆楚号 · 陆羽茶室'); return; }
-    if (b.dataset.home) { ex.view = 'home'; ex.area = '天门'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); mysteryRoll('荆楚号 · 陆羽茶室'); return; }
-    if (b.dataset.endless) { ex.view = 'endless'; ex.planet = 'jingchu'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
-    if (b.dataset.summon) { ex.view = 'summon'; ex.planet = 'jingchu'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
-    if (b.dataset.bosshub) { ex.view = 'bosshub'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
-    if (b.dataset.boss) { var BB = BOSSES[b.dataset.boss]; ex.bossFrom = b.dataset.from || null; ex.view = 'boss'; ex.boss = b.dataset.boss; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); mysteryRoll(BB.dept ? '荆楚号 · ' + DEPTS[BB.dept][0] : bossWhere(BB)); return; }
+    if (b.dataset.room) { ex.view = 'room'; ex.room = b.dataset.room; ex.area = '天门'; renderExplore(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8); mysteryRoll('荆楚号 · 陆羽茶室'); return; }
+    if (b.dataset.home) { ex.view = 'home'; ex.area = '天门'; renderExplore(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8); mysteryRoll('荆楚号 · 陆羽茶室'); return; }
+    if (b.dataset.endless) { ex.view = 'endless'; ex.planet = 'jingchu'; renderExplore(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8); return; }
+    if (b.dataset.summon) { ex.view = 'summon'; ex.planet = 'jingchu'; renderExplore(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8); return; }
+    if (b.dataset.bosshub) { ex.view = 'bosshub'; renderExplore(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8); return; }
+    if (b.dataset.boss) { var BB = BOSSES[b.dataset.boss]; ex.bossFrom = b.dataset.from || null; ex.view = 'boss'; ex.boss = b.dataset.boss; renderExplore(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8); mysteryRoll(BB.dept ? '荆楚号 · ' + DEPTS[BB.dept][0] : bossWhere(BB)); return; }
     if (b.dataset.bossd) { ex.bossK = ex.boss; ex.bossD = +b.dataset.bossd; renderBoss(); return; }
     if (b.dataset.bossgo) { startBoss(b.dataset.bossgo, +b.dataset.d || 0); return; }
-    if (b.dataset.weekly) { ex.wk = (+b.dataset.weekly || 1) - 1; ex.view = 'weekly'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
+    if (b.dataset.weekly) { ex.wk = (+b.dataset.weekly || 1) - 1; ex.view = 'weekly'; renderExplore(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8); return; }
     if (b.dataset.wkd) { ex.wk = +b.dataset.wkd; renderExplore(); return; }   // 每周挑战里切换难度
     if (b.dataset.weeklygo) { startBoss(curWk().boss, curWk().d, true); return; }
-    if (b.dataset.archive) { ex.view = 'archive'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
+    if (b.dataset.archive) { ex.view = 'archive'; renderExplore(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8); return; }
     if (b.dataset.arctab) { ex.arcTab = b.dataset.arctab; renderArchive(); return; }
     if (b.id === 'arc-back') { arcStop(); ex.view = 'planets'; renderExplore(); return; }
     if (b.dataset.arcmus) { arcMus(b.dataset.arcmus); return; }
     if (b.dataset.arcface) { var af = b.dataset.arcface.split('|'); if (!ex.arcFace) ex.arcFace = {}; ex.arcFace[af[0]] = +af[1]; renderArchive(); return; }
-    if (b.dataset.arcplay) { arcStop(); ex.arcQ = []; ex.arc = true; startVN(b.dataset.arcplay, 'replay', $('pg-explore'), true); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
-    if (b.dataset.arcall) { arcStop(); var aq = Object.keys(SITES).filter(function (id) { return !SITES[id].side && prog(id).done; }); ex.arc = true; ex.arcQ = aq.slice(1); startVN(aq[0], 'replay', $('pg-explore'), true); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
+    if (b.dataset.arcplay) { arcStop(); ex.arcQ = []; ex.arc = true; startVN(b.dataset.arcplay, 'replay', $('pg-explore'), true); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8); return; }
+    if (b.dataset.arcall) { arcStop(); var aq = Object.keys(SITES).filter(function (id) { return !SITES[id].side && prog(id).done; }); ex.arc = true; ex.arcQ = aq.slice(1); startVN(aq[0], 'replay', $('pg-explore'), true); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8); return; }
     if (b.dataset.arcgo) { var AS = SITES[b.dataset.arcgo]; ex.arc = false; ex.planet = AS.planet; if (AS.dept) { ex.view = 'area'; ex.area = AS.dept; } else { ex.view = 'sites'; if (AS.planet === 'flora') { ex.fpart = 'story'; ex.flSt = AS.side ? 'side' : 'main'; } } renderExplore(); return; }
-    if (b.dataset.mmarena) { ex.view = 'mmArena'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
+    if (b.dataset.mmarena) { ex.view = 'mmArena'; renderExplore(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8); return; }
     if (b.dataset.mmgo) { mmStart(b.dataset.mmgo, +b.dataset.d || 0); return; }
     if (b.dataset.goarena) { if (!arenaOpen()) { toast('读完星际探索 · 荆楚号 · 孝感大厅的剧情后，「竞技对战」才会开放。', prog('board').done ? '前往孝感大厅' : '', '孝感'); return; } go('arena'); return; }   // 太空竞技场 → 竞技对战
     if (b.dataset.mmgacha) { if (ex.mmFrom !== 'holo') ex.mmFrom = 'arena'; ex.view = 'mmGacha'; renderExplore(); return; }
     if (b.dataset.mmdraw) { mmDraw(+b.dataset.mmdraw || 1); return; }
     if (b.id === 'mm-back') { if (ex.mmFrom === 'holo') { ex.mmFrom = null; ex.view = 'planets'; go('holo'); return; } ex.view = 'sites'; ex.planet = 'station'; renderExplore(); return; }
     if (b.id === 'mmg-back') { if (ex.mmFrom === 'log') { go('log'); return; } if (ex.mmFrom === 'holo') { ex.mmFrom = null; ex.view = 'planets'; go('holo'); return; } ex.view = 'mmArena'; renderExplore(); return; }
-    if (b.dataset.wkhub) { ex.view = 'wkhub'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
+    if (b.dataset.wkhub) { ex.view = 'wkhub'; renderExplore(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8); return; }
     if (b.id === 'wkhub-back') { ex.view = 'sites'; ex.planet = 'jingchu'; renderExplore(); return; }
-    if (b.dataset.ewk) { ex.ewkT = b.dataset.ewk; ex.view = 'ewk'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
+    if (b.dataset.ewk) { ex.ewkT = b.dataset.ewk; ex.view = 'ewk'; renderExplore(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8); return; }
     if (b.dataset.ewkd) { ex.ewkD = +b.dataset.ewkd; renderEwk(); return; }
     if (b.dataset.ewkgo) { startEwk(ex.ewkT, ex.ewkD | 0); return; }
     if (b.id === 'ewk-back') { ex.view = 'wkhub'; renderExplore(); return; }
@@ -7592,14 +7592,14 @@
       txRun('home', { a: 'auto', u: hx.u }, function () { renderHome(); });
       toast('给 ' + form(mon(hx.u)).name + ' 装上了 7日自律训练装置：每满 1 天自动结算经验，一共 7 天。'); return;
     }
-    if (b.dataset.teashop) { ex.view = 'teashop'; ex.area = '天门'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
+    if (b.dataset.teashop) { ex.view = 'teashop'; ex.area = '天门'; renderExplore(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8); return; }
     if (b.dataset.tsbuy) { teaShopBuy(b.dataset.tsbuy); return; }
     if (b.dataset.tsq) { shopQty.tsauto = Math.max(1, Math.min(20, (shopQty.tsauto || 1) + +b.dataset.tsq)); renderTeaShop(); return; }
     if (b.id === 'ts-back') { ex.view = 'area'; ex.area = '天门'; renderExplore(); return; }
     if (b.dataset.hpoke) { var f = b.closest('.hm-fig'); f.classList.remove('hop'); void f.offsetWidth; f.classList.add('hop'); return; }
-    if (b.dataset.shop) { ex.view = 'shop'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
-    if (b.dataset.nursery) { ex.view = 'nursery'; ex.area = '神农架'; ex.planet = 'jingchu'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
-    if (b.dataset.spa) { if (!spaOpen()) return; ex.view = 'spa'; ex.area = '咸宁'; ex.planet = 'jingchu'; ex.spaPick = null; spa(); renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
+    if (b.dataset.shop) { ex.view = 'shop'; renderExplore(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8); return; }
+    if (b.dataset.nursery) { ex.view = 'nursery'; ex.area = '神农架'; ex.planet = 'jingchu'; renderExplore(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8); return; }
+    if (b.dataset.spa) { if (!spaOpen()) return; ex.view = 'spa'; ex.area = '咸宁'; ex.planet = 'jingchu'; ex.spaPick = null; spa(); renderExplore(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8); return; }
     if (b.id === 'spa-back') { ex.view = 'area'; ex.area = '咸宁'; ex.planet = 'jingchu'; renderExplore(); return; }
     if (b.dataset.spaslot != null && b.dataset.spaslot !== '') { ex.spaPick = ex.spaPick === +b.dataset.spaslot ? null : +b.dataset.spaslot; renderSpa(); return; }
     if (b.dataset.spain) { spaPut(ex.spaPick, +b.dataset.spain); return; }
@@ -7607,7 +7607,7 @@
     if (b.dataset.spastart) { spaStart(); return; }
     if (b.dataset.spaend) { spaLeaveAsk(function () { renderSpa(); }); return; }
     if (b.dataset.sparoom) { openSpaRoom(); return; }
-    if (b.dataset.medal) { if (!medalOpen()) return; ex.view = 'medal'; ex.area = '黄冈'; ex.planet = 'jingchu'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
+    if (b.dataset.medal) { if (!medalOpen()) return; ex.view = 'medal'; ex.area = '黄冈'; ex.planet = 'jingchu'; renderExplore(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8); return; }
     if (b.id === 'medal-back') { ex.view = 'area'; ex.area = '黄冈'; ex.planet = 'jingchu'; renderExplore(); return; }
     if (b.dataset.promote) { promote(); return; }
     if (b.dataset.mdtype) { ex.mdType = b.dataset.mdtype; renderMedal(); return; }
@@ -7615,7 +7615,7 @@
     if (b.dataset.incub) { nurseryPut(+b.dataset.incub.split('|')[0], b.dataset.incub.split('|')[1]); return; }
     if (b.dataset.hatch) { nurseryHatch(+b.dataset.hatch); return; }
     if (b.dataset.core) { openCore(); return; }
-    if (b.dataset.forge) { ex.view = 'forge'; ex.area = '黄石'; ex.planet = 'jingchu'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
+    if (b.dataset.forge) { ex.view = 'forge'; ex.area = '黄石'; ex.planet = 'jingchu'; renderExplore(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8); return; }
     if (b.dataset.fq) { var fq = b.dataset.fq.split('|'), fr = forgeOf(fq[0]); if (fr && !b.disabled) { shopQty['fg-' + fq[0]] = Math.max(1, Math.min(FORGE_Q, (shopQty['fg-' + fq[0]] || 1) + +fq[1])); renderForge(); } return; }
     if (b.dataset.smelt) { forgeCraft(b.dataset.smelt); return; }
     if (b.dataset.fgcat) { ex.fgCat = b.dataset.fgcat; renderForge(); return; }
@@ -7624,7 +7624,7 @@
     if (b.dataset.gxq) { if (!b.disabled) { shopQty.gx = Math.max(1, Math.min(FORGE_Q, (shopQty.gx || 1) + +b.dataset.gxq)); renderForge(); } return; }
     if (b.dataset.gxgo) { gxGo(); return; }
     if (b.id === 'forge-back') { ex.view = 'area'; ex.area = '黄石'; ex.planet = 'jingchu'; renderExplore(); return; }
-    if (b.dataset.farm) { if (!farmOpen()) return; ex.view = 'farm'; ex.area = '恩施'; ex.planet = 'jingchu'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
+    if (b.dataset.farm) { if (!farmOpen()) return; ex.view = 'farm'; ex.area = '恩施'; ex.planet = 'jingchu'; renderExplore(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8); return; }
     if (b.dataset.fpi != null && b.dataset.fpi !== '') { farmPlotClick(+b.dataset.fpi); return; }
     if (b.dataset.fpanel) { farmPanel(b.dataset.fpanel); return; }
     if (b.dataset.fharvest) { farmHarvestAll(); return; }
@@ -7633,7 +7633,7 @@
     if (b.dataset.gofarm) { if (!farmOpen()) return; ex.bpanel = null; ex.fpanel = null; ex.baseEdit = null; ex.view = 'farm'; ex.area = '恩施'; ex.planet = 'jingchu'; renderExplore(); return; }
     if (b.dataset.gohome) { if (!homeOpen()) return; ex.bpanel = null; ex.fpanel = null; ex.view = 'home'; ex.area = '天门'; ex.planet = 'jingchu'; renderExplore(); return; }
     if (b.dataset.sow != null && b.dataset.sow !== '') { var si = +b.dataset.sow, sel = document.querySelector('[data-sowsel="' + si + '"]'); if (sel) farmPlant(si, sel.value); return; }
-    if (b.dataset.seedshop) { if (!farmOpen()) return; ex.view = 'seedshop'; ex.area = '恩施'; ex.planet = 'jingchu'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
+    if (b.dataset.seedshop) { if (!farmOpen()) return; ex.view = 'seedshop'; ex.area = '恩施'; ex.planet = 'jingchu'; renderExplore(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8); return; }
     if (b.dataset.sdq || b.dataset.sdbuy) { if (!b.disabled) seedShopClick(b); return; }
     if (b.dataset.reap != null && b.dataset.reap !== '') { farmHarvest(+b.dataset.reap); return; }
     if (b.id === 'farm-back') { ex.view = 'area'; ex.area = '恩施'; ex.planet = 'jingchu'; renderExplore(); return; }
@@ -7653,8 +7653,8 @@
     if (b.dataset.fmnpc) { fmNpcTalk(); return; }
     if (b.dataset.wfid) { engageField(+b.dataset.wfid); return; }
     if (b.dataset.wfnav) { fieldNav(+b.dataset.wfnav); return; }
-    if (b.id === 'field-back') { var FR = regionById(ex.region); ex.view = 'sites'; if (FR) ex.planet = FR.planet; ex.fpart = 'catch'; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
-    if (b.dataset.goshop) { ex.planet = 'jingchu'; ex.area = '荆门'; ex.view = 'shop'; ex.tp = true; renderExplore(); window.scrollTo(0, $('pg-explore').offsetTop - 8); return; }
+    if (b.id === 'field-back') { var FR = regionById(ex.region); ex.view = 'sites'; if (FR) ex.planet = FR.planet; ex.fpart = 'catch'; renderExplore(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8); return; }
+    if (b.dataset.goshop) { ex.planet = 'jingchu'; ex.area = '荆门'; ex.view = 'shop'; ex.tp = true; renderExplore(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8); return; }
     if (b.id === 'ex-area') { ex.view = 'area'; renderExplore(); return; }
     if (b.id === 'ex-ship') { ex.view = 'sites'; ex.planet = 'jingchu'; renderExplore(); return; }
     if (b.dataset.ctsign) { contestSign(); return; }
@@ -7665,7 +7665,7 @@
     if (b.dataset.ctrep) { if (window.HSSOCIAL && window.HSSOCIAL.replay) window.HSSOCIAL.replay(b.dataset.ctrep); return; }
     if (b.dataset.planet && !b.disabled) { ex.planet = b.dataset.planet; ex.view = 'sites'; renderExplore(); loadGate($('pg-explore'), '正在前往' + planetOf(b.dataset.planet).name + '～'); mysteryRoll(planetOf(b.dataset.planet).name); return; }
     if (b.id === 'ex-back') { var P_ = ex.view === 'sites' && planetOf(ex.planet); if (P_ && P_.inStation) { ex.planet = 'station'; renderExplore(); return; } if (ex.view === 'bosshub' || (P_ && SHIP_SIDE[P_.id])) { ex.view = 'sites'; ex.planet = 'jingchu'; renderExplore(); return; } ex.view = 'planets'; renderExplore(); return; }
-    if (b.dataset.go && unlocked(b.dataset.go)) { ex.arc = false; startVN(b.dataset.go, 'replay', $('pg-explore'), b.dataset.from === '0'); window.scrollTo(0, $('pg-explore').offsetTop - 8); }
+    if (b.dataset.go && unlocked(b.dataset.go)) { ex.arc = false; startVN(b.dataset.go, 'replay', $('pg-explore'), b.dataset.from === '0'); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8); }
   });
 
   $('pg-explore').addEventListener('keydown', function (e) { var g = e.target.closest && e.target.closest('.dept.open'); if (g && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); g.dispatchEvent(new MouseEvent('click', { bubbles: true })); } });

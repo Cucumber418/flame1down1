@@ -656,7 +656,7 @@
     addLog('训练开始：【' + SPMAP[id].name + '】LV' + app.train.lv + ' 对阵木桩（双防种族值 ' + app.train.def + '）', 'turn');
     renderSnap(snap(app.S), true); renderStats();
     showTab('moves'); refreshCmd();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    HSVIEW.to({ top: 0, behavior: 'smooth' });
   }
   function renderStats() {
     var box = $('statsbox'), S = app.S; box.hidden = !(S && S.training); if (box.hidden) return;
@@ -707,7 +707,7 @@
       else { addLog('对手背包：' + a.map(function (x) { return SPMAP[x.id].name; }).join('、'), 'dmg'); a.forEach(function (x) { addLog('　' + SPMAP[x.id].name + '：' + x.moves.map(function (m) { return M[m.n].name; }).join('、'), 'dmg'); }); }
       renderSnap(snap(app.S), true);
       showTab('moves'); refreshCmd();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      HSVIEW.to({ top: 0, behavior: 'smooth' });
     }
   }
   function startBattle() {
@@ -730,7 +730,7 @@
     else { addLog('对手背包：' + a.map(function (x) { return SPMAP[x.id].name; }).join('、'), 'dmg'); a.forEach(function (x) { addLog('　' + SPMAP[x.id].name + '：' + x.moves.map(function (n) { return M[n].name; }).join('、'), 'dmg'); }); }
     renderSnap(snap(app.S), true);
     showTab('moves'); refreshCmd();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    HSVIEW.to({ top: 0, behavior: 'smooth' });
   }
 
   // 剧情对战（由星际探索调用）：opt = { p, a, foe, onEnd(result) }
@@ -761,7 +761,7 @@
     if (opt.env === 'miasma') addLog('这里弥漫着瘴气：每回合结束时，场上的精灵各获得 1 层瘴气（每层物攻、特攻 +5%，物防、特防 −5%）', 'bad');
     renderSnap(snap(app.S), true);
     showTab('moves'); refreshCmd();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    HSVIEW.to({ top: 0, behavior: 'smooth' });
     storyCuts = (opt.cuts || []).map(function (c) { return { hp: c.hp, lines: c.lines, done: false }; });
     if (opt.resume) {   // 剧情对战断点续打（2026-11-01）：接着上次的进度，已经播过的插话不再播
       var fr = app.S.sides[1].team[app.S.sides[1].active]; storyCuts.forEach(function (c) { if (fr && fr.hp <= c.hp) c.done = true; });
@@ -886,7 +886,7 @@
     renderSnap(snap(app.S), true);
     showTab('moves'); refreshCmd();
     pvp.clock = setInterval(function () { if (pvp && !busy && app.S && !app.S.over) { var h = $('cmd-hint'), t = pvpClock(); if (t || /剩余/.test(h.textContent)) refreshCmd(); } }, 1000);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    HSVIEW.to({ top: 0, behavior: 'smooth' });
   }
   // 播放一回合的结果；S 是结算后的战况（应战方收到的是副本）
   function pvpApply(evs, S, seconds) {

@@ -9,6 +9,7 @@
 <!-- 手写字体来自 Google Fonts，国内经常连不上；用 media=print 技巧异步加载，连不上也不会卡住页面，会自动用楷体代替 -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Long+Cang&display=swap" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/battle-layout.css">
 </head>
 <body>
 
@@ -23,6 +24,7 @@
       <button type="button" class="mail-btn" id="board-btn" title="讨论区"><span aria-hidden="true">💬</span><b>讨论</b><i class="q-badge dot-badge" id="board-badge" hidden></i></button>
       <span class="res" id="res"></span>
       <div class="qtop-wrap" id="qtop-wrap"><button type="button" class="mail-btn qtop-btn" id="qtop-btn" aria-haspopup="dialog" title="任务"><span aria-hidden="true">📜</span><b>任务</b><i class="q-badge" id="qtop-badge" hidden></i></button><div class="qtop-pop" id="qtop-pop" hidden></div></div>
+      <button type="button" class="mail-btn fullscreen-btn" id="fullscreen-btn" aria-label="全屏显示游戏" aria-pressed="false" title="全屏显示游戏"><span aria-hidden="true">⛶</span><b>全屏</b></button>
       <button type="button" class="mail-btn land-btn" id="land-btn" title="横屏模式：和电脑界面一样"><span aria-hidden="true">📱</span><b>横屏</b></button>
       <button type="button" class="who-btn" id="who-btn" aria-haspopup="true" aria-expanded="false"><span class="av" id="who-av">?</span><span><span class="lab" id="who-title">做题家</span><br><b id="who-name"></b></span></button>
       <div class="who-menu" id="who-menu" hidden>
@@ -106,6 +108,13 @@
 
   <!-- ============ 对战 ============ -->
   <section id="battle" hidden>
+    <div class="battle-toolbar" aria-label="战斗显示选项">
+      <b>精灵对战</b>
+      <button type="button" class="tab" id="battle-info-toggle" aria-controls="battle-info-panel" aria-expanded="false">技能说明</button>
+      <button type="button" class="tab" id="battle-log-toggle" aria-controls="battle-logbox" aria-expanded="false">记录</button>
+      <button type="button" class="tab" id="battle-stats-toggle" aria-controls="statsbox" aria-expanded="false" hidden>统计</button>
+      <button type="button" class="tab" data-fullscreen aria-label="全屏显示游戏" aria-pressed="false"><b>全屏</b></button>
+    </div>
     <div class="plates">
       <div class="plate" id="plate0"><span class="tape l"></span></div>
       <div class="vs">第<b id="turnNo">1</b>回合<span class="tmax" id="turnMax">上限 60</span></div>
@@ -129,6 +138,7 @@
       </div>
     </div>
     <div class="statsbox" id="statsbox" hidden>
+      <button type="button" class="tab battle-panel-close" data-battle-close="stats" aria-label="关闭伤害统计">关闭</button>
       <div class="sb-head"><h4>伤害统计</h4>
         <div class="sb-btns"><button type="button" class="btn ghost" id="btn-sreset">清空统计</button><button type="button" class="btn ghost" id="btn-dreset">重置木桩状态</button></div></div>
       <div class="sb-tiles" id="sb-tiles"></div>
@@ -150,11 +160,17 @@
         <div class="tgrid igrid" id="igrid" hidden></div>
         <p class="hint" id="cmd-hint"></p>
       </div>
-      <div class="logbox">
+      <div class="logbox" id="battle-logbox">
+        <button type="button" class="tab battle-panel-close" data-battle-close="log" aria-label="关闭战斗记录">关闭</button>
         <h4>战斗记录 <span class="cast-wrap"><button type="button" class="cast-n" id="cast-n" hidden></button><span class="cast-pop" id="cast-pop" hidden></span></span></h4>
         <div class="log" id="log" aria-live="polite"></div>
       </div>
     </div>
+    <section class="battle-info-panel" id="battle-info-panel" role="dialog" aria-modal="true" aria-label="技能与状态说明" hidden>
+      <button type="button" class="tab battle-panel-close" data-battle-close="info" aria-label="关闭技能与状态说明">关闭</button>
+      <h3>技能与状态说明</h3>
+      <div id="battle-info-list"></div>
+    </section>
   </section>
   </div>
 
@@ -168,6 +184,8 @@
   <div class="page" id="pg-explore" hidden></div>
 </div>
 
+<div class="display-status" id="display-status" role="status" aria-live="polite" hidden></div>
+
 <div class="lightbox" id="lightbox" hidden role="dialog" aria-modal="true" aria-label="精灵大图">
   <div class="lb-box">
     <button type="button" class="lb-nav" id="lb-prev" aria-label="上一个形态">‹</button>
@@ -179,6 +197,7 @@
 
 <!-- 脚本按顺序加载：数据 → 对战引擎 → 界面。顺序不能乱 -->
 <!-- cloud.js 先加载：用服务器打开时先登录、取回存档，再按下面的顺序加载游戏脚本（数据 → 引擎 → 界面，顺序不能调换） -->
+<script src="js/ui/viewport.js"></script>
 <script src="js/ui/loader.js"></script>
 <script src="js/net/cloud.js"></script>
 <script>
@@ -216,7 +235,9 @@ CLOUD.boot([
   'js/ui/game.js',
   'js/ui/social.js',
   'js/ui/board.js',
-  'js/ui/land.js'
+  'js/ui/land.js',
+  'js/ui/display.js',
+  'js/ui/battle-layout.js'
 ]);
 </script>
 </body>
