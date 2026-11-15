@@ -47,9 +47,10 @@
   function text(tag, value, parent) {
     var node = document.createElement(tag); node.textContent = value; parent.appendChild(node); return node;
   }
-  function descriptions() {
+  function descriptions(selected) {
     var list = document.getElementById('battle-info-list'); list.textContent = '';
-    document.querySelectorAll('#mgrid .mv').forEach(function (move) {
+    info.querySelector('h3').textContent = selected ? '技能效果' : '技能与状态说明';
+    (selected ? [selected] : document.querySelectorAll('#mgrid .mv')).forEach(function (move) {
       var card = document.createElement('div'); card.className = 'battle-skill-info';
       text('h4', move.querySelector('.mn').textContent, card);
       var pp = move.querySelector('.pp'), meta = move.querySelector('.t2'), detail = move.querySelector('.md');
@@ -57,17 +58,17 @@
       if (detail) text('p', detail.textContent, card);
       list.appendChild(card);
     });
-    document.querySelectorAll('#battle .plate').forEach(function (plate) {
+    if (!selected) document.querySelectorAll('#battle .plate').forEach(function (plate) {
       var card = document.createElement('div'); card.className = 'battle-status-info';
       text('h4', plate.querySelector('.pn').textContent + ' · 状态与特性', card);
       plate.querySelectorAll('.tip').forEach(function (tip) { text('p', tip.textContent, card); });
       list.appendChild(card);
     });
   }
-  function open(key) {
+  function open(key, selected) {
     if (current === key) { close(true); return; }
     close(false); current = key;
-    if (key === 'info') { descriptions(); info.hidden = false; }
+    if (key === 'info') { descriptions(selected); info.hidden = false; }
     panels[key].setAttribute('role', 'dialog'); panels[key].setAttribute('aria-modal', 'true');
     flag('battle-' + key + '-open', true);
     document.getElementById('battle-' + key + '-toggle').setAttribute('aria-expanded', 'true');
@@ -76,6 +77,7 @@
   Object.keys(panels).forEach(function (key) {
     document.getElementById('battle-' + key + '-toggle').addEventListener('click', function () { open(key); });
   });
+  document.getElementById('mgrid').addEventListener('skillinspect', function (e) { open('info', e.target.closest('.mv')); });
   battle.addEventListener('click', function (e) {
     if (e.target.closest('[data-battle-close]')) { close(true); return; }
     // 点在面板外只关闭面板，不让这次点击误选下方的技能。

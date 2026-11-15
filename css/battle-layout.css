@@ -165,3 +165,14 @@ body.battle-active #battle .sp-panel {
   body.battle-active #battle .mv .t1 { flex-wrap: wrap; gap: 1px 4px; }
   body.battle-active #battle .mv .pp { margin-left: auto; }
 }
+
+/* 手机技能卡只放名称、PP、属性和种类；长按查看完整效果。
+ * battle-touch 由输入方式识别，不依赖旋转横屏后 1180px 的逻辑宽度。 */
+body.battle-active.battle-touch #mgrid .mv .md,
+body.battle-active.battle-touch #mgrid .mv .mv-blocked,
+body.battle-active.battle-touch #mgrid .mv .t2 > :not(.tchip):not(.mv-kind):not(.mv-power) { display: none; }
+body.battle-active.battle-touch #mgrid .mv,
+body.battle-active.battle-touch #mgrid .mv * {
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+}
+body.battle-active.battle-touch #mgrid .mv { touch-action: manipulation; }

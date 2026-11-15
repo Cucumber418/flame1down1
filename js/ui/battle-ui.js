@@ -1111,12 +1111,12 @@
     var foeTypes = typesOf(foe);
     var usable = me.moves.some(function (m) { return m.pp > 0 && !moveBlocked(me, m); });
     var html = '';
-    if (!usable) html = '<button type="button" class="mv" data-mi="-1"' + (lock || needMe ? ' disabled' : '') + ' style="--tc:' + TYPE_COLOR['普通'] + '"><span class="t1"><span class="mn">挣扎</span></span><span class="md">' + STRUGGLE.d + '</span></button>';
+    if (!usable) html = '<button type="button" class="mv" data-mi="-1"' + (lock || needMe ? ' disabled' : '') + ' style="--tc:' + TYPE_COLOR['普通'] + '"><span class="t1"><span class="mn">挣扎</span><span class="pp">PP —</span></span><span class="t2">' + tchip('普通') + '<span class="mv-kind">物攻</span><span class="mv-power">威力 ' + STRUGGLE.power + '</span></span><span class="md">' + STRUGGLE.d + '</span></button>';
     else me.moves.forEach(function (slot, i) {
       var m = liveMove(me, M[slot.n]), mt = mvType(me, m), e = m.cat === '变化' ? 1 : effT(mt, foeTypes);
       html += '<button type="button" class="mv" data-mi="' + i + '"' + (lock || needMe || slot.pp <= 0 || moveBlocked(me, slot) ? ' disabled' : '') + ' style="--tc:' + TYPE_COLOR[mt] + '" title="' + esc(m.d) + '">' +
-        '<span class="t1"><span class="mn">' + (i + 1) + '. ' + m.name + (moveBlocked(me, slot) ? '（' + blockWhy(me, slot) + '）' : '') + '</span><span class="pp">PP ' + slot.pp + '/' + slot.max + '</span></span>' +
-        '<span class="t2">' + tchip(mt) + '<span>' + m.cat + (m.power ? ' · 威力' + m.power : '') + (m.pri ? ' · 先制+' + m.pri : '') + '</span>' +
+        '<span class="t1"><span class="mn">' + (i + 1) + '. ' + m.name + (moveBlocked(me, slot) ? '<span class="mv-blocked">（' + blockWhy(me, slot) + '）</span>' : '') + '</span><span class="pp">PP ' + slot.pp + '/' + slot.max + '</span></span>' +
+        '<span class="t2">' + tchip(mt) + '<span class="mv-kind">' + m.cat + '</span><span class="mv-power">威力 ' + (m.power || '—') + '</span><span class="mv-extra">' + (m.pri ? ' · 先制+' + m.pri : '') + '</span>' +
         (hitBlocked(foe, mt) && (m.cat !== '变化' || targetsFoe(m)) ? '<span class="eff0">无法命中</span>' : e > 1 ? '<span class="eff2">克制 ×' + e + '</span>' : e < 1 ? '<span class="eff0">被抵抗 ×' + e + '</span>' : '') + '</span>' +
         '<span class="md">' + esc(m.d) + '</span></button>';
     });
@@ -1147,6 +1147,7 @@
     else if (needMe) { hint.textContent = '【' + (me.nick || SPMAP[me.id].name) + '】已倒下，请选择下一只出战的精灵'; hint.className = 'hint alert'; }
     else if (locked) hint.textContent = '受「傲慢」影响，' + me.tm.noSwitch + ' 回合内无法切换精灵';
     else hint.textContent = S.training ? '点击技能对木桩出招，也可按键盘 1–4 出招。伤害统计会实时更新。' : '点击技能出招，或在「精灵」页切换精灵（切换会占用本回合），也可按键盘 1–4 出招。' + pvpClock();
+    if (!lock && !needMe && window.HSSKILL && HSSKILL.touchUI()) hint.textContent = '轻触技能出招，长按查看具体效果。' + pvpClock();
     $('btn-quit').disabled = !!S.over;
     $('btn-quit').textContent = S.training ? '结束训练' : S.wild ? '逃跑' : '认输';
     if (needMe && !lock) showTab('team');

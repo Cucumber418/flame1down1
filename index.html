@@ -10,23 +10,23 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Long+Cang&display=swap" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="css/battle-layout.css">
+<link rel="stylesheet" href="css/bag-layout.css">
 </head>
 <body>
 
 <div class="sheet">
   <header class="topbar">
-    <div class="masthead"><h1>Flame1Down - 1<small>试验版</small></h1></div>
     <div class="acct" id="who">
+      <button type="button" class="who-btn" id="who-btn" aria-haspopup="true" aria-expanded="false"><span class="av" id="who-av">?</span><span><span class="lab" id="who-title">做题家</span><br><b id="who-name"></b></span></button>
       <button type="button" class="mail-btn" id="mail-btn" aria-label="邮箱" title="邮箱"><span aria-hidden="true">✉</span><b>邮箱</b><i class="q-badge" id="mail-badge" hidden></i></button>
       <div class="snd-wrap"><button type="button" class="mail-btn snd-btn" id="snd-btn" aria-haspopup="true" aria-expanded="false" title="设置"><span aria-hidden="true">⚙</span><b>设置</b></button><div class="snd-menu" id="snd-menu" hidden></div></div>
       <button type="button" class="mail-btn" id="wiki-btn" title="Wiki：精灵和技能资料"><span aria-hidden="true">📚</span><b>Wiki</b></button>
       <button type="button" class="mail-btn" id="about-btn" title="关于"><span aria-hidden="true">ⓘ</span><b>关于</b></button>
       <button type="button" class="mail-btn" id="board-btn" title="讨论区"><span aria-hidden="true">💬</span><b>讨论</b><i class="q-badge dot-badge" id="board-badge" hidden></i></button>
-      <span class="res" id="res"></span>
+      <span class="res" id="res" hidden></span>
       <div class="qtop-wrap" id="qtop-wrap"><button type="button" class="mail-btn qtop-btn" id="qtop-btn" aria-haspopup="dialog" title="任务"><span aria-hidden="true">📜</span><b>任务</b><i class="q-badge" id="qtop-badge" hidden></i></button><div class="qtop-pop" id="qtop-pop" hidden></div></div>
       <button type="button" class="mail-btn fullscreen-btn" id="fullscreen-btn" aria-label="全屏显示游戏" aria-pressed="false" title="全屏显示游戏"><span aria-hidden="true">⛶</span><b>全屏</b></button>
       <button type="button" class="mail-btn land-btn" id="land-btn" title="横屏模式：和电脑界面一样"><span aria-hidden="true">📱</span><b>横屏</b></button>
-      <button type="button" class="who-btn" id="who-btn" aria-haspopup="true" aria-expanded="false"><span class="av" id="who-av">?</span><span><span class="lab" id="who-title">做题家</span><br><b id="who-name"></b></span></button>
       <div class="who-menu" id="who-menu" hidden>
         <div class="gender-box" id="gender-box"></div>
         <div class="avatar-box" id="avatar-box"></div>
@@ -198,6 +198,7 @@
 <!-- 脚本按顺序加载：数据 → 对战引擎 → 界面。顺序不能乱 -->
 <!-- cloud.js 先加载：用服务器打开时先登录、取回存档，再按下面的顺序加载游戏脚本（数据 → 引擎 → 界面，顺序不能调换） -->
 <script src="js/ui/viewport.js"></script>
+<script src="js/ui/skill-inspect.js"></script>
 <script src="js/ui/loader.js"></script>
 <script src="js/net/cloud.js"></script>
 <script>
@@ -237,7 +238,8 @@ CLOUD.boot([
   'js/ui/board.js',
   'js/ui/land.js',
   'js/ui/display.js',
-  'js/ui/battle-layout.js'
+  'js/ui/battle-layout.js',
+  'js/ui/bag-layout.js'
 ]);
 </script>
 </body>

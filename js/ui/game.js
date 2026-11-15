@@ -299,6 +299,7 @@
     deliverMail(); checkRankRewards(); daily(); homeSettle();
     setTimeout(function () { storyNewsCheck(); newsCheck(); }, 1500);
     ['holo', 'arena', 'log', 'bag', 'store', 'release', 'dex', 'items', 'social', 'explore'].forEach(function (p) { $('pg-' + p).hidden = p !== page; });
+    if (page !== 'bag' && ui.bagPanel) closeBagPanel();
     renderRename();
     if (page === 'arena' && window.HSBATTLE && window.HSBATTLE.renderMode && $('battle').hidden) window.HSBATTLE.renderMode();
     if (page === 'social') { if (window.HSSOCIAL) window.HSSOCIAL.render(); }
@@ -314,7 +315,7 @@
   }
   function renderRes() {   /* 2026-11-02：顺便刷新小红点 */
     if (typeof navDots === 'function') setTimeout(navDots, 0);
-    $('res').innerHTML = '<span class="res-chip" title="经验背包里的累积经验，可分配给精灵"><img class="res-ic" src="images/items/exp.png" alt="">经验 <b>' + fmt(acc.exp) + '</b></span><span class="res-chip en" title="能量（货币）"><img class="res-ic" src="images/items/energy.png" alt="">能量 <b>' + fmt(acc.energy) + '</b></span>'; setTimeout(renderQBadge, 0); }
+    $('res').textContent = ''; $('res').hidden = true; setTimeout(renderQBadge, 0); }
   // 导航高亮：明明教官的试炼（全息作战场地、代币抽奖）不管从哪里进，都亮「全息作战」；竞技对战（在太空竞技场里）亮「星际探索」
   // 现在是不是在荆楚号里（舰体图、区域、区域里的设施）：导航亮「飞船终端」
   var SHIP_VIEWS = { summon: 1, area: 1, shop: 1, forge: 1, nursery: 1, medal: 1, farm: 1, seedshop: 1, spa: 1, home: 1, room: 1, teashop: 1, baseshop: 1 };
@@ -828,7 +829,7 @@
     else if (b.dataset.lead != null) { var t3 = acc.teams[+b.dataset.lead]; t3.splice(t3.indexOf(m.u), 1); t3.unshift(m.u); }
     else if (b.dataset.give) {
       var need = expAt(Math.min(capLv(m), m.lv + 1)) - m.exp, amt;
-      if (b.dataset.give === 'lv') amt = need; else if (b.dataset.give === 'all') amt = acc.exp; else if (b.dataset.give === 'in') amt = Math.floor(+$('exp-in').value) || 0; else amt = +b.dataset.give;
+      if (b.dataset.give === 'lv') amt = need; else if (b.dataset.give === 'all') amt = acc.exp; else if (b.dataset.give === 'in') amt = Math.floor(+b.closest('.expbox').querySelector('#exp-in').value) || 0; else amt = +b.dataset.give;
       if (!acc.exp) { ui.expMsg = { u: m.u, t: '经验背包里没有经验了。', bad: 1 }; renderTop(); return; }
       if (amt <= 0) { ui.expMsg = { u: m.u, t: '请输入要分配的经验数量。', bad: 1 }; renderTop(); return; }
       if (amt > acc.exp) { ui.expMsg = { u: m.u, t: '经验不足：经验背包里只有 ' + fmt(acc.exp) + ' 点。', bad: 1 }; renderTop(); return; }
@@ -861,7 +862,7 @@
       (nx ? '<span class="hint">' + (CAP_SID[m.sid] ? form(m).name : USE_ITEMS[nx.k].gem + '系精灵') + '可以用「' + itemName(nx.k) + '」解锁更高的等级上限。</span><button type="button" class="btn' + (have >= nx.jade ? ' primary' : '') + '" data-lvcap="1"' + (have >= nx.jade && (acc.items.grail || 0) >= (nx.grail || 0) ? '' : ' disabled') + '>用 ' + nx.jade + ' 个' + itemName(nx.k) + (nx.grail ? ' + ' + nx.grail + ' 个圣杯' : '') + '解锁 LV' + nx.lv + ' 上限</button><span class="hint">' + itemName(nx.k) + '：' + fmt(have) + ' 个</span>'
         : '<span class="hint">' + (g ? '已经解锁到目前的最高上限 LV' + CAP_STEPS[CAP_STEPS.length - 1].lv + '，暂时无法再提高。' : '这只精灵目前最高 LV' + capLv(m) + '。提高等级上限的方法，以后会陆续开放。') + '</span>') + '</div>';
   }
-  function flash(t) { var el = document.querySelector('.page:not([hidden]) .flash'); if (el) { el.textContent = t; el.classList.add('red'); } }
+  function flash(t) { var el = document.querySelector('#bag-panel .flash') || document.querySelector('.page:not([hidden]) .flash'); if (el) { el.textContent = t; el.classList.add('red'); } }
 
   /* ---------- 道具与储存箱 ----------
    * 精灵道具：直接用在某只精灵身上的（USE_ITEMS，kind：nat 改性格，ev 加学习力），在精灵资料里就能调出来用，储存箱里也能用
@@ -1150,7 +1151,7 @@
     return html + '</div></section>';
   }
   function renderItems() {
-    $('pg-items').innerHTML = '<div class="page-head"><h2 class="sec">储存箱</h2><p class="hint">你拥有的所有道具。点道具查看说明和使用方法。</p></div>' + itemsHTML();
+    $('pg-items').innerHTML = '<div class="page-head storage-head"><h2 class="sec">储存箱</h2><span class="storage-energy"><img src="images/items/energy.png" alt="">能量 <b>' + fmt(acc.energy) + '</b></span></div><p class="hint">你拥有的所有道具。点道具查看说明和使用方法。</p>' + itemsHTML();
   }
   function teamRename(i) {
     var old = $('tren-dlg'); if (old) old.remove();
@@ -1181,63 +1182,139 @@
   }
 
   /* ---------- 精灵背包 ---------- */
-  function renderBag() {
-    var el = $('pg-bag'), m = mon(ui.sel);
-    while (acc.teams.length < TEAM_N + (acc.teamX | 0)) acc.teams.push([]);
-    var html = monsTabs('bag') + '<div class="page-head"><h2 class="sec">精灵背包</h2><p class="hint flash">最多 ' + TX.D.TEAM_MAX + ' 个配队（前 ' + TEAM_N + ' 个免费，之后用能量解锁），每个配队最多 ' + TEAM_SIZE + ' 只不重复的精灵。拖动精灵可调整顺序（触屏长按后拖动），排在第 1 位的为首发。除了当前出战的配队，其他配队平时收起，点开查看。</p></div>';
-    if (ui.welcome) html += '<div class="welcome"><p><b>欢迎，' + esc(acc.name) + '！</b>你的初始精灵 ' + esc(form(acc.mons[0]).name) + ' 已经放进配队一，并设为当前出战配队。序章奖励的经验已存进经验背包，点击精灵即可分配。下一段剧情「江边出发」已在星际探索中解锁。</p><button class="btn" type="button" id="wel-x">知道了</button></div>';
-    html += '<div class="expbag"><span class="tape l"></span><div class="eb-item"><span class="eb-lab">经验背包</span><b>' + fmt(acc.exp) + '</b><span class="hint">累积经验，可分配给任意精灵</span></div>' +
-      '<div class="eb-item"><span class="eb-lab">能量</span><b class="en">' + fmt(acc.energy) + '</b><span class="hint">通用货币</span></div>' +
-      '<p class="hint eb-tip">点击配队中的精灵，在下方「精灵资料」的经验一栏里分配。升到 LV' + 25 + ' / LV50 时精灵会进化。隐藏技能要靠精灵在战斗中自己领悟。</p></div>';
-    if (!ui.tOpen) ui.tOpen = {};
-    html += '<div class="teams">' + acc.teams.map(function (t, i) {
-      var on = acc.active === i, body = '', open = on || ui.tOpen[i];
-      if (!open) {   // 收起的配队：一行，显示名字、几只、精灵小图
-        var mini = ''; for (var q = 0; q < TEAM_SIZE; q++) { var qm = mon(t[q]); mini += qm ? '<img src="' + form(qm).img + '" alt="' + esc(form(qm).name) + '">' : '<i></i>'; }
-        return '<section class="teambox fold"><div class="team-head"><button type="button" class="tm-fold" data-topen="' + i + '" aria-expanded="false"><span class="arr">▶</span><h3>' + esc(tName(i)) + '</h3><span class="cnt">' + t.length + ' / ' + TEAM_SIZE + '</span></button><button type="button" class="tm-ren" data-tren="' + i + '" title="给配队改名" aria-label="给' + esc(tName(i)) + '改名">✎</button><span class="tm-mini">' + mini + '</span>' +
-          '<span class="act"><button class="btn" type="button" data-active="' + i + '"' + (t.length ? '' : ' disabled title="配队里至少要有 1 只精灵"') + '>设为出战配队</button></span></div></section>';
-      }
-      for (var k = 0; k < TEAM_SIZE; k++) {
-        var u = t[k], mm = mon(u);
-        if (mm) body += '<li><button type="button" class="slot filled' + (ui.sel === u ? ' sel' : '') + '" data-u="' + u + '">' + (k === 0 ? '<span class="lead">首发</span>' : '') + monCard(mm) + (mm.moves.length !== 4 ? '<span class="warn">技能 ' + mm.moves.length + '/4</span>' : '') + '</button>' +
-          (ui.sel === u ? '<button type="button" class="qx" data-rmt="' + i + '" data-u="' + u + '" aria-label="移出">✕ 移出</button>' : '') + '</li>';
-        else body += '<li><button type="button" class="slot addslot" data-pickt="' + i + '"><span class="plus">＋</span>添加精灵</button></li>';
-      }
-      var picker = '';
-      if (ui.pick === i) {
-        var cand = acc.mons.filter(function (x) { return t.indexOf(x.u) < 0; }).sort(function (a, b) { return b.lv - a.lv; });
-        picker = '<div class="picker"><div class="picker-head"><b>从仓库选择加入' + tName(i) + '的精灵</b><button class="btn ghost" type="button" data-pickx="1">收起</button></div>' +
-          (cand.length ? '<div class="picker-grid">' + cand.map(function (x) {
-            var ts = teamsOf(x.u);
-            return '<button type="button" class="dmon" data-padd="' + i + '" data-u="' + x.u + '"><img src="' + form(x).img + '" alt=""><span class="nm">' + esc(form(x).name) + '</span><span class="lv">LV' + x.lv + '</span><span class="tc">' + tchips(SPMAP[x.sid].types) + '</span>' +
-              (ts.length ? '<span class="intm">已在' + ts.map(function (y) { return tName(y.t); }).join('、') + '</span>' : '') + '</button>';
-          }).join('') + '</div>' : '<p class="empty-note">仓库里没有可加入的精灵了。' + (acc.mons.length <= t.length ? '可以先在「精灵仓库」获取更多精灵。' : '') + '</p>') + '</div>';
-      }
-      return '<section class="teambox' + (on ? ' active' : '') + '"><span class="tape l"></span>' +
-        '<div class="team-head">' + (on ? '<h3>' + esc(tName(i)) + '</h3><span class="cnt">' + t.length + ' / ' + TEAM_SIZE + '</span>' : '<button type="button" class="tm-fold" data-topen="' + i + '" aria-expanded="true"><span class="arr">▶</span><h3>' + esc(tName(i)) + '</h3><span class="cnt">' + t.length + ' / ' + TEAM_SIZE + '</span></button>') + '<button type="button" class="tm-ren" data-tren="' + i + '" title="给配队改名" aria-label="给' + esc(tName(i)) + '改名">✎</button>' +
-        '<span class="act">' + (on ? '<span class="badge-on">当前出战</span>' : '<button class="btn" type="button" data-active="' + i + '"' + (t.length ? '' : ' disabled title="配队里至少要有 1 只精灵"') + '>设为出战配队</button>') + '</span></div>' +
-        '<ol class="bag tbag" data-team="' + i + '">' + body + '</ol>' + picker + '</section>';
-    }).join('') + teamLockHTML() + '</div>';
-    html += '<div class="page-head"><h2 class="sec">精灵资料</h2><p class="hint">点击配队里的精灵，可在此处查看资料、配置技能。完整列表和检索见「精灵仓库」。</p></div><article class="detail" id="bag-detail">' + (m ? monDetail(m) : '<p class="empty-note">点击配队里的精灵查看资料。</p>') + '</article>';
-    el.innerHTML = html;
+  function bagMoveCard(m, name, i) {
+    var odoF = m.sid === 'odo' && ui.odoF && ui.odoF.u === m.u ? ui.odoF.f : '';
+    var mv = M[odoMoveAs(name, odoF)] || M[name];
+    if (!mv) return '<div class="bag-skill empty-note">未装备技能</div>';
+    return '<button type="button" class="bag-skill" data-bag-skill="' + i + '" aria-label="' + esc(mv.name) + '，查看技能信息">' +
+      '<span class="mn">' + esc(mv.name) + '</span><span class="pp">PP ' + mv.pp + '</span><span class="t2">' + tchip(mv.type) + '<span class="mv-kind">' + mv.cat + '</span><span class="mv-power">威力 ' + (mv.power || '—') + '</span></span>' +
+      '<span class="md" hidden>' + esc(mv.d) + (mv.power ? ' · 威力 ' + mv.power : '') + (mv.pri ? ' · 先制 +' + mv.pri : '') + '</span></button>';
   }
-  $('pg-bag').addEventListener('click', function (e) {
+  function bagStats(m) {
+    var iv = ivOf(m), free = m.evFree || 0, sum = evSum(m), s = SPMAP[m.sid];
+    return '<div class="bag-stat-summary"><span><b>性格 · ' + esc(m.nat) + '</b> · ' + esc(natText(m.nat)) + '</span><span>学习力：可分配 <b>' + free + '</b> · 已分配 ' + sum + '/' + EV_TOTAL + '</span></div><div class="bag-stat-grid">' + STAT_KEYS.map(function (k) {
+      var ev = m.ev[k] || 0, room = Math.min(free, EV_MAX - ev, EV_TOTAL - sum), nm = natureMult(m.nat, k);
+      return '<article class="bag-stat-card"><header><span>' + BASE_NAME[k] + '</span><strong class="' + (nm > 1 ? 'blue' : nm < 1 ? 'red' : '') + '">' + stat(m, k) + (nm > 1 ? '↑' : nm < 1 ? '↓' : '') + '</strong><small class="bag-stat-meta">种族 ' + s.base[k] + ' · 天赋 ' + (iv ? iv[k] : '？') + '</small></header><div class="bag-stat-ev"><span>学习力 ' + ev + '</span><button type="button" data-ev="' + k + '" data-d="1" aria-label="' + BASE_NAME[k] + '学习力加1"' + (room > 0 ? '' : ' disabled') + '>+1</button><button type="button" data-ev="' + k + '" data-d="10" aria-label="' + BASE_NAME[k] + '学习力加10"' + (room > 0 ? '' : ' disabled') + '>+10</button></div></article>';
+    }).join('') + '</div>';
+  }
+  function bagDetail(m) {
+    var tabs = [['base', '基础信息'], ['stats', '能力'], ['moves', '当前技能'], ['ins', '刻印'], ['items', '道具使用']];
+    var tab = ui.detailTab || 'base', content = '<p class="empty-note">从左边选择精灵，或点击空位添加。</p>';
+    if (m) {
+      var source = document.createElement('div'); source.innerHTML = monDetail(m);
+      var section = function (key) { var el = source.querySelector('[data-mdfold="' + key + '"] .mdf-body'); return el ? el.innerHTML : ''; };
+      if (tab === 'base') {
+        var head = source.querySelector('.d-head');
+        head.querySelectorAll('.formdesc, .placeholder-note').forEach(function (el) { el.remove(); });
+        var note = head.querySelector('.hint'); if (note) note.textContent = stageLabel(SPMAP[m.sid], form(m).stage) + ' · ' + (acc.teams[acc.active][0] === m.u ? '当前配队首发' : '当前配队');
+        content = head.outerHTML + '<div class="bag-mon-actions">' + (acc.teams[acc.active][0] === m.u ? '' : '<button type="button" class="btn ghost" data-lead="' + acc.active + '">设为首发</button>') + '<button type="button" class="btn ghost" data-out="' + acc.active + '">移出配队</button></div>';
+      } else if (tab === 'moves') {
+        var cards = ''; for (var i = 0; i < 4; i++) cards += i < m.moves.length ? bagMoveCard(m, m.moves[i], i) : '<div class="bag-skill empty-note">未装备技能</div>';
+        content = '<section class="bag-current-skills"><div class="bag-ability">' + section('trait') + '</div><div class="bag-skill-grid">' + cards + '</div><button type="button" class="btn" data-move-panel="1">更换技能</button></section>';
+      } else if (tab === 'stats') content = bagStats(m);
+      else content = section(tab) || '<p class="empty-note">暂无可用道具。</p>';
+    }
+    return '<header class="bag-detail-head"><h2 class="sec">精灵资料</h2><button type="button" class="btn ghost" data-exp-panel="1"' + (acc.teams[acc.active].length ? '' : ' disabled') + '>分配经验</button></header>' +
+      '<nav class="bag-detail-tabs" role="tablist" aria-label="精灵资料">' + tabs.map(function (t) { return '<button type="button" role="tab" data-detail-tab="' + t[0] + '" class="' + (tab === t[0] ? 'on' : '') + '" aria-selected="' + (tab === t[0]) + '">' + t[1] + '</button>'; }).join('') + '</nav><div class="bag-detail-body">' + content + '</div>';
+  }
+  function renderBag() {
+    var el = $('pg-bag');
+    while (acc.teams.length < TEAM_N + (acc.teamX | 0)) acc.teams.push([]);
+    var t = acc.teams[acc.active];
+    if (t.indexOf(ui.sel) < 0) ui.sel = t.length ? t[0] : null;
+    var body = '';
+    for (var k = 0; k < TEAM_SIZE; k++) {
+      var m = mon(t[k]);
+      body += '<li>' + (m ? '<button type="button" class="slot filled' + (ui.sel === m.u ? ' sel' : '') + '" data-u="' + m.u + '" aria-pressed="' + (ui.sel === m.u) + '">' + (k === 0 ? '<span class="lead">首发</span>' : '') + monCard(m) + '</button>' : '<button type="button" class="slot addslot" data-pickt="' + acc.active + '"><span class="plus">＋</span>添加精灵</button>') + '</li>';
+    }
+    el.innerHTML = monsTabs('bag') + '<div class="bag-workspace"><section class="current-team teambox active"><div class="team-head"><h3>' + esc(tName(acc.active)) + '</h3><span class="cnt">' + t.length + ' / 5</span><button type="button" class="tm-ren" data-tren="' + acc.active + '" aria-label="配队改名">✎</button></div><ol class="bag tbag" data-team="' + acc.active + '">' + body + '</ol><footer class="bag-team-footer"><button type="button" class="btn" data-team-panel="1">切换配队</button></footer></section><article class="bag-detail" id="bag-detail">' + bagDetail(mon(ui.sel)) + '</article></div>';
+    if (ui.bagPanel) renderBagPanel();
+  }
+  function closeBagPanel() {
+    var kind = ui.bagPanel;
+    ui.bagPanel = null;
+    var d = $('bag-panel'); if (d) d.remove();
+    if (page === 'bag' && kind) { var selector = { teams: '[data-team-panel]', exp: '[data-exp-panel]', moves: '[data-move-panel]', pick: '[data-pickt]', skill: '[data-bag-skill="' + ui.skillIdx + '"]' }[kind], trigger = selector && $('pg-bag').querySelector(selector); if (trigger) trigger.focus(); }
+  }
+  function renderBagPanel() {
+    var kind = ui.bagPanel; if (!kind || page !== 'bag') { closeBagPanel(); return; }
+    var title = '', content = '', footer = '', m = mon(ui.sel), t = acc.teams[acc.active];
+    if (kind === 'teams') {
+      title = '切换配队';
+      content = '<div class="bag-team-options">' + acc.teams.map(function (team, i) {
+        var slots = ''; for (var k = 0; k < TEAM_SIZE; k++) { var mm = mon(team[k]); slots += mm ? '<span><img src="' + form(mm).img + '" alt=""><small>' + esc(form(mm).name) + '</small></span>' : '<span class="empty-note">空位</span>'; }
+        return '<button type="button" class="bag-team-option' + (ui.teamChoice === i ? ' on' : '') + '" data-team-choice="' + i + '" aria-pressed="' + (ui.teamChoice === i) + '"><b>' + esc(tName(i)) + (i === acc.active ? ' · 当前配队' : '') + '</b><span class="bag-team-preview">' + slots + '</span></button>';
+      }).join('') + '</div>' + teamLockHTML();
+      footer = '<button type="button" class="btn primary" data-team-apply="1"' + (ui.teamChoice == null || ui.teamChoice === acc.active || !acc.teams[ui.teamChoice] || !acc.teams[ui.teamChoice].length ? ' disabled' : '') + '>切换为当前配队</button>';
+    } else if (kind === 'pick') {
+      title = '添加精灵'; var team = acc.teams[ui.pick], list = acc.mons.filter(function (x) { return team.indexOf(x.u) < 0; }).sort(function (a, b) { return b.lv - a.lv; });
+      content = '<div class="picker-grid">' + list.map(function (x) { return '<button type="button" class="dmon" data-padd="' + ui.pick + '" data-u="' + x.u + '"><img src="' + form(x).img + '" alt=""><span class="nm">' + esc(form(x).name) + '</span><span class="lv">LV' + x.lv + '</span><span class="tc">' + tchips(SPMAP[x.sid].types) + '</span></button>'; }).join('') + '</div>' + (!list.length ? '<p class="empty-note">仓库里没有可以加入这支配队的精灵。</p>' : '');
+    } else if (kind === 'exp' && m) {
+      title = '分配经验';
+      content = '<div class="bag-exp-targets" aria-label="选择当前配队中的精灵">' + t.map(function (u) { var x = mon(u); return '<button type="button" class="btn' + (u === m.u ? ' primary' : '') + '" data-exp-target="' + u + '" aria-pressed="' + (u === m.u) + '">' + esc(form(x).name) + ' · LV' + x.lv + '</button>'; }).join('') + '</div><h3>' + esc(form(m).name) + '</h3>' + expBox(m);
+    } else if (kind === 'moves' && m) {
+      title = '更换技能'; var source = document.createElement('div'); source.innerHTML = monDetail(m); var moves = source.querySelector('[data-mdfold="moves"] .mdf-body');
+      content = '<p class="hint flash" role="status">选择已学习的技能，最多装备 4 个；更改会自动保存。</p>' + (moves ? moves.innerHTML : '');
+    } else if (kind === 'skill' && m) {
+      title = '技能效果'; var tmp = document.createElement('div'); tmp.innerHTML = bagMoveCard(m, m.moves[ui.skillIdx], ui.skillIdx); var detail = document.createElement('div'); HSSKILL.fill(tmp.firstElementChild, detail); content = detail.innerHTML;
+    } else { closeBagPanel(); return; }
+    var d = $('bag-panel'), firstOpen = !d;
+    if (!d) {
+      d = document.createElement('div'); d.id = 'bag-panel'; d.className = 'soc-dlg'; document.body.appendChild(d);
+      d.addEventListener('click', function (e) {
+        if (e.target === d || e.target.closest('[data-bag-close]')) { closeBagPanel(); return; }
+        var b = e.target.closest('button'); if (!b || b.disabled) return;
+        if (b.dataset.teamChoice != null) { ui.teamChoice = +b.dataset.teamChoice; renderBagPanel(); return; }
+        if (b.dataset.teamApply) { acc.active = ui.teamChoice; ui.sel = acc.teams[acc.active][0]; save(); closeBagPanel(); renderBag(); return; }
+        if (b.dataset.expTarget) { ui.sel = +b.dataset.expTarget; renderBag(); return; }
+        if (b.dataset.give || b.dataset.lvcap) { onDetailClick(e); return; }
+        onBagClick(e);
+      });
+      d.addEventListener('change', function (e) { if (e.target.matches('[data-amove]')) onDetailChange(e); });
+    }
+    var y = d.querySelector('.bag-panel-body') ? d.querySelector('.bag-panel-body').scrollTop : 0;
+    var focused = document.activeElement, inPanel = d.contains(focused), focusId = inPanel && focused.id;
+    var focusData = inPanel && [].find.call(focused.attributes, function (attr) { return attr.name.indexOf('data-') === 0; });
+    d.innerHTML = '<section class="soc-box bag-panel-box" role="dialog" aria-modal="true" aria-label="' + title + '"><header class="bag-panel-head"><h2>' + title + '</h2><button type="button" class="btn ghost" data-bag-close="1" aria-label="关闭">关闭</button></header><div class="bag-panel-body">' + content + '</div><footer class="soc-foot">' + footer + '</footer></section>';
+    var restore = focusId ? [].find.call(d.querySelectorAll('[id]'), function (el) { return el.id === focusId; }) : focusData ? [].find.call(d.querySelectorAll('[' + focusData.name + ']'), function (el) { return el.getAttribute(focusData.name) === focusData.value; }) : null;
+    if (restore && !restore.disabled) restore.focus({ preventScroll: true });
+    else if (firstOpen || inPanel) d.querySelector('[data-bag-close]').focus({ preventScroll: true });
+    d.querySelector('.bag-panel-body').scrollTop = y;
+  }
+  document.addEventListener('keydown', function (e) {
+    var d = $('bag-panel'); if (!d) return;
+    if (e.key === 'Escape') { closeBagPanel(); return; }
+    if (e.key === 'Tab') {
+      var buttons = [].filter.call(d.querySelectorAll('button, input, select, a[href]'), function (el) { return !el.disabled && el.getClientRects().length; });
+      var first = buttons[0], last = buttons[buttons.length - 1];
+      if (e.shiftKey && (document.activeElement === first || !d.contains(document.activeElement))) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && (document.activeElement === last || !d.contains(document.activeElement))) { e.preventDefault(); first.focus(); }
+    }
+  });
+  $('pg-bag').addEventListener('skillinspect', function (e) { var card = e.target.closest('[data-bag-skill]'); if (card) { ui.skillIdx = +card.dataset.bagSkill; ui.bagPanel = 'skill'; renderBagPanel(); } });
+  function onBagClick(e) {
     if (dragJust) { e.stopPropagation(); return; }
     var t = e.target;
     if (t.id === 'wel-x') { ui.welcome = false; renderBag(); return; }
     var b = t.closest('button'); if (!b) return;
+    if (b.dataset.detailTab) { ui.detailTab = b.dataset.detailTab; renderBag(); return; }
+    if (b.dataset.teamPanel) { ui.teamChoice = acc.active; ui.bagPanel = 'teams'; renderBagPanel(); return; }
+    if (b.dataset.expPanel) { ui.bagPanel = 'exp'; renderBagPanel(); return; }
+    if (b.dataset.movePanel) { ui.bagPanel = 'moves'; renderBagPanel(); return; }
+    if (b.dataset.bagSkill != null) { ui.skillIdx = +b.dataset.bagSkill; ui.bagPanel = 'skill'; renderBagPanel(); return; }
     if (b.closest('#bag-detail')) { onDetailClick(e); return; }
     if (b.dataset.rmt != null) { var tm = acc.teams[+b.dataset.rmt]; tm.splice(tm.indexOf(+b.dataset.u), 1); if (!tm.length && acc.active === +b.dataset.rmt) { var nz = acc.teams.findIndex(function (x) { return x.length; }); if (nz >= 0) acc.active = nz; } save(); renderBag(); return; }
     if (b.dataset.topen != null) { var ti = +b.dataset.topen; if (!ui.tOpen) ui.tOpen = {}; ui.tOpen[ti] = !ui.tOpen[ti]; if (!ui.tOpen[ti] && ui.pick === ti) ui.pick = -1; renderBag(); return; }
-    if (b.dataset.tren != null) { teamRename(+b.dataset.tren); return; }
+    if (b.dataset.tren != null) { closeBagPanel(); teamRename(+b.dataset.tren); return; }
     if (b.dataset.tunlock) { var tpz = TX.D.TEAM_PRICE[acc.teamX | 0]; if (!tpz) return; if ((acc.energy || 0) < tpz) { toast('能量不足：解锁需要 ' + fmt(tpz) + ' 能量。'); return; } txRun('teamSlot', {}, function (r) { while (acc.teams.length < r.n) acc.teams.push([]); if (!ui.tOpen) ui.tOpen = {}; ui.tOpen[r.n - 1] = true; save(); renderBag(); renderRes(); toast('解锁了' + tName(r.n - 1) + '！消耗 ' + fmt(r.cost) + ' 能量。'); }); return; }
     if (b.dataset.mtab) { if (b.dataset.mtab === 'dex' && !dexOpen()) { toast('读完星际探索 · 荆楚号 · 学院部的剧情后，「黄冈秘鉴」才会开放。', prog('board').done ? '前往学院部' : '', '黄冈'); return; } go(b.dataset.mtab); return; }
-    if (b.dataset.pickt != null) { ui.pick = ui.pick === +b.dataset.pickt ? -1 : +b.dataset.pickt; renderBag(); return; }
+    if (b.dataset.pickt != null) { ui.pick = +b.dataset.pickt; ui.bagPanel = 'pick'; renderBagPanel(); return; }
     if (b.dataset.pickx) { ui.pick = -1; renderBag(); return; }
-    if (b.dataset.padd != null) { var tp = acc.teams[+b.dataset.padd], u = +b.dataset.u; if (tp.length < TEAM_SIZE && tp.indexOf(u) < 0) tp.push(u); if (tp.length >= TEAM_SIZE) ui.pick = -1; ui.sel = u; save(); renderBag(); return; }
+    if (b.dataset.padd != null) { var tp = acc.teams[+b.dataset.padd], u = +b.dataset.u; if (tp.length < TEAM_SIZE && tp.indexOf(u) < 0) tp.push(u); if (tp.length >= TEAM_SIZE) { ui.pick = -1; closeBagPanel(); } ui.sel = u; save(); renderBag(); return; }
     if (b.dataset.active != null) { acc.active = +b.dataset.active; if (ui.tOpen) delete ui.tOpen[acc.active]; save(); renderBag(); return; }
     if (b.classList.contains('filled')) { ui.sel = +b.dataset.u; renderBag(); }
-  });
+  }
+  $('pg-bag').addEventListener('click', onBagClick);
   $('pg-bag').addEventListener('change', function (e) { if (e.target.closest('#bag-detail')) onDetailChange(e); });
   $('pg-items').addEventListener('click', function (e) {
     var b = e.target.closest('button'); if (!b || b.disabled) return;
@@ -5921,8 +5998,9 @@
   }
   document.addEventListener('click', function (e) {   // 奥多亚克：背包 / 仓库资料里切换查看的形态
     var b = e.target.closest && e.target.closest('[data-odof]'); if (!b) return;
-    var u = +b.dataset.odof, m = mon(u), det = b.closest('.detail'); if (!m || !det) return;
-    ui.odoF = { u: u, f: b.dataset.of || '' }; det.innerHTML = monDetail(m);
+    var u = +b.dataset.odof, m = mon(u), det = b.closest('.detail'), inBag = b.closest('#bag-panel, #bag-detail'); if (!m || (!det && !inBag)) return;
+    ui.odoF = { u: u, f: b.dataset.of || '' };
+    if (inBag) renderBag(); else det.innerHTML = monDetail(m);
   });
   // 2026-10-24：改成在 document 上监听（按钮被重新渲染也不会失效），出错时把原因提示出来
   document.addEventListener('click', function (e) {

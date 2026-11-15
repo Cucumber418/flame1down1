@@ -196,7 +196,7 @@
     var rl = $('cloud-relogin'); if (rl) rl.hidden = s !== 'expired';
   }
   function renderBar() {
-    var mh = document.querySelector('.masthead'); if (!mh || $('cloud-bar')) return;
+    var mh = $('who') || document.querySelector('.masthead'); if (!mh || $('cloud-bar')) return;
     var bar = document.createElement('div'); bar.className = 'cloud-bar'; bar.id = 'cloud-bar';
     bar.innerHTML = '<button type="button" class="cloud-pill" id="cloud-pill" aria-haspopup="true" aria-expanded="false"><span class="cl-ic" aria-hidden="true">☁</span><b>' + esc(st.user) + '</b><span class="cl-st" id="cloud-st"></span></button>' +
       '<div class="cloud-menu" id="cloud-menu" hidden>' +
