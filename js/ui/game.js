@@ -1077,39 +1077,34 @@
     var listed = ['m_lcleaf', 'e_leafcat', 'e_pluto', 'e_odo'].concat(SUM_ESS);
     var evt = MAT_ORDER.filter(function (k) { return listed.indexOf(k) < 0; });
     return [
-      { id: 'mon', n: '精灵培养', hint: '直接用在精灵身上。也可以在精灵背包、仓库里点开精灵，在资料里使用。', subs: [['特产 · 隐藏技能与等级上限', byKind(['jade'])], ['性格 · 天赋 · 学习力', byKind(['nat', 'natRand', 'iv', 'iv2', 'ev', 'evreset'])], ['经验', byKind(['exp'])], ['形态', byKind(['form'])]] },
-      { id: 'battle', n: '战斗道具', hint: '在剧情、野外、BOSS对战的「道具」页使用。', subs: [['捕捉装置', ['cap1', 'cap2', 'cap3']], ['hp药水', ['pot100', 'pot200']], ['PP 药水', ['pp10', 'pp20', 'pp5', 'pp15']], ['解毒药剂', ['antidote']]] },
-      { id: 'mat', n: '材料', hint: '拿到黄石 · 冶炼坊合成，或者用在种植园、保育仓。', subs: [['采集物', GATHER_ORDER], ['种子', SEED_ORDER], ['作物', CROP_ORDER], ['精灵素材与精元', listed], ['活动道具', evt]] },
-      { id: 'ins', n: '刻印', hint: '在精灵资料的「刻印」里装备；只在 PVE 对战中生效。', subs: [['常规刻印', SUMMON.INS_NORMAL1.concat(SUMMON.INS_NORMAL2)], ['限定刻印', INS_KEYS.filter(function (k) { return SUMMON.INS[k].lim; })], ['刻印激活晶片', ['insChip']]] },
-      { id: 'other', n: '其他', hint: '功能道具点开后使用；剧情道具不会消耗。', subs: [['召唤', ['sumTok', 'fPt']], ['功能道具', ['rename', 'auto'].concat(wk ? ['permit'] : [])], ['剧情道具', Object.keys(KEY_ITEMS)]] }
+      { id: 'mon', n: '精灵培养', subs: [['特产 · 隐藏技能与等级上限', byKind(['jade'])], ['性格 · 天赋 · 学习力', byKind(['nat', 'natRand', 'iv', 'iv2', 'ev', 'evreset'])], ['经验', byKind(['exp'])], ['形态', byKind(['form'])]] },
+      { id: 'battle', n: '战斗道具', subs: [['捕捉装置', ['cap1', 'cap2', 'cap3']], ['hp药水', ['pot100', 'pot200']], ['PP 药水', ['pp10', 'pp20', 'pp5', 'pp15']], ['解毒药剂', ['antidote']]] },
+      { id: 'mat', n: '材料', subs: [['采集物', GATHER_ORDER], ['种子', SEED_ORDER], ['作物', CROP_ORDER], ['精灵素材与精元', listed], ['活动道具', evt]] },
+      { id: 'ins', n: '刻印', subs: [['常规刻印', SUMMON.INS_NORMAL1.concat(SUMMON.INS_NORMAL2)], ['限定刻印', INS_KEYS.filter(function (k) { return SUMMON.INS[k].lim; })], ['刻印激活晶片', ['insChip']]] },
+      { id: 'other', n: '其他', subs: [['召唤', ['sumTok', 'fPt']], ['功能道具', ['rename', 'auto'].concat(wk ? ['permit'] : [])], ['剧情道具', Object.keys(KEY_ITEMS)]] }
     ];
   }
   function itemsHTML() {
     var wk = weeklyOpen(), pn = wk ? permits() : 0, G = ibGroups(wk);
     var owned = function (k) { return k === 'permit' ? wk : acc.items[k] > 0; };
-    var allKeys = []; G.forEach(function (g) { g.subs.forEach(function (sb) { sb[1].forEach(function (k) { if (owned(k)) allKeys.push(k); }); }); });
+    var keysOf = function (g) { var out = []; g.subs.forEach(function (sb) { sb[1].forEach(function (k) { if (owned(k) && out.indexOf(k) < 0) out.push(k); }); }); return out; };
+    var allKeys = []; G.forEach(function (g) { keysOf(g).forEach(function (k) { if (allKeys.indexOf(k) < 0) allKeys.push(k); }); });
     if (ui.itSel && allKeys.indexOf(ui.itSel) < 0) ui.itSel = null;
     var tab = ui.itTab || 'all';
-    var cnt = function (g) { var n = 0; g.subs.forEach(function (sb) { sb[1].forEach(function (k) { if (owned(k)) n++; }); }); return n; };
+    var keys = tab === 'all' ? allKeys : keysOf(G.filter(function (g) { return g.id === tab; })[0] || G[0]);
+    var size = ui.itPageSize || 12, pages = Math.max(1, Math.ceil(keys.length / size));
+    ui.itPage = Math.max(0, Math.min(pages - 1, ui.itPage || 0));
     var cell = function (k) {
       var kimg = KEY_ITEMS[k] && KEY_ITEMS[k].img && ITEM_IMG[KEY_ITEMS[k].img];
       var ic = kimg ? '<img class="it-ic" src="' + kimg + '" alt="">' : H.itemIcon(k);
       var n = k === 'permit' ? pn + '/' + PERMIT.max : KEY_ITEMS[k] ? '' : '×' + fmt(acc.items[k]);
       return '<button type="button" class="ib-it' + (ui.itSel === k ? ' sel' : '') + '" data-itsel="' + k + '"><span class="ib-ic">' + ic + '</span><b>' + (k === 'permit' ? '挑战许可' : itemName(k)) + '</b>' + (n ? '<span class="cnt">' + n + '</span>' : '') + '</button>';
     };
-    var html = '<section class="itembox"><span class="tape r"></span><div class="ib-tabs" role="tablist">' +
-      [{ id: 'all', n: '全部', c: allKeys.length }].concat(G.map(function (g) { return { id: g.id, n: g.n, c: cnt(g) }; })).map(function (t) {
+    var html = '<div class="storage-page" style="--storage-cols:' + (ui.itCols || 3) + ';--storage-rows:' + (ui.itRows || 4) + '"><section class="itembox"><div class="storage-toolbar"><span class="storage-energy"><img src="images/items/energy.png" alt="">能量 <b>' + fmt(acc.energy) + '</b></span><div class="ib-tabs" role="tablist" aria-label="道具分类">' +
+      [{ id: 'all', n: '全部', c: allKeys.length }].concat(G.map(function (g) { return { id: g.id, n: g.n, c: keysOf(g).length }; })).map(function (t) {
         return '<button type="button" role="tab" class="ib-tab' + (tab === t.id ? ' on' : '') + '" data-ittab="' + t.id + '" aria-selected="' + (tab === t.id) + '">' + t.n + ' <small>' + t.c + '</small></button>';
-      }).join('') + '</div><div class="ib-wrap"><div class="ib-main">';
-    var shown = 0;
-    G.forEach(function (g) {
-      if (tab !== 'all' && tab !== g.id) return;
-      var body = g.subs.map(function (sb) { var ks = sb[1].filter(owned); if (!ks.length) return ''; shown += ks.length; return '<h4 class="ib-sub">' + sb[0] + '</h4><div class="ib-grid">' + ks.map(cell).join('') + '</div>'; }).join('');
-      if (!body && tab === 'all') return;
-      html += '<div class="ib-cat"><div class="ib-head"><h3>' + g.n + '</h3><span class="hint">' + g.hint + '</span></div>' + (body || '<p class="empty-note">这一类还没有道具。</p>') + '</div>';
-    });
-    if (!shown && tab === 'all') html += '<p class="empty-note">储存箱是空的。</p>';
-    html += '</div>';
+      }).join('') + '</div></div><div class="ib-grid" aria-label="道具列表">' + (keys.length ? keys.slice(ui.itPage * size, (ui.itPage + 1) * size).map(cell).join('') : '<p class="empty-note">' + (tab === 'all' ? '储存箱是空的。' : '这一类还没有道具。') + '</p>') + '</div>' +
+      '<nav class="storage-pages" aria-label="道具翻页"><button type="button" class="btn ghost" data-itpage="-1" aria-label="上一页"' + (ui.itPage ? '' : ' disabled') + '>‹</button><span role="status" aria-live="polite">' + (ui.itPage + 1) + ' / ' + pages + '</span><button type="button" class="btn ghost" data-itpage="1" aria-label="下一页"' + (ui.itPage < pages - 1 ? '' : ' disabled') + '>›</button></nav></section></div>';
     var k = ui.itSel;
     if (k) {
       var it = USE_ITEMS[k] && USE_ITEMS[k].kind ? USE_ITEMS[k] : null, inf = itemInfo(k), act = '', body = '';
@@ -1144,14 +1139,17 @@
       var dsc = (INS_ITEMS[k] && INS_ITEMS[k].d) || (ITEMS[k] && ITEMS[k].d) || (USE_ITEMS[k] && USE_ITEMS[k].d) || (KEY_ITEMS[k] && KEY_ITEMS[k].d) || (GATHER_ITEMS[k] && GATHER_ITEMS[k].d) || (SEEDS[k] && SEEDS[k].d) || (CROPS[k] && CROPS[k].d) || (MATS[k] && MATS[k].d) || '';
       body = (inf ? '<dl class="ib-info"><div><dt>简介</dt><dd>' + esc(inf.intro) + '</dd></div><div><dt>用途</dt><dd>' + esc(inf.use) + '</dd></div><div><dt>获得方式</dt><dd>' + esc(inf.get) + '</dd></div></dl>' : '<p>' + esc(dsc) + '</p>') +
         (act ? '<div class="ib-act">' + act + '</div>' : '');
-      html += '<div class="ib-detail"><h4><span class="ib-ic">' + (KEY_ITEMS[k] && KEY_ITEMS[k].img && ITEM_IMG[KEY_ITEMS[k].img] ? '' : H.itemIcon(k)) + '</span>' + (k === 'permit' ? '挑战许可' : itemName(k)) + (k !== 'permit' ? ' <small class="cnt">×' + fmt(acc.items[k] || 0) + '</small>' : '') + '</h4>' + body + (ui.itMsg ? '<p class="exp-msg">' + esc(ui.itMsg) + '</p>' : '') + '</div>';
+      html += '<div class="soc-dlg ib-dialog"><div class="soc-box ib-dialog-box" role="dialog" aria-modal="true" aria-label="' + esc(itemName(k)) + '"><div class="ib-detail"><h4><span class="ib-ic">' + (KEY_ITEMS[k] && KEY_ITEMS[k].img && ITEM_IMG[KEY_ITEMS[k].img] ? '' : H.itemIcon(k)) + '</span>' + (k === 'permit' ? '挑战许可' : itemName(k)) + (k !== 'permit' ? ' <small class="cnt">×' + fmt(acc.items[k] || 0) + '</small>' : '') + '</h4>' + body + (ui.itMsg ? '<p class="exp-msg">' + esc(ui.itMsg) + '</p>' : '') + '</div><div class="soc-foot"><button type="button" class="btn primary" data-itclose="1">关闭</button></div></div></div>';
     }
-    else if (ui.itMsg) html += '<div class="ib-detail"><p class="exp-msg">' + esc(ui.itMsg) + '</p></div>';   // 道具刚好用完：提示留着
-    else html += '<div class="ib-detail ib-empty"><p class="hint">点左边的道具，查看说明和使用方法。</p></div>';
-    return html + '</div></section>';
+    else if (ui.itMsg) html += '<div class="soc-dlg ib-dialog"><div class="soc-box ib-dialog-box" role="dialog" aria-modal="true" aria-label="使用结果"><p class="exp-msg">' + esc(ui.itMsg) + '</p><div class="soc-foot"><button type="button" class="btn primary" data-itclose="1">关闭</button></div></div></div>';
+    return html;
   }
   function renderItems() {
-    $('pg-items').innerHTML = '<div class="page-head storage-head"><h2 class="sec">储存箱</h2><span class="storage-energy"><img src="images/items/energy.png" alt="">能量 <b>' + fmt(acc.energy) + '</b></span></div>' + itemsHTML();
+    $('pg-items').innerHTML = itemsHTML();
+  }
+  function closeItemDetail() {
+    var key = ui.itSel; ui.itSel = null; ui.itMsg = ''; renderItems();
+    var button = key && $('pg-items').querySelector('[data-itsel="' + key + '"]'); if (button) button.focus();
   }
   function teamRename(i) {
     var old = $('tren-dlg'); if (old) old.remove();
@@ -1317,16 +1315,25 @@
   $('pg-bag').addEventListener('click', onBagClick);
   $('pg-bag').addEventListener('change', function (e) { if (e.target.closest('#bag-detail')) onDetailChange(e); });
   $('pg-items').addEventListener('click', function (e) {
+    if (e.target.classList.contains('ib-dialog')) { closeItemDetail(); return; }
     var b = e.target.closest('button'); if (!b || b.disabled) return;
-    if (b.dataset.ittab) { ui.itTab = b.dataset.ittab; renderItems(); return; }
-    if (b.dataset.itsel) { ui.itSel = ui.itSel === b.dataset.itsel ? null : b.dataset.itsel; ui.itMsg = ''; renderItems(); if (ui.itSel && window.innerWidth < 860) { var dd = document.querySelector('#pg-items .ib-detail'); if (dd) dd.scrollIntoView({ behavior: 'smooth', block: 'start' }); } return; }
-    if (b.dataset.ituse) { useBagItem(b.dataset.ituse); return; }
+    if (b.dataset.itclose) { closeItemDetail(); return; }
+    if (b.dataset.ittab) { ui.itTab = b.dataset.ittab; ui.itPage = 0; ui.itSel = null; ui.itMsg = ''; renderItems(); return; }
+    if (b.dataset.itpage) { ui.itPage = (ui.itPage || 0) + +b.dataset.itpage; ui.itSel = null; ui.itMsg = ''; renderItems(); return; }
+    if (b.dataset.itsel) { ui.itSel = b.dataset.itsel; ui.itMsg = ''; renderItems(); var close = document.querySelector('#pg-items [data-itclose]'); if (close) close.focus(); return; }
+    if (b.dataset.ituse) { var item = b.dataset.ituse; if (item === 'rename') closeItemDetail(); useBagItem(item); return; }
+    if (b.dataset.itgo) { if (b.dataset.itgo === 'seedshop' && !farmOpen()) { toast('读完支线「伟大的种植园」后开放。'); return; } closeItemDetail(); }
     if (b.dataset.itgo === 'weekly') { ex.view = 'weekly'; go('explore'); return; }
     if (b.dataset.itgo === 'store') { go('store'); return; }
     if (b.dataset.itgo === 'summon') { ex.view = 'summon'; ex.planet = 'jingchu'; go('explore'); return; }
     if (b.dataset.itgo === 'home') { HSACC.goHome(); return; }
     if (b.dataset.itgo === 'nursery') { ex.view = 'nursery'; ex.area = '神农架'; ex.planet = 'jingchu'; go('explore'); return; }
-    if (b.dataset.itgo === 'seedshop') { if (!farmOpen()) { toast('读完支线「伟大的种植园」后开放。'); return; } ex.view = 'seedshop'; ex.area = '恩施'; ex.planet = 'jingchu'; go('explore'); return; }
+    if (b.dataset.itgo === 'seedshop') { ex.view = 'seedshop'; ex.area = '恩施'; ex.planet = 'jingchu'; go('explore'); return; }
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !$('pg-items').hidden && document.querySelector('#pg-items .ib-dialog')) { closeItemDetail(); e.preventDefault(); }
+    var areas = document.querySelector('.ship-areas-dialog');
+    if (e.key === 'Escape' && areas) { areas.remove(); e.preventDefault(); }
   });
   $('pg-items').addEventListener('change', function (e) {
     if (e.target.name === 'it-t') { ui.itTarget = +e.target.value; ui.itMsg = ''; renderItems(); return; }
@@ -1884,7 +1891,7 @@
     if (ex.view === 'seedshop') { if (farmOpen()) { renderSeedShop(); return; } ex.view = 'area'; ex.area = '恩施'; }
     if (ex.view === 'spa') { if (spaOpen()) { renderSpa(); return; } ex.view = 'area'; ex.area = '咸宁'; }
     var Pp = ex.view === 'sites' && PLANETS.filter(function (p) { return p.id === ex.planet; })[0];
-    var html = ex.view === 'planets' ? '' : exHead('');
+    var html = '';
     if (ex.view === 'planets') {
       // 2026-10-31：空间站、太空竞技场、BOSS挑战、每周挑战移到飞船终端（舰体图右边）
       html = '<div class="star-map-page">' + mayarMap() + (earthStoryDone() ? '' :
@@ -1928,10 +1935,9 @@
         (big ? '<text x="' + r.c[0] + '" y="' + (r.c[1] + 11) + '" class="df">' + r.n + '</text>' : '') +
         (todo ? '<g transform="translate(' + (r.c[0] + (big ? 30 : 14)) + ',' + (r.c[1] - (big ? 20 : 14)) + ')"><g class="pin"><circle r="10"/><text y="4.5">!</text></g></g>' : '') + '</g>';
     }).join('');
-    return '<figure class="shipmap">' + shipQuick() + '<div class="sm-wrap"><svg viewBox="-60 20 880 560" role="img" aria-label="荆楚号舰体平面图">' +
+    return '<div class="ship-map-page"><figure class="shipmap"><div class="ship-scene"><img class="ship-space-bg" src="' + BG.mayar + '" alt="">' + shipQuick() + '<div class="sm-wrap"><svg viewBox="-60 20 880 560" role="img" aria-label="荆楚号舰体平面图">' +
       '<g class="eng">' + [[16, 398, 30], [20, 452, 26], [42, 510, 22], [130, 122, 24], [124, 74, 18]].map(function (e) { return '<path d="M' + (e[0] - 14) + ',' + (e[1] - e[2] / 2) + ' l-' + (e[2] * 1.6) + ',' + (e[2] * .3) + ' l0,' + (e[2] * .4) + ' l' + (e[2] * 1.6) + ',' + (e[2] * .3) + ' Z"/>'; }).join('') + '</g>' +
-      '<path class="hull" d="' + sPath(SHIP.outline) + '"/>' + g + '<path class="hull-l" d="' + sPath(SHIP.outline) + '"/></svg>' + shipSide() + '</div>' +
-      '<figcaption><span><i class="lg open"></i>可传送</span><span><i class="lg pin">!</i>有可进行的剧情</span><span><i class="lg"></i>登船后开放</span>船尾（西侧）是引擎，船头朝东。</figcaption></figure>' + shipTiles();
+      '<path class="hull" d="' + sPath(SHIP.outline) + '"/>' + g + '<path class="hull-l" d="' + sPath(SHIP.outline) + '"/></svg></div>' + shipSide() + '</div></figure></div>';
   }
   // 舰体图上方（同一个黑框里）的快捷入口：基地、种植园、冶炼、孵化、商城（2026-10-31）
   var SHIP_QUICK = [
@@ -1981,7 +1987,7 @@
   }, true);
   // 舰体图右边（同一个黑框里）：空间站、太空竞技场、BOSS挑战、每周挑战（2026-10-31，从星际探索的星图页搬过来）
   function shipSide() {
-    var item = function (attr, ic, t, sub, open) { return '<button type="button" class="sm-it' + (open ? '' : ' locked') + '"' + (open ? ' ' + attr : ' disabled') + '><span class="sm-ic">' + ic + '</span><span class="sm-t"><b>' + t + '</b><small>' + sub + '</small></span></button>'; };
+    var item = function (attr, ic, t, sub, open) { return '<button type="button" class="sm-it mayar-tool' + (open ? '' : ' locked') + '" title="' + esc(t + (sub ? '：' + sub : '')) + '"' + (open ? ' ' + attr : ' disabled') + '><span class="sm-ic" aria-hidden="true">' + ic + '</span><span class="sm-t"><b>' + t + '</b></span></button>'; };
     var st = planetOf('station'), sa = planetOf('sarena'), bk = Object.keys(BOSSES), nOpen = bk.filter(bossOpen).length, wk = weeklyOpen();
     return '<div class="sm-side">' +
       item('data-planet="station"', '<img src="images/planets/station.webp" alt="">', '空间站', planetOpen(st) ? '先驱之塔 · 全息作战场地' : '读完「降临芙罗拉」后开放', planetOpen(st)) +
@@ -1991,6 +1997,7 @@
       item('data-endless="1"', '♾', '无尽作战', EN.rec(acc).run ? '作战进行中 · 难度 ' + EN.rec(acc).run.d : '已解锁难度 ' + EN.rec(acc).maxD + ' / ' + EN.D_MAX, true) +   // 2026-11-02
       item('data-bosshub="1"', '<img src="' + SPRITES[BOSSES[bk[0]].sid] + '" alt="">', 'BOSS挑战', '已开放 ' + nOpen + ' / ' + bk.length, true) +
       item('data-wkhub="1"', wk ? '<span class="sm-pm">' + permits() + '</span>' : '🔒', '每周挑战', wk ? '挑战许可 ' + permits() + ' / ' + PERMIT.max : '击败困难难度的泰戈尔或荒芜后开放', wk) +
+      item('data-shipareas="1"', '🗺', '舰内区域', '', true) +
       '</div>';
   }
   // 舰体图下方的区域板块（2026-10-27）：只列出有功能的区域（不列剧情），每块写明有什么功能；点击传送过去（和点舰体图一样）
@@ -2008,7 +2015,7 @@
     return out;
   }
   function shipTiles() {
-    var tiles = SHIP.regions.filter(function (r) { return deptOpen(r.n) && areaFeats(r.n).length; }).map(function (r) {
+    var tiles = SHIP.regions.filter(function (r) { return deptOpen(r.n); }).map(function (r) {
       var d = DEPTS[r.n], F = areaFeats(r.n), todo = 0, bg = AREA_BG[r.n] && BG[AREA_BG[r.n]];
       return '<button type="button" class="st-tile' + (todo ? ' todo' : '') + '" data-area="' + r.n + '">' +
         '<span class="st-img">' + (bg ? '<img src="' + bg + '" alt="" loading="lazy">' : '<img class="st-ph" src="' + CHARS.ship_icon + '" alt="">') + (todo ? '<i class="st-pin">!</i>' : '') + '</span>' +
@@ -2027,8 +2034,7 @@
         '<span class="mk-dot">' + (pr.done ? '✓' : open ? '!' : '锁') + '</span><span class="mk-lab"><b>' + S.chapter + '</b><small>' + st + '</small></span></button>';
     }).join('');
     var rw = ids.map(function (id) { var S = SITES[id], R = S.reward; return R ? '<li><b>' + S.chapter + '</b>：' + S.d + '<br><span class="hint">首次读完奖励：' + rwList(R).filter(Boolean).join('、') + (UNLOCK[id] ? '，并开放' + UNLOCK[id] : '') + (prog(id).rewarded ? '（已领取）' : '') + '</span></li>' : '<li><b>' + S.chapter + '</b>：' + S.d + '</li>'; }).join('');
-    $('pg-explore').innerHTML = exHead('') +
-      '<div class="crumb"><button type="button" class="btn ghost" id="ex-ship">‹ 返回舰体图</button><b>荆楚号 · ' + d[0] + '</b><span class="hint">' + n + ' · ' + d[1] + '</span></div>' +
+    $('pg-explore').innerHTML = '<div class="crumb"><button type="button" class="btn ghost" id="ex-ship">‹ 返回舰体图</button><b>荆楚号 · ' + d[0] + '</b><span class="hint">' + n + ' · ' + d[1] + '</span></div>' +
       '<div class="area' + (ex.tp ? ' tp' : '') + '"><div class="area-scene">' +
       (bg ? '<img src="' + BG[bg] + '" alt="' + d[0] + '">' : '<div class="area-ph"><img src="' + CHARS.ship_icon + '" alt=""><b>' + d[0] + '</b><span>这片区域的具体样子还在建造中</span></div>') +
       mk + (n === '天门' ? hallSpots() : '') + bossSpots(n) +
@@ -2744,7 +2750,7 @@
       (on ? '<span class="en-ord">' + (enUi.line.indexOf(i) + 1) + '</span>' : '') + '</div>';
   }
   function renderEndless() {
-    var E = EN.rec(acc), R = E.run, html = exHead('') + '<div class="crumb"><button type="button" class="btn ghost" id="en-back">‹ 返回飞船终端</button><b>荆楚号 · 无尽作战</b></div>';
+    var E = EN.rec(acc), R = E.run, html = '<div class="crumb"><button type="button" class="btn ghost" id="en-back">‹ 返回飞船终端</button><b>荆楚号 · 无尽作战</b></div>';
     if (!R) html += enLobby(E); else html += enRun(R);
     if (enUi.pageHtml !== html || !$('pg-explore').querySelector('.crumb #en-back')) { var w0 = $('en-mapw'), sl = w0 ? w0.scrollLeft : null; $('pg-explore').innerHTML = html; enUi.pageHtml = html; enMapBind(sl); }   // 页面没变就不重画（免得闪）
     enModal(R);
@@ -3057,7 +3063,7 @@
         card(Ts.leaf, itemName(B.leaf) + ' ×100', esc(shortD(USE_ITEMS[B.leaf]))) +
         card(Ts.ins, '限定刻印 · 自选一个', '每月限 5 次。选一个当期限定刻印：', '<p class="gxc-row">' + B.ins.map(function (k) { return '<button type="button" class="btn ' + (k === pick ? 'primary' : 'ghost') + ' gx-chip" data-sumins="' + k + '" title="' + esc(SUMMON.insDesc(k)) + '">' + esc(SUMMON.INS[k].name) + '</button>'; }).join('') + '</p><p class="hint">' + esc(SUMMON.insDesc(pick)) + '</p>') + '</div>';
     }
-    $('pg-explore').innerHTML = exHead('') + '<div class="crumb"><button type="button" class="btn ghost" id="sum-back">‹ 返回飞船终端</button><b>荆楚号 · 召唤</b></div>' + tabs + body;
+    $('pg-explore').innerHTML = '<div class="crumb"><button type="button" class="btn ghost" id="sum-back">‹ 返回飞船终端</button><b>荆楚号 · 召唤</b></div>' + tabs + body;
   }
   $('pg-explore').addEventListener('click', function (e) {
     if (ex.view !== 'summon') return;
@@ -3587,8 +3593,7 @@
     var nav = n > 1 ? '<button type="button" class="wf-arrow l" data-wfnav="-1" aria-label="上一个场景">‹</button><button type="button" class="wf-arrow r" data-wfnav="1" aria-label="下一个场景">›</button>' +
       '<span class="wf-dots" aria-label="场景 ' + (F.scene + 1) + ' / ' + n + '">' + F.scenes.map(function (x, i) { return '<i class="' + (i === F.scene ? 'on' : '') + '"></i>'; }).join('') + '</span>' : '';
     var spareTip = R.pool && R.planet === 'flora' && spareActive() ? '<div class="spare-note"><span class="tape l"></span><b>主线任务 · 引出猎杀者</b>　手下留情：这些精灵不会倒下，体力剩 1 点时就会逃走，算作「假装击败」。已完成 <b>' + spareN() + ' / ' + SPARE_N + '</b>。</div>' : '';
-    $('pg-explore').innerHTML = exHead(R.pool ? '点击场景里走动的精灵，就会和它开战。' : '这里没有野生精灵。点击场景里的BOSS就能挑战它。') +
-      '<div class="crumb"><button type="button" class="btn ghost" id="field-back">‹ 返回' + esc(P.name) + '</button><b>' + esc(P.name) + ' · ' + esc(R.name) + '</b>' + (n > 1 ? '<span class="hint">场景 ' + (F.scene + 1) + ' / ' + n + (BG_NAME[sc.bgKey] ? ' · ' + BG_NAME[sc.bgKey] : '') + '</span>' : '') + '</div>' +
+    $('pg-explore').innerHTML = '<div class="crumb"><button type="button" class="btn ghost" id="field-back">‹ 返回' + esc(P.name) + '</button><b>' + esc(P.name) + ' · ' + esc(R.name) + '</b>' + (n > 1 ? '<span class="hint">场景 ' + (F.scene + 1) + ' / ' + n + (BG_NAME[sc.bgKey] ? ' · ' + BG_NAME[sc.bgKey] : '') + '</span>' : '') + '</div>' +
       invLine() + spareTip + '<div class="wf-scene' + (sc.corrupt ? ' miasma-bg' : '') + '" id="wf-scene">' + bg + mons + gatherNodesHTML(R.id, F.scene, n) + jadeHTML(R.id, F.scene) + riceBowlHTML(R, F.scene) + oreHTML(R, F, F.scene) + hornHTML(R, F, F.scene) + iceHTML(R, F, F.scene) + travelHTML(R, F.scene) + kbwHTML(R, F.scene) + storyGatherHTML(R, F.scene) + fmNpcHTML(F, F.scene) + fieldBossHTML(R, F.scene) + nav + '</div>' +
       (R.pool ? '<p class="hint">点左右两边的箭头可以切换场景。每只精灵在自己的一小片范围里走动，待一会儿就会离开，过一阵又会有新的精灵出现，各走各的。点中哪只，就和哪只对战；打完、抓到或逃走之后，这只离开，过一会儿会有新的一只补上。采集点固定在场景里，每个每天可以采集 1 次：芙罗拉、坎伯兰、庞贝采到星砂 ×12，莱汀和白之星采到圣晶石 ×1。' + (RICE.regions.indexOf(R.id) >= 0 ? '带着「一碗饭」来的话，可以在任意一个场景里放下它。' : '') + '</p>' : '');
     startFieldMove();
@@ -5030,8 +5035,7 @@
     var E = logEntries(), sel = E.filter(function (x) { return x.t === ui.logSel; })[0] ? ui.logSel : (E.filter(function (x) { return x.t === '版本更新-基地全面翻新！'; })[0] || E[0]).t;   // 每次进入航行日志默认显示「新玩法-圣晶石召唤」
     ui.logSel = sel; LOG_KEYS = E.map(function (x) { return logKeyOf(x.t); });
     logMarkRead(sel);
-    $('pg-log').innerHTML = '<div class="page-head"><h2 class="sec">航行日志</h2></div>' +
-      '<div class="log-split"><nav class="log-nav" role="tablist" aria-label="航行日志">' + E.map(function (x) { var p = x.t.split('-'), ty = p.length > 1 ? p.shift() : '', nm = p.join('-'), on = x.t === sel; return '<button type="button" role="tab" class="log-nv' + (on ? ' on' : '') + '" aria-selected="' + on + '" data-logsel="' + esc(x.t) + '">' + (ty ? '<small>' + esc(ty) + '</small>' : '') + '<b>' + esc(nm) + '</b>' + (!logRead()[logKeyOf(x.t)] && x.t !== sel ? '<i class="red-dot" aria-label="未读"></i>' : '') + '</button>'; }).join('') + '</nav>' +
+    $('pg-log').innerHTML = '<div class="log-split"><nav class="log-nav" role="tablist" aria-label="航行日志">' + E.map(function (x) { var p = x.t.split('-'), ty = p.length > 1 ? p.shift() : '', nm = p.join('-'), on = x.t === sel; return '<button type="button" role="tab" class="log-nv' + (on ? ' on' : '') + '" aria-selected="' + on + '" data-logsel="' + esc(x.t) + '">' + (ty ? '<small>' + esc(ty) + '</small>' : '') + '<b>' + esc(nm) + '</b>' + (!logRead()[logKeyOf(x.t)] && x.t !== sel ? '<i class="red-dot" aria-label="未读"></i>' : '') + '</button>'; }).join('') + '</nav>' +
       '<div class="log-view">' + E.map(function (x) { return '<section class="log-sec" data-logsec="' + esc(x.t) + '"' + (x.t === sel ? '' : ' hidden') + '>' + x.h + '</section>'; }).join('') + '</div></div>';
   }
   $('pg-log').addEventListener('click', function (e) {
@@ -5263,8 +5267,7 @@
         '<div class="hb-txt"><h3>' + B.name + '</h3><p class="hint">' + esc(bossWhere(B)) + ' · ' + esc(B.d) + '</p><p class="hb-lvs">' + lv + '</p>' +
         (open ? '<button type="button" class="btn primary" data-boss="' + k + '" data-from="hub">挑战</button>' : '<button type="button" class="btn" disabled>' + esc(B.lv[0].lockText) + '</button>') + '</div></article>';
     }).join('');
-    $('pg-explore').innerHTML = exHead('所有BOSS都集中在这里。难度依次开放，每档难度第一次击败都有奖励。') +
-      '<div class="crumb"><button type="button" class="btn ghost" id="ex-back">‹ 返回飞船终端</button><b>BOSS挑战</b></div>' +
+    $('pg-explore').innerHTML = '<div class="crumb"><button type="button" class="btn ghost" id="ex-back">‹ 返回飞船终端</button><b>BOSS挑战</b></div>' +
       (weeklyOpen() ? '<p class="hint">每周挑战在星球列表上方单独入口，挑战许可 ' + permits() + ' / ' + PERMIT.max + '。</p>' : '') +
       '<div class="boss-hub">' + cards + '</div>';
   }
@@ -5283,8 +5286,7 @@
       : (won ? '已领取（首次击败：' + rewardText(L.reward) + '）；再次击败只获得经验和学习力' : '首次击败：' + rewardText(L.reward) + '；另有经验和学习力');
     var btn = weekly ? '<button type="button" class="btn primary" data-weeklygo="1"' + (pn > 0 ? '' : ' disabled') + '>开始挑战（获胜时消耗 1 枚挑战许可）</button><p class="hint permit-line">挑战许可 <b>' + pn + '</b> / ' + PERMIT.max + ' · ' + permitNext() + '</p>'
       : open ? '<button type="button" class="btn primary" data-bossgo="' + k + '" data-d="' + d + '">开始挑战</button>' : '<button type="button" class="btn" disabled>' + esc(L.lockText) + '</button>';
-    $('pg-explore').innerHTML = exHead(weekly ? '每周挑战：和' + L.diff + '难度的' + B.name + '一模一样，每次获胜消耗 1 枚挑战许可，输了不消耗。' : 'BOSS可以反复挑战。难度依次开放，每档难度第一次击败都有奖励。') +
-      '<div class="crumb"><button type="button" class="btn ghost" id="boss-back">‹ 返回' + (weekly ? '每周挑战' : ex.bossFrom === 'hub' ? 'BOSS挑战' : bossWhere(B)) + '</button><b>' + (weekly ? '每周挑战 · ' : 'BOSS · ') + B.name + '</b></div>' + tabs +
+    $('pg-explore').innerHTML = '<div class="crumb"><button type="button" class="btn ghost" id="boss-back">‹ 返回' + (weekly ? '每周挑战' : ex.bossFrom === 'hub' ? 'BOSS挑战' : bossWhere(B)) + '</button><b>' + (weekly ? '每周挑战 · ' : 'BOSS · ') + B.name + '</b></div>' + tabs +
       '<article class="boss-card"><span class="tape l"></span><div class="boss-art"><img src="' + BG[floraBg(B.bg)] + '" alt="" class="boss-bg"><img src="' + SPRITES[B.sid] + '" alt="' + B.name + '" class="boss-mon"></div>' +
       '<div class="boss-txt"><span class="chip boss-diff d' + d + '">' + (weekly ? '每周挑战 · ' : '') + L.diff + '难度</span><h3>' + B.name + '</h3><p class="hint">' + esc(B.d) + '</p>' +
       '<ul class="boss-rules"><li><b>等级</b>LV' + L.lv + '</li><li><b>体力</b>' + (L.hpText || fmt(L.hp)) + '</li>' + rules +
@@ -5660,8 +5662,7 @@
     return html + ewkCardHTML(pn);
   }
   function renderWkHub() {
-    $('pg-explore').innerHTML = exHead('所有每周挑战都在这里，挑战许可共用：每 12 小时恢复 1 枚，最多 ' + PERMIT.max + ' 枚。获胜才消耗，输了不消耗。') +
-      '<div class="crumb"><button type="button" class="btn ghost" id="wkhub-back">‹ 返回飞船终端</button><b>每周挑战</b></div>' +
+    $('pg-explore').innerHTML = '<div class="crumb"><button type="button" class="btn ghost" id="wkhub-back">‹ 返回飞船终端</button><b>每周挑战</b></div>' +
       '<p class="hint permit-line">挑战许可 <b>' + permits() + '</b> / ' + PERMIT.max + ' · ' + permitNext() + '</p><div class="boss-row">' + weeklyCardsHTML() + '</div>';
   }
   function renderEwk() {
@@ -5670,8 +5671,7 @@
     var tabs = '<div class="fparts boss-tabs" role="tablist">' + EWK.lv.map(function (x, i) { return '<button type="button" role="tab" class="tab' + (i === d ? ' on' : '') + '" aria-selected="' + (i === d) + '" data-ewkd="' + i + '">' + x.diff + (bossWon('ewk_' + T.t, i) ? ' ✓' : '') + '</button>'; }).join('') + '</div>';
     var rules = fxRules(L).map(function (r) { return '<li><b>特殊</b>' + esc(r[0]) + '：' + esc(r[1]) + '</li>'; }).join('');
     var bg = ewkBg(sid);
-    $('pg-explore').innerHTML = exHead(T.team ? '地球挑战：从地球一起出发的三只伙伴——' + nm0 + '——会按顺序轮流上场，全部击败才算获胜。掉落的地球元素比属性挑战更多。三档难度都能直接挑战，获胜消耗 1 枚挑战许可，输了不消耗。' : T.t + '系每周挑战：BOSS 每周一 0 点从' + T.t + '系野生精灵里随机换一只。三档难度都能直接挑战，获胜消耗 1 枚挑战许可，输了不消耗。') +
-      '<div class="crumb"><button type="button" class="btn ghost" id="ewk-back">‹ 返回每周挑战</button><b>每周挑战 · ' + (T.team ? '地球挑战' : T.t + '系 · ' + esc(S.name)) + '</b></div>' + tabs +
+    $('pg-explore').innerHTML = '<div class="crumb"><button type="button" class="btn ghost" id="ewk-back">‹ 返回每周挑战</button><b>每周挑战 · ' + (T.team ? '地球挑战' : T.t + '系 · ' + esc(S.name)) + '</b></div>' + tabs +
       '<article class="boss-card"><span class="tape l"></span><div class="boss-art">' + (bg ? '<img src="' + bg + '" alt="" class="boss-bg">' : '') + (T.team ? '<span class="ewk-trio">' + T.team.map(function (x) { return '<img src="' + SPRITES[x] + '" alt="' + esc(SPMAP[x].name) + '">'; }).join('') + '</span>' : '<img src="' + SPRITES[sid] + '" alt="' + esc(S.name) + '" class="boss-mon">') + '</div>' +
       '<div class="boss-txt"><span class="chip boss-diff d' + d + '">' + lb + ' · ' + L.diff + '难度</span><h3>' + esc(nm0) + '</h3><p class="hint">' + (T.team ? '三只轮流上场，打倒一只换下一只。' : '本周的' + T.t + '系BOSS，还剩 ' + ewkLeft() + ' 换下一只。') + '</p>' +
       '<ul class="boss-rules"><li><b>等级</b>LV' + L.lv + '</li><li><b>体力</b>' + (T.team ? '每只 ' + fmt(Math.round(L.hp * T.hpMul)) + '（共 ' + T.team.length + ' 只）' : fmt(L.hp)) + '</li>' + rules +
@@ -5850,8 +5850,7 @@
   function renderArchive() {
     var tab = ex.arcTab || 'main';
     var body = tab === 'side' ? arcSide('side') : tab === 'world' ? arcSide('world') : tab === 'event' ? arcSide('event') : tab === 'cg' ? cgGallery(Object.keys(SITES)) : tab === 'music' ? arcMusic() : tab === 'chars' ? arcChars() : arcMain();
-    $('pg-explore').innerHTML = exHead('在这里重温读过的剧情、看过的 CG、听过的音乐和遇见过的角色。') +
-      '<div class="crumb"><button type="button" class="btn ghost" id="arc-back">‹ 返回星际探索</button><b>剧情回顾</b></div>' +
+    $('pg-explore').innerHTML = '<div class="crumb"><button type="button" class="btn ghost" id="arc-back">‹ 返回星际探索</button><b>剧情回顾</b></div>' +
       '<div class="fparts arc-tabs" role="tablist">' + ARC_TABS.map(function (t) { return '<button type="button" role="tab" class="tab' + (t[0] === tab ? ' on' : '') + '" aria-selected="' + (t[0] === tab) + '" data-arctab="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>' +
       '<div class="arc-body">' + body + '</div>';
   }
@@ -6122,8 +6121,7 @@
           : '<p class="hint">' + mmOpenText(i) + '</p>') + '</div></article>';
     };
     var finOpen = mmStageOpen(5);
-    $('pg-explore').innerHTML = holoHead('') +
-      '<div class="crumb"><button type="button" class="btn ghost" id="mm-back">‹ 返回' + (ex.mmFrom === 'holo' ? '全息作战' : '空间站') + '</button><b>空间站 · 全息作战场地</b><span class="hint">限时活动 · ' + mmLeftText() + '</span></div>' +
+    $('pg-explore').innerHTML = '<div class="crumb"><button type="button" class="btn ghost" id="mm-back">‹ 返回' + (ex.mmFrom === 'holo' ? '全息作战' : '空间站') + '</button><b>空间站 · 全息作战场地</b><span class="hint">限时活动 · ' + mmLeftText() + '</span></div>' +
       '<div class="mm-bar"><span>明明代币 <b>' + fmt(tok) + '</b></span><button type="button" class="btn primary" data-mmgacha="1">去抽奖</button></div>' +
       '<div class="mm-grid">' + MM.order.map(stage).join('') +
       '<article class="mm-st final' + (finOpen ? '' : ' locked') + '"><span class="tape r"></span><div class="mm-art">' + (finOpen ? '<img src="' + SPRITES.leiming + '" alt="">' : '<span class="mm-lock">🔒</span>') + '</div><div class="mm-txt"><h3>明明的最终试炼</h3>' +
@@ -6155,8 +6153,7 @@
   }
   function renderMmGacha() {
     var G = mmG(), P = mmPool(G.n), tok = acc.items.mmTok || 0;
-    $('pg-explore').innerHTML = holoHead('用明明代币抽奖：每个奖池有 20 个固定奖励，抽完一个奖池就会进入下一个。每逢 4 的倍数的奖池，50学习力合剂换成 100学习力合剂。从第 5 个奖池起，每逢 5 的倍数的奖池都有 50 个「雷明之眼」；第 10、30、50、70……个奖池还有「雷明灯的精元」（孵出的雷明灯 10% 是异色）。') +
-      '<div class="crumb"><button type="button" class="btn ghost" id="mmg-back">‹ 返回' + (ex.mmFrom === 'log' ? '航行日志' : ex.mmFrom === 'holo' ? '全息作战' : '全息作战场地') + '</button><b>明明代币抽奖 · 第 ' + G.n + ' 个奖池</b></div>' +
+    $('pg-explore').innerHTML = '<div class="crumb"><button type="button" class="btn ghost" id="mmg-back">‹ 返回' + (ex.mmFrom === 'log' ? '航行日志' : ex.mmFrom === 'holo' ? '全息作战' : '全息作战场地') + '</button><b>明明代币抽奖 · 第 ' + G.n + ' 个奖池</b></div>' +
       '<div class="mm-bar"><span>明明代币 <b>' + fmt(tok) + '</b></span><span>剩余 <b>' + G.left.length + '</b> / 20</span><span class="hint">今天已解锁 ' + G.opened + ' / ' + MM_POOL_DAY + ' 个新奖池</span>' +
       '<button type="button" class="btn" data-mmdraw="1"' + (tok >= 10 ? '' : ' disabled') + '>抽一次（10）</button><button type="button" class="btn primary" data-mmdraw="10"' + (tok >= 100 ? '' : ' disabled') + '>十连抽（100）</button></div>' +
       '<ol class="mm-pool">' + P.map(function (z, i) { var left = G.left.indexOf(i) >= 0; return '<li class="' + (left ? '' : 'got') + (z.big ? ' big' : '') + '"><span class="mmp-ic">' + H.itemIcon(z.exp ? 'exp' : Object.keys(z.items)[0]) + '</span><span class="mmp-t">' + esc(mmPrizeText(z)) + '</span>' + (left ? '' : '<em>已抽到</em>') + '</li>'; }).join('') + '</ol>';
@@ -6176,8 +6173,7 @@
   function renderHolo() {   // 活动没开放（还没解锁 / 已结束）时才会停在这一页；开放时直接进全息作战场地
     var el = $('pg-holo'); if (!el || !acc) return;
     var live = mmLive(), f7 = prog('flora7').done;
-    el.innerHTML = '<div class="page-head holo-head"><h2 class="sec">全息作战 · 明明教官的试炼</h2></div>' +
-      '<article class="holo-card' + (live ? ' live' : ' ended') + '"><span class="tape l"></span><span class="tape r"></span><span class="chip log-tag">' + (live ? '进行中' : Date.now() < MM.start ? '即将开始' : '已结束') + '</span>' +
+    el.innerHTML = '<article class="holo-card' + (live ? ' live' : ' ended') + '"><span class="tape l"></span><span class="tape r"></span><span class="chip log-tag">' + (live ? '进行中' : Date.now() < MM.start ? '即将开始' : '已结束') + '</span>' +
       '<div class="holo-art"><img src="' + (CHARS.mm || '') + '" alt=""></div><div class="holo-txt"><h3>明明教官的试炼</h3>' +
       '' +
       (live ? '<p class="hint">活动' + mmLeftText() + ' · ' + (f7 ? '先完成古城防卫部的活动任务「明明教官的试炼」' : '读完主线第十一段后参加') + '</p>' : '<p class="hint">活动已经结束了，下一次大型活动敬请期待。</p>') +
@@ -6203,8 +6199,7 @@
   function goods(k) { return ITEMS[k] || SHOP_X[k]; }
   function renderShop() {
     var grp = [['捕捉装置', ['cap1']], ['其他', ['rename']]];
-    $('pg-explore').innerHTML = exHead('荆楚号 · 荆门物资仓储的商城。这里用能量兑换普通捕捉装置和改名卡。加强捕捉装置、华为捕捉装置和 200hp药水在黄石 · 冶炼坊合成。') +
-      '<div class="crumb"><button type="button" class="btn ghost" id="ex-area">‹ 返回物资仓储</button><b>物资仓储 · 商城</b></div>' +
+    $('pg-explore').innerHTML = '<div class="crumb"><button type="button" class="btn ghost" id="ex-area">‹ 返回物资仓储</button><b>物资仓储 · 商城</b></div>' +
       '<div class="shop-bal"><span class="tape l"></span>当前能量 <b>' + fmt(acc.energy) + '</b></div>' +
       grp.map(function (g) {
         return '<h3 class="shop-h">' + g[0] + '</h3><div class="shop-grid">' + g[1].map(function (k) {
@@ -6368,8 +6363,7 @@
         return '<button type="button" class="spa-it' + (inS ? ' on' : '') + '" data-spain="' + m.u + '"' + (tea ? ' disabled' : '') + '><img src="' + f.img + '" alt=""><b>' + esc(f.name) + '</b><small>LV' + m.lv + (tea ? ' · 茶室展示中' : inS ? ' · 泡着呢' : ' · 每小时 +' + fmt(spaRate(m))) + '</small></button>';
       }).join('') + '</div></div>';
     }
-    $('pg-explore').innerHTML = exHead(on ? '正在泡温泉：留在这个页面，精灵们就会一直涨经验。离开就结束这一次。' : '把精灵放进温泉，点「开始泡温泉」。泡温泉期间要一直留在这个页面。') +
-      '<div class="crumb"><button type="button" class="btn ghost" id="spa-back">‹ 返回温泉生活区</button><b>咸宁 · 温泉大厅</b></div>' +
+    $('pg-explore').innerHTML = '<div class="crumb"><button type="button" class="btn ghost" id="spa-back">‹ 返回温泉生活区</button><b>咸宁 · 温泉大厅</b></div>' +
       '<div class="spa-hall' + (on ? ' soaking' : '') + '" style="background-image:url(images/backgrounds/spa_hall.jpg?v=2)">' + hud +
         '<div class="spa-steam" aria-hidden="true"><i></i><i></i><i></i><i></i></div>' +
         '<div class="spa-pool"><div class="spa-wave" aria-hidden="true"></div>' + floats +
@@ -6435,8 +6429,7 @@
       return '<div class="md-row"><h4>' + t + '系' + G.n + ' <small>' + (G.lv ? 'LV' + G.lv + ' 以上的' : '') + t + '属性精灵：现在 ' + cur + ' 种</small></h4><div class="md-grid">' + L.map(function (T) { return card(T, has(T) || cur >= T.need ? '' : '还差 ' + (T.need - cur) + ' 种'); }).join('') + '</div></div>';
     }).join('');
     var nT = TT.filter(has).length;
-    $('pg-explore').innerHTML = exHead('授勋馆里记录着荆楚号上所有的称号。已经获得的称号可以在右上角的名字菜单里佩戴。') +
-      '<div class="crumb"><button type="button" class="btn ghost" id="medal-back">‹ 返回学院部</button><b>黄冈 · 授勋馆</b><span class="hint">已获得 ' + got + ' / ' + all + '</span></div>' +
+    $('pg-explore').innerHTML = '<div class="crumb"><button type="button" class="btn ghost" id="medal-back">‹ 返回学院部</button><b>黄冈 · 授勋馆</b><span class="hint">已获得 ' + got + ' / ' + all + '</span></div>' +
       milHTML() + sec('剧情与探索', grp('story')) + sec('等级', grp('lv')) + sec('排位赛季 S1', grp('season'), '每达到一个新段位获得一个。') +
       '<section class="md-sec"><h3>属性称号 <small>' + nT + ' / ' + TT.length + '</small></h3><p class="hint">按精灵的种类数计算：同一条进化线的精灵算 1 种，有两个属性的精灵两个属性都算。</p>' + tabs + rows + '</section>';
   }
@@ -6450,8 +6443,7 @@
   }
   function renderNursery() {
     var cards = nurseryCards();
-    $('pg-explore').innerHTML = exHead('精灵保育仓有 3 个孵化槽。把精元放进去，过一段时间就会孵化出精灵（叶子喵的精元要 8 小时）。') +
-      '<div class="crumb"><button type="button" class="btn ghost" id="nursery-back">‹ 返回精灵保育区</button><b>神农架 · 精灵保育仓</b></div>' + nurseryBody(cards);
+    $('pg-explore').innerHTML = '<div class="crumb"><button type="button" class="btn ghost" id="nursery-back">‹ 返回精灵保育区</button><b>神农架 · 精灵保育仓</b></div>' + nurseryBody(cards);
     nurseryTick();
   }
   function nurseryCards() {
@@ -6578,8 +6570,7 @@
         '<div class="qty"><button type="button" class="btn ghost" data-fq="' + r.id + '|-1" aria-label="减少"' + (q <= 1 ? ' disabled' : '') + '>−</button><span aria-live="polite">' + q + '</span><button type="button" class="btn ghost" data-fq="' + r.id + '|1" aria-label="增加"' + (q >= Math.min(FORGE_Q, Math.max(1, max)) ? ' disabled' : '') + '>+</button></div>' +
         '<button type="button" class="btn primary" data-smelt="' + r.id + '"' + (ok ? '' : ' disabled') + '>' + (ok ? '合成' : '材料不足') + '</button></div></article>';
     }).join('');
-    $('pg-explore').innerHTML = exHead('') +
-      '<div class="crumb"><button type="button" class="btn ghost" id="forge-back">‹ 返回冶炼工坊</button><b>黄石 · 冶炼坊</b></div>' +
+    $('pg-explore').innerHTML = '<div class="crumb"><button type="button" class="btn ghost" id="forge-back">‹ 返回冶炼工坊</button><b>黄石 · 冶炼坊</b></div>' +
       tabs + '<div class="shop-grid">' + cards + '</div>';
   }
   function forgeCraft(id) {
@@ -6649,8 +6640,7 @@
   }
   function renderFarm() {
     var F = farm(), plots = FARM_POS.map(function (P, i) { return farmPlotHTML(i, F); }).join('');
-    $('pg-explore').innerHTML = exHead('点田上方的气泡种植、收获。药草、活力花 8 小时成熟（各 ×50，收获时 20% 掉落 1 颗种子）；水稻 12 小时成熟（米饭 ×250，种子退回）。离开游戏也照常计时。') +
-      '<div class="crumb"><button type="button" class="btn ghost" id="farm-back">‹ 返回生态舱</button><b class="home-name">太空种植园</b><span class="hint">恩施 · 生态舱 · ' + farmN() + ' / ' + FARM_POS.length + ' 块田</span></div>' +
+    $('pg-explore').innerHTML = '<div class="crumb"><button type="button" class="btn ghost" id="farm-back">‹ 返回生态舱</button><b class="home-name">太空种植园</b><span class="hint">恩施 · 生态舱 · ' + farmN() + ' / ' + FARM_POS.length + ' 块田</span></div>' +
       '<div class="base-stage"><div class="home-room farm-room" id="farm-room"><img class="home-bg" src="images/base/farm.jpg" alt="太空种植园">' + plots + farmSideHTML() + sceneGoHTML('home') + '</div></div>' +
       (ex.fpanel ? farmPanelHTML(ex.fpanel) : '');
     clearInterval(ex.farmTick);
@@ -6769,8 +6759,7 @@
     return '<div class="shop-bal"><span class="tape l"></span>当前能量 <b>' + fmt(acc.energy) + '</b></div><div class="shop-grid">' + cards + '</div>';
   }
   function renderSeedShop() {
-    $('pg-explore').innerHTML = exHead('生态舱的种子商店：用能量买药草种子（绿色）和活力花种子（蓝色），还能给太空种植园多开几块田。') +
-      '<div class="crumb"><button type="button" class="btn ghost" id="farm-back">‹ 返回生态舱</button><b>恩施 · 种子商店</b><button type="button" class="btn" data-farm="1">太空种植园</button></div>' + seedShopBody();
+    $('pg-explore').innerHTML = '<div class="crumb"><button type="button" class="btn ghost" id="farm-back">‹ 返回生态舱</button><b>恩施 · 种子商店</b><button type="button" class="btn" data-farm="1">太空种植园</button></div>' + seedShopBody();
   }
   // 买完东西：在种植园里就刷新弹窗和田，在种子商店页就重画商店
   function seedShopRefresh() { if (ex.view === 'farm') { farmPanel('shop'); farmRefresh(); } else renderSeedShop(); }
@@ -7187,8 +7176,7 @@
   })();
   /* 基地商城：房型（买一次）、摆件（可以买很多个） */
   function renderBaseShop() {
-    $('pg-explore').innerHTML = exHead('基地商城：用能量购买基地的房型和摆件。买到的在基地的「编辑基地」里使用。') +
-      '<div class="crumb"><button type="button" class="btn ghost" data-bhome="1">‹ 返回基地</button><b>基地商城</b></div>' + baseShopBody();
+    $('pg-explore').innerHTML = '<div class="crumb"><button type="button" class="btn ghost" data-bhome="1">‹ 返回基地</button><b>基地商城</b></div>' + baseShopBody();
   }
   function baseShopRefresh() { if (ex.view === 'home') renderHome(); else renderBaseShop(); }
   function baseShopBody() {
@@ -7222,8 +7210,7 @@
   });
   function renderTeaShop() {
     var nCap = Math.min(4, (acc.home && acc.home.cap) || 0), capPrice = CAP_PRICE[nCap], A0 = TEA_SHOP.auto, q = shopQty.tsauto || 1, cost = A0.price * q, ok = acc.energy >= cost;
-    $('pg-explore').innerHTML = exHead('陆羽茶室大厅里的小商店，卖茶室专用的东西。') +
-      '<div class="crumb"><button type="button" class="btn ghost" id="ts-back">‹ 返回茶室大厅</button><b>陆羽茶室 · 茶室商店</b></div>' +
+    $('pg-explore').innerHTML = '<div class="crumb"><button type="button" class="btn ghost" id="ts-back">‹ 返回茶室大厅</button><b>陆羽茶室 · 茶室商店</b></div>' +
       '<div class="shop-bal"><span class="tape l"></span>当前能量 <b>' + fmt(acc.energy) + '</b></div>' +
       '<div class="shop-grid">' +
       '<article class="shop-it"><span class="tape r"></span><span class="it-ic ts-ic" aria-hidden="true">⏱</span><div class="si-txt"><b>' + A0.name + '</b><p class="hint">' + esc(A0.d) + '</p>' +
@@ -7361,8 +7348,7 @@
       return '<div class="hm-fig" data-csid="' + x.sid + '" data-cst="' + (f.stage || 0) + '" data-cctx="home" style="left:' + p[0] + '%;top:' + p[1] + '%"><button type="button" class="hm-poke" data-hpoke="1" aria-label="摸摸' + esc(f.name) + '"><img src="' + f.img + '" alt=""></button><span class="hm-tag">' + esc(f.name) + ' · LV' + x.lv + '</span></div>';
     }).join('');
     var N = NPC[R.k], inside = N && npcHome(R.k), won = N && npcWon(R.k);
-    $('pg-explore').innerHTML = exHead('朋友们的房间暂时都长得一样。他们每天会在某个时间回来待一阵子，在家时可以找他们对战。') +
-      '<div class="crumb"><button type="button" class="btn ghost" id="home-back">‹ 返回大厅</button><b class="home-name">' + R.n + '</b></div>' +
+    $('pg-explore').innerHTML = '<div class="crumb"><button type="button" class="btn ghost" id="home-back">‹ 返回大厅</button><b class="home-name">' + R.n + '</b></div>' +
       '<div class="home-room"><img class="home-bg" src="' + BG.tea_p + '" alt="' + R.n + '">' + figs +
       (inside ? '<button type="button" class="npc-stand" data-npctalk="' + R.k + '" aria-label="和 ' + esc(N.name) + ' 对话"><img src="' + npcArt(R.k) + '" alt=""><span class="npc-bubble">！</span></button>' : '') +
       (list.length || inside ? '' : '<p class="home-empty">房间的主人不在，这里还没有展示精灵。</p>') + '</div>' +
@@ -7443,10 +7429,7 @@
   var QLAB = { lock: '未解锁', todo: '可进行', doing: '进行中', claim: '可领取', done: '已完成' };
   function qList(tab) { return tab === 'main' ? MAIN_Q : tab === 'side' ? SIDE_Q : tab === 'event' ? EVENT_Q.filter(function (id) { return id !== 'mmTrial' || mmLive() || prog(id).done; }) : tab === 'daily' ? [] : WQ.map(function (w) { return w.id; }); }
   function qTodo(tab) { if (tab === 'daily') { var D = daily(); return D ? D.list.filter(function (t) { return !t.c; }).length : 0; } return qList(tab).filter(function (id) { var st = qState(id); return st === 'todo' || st === 'doing' || st === 'claim'; }).length; }
-  function holoHead(hint) { return '<div class="page-head ex-head holo-head"><h2 class="sec">全息作战 · 明明教官的试炼</h2>' + (hint ? '<p class="hint">' + hint + '</p>' : '') + '</div>'; }   // 明明教官的试炼不管从哪里进，标题都是「全息作战」
-  function exHead(hint) {
-    return '<div class="page-head ex-head"><h2 class="sec">' + (shipCtx() ? '飞船终端' : '星际探索') + '</h2>' + (hint ? '<p class="hint">' + hint + '</p>' : '') + '</div>';
-  }
+
   function qName(id) { var W = wq(id); return W ? W.n : SITES[id].chapter.split(' · ')[1]; }
   function qWhere(id) {
     var W = wq(id); if (W) return W.where;
@@ -7615,10 +7598,17 @@
   }
 
   $('pg-explore').addEventListener('click', function (e) {
+    if (e.target.classList.contains('ship-areas-dialog') || e.target.closest('[data-shipareasclose]')) { var areas = document.querySelector('.ship-areas-dialog'); if (areas) areas.remove(); return; }
     if (ex.mode === 'replay' && $('vn')) { vnClick(e); return; }
     if (ex.view === 'shop' && shopClick(e)) return;
     if (e.target.closest('#bsoc')) { bsocClick(e); return; }
     var b = e.target.closest('button, .dept.open'); if (!b) return;
+    if (b.dataset.shipareas) {
+      if (document.querySelector('.ship-areas-dialog')) return;
+      var panel = document.createElement('div'); panel.className = 'soc-dlg ship-areas-dialog';
+      panel.innerHTML = '<div class="soc-box ship-areas-box" role="dialog" aria-modal="true" aria-label="舰内区域"><div class="ship-areas-list">' + shipTiles() + '</div><div class="soc-foot"><button type="button" class="btn primary" data-shipareasclose="1">关闭</button></div></div>';
+      $('pg-explore').appendChild(panel); panel.querySelector('[data-shipareasclose]').focus(); return;
+    }
     if (chalClick(b)) return;
     if (towerClick(b)) return;
     if (b.dataset.smq) { shipQuickGo(b.dataset.smq); return; }
@@ -8209,6 +8199,16 @@
   /* ---------- 给社交页（social.js）用的接口 ---------- */
   window.HSACC = {
     acc: function () { return acc; }, ready: ready, save: save, toast: toast, go: go, page: function () { return page; }, renderRes: renderRes,
+    layoutItems: function (cols, rows) {
+      if (!ready()) return;
+      if (ui.itCols === cols && ui.itRows === rows) return;
+      var first = (ui.itPage || 0) * (ui.itPageSize || 12);
+      var select = $('it-nat'), value = select && select.value, detail = document.querySelector('#pg-items .ib-detail'), scroll = detail ? detail.scrollTop : 0;
+      ui.itCols = cols; ui.itRows = rows; ui.itPageSize = cols * rows;
+      ui.itPage = Math.floor(first / ui.itPageSize); renderItems();
+      select = $('it-nat'); if (select && Array.prototype.some.call(select.options, function (o) { return o.value === value; })) select.value = value;
+      detail = document.querySelector('#pg-items .ib-detail'); if (detail) detail.scrollTop = scroll;
+    },
     titleName: titleName, mon: mon, fmt: fmt, milRank: milRank, avatarInner: avatarInner, avatarSpec: function () { return avatarCur(); },
     npcPlan: npcPlan, npcHome: npcHome,
     sendMail: sendMail, openMailbox: openMailbox,

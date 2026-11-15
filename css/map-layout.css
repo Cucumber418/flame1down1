@@ -1,7 +1,7 @@
-/* 星图和基地占用顶栏以下的视口；子页面仍使用各自的正常滚动布局。 */
+/* 地图、基地和储存箱占用顶栏以下的视口；子页面使用各自的正常滚动布局。 */
 body.scene-page-active { overflow: hidden; }
 body.scene-page-active .sheet { height: var(--scene-full-height, 100dvh); min-height: 0; overflow: hidden; padding-block: 8px; }
-body.scene-page-active #pg-explore { height: var(--scene-view-height); min-height: 0; }
+body.scene-page-active #pg-explore, body.scene-page-active #pg-items { height: var(--scene-view-height); min-height: 0; }
 .star-map-page { height: 100%; min-height: 0; display: flex; flex-direction: column; gap: 8px; padding: 0 4px 4px 0; }
 .star-map-page .mayar { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
 .star-map-page .mayar h3 { flex: 0 0 auto; font-size: 26px; line-height: 1.15; padding: 8px 12px; }
@@ -83,4 +83,37 @@ body.home-compact .home-page .home-empty { bottom: 28%; max-width: calc(100% - 2
   .home-page .home-name { font-size: 22px; }
   .home-page .home-edit .hint { display: none; }
   .home-page .home-friends-btn { right: 6px; }
+}
+
+/* 飞船和星系共用深色画框与图标按钮；所有舰内区域仍可从面板进入。 */
+.ship-map-page { height: 100%; min-height: 0; padding: 0 4px 4px 0; }
+.ship-map-page .shipmap { height: 100%; min-height: 0; margin: 0; padding: 0; border: 1.5px solid var(--ink); border-radius: 16px; background: #0d0e16; box-shadow: 3px 3px 0 var(--ink); overflow: hidden; }
+.ship-scene { position: relative; height: 100%; min-height: 0; isolation: isolate; }
+.ship-space-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: brightness(.35); opacity: .65; z-index: -1; }
+.ship-map-page .sm-quick { position: absolute; top: 10px; left: 10px; right: 10px; max-width: 540px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; padding: 0; margin: 0; border: 0; z-index: 2; }
+.ship-map-page .sm-q { flex-direction: row; min-height: 44px; padding: 5px 3px; gap: 5px; border: 1px solid #8d94af; border-radius: 12px; background: #131a2be8; color: #f3efe2; }
+.ship-map-page .sm-q b { font-size: 12px; }
+.ship-map-page .sm-q span { font-size: 20px; }
+.ship-map-page .sm-wrap { position: absolute; inset: 64px 84px 12px 10px; display: block; }
+.ship-map-page .sm-wrap > svg { width: 100%; height: 100%; max-height: none; }
+.ship-map-page .sm-side { position: absolute; right: 10px; top: 64px; width: auto; display: grid; grid-template-columns: 62px; align-content: start; gap: 6px; padding: 0; }
+.ship-map-page .sm-it { width: 62px; min-height: 54px; padding: 4px 2px; gap: 2px; text-align: center; border: 1px solid #8d94af; background: #131a2be8; color: #f3efe2; }
+.ship-map-page .sm-ic { width: 26px; height: 26px; font-size: 24px; }
+.ship-map-page .sm-ic img, .ship-map-page .sm-ic svg { width: 26px; height: 26px; }
+.ship-map-page .sm-t { display: block; font-size: 11px; line-height: 13px; }
+.ship-map-page .sm-t b { display: block; font-size: 11px; line-height: 13px; font-weight: 500; }
+.ship-map-page .sm-pm { width: 24px; height: 24px; font-size: 13px; }
+.ship-map-page .sm-it:hover:not(:disabled), .ship-map-page .sm-q:hover { background: #29334b; border-color: #d2dcff; }
+body.ship-paired .ship-map-page .sm-side { grid-template-columns: repeat(2, 54px); gap: 5px; }
+body.ship-paired .ship-map-page .sm-it { width: 54px; min-height: 46px; }
+body.ship-paired .ship-map-page .sm-ic, body.ship-paired .ship-map-page .sm-ic img, body.ship-paired .ship-map-page .sm-ic svg { width: 22px; height: 22px; font-size: 20px; }
+body.ship-paired .ship-map-page .sm-wrap { right: 132px; }
+.ship-areas-box { display: flex; flex-direction: column; min-height: 0; max-width: 980px; overflow: hidden !important; }
+.ship-areas-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 4px; }
+.ship-areas-box .soc-foot { flex: 0 0 auto; }
+@media (max-width: 640px) {
+  .ship-map-page .sm-quick { top: 8px; left: 8px; right: 8px; gap: 4px; }
+  .ship-map-page .sm-q { flex-direction: column; gap: 2px; min-height: 46px; }
+  .ship-map-page .sm-q b { font-size: 11px; }
+  .ship-map-page .sm-q span { font-size: 18px; }
 }

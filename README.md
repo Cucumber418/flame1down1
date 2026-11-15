@@ -27,6 +27,8 @@ index.html            页面骨架（各个界面的 HTML），并按顺序加�
 css/style.css         基础页面和游戏场景样式
 css/battle-layout.css 一屏战斗适配
 css/bag-layout.css    顶栏和当前配队 / 精灵资料布局
+css/map-layout.css    星图、飞船与基地的一屏布局
+css/storage-layout.css 储存箱分页网格与道具弹窗
 js/
   data/               游戏数据，平时加内容基本只改这里
     types.js          属性颜色、属性克制表
@@ -54,7 +56,7 @@ js/
     display.js        顶栏可选全屏、退出状态同步与提示
     battle-layout.js  一屏战斗视口、技能与状态说明、记录 / 统计面板
     bag-layout.js     背包的可用视口高度和横竖屏适配
-    map-layout.js     星图、基地的一屏高度和横竖屏适配
+    map-layout.js     星图、飞船、基地、储存箱的一屏高度和横竖屏适配
     skill-inspect.js  手机长按技能说明、防误出招和电脑悬停说明
 images/
   sprites/            精灵立绘（最终形态），文件名 = 精灵 id

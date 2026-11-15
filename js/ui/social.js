@@ -322,7 +322,7 @@
   function render() {
     var pg = $('pg-social'); if (!pg || A.page() !== 'social' || !A.ready()) return;
     if (!online) {
-      pg.innerHTML = '<div class="soc-head"><h2 class="sec">社交</h2></div><div class="soc-empty"><span class="tape l"></span><p>社交功能需要联网：用服务器网址打开游戏并登录账号后，就能看到其他船员、加好友和切磋。</p><p class="hint">现在是双击 index.html 打开的本地版，存档只在这台电脑上。</p></div>';
+      pg.innerHTML = '<div class="soc-empty"><span class="tape l"></span><p>社交功能需要联网：用服务器网址打开游戏并登录账号后，就能看到其他船员、加好友和切磋。</p><p class="hint">现在是双击 index.html 打开的本地版，存档只在这台电脑上。</p></div>';
       return;
     }
     var P = st.players || [], friends = P.filter(function (p) { return p.friend; }), on = P.filter(function (p) { return p.online; }).length;
@@ -337,8 +337,7 @@
       body = list.length ? '<div class="plist">' + list.map(playerRow).join('') + '</div>' :
         '<div class="soc-empty"><p>' + (st.tab === 'friends' ? '还没有好友。去「玩家」里找到想关注的人，点「加好友」。' : '还没有其他船员。') + '</p></div>';
     }
-    pg.innerHTML = '<div class="soc-head"><h2 class="sec">社交</h2></div>' +
-      '<div class="subbar soc-tabs" role="tablist">' +
+    pg.innerHTML = '<div class="subbar soc-tabs" role="tablist">' +
       '<button type="button" class="sub' + (st.tab === 'players' ? ' on' : '') + '" data-tab="players" role="tab" aria-selected="' + (st.tab === 'players') + '">玩家 ' + (st.players ? P.length : '') + '</button>' +
       '<button type="button" class="sub' + (st.tab === 'friends' ? ' on' : '') + '" data-tab="friends" role="tab" aria-selected="' + (st.tab === 'friends') + '">好友 ' + (st.players ? friends.length : '') + '</button>' +
       '<button type="button" class="sub' + (st.tab === 'dm' ? ' on' : '') + '" data-tab="dm" role="tab" aria-selected="' + (st.tab === 'dm') + '">私信' + (st.dmUnread ? '<i class="q-badge">' + st.dmUnread + '</i>' : '') + '</button>' +

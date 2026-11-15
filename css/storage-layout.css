@@ -1,0 +1,33 @@
+.storage-page { height: 100%; min-height: 0; display: flex; flex-direction: column; }
+.storage-page .itembox { flex: 1 1 0; min-height: 0; margin: 0; padding: 8px; display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
+.storage-toolbar { flex: 0 0 auto; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: 8px; }
+.storage-toolbar .storage-energy { font-size: 12px; padding: 4px 6px; }
+.storage-toolbar .ib-tabs { justify-content: flex-end; gap: 5px; }
+.storage-toolbar .ib-tab { padding: 4px 8px; font-size: 12px; border-radius: 9px; white-space: nowrap; }
+.storage-toolbar .ib-tab small { font-size: 10px; }
+.storage-page .ib-grid { flex: 1 1 0; min-height: 0; display: grid; grid-template-columns: repeat(var(--storage-cols, 3), minmax(0, 1fr)) !important; grid-template-rows: repeat(var(--storage-rows, 4), minmax(0, 1fr)); gap: 8px; }
+.storage-page .ib-it { display: flex !important; flex-direction: column; align-items: center; justify-content: center; min-width: 0; min-height: 0; gap: 4px !important; padding: 6px !important; }
+.storage-page .ib-it > .ib-ic { flex: 0 0 auto; width: 40px; height: 40px; }
+.storage-page .ib-it .ib-ic .it-ic { width: 38px; height: 38px; }
+.storage-page .ib-it b { max-width: 100%; font-size: 12px; line-height: 1.2; overflow-wrap: anywhere; }
+.storage-page .ib-it .cnt { font-size: 10px; padding: 0 4px; top: 3px; right: 3px; }
+.storage-page .empty-note { grid-column: 1 / -1; grid-row: 1 / -1; place-self: center; }
+.storage-pages { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; gap: 16px; min-height: 36px; }
+.storage-pages .btn { width: 38px; height: 32px; min-height: 32px; padding: 0; font-size: 24px; line-height: 24px; }
+.storage-pages > span { min-width: 54px; text-align: center; font-size: 12px; font-variant-numeric: tabular-nums; }
+body.storage-active #toast { bottom: 64px; }
+.ib-dialog-box { display: flex; flex-direction: column; min-height: 0; max-width: 760px; overflow: hidden !important; }
+.ib-dialog-box > .ib-detail { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; border: 0; padding: 0 3px 3px; justify-items: stretch; }
+.ib-dialog-box > .soc-foot { flex: 0 0 auto; }
+.ib-dialog-box .ib-info { font-size: 13px; }
+@media (max-width: 640px) {
+  .storage-toolbar { gap: 6px; }
+  .storage-toolbar .ib-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .storage-toolbar .ib-tab { padding: 4px 2px; font-size: 11px; }
+  .storage-toolbar .storage-energy { font-size: 11px; gap: 3px; }
+  .storage-page .ib-it b { font-size: 11px; }
+  .ib-dialog-box .ib-info > div { padding: 6px 8px; }
+}
+@media (max-width: 360px) {
+  .storage-toolbar .ib-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
