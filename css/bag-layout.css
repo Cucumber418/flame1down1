@@ -319,3 +319,10 @@ body.bag-short.bag-wide .bag-stat-ev { margin-top: 1px; }
   #pg-bag .bag-detail-body .ins-slot .it-ic { width: 26px; height: 26px; }
   #pg-bag .bag-detail-body .ins-slot .btn { max-width: 100%; padding: 3px; font-size: 10px; }
 }
+
+/* 电脑版背包直接展示完整技能效果，沿用战斗卡的属性色框和蓝色说明。 */
+@media (hover: hover) and (pointer: fine) {
+  #pg-bag .bag-current-skills { min-height: 300px; }
+  #pg-bag .bag-skill-grid { min-height: 220px; }
+  #pg-bag .bag-skill .md { display: block; flex: 0 0 auto; color: var(--blue); font-size: 12px; line-height: 1.3; white-space: normal; overflow-wrap: anywhere; }
+}
