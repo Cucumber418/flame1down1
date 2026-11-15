@@ -31,6 +31,17 @@
     property('--battle-field-height', field.offsetHeight + 'px');
     document.getElementById('battle-stats-toggle').hidden = stats.hidden;
     if (current === 'stats' && stats.hidden) close(false);
+    if (body.classList.contains('battle-touch')) {
+      var unit = 1 / scale;
+      document.querySelectorAll('#mgrid .mv').forEach(function (move) {
+        var detail = move.querySelector('.md'); if (!detail) return;
+        var size = 11 * unit;
+        detail.style.fontSize = size + 'px';
+        while (size > 7.5 * unit && move.scrollHeight > move.clientHeight + 1) {
+          size -= .5 * unit; detail.style.fontSize = size + 'px';
+        }
+      });
+    }
   }
   function schedule() { if (!frame) frame = requestAnimationFrame(sync); }
   function close(focus) {
@@ -52,10 +63,7 @@
     info.querySelector('h3').textContent = selected ? '技能效果' : '技能与状态说明';
     (selected ? [selected] : document.querySelectorAll('#mgrid .mv')).forEach(function (move) {
       var card = document.createElement('div'); card.className = 'battle-skill-info';
-      text('h4', move.querySelector('.mn').textContent, card);
-      var pp = move.querySelector('.pp'), meta = move.querySelector('.t2'), detail = move.querySelector('.md');
-      text('p', [pp && pp.textContent, meta && meta.textContent].filter(Boolean).join(' · '), card);
-      if (detail) text('p', detail.textContent, card);
+      HSSKILL.fill(move, card);
       list.appendChild(card);
     });
     if (!selected) document.querySelectorAll('#battle .plate').forEach(function (plate) {
@@ -98,6 +106,7 @@
   }, true);
   var observer = new MutationObserver(schedule);
   [battle, arena, stats].forEach(function (el) { observer.observe(el, { attributes: true, attributeFilter: ['hidden'] }); });
+  observer.observe(document.getElementById('mgrid'), { childList: true });
   observer.observe(root, { attributes: true, attributeFilter: ['class'] });
   observer.observe(body, { attributes: true, attributeFilter: ['style'] });
   window.addEventListener('resize', schedule);

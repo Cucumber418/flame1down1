@@ -1186,7 +1186,7 @@
     var odoF = m.sid === 'odo' && ui.odoF && ui.odoF.u === m.u ? ui.odoF.f : '';
     var mv = M[odoMoveAs(name, odoF)] || M[name];
     if (!mv) return '<div class="bag-skill empty-note">未装备技能</div>';
-    return '<button type="button" class="bag-skill" data-bag-skill="' + i + '" aria-label="' + esc(mv.name) + '，查看技能信息">' +
+    return '<button type="button" class="bag-skill" style="--skill-color:' + TYPE_COLOR[mv.type] + '" data-bag-skill="' + i + '" aria-label="' + esc(mv.name) + '，查看技能信息">' +
       '<span class="mn">' + esc(mv.name) + '</span><span class="pp">PP ' + mv.pp + '</span><span class="t2">' + tchip(mv.type) + '<span class="mv-kind">' + mv.cat + '</span><span class="mv-power">威力 ' + (mv.power || '—') + '</span></span>' +
       '<span class="md" hidden>' + esc(mv.d) + (mv.power ? ' · 威力 ' + mv.power : '') + (mv.pri ? ' · 先制 +' + mv.pri : '') + '</span></button>';
   }

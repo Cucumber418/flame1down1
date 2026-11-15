@@ -176,3 +176,12 @@ body.battle-active.battle-touch #mgrid .mv * {
   -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
 }
 body.battle-active.battle-touch #mgrid .mv { touch-action: manipulation; }
+
+/* 手机直接显示完整效果，长按只是额外的放大阅读入口。 */
+body.battle-active.battle-touch #battle .mv { display: flex; flex-direction: column; justify-content: center; align-items: stretch; gap: 3px; }
+body.battle-active.battle-touch #battle .mv .md { display: block; -webkit-line-clamp: unset; overflow: visible; overflow-wrap: anywhere; line-height: 1.2; font-size: calc(11px * var(--battle-type-scale)); }
+body.battle-active.battle-touch #battle .mv .mn { line-height: 1.1; }
+body.battle-active.battle-touch #battle .mv .t2 { flex: 0 0 auto; }
+body.battle-active.battle-touch:not(.battle-wide) #battle { grid-template-rows: calc(32px * var(--battle-type-scale)) calc(100px * var(--battle-type-scale)) minmax(0, 1fr) minmax(300px, 43%); }
+body.battle-active.battle-touch:not(.battle-wide) #battle .plate { padding: 5px 6px; grid-template-rows: minmax(0, 1fr) 8px 15px 18px; }
+body.battle-active.battle-touch:not(.battle-wide) #battle .plate .pn { font-size: calc(18px * var(--battle-type-scale)); }

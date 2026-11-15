@@ -22,11 +22,12 @@ body.bag-active .sheet { height: var(--bag-full-height, var(--game-view-height))
 #pg-bag > .mons-tabs .tab, #pg-bag > .mtabs .tab { padding: 5px 18px; font-size: calc(13px * var(--bag-type-scale)); }
 #pg-bag .bag-workspace {
   flex: 1 1 0; min-height: 0; min-width: 0;
-  display: grid; grid-template-columns: minmax(240px, 28%) minmax(0, 1fr); gap: 12px;
+  display: grid; grid-template-columns: minmax(240px, 28%) minmax(0, 1fr); grid-template-areas: "team detail"; direction: ltr; gap: 12px;
 }
 #pg-bag .bag-workspace > * { min-width: 0; min-height: 0; }
 body.battle-touch #pg-bag .bag-workspace { grid-template-columns: minmax(0, 32%) minmax(0, 1fr); }
 #pg-bag .current-team {
+  grid-area: team;
   display: flex; flex-direction: column; gap: 8px; padding: 10px;
   margin: 0; box-shadow: 2px 2px 0 var(--red); overflow: hidden;
 }
@@ -61,6 +62,7 @@ body.battle-touch #pg-bag .bag-workspace { grid-template-columns: minmax(0, 32%)
 #pg-bag .bag-team-footer button { width: 100%; min-width: 0; padding: 6px 8px; font-size: calc(12px * var(--bag-type-scale)); white-space: normal; }
 
 #pg-bag .bag-detail {
+  grid-area: detail;
   display: flex; flex-direction: column; gap: 9px; padding: 12px; position: relative;
   background: var(--paper-2); border: 1.5px solid var(--ink); border-radius: 14px;
   overflow: hidden;
@@ -292,4 +294,28 @@ body.bag-short.bag-wide .bag-stat-ev { margin-top: 1px; }
 
 @media (max-height: 500px) {
   .who-menu { left: 50%; right: auto; }
+}
+
+/* 手机沿用电脑的左右骨架和四技能格，五个资料页共用同一内容框。 */
+#pg-bag .current-team > .bag.tbag { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: repeat(5, minmax(0, 1fr)); }
+#pg-bag .bag-detail-body { position: relative; }
+#pg-bag .bag-skill-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); }
+#pg-bag .bag-skill { border-left: 5px solid var(--skill-color, var(--rule)); }
+.skill-info-meta .t2 { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; }
+.skill-info-meta .tchip { display: inline-flex; color: #fff; border-radius: 999px; padding: 3px 7px; }
+.skill-hover { border-left: 5px solid var(--skill-color, var(--red)); }
+@media (max-width: 680px) {
+  #pg-bag .bag-detail-tabs { grid-template-columns: repeat(5, minmax(0, 1fr)); min-height: 36px; }
+  #pg-bag .bag-detail-body .d-head { grid-template-columns: minmax(55px, 34%) minmax(0, 1fr); gap: 6px; }
+  #pg-bag .bag-detail-body .d-head h3 { font-size: 20px; }
+  #pg-bag .bag-detail-body .d-art { height: 110px; }
+}
+#pg-bag .bag-detail-body > .ins-box, #pg-bag .bag-detail-body > .md-items { margin: 0; padding: 8px; border-radius: 9px; background: var(--paper); }
+#pg-bag .bag-detail-body .ins-slots { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 680px) {
+  #pg-bag .bag-detail-body .ins-slot { min-width: 0; padding: 4px; gap: 3px; font-size: 11px; overflow-wrap: anywhere; }
+  #pg-bag .bag-detail-body .ins-slot.on { flex-direction: column; align-items: start; }
+  #pg-bag .bag-detail-body .ins-slot span, #pg-bag .bag-detail-body .ins-slot small { font-size: 10px; }
+  #pg-bag .bag-detail-body .ins-slot .it-ic { width: 26px; height: 26px; }
+  #pg-bag .bag-detail-body .ins-slot .btn { max-width: 100%; padding: 3px; font-size: 10px; }
 }

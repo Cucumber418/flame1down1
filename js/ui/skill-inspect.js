@@ -18,8 +18,11 @@
     var el = card(e.target); if (!el || e.button > 0) return;
     press = { el: el, id: e.pointerId, x: e.clientX, y: e.clientY };
     press.timer = setTimeout(function () {
-      if (!press || press.el !== el || !el.isConnected || !el.getClientRects().length || document.hidden) return;
-      swallow = true; press.fired = true; inspect(el);
+      if (!press || press.el !== el || document.hidden) return;
+      // 联网计时刷新会重建技能按钮，长按仍应跟随同一个技能。
+      var live = el.isConnected ? el : el.dataset.mi != null ? document.querySelector('#mgrid [data-mi="' + el.dataset.mi + '"]') : null;
+      if (!live || !live.getClientRects().length || live.querySelector('.mn').textContent !== el.querySelector('.mn').textContent) return;
+      swallow = true; press.fired = true; inspect(live);
     }, 500);
   }, true);
   document.addEventListener('pointermove', function (e) {
@@ -41,20 +44,24 @@
     ['.mn', '.pp', '.t2', '.md'].forEach(function (selector) {
       var node = el.querySelector(selector); if (!node) return;
       var line = document.createElement(selector === '.mn' ? 'h4' : 'p');
-      line.textContent = node.textContent; target.appendChild(line);
+      if (selector === '.t2') { line.className = 'skill-info-meta'; line.appendChild(node.cloneNode(true)); }
+      else line.textContent = node.textContent;
+      target.appendChild(line);
     });
   }
   function hideHover() { if (hover) { hover.remove(); hover = null; } }
   document.addEventListener('pointerover', function (e) {
-    var el = e.target.closest && e.target.closest('.bag-skill');
+    var el = card(e.target);
     if (!el || e.pointerType !== 'mouse' || touchUI() || (e.relatedTarget && el.contains(e.relatedTarget))) return;
     hideHover(); hover = document.createElement('div'); hover.className = 'skill-hover'; hover.setAttribute('role', 'tooltip');
+    hover.style.setProperty('--skill-color', el.style.getPropertyValue('--skill-color') || el.style.getPropertyValue('--tc'));
+    if (el.hasAttribute('title')) { el.dataset.inspectTitle = el.title; el.removeAttribute('title'); }
     fill(el, hover); document.body.appendChild(hover);
     var r = el.getBoundingClientRect(), tip = hover.getBoundingClientRect();
     hover.style.left = Math.max(8, Math.min(innerWidth - tip.width - 8, r.left)) + 'px';
     hover.style.top = Math.max(8, r.bottom + tip.height + 8 <= innerHeight ? r.bottom + 8 : r.top - tip.height - 8) + 'px';
   });
-  document.addEventListener('pointerout', function (e) { var el = e.target.closest && e.target.closest('.bag-skill'); if (el && (!e.relatedTarget || !el.contains(e.relatedTarget))) hideHover(); });
+  document.addEventListener('pointerout', function (e) { var el = card(e.target); if (el && (!e.relatedTarget || !el.contains(e.relatedTarget))) { hideHover(); if (el.dataset.inspectTitle != null) { el.title = el.dataset.inspectTitle; delete el.dataset.inspectTitle; } } });
   window.addEventListener('resize', function () { cancel(true); sync(); });
   if (window.visualViewport) visualViewport.addEventListener('resize', sync);
   var coarse = matchMedia('(pointer: coarse)');

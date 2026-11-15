@@ -1147,7 +1147,7 @@
     else if (needMe) { hint.textContent = '【' + (me.nick || SPMAP[me.id].name) + '】已倒下，请选择下一只出战的精灵'; hint.className = 'hint alert'; }
     else if (locked) hint.textContent = '受「傲慢」影响，' + me.tm.noSwitch + ' 回合内无法切换精灵';
     else hint.textContent = S.training ? '点击技能对木桩出招，也可按键盘 1–4 出招。伤害统计会实时更新。' : '点击技能出招，或在「精灵」页切换精灵（切换会占用本回合），也可按键盘 1–4 出招。' + pvpClock();
-    if (!lock && !needMe && window.HSSKILL && HSSKILL.touchUI()) hint.textContent = '轻触技能出招，长按查看具体效果。' + pvpClock();
+    if (!lock && !needMe && window.HSSKILL && HSSKILL.touchUI()) hint.textContent = '轻触技能出招；效果已写在技能框内，也可长按放大查看。' + pvpClock();
     $('btn-quit').disabled = !!S.over;
     $('btn-quit').textContent = S.training ? '结束训练' : S.wild ? '逃跑' : '认输';
     if (needMe && !lock) showTab('team');
