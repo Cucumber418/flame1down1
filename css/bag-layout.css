@@ -109,8 +109,8 @@ body.battle-touch #pg-bag .bag-workspace { grid-template-columns: minmax(0, 32%)
   .acct .mail-btn { padding: 3px 7px; font-size: 12px; gap: 3px; }
   .who-btn b { max-width: 8em; font-size: 13px; }
   .mainnav { gap: 5px; }
-  .mainnav .nav { min-height: 32px; font-size: 16px; padding: 5px 3px; }
-  .mainnav .nav small { display: none; }
+  .mainnav .nav { min-height: 30px; font-size: 13px; padding: 4px 3px; gap: 3px; }
+  .mainnav .nav-icon { font-size: 14px; }
   #pg-bag { gap: 6px; }
   #pg-bag > .mons-tabs .tab, #pg-bag > .mtabs .tab { padding: 4px 13px; }
   #pg-bag .bag-workspace { grid-template-columns: minmax(0, 32%) minmax(0, 1fr); gap: 8px; }
@@ -189,8 +189,7 @@ body.bag-short #pg-bag .bag-current-skills { gap: 5px; }
   body.bag-active.bag-short.bag-wide .acct .mail-btn { padding: 3px 7px; font-size: calc(11px * var(--bag-font-scale, 1)); }
   body.bag-active.bag-short.bag-wide .topbar { gap: 5px; margin-bottom: 6px; }
   body.bag-active.bag-short.bag-wide .mainnav { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; }
-  body.bag-active.bag-short.bag-wide .mainnav .nav { min-height: 28px; padding: 4px 2px; font-size: calc(16px * var(--bag-font-scale, 1)); }
-  body.bag-active.bag-short.bag-wide .mainnav .nav small { display: none; }
+  body.bag-active.bag-short.bag-wide .mainnav .nav { min-height: 28px; padding: 4px 2px; font-size: 14px; }
   body.bag-active.bag-short.bag-wide #pg-bag { gap: 5px; }
   body.bag-active.bag-short.bag-wide #pg-bag > .mons-tabs .tab { padding: 3px 14px; font-size: calc(11px * var(--bag-type-scale)); }
   body.bag-active.bag-short.bag-wide #pg-bag .bag-workspace { gap: 8px; }
@@ -215,6 +214,11 @@ body.bag-short #pg-bag .bag-current-skills { gap: 5px; }
   body.bag-active.bag-short.bag-wide #pg-bag .bag-skill .pp, body.bag-active.bag-short.bag-wide #pg-bag .bag-skill .t2 { font-size: calc(10px * var(--bag-type-scale)); }
   body.bag-active.bag-short.bag-wide #pg-bag .bag-current-skills > button { padding: 3px 8px; font-size: calc(11px * var(--bag-type-scale)); }
 
+
+@media (max-width: 360px) {
+  .mainnav .nav { font-size: 12px; gap: 2px; padding-inline: 2px; }
+  .mainnav .nav-icon { font-size: 12px; }
+}
 
 body.battle-touch .bag-skill, body.battle-touch .bag-skill * {
   -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;

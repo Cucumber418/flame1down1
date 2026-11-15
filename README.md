@@ -54,6 +54,7 @@ js/
     display.js        顶栏可选全屏、退出状态同步与提示
     battle-layout.js  一屏战斗视口、技能与状态说明、记录 / 统计面板
     bag-layout.js     背包的可用视口高度和横竖屏适配
+    map-layout.js     星图的一屏高度和横竖屏适配
     skill-inspect.js  手机长按技能说明、防误出招和电脑悬停说明
 images/
   sprites/            精灵立绘（最终形态），文件名 = 精灵 id

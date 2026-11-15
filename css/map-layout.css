@@ -1,0 +1,48 @@
+/* 星图占用顶栏以下的视口；子页面仍使用各自的正常滚动布局。 */
+body.star-map-active { overflow: hidden; }
+body.star-map-active .sheet { height: var(--star-full-height, 100dvh); min-height: 0; overflow: hidden; padding-block: 8px; }
+body.star-map-active #pg-explore { height: var(--star-view-height); min-height: 0; }
+.star-map-page { height: 100%; min-height: 0; display: flex; flex-direction: column; gap: 8px; padding: 0 4px 4px 0; }
+.star-map-page .mayar { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
+.star-map-page .mayar h3 { flex: 0 0 auto; font-size: 26px; line-height: 1.15; padding: 8px 12px; }
+.star-map-page .mayar-map { flex: 1 1 0; min-height: 0; aspect-ratio: auto; }
+.star-map-page .mayar-planets { position: absolute; inset: 0 82px 22px 14px; }
+.star-map-page .mp { left: var(--mp-portrait-x, var(--mp-x)); top: var(--mp-portrait-y, var(--mp-y)); max-width: var(--star-planet-max, 100px); }
+.star-map-page .mp.unk { max-width: 32px; }
+.star-map-page .mp-lb small { width: max-content; max-width: 100px; white-space: normal; text-align: center; line-height: 1.2; }
+.mayar-tools { position: absolute; right: 10px; top: 10px; display: flex; flex-direction: column; gap: 10px; }
+.mayar-tool { width: 62px; min-height: 62px; display: grid; place-items: center; gap: 3px; padding: 6px 3px; border: 1px solid #8d94af; border-radius: 12px; background: #131a2be8; color: #f3efe2; cursor: pointer; font: inherit; box-shadow: 0 2px 8px #0006; }
+.mayar-tool > span { font-size: 26px; line-height: 1; }
+.mayar-tool b { font-size: 11px; line-height: 1.25; font-weight: 500; white-space: nowrap; }
+.mayar-tool:hover { background: #29334b; border-color: #d2dcff; }
+.mayar-tool:focus-visible, .star-earth-pending:focus-visible { outline: 3px solid #f4d073; outline-offset: 2px; }
+.star-earth-pending { flex: 0 0 auto; display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 6px 12px; border: 1.5px solid var(--ink); border-radius: 12px; background: var(--paper-2); color: var(--ink); font: inherit; cursor: pointer; }
+.star-earth-pending > span:first-child { font-size: 28px; }
+.star-earth-pending small { flex: 1; text-align: left; }
+@media (max-width: 640px) {
+  .star-map-page .mayar-planets { right: 68px; left: 16px; }
+  .star-map-page .mp { min-width: 36px; }
+  .star-map-page .mp-lb b { font-size: 14px; }
+  .star-map-page .mp-lb small { max-width: 88px; white-space: normal; text-align: center; line-height: 1.2; }
+  .mayar-tools { right: 6px; top: 8px; gap: 8px; }
+  .mayar-tool { width: 54px; min-height: 58px; }
+}
+@media (max-width: 640px) and (orientation: portrait) {
+  .mayar-planets [data-planet="laiting"] { --mp-portrait-x: 20%; --mp-portrait-y: 16%; }
+  .mayar-planets [data-planet="kongyan"] { --mp-portrait-x: 62%; --mp-portrait-y: 12%; }
+  .mayar-planets [data-planet="ivy"] { --mp-portrait-x: 65%; --mp-portrait-y: 33%; }
+  .mayar-planets [data-planet="pompeii"] { --mp-portrait-x: 25%; --mp-portrait-y: 44%; }
+  .mayar-planets [data-planet="white"] { --mp-portrait-x: 16%; --mp-portrait-y: 72%; }
+  .mayar-planets [data-planet="kamble"] { --mp-portrait-x: 62%; --mp-portrait-y: 82%; }
+  .mayar-planets [data-planet="flora"] { --mp-portrait-x: 78%; --mp-portrait-y: 61%; }
+  .mayar-planets > .unk:nth-last-child(2) { --mp-portrait-x: 36%; --mp-portrait-y: 29%; }
+  .mayar-planets > .unk:last-child { --mp-portrait-x: 50%; --mp-portrait-y: 61%; }
+}
+@media (max-height: 480px) and (orientation: landscape) {
+  .star-map-page .mayar h3 { font-size: 22px; padding: 4px 10px; }
+  .star-map-page .mayar-planets { right: 70px; bottom: 30px; }
+  .star-map-page .mp-lb b { font-size: 14px; }
+  .star-map-page .mp-lb small { font-size: 9px; max-width: 84px; }
+  .mayar-tools { right: 6px; top: 6px; gap: 6px; }
+  .mayar-tool { width: 54px; min-height: 54px; padding: 4px 3px; }
+}

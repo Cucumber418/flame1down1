@@ -1884,11 +1884,11 @@
     if (ex.view === 'seedshop') { if (farmOpen()) { renderSeedShop(); return; } ex.view = 'area'; ex.area = '恩施'; }
     if (ex.view === 'spa') { if (spaOpen()) { renderSpa(); return; } ex.view = 'area'; ex.area = '咸宁'; }
     var Pp = ex.view === 'sites' && PLANETS.filter(function (p) { return p.id === ex.planet; })[0];
-    var html = exHead('');
+    var html = ex.view === 'planets' ? '' : exHead('');
     if (ex.view === 'planets') {
       // 2026-10-31：空间站、太空竞技场、BOSS挑战、每周挑战移到飞船终端（舰体图右边）
-      html += '<div class="gx-rows">' + mayarMap() + '</div>' + arcBarHTML() +
-        '<div class="gx-rows"><div class="gx-row">' + planetCard(planetOf('earth')) + '</div></div>';
+      html = '<div class="star-map-page">' + mayarMap() + (earthStoryDone() ? '' :
+        '<button type="button" class="star-earth-pending" data-planet="earth"><span aria-hidden="true">🌍</span><b>地球主线</b><small>继续未读完的剧情</small><span aria-hidden="true">›</span></button>') + '</div>';
     } else {
       var P = PLANETS.filter(function (p) { return p.id === ex.planet; })[0];
       html += '<div class="crumb">' + (P.ship ? '' : '<button type="button" class="btn ghost" id="ex-back">‹ ' + (P.inStation ? '返回空间站' : SHIP_SIDE[P.id] ? '返回飞船终端' : '返回星图') + '</button>') + '<b>' + (P.ship ? '飞船终端 · ' : '') + (P.inStation ? '空间站 · ' : MAYAR[P.id] ? '马亚尔星系 · ' : '') + P.name + '</b></div>';
@@ -2247,13 +2247,17 @@
   function stationSvg() { return '<img class="station-ic" src="images/planets/station.webp" alt="">'; }   // 2026-10-27：空间站立绘（照片抠图 + 手绘风格）
 
   // 马亚尔星系：星系图，点星球进入
+  function earthStoryDone() { return INTRO_SITES.every(function (id) { return prog(id).done; }); }
   function mayarMap() {
     var pts = Object.keys(MAYAR).map(function (id) {
       var p = planetOf(id), m = MAYAR[id], open = planetOpen(p), lock = open ? '' : p.soon ? '敬请期待' : '读完「' + SITES[p.after].chapter.split(' · ')[1] + '」后解锁';
-      return '<button type="button" class="mp' + (open ? '' : ' locked') + '" data-planet="' + id + '"' + (open ? '' : ' disabled') + ' style="left:' + m[0] + '%;top:' + m[1] + '%;width:' + m[2] + '%" title="' + esc(p.name + '：' + (open ? p.d : lock)) + '">' +
+      return '<button type="button" class="mp' + (open ? '' : ' locked') + '" data-planet="' + id + '"' + (open ? '' : ' disabled') + ' style="--mp-x:' + m[0] + '%;--mp-y:' + m[1] + '%;width:' + m[2] + '%" title="' + esc(p.name + '：' + (open ? p.d : lock)) + '">' +
         '<span class="mp-ic">' + planetSvg(id) + '</span><span class="mp-lb"><b>' + p.name + '</b><small>' + (open ? p.ptype : p.soon ? p.ptype + ' · 敬请期待' : '未解锁') + '</small></span></button>';
-    }).join('') + MAYAR_UNK.map(function (m) { return '<span class="mp unk" style="left:' + m[0] + '%;top:' + m[1] + '%" title="未知星球：更多星球敬请期待">?</span>'; }).join('');
-    return '<section class="mayar"><h3>马亚尔星系 <small>点击星球前往</small></h3><div class="mayar-map"><img class="mayar-bg" src="' + BG.mayar + '" alt="马亚尔星系">' + pts + '</div></section>';
+    }).join('') + MAYAR_UNK.map(function (m) { return '<span class="mp unk" style="--mp-x:' + m[0] + '%;--mp-y:' + m[1] + '%" title="未知星球：更多星球敬请期待">?</span>'; }).join('');
+    return '<section class="mayar"><h3>马亚尔星系 <small>点击星球前往</small></h3><div class="mayar-map"><img class="mayar-bg" src="' + BG.mayar + '" alt="">' +
+      '<div class="mayar-planets">' + pts + '</div><nav class="mayar-tools" aria-label="剧情入口">' +
+      (earthStoryDone() ? '<button type="button" class="mayar-tool" data-planet="earth" title="重温地球主线剧情"><span aria-hidden="true">🌍</span><b>地球剧情</b></button>' : '') +
+      arcMapEntryHTML() + '</nav></div></section>';
   }
   // 进入星球 / 场景时：这一页的图片还没下载完，就先盖上加载面板，全部到了再显示（2026-10-27）
   function loadGate(el, msg) {
@@ -5851,10 +5855,10 @@
       '<div class="fparts arc-tabs" role="tablist">' + ARC_TABS.map(function (t) { return '<button type="button" role="tab" class="tab' + (t[0] === tab ? ' on' : '') + '" aria-selected="' + (t[0] === tab) + '" data-arctab="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>' +
       '<div class="arc-body">' + body + '</div>';
   }
-  function arcBarHTML() {
+  function arcMapEntryHTML() {
     var main = Object.keys(SITES).filter(function (id) { return !SITES[id].side; }), side = Object.keys(SITES).filter(function (id) { return SITES[id].side; });
     var nm = main.filter(function (id) { return prog(id).done; }).length, ns = side.filter(function (id) { return prog(id).done; }).length;
-    return '<button type="button" class="arc-entry" data-archive="1"><span class="tape l"></span><span class="arc-e-ic" aria-hidden="true">📖</span><span class="arc-e-txt"><b>剧情回顾</b><small>主线 ' + nm + ' 段 · 支线 ' + ns + ' 段 · 画廊 · 音乐鉴赏 · 角色立绘</small></span><span class="wk-pm">›</span></button>';
+    return '<button type="button" class="mayar-tool" data-archive="1" title="已读主线 ' + nm + ' 段、支线 ' + ns + ' 段；剧情、画廊、音乐与角色回顾"><span aria-hidden="true">📖</span><b>剧情回顾</b></button>';
   }
   /* ---------- Wiki（2026-10-24）：顶栏入口，按图鉴编号列出所有精灵的全部技能，
    * 标出隐藏技能用什么道具解锁、等级上限用什么道具提升，以及精灵的获得方式；可以按属性筛选 ---------- */

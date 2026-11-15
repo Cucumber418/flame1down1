@@ -8,9 +8,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- 手写字体来自 Google Fonts，国内经常连不上；用 media=print 技巧异步加载，连不上也不会卡住页面，会自动用楷体代替 -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Long+Cang&display=swap" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="css/style.css?v=20261115-5">
+<link rel="stylesheet" href="css/style.css?v=20261115-6">
 <link rel="stylesheet" href="css/battle-layout.css?v=20261115-5">
-<link rel="stylesheet" href="css/bag-layout.css?v=20261115-5">
+<link rel="stylesheet" href="css/bag-layout.css?v=20261115-6">
+<link rel="stylesheet" href="css/map-layout.css?v=20261115-6">
 </head>
 <body>
 
@@ -35,13 +36,13 @@
       </div>
     </div>
     <nav class="mainnav" id="mainnav" role="tablist" aria-label="主菜单">
-      <button type="button" class="nav holo on" data-page="holo" role="tab" aria-selected="true">全息作战<small>明明教官的试炼</small></button>
-      <button type="button" class="nav" data-page="log" role="tab" aria-selected="false">航行日志<small>公告 · 活动</small></button>
-      <button type="button" class="nav" data-page="bag" role="tab" aria-selected="false">精灵一览<small>背包 · 仓库 · 放生 · 图鉴</small></button>
-      <button type="button" class="nav" data-page="ship" role="tab" aria-selected="false">飞船终端<small>荆楚号</small></button>
-      <button type="button" class="nav" data-page="explore" role="tab" aria-selected="false">星际探索<small>星球 · 剧情</small></button>
-      <button type="button" class="nav" data-page="items" role="tab" aria-selected="false">储存箱<small>精灵道具 · 一般道具</small></button>
-      <button type="button" class="nav" data-page="social" role="tab" aria-selected="false">社交<small>玩家 · 好友 · 切磋</small></button>
+      <button type="button" class="nav holo on" data-page="holo" role="tab" aria-selected="true"><span class="nav-icon" aria-hidden="true">⚔️</span><span class="nav-label">全息作战</span></button>
+      <button type="button" class="nav" data-page="log" role="tab" aria-selected="false"><span class="nav-icon" aria-hidden="true">📒</span><span class="nav-label">航行日志</span></button>
+      <button type="button" class="nav" data-page="bag" role="tab" aria-selected="false"><span class="nav-icon" aria-hidden="true">🐾</span><span class="nav-label">精灵一览</span></button>
+      <button type="button" class="nav" data-page="ship" role="tab" aria-selected="false"><span class="nav-icon" aria-hidden="true">🚀</span><span class="nav-label">飞船终端</span></button>
+      <button type="button" class="nav" data-page="explore" role="tab" aria-selected="false"><span class="nav-icon" aria-hidden="true">🪐</span><span class="nav-label">星际探索</span></button>
+      <button type="button" class="nav" data-page="items" role="tab" aria-selected="false"><span class="nav-icon" aria-hidden="true">📦</span><span class="nav-label">储存箱</span></button>
+      <button type="button" class="nav" data-page="social" role="tab" aria-selected="false"><span class="nav-icon" aria-hidden="true">👥</span><span class="nav-label">社交</span></button>
     </nav>
   </header>
   <div class="onboard-wrap" id="onboard" hidden></div>
@@ -232,12 +233,13 @@ CLOUD.boot([
   'js/engine/endless.js',
   'js/ui/audio.js',
   'js/ui/battle-ui.js?v=20261115-5',
-  'js/ui/game.js?v=20261115-5',
+  'js/ui/game.js?v=20261115-6',
   'js/ui/social.js?v=20261115-5',
   'js/ui/board.js',
   'js/ui/display.js',
   'js/ui/battle-layout.js?v=20261115-5',
-  'js/ui/bag-layout.js?v=20261115-5'
+  'js/ui/bag-layout.js?v=20261115-5',
+  'js/ui/map-layout.js?v=20261115-6'
 ]);
 </script>
 </body>
