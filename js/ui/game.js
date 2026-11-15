@@ -1891,8 +1891,8 @@
         '<button type="button" class="star-earth-pending" data-planet="earth"><span aria-hidden="true">🌍</span><b>地球主线</b><small>继续未读完的剧情</small><span aria-hidden="true">›</span></button>') + '</div>';
     } else {
       var P = PLANETS.filter(function (p) { return p.id === ex.planet; })[0];
-      html += '<div class="crumb">' + (P.ship ? '' : '<button type="button" class="btn ghost" id="ex-back">‹ ' + (P.inStation ? '返回空间站' : SHIP_SIDE[P.id] ? '返回飞船终端' : '返回星图') + '</button>') + '<b>' + (P.ship ? '飞船终端 · ' : '') + (P.inStation ? '空间站 · ' : MAYAR[P.id] ? '马亚尔星系 · ' : '') + P.name + '</b></div>';
-      if (P.ship) { el.innerHTML = html + shipMap(P); return; }
+      if (P.ship) { el.innerHTML = shipMap(P); return; }
+      html += '<div class="crumb"><button type="button" class="btn ghost" id="ex-back">‹ ' + (P.inStation ? '返回空间站' : SHIP_SIDE[P.id] ? '返回飞船终端' : '返回星图') + '</button><b>' + (P.inStation ? '空间站 · ' : MAYAR[P.id] ? '马亚尔星系 · ' : '') + P.name + '</b></div>';
       if (P.wild) { el.innerHTML = html + (P.id === 'flora' ? floraPage() : wildPage(P)); return; }
       if (P.tower) { el.innerHTML = html + towerPage(); return; }
       if (P.station) { el.innerHTML = html + '<div class="planets">' + planetCard(planetOf('tower')) + (prog('flora7').done && mmLive() ? '<button type="button" class="planet' + (mmOpen() ? '' : ' locked') + '"' + (mmOpen() ? ' data-mmarena="1"' : ' disabled') + '><span class="tape l"></span><span class="mm-ic" aria-hidden="true">🛰</span><span class="pn">全息作战场地<span class="chip ptype">限时</span></span><span class="hint">明明教官安置的全息作战场地。活动「明明教官的试炼」期间开放。</span><span class="pc">' + (mmOpen() ? '明明代币 ' + fmt(acc.items.mmTok || 0) + ' · ' + mmLeftText() : '先完成活动任务「明明教官的试炼」') + '</span></button>' : '') + '</div>'; return; }
@@ -6942,6 +6942,7 @@
       });
     }, 20000);
     var E0 = ex.baseEdit, LY = E0 || baseLayout();
+    var roomBg = new URL((BASE_UI[LY.room] || BASE_UI.r1).img, document.baseURI).href;
     // 2026-10-31：基地里的精灵只显示精灵本身；鼠标悬停看基本信息；点击是摸摸（2026-11-01 改回，面板在「精灵展示」里看）
     var figs = H.mons.map(function (x, i) {
       var m = mon(x.u), f = form(m), p = baseMonPos(LY.room, i);
@@ -6952,10 +6953,11 @@
       : '<b class="home-name">' + esc(H.name || '我的基地') + '</b><button type="button" class="btn ghost" id="home-rn">改名</button>';
     var dl0 = document.querySelector('.bp-dlg'), dlTop = dl0 ? dl0.scrollTop : 0, pan = ex.bpanel ? basePanelHTML(ex.bpanel) : '';
     if (!pan) ex.bpanel = null;
-    $('pg-explore').innerHTML = exHead('') +
-      '<div class="crumb"><button type="button" class="btn ghost" id="home-back">‹ 返回大厅</button>' + title + '</div>' +
-      '<div class="base-stage' + (E0 ? ' editing' : '') + '">' + baseRoomHTML(LY, figs + (H.mons.length || E0 ? '' : '<p class="home-empty">基地里空荡荡的。点左边的「精灵展示」放几只精灵出来，或者点「基地编辑」摆上摆件吧。</p>') + (E0 ? '' : baseSideHTML() + sceneGoHTML('farm')), E0) + '</div>' +
-      (E0 ? baseEditBar() : '') + (!E0 && window.HSSOCIAL && HSSOCIAL.friendBases ? HSSOCIAL.friendBases() : '') + pan;
+    $('pg-explore').innerHTML = '<div class="home-page">' +
+      '<div class="crumb home-crumb"><button type="button" class="btn ghost" id="home-back">‹ 返回大厅</button>' + title + '</div>' +
+      '<div class="base-stage' + (E0 ? ' editing' : '') + '" style="--home-backdrop:url(' + roomBg + ')">' + baseRoomHTML(LY, figs + (H.mons.length || E0 ? '' : '<p class="home-empty">基地里空荡荡的。点「精灵展示」放几只精灵出来，或者点「基地编辑」摆上摆件吧。</p>'), E0) +
+        (E0 ? '' : baseSideHTML() + sceneGoHTML('farm') + '<button type="button" class="scene-go home-friends-btn" data-bpanel="friends" aria-haspopup="dialog"><span class="sg-ic" aria-hidden="true">👥</span>好友基地</button>') + '</div>' +
+      (E0 ? baseEditBar() : '') + '</div>' + pan;
     var dl1 = document.querySelector('.bp-dlg'); if (dl1 && dl0) dl1.scrollTop = dlTop;
   }
   // 基地画面左边悬停的入口（2026-10-31，参考飞船终端舰体图右边的入口）
@@ -6976,6 +6978,7 @@
     if (k === 'log' || k === 'msg') { if (!baseOnline()) return ''; ttl = k === 'log' ? '基地动态' : '留言板'; body = HSSOCIAL.homeBoard(null, k); }
     else if (k === 'mons') { ttl = '精灵展示'; cls = ' wide'; body = baseMonsBody(); }
     else if (k === 'shop') { ttl = '基地商城'; cls = ' wide'; body = baseShopBody(); }
+    else if (k === 'friends') { ttl = '好友基地'; cls = ' wide bp-friends'; body = window.HSSOCIAL && HSSOCIAL.friendBases ? HSSOCIAL.friendBases() : '<p class="hint">好友功能正在加载，请稍后重试。</p>'; }
     else if (k.indexOf('mon:') === 0) { cls = ' bp-mon'; body = baseMonBody(+k.slice(4)); if (!body) return ''; }
     else if (k === 'nursery') { ttl = '精元转化仪'; cls = ' wide'; body = '<p class="hint">和神农架 · 精灵保育仓的孵化槽是同一套，在这里放进去、在那边孵化也一样。</p>' + nurseryBody(nurseryCards()); setTimeout(nurseryTick, 0); }
     else if (k === 'mm') { cls = ' mm-box'; body = mmPortraitBody(); }

@@ -64,18 +64,18 @@
     api('GET', '/api/fp-state').then(function (r) { if (r && r.ok) { st.fpSent = Array.isArray(r.sent) ? r.sent : []; st.fpOk = true; } }).catch(function () {});   // 2026-11-01：今天给好友送过经验没有
     api('GET', '/api/players').then(function (r) {
       loading = false;
-      if (r._code !== 200) { st.err = r.error || '读取失败'; render(); return; }
+      if (r._code !== 200) { st.err = r.error || '读取失败'; render(); fbDraw(); return; }
       st.err = ''; st.players = r.players; st.me = r.me; st.loadedAt = Date.now(); render(); renderBrawl(); fbDraw();
-    }).catch(function () { loading = false; st.err = '连不上服务器'; render(); });
+    }).catch(function () { loading = false; st.err = '连不上服务器'; render(); fbDraw(); });
   }
   setInterval(function () { if (A.page() === 'social' && !A.inBattle() && document.visibilityState === 'visible') load(); }, 30000);
   // 竞技对战的大乱斗面板开着时，20 秒刷新一次谁能匹配（别人刚读完支线、刚上线都要能看到）
   setInterval(function () { var el = $('brawl'); if (el && !el.hidden && A.page() === 'arena' && !A.inBattle() && document.visibilityState === 'visible') load(); }, 20000);
 
-  // 自己基地画面下方的「好友的基地」（2026-10-31）：点一下去拜访
+  // 基地右下角打开的好友选择面板：点一下去拜访。
   function fbInner() {
     if (!online) return '<p class="hint">连上服务器后才能看到好友的基地。</p>';
-    if (!st.players) return '<p class="hint">' + (st.err ? esc(st.err) : '正在读取好友名单……') + '</p>';
+    if (!st.players) return '<p class="hint">' + (st.err ? esc(st.err) : '正在读取好友名单……') + '</p>' + (st.err ? '<button type="button" class="btn" data-fbretry="1">重试</button>' : '');
     var F = st.players.filter(function (p) { return p.friend && !p.me && !p.noChar; }).sort(function (a, b) { return (b.homeOpen ? 1 : 0) - (a.homeOpen ? 1 : 0) || (b.online ? 1 : 0) - (a.online ? 1 : 0); });
     if (!F.length) return '<p class="hint">还没有好友。去「社交」页加几个好友，就能在这里直接拜访他们的基地。</p>';
     return '<div class="fb-grid">' + F.map(function (p) {
@@ -88,9 +88,17 @@
   function fbDraw() { var el = $('base-friends'); if (el) el.innerHTML = fbInner(); }
   function friendBases() {
     if (online && (!st.players || Date.now() - (st.loadedAt || 0) > 30000)) setTimeout(load, 0);
-    return '<section class="base-friends"><h3 class="sec">好友的基地 <span class="hint">点一下去拜访</span></h3><div id="base-friends">' + fbInner() + '</div></section>';
+    return '<div id="base-friends">' + fbInner() + '</div>';
   }
-  document.addEventListener('click', function (e) { var t = e.target.closest('[data-fbvisit]'); if (t && !t.disabled) openHome(t.dataset.fbvisit, 'base'); });
+  document.addEventListener('click', function (e) {
+    if (e.target.closest('[data-fbretry]')) { st.err = ''; fbDraw(); load(); return; }
+    var t = e.target.closest('[data-fbvisit]');
+    if (t && !t.disabled) {
+      var panel = t.closest('.bp-dlg'), close = panel && panel.querySelector('[data-bpx]');
+      if (close) close.click();
+      openHome(t.dataset.fbvisit, 'base');
+    }
+  });
   // 能不能观战：对方正在对战，并且是自己的好友（或者对方发了全服观战邀请）
   function canWatch(p) { return !p.me && p.online && p.busy && !!p.battle && (p.friend || p.watchOpen); }
   function watchBtn(p) { return canWatch(p) ? '<button type="button" class="btn watch" data-watch="' + esc(p.user) + '">👁 观战</button>' : ''; }
