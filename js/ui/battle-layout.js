@@ -17,7 +17,7 @@
     var z = parseFloat(body.style.zoom) || 1;
     var height = parseFloat(body.style.getPropertyValue('--game-view-height')) || (window.visualViewport ? visualViewport.height : root.clientHeight) / z;
     var width = parseFloat(body.style.width) || root.clientWidth / z;
-    var scale = root.classList.contains('phone-portrait-rot') ? z * (window.visualViewport ? visualViewport.scale : 1) : 1;
+    var scale = 1;
     property('--battle-view-height', height + 'px');
     property('--battle-view-width', width + 'px');
     property('--battle-font-scale', String(1 / scale));

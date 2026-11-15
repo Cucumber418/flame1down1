@@ -8,9 +8,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- 手写字体来自 Google Fonts，国内经常连不上；用 media=print 技巧异步加载，连不上也不会卡住页面，会自动用楷体代替 -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Long+Cang&display=swap" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="css/style.css?v=20261115-3">
-<link rel="stylesheet" href="css/battle-layout.css?v=20261115-3">
-<link rel="stylesheet" href="css/bag-layout.css?v=20261115-3">
+<link rel="stylesheet" href="css/style.css?v=20261115-4">
+<link rel="stylesheet" href="css/battle-layout.css?v=20261115-4">
+<link rel="stylesheet" href="css/bag-layout.css?v=20261115-4">
 </head>
 <body>
 
@@ -195,9 +195,9 @@
 
 <!-- 脚本按顺序加载：数据 → 对战引擎 → 界面。顺序不能乱 -->
 <!-- cloud.js 先加载：用服务器打开时先登录、取回存档，再按下面的顺序加载游戏脚本（数据 → 引擎 → 界面，顺序不能调换） -->
-<script src="js/ui/viewport.js?v=20261115-3"></script>
-<script src="js/ui/land.js?v=20261115-3"></script>
-<script src="js/ui/skill-inspect.js?v=20261115-3"></script>
+<script src="js/ui/viewport.js?v=20261115-4"></script>
+<script src="js/ui/land.js?v=20261115-4"></script>
+<script src="js/ui/skill-inspect.js?v=20261115-4"></script>
 <script src="js/ui/loader.js"></script>
 <script src="js/net/cloud.js"></script>
 <script>
@@ -231,13 +231,13 @@ CLOUD.boot([
   'js/engine/summon.js',
   'js/engine/endless.js',
   'js/ui/audio.js',
-  'js/ui/battle-ui.js?v=20261115-3',
-  'js/ui/game.js?v=20261115-3',
-  'js/ui/social.js?v=20261115-3',
+  'js/ui/battle-ui.js?v=20261115-4',
+  'js/ui/game.js?v=20261115-4',
+  'js/ui/social.js?v=20261115-4',
   'js/ui/board.js',
   'js/ui/display.js',
-  'js/ui/battle-layout.js?v=20261115-3',
-  'js/ui/bag-layout.js?v=20261115-3'
+  'js/ui/battle-layout.js?v=20261115-4',
+  'js/ui/bag-layout.js?v=20261115-4'
 ]);
 </script>
 </body>

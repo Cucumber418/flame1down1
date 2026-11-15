@@ -3321,10 +3321,6 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .sum-gift { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 10px 0; padding: 10px 12px; border: 2px dashed #c9a227; border-radius: 12px; background: #fff8e1; }
 .sum-gift .it-ic { width: 36px; height: 36px; }
 .sum-gift span { flex: 1 1 200px; }
-/* 手机竖屏逻辑画布：浏览器不能原生锁方向时使用。 */
-html.phone-portrait-rot, html.phone-portrait-rot body { overflow: hidden; height: 100%; }
-html.phone-portrait-rot body { position: fixed; top: 0; left: 0; transform-origin: 0 0; }
-html.phone-portrait-rot .sheet { height: 100%; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; }
 .lb-art { position: relative; background: radial-gradient(circle, #fff6c8, #f2d06b 70%); }
 .lb-art .lb-sh { position: absolute; right: -6px; bottom: -6px; width: 46%; filter: drop-shadow(0 0 6px rgba(80,170,255,.8)); }
 .lb-art > img:first-child { width: 100%; height: 100%; object-fit: contain; padding: 6px; box-sizing: border-box; }
