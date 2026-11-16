@@ -1907,7 +1907,7 @@
   }
   function giveItems(o) { if (o) earn('misc', '', { items: o }); }   // 旧写法：新代码请直接用 earn，写明来源
   function rwList(R) { var a = [R.exp ? '累积经验 ×' + fmt(R.exp) : '', R.energy ? '能量 ×' + fmt(R.energy) : '', R.bgm ? '基地音乐「' + bgmName(R.bgm) + '」' : '']; if (R.items) for (var k in R.items) a.push(itemName(k) + ' ×' + R.items[k]); if (R.title) a.push('称号「' + TITLES.filter(function (x) { return x.id === R.title; })[0].n + '」'); if (R.mon) a.push(R.mon); (R.gift || []).forEach(function (g) { a.push(form(g).name + ' LV' + g.lv); }); return a.filter(Boolean); }
-  var PM = { panel: null, page: 0, mini: null, task: 0, chal: 'levels', last: {} };
+  var PM = { panel: null, helpers: false, last: {} };
   var ex = { view: 'planets', planet: 'earth', site: null, mode: null, host: null, i: 0, typing: false, auto: false, skip: false, timer: null, tick: null, full: '', log: [], pickSel: null };
   function story() { if (!acc.story) acc.story = {}; return acc.story; }
   function prog(site) { var st = story(); if (!st[site]) st[site] = { at: 0, done: false, ch: null }; return st[site]; }
@@ -3754,94 +3754,76 @@
     var F = planetMapField(R);
     if (index != null) F.scene = Math.max(0, Math.min(F.scenes.length - 1, Math.floor(+index) || 0));
     else if (!last) F.scene = 0;
-    PM.panel = panel || null; PM.page = 0; PM.mini = R.id;
+    PM.panel = panel || null; PM.helpers = false;
     renderField(); setTimeout(bgmScene, 0); setTimeout(cumberCheck, 400);
   }
   function planetMapName(sc, R, i) { return BG_NAME[sc.bgKey] || BG_NAME[(sc.bgKey || '').replace(/_mia$|_corrupt$/, '')] || R.name + ' · 场景 ' + (i + 1); }
-  function planetMapPages(html, selector, size) {
-    var source = document.createElement('div'); source.innerHTML = html;
-    var items = [].slice.call(source.querySelectorAll(selector)), pages = Math.max(1, Math.ceil(items.length / size));
-    PM.page = Math.max(0, Math.min(pages - 1, PM.page));
-    items.forEach(function (el, i) { if (i < PM.page * size || i >= (PM.page + 1) * size) el.remove(); });
-    return { html: source.innerHTML, pager: pages > 1 ? '<nav class="planet-panel-pages" aria-label="面板翻页"><button type="button" class="btn ghost" data-map-page="-1" aria-label="上一页"' + (PM.page ? '' : ' disabled') + '>‹</button><span>' + (PM.page + 1) + ' / ' + pages + '</span><button type="button" class="btn ghost" data-map-page="1" aria-label="下一页"' + (PM.page < pages - 1 ? '' : ' disabled') + '>›</button></nav>' : '' };
-  }
   function planetMiniMap(P) {
-    var regions = regionsOf(P.id).filter(function (R) { return !R.record || regionOpen(R); });
-    var R = regions.filter(function (R) { return R.id === PM.mini; })[0] || regions[0]; if (!R) return '<p>暂时没有可以前往的区域。</p>';
-    PM.mini = R.id; var F = planetMapField(regionById(ex.region));
-    return '<nav class="planet-region-tabs" aria-label="大场景">' + regions.map(function (r) { return '<button type="button" class="btn' + (r.id === R.id ? ' primary' : ' ghost') + '" data-map-region="' + r.id + '" aria-pressed="' + (r.id === R.id) + '">' + esc(r.name) + '</button>'; }).join('') + '</nav><div class="planet-mini-grid">' + planetMapScenes(R).map(function (sc, i) {
-      var on = ex.region === R.id && F.scene === i, open = planetMapCan(R);
-      return '<button type="button" class="planet-mini-scene' + (on ? ' on' : '') + '" data-map-rid="' + R.id + '" data-map-scene="' + i + '" aria-pressed="' + on + '"' + (open ? '' : ' disabled title="读完「降临芙罗拉」后开放"') + '><span class="planet-mini-image">' + (sc.bg ? '<img src="' + sc.bg + '" alt="">' : '') + '</span><b>' + esc(planetMapName(sc, R, i)) + '</b><small>' + (on ? '当前位置' : open ? '点击传送' : '未开放') + '</small></button>';
-    }).join('') + '</div>';
+    var F = planetMapField(regionById(ex.region));
+    return regionsOf(P.id).filter(function (R) { return !R.record || regionOpen(R); }).map(function (R) {
+      var open = planetMapCan(R);
+      return '<section class="planet-mini-region"><h3>' + esc(R.name) + (open ? '' : ' <small>未开放</small>') + '</h3><div class="planet-mini-grid">' + planetMapScenes(R).map(function (sc, i) {
+        var on = ex.region === R.id && F.scene === i;
+        return '<button type="button" class="planet-mini-scene' + (on ? ' on' : '') + '" data-map-rid="' + R.id + '" data-map-scene="' + i + '" aria-pressed="' + on + '"' + (open ? '' : ' disabled title="读完「降临芙罗拉」后开放"') + '><span class="planet-mini-image">' + (sc.bg ? '<img src="' + sc.bg + '" alt="">' : '') + '</span><b>' + esc(planetMapName(sc, R, i)) + '</b><small>' + (on ? '当前位置' : open ? '点击传送' : '未开放') + '</small></button>';
+      }).join('') + '</div></section>';
+    }).join('') || '<p>暂时没有可以前往的区域。</p>';
   }
   function planetChallengePanel(P) {
-    if (!CHAL[P.id]) return { html: '<p class="hint">这颗星球暂时没有关卡。</p>', pager: '' };
+    if (!CHAL[P.id]) return '<p class="hint">这颗星球暂时没有关卡。</p>';
     var source = document.createElement('div'); source.innerHTML = chalPage(P.id);
-    var wrap = source.querySelector('.ch-wrap'); if (!wrap) return { html: source.innerHTML, pager: '' };
-    var tab = PM.chal || 'levels', head = source.querySelector('.ch-dh'), cols = source.querySelectorAll('.ch-cols > div'), go = source.querySelector('.ch-go');
-    var nav = '<nav class="planet-panel-tabs">' + [['levels','关卡'],['detail','要求'],['team','出战'],['rewards','奖励'],['rank','排行']].map(function (t) { return '<button type="button" class="btn ' + (tab === t[0] ? 'primary' : 'ghost') + '" data-map-ctab="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</nav>';
-    var part;
-    if (tab === 'levels') part = planetMapPages(source.querySelector('.ch-chain').outerHTML, '.ch-node', innerHeight < 500 ? 12 : innerWidth <= 640 ? 15 : 20);
-    else if (tab === 'detail') part = { html: (head ? head.outerHTML : '') + (cols[0] ? cols[0].innerHTML : ''), pager: '' };
-    else if (tab === 'team') part = planetMapPages(cols[1] ? cols[1].innerHTML : '', '.ch-help', innerHeight < 500 ? 6 : innerHeight < 650 ? 3 : 6);
-    else if (tab === 'rank') {
-      var rank = source.querySelector('.cb-card'), mode = PM.rankMode || 'top';
-      if (rank) {
-        var remove = rank.querySelector(mode === 'top' ? '.cb-bars' : '.cb-top'); if (remove) remove.remove();
-        part = planetMapPages(rank.outerHTML, mode === 'top' ? '.cb-top > li' : '.cb-bars > li', innerHeight < 500 ? 3 : 8);
-        part.html = '<nav class="planet-panel-tabs"><button type="button" class="btn ' + (mode === 'top' ? 'primary' : 'ghost') + '" data-map-rank="top">船员排行</button><button type="button" class="btn ' + (mode === 'buckets' ? 'primary' : 'ghost') + '" data-map-rank="buckets">关卡分布</button></nav>' + part.html;
-      } else part = { html: '<p>暂无排行。</p>', pager: '' };
-    } else part = planetMapPages(wrap.children[1] ? wrap.children[1].outerHTML : '<p>暂无奖励。</p>', '.ch-mi', innerHeight < 500 ? 1 : innerHeight < 650 ? 3 : 4);
-    return { html: nav + '<div class="planet-challenge-content planet-challenge-' + tab + '">' + part.html + '</div>' + (go ? go.outerHTML : ''), pager: part.pager };
+    var helpers = source.querySelector('.ch-helpers');
+    if (helpers) {
+      var T = chalTeam(), h = T.helper, f = h && form(h.mon), trigger = document.createElement('button');
+      trigger.type = 'button'; trigger.className = 'planet-helper-trigger'; trigger.dataset.mapHelper = '1'; trigger.setAttribute('aria-haspopup', 'dialog');
+      trigger.innerHTML = (h ? '<img src="' + f.img + '" alt=""><span><b>' + esc(f.name) + '</b><small>LV' + h.mon.lv + ' · ' + esc(h.owner) + '</small></span>' : '<span><b>未携带助战</b><small>可选择教官或好友的助战精灵</small></span>') + '<strong>' + (h ? '更换助战' : '选择助战') + ' ›</strong>';
+      helpers.replaceWith(trigger);
+    }
+    return source.innerHTML;
   }
-  function planetTaskPanelCard(card) {
-    if (!card.classList.contains('pw-card')) return planetMapPages(card.outerHTML, '.pt-step', innerHeight < 500 ? 2 : 5);
-    var source = card.cloneNode(false), title = card.querySelector('h3'), tab = PM.taskPart || 'progress';
-    var tabs = '<nav class="planet-panel-tabs">' + [['progress','进度'],['rewards','奖励'],['rank','排行'],['info','详情']].map(function (t) { return '<button type="button" class="btn ' + (tab === t[0] ? 'primary' : 'ghost') + '" data-map-taskpart="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</nav>';
-    var get = function (selector) { return [].map.call(card.querySelectorAll(selector), function (el) { return el.outerHTML; }).join(''); }, part;
-    if (tab === 'rewards') part = planetMapPages(get('.pw-ms') || '<p class="hint">暂无可领取的奖励。</p>', '.pw-ms > li', innerHeight < 500 ? 2 : innerHeight < 650 ? 3 : 4);
-    else if (tab === 'rank') part = planetMapPages(get('.pw-top') || '<p class="hint">暂无排行。</p>', '.pw-top > li', innerHeight < 500 ? 3 : innerHeight < 650 ? 5 : 8);
-    else if (tab === 'info') part = planetMapPages([].filter.call(card.children, function (el) { return el.tagName === 'P'; }).map(function (el) { return '<div class="planet-task-note">' + el.outerHTML + '</div>'; }).join(''), '.planet-task-note', innerHeight < 500 ? 1 : 2);
-    else part = { html: get('.pt-bar, .pw-big, .pw-bar, .pw-me') || get('p.hint') || '<p class="hint">正在读取任务进度。</p>', pager: '' };
-    var go = [].map.call(card.querySelectorAll('button[data-fpart]'), function (el) { var button = el.cloneNode(true); button.removeAttribute('data-golog'); return button.outerHTML; }).join('');
-    source.innerHTML = (title ? title.outerHTML : '') + tabs + part.html + go;
-    return { html: source.outerHTML, pager: part.pager };
+  function planetHelperDialog() {
+    if (!PM.helpers || PM.panel !== 'challenge' || !helperOk()) return '';
+    var T = chalTeam();
+    return '<div class="soc-dlg planet-helper-dialog"><section class="soc-box planet-panel-box" role="dialog" aria-modal="true" aria-label="选择助战精灵"><header><h2>选择助战精灵</h2><button type="button" class="btn ghost" data-map-helper-close="1">关闭</button></header><div class="planet-panel-body planet-helper-body"><div class="ch-helpers"><button type="button" class="ch-help' + (!T.helper ? ' on' : '') + '" data-chhelp="" aria-pressed="' + !T.helper + '"><span class="ch-none">不带助战</span></button>' + helperList().map(function (h) {
+      var f = form(h.mon), on = T.helper && T.helper.key === h.key;
+      return '<button type="button" class="ch-help' + (on ? ' on' : '') + '" data-chhelp="' + esc(h.key) + '" aria-pressed="' + !!on + '"><img src="' + f.img + '" alt=""><b>' + esc(f.name) + '</b><small>LV' + h.mon.lv + ' · ' + esc(h.owner) + '</small></button>';
+    }).join('') + '</div></div></section></div>';
   }
   function planetMapPanel(P) {
     if (!PM.panel) return '';
-    var kind = PM.panel, title = { story: '剧情', challenge: '关卡', task: '星球任务', map: '小地图' }[kind], part = { html: '', pager: '' };
-    if (kind === 'map') part.html = planetMiniMap(P);
-    else if (kind === 'story') {
-      var ids = P.storyIds || P.sites || [], story = storyTabs(ids).html(P.storyEmpty);
-      part = planetMapPages(story, ex.flSt === 'cg' ? '.cg-th' : '.site', ex.flSt === 'cg' ? (innerHeight < 650 ? 4 : 6) : (innerHeight < 500 ? 1 : innerHeight < 650 ? 2 : 3));
-    } else if (kind === 'challenge') part = planetChallengePanel(P);
+    var kind = PM.panel, title = { story: '剧情', challenge: '关卡', task: '星球任务', map: '小地图' }[kind], html;
+    if (kind === 'map') html = planetMiniMap(P);
+    else if (kind === 'story') html = storyTabs(P.storyIds || P.sites || []).html(P.storyEmpty);
+    else if (kind === 'challenge') html = planetChallengePanel(P);
     else {
       var source = document.createElement('div'); source.innerHTML = planetTasks(P.id);
-      var cards = source.querySelectorAll('article.pt-card, article.pw-card');
-      if (cards.length > 1) {
-        PM.task = Math.max(0, Math.min(cards.length - 1, PM.task));
-        var nav = '<nav class="planet-panel-tabs">' + [].map.call(cards, function (card, i) { var h = card.querySelector('h3'); return '<button type="button" class="btn ' + (i === PM.task ? 'primary' : 'ghost') + '" data-map-task="' + i + '">' + esc(h ? h.textContent : '任务 ' + (i + 1)) + '</button>'; }).join('') + '</nav>';
-        part = planetTaskPanelCard(cards[PM.task]); part.html = nav + part.html;
-      } else part = cards.length ? planetTaskPanelCard(cards[0]) : { html: source.innerHTML, pager: '' };
+      source.querySelectorAll('[data-golog]').forEach(function (el) { el.removeAttribute('data-golog'); });
+      html = source.innerHTML;
     }
-    return '<div class="soc-dlg planet-panel" data-map-dialog="' + kind + '"><section class="soc-box planet-panel-box planet-panel-' + kind + '" role="dialog" aria-modal="true" aria-label="' + esc(P.name + ' · ' + title) + '"><header><h2>' + esc(P.name + ' · ' + title) + '</h2><button type="button" class="btn ghost" data-map-close="1">关闭</button></header><div class="planet-panel-body">' + part.html + '</div>' + part.pager + '</section></div>';
+    return '<div class="soc-dlg planet-panel" data-map-dialog="' + kind + '"><section class="soc-box planet-panel-box planet-panel-' + kind + '" role="dialog" aria-modal="true" aria-label="' + esc(P.name + ' · ' + title) + '"' + (PM.helpers ? ' inert aria-hidden="true"' : '') + '><header><h2>' + esc(P.name + ' · ' + title) + '</h2><button type="button" class="btn ghost" data-map-close="1">关闭</button></header><div class="planet-panel-body">' + html + '</div></section>' + planetHelperDialog() + '</div>';
   }
   function planetMapRender(html) {
     var host = $('pg-explore'), old = host.querySelector('.planet-panel'), active = document.activeElement;
     var inPanel = old && old.contains(active), id = inPanel && active.id;
     var attr = inPanel && [].find.call(active.attributes, function (a) { return a.name.indexOf('data-') === 0; });
+    var kind = old && old.dataset.mapDialog, hadHelper = old && old.querySelector('.planet-helper-dialog');
+    var scroll = old ? [].map.call(old.querySelectorAll('.planet-panel-body'), function (el) { return el.scrollTop; }) : [];
     host.innerHTML = html;
     var panel = host.querySelector('.planet-panel');
     if (panel) {
-      var focus = id ? $(id) : attr ? [].find.call(panel.querySelectorAll('[' + attr.name + ']'), function (el) { return el.getAttribute(attr.name) === attr.value; }) : null;
-      if (focus && !focus.disabled) focus.focus({ preventScroll: true }); else if (!old || inPanel) panel.querySelector('[data-map-close]').focus({ preventScroll: true });
+      var scope = panel.querySelector('.planet-helper-dialog') || panel;
+      if (kind === panel.dataset.mapDialog) panel.querySelectorAll('.planet-panel-body').forEach(function (el, i) { el.scrollTop = scroll[i] || 0; });
+      var focus = id ? $(id) : attr ? [].find.call(scope.querySelectorAll('[' + attr.name + ']'), function (el) { return el.getAttribute(attr.name) === attr.value; }) : null;
+      if (hadHelper && !PM.helpers) focus = panel.querySelector('[data-map-helper]');
+      if (focus && !focus.disabled) focus.focus({ preventScroll: true });
+      else if (!old || inPanel) scope.querySelector('header button').focus({ preventScroll: true });
     } else if (old) { var trigger = host.querySelector('[data-map-panel="' + old.dataset.mapDialog + '"]'); if (trigger) trigger.focus({ preventScroll: true }); }
   }
   $('pg-explore').addEventListener('keydown', function (e) {
-    var panel = $('pg-explore').querySelector('.planet-panel'); if (!panel || !panel.contains(e.target)) return;
-    if (e.key === 'Escape') { e.stopPropagation(); PM.panel = null; renderField(); return; }
+    var panel = $('pg-explore').querySelector('.planet-helper-dialog') || $('pg-explore').querySelector('.planet-panel');
+    if (!panel || !panel.contains(e.target)) return;
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); if (PM.helpers) PM.helpers = false; else PM.panel = null; renderField(); return; }
     if (e.key !== 'Tab') return;
-    var controls = [].filter.call(panel.querySelectorAll('button,input,select,a[href]'), function (el) { return !el.disabled && el.getClientRects().length; });
+    var controls = [].filter.call(panel.querySelectorAll('button,input,select,a[href]'), function (el) { return !el.disabled && !el.closest('[inert]') && el.getClientRects().length; });
     var first = controls[0], last = controls[controls.length - 1];
     if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
     else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
@@ -7883,7 +7865,8 @@
     if (ex.mode === 'replay' && $('vn')) { vnClick(e); return; }
     if (ex.view === 'shop' && shopClick(e)) return;
     if (e.target.closest('#bsoc')) { bsocClick(e); return; }
-    if (e.target.classList.contains('planet-panel')) { PM.panel = null; renderField(); return; }
+    if (e.target.classList.contains('planet-helper-dialog')) { PM.helpers = false; renderField(); return; }
+    if (e.target.classList.contains('planet-panel')) { PM.panel = null; PM.helpers = false; renderField(); return; }
     var b = e.target.closest('button, .dept.open'); if (!b) return;
     if (b.dataset.shipareas) {
       if (document.querySelector('.ship-areas-dialog')) return;
@@ -7891,18 +7874,17 @@
       panel.innerHTML = '<div class="soc-box ship-areas-box" role="dialog" aria-modal="true" aria-label="舰内区域"><div class="ship-areas-list">' + shipTiles() + '</div><div class="soc-foot"><button type="button" class="btn primary" data-shipareasclose="1">关闭</button></div></div>';
       $('pg-explore').appendChild(panel); panel.querySelector('[data-shipareasclose]').focus(); return;
     }
-    if (b.dataset.mapPanel) { PM.panel = b.dataset.mapPanel; PM.page = 0; PM.mini = ex.region; renderField(); return; }
-    if (b.dataset.mapClose || e.target.classList.contains('planet-panel')) { PM.panel = null; renderField(); return; }
-    if (b.dataset.mapExit) { PM.panel = null; ex.view = 'planets'; renderExplore(); return; }
-    if (b.dataset.mapRegion) { PM.mini = b.dataset.mapRegion; renderField(); return; }
+    if (b.dataset.mapPanel) { PM.panel = b.dataset.mapPanel; PM.helpers = false; renderField(); return; }
+    if (b.dataset.mapClose) { PM.panel = null; PM.helpers = false; renderField(); return; }
+    if (b.dataset.mapHelper) { PM.helpers = true; renderField(); return; }
+    if (b.dataset.mapHelperClose) { PM.helpers = false; renderField(); return; }
+    if (b.dataset.mapExit) { PM.panel = null; PM.helpers = false; ex.view = 'planets'; renderExplore(); return; }
     if (b.dataset.mapRid && !b.disabled) { var MR = regionById(b.dataset.mapRid); if (MR && MR.planet === ex.planet && planetMapCan(MR)) enterField(MR.id, +b.dataset.mapScene); return; }
-    if (b.dataset.mapPage) { PM.page += +b.dataset.mapPage; renderField(); return; }
-    if (b.dataset.mapCtab) { PM.chal = b.dataset.mapCtab; PM.page = 0; renderField(); return; }
-    if (b.dataset.mapTask != null) { PM.task = +b.dataset.mapTask; PM.taskPart = 'progress'; PM.page = 0; renderField(); return; }
-    if (b.dataset.mapTaskpart) { PM.taskPart = b.dataset.mapTaskpart; PM.page = 0; renderField(); return; }
-    if (b.dataset.mapRank) { PM.rankMode = b.dataset.mapRank; PM.page = 0; renderField(); return; }
-    if (PM.panel === 'challenge' && b.dataset.chal != null) { PM.chal = 'detail'; PM.page = 0; }
-    if (chalClick(b)) return;
+    if (b.dataset.chhelp !== undefined && PM.helpers) PM.helpers = false;
+    if (chalClick(b)) {
+      if (PM.panel === 'challenge' && b.dataset.chal != null) { var detail = $('pg-explore').querySelector('.planet-panel .ch-detail'); if (detail) detail.scrollIntoView({ block: 'start' }); }
+      return;
+    }
     if (towerClick(b)) return;
     if (b.dataset.smq) { shipQuickGo(b.dataset.smq); return; }
     if (b.dataset.area) { teleport(b.dataset.area); return; }
@@ -8005,8 +7987,8 @@
     if (b.dataset.sdq || b.dataset.sdbuy) { if (!b.disabled) seedShopClick(b); return; }
     if (b.dataset.reap != null && b.dataset.reap !== '') { farmHarvest(+b.dataset.reap); return; }
     if (b.id === 'farm-back') { ex.view = 'area'; ex.area = '恩施'; ex.planet = 'jingchu'; renderExplore(); return; }
-    if (b.dataset.fpart) { if (ex.view === 'field') { PM.panel = b.dataset.fpart === 'catch' ? null : b.dataset.fpart; PM.page = 0; renderField(); } else { ex.fpart = b.dataset.fpart; renderExplore(); } return; }
-    if (b.dataset.flst) { ex.flSt = b.dataset.flst; PM.page = 0; renderExplore(); return; }
+    if (b.dataset.fpart) { if (ex.view === 'field') { PM.panel = b.dataset.fpart === 'catch' ? null : b.dataset.fpart; PM.helpers = false; renderField(); } else { ex.fpart = b.dataset.fpart; renderExplore(); } return; }
+    if (b.dataset.flst) { ex.flSt = b.dataset.flst; renderExplore(); var storyBody = $('pg-explore').querySelector('.planet-panel-story .planet-panel-body'); if (storyBody) storyBody.scrollTop = 0; return; }
     if (b.dataset.cgview) { openCgView(b.dataset.cgview); return; }
     if (b.dataset.field && !b.disabled) { enterField(b.dataset.field); return; }
     if (b.dataset.gather != null && b.dataset.gather !== '') { gatherAt(+b.dataset.gather); return; }
@@ -8502,11 +8484,6 @@
       if (page === 'explore' && ex.view === 'farm') farmRefresh([m.i]);
     },
     farmSteal: function (owner, i, ok, fail) { txRun('farmSteal', { owner: owner, i: i }, function (r) { renderRes(); if (ok) ok(r); }, fail); },
-    layoutPlanetPanel: function () {
-      if (page !== 'explore' || ex.view !== 'field' || !PM.panel) return;
-      var key = (innerHeight < 500 ? 'short' : innerHeight < 650 ? 'medium' : 'tall') + ':' + (innerWidth <= 640 ? 'narrow' : 'wide');
-      if (PM.layout !== key) { PM.layout = key; renderField(); }
-    },
     layoutCollection: function (kind, cols, rows) {
       if (!ready() || page !== kind) return;
       var state = collectionState(kind); if (state.cols === cols && state.rows === rows) return;

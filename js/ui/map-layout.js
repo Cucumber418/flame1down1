@@ -36,7 +36,6 @@
       }
     } else if (planet && !visitingEstate) {
       prop('--planet-scene-height', planet.querySelector('.wf-scene').clientHeight + 'px');
-      if (window.HSACC && HSACC.layoutPlanetPanel) HSACC.layoutPlanetPanel();
     } else if (ship && !visitingEstate) {
       flag('ship-paired', height < 570);
     } else if (star && !visitingEstate) {
