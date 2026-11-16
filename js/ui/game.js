@@ -763,7 +763,7 @@
       '<p style="margin:0 0 6px"><span class="lvbig">LV' + m.lv + '</span>' + tchips(s.types) + '</p>' +
       '<p class="hint">' + stageLabel(s, f.stage) + (!isFin(s, f.stage) ? ' · 最终进化为' + (s.placeholder || s.tbdForms ? '？' : s.name) : '') +
       (ts.length ? ' · ' + ts.map(function (x) { return tName(x.t) + (x.lead ? '首发' : ''); }).join('、') : ' · 未加入配队') + '</p>' +
-      '<div class="mon-naming">' + (m.nickname ? '<p class="hint">种族：' + esc(f.speciesName) + '</p>' : '') + '<button type="button" class="btn ghost" data-monrename="1"' + (!m.renameUnlocked && !(acc.items.nameTag > 0) ? ' disabled' : '') + '>' + (m.renameUnlocked ? '改名（永久免费）' : '使用命名牌解锁改名（消耗 1 张）') + '</button>' + (!m.renameUnlocked ? '<p class="hint">命名牌：冶炼坊 5 圣晶石合成，或商城 20000 能量购买。</p>' : '') + '</div>' +
+      (m.nickname ? '<p class="hint">种族：' + esc(f.speciesName) + '</p>' : '') +
       (f.d ? '<p class="formdesc">' + esc(f.d) + '</p>' : '') + evoLine(m) + formSwitchHTML(m) + (s.placeholder ? '<p class="placeholder-note" style="margin-top:6px">数值和技能还是占位，二阶和最终形态还没画出来</p>' : s.tbdForms ? '<p class="placeholder-note" style="margin-top:6px">二阶和最终形态还没画出来</p>' : '') + '</div></div>' +
       mdFold('exp', '经验', '', expBox(m)) + mdFold('stats', '能力', '性格 · ' + m.nat, stats) +
       mdFold('trait', '特性', esc(s.ability.n), '<div class="trait"><p><b>特性 · ' + esc(s.ability.n) + '</b>　<span class="blue">' + esc(s.ability.d) + '</span></p>' + (s.ability.extra ? '<p class="blue" style="font-size:13px">' + esc(s.ability.extra) + '</p>' : '') +
@@ -807,7 +807,6 @@
     if (b.dataset.abig) { var q = b.dataset.abig.split('|'); H.big(q[0], +q[1]); return; }
     if (b.dataset.monrename) {
       if (m.renameUnlocked) monRename(m);
-      else applyMonItem('nameTag', m, null, function (r) { toast(r.msg); if (r.ok) { renderTop(); monRename(mon(m.u)); } });
       return;
     }
     if (b.dataset.insslot) { insPick(m, +b.dataset.insslot); return; }
@@ -961,7 +960,7 @@
     evReset: ['把学习力退回去的胶囊。', '用在一只精灵身上，已经分配的学习力全部退回「可分配学习力」，可以重新分配。', '竞技代币商店（80 竞技代币）；先驱之塔的代币商店（200 先驱代币）。'],
     fruit1: ['一颗饱满的果子。', '用在一只精灵身上，直接增加经验（每颗 = 精灵等级 × 100）。到了等级上限就不能用。', '竞技代币商店（30 竞技代币）。'],
     fruit2: ['长得特别快的果子。', '用在一只精灵身上，直接增加经验（每颗 = 精灵等级 × 250）。到了等级上限就不能用。', '竞技代币商店（60 竞技代币）；先驱之塔的代币商店（60 先驱代币）；明明代币抽奖。'],
-    nameTag: ['给精灵使用的命名牌。', '消耗 1 张，对选中的个体永久解锁无限次免费改名；在精灵资料中改名，留空可恢复默认名。', '黄石 · 冶炼坊用圣晶石 ×5 合成；荆门 · 商城用 20000 能量购买。'],
+    nameTag: ['给精灵使用的命名牌。', '消耗 1 张，对选中的个体永久解锁无限次免费改名；在精灵资料的「道具使用」中改名，留空可恢复默认名。', '黄石 · 冶炼坊用圣晶石 ×5 合成；荆门 · 商城用 20000 能量购买。'],
     formDev: ['用圣晶石和星砂做成的小装置。', '用在一只精灵身上，永久解锁一个它长到过的更小形态的外观；之后在精灵资料的「外观形态」里随时免费切换。只改外观。', '黄石 · 冶炼坊用圣晶石 ×6、星砂 ×300 合成。'],
     earthShard: ['出发前从地球上带来的元素结晶，带着家乡的气息。', '每 100 个让三只初始精灵（叶粒之果、水臂领主、涅槃方头一系）领悟一个还没领悟的隐藏技能；它们到 LV70 后，也用它解锁 LV75（500 个）、LV80（1,000 个）的等级上限。', '读完黄冈 · 学院部的支线「隐藏技能」得 1,000 个。'],
     moonStone: ['一块映着新月微光的石头。', '每 100 个让小月亮一系领悟一个隐藏技能；到 LV70 后也用它解锁更高的等级上限。', '竞技代币商店（2 竞技代币）。'],
@@ -1063,12 +1062,12 @@
     });
   }
   function monItemsHTML(m) {
-    var ks = MON_ORDER.concat(['m_lcleaf']).filter(function (k) { return acc.items[k] > 0 && itemFits(k, m); });
+    var ks = MON_ORDER.concat(['m_lcleaf']).filter(function (k) { return (acc.items[k] > 0 || (k === 'nameTag' && m.renameUnlocked)) && itemFits(k, m); });
     if (!ks.length) return '';
     return '<div class="md-items"><h4>精灵道具 <span class="hint">直接用在' + esc(form(m).name) + '身上</span></h4>' + ks.map(function (k) {
       var it = USE_ITEMS[k], act;
       if (it.kind === 'jade') { var jl = jadeMoves(m), jok = jl.length && acc.items[k] >= it.cost; act = jl.length ? '<select data-mnat="1" aria-label="要领悟的隐藏技能">' + jl.map(function (n) { return '<option value="' + n + '">' + n + '</option>'; }).join('') + '</select><button type="button" class="btn" data-muse="' + k + '"' + (jok ? '' : ' disabled title="需要 ' + it.cost + ' 个"') + '>' + (jok ? '用 ' + it.cost + ' 个领悟' : '需要 ' + it.cost + ' 个') + '</button>' : '<button type="button" class="btn" disabled>隐藏技能已全部领悟</button>'; }
-      else if (it.kind === 'nameTag') act = '<button type="button" class="btn" data-muse="' + k + '"' + (m.renameUnlocked ? ' disabled' : '') + '>' + (m.renameUnlocked ? '已解锁免费改名' : '使用 · 永久解锁改名') + '</button>';
+      else if (it.kind === 'nameTag') act = m.renameUnlocked ? '<button type="button" class="btn" data-monrename="1">改名（永久免费）</button>' : '<button type="button" class="btn" data-muse="' + k + '">使用 · 永久解锁改名</button>';
       else if (it.kind === 'form') { var fo = formOpts(m); act = fo.length ? '<select data-mnat="1" aria-label="要解锁的形态">' + fo.map(function (x) { return '<option value="' + x.i + '">' + esc(x.n) + '</option>'; }).join('') + '</select><button type="button" class="btn" data-muse="' + k + '">解锁</button>' : '<button type="button" class="btn" disabled>没有可以解锁的形态</button>'; }
       else if (it.kind === 'nat') act = '<select data-mnat="1" aria-label="新的性格">' + NAT_KEYS.filter(function (n) { return n !== m.nat; }).map(function (n) { return '<option value="' + n + '">' + n + '（' + natText(n) + '）</option>'; }).join('') + '</select><button type="button" class="btn" data-muse="' + k + '">改性格</button>';
       else if (it.kind === 'iv' || it.kind === 'iv2') act = '<button type="button" class="btn" data-muse="' + k + '">使用 · 重组天赋</button>';
@@ -1076,7 +1075,7 @@
       else if (it.kind === 'exp') act = '<button type="button" class="btn" data-muse="' + k + '"' + (atCap(m) ? ' disabled' : '') + '>' + (atCap(m) ? '已到等级上限' : '使用 · +' + fmt(m.lv * it.rate) + ' 经验') + '</button>';
       else if (it.kind === 'evreset') act = '<button type="button" class="btn" data-muse="' + k + '"' + (evSum(m) ? '' : ' disabled') + '>' + (evSum(m) ? '使用 · 退回 ' + evSum(m) + ' 点' : '没有分配过学习力') + '</button>';
       else { var room = evRoom(m); act = '<button type="button" class="btn" data-muse="' + k + '"' + (room ? '' : ' disabled title="学习力已经到上限了"') + '>' + (room ? '使用 · +' + Math.min(100, room) + ' 学习力' : '学习力已满') + '</button>'; }
-      return '<div class="md-it"><b>' + it.name + ' <span class="cnt">×' + acc.items[k] + '</span></b><span class="hint">' + esc(it.kind === 'nameTag' ? '永久解锁这个个体的无限次免费改名' : it.kind === 'jade' ? '每 ' + it.cost + ' 个领悟一个隐藏技能' : it.kind === 'form' ? '每个给这只精灵永久解锁一个形态' : it.kind === 'nat' ? '把性格改成你选的性格' : it.kind === 'natRand' ? '性格随机换成另一种' : it.kind === 'iv' ? '六项天赋全部重新随机' : it.kind === 'iv2' ? '六项天赋重新随机，每项掷两次取高' : it.kind === 'exp' ? '直接给这只精灵增加经验' : it.kind === 'evreset' ? '已分配的学习力全部退回' : '直接增加 100 点可分配学习力') + '</span><span class="md-act">' + act + '</span></div>';
+      return '<div class="md-it"><b>' + it.name + ' <span class="cnt">' + (k === 'nameTag' && m.renameUnlocked ? '已解锁' : '×' + acc.items[k]) + '</span></b><span class="hint">' + esc(it.kind === 'nameTag' ? '永久解锁这个个体的无限次免费改名' : it.kind === 'jade' ? '每 ' + it.cost + ' 个领悟一个隐藏技能' : it.kind === 'form' ? '每个给这只精灵永久解锁一个形态' : it.kind === 'nat' ? '把性格改成你选的性格' : it.kind === 'natRand' ? '性格随机换成另一种' : it.kind === 'iv' ? '六项天赋全部重新随机' : it.kind === 'iv2' ? '六项天赋重新随机，每项掷两次取高' : it.kind === 'exp' ? '直接给这只精灵增加经验' : it.kind === 'evreset' ? '已分配的学习力全部退回' : '直接增加 100 点可分配学习力') + '</span><span class="md-act">' + act + '</span></div>';
     }).join('') + '</div>';
   }
   function growText(min) { return min >= 60 && min % 60 === 0 ? (min / 60) + ' 小时' : min + ' 分钟'; }
@@ -1134,7 +1133,7 @@
           var f = form(m), sub = it.kind === 'nameTag' ? (m.renameUnlocked ? '已解锁免费改名' : '使用后永久免费改名') : it.kind === 'jade' ? (jadeMoves(m).length ? '还有 ' + jadeMoves(m).length + ' 个隐藏技能可领悟' : '隐藏技能已全部领悟') : it.kind === 'form' ? (formOpts(m).length ? '还能解锁 ' + formOpts(m).length + ' 个形态' : '没有可以解锁的形态') : it.kind === 'nat' ? '性格 ' + m.nat : it.kind === 'exp' ? (atCap(m) ? '已到等级上限' : '可得 ' + fmt(m.lv * it.rate) + ' 经验') : it.kind === 'evreset' ? '已分配 ' + evSum(m) + ' 点' : it.kind === 'iv' || it.kind === 'iv2' ? '天赋合计 ' + (ivOf(m) ? STAT_KEYS.reduce(function (a, x) { return a + m.iv[x]; }, 0) : '？') : '可再加 ' + evRoom(m) + ' 点';
           return '<label class="it-mon' + (m.u === ui.itTarget ? ' on' : '') + '"><input type="radio" name="it-t" value="' + m.u + '"' + (m.u === ui.itTarget ? ' checked' : '') + '><img src="' + f.img + '" alt=""><span><b>' + esc(f.name) + '</b><small>LV' + m.lv + ' · ' + sub + '</small></span></label>';
         }).join('') + '</div></div>' +
-          (it.kind === 'nameTag' ? '<p class="hint">消耗 1 张命名牌，只为选中的这个个体永久解锁免费改名。解锁后在精灵资料中点击「改名」。</p>' : it.kind === 'jade' ? (tm && jadeMoves(tm).length ? '<div class="it-step"><b>2. 选择隐藏技能</b><select id="it-nat" aria-label="要领悟的隐藏技能">' + jadeMoves(tm).map(function (n) { return '<option value="' + n + '">' + n + '（' + esc(LEARN[n] ? '原本要' + LEARN[n] : '原本 LV50 习得') + '）</option>'; }).join('') + '</select></div>' : '') + '<p class="hint">一次消耗 ' + it.cost + ' 个，你现在有 ' + acc.items[k] + ' 个。</p>'
+          (it.kind === 'nameTag' ? '<p class="hint">消耗 1 张命名牌，只为选中的这个个体永久解锁免费改名。解锁后在精灵资料的「道具使用」中点击「改名」。</p>' : it.kind === 'jade' ? (tm && jadeMoves(tm).length ? '<div class="it-step"><b>2. 选择隐藏技能</b><select id="it-nat" aria-label="要领悟的隐藏技能">' + jadeMoves(tm).map(function (n) { return '<option value="' + n + '">' + n + '（' + esc(LEARN[n] ? '原本要' + LEARN[n] : '原本 LV50 习得') + '）</option>'; }).join('') + '</select></div>' : '') + '<p class="hint">一次消耗 ' + it.cost + ' 个，你现在有 ' + acc.items[k] + ' 个。</p>'
             : it.kind === 'form' ? (tm && formOpts(tm).length ? '<div class="it-step"><b>2. 选择要解锁的形态</b><select id="it-nat" aria-label="要解锁的形态">' + formOpts(tm).map(function (x) { return '<option value="' + x.i + '">' + esc(x.n) + '</option>'; }).join('') + '</select></div>' : '') + '<p class="hint">给这只精灵永久解锁一个形态，之后在精灵资料里随时免费切换。只改外观，数值和技能都不变。</p>'
             : it.kind === 'nat' ? '<div class="it-step"><b>2. 选择性格</b><select id="it-nat" aria-label="新的性格">' + NAT_KEYS.map(function (n) { var cur = tm && tm.nat === n, pick = ui.itNat && (!tm || ui.itNat !== tm.nat) ? ui.itNat : NAT_KEYS.filter(function (x) { return !tm || x !== tm.nat; })[0]; return '<option value="' + n + '"' + (pick === n ? ' selected' : '') + (cur ? ' disabled' : '') + '>' + n + '（' + natText(n) + '）' + (cur ? ' · 当前' : '') + '</option>'; }).join('') + '</select></div>'
             : it.kind === 'iv' || it.kind === 'iv2' ? '<p class="hint">' + (tm && ivOf(tm) ? esc(form(tm).name) + ' 现在的天赋：' + STAT_KEYS.map(function (x) { return BASE_NAME[x] + ' ' + tm.iv[x]; }).join('，') + '。' : '') + '</p>'
