@@ -406,3 +406,9 @@ body.battle-touch .bag-skill { touch-action: manipulation; }
   #who .mail-btn .dot-badge { min-width: 7px; width: 7px; height: 7px; padding: 0; top: 0; right: 0; }
   #fullscreen-btn, [data-fullscreen] { display: none !important; }
 }
+
+/* 命名牌解锁后，名字旁的小羽毛是改名入口。 */
+.mon-rename-feather { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; margin-left: 4px; padding: 5px; vertical-align: middle; color: var(--ink, #23222b); background: transparent; border: 0; border-radius: 5px; cursor: pointer; }
+.mon-rename-feather svg { width: 17px; height: 17px; flex-shrink: 0; }
+.mon-rename-feather:hover { background: #23222b0d; }
+.mon-rename-feather:focus-visible { outline: 2px solid currentColor; outline-offset: 1px; }

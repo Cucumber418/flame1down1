@@ -8,7 +8,7 @@ var GROW = (function () {
   'use strict';
   var EV_TOTAL0 = EV_TOTAL;
   var USE_ITEMS = {
-    nameTag: { name: '命名牌', sid: null, kind: 'nameTag', sd: '给一只精灵永久解锁无限次免费改名。', d: '对一只精灵使用后消耗 1 张命名牌，永久解锁这个个体的改名功能。之后在精灵资料的「道具使用」中可以无限次免费改名。冶炼坊用 5 个圣晶石合成，或在商城用 20000 能量购买。' },
+    nameTag: { name: '命名牌', sid: null, kind: 'nameTag', sd: '给一只精灵永久解锁无限次免费改名。', d: '对一只精灵使用后消耗 1 张命名牌，永久解锁这个个体的改名功能。之后在基础信息中点击名字旁的小羽毛，可以无限次免费改名。冶炼坊用 5 个圣晶石合成，或在商城用 20000 能量购买。' },
     ivReroll: { name: '天赋重组合剂', sid: null, kind: 'iv', d: '把你的任意一只精灵的六项天赋（0~31）全部重新随机。新的天赋可能更高，也可能更低。' },
     natTagore: { name: '泰戈尔性格药剂', sid: 'tagore', kind: 'nat', d: '把你的一只泰戈尔（小胖虎、胖虎也可以）的性格改成你指定的性格。' },
     ev50: { name: '50学习力合剂', sid: null, kind: 'ev', amt: 50, d: '为你的任意一只精灵直接增加 50 点学习力。加进「可分配学习力」，再在精灵资料里自己分配；学习力总量最多 ' + EV_TOTAL0 + '。' },   // 2026-10-27：通用学习力合剂拆成 50、100 两种
@@ -74,7 +74,7 @@ var GROW = (function () {
     if (it.kind === 'nameTag') {
       if (m.renameUnlocked) return no('这只精灵已经解锁免费改名，无需再使用命名牌。');
       m.renameUnlocked = true; I[k]--;
-      return { ok: true, msg: name + ' 已永久解锁免费改名，请在精灵资料的「道具使用」中点击「改名」。' };
+      return { ok: true, msg: name + ' 已永久解锁免费改名，请在基础信息中点击名字旁的小羽毛改名。' };
     }
     if (it.kind === 'jade') {
       if (I[k] < it.cost) return no(it.name + '不够：需要 ' + it.cost + ' 个，你现在有 ' + I[k] + ' 个。');
