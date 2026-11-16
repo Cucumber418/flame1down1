@@ -2,7 +2,7 @@
 body.scene-page-active { overflow: hidden; }
 body.scene-page-active .sheet { height: var(--scene-full-height, 100dvh); min-height: 0; overflow: hidden; padding-block: 8px; }
 body.scene-page-active #pg-explore, body.scene-page-active #pg-items { height: var(--scene-view-height); min-height: 0; }
-body.farm-page-active #pg-social { height: var(--scene-view-height); min-height: 0; }
+body.scene-page-active #pg-social { height: var(--scene-view-height); min-height: 0; }
 .star-map-page { height: 100%; min-height: 0; display: flex; flex-direction: column; gap: 8px; padding: 0 4px 4px 0; }
 .star-map-page .mayar { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
 .star-map-page .mayar h3 { flex: 0 0 auto; font-size: 26px; line-height: 1.15; padding: 8px 12px; }
@@ -123,3 +123,10 @@ body.ship-paired .ship-map-page .sm-wrap { right: 132px; }
   .ship-map-page .sm-q b { font-size: 11px; }
   .ship-map-page .sm-q span { font-size: 18px; }
 }
+
+.visit-challenge-btn { left: 50%; right: auto; transform: translateX(-50%); }
+.visit-challenge-btn:hover { transform: translate(-50%, -1px); }
+.visit-info-box { display: flex; flex-direction: column; min-height: 0; overflow: hidden !important; }
+.visit-info-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.visit-info-body .hboard { grid-template-columns: minmax(0, 1fr); margin: 0; }
+.visit-info-box > .soc-foot { flex: 0 0 auto; }

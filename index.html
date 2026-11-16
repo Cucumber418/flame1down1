@@ -8,10 +8,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- 手写字体来自 Google Fonts，国内经常连不上；用 media=print 技巧异步加载，连不上也不会卡住页面，会自动用楷体代替 -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Long+Cang&display=swap" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="css/style.css?v=20261115-6">
+<link rel="stylesheet" href="css/style.css?v=20261116-2">
 <link rel="stylesheet" href="css/battle-layout.css?v=20261115-5">
-<link rel="stylesheet" href="css/bag-layout.css?v=20261115-6">
-<link rel="stylesheet" href="css/map-layout.css?v=20261116-1">
+<link rel="stylesheet" href="css/bag-layout.css?v=20261116-2">
+<link rel="stylesheet" href="css/map-layout.css?v=20261116-2">
 <link rel="stylesheet" href="css/storage-layout.css?v=20261115-8">
 <link rel="stylesheet" href="css/estate-view.css?v=20261116-1">
 </head>
@@ -38,13 +38,12 @@
       </div>
     </div>
     <nav class="mainnav" id="mainnav" role="tablist" aria-label="主菜单">
-      <button type="button" class="nav holo on" data-page="holo" role="tab" aria-selected="true"><span class="nav-icon" aria-hidden="true">⚔️</span><span class="nav-label">全息作战</span></button>
-      <button type="button" class="nav" data-page="log" role="tab" aria-selected="false"><span class="nav-icon" aria-hidden="true">📒</span><span class="nav-label">航行日志</span></button>
-      <button type="button" class="nav" data-page="bag" role="tab" aria-selected="false"><span class="nav-icon" aria-hidden="true">🐾</span><span class="nav-label">精灵一览</span></button>
-      <button type="button" class="nav" data-page="ship" role="tab" aria-selected="false"><span class="nav-icon" aria-hidden="true">🚀</span><span class="nav-label">飞船终端</span></button>
-      <button type="button" class="nav" data-page="explore" role="tab" aria-selected="false"><span class="nav-icon" aria-hidden="true">🪐</span><span class="nav-label">星际探索</span></button>
-      <button type="button" class="nav" data-page="items" role="tab" aria-selected="false"><span class="nav-icon" aria-hidden="true">📦</span><span class="nav-label">储存箱</span></button>
-      <button type="button" class="nav" data-page="social" role="tab" aria-selected="false"><span class="nav-icon" aria-hidden="true">👥</span><span class="nav-label">社交</span></button>
+      <button type="button" class="nav" data-page="log" role="tab" aria-selected="false" aria-label="航行日志"><span class="nav-icon" aria-hidden="true">📒</span><span class="nav-label">航行日志</span><span class="nav-short" aria-hidden="true">日志</span></button>
+      <button type="button" class="nav" data-page="bag" role="tab" aria-selected="false" aria-label="精灵一览"><span class="nav-icon" aria-hidden="true">🐾</span><span class="nav-label">精灵一览</span><span class="nav-short" aria-hidden="true">精灵</span></button>
+      <button type="button" class="nav" data-page="ship" role="tab" aria-selected="false" aria-label="飞船终端"><span class="nav-icon" aria-hidden="true">🚀</span><span class="nav-label">飞船终端</span><span class="nav-short" aria-hidden="true">终端</span></button>
+      <button type="button" class="nav" data-page="explore" role="tab" aria-selected="false" aria-label="星际探索"><span class="nav-icon" aria-hidden="true">🪐</span><span class="nav-label">星际探索</span><span class="nav-short" aria-hidden="true">探索</span></button>
+      <button type="button" class="nav" data-page="items" role="tab" aria-selected="false" aria-label="储存箱"><span class="nav-icon" aria-hidden="true">📦</span><span class="nav-label">储存箱</span><span class="nav-short" aria-hidden="true">储存</span></button>
+      <button type="button" class="nav" data-page="social" role="tab" aria-selected="false" aria-label="社交"><span class="nav-icon" aria-hidden="true">👥</span><span class="nav-label">社交</span><span class="nav-short" aria-hidden="true">社交</span></button>
     </nav>
   </header>
   <div class="onboard-wrap" id="onboard" hidden></div>
@@ -235,13 +234,13 @@ CLOUD.boot([
   'js/engine/endless.js',
   'js/ui/audio.js',
   'js/ui/battle-ui.js?v=20261115-5',
-  'js/ui/game.js?v=20261116-1',
-  'js/ui/social.js?v=20261116-1',
+  'js/ui/game.js?v=20261116-2',
+  'js/ui/social.js?v=20261116-2',
   'js/ui/board.js',
   'js/ui/display.js',
   'js/ui/battle-layout.js?v=20261115-5',
   'js/ui/bag-layout.js?v=20261115-5',
-  'js/ui/map-layout.js?v=20261116-1',
+  'js/ui/map-layout.js?v=20261116-2',
   'js/ui/estate-view.js?v=20261116-1'
 ]);
 </script>

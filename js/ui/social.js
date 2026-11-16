@@ -96,9 +96,10 @@
     if (e.target.closest('[data-fbretry]')) { st.err = ''; fbDraw(); load(); return; }
     var t = e.target.closest('[data-fbvisit],[data-ffvisit]');
     if (t && !t.disabled) {
-      var panel = t.closest('.bp-dlg'), close = panel && panel.querySelector('[data-bpx]');
+      var panel = t.closest('.bp-dlg,[data-visit-panel]'), close = panel && panel.querySelector('[data-bpx],[data-visitclose]');
+      var from = panel && panel.dataset.visitFrom || (t.dataset.ffvisit ? 'farm' : 'base'); if (from === 'social') from = null;
       if (close) close.click();
-      if (t.dataset.ffvisit) openFarm(t.dataset.ffvisit, 'farm'); else openHome(t.dataset.fbvisit, 'base');
+      if (t.dataset.ffvisit) openFarm(t.dataset.ffvisit, from); else openHome(t.dataset.fbvisit, from);
     }
   });
   // 能不能观战：对方正在对战，并且是自己的好友（或者对方发了全服观战邀请）
@@ -257,7 +258,7 @@
     });
   }
   function homeHTML() {
-    var V0 = st.view, d = V0.data, back = '<div class="crumb"><button type="button" class="btn ghost" data-back="1">‹ ' + (V0.from === 'base' ? '返回我的基地' : '返回社交') + '</button>';
+    var V0 = st.view, d = V0.data, back = '<div class="crumb home-crumb"><button type="button" class="btn ghost" data-back="1">‹ ' + (V0.from === 'base' ? '返回我的基地' : V0.from === 'farm' ? '返回我的种植园' : '返回社交') + '</button>';
     if (!d) return back + '</div><p class="hint soc-load">' + (V0.err ? esc(V0.err) : '正在前往基地……') + '</p>';
     if (d.noChar) return back + '</div><div class="soc-empty"><p>@' + esc(d.user) + ' 还没有创建游戏角色。</p></div>';
     if (!d.open) return back + '<b class="home-name">' + esc(d.name) + ' 的休息舱</b></div><div class="soc-empty"><p>' + esc(d.name) + ' 还没有读完「陆羽茶室」支线，基地还没开放。</p></div>';
@@ -265,19 +266,27 @@
       var v = A.view({ sid: m.sid, lv: m.lv, shiny: m.shiny, fs: m.fs }), p = A.baseMonPos ? A.baseMonPos(d.layout && d.layout.room, i) : (pos[i] || pos[0]);
       return '<div class="hm-fig' + (d.mons.length > 3 ? ' many' : '') + '" data-csid="' + esc(m.sid) + '" data-cst="' + (v.stage || 0) + '" data-cctx="home" data-fi="' + i + '" style="left:' + p[0] + '%;top:' + p[1] + '%' + (A.baseFigW ? ';--fw:' + A.baseFigW(m.sid, v.stage, d.layout && d.layout.room, p[1]) : '') + '">' + stealBub(d, i, v) + '<button type="button" class="hm-poke" data-vmon="' + i + '" aria-label="' + esc(v.name) + '"><img src="' + v.img + '" alt=""></button><span class="hm-tip">' + esc(v.name) + ' · LV' + m.lv + '</span></div>';
     }).join('');
-    var left = A.teaLeft(), mine = (A.acc().teams[A.acc().active] || []).map(A.mon).filter(Boolean);
-    return back + '<b class="home-name">' + esc(d.homeName) + '</b><span class="hint">' + esc(d.name) + ' 的基地' + (d.online ? ' · 主人在线' : '') + ' · 基地音乐「' + (window.HSTRACK ? HSTRACK(d.bgm || 'base') : (d.bgm || 'base')) + '」</span></div>' +
-      (A.baseRoom ? A.baseRoom(d.layout, figs + (d.mons.length ? '' : '<p class="home-empty">基地里空荡荡的，主人还没有放精灵出来展示。</p>') +
-        '<button type="button" class="scene-go" data-visitfarm="' + esc(d.user) + '"' + ((d.friend || d.me) && d.farmOpen ? '' : ' disabled title="对方种植园尚未开放，或尚未加为好友"') + '><span class="sg-ic" aria-hidden="true">🌱</span>前往种植园</button>') :   // 2026-10-31：基地改成基地，显示主人的房型和摆件
-      '<div class="home-room"><img class="home-bg" src="' + BG.tea_p + '" alt="' + esc(d.homeName) + '">' + figs + '</div>') +
-      (d.me ? '<p class="hint" style="margin-top:8px">这是你自己的基地。</p>' :
-      '<div class="tea-bar"><span class="tape l"></span><div class="tea-txt"><b>挑战基地</b>' +
-      '<p class="hint">用你的出战配队（' + Math.min(5, mine.length) + ' 只）挑战基地里正在训练的 ' + d.mons.length + ' 只精灵，对手由电脑操控，用的是它们的真实等级和技能。' +
-      '每天前 ' + A.TEA_DAILY + ' 场基地对战各奖励 ' + A.fmt(A.TEA_EXP) + ' 累积经验（进经验背包），赢输都算，认输不算，0 点刷新。</p>' +
-      '<p class="tea-left">今天还能领奖 <b>' + left + '</b> / ' + A.TEA_DAILY + ' 次</p>' +
-      (d.friend ? '<p class="hint">好友基地里训练满 1 小时的精灵头上会冒出经验气泡，点一下可以偷走它现存经验的 10%（每只每轮偷一次，最多被偷走一半）。今天还能偷 <b data-stealleft="1">' + A.fmt(d.stealLeft || 0) + '</b> / ' + A.fmt(d.stealDay || 30000) + ' 经验。</p>' : '') + '</div>' +
-      '<button type="button" class="btn primary" data-teafight="1"' + (d.mons.length && mine.length ? '' : ' disabled') + '>' + (d.mons.length ? '挑战基地' : '没有可挑战的精灵') + '</button></div>') +
-      hbSlot(d.user);
+    var mine = (A.acc().teams[A.acc().active] || []).map(A.mon).filter(Boolean);
+    var room = d.layout && /^r[1-4]$/.test(d.layout.room) ? d.layout.room : 'r1';
+    return '<div class="home-page visit-home-page">' + back + '<b class="home-name">' + esc(d.homeName) + '</b></div>' +
+      '<div class="base-stage" style="--home-backdrop:url(' + new URL('images/base/room' + room.slice(1) + '.jpg', document.baseURI).href + ')">' +
+      A.baseRoom(d.layout, figs + (d.mons.length ? '' : '<p class="home-empty">主人还没有放精灵出来展示。</p>')) +
+      '<div class="base-side"><div class="bs-list"><button type="button" class="bs-it" data-vhomepanel="msg" title="留言板"><span class="bs-ic" aria-hidden="true">💬</span><span class="bs-t"><b>留言板</b></span></button><button type="button" class="bs-it" data-vhomepanel="info" title="基地信息"><span class="bs-ic" aria-hidden="true">ⓘ</span><span class="bs-t"><b>基地信息</b></span></button></div></div>' +
+      '<button type="button" class="scene-go" data-visitfarm="' + esc(d.user) + '"' + ((d.friend || d.me) && d.farmOpen ? '' : ' disabled title="对方种植园尚未开放，或尚未加为好友"') + '><span class="sg-ic" aria-hidden="true">🌱</span>前往种植园</button>' +
+      (!d.me ? '<button type="button" class="scene-go visit-challenge-btn" data-teafight="1" title="' + (d.mons.length ? mine.length ? '用出战配队挑战好友展示中的精灵' : '请先配置出战精灵' : '对方没有展示精灵') + '"' + (d.mons.length && mine.length ? '' : ' disabled') + '><span class="sg-ic" aria-hidden="true">⚔</span>挑战好友</button>' : '') +
+      '<button type="button" class="scene-go home-friends-btn" data-vfriends="home" aria-haspopup="dialog"><span class="sg-ic" aria-hidden="true">👥</span>好友基地</button></div></div>';
+  }
+  function homeInfoHTML(d) {
+    return '<p>' + esc(d.name) + ' 的基地' + (d.online ? ' · 主人在线' : '') + '</p><p>用你的出战配队挑战这里展示的 ' + d.mons.length + ' 只精灵，由电脑操控对手。每天前 ' + A.TEA_DAILY + ' 场各奖励 ' + A.fmt(A.TEA_EXP) + ' 累积经验，赢输都算，认输不算。</p><p>今天还能领取 ' + A.teaLeft() + ' / ' + A.TEA_DAILY + ' 次奖励。</p>' +
+      (d.friend ? '<p>好友基地里训练满 1 小时的精灵可偷取现存经验的 10%，每只每轮一次，最多被偷走一半。今天还能偷 ' + A.fmt(d.stealLeft || 0) + ' / ' + A.fmt(d.stealDay || 30000) + ' 经验。</p>' : '');
+  }
+  function visitPanel(kind) {
+    var v = st.view, d = v && v.data; if (!d) return;
+    var friends = kind === 'home' || kind === 'farm';
+    var title = kind === 'farm' ? '好友种植园' : kind === 'home' ? '好友基地' : kind === 'msg' ? '留言板' : '基地信息';
+    var body = friends ? friendBases(kind === 'farm' ? 'farm' : undefined) : '<div class="visit-info-body">' + (kind === 'msg' ? hbSlot(d.user, 'msg') : homeInfoHTML(d)) + '</div>';
+    var panel = dialog('bp-box' + (friends ? ' wide bp-friends' : ' visit-info-box'), '<h2>' + title + '</h2>' + body + '<div class="soc-foot"><button type="button" class="btn primary" data-visitclose="1">关闭</button></div>', function (el, close) { el.addEventListener('click', function (e) { if (e.target.closest('[data-visitclose]')) close(); }); });
+    panel.el.dataset.visitPanel = '1'; panel.el.dataset.visitFrom = v.from || 'social';
   }
 
   function farmHTML() {
@@ -288,7 +297,7 @@
     return '<div class="home-page farm-page visit-farm-page">' + back + '<b class="home-name">' + esc(d.name) + '的种植园</b></div>' +
       '<div class="base-stage" style="--home-backdrop:url(' + new URL('images/base/farm.jpg', document.baseURI).href + ')">' + A.farmVisitorRoom(d) +
       '<div class="base-side"><div class="bs-list"><button type="button" class="bs-it" data-vfarmrefresh="1" title="刷新种植园"><span class="bs-ic" aria-hidden="true">↻</span><span class="bs-t"><b>刷新</b></span></button><button type="button" class="bs-it" data-vfarmrules="1" title="偷菜规则"><span class="bs-ic" aria-hidden="true">ⓘ</span><span class="bs-t"><b>偷菜规则</b><small>今天还能偷 ' + A.fmt(d.stealLeft) + ' 份</small></span></button></div></div>' +
-      '<button type="button" class="scene-go" data-visithome="' + esc(d.user) + '"' + (d.homeOpen ? '' : ' disabled title="对方基地还没有开放"') + '><span class="sg-ic" aria-hidden="true">🏠</span>前往基地</button></div></div>';
+      '<button type="button" class="scene-go" data-visithome="' + esc(d.user) + '"' + (d.homeOpen ? '' : ' disabled title="对方基地还没有开放"') + '><span class="sg-ic" aria-hidden="true">🏠</span>前往基地</button><button type="button" class="scene-go home-friends-btn" data-vfriends="farm" aria-haspopup="dialog"><span class="sg-ic" aria-hidden="true">👥</span>切换好友</button></div></div>';
   }
   function refreshFarm(quiet) {
     var v = st.view; if (!v || v.kind !== 'farm' || v.farmLoading) return;
@@ -366,7 +375,7 @@
     }
     var P = st.players || [], friends = P.filter(function (p) { return p.friend; }), on = P.filter(function (p) { return p.online; }).length;
     var focus = document.activeElement && document.activeElement.id === 'me-motto' ? $('me-motto').selectionStart : null;
-    if (st.view) { pg.innerHTML = st.view.kind === 'farm' ? farmHTML() : '<div class="soc-head"><h2 class="sec">拜访基地</h2></div>' + homeHTML(); return; }
+    if (st.view) { pg.innerHTML = st.view.kind === 'farm' ? farmHTML() : homeHTML(); return; }
     var body;
     if (st.tab === 'mine') body = mineHTML();
     else if (st.tab === 'dm') body = dmListHTML();
@@ -395,6 +404,8 @@
       if ((t = e.target.closest('[data-back]'))) { var from = st.view && st.view.from; st.view = null; if (from === 'base') { A.goHome(); return; } if (from === 'farm') { A.goFarm(); return; } render(); load(); return; }
       if ((t = e.target.closest('[data-visitfarm]'))) { if (!t.disabled) { if (st.view && st.view.data && st.view.data.me) { st.view = null; A.goFarm(); } else openFarm(t.dataset.visitfarm, st.view && st.view.from); } return; }
       if ((t = e.target.closest('[data-visithome]'))) { if (!t.disabled) { if (st.view && st.view.data && st.view.data.me) { st.view = null; A.goHome(); } else openHome(t.dataset.visithome, st.view && st.view.from); } return; }
+      if ((t = e.target.closest('[data-vfriends]'))) { visitPanel(t.dataset.vfriends); return; }
+      if ((t = e.target.closest('[data-vhomepanel]'))) { visitPanel(t.dataset.vhomepanel); return; }
       if ((t = e.target.closest('[data-vfarmrefresh]'))) { refreshFarm(false); return; }
       if ((t = e.target.closest('[data-vfarmplot]'))) { if (!t.disabled) stealCrop(+t.dataset.vfarmplot, t); return; }
       if ((t = e.target.closest('[data-vfarmrules]'))) { dialog('bp-box', '<h2>偷菜规则</h2>' + A.farmRules() + '<p>今天还能偷 ' + A.fmt(st.view.data.stealLeft) + ' / ' + A.fmt(st.view.data.stealDay) + ' 份。</p><div class="soc-foot"><button type="button" class="btn primary" data-ruleclose="1">关闭</button></div>', function (d, close) { d.addEventListener('click', function (e) { if (e.target.closest('[data-ruleclose]')) close(); }); }); return; }

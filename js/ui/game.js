@@ -14,7 +14,7 @@
   var NAT_KEYS = Object.keys(NATURES), STAT_KEYS = ['hp', 'atk', 'def', 'spa', 'spd', 'spe'];
   var BASE_NAME = { hp: '体力', atk: '物攻', def: '物防', spa: '特攻', spd: '特防', spe: '速度' };
   var STAGE = ['一阶', '二阶', '最终形态'];
-  var acc = null, page = 'holo';   // 2026-10-27：第一栏改成「全息作战」（大型活动展厅），竞技对战移到太空竞技场里
+  var acc = null, page = 'log';
   // 进账申报的缓冲区（见下面的 earn）。要放在最前面：读存档时的修复代码就会用到
   var claimBuf = [], WALLET_KEYS = ['exp', 'energy', 'tokens', 'twTok', 'merit', 'meritXp'];
   var ui = { sel: null, pick: -1, ob: { step: 1, name: '', starter: null }, f: { type: '', min: 1, max: 100, sort: 'lvd' }, resetArmed: 0, welcome: false };
@@ -294,7 +294,7 @@
     if (page === 'dex' && !dexOpen()) page = 'bag';
     if (page === 'shop') page = 'explore';
     if (page === 'ship' && typeof ex !== 'undefined' && ex) { page = 'explore'; ex.view = 'sites'; ex.planet = 'jingchu'; if (ex.mode === 'replay') ex.mode = null; }   // 2026-10-28：飞船终端 = 荆楚号舰体图
-    if (page === 'holo' && typeof ex !== 'undefined' && ex && mmOpen()) { page = 'explore'; ex.view = 'mmArena'; ex.mmFrom = null; }   // 2026-10-27：全息作战 = 直接进明明教官的试炼（全息作战场地）
+    if (page === 'holo') page = 'log';   // 关闭活动主页，兼容旧的页面记忆。
     navSync();
     syncBattle();
     deliverMail(); checkRankRewards(); daily(); homeSettle();
@@ -317,16 +317,16 @@
   function renderRes() {   /* 2026-11-02：顺便刷新小红点 */
     if (typeof navDots === 'function') setTimeout(navDots, 0);
     $('res').textContent = ''; $('res').hidden = true; setTimeout(renderQBadge, 0); }
-  // 导航高亮：明明教官的试炼（全息作战场地、代币抽奖）不管从哪里进，都亮「全息作战」；竞技对战（在太空竞技场里）亮「星际探索」
+  // 导航高亮：飞船内的场景归「飞船终端」，精灵相关页面归「精灵一览」。
   // 现在是不是在荆楚号里（舰体图、区域、区域里的设施）：导航亮「飞船终端」
   var SHIP_VIEWS = { summon: 1, area: 1, shop: 1, forge: 1, nursery: 1, medal: 1, farm: 1, seedshop: 1, spa: 1, home: 1, room: 1, teashop: 1, baseshop: 1 };
   // 2026-10-31：空间站、太空竞技场、BOSS挑战、每周挑战也挂在飞船终端里
   var SHIP_SIDE = { jingchu: 1, station: 1, sarena: 1 }, SHIP_HUBS = { bosshub: 1, wkhub: 1, weekly: 1, ewk: 1 };
   function shipCtx() { if (!(page === 'explore' && typeof ex !== 'undefined' && ex && !ex.mode)) return false; var P = ex.view === 'sites' && planetOf(ex.planet); return !!(SHIP_VIEWS[ex.view] || SHIP_HUBS[ex.view] || (ex.view === 'boss' && ex.bossFrom === 'hub') || (P && (SHIP_SIDE[P.id] || P.inStation))); }
   function navSync() {
-    var holo = page === 'explore' && typeof ex !== 'undefined' && (ex.view === 'mmArena' || ex.view === 'mmGacha'), ship = shipCtx();
+    var ship = shipCtx();
     [].forEach.call(document.querySelectorAll('#mainnav .nav'), function (b) {
-      var pg = b.dataset.page, on = holo ? pg === 'holo' : ship ? pg === 'ship' : pg === page || (page === 'arena' && pg === 'ship') || ((page === 'store' || page === 'release' || page === 'dex') && pg === 'bag');   // 精灵仓库、图鉴在「精灵一览」里；荆楚号在「飞船终端」里
+      var pg = b.dataset.page, on = ship ? pg === 'ship' : pg === page || (page === 'arena' && pg === 'ship') || ((page === 'store' || page === 'release' || page === 'dex') && pg === 'bag');   // 精灵仓库、图鉴在「精灵一览」里；荆楚号在「飞船终端」里
       b.classList.toggle('on', on); b.setAttribute('aria-selected', on);
     });
     setTimeout(navDots, 0);
@@ -1876,7 +1876,7 @@
     if (ex.view !== 'archive' && ex.arcPlay) arcStop();
     if (ex.view === 'archive') { renderArchive(); return; }
     if (ex.view === 'mmArena') { if (mmOpen()) { renderMmArena(); return; } ex.view = 'planets'; }
-    if (ex.view === 'mmGacha') { if (acc.mm || mmOpen()) { renderMmGacha(); return; } ex.view = 'planets'; }
+    if (ex.view === 'mmGacha') { if (mmLive() && (acc.mm || mmOpen())) { renderMmGacha(); return; } ex.view = 'planets'; }
     if (ex.view === 'wkhub') { if (weeklyOpen()) { renderWkHub(); return; } ex.view = 'planets'; }
     if (ex.view === 'ewk') { if (weeklyOpen() && ewkType(ex.ewkT)) { renderEwk(); return; } ex.view = 'planets'; }
     if (ex.view === 'room') { if (homeOpen()) { renderRoom(); return; } ex.view = 'area'; renderArea(); return; }
