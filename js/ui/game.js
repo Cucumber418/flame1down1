@@ -1907,7 +1907,7 @@
   }
   function giveItems(o) { if (o) earn('misc', '', { items: o }); }   // 旧写法：新代码请直接用 earn，写明来源
   function rwList(R) { var a = [R.exp ? '累积经验 ×' + fmt(R.exp) : '', R.energy ? '能量 ×' + fmt(R.energy) : '', R.bgm ? '基地音乐「' + bgmName(R.bgm) + '」' : '']; if (R.items) for (var k in R.items) a.push(itemName(k) + ' ×' + R.items[k]); if (R.title) a.push('称号「' + TITLES.filter(function (x) { return x.id === R.title; })[0].n + '」'); if (R.mon) a.push(R.mon); (R.gift || []).forEach(function (g) { a.push(form(g).name + ' LV' + g.lv); }); return a.filter(Boolean); }
-  var PM = { panel: null, helpers: false, last: {} };
+  var PM = { panel: null, helpers: false, story: null, storyScroll: 0, last: {} };
   var ex = { view: 'planets', planet: 'earth', site: null, mode: null, host: null, i: 0, typing: false, auto: false, skip: false, timer: null, tick: null, full: '', log: [], pickSel: null };
   function story() { if (!acc.story) acc.story = {}; return acc.story; }
   function prog(site) { var st = story(); if (!st[site]) st[site] = { at: 0, done: false, ch: null }; return st[site]; }
@@ -2488,11 +2488,12 @@
       (shopOpen() ? '<button type="button" class="btn" data-goshop="1">去物资仓储兑换</button>' : '<span class="hint">在荆楚号 · 荆门 · 物资仓储读完支线后开放商城</span>') + '</div>';
   }
   // 星球的「剧情」页：主线 / 支线 / 画廊三栏，从上往下是 新 → 旧（lockBtn：有任务没完成时卡片上的按钮）
-  function storyTabs(sites, lockBtn) {
+  function storyTabs(sites, lockBtn, compact) {
     var stab = ex.flSt === 'side' ? 'side' : ex.flSt === 'cg' ? 'cg' : 'main';
     var stCard = function (id) {
       var S = SITES[id], pr = prog(id), started = pr.at > 0 && !pr.done, lock = !unlocked(id);
       if (lock && !prog(S.after).done) return '';   // 前一段还没读完的不显示
+      if (compact) return '<button type="button" class="planet-story-entry' + (lock ? ' locked' : '') + '" data-map-story="' + id + '"><span class="sc-tag">' + esc(S.name) + '</span><b>' + esc(S.chapter) + '</b><span class="site-st ' + (lock ? 'red' : pr.done ? 'blue' : started ? 'red' : '') + '">' + (lock ? '任务待完成' : pr.done ? '已读完' : started ? '读到一半' : '未读') + '</span><span class="planet-story-chevron" aria-hidden="true">›</span></button>';
       if (lock) return '<article class="site fl-story locked"><span class="tape r"></span><div class="site-img"><img src="' + BG[S.bg] + '" alt=""></div><div class="site-txt"><span class="sc-tag">' + S.chapter + '</span><h3>' + S.name + '</h3><p class="hint">' + S.d + '</p>' +
         '<p class="site-st red">任务：' + esc(S.needText || '') + (id === 'flora3' ? '（' + spareN() + ' / ' + SPARE_N + '）' : '') + '</p><div class="site-act">' + (lockBtn || '') + '</div></div></article>';
       return '<article class="site fl-story"><span class="tape r"></span><div class="site-img"><img src="' + BG[S.bg] + '" alt=""></div><div class="site-txt"><span class="sc-tag">' + S.chapter + '</span><h3>' + S.name + '</h3><p class="hint">' + S.d + '</p>' +
@@ -3754,10 +3755,31 @@
     var F = planetMapField(R);
     if (index != null) F.scene = Math.max(0, Math.min(F.scenes.length - 1, Math.floor(+index) || 0));
     else if (!last) F.scene = 0;
-    PM.panel = panel || null; PM.helpers = false;
+    PM.panel = panel || null; PM.helpers = false; PM.story = null;
     renderField(); setTimeout(bgmScene, 0); setTimeout(cumberCheck, 400);
   }
   function planetMapName(sc, R, i) { return BG_NAME[sc.bgKey] || BG_NAME[(sc.bgKey || '').replace(/_mia$|_corrupt$/, '')] || R.name + ' · 场景 ' + (i + 1); }
+  function planetStoryPanel(P) {
+    var ids = P.storyIds || P.sites || [], id = PM.story;
+    if (!id || ids.indexOf(id) < 0) return storyTabs(ids, null, true).html(P.storyEmpty);
+    var source = document.createElement('div'); source.innerHTML = storyTabs([id]).listOf([id]);
+    var card = source.querySelector('.site');
+    if (!card) { PM.story = null; return storyTabs(ids, null, true).html(P.storyEmpty); }
+    card.classList.add('planet-story-detail');
+    var img = card.querySelector('.site-img'), title = card.querySelector('h3');
+    if (title) title.textContent = SITES[id].chapter;
+    var location = card.querySelector('.sc-tag'); if (location) location.textContent = SITES[id].name;
+    if (img && title) title.insertAdjacentElement('afterend', img);
+    card.querySelectorAll('[data-go]').forEach(function (button) { if (button.textContent === '进入') button.textContent = '开始剧情'; });
+    if (!unlocked(id)) { var blocked = document.createElement('button'); blocked.type = 'button'; blocked.className = 'btn primary'; blocked.disabled = true; blocked.textContent = '开始剧情'; blocked.title = '完成剧情任务后开放'; card.querySelector('.site-act').appendChild(blocked); }
+    return '<button type="button" class="btn ghost planet-story-back" data-map-story-back="1">‹ 返回剧情列表</button>' + source.innerHTML;
+  }
+  function planetStoryBack() {
+    var id = PM.story; PM.story = null; renderField();
+    var host = $('pg-explore'), body = host.querySelector('.planet-panel-story .planet-panel-body'), trigger = host.querySelector('[data-map-story="' + id + '"]');
+    if (body) body.scrollTop = PM.storyScroll;
+    if (trigger) trigger.focus({ preventScroll: true });
+  }
   function planetMiniMap(P) {
     var F = planetMapField(regionById(ex.region));
     return regionsOf(P.id).filter(function (R) { return !R.record || regionOpen(R); }).map(function (R) {
@@ -3792,7 +3814,7 @@
     if (!PM.panel) return '';
     var kind = PM.panel, title = { story: '剧情', challenge: '关卡', task: '星球任务', map: '小地图' }[kind], html;
     if (kind === 'map') html = planetMiniMap(P);
-    else if (kind === 'story') html = storyTabs(P.storyIds || P.sites || []).html(P.storyEmpty);
+    else if (kind === 'story') html = planetStoryPanel(P);
     else if (kind === 'challenge') html = planetChallengePanel(P);
     else {
       var source = document.createElement('div'); source.innerHTML = planetTasks(P.id);
@@ -3821,7 +3843,7 @@
   $('pg-explore').addEventListener('keydown', function (e) {
     var panel = $('pg-explore').querySelector('.planet-helper-dialog') || $('pg-explore').querySelector('.planet-panel');
     if (!panel || !panel.contains(e.target)) return;
-    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); if (PM.helpers) PM.helpers = false; else PM.panel = null; renderField(); return; }
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); if (PM.panel === 'story' && PM.story) { planetStoryBack(); return; } if (PM.helpers) PM.helpers = false; else PM.panel = null; renderField(); return; }
     if (e.key !== 'Tab') return;
     var controls = [].filter.call(panel.querySelectorAll('button,input,select,a[href]'), function (el) { return !el.disabled && !el.closest('[inert]') && el.getClientRects().length; });
     var first = controls[0], last = controls[controls.length - 1];
@@ -7874,7 +7896,16 @@
       panel.innerHTML = '<div class="soc-box ship-areas-box" role="dialog" aria-modal="true" aria-label="舰内区域"><div class="ship-areas-list">' + shipTiles() + '</div><div class="soc-foot"><button type="button" class="btn primary" data-shipareasclose="1">关闭</button></div></div>';
       $('pg-explore').appendChild(panel); panel.querySelector('[data-shipareasclose]').focus(); return;
     }
-    if (b.dataset.mapPanel) { PM.panel = b.dataset.mapPanel; PM.helpers = false; renderField(); return; }
+    if (b.dataset.mapPanel) { PM.panel = b.dataset.mapPanel; PM.helpers = false; PM.story = null; PM.storyScroll = 0; renderField(); return; }
+    if (b.dataset.mapStory && PM.panel === 'story') {
+      var PStory = planetOf(ex.planet), storyIds = PStory.storyIds || PStory.sites || [], storyBody = $('pg-explore').querySelector('.planet-panel-story .planet-panel-body');
+      if (storyIds.indexOf(b.dataset.mapStory) < 0) return;
+      PM.storyScroll = storyBody ? storyBody.scrollTop : 0; PM.story = b.dataset.mapStory; renderField();
+      storyBody = $('pg-explore').querySelector('.planet-panel-story .planet-panel-body'); if (storyBody) storyBody.scrollTop = 0;
+      var storyBack = $('pg-explore').querySelector('[data-map-story-back]'); if (storyBack) storyBack.focus({ preventScroll: true });
+      return;
+    }
+    if (b.dataset.mapStoryBack) { planetStoryBack(); return; }
     if (b.dataset.mapClose) { PM.panel = null; PM.helpers = false; renderField(); return; }
     if (b.dataset.mapHelper) { PM.helpers = true; renderField(); return; }
     if (b.dataset.mapHelperClose) { PM.helpers = false; renderField(); return; }
@@ -7988,7 +8019,7 @@
     if (b.dataset.reap != null && b.dataset.reap !== '') { farmHarvest(+b.dataset.reap); return; }
     if (b.id === 'farm-back') { ex.view = 'area'; ex.area = '恩施'; ex.planet = 'jingchu'; renderExplore(); return; }
     if (b.dataset.fpart) { if (ex.view === 'field') { PM.panel = b.dataset.fpart === 'catch' ? null : b.dataset.fpart; PM.helpers = false; renderField(); } else { ex.fpart = b.dataset.fpart; renderExplore(); } return; }
-    if (b.dataset.flst) { ex.flSt = b.dataset.flst; renderExplore(); var storyBody = $('pg-explore').querySelector('.planet-panel-story .planet-panel-body'); if (storyBody) storyBody.scrollTop = 0; return; }
+    if (b.dataset.flst) { ex.flSt = b.dataset.flst; PM.story = null; renderExplore(); var storyBody = $('pg-explore').querySelector('.planet-panel-story .planet-panel-body'); if (storyBody) storyBody.scrollTop = 0; return; }
     if (b.dataset.cgview) { openCgView(b.dataset.cgview); return; }
     if (b.dataset.field && !b.disabled) { enterField(b.dataset.field); return; }
     if (b.dataset.gather != null && b.dataset.gather !== '') { gatherAt(+b.dataset.gather); return; }
