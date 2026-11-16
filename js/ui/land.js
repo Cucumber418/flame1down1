@@ -5,8 +5,6 @@
   try { localStorage.removeItem('hs-land'); } catch (e) {}
   root.classList.remove('land', 'land-rot', 'phone-portrait', 'phone-portrait-rot');
   var button = document.getElementById('land-btn'); if (button) button.remove();
-  var meta = document.querySelector('meta[name="viewport"]');
-  if (meta) meta.content = 'width=device-width, initial-scale=1, viewport-fit=cover';
   body.style.zoom = ''; body.style.width = ''; body.style.height = ''; body.style.transform = '';
   body.style.removeProperty('--game-view-height'); body.style.removeProperty('--game-view-width');
   // 释放旧版本在全屏中可能留下的原生方向锁。

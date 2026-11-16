@@ -26,6 +26,7 @@ img{max-width:100%}
   color-scheme: light;
 }
 html, body { background: var(--desk); color: var(--ink); }
+html.mobile-no-zoom, html.mobile-no-zoom body { touch-action: pan-x pan-y; }
 body { font-family: var(--f-body); font-size: 14px; line-height: 1.5; }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
