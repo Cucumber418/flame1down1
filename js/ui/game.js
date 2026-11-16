@@ -7293,7 +7293,7 @@
     var roomBg = new URL((BASE_UI[LY.room] || BASE_UI.r1).img, document.baseURI).href;
     // 2026-10-31：基地里的精灵只显示精灵本身；鼠标悬停看基本信息；点击是摸摸（2026-11-01 改回，面板在「精灵展示」里看）
     var figs = H.mons.map(function (x, i) {
-      var m = mon(x.u), f = form(m), p = baseMonPos(LY.room, i);
+      var m = mon(x.u), f = form(m), p = baseMonPos(LY.room, GROW.homeSlots(acc).indexOf(x));
       return '<div class="hm-fig' + (H.mons.length > 3 ? ' many' : '') + '" data-csid="' + m.sid + '" data-cst="' + (f.stage || 0) + '" data-cctx="home" data-hu="' + m.u + '" style="left:' + p[0] + '%;top:' + p[1] + '%;--fw:' + baseFigW(m.sid, f.stage, LY.room, p[1]) + '">' + (homeFull(x) && !E0 ? homeReadyBub(x) : '') + '<button type="button" class="hm-poke" data-hpoke="1" aria-label="摸摸' + esc(f.name) + '"><img src="' + f.img + '" alt=""></button><span class="hm-tip" data-htag="' + i + '">' + homeTag(x) + '</span></div>';
     }).join('');
     var title = ex.homeEdit
@@ -7325,6 +7325,7 @@
     var body = '', cls = '', ttl = '';
     if (k === 'log' || k === 'msg') { if (!baseOnline()) return ''; ttl = k === 'log' ? '基地动态' : '留言板'; body = HSSOCIAL.homeBoard(null, k); }
     else if (k === 'mons') { ttl = '精灵展示'; cls = ' wide'; body = baseMonsBody(); }
+    else if (k === 'homePick') { ttl = '选择精灵'; cls = ' wide bp-picker'; body = baseMonPickerBody(); }
     else if (k === 'shop') { ttl = '基地商城'; cls = ' wide'; body = baseShopBody(); }
     else if (k === 'friends') { ttl = '好友基地'; cls = ' wide bp-friends'; body = window.HSSOCIAL && HSSOCIAL.friendBases ? HSSOCIAL.friendBases() : '<p class="hint">好友功能正在加载，请稍后重试。</p>'; }
     else if (k.indexOf('mon:') === 0) { cls = ' bp-mon'; body = baseMonBody(+k.slice(4)); if (!body) return ''; }
@@ -7336,17 +7337,42 @@
   }
   // 精灵展示面板：放出、收回精灵；给展示中的精灵装自律训练装置
   function baseMonsBody() {
-    var H = home(), nAuto = acc.items.auto || 0, ins = H.mons.map(function (x) { return x.u; });
-    var list = acc.mons.slice();   // 2026-11-01：顺序固定，点了放出 / 收回也不会跳到最上面
-    var cards = list.map(function (m) {
-      var on = ins.indexOf(m.u) >= 0, f = form(m), full = !on && H.mons.length >= homeMax(), x = on ? H.mons[ins.indexOf(m.u)] : null;
-      var armed = on && ex.hmArm === m.u;
-      return '<div class="hm-cell"><button type="button" class="card hm-card' + (on ? ' on' : '') + (armed ? ' armed' : '') + '" data-hm="' + m.u + '"' + (full ? ' disabled' : '') + ' aria-pressed="' + on + '"><img src="' + f.img + '" alt=""><span class="nm">' + esc(f.name) + '</span><span class="meta">LV' + m.lv + (armed ? ' · 再点一次收回（装置剩余天数作废）' : on ? (x.auto ? ' · 自律训练中 · 还剩 ' + x.auto.left + ' 天' : ' · 展示中，点击收回') : ' · 每小时 ' + homeRate(m) + ' 经验') + '</span></button>' +
-        (on && !x.auto ? '<button type="button" class="btn hm-autobtn" data-hauto="' + m.u + '"' + (nAuto ? '' : ' disabled') + '>' + (nAuto ? '装上自律装置' : '没有自律装置') + '</button>' : '') + '</div>';
-    }).join('');
-    return '<p class="hint">展示中 <b>' + H.mons.length + ' / ' + homeMax() + '</b> 只。展示越久、等级越高，收回时经验越多，最多累计 ' + HOME_CAP_H + ' 小时，离开游戏也照常计时。点卡片放出或收回。</p>' +
-      '<div class="hm-autobar"><b>7日自律训练装置</b><span class="hint">持有 ' + nAuto + ' 个' + (nAuto ? '，点展示中精灵下面的「装上自律装置」使用' : '，可以在茶室大厅的茶室商店兑换') + '。装上后每满 1 天自动结算经验并重新开始，一共 7 天；中途收回精灵，剩下的天数作废。</span></div>' +
-      '<div class="hm-grid">' + cards + '</div>';
+    var slots = GROW.homeSlots(acc), nAuto = acc.items.auto || 0;
+    return '<p class="hint">展示中 ' + home().mons.length + ' / ' + slots.length + ' 只</p><div class="home-slot-grid" style="--home-slot-cols:' + Math.min(4, slots.length) + '">' + slots.map(function (x, i) {
+      var m = x && mon(x.u), f = m && form(m);
+      return '<article class="home-slot" data-home-slot="' + i + '"><b class="home-slot-no">槽位 ' + (i + 1) + '</b>' + (m ?
+        '<button type="button" class="home-slot-mon" data-hmon="' + m.u + '" aria-label="查看' + esc(f.name) + '的展示信息"><img src="' + f.img + '" alt=""><b>' + esc(f.name) + '</b><span>LV' + m.lv + '</span></button><span class="hint">经验 +' + fmt(homeExp(x)) + (x.auto ? ' · 自律训练剩 ' + x.auto.left + ' 天' : '') + '</span>' :
+        '<div class="home-slot-empty"><span aria-hidden="true">＋</span><b>空槽位</b></div>') +
+        '<button type="button" class="btn primary" data-home-pick="' + i + '">' + (m ? '切换精灵' : '添加精灵') + '</button>' +
+        (m && !x.auto ? '<button type="button" class="btn ghost" data-hauto="' + m.u + '"' + (nAuto ? '' : ' disabled') + '>装上自律装置（' + nAuto + '）</button>' : '') + '</article>';
+    }).join('') + '</div>';
+  }
+  var HOME_PICK_SIZE = 12;
+  function baseMonPickerBody() {
+    var slots = GROW.homeSlots(acc), slot = ex.homePickSlot, current = slots[slot];
+    if (!(slot >= 0 && slot < slots.length)) return '<p class="hint">槽位已变化，请返回重新选择。</p><button type="button" class="btn" data-home-pick-back="1">返回槽位</button>';
+    var size = window.innerWidth <= 640 ? 9 : HOME_PICK_SIZE, pages = Math.max(1, Math.ceil(acc.mons.length / size));
+    ex.homePickPage = Math.max(0, Math.min(pages - 1, ex.homePickPage || 0));
+    var chosen = mon(ex.homePickChoice), used = home().mons.map(function (x) { return x.u; });
+    var list = acc.mons.slice(ex.homePickPage * size, (ex.homePickPage + 1) * size);
+    return '<div class="home-picker-head"><button type="button" class="btn ghost" data-home-pick-back="1">‹ 返回槽位</button><b>槽位 ' + (slot + 1) + (current ? ' · 切换精灵' : ' · 添加精灵') + '</b></div><div class="hm-grid home-picker-grid">' + list.map(function (m) {
+      var f = form(m), displayed = used.indexOf(m.u) >= 0, spa = acc.spa && (acc.spa.u || []).indexOf(m.u) >= 0;
+      return '<button type="button" class="card hm-card' + (ex.homePickChoice === m.u ? ' on' : '') + '" data-home-choice="' + m.u + '" aria-pressed="' + (ex.homePickChoice === m.u) + '"' + (displayed || spa ? ' disabled' : '') + '><img src="' + f.img + '" alt=""><span class="nm">' + esc(f.name) + '</span><span class="meta">LV' + m.lv + (displayed ? (current && current.u === m.u ? ' · 当前槽位' : ' · 展示中') : spa ? ' · 温泉中' : '') + '</span></button>';
+    }).join('') + (list.length ? '' : '<p class="empty-note">还没有精灵。</p>') + '</div><nav class="home-picker-pages" aria-label="精灵翻页"><button type="button" class="btn ghost" data-home-page="-1"' + (ex.homePickPage ? '' : ' disabled') + '>上一页</button><span role="status">' + (ex.homePickPage + 1) + ' / ' + pages + ' · 共 ' + acc.mons.length + ' 只</span><button type="button" class="btn ghost" data-home-page="1"' + (ex.homePickPage < pages - 1 ? '' : ' disabled') + '>下一页</button></nav>' +
+      (current ? '<p class="hint">切换时结算 ' + esc(form(mon(current.u)).name) + ' 的展示经验。' + (current.auto ? '收回后，自律装置剩余天数作废。' : '') + '</p>' : '') +
+      '<div class="home-picker-confirm"><span>' + (chosen ? '已选：' + esc(form(chosen).name) + ' · LV' + chosen.lv : '请选择一只精灵') + '</span><button type="button" class="btn primary" data-home-confirm="1"' + (chosen ? '' : ' disabled') + '>' + (current ? '确认切换' : '确认添加') + '</button></div>';
+  }
+  function refreshBasePanel() {
+    var d = document.querySelector('#pg-explore .bp-dlg');
+    if (!d) return;
+    var active = document.activeElement, attr = active && active.attributes && Array.from(active.attributes).find(function (a) { return a.name.indexOf('data-') === 0; });
+    d.outerHTML = basePanelHTML(ex.bpanel);
+    var panel = document.querySelector('#pg-explore .bp-dlg');
+    if (panel) {
+      var target = attr && Array.from(panel.querySelectorAll('button:not(:disabled)')).find(function (b) { return b.getAttribute(attr.name) === attr.value; });
+      target = target || panel.querySelector('[data-home-choice]:not(:disabled), [data-home-pick], [data-home-pick-back]');
+      if (target) target.focus();
+    }
   }
   // 点基地里的精灵弹出的面板
   function baseMonBody(u) {
@@ -7454,6 +7480,19 @@
   $('pg-explore').addEventListener('click', function (e) {
     if (e.target.classList && e.target.classList.contains('bp-dlg')) { ex.bpanel = null; ex.fpanel = null; ex.hmArm = null; e.target.remove(); return; }
     var b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.homePick != null) { ex.homePickSlot = +b.dataset.homePick; ex.homePickPage = 0; ex.homePickChoice = null; var x = GROW.homeSlots(acc)[ex.homePickSlot]; ex.homePickFrom = x ? x.u : null; ex.bpanel = 'homePick'; refreshBasePanel(); return; }
+    if (b.dataset.homePickBack) { ex.bpanel = 'mons'; refreshBasePanel(); return; }
+    if (b.dataset.homePage) { ex.homePickPage += +b.dataset.homePage; refreshBasePanel(); return; }
+    if (b.dataset.homeChoice) { ex.homePickChoice = +b.dataset.homeChoice; refreshBasePanel(); return; }
+    if (b.dataset.homeConfirm) {
+      if (b.disabled || !ex.homePickChoice) return;
+      b.disabled = true;
+      txRun('home', { a: 'put', slot: ex.homePickSlot, u: ex.homePickChoice, from: ex.homePickFrom }, function (r) {
+        ex.bpanel = 'mons'; ex.homePickChoice = null; renderHome(); renderRes();
+        toast('已更新槽位 ' + (r.slot + 1) + '。' + (r.g ? gainMsg(r.g) : ''));
+      }, function (err) { refreshBasePanel(); if (err) toast(err); });
+      return;
+    }
     if (b.dataset.bshop && ex.view === 'home') { ex.bpanel = 'shop'; renderHome(); return; }
     if (b.dataset.bstog) { var sd = b.closest('.base-side'), h2 = sd.classList.toggle('hid'), skey = b.dataset.bstog === '1' ? 'hs-bside-hide' : b.dataset.bstog; try { localStorage.setItem(skey, h2 ? '1' : '0'); } catch (er) {} b.setAttribute('aria-label', (h2 ? '展开' : '收起') + (skey === 'hs-bside-hide' ? '基地菜单' : '种植园菜单')); b.title = h2 ? '展开' : '收起'; return; }
     if (b.dataset.bpanel) { ex.bpanel = b.dataset.bpanel; renderHome(); return; }

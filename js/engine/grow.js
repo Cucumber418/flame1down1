@@ -210,6 +210,18 @@ var GROW = (function () {
     return a.home;
   }
   function homeMax(a) { return HOME_BASE + Math.min(4, (a.home && a.home.cap) || 0); }
+  // 旧存档按原有顺序补槽位；显式槽位优先，空位不会因收回其他精灵而移动。
+  function homeSlots(a) {
+    var slots = Array(homeMax(a)).fill(null), pending = [], H = a.home || {};
+    (H.mons || []).forEach(function (x) {
+      if (!x || !ACC.mon(a, x.u)) return;
+      if (Number.isInteger(x.slot) && x.slot >= 0 && x.slot < slots.length && !slots[x.slot]) slots[x.slot] = x;
+      else pending.push(x);
+    });
+    pending.forEach(function (x) { var i = slots.indexOf(null); if (i >= 0) slots[i] = x; });
+    return slots;
+  }
+  function keepHomeSlots(a) { homeSlots(a).forEach(function (x, i) { if (x) x.slot = i; }); }
   function homeRate(m) { return 30 + m.lv * 6; }
   function homeMins(x, now) { return Math.max(0, Math.min(HOME_CAP_H * 60, Math.floor((now - x.t) / 60000))); }
   /* ---------- 去好友基地偷经验（2026-11-03） ----------
@@ -256,17 +268,33 @@ var GROW = (function () {
     var H = homeRec(a), act = String(args.a || ''), u = int(args.u);
     H.mons = H.mons.map(function (x) { return typeof x === 'number' ? { u: x, t: env.now } : x; }).filter(function (x) { return x && ACC.mon(a, x.u); });
     var i = -1; H.mons.forEach(function (x, k) { if (x.u === u) i = k; });
+    if (act === 'put') {
+      var slot = int(args.slot), slots = homeSlots(a), chosen = ACC.mon(a, u);
+      if (!(slot >= 0 && slot < slots.length)) return no('没有这个展示槽位');
+      if (!chosen) return no('找不到这只精灵');
+      var previous = slots[slot];
+      if (args.from !== (previous ? previous.u : null)) return no('槽位中的精灵已变化，请重新选择。');
+      if (i >= 0) return no('它已经在基地里展示了');
+      if (a.spa && Array.isArray(a.spa.u) && a.spa.u.indexOf(u) >= 0) return no('它正在泡温泉，先从温泉里带出来吧。');
+      // 所有条件检查后，在同一笔交易中结算并替换，防止两次点击重复收获。
+      keepHomeSlots(a);
+      var settled = TX.run(a, 'home', { a: 'settle' }, env), removed = previous ? TX.run(a, 'home', { a: 'out', u: previous.u }, env) : null;
+      H.mons.push({ u: u, t: env.now, slot: slot });
+      return { ok: true, slot: slot, u: u, previous: previous ? previous.u : null, g: removed && removed.g, min: removed ? removed.min : 0, settled: settled.list || [] };
+    }
     if (act === 'in') {
       var m = ACC.mon(a, u); if (!m) return no('找不到这只精灵');
       if (i >= 0) return no('它已经在茶室里了');
       if (H.mons.length >= homeMax(a)) return no('茶室已经满了');
       if (a.spa && Array.isArray(a.spa.u) && a.spa.u.indexOf(u) >= 0) return no('它正在泡温泉，先从温泉里带出来吧。');
-      H.mons.push({ u: u, t: env.now });
+      keepHomeSlots(a);
+      H.mons.push({ u: u, t: env.now, slot: homeSlots(a).indexOf(null) });
       return { ok: true };
     }
     if (act === 'out') {
       if (i < 0) return no('它不在茶室里');
       var x = H.mons[i], mo = ACC.mon(a, x.u), min = homeMins(x, env.now), amt = homeNet(x, mo, env.now);
+      keepHomeSlots(a);
       H.mons.splice(i, 1);
       var dh = min >= 60 && typeof QST !== 'undefined' ? QST.hit(a, 'home', 1, env.now) : [];   // 每日任务（js/engine/quest.js）
       return { ok: true, min: min, g: amt > 0 ? ACC.gainExp(a, mo, amt) : null, daily: dh };
@@ -588,7 +616,7 @@ var GROW = (function () {
     return { ok: true, want: want, give: give, today: had + give, cap: BRAWL_CAP, none: !!rec.none, r: rec.r, daily: dh };
   });
 
-  return { MON_NAME_MAX: MON_NAME_MAX, REL_TIER: REL_TIER, REL_SHINY: REL_SHINY, REL_MAX: REL_MAX, relTier: relTier, relExp: relExp, relPt: relPt, relBlock: relBlock, starterU: starterU, FORGE: FORGE, FORGE_Q: FORGE_Q, GX_KEYS: GX_KEYS, GX_IN: GX_IN, GX_OUT: GX_OUT, GX_SRC: GX_SRC, gxOut: gxOut, farmOpen: farmOpen, farmNet: farmNet, FARM_STEAL_DAY: FARM_STEAL_DAY, farmStealLeft: farmStealLeft, farmStealView: farmStealView, farmStealFrom: farmStealFrom, FARM_N: FARM_N, FARM_EXTRA_MAX: FARM_EXTRA_MAX, PLOT_PRICE: PLOT_PRICE, SEED_PRICE: SEED_PRICE, SEED_SHOP: SEED_SHOP, SEED_SHOP_MAX: SEED_SHOP_MAX, farmN: farmN, SEEDS: SEEDS, HELP_RW: HELP_RW, BRAWL_WIN: BRAWL_WIN, BRAWL_LOSE: BRAWL_LOSE, BRAWL_CAP: BRAWL_CAP, SPA_GAP: SPA_GAP, spaMons: spaMons, HOME_CAP_H: HOME_CAP_H, STEAL_DAY: STEAL_DAY, homeNet: homeNet, stealLeft: stealLeft, stealView: stealView, stealFrom: stealFrom, AUTO_DAYS: AUTO_DAYS, DAY_MS: DAY_MS, HATCH: HATCH, STORY_GIFT: STORY_GIFT, RANK_GIFT: RANK_GIFT, USE_ITEMS: USE_ITEMS, CAP_STEPS: CAP_STEPS, GEM_OF: GEM_OF, CAP_SID: CAP_SID, capGem: capGem, capNext: capNext, formLabel: formLabel, natText: natText,
+  return { homeSlots: homeSlots, MON_NAME_MAX: MON_NAME_MAX, REL_TIER: REL_TIER, REL_SHINY: REL_SHINY, REL_MAX: REL_MAX, relTier: relTier, relExp: relExp, relPt: relPt, relBlock: relBlock, starterU: starterU, FORGE: FORGE, FORGE_Q: FORGE_Q, GX_KEYS: GX_KEYS, GX_IN: GX_IN, GX_OUT: GX_OUT, GX_SRC: GX_SRC, gxOut: gxOut, farmOpen: farmOpen, farmNet: farmNet, FARM_STEAL_DAY: FARM_STEAL_DAY, farmStealLeft: farmStealLeft, farmStealView: farmStealView, farmStealFrom: farmStealFrom, FARM_N: FARM_N, FARM_EXTRA_MAX: FARM_EXTRA_MAX, PLOT_PRICE: PLOT_PRICE, SEED_PRICE: SEED_PRICE, SEED_SHOP: SEED_SHOP, SEED_SHOP_MAX: SEED_SHOP_MAX, farmN: farmN, SEEDS: SEEDS, HELP_RW: HELP_RW, BRAWL_WIN: BRAWL_WIN, BRAWL_LOSE: BRAWL_LOSE, BRAWL_CAP: BRAWL_CAP, SPA_GAP: SPA_GAP, spaMons: spaMons, HOME_CAP_H: HOME_CAP_H, STEAL_DAY: STEAL_DAY, homeNet: homeNet, stealLeft: stealLeft, stealView: stealView, stealFrom: stealFrom, AUTO_DAYS: AUTO_DAYS, DAY_MS: DAY_MS, HATCH: HATCH, STORY_GIFT: STORY_GIFT, RANK_GIFT: RANK_GIFT, USE_ITEMS: USE_ITEMS, CAP_STEPS: CAP_STEPS, GEM_OF: GEM_OF, CAP_SID: CAP_SID, capGem: capGem, capNext: capNext, formLabel: formLabel, natText: natText,
     itemFits: itemFits, jadeMoves: jadeMoves, formOpts: formOpts, evRoom: evRoom, applyMonItem: applyMonItem };
 })();
 if (typeof module !== 'undefined') module.exports = GROW;

@@ -263,7 +263,7 @@
     if (d.noChar) return back + '</div><div class="soc-empty"><p>@' + esc(d.user) + ' 还没有创建游戏角色。</p></div>';
     if (!d.open) return back + '<b class="home-name">' + esc(d.name) + ' 的休息舱</b></div><div class="soc-empty"><p>' + esc(d.name) + ' 还没有读完「陆羽茶室」支线，基地还没开放。</p></div>';
     var pos = A.homePos, figs = d.mons.map(function (m, i) {
-      var v = A.view({ sid: m.sid, lv: m.lv, shiny: m.shiny, fs: m.fs }), p = A.baseMonPos ? A.baseMonPos(d.layout && d.layout.room, i) : (pos[i] || pos[0]);
+      var v = A.view({ sid: m.sid, lv: m.lv, shiny: m.shiny, fs: m.fs }), p = A.baseMonPos ? A.baseMonPos(d.layout && d.layout.room, m.homeSlot >= 0 ? m.homeSlot : i) : (pos[i] || pos[0]);
       return '<div class="hm-fig' + (d.mons.length > 3 ? ' many' : '') + '" data-csid="' + esc(m.sid) + '" data-cst="' + (v.stage || 0) + '" data-cctx="home" data-fi="' + i + '" style="left:' + p[0] + '%;top:' + p[1] + '%' + (A.baseFigW ? ';--fw:' + A.baseFigW(m.sid, v.stage, d.layout && d.layout.room, p[1]) : '') + '">' + stealBub(d, i, v) + '<button type="button" class="hm-poke" data-vmon="' + i + '" aria-label="' + esc(v.name) + '"><img src="' + v.img + '" alt=""></button><span class="hm-tip">' + esc(v.name) + ' · LV' + m.lv + '</span></div>';
     }).join('');
     var mine = (A.acc().teams[A.acc().active] || []).map(A.mon).filter(Boolean);

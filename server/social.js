@@ -824,7 +824,7 @@ A.use(function (req, res, url) {
       var ma = parseSave(me).acc, now = Date.now(); stealLeft = E.GROW.stealLeft(ma, now);
       steal = hm.raw.map(function (r) { var v = E.GROW.stealView(r.x, r.m, me.name, stealLeft, now); return { u: r.m.u, n: v.n, why: v.why || null }; });
     }
-    A.reply(res, 200, { user: hu.name, name: str(ha.name, 20), me: hu.name === me.name, open: hm.open, homeName: hm.name, bgm: hm.bgm, layout: hm.layout, mons: hm.mons.map(function (m) { return monOut(m, ha); }), online: isOnline(hu.name), friend: isFriend, farmOpen: !!(E && E.GROW && E.GROW.farmOpen(ha)), steal: steal, stealLeft: stealLeft, stealDay: E && E.GROW ? E.GROW.STEAL_DAY : 0 });
+    A.reply(res, 200, { user: hu.name, name: str(ha.name, 20), me: hu.name === me.name, open: hm.open, homeName: hm.name, bgm: hm.bgm, layout: hm.layout, mons: hm.mons.map(function (m, i) { var out = monOut(m, ha), slots = E && E.GROW ? E.GROW.homeSlots(ha) : []; out.homeSlot = slots.length ? slots.findIndex(function (x) { return x && x.u === m.u; }) : i; return out; }), online: isOnline(hu.name), friend: isFriend, farmOpen: !!(E && E.GROW && E.GROW.farmOpen(ha)), steal: steal, stealLeft: stealLeft, stealDay: E && E.GROW ? E.GROW.STEAL_DAY : 0 });
     return true;
   }
   if (url === '/api/friends' && req.method === 'POST') {
