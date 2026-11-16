@@ -167,6 +167,7 @@ function summary(u, me) {
   o.show = showMons(acc).map(function (m) { return { sid: str(m.sid, 32), lv: int(m.lv, 1, 100) }; });
   var ro = rankOut(p.rank); o.rank = ro.best; o.rankDv = ro.bestDv; if (ro.best === KING_R) o.rankStars = ro.kingBest;
   var hm = homeOf(acc); o.homeOpen = hm.open; o.homeN = hm.mons.length;
+  var E = require('./tx').engine(); o.farmOpen = !!(E && E.GROW && E.GROW.farmOpen(acc)); o.farmN = o.farmOpen ? E.GROW.farmN(acc) : 0;
   o.brawl = brawlOk(acc);
   return o;
 }
@@ -823,7 +824,7 @@ A.use(function (req, res, url) {
       var ma = parseSave(me).acc, now = Date.now(); stealLeft = E.GROW.stealLeft(ma, now);
       steal = hm.raw.map(function (r) { var v = E.GROW.stealView(r.x, r.m, me.name, stealLeft, now); return { u: r.m.u, n: v.n, why: v.why || null }; });
     }
-    A.reply(res, 200, { user: hu.name, name: str(ha.name, 20), me: hu.name === me.name, open: hm.open, homeName: hm.name, bgm: hm.bgm, layout: hm.layout, mons: hm.mons.map(function (m) { return monOut(m, ha); }), online: isOnline(hu.name), friend: isFriend, steal: steal, stealLeft: stealLeft, stealDay: E && E.GROW ? E.GROW.STEAL_DAY : 0 });
+    A.reply(res, 200, { user: hu.name, name: str(ha.name, 20), me: hu.name === me.name, open: hm.open, homeName: hm.name, bgm: hm.bgm, layout: hm.layout, mons: hm.mons.map(function (m) { return monOut(m, ha); }), online: isOnline(hu.name), friend: isFriend, farmOpen: !!(E && E.GROW && E.GROW.farmOpen(ha)), steal: steal, stealLeft: stealLeft, stealDay: E && E.GROW ? E.GROW.STEAL_DAY : 0 });
     return true;
   }
   if (url === '/api/friends' && req.method === 'POST') {

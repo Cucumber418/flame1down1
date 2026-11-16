@@ -87,11 +87,13 @@ A.use(function (req, res, url) {
     var before = wallet(acc), now = Date.now(), rand = TX.recorder(), r, ext = {};
     // fetch：交易要用的、只有服务器知道的资料（比如助战被借用了几次、大乱斗的结果）；结果一起发给浏览器重放用
     var fetch = function (k, arg) { var v = HOOKS[k] ? HOOKS[k](u, arg) : null; ext[k] = v === undefined ? null : v; return ext[k]; };
+    if (op === 'farm') ext.farmBefore = JSON.parse(JSON.stringify(acc.farm || { plots: [] }));
     try { r = TX.run(acc, op, args, { now: now, rand: rand, data: u.save.data, user: u.name, fetch: fetch }); } catch (e) { console.error('交易出错', op, e); return A.reply(res, 500, { error: '服务器出错了，这次没有扣费。' }); }
     if (!r || !r.ok) return A.reply(res, 400, { error: (r && r.err) || '没能完成' });
     u.save.data['hs-account-v1'] = JSON.stringify(acc);
     u.save.rev = (u.save.rev || 0) + 1; u.save.savedAt = now;
     A.saveUser(u);
+    if (op === 'farm') { try { require('./farm').activity(u.name, u.name, args.a, r); } catch (e) { console.error('种植园动态保存失败', e.message); } }
     ledger(u.name, op, args, diff(before, wallet(acc)));
     A.reply(res, 200, { ok: true, rev: u.save.rev, now: now, rolls: rand.rolls.slice(), ext: ext });
   });

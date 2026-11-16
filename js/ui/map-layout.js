@@ -2,27 +2,30 @@
 (function () {
   'use strict';
   var body = document.body, root = document.documentElement;
-  var page = document.getElementById('pg-explore'), inventory = document.getElementById('pg-items'), header = document.querySelector('.topbar');
+  var page = document.getElementById('pg-explore'), inventory = document.getElementById('pg-items'), social = document.getElementById('pg-social'), header = document.querySelector('.topbar');
   var frame = 0, was = false;
   function prop(key, value) { if (body.style.getPropertyValue(key) !== value) body.style.setProperty(key, value); }
   function sync() {
     frame = 0;
-    var star = page.querySelector('.star-map-page'), home = page.querySelector('.home-page'), ship = page.querySelector('.ship-map-page');
-    var items = !inventory.hidden, target = items ? inventory : page;
-    var on = !body.classList.contains('no-acc') && (items || (!page.hidden && !!(star || home || ship))) && !body.classList.contains('battle-active');
+    var visitingFarm = !social.hidden && social.querySelector('.visit-farm-page');
+    var star = page.querySelector('.star-map-page'), home = visitingFarm || page.querySelector('.home-page'), ship = page.querySelector('.ship-map-page');
+    var items = !inventory.hidden, target = items ? inventory : visitingFarm ? social : page;
+    var on = !body.classList.contains('no-acc') && (items || !!visitingFarm || (!page.hidden && !!(star || home || ship))) && !body.classList.contains('battle-active');
     flag('scene-page-active', on);
-    flag('star-map-active', on && !items && !!star);
+    flag('star-map-active', on && !items && !visitingFarm && !!star);
     flag('home-page-active', on && !items && !!home);
-    flag('ship-page-active', on && !items && !!ship);
+    flag('ship-page-active', on && !items && !visitingFarm && !!ship);
     flag('storage-active', on && items);
+    flag('farm-page-active', on && !items && !!home && home.classList.contains('farm-page'));
     if (!on || items || !home) flag('home-compact', false);
-    if (!on || items || !ship) flag('ship-paired', false);
+    if (!on || items || visitingFarm || !ship) flag('ship-paired', false);
     if (!on) { was = false; return; }
     if (!was) HSVIEW.to(0, 0);
     was = true;
-    var full = window.visualViewport ? visualViewport.height : root.clientHeight;
+    var estate = window.HSESTATE && HSESTATE.dimensions();
+    var full = estate ? estate.height : window.visualViewport ? visualViewport.height : root.clientHeight;
     prop('--scene-full-height', full + 'px');
-    var height = Math.max(0, full - HSVIEW.top(target) - 10);
+    var height = estate ? full : Math.max(0, full - HSVIEW.top(target) - 10);
     prop('--scene-view-height', height + 'px');
     if (items) {
       var grid = inventory.querySelector('.ib-grid');
@@ -30,17 +33,18 @@
         var minWidth = root.clientWidth <= 640 ? 104 : 124;
         HSACC.layoutItems(Math.max(1, Math.min(8, Math.floor((grid.clientWidth + 8) / (minWidth + 8)))), Math.max(1, Math.floor((grid.clientHeight + 8) / 96)));
       }
-    } else if (ship) {
+    } else if (ship && !visitingFarm) {
       flag('ship-paired', height < 570);
-    } else if (star) {
+    } else if (star && !visitingFarm) {
       var map = star.querySelector('.mayar-planets');
       prop('--star-planet-max', Math.max(36, Math.min(112, map.clientHeight * .18)) + 'px');
     } else {
       var stage = home.querySelector('.base-stage');
-      var width = Math.max(0, Math.min(stage.clientWidth, stage.clientHeight * 1400 / 817));
+      var ratio = home.classList.contains('farm-page') ? 1192 / 697 : 1400 / 817;
+      var width = Math.max(0, Math.min(stage.clientWidth, stage.clientHeight * ratio));
       prop('--home-room-width', width + 'px');
-      prop('--home-room-height', width * 817 / 1400 + 'px');
-      flag('home-compact', width * 817 / 1400 < 330);
+      prop('--home-room-height', width / ratio + 'px');
+      flag('home-compact', width / ratio < 330);
     }
   }
   function flag(key, on) { if (body.classList.contains(key) !== on) body.classList.toggle(key, on); }
@@ -48,6 +52,7 @@
   var observer = new MutationObserver(schedule);
   observer.observe(page, { attributes: true, attributeFilter: ['hidden'], childList: true, subtree: true });
   observer.observe(inventory, { attributes: true, attributeFilter: ['hidden'], childList: true, subtree: true });
+  observer.observe(social, { attributes: true, attributeFilter: ['hidden'], childList: true, subtree: true });
   observer.observe(body, { attributes: true, attributeFilter: ['class', 'style'] });
   observer.observe(header, { childList: true, subtree: true });
   if (window.ResizeObserver) new ResizeObserver(schedule).observe(header);

@@ -2,6 +2,7 @@
 body.scene-page-active { overflow: hidden; }
 body.scene-page-active .sheet { height: var(--scene-full-height, 100dvh); min-height: 0; overflow: hidden; padding-block: 8px; }
 body.scene-page-active #pg-explore, body.scene-page-active #pg-items { height: var(--scene-view-height); min-height: 0; }
+body.farm-page-active #pg-social { height: var(--scene-view-height); min-height: 0; }
 .star-map-page { height: 100%; min-height: 0; display: flex; flex-direction: column; gap: 8px; padding: 0 4px 4px 0; }
 .star-map-page .mayar { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
 .star-map-page .mayar h3 { flex: 0 0 auto; font-size: 26px; line-height: 1.15; padding: 8px 12px; }
@@ -57,6 +58,11 @@ body.scene-page-active #pg-explore, body.scene-page-active #pg-items { height: v
 .home-page .base-stage { flex: 1 1 0; min-height: 0; min-width: 0; display: grid; place-items: center; isolation: isolate; overflow: hidden; border: 1.5px solid var(--ink); border-radius: 14px; background: #121a2a; }
 .home-page .base-stage::before { content: ''; position: absolute; inset: -24px; z-index: 0; background: var(--home-backdrop) center / cover; filter: blur(18px) brightness(.45); pointer-events: none; }
 .home-page .home-room.base-room { z-index: 1; flex: none; width: var(--home-room-width); height: var(--home-room-height); aspect-ratio: 1400 / 817; }
+.home-page .home-room.farm-room { z-index: 1; width: var(--home-room-width); height: var(--home-room-height); aspect-ratio: 1192 / 697; }
+.home-page .home-crumb > .hint { flex: 0 0 auto; font-size: 11px; }
+.farm-page .fp-soil:disabled, .farm-page .fp-bub:disabled { cursor: default; }
+.farm-page .fp-bub:disabled { filter: saturate(.5); }
+.scene-go:disabled { opacity: .5; cursor: not-allowed; }
 .home-page .home-friends-btn { left: auto; right: 10px; }
 .home-page .base-edit { flex: 0 1 auto; min-height: 48px; max-height: 42%; overflow: auto; margin: 0; padding: 6px 8px; box-shadow: none; }
 .home-page .base-edit .be-head { position: sticky; top: -6px; z-index: 2; padding-block: 4px; background: var(--paper-2); }
@@ -68,7 +74,7 @@ body.scene-page-active #pg-explore, body.scene-page-active #pg-items { height: v
 .home-page .base-edit .be-room { width: 100px; }
 .home-page .base-edit .be-deco { width: 86px; }
 .bp-box.bp-friends { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
-.bp-friends #base-friends { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 3px; }
+.bp-friends #base-friends, .bp-friends #farm-friends { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 3px; }
 .bp-friends > h2, .bp-friends > .soc-foot { flex: 0 0 auto; }
 body.home-compact .home-page .base-side { top: 6px; transform: none; align-items: center; }
 body.home-compact .home-page .bs-list { width: auto; padding-left: 6px; flex-direction: row; flex-wrap: nowrap; gap: 4px; }

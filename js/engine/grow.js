@@ -466,6 +466,43 @@ var GROW = (function () {
   };
   function farmN(a) { return FARM_N + Math.max(0, Math.min(FARM_EXTRA_MAX, (a && a.farm && a.farm.extra) | 0)); }
   function farmRec(a) { if (!a.farm || !Array.isArray(a.farm.plots)) a.farm = { plots: [], extra: (a.farm && a.farm.extra) | 0 }; var n = farmN(a); while (a.farm.plots.length < n) a.farm.plots.push(null); return a.farm; }
+  function farmOpen(a) { return !!(a && ((a.story && a.story.plant && a.story.plant.done) || (a.farm && Array.isArray(a.farm.plots) && a.farm.plots.some(Boolean)))); }
+  var FARM_STEAL_DAY = 3000;
+  function farmStealLeft(a, now) { var d = a && a.farmStealD; return Math.max(0, FARM_STEAL_DAY - (d && d.d === TX.bjDay(now) ? d.n | 0 : 0)); }
+  function farmNet(p) { var s = p && SEEDS[p.seed]; return s ? Math.max(0, s.yield - Math.max(0, p.st | 0)) : 0; }
+  function farmStealView(p, thief, cap, now) {
+    var s = p && SEEDS[p.seed];
+    if (!s) return { n: 0, why: 'empty' };
+    if (!(p.t > 0) || now - p.t < s.min * 60000) return { n: 0, why: 'young' };
+    if (Array.isArray(p.sb) && p.sb.indexOf(thief) >= 0) return { n: 0, why: 'done' };
+    var room = Math.floor(s.yield / 2) - Math.max(0, p.st | 0);
+    if (room <= 0) return { n: 0, why: 'half' };
+    if (!(cap > 0)) return { n: 0, why: 'cap' };
+    var n = Math.min(Math.floor(farmNet(p) / 10), room, Math.floor(cap));
+    return n > 0 ? { n: n } : { n: 0, why: 'half' };
+  }
+  var FARM_STEAL_WHY = { empty: '这块田没有作物', young: '作物成熟以后才能偷', done: '这一轮你已经偷过这块田了', half: '这块田已经被偷走一半了', cap: '今天偷菜已达到 ' + FARM_STEAL_DAY + ' 份的上限' };
+  function farmStealFrom(a, i, thief, cap, now) {
+    if (!farmOpen(a)) return { err: '对方的种植园还没开放' };
+    if (!(i >= 0 && i < farmN(a) && i === Math.floor(i))) return { err: '没有这块田' };
+    var p = a.farm && a.farm.plots && a.farm.plots[i], v = farmStealView(p, thief, cap, now);
+    if (!v.n) return { err: FARM_STEAL_WHY[v.why] || '现在偷不了' };
+    p.st = Math.max(0, p.st | 0) + v.n;
+    p.sb = (Array.isArray(p.sb) ? p.sb : []).concat([thief]).slice(-100);
+    return { n: v.n, crop: SEEDS[p.seed].crop, seed: p.seed, i: i, plantedAt: p.t, stolen: p.st, remaining: farmNet(p) };
+  }
+  TX.add('farmSteal', function (a, args, env) {
+    var cap = farmStealLeft(a, env.now); if (!cap) return no(FARM_STEAL_WHY.cap);
+    if (typeof args.i !== 'number' || !Number.isInteger(args.i)) return no('没有这块田');
+    var r = env.fetch && env.fetch('farmSteal', { owner: String(args.owner || ''), i: +args.i, cap: cap });
+    if (!r) return no('联网登录后才能去好友的种植园偷菜');
+    if (r.err) return no(r.err);
+    if (!SEEDS[r.seed] || SEEDS[r.seed].crop !== r.crop || !Number.isInteger(r.n) || !(r.n > 0 && r.n <= cap)) return no('种植园结算失败，请刷新后重试');
+    var d = TX.bjDay(env.now), s = a.farmStealD && a.farmStealD.d === d ? a.farmStealD : { d: d, n: 0 };
+    s.n = (s.n | 0) + r.n; a.farmStealD = s;
+    var I = items(a); I[r.crop] = (I[r.crop] || 0) + r.n;
+    return { ok: true, n: r.n, crop: r.crop, left: FARM_STEAL_DAY - s.n };
+  });
   // { a: 'plant', i, seed } / { a: 'harvest', i }
   TX.add('farm', function (a, args, env) {
     var F = farmRec(a), i = int(args.i), I = items(a);
@@ -475,14 +512,15 @@ var GROW = (function () {
       if (F.plots[i]) return no('这块田已经种上了');
       if (!SEEDS[sd] || !(I[sd] > 0)) return no('没有这种种子了');
       I[sd]--; F.plots[i] = { seed: sd, t: env.now };
-      return { ok: true };
+      return { ok: true, i: i, seed: sd, plantedAt: env.now };
     }
     if (args.a === 'harvest') {
       var p = F.plots[i], S = p && SEEDS[p.seed]; if (!S) return no('这块田是空的');
       if (env.now - p.t < S.min * 60000) return no('还没成熟');
       var back = S.back >= 1 || env.rand() < S.back ? 1 : 0;
-      I[S.crop] = (I[S.crop] || 0) + S.yield; if (back) I[p.seed] = (I[p.seed] || 0) + back; F.plots[i] = null;
-      return { ok: true, crop: S.crop, n: S.yield, seed: p.seed, back: back };
+      var n = farmNet(p);
+      I[S.crop] = (I[S.crop] || 0) + n; if (back) I[p.seed] = (I[p.seed] || 0) + back; F.plots[i] = null;
+      return { ok: true, i: i, crop: S.crop, n: n, seed: p.seed, back: back, stolen: p.st | 0, plantedAt: p.t };
     }
     return no('不支持的操作');
   });
@@ -529,7 +567,7 @@ var GROW = (function () {
     return { ok: true, want: want, give: give, today: had + give, cap: BRAWL_CAP, none: !!rec.none, r: rec.r, daily: dh };
   });
 
-  return { REL_TIER: REL_TIER, REL_SHINY: REL_SHINY, REL_MAX: REL_MAX, relTier: relTier, relExp: relExp, relPt: relPt, relBlock: relBlock, starterU: starterU, FORGE: FORGE, FORGE_Q: FORGE_Q, GX_KEYS: GX_KEYS, GX_IN: GX_IN, GX_OUT: GX_OUT, GX_SRC: GX_SRC, gxOut: gxOut, FARM_N: FARM_N, FARM_EXTRA_MAX: FARM_EXTRA_MAX, PLOT_PRICE: PLOT_PRICE, SEED_PRICE: SEED_PRICE, SEED_SHOP: SEED_SHOP, SEED_SHOP_MAX: SEED_SHOP_MAX, farmN: farmN, SEEDS: SEEDS, HELP_RW: HELP_RW, BRAWL_WIN: BRAWL_WIN, BRAWL_LOSE: BRAWL_LOSE, BRAWL_CAP: BRAWL_CAP, SPA_GAP: SPA_GAP, spaMons: spaMons, HOME_CAP_H: HOME_CAP_H, STEAL_DAY: STEAL_DAY, homeNet: homeNet, stealLeft: stealLeft, stealView: stealView, stealFrom: stealFrom, AUTO_DAYS: AUTO_DAYS, DAY_MS: DAY_MS, HATCH: HATCH, STORY_GIFT: STORY_GIFT, RANK_GIFT: RANK_GIFT, USE_ITEMS: USE_ITEMS, CAP_STEPS: CAP_STEPS, GEM_OF: GEM_OF, CAP_SID: CAP_SID, capGem: capGem, capNext: capNext, formLabel: formLabel, natText: natText,
+  return { REL_TIER: REL_TIER, REL_SHINY: REL_SHINY, REL_MAX: REL_MAX, relTier: relTier, relExp: relExp, relPt: relPt, relBlock: relBlock, starterU: starterU, FORGE: FORGE, FORGE_Q: FORGE_Q, GX_KEYS: GX_KEYS, GX_IN: GX_IN, GX_OUT: GX_OUT, GX_SRC: GX_SRC, gxOut: gxOut, farmOpen: farmOpen, farmNet: farmNet, FARM_STEAL_DAY: FARM_STEAL_DAY, farmStealLeft: farmStealLeft, farmStealView: farmStealView, farmStealFrom: farmStealFrom, FARM_N: FARM_N, FARM_EXTRA_MAX: FARM_EXTRA_MAX, PLOT_PRICE: PLOT_PRICE, SEED_PRICE: SEED_PRICE, SEED_SHOP: SEED_SHOP, SEED_SHOP_MAX: SEED_SHOP_MAX, farmN: farmN, SEEDS: SEEDS, HELP_RW: HELP_RW, BRAWL_WIN: BRAWL_WIN, BRAWL_LOSE: BRAWL_LOSE, BRAWL_CAP: BRAWL_CAP, SPA_GAP: SPA_GAP, spaMons: spaMons, HOME_CAP_H: HOME_CAP_H, STEAL_DAY: STEAL_DAY, homeNet: homeNet, stealLeft: stealLeft, stealView: stealView, stealFrom: stealFrom, AUTO_DAYS: AUTO_DAYS, DAY_MS: DAY_MS, HATCH: HATCH, STORY_GIFT: STORY_GIFT, RANK_GIFT: RANK_GIFT, USE_ITEMS: USE_ITEMS, CAP_STEPS: CAP_STEPS, GEM_OF: GEM_OF, CAP_SID: CAP_SID, capGem: capGem, capNext: capNext, formLabel: formLabel, natText: natText,
     itemFits: itemFits, jadeMoves: jadeMoves, formOpts: formOpts, evRoom: evRoom, applyMonItem: applyMonItem };
 })();
 if (typeof module !== 'undefined') module.exports = GROW;

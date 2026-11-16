@@ -20,6 +20,7 @@
   var SHOW_MAX = 5, HELP_MAX = 3, MOTTO_MAX = 200, TURN_SEC = 90;
   var online = !!(C && C.user && C.user());   // 用服务器打开并登录了才有社交功能
   var hb = { owner: null, data: null, err: '', at: 0, draft: '', newN: 0, peeked: false }, pokeAt = {};   // 基地信息栏与留言板（见下面「基地信息栏」一节）
+  var fl = { data: null, err: '', at: 0, newN: 0, loading: false };
   var st = { prep: null, bw: { picks: null, wait: null, inv: null }, view: null, tab: 'players', players: null, me: null, err: '', ws: null, wsOk: false, retry: 0, pend: null, inc: null, match: null, edit: null };
 
   /* ---------- 小工具 ---------- */
@@ -73,30 +74,31 @@
   setInterval(function () { var el = $('brawl'); if (el && !el.hidden && A.page() === 'arena' && !A.inBattle() && document.visibilityState === 'visible') load(); }, 20000);
 
   // 基地右下角打开的好友选择面板：点一下去拜访。
-  function fbInner() {
-    if (!online) return '<p class="hint">连上服务器后才能看到好友的基地。</p>';
+  function fbInner(kind) {
+    var farm = kind === 'farm', label = farm ? '种植园' : '基地', field = farm ? 'farmOpen' : 'homeOpen';
+    if (!online) return '<p class="hint">连上服务器后才能看到好友的' + label + '。</p>';
     if (!st.players) return '<p class="hint">' + (st.err ? esc(st.err) : '正在读取好友名单……') + '</p>' + (st.err ? '<button type="button" class="btn" data-fbretry="1">重试</button>' : '');
-    var F = st.players.filter(function (p) { return p.friend && !p.me && !p.noChar; }).sort(function (a, b) { return (b.homeOpen ? 1 : 0) - (a.homeOpen ? 1 : 0) || (b.online ? 1 : 0) - (a.online ? 1 : 0); });
-    if (!F.length) return '<p class="hint">还没有好友。去「社交」页加几个好友，就能在这里直接拜访他们的基地。</p>';
+    var F = st.players.filter(function (p) { return p.friend && !p.me && !p.noChar; }).sort(function (a, b) { return (b[field] ? 1 : 0) - (a[field] ? 1 : 0) || (b.online ? 1 : 0) - (a.online ? 1 : 0); });
+    if (!F.length) return '<p class="hint">还没有好友。去「社交」页加几个好友，就能在这里直接拜访他们的' + label + '。</p>';
     return '<div class="fb-grid">' + F.map(function (p) {
-      return '<button type="button" class="fb-it' + (p.online ? ' live' : '') + '" data-fbvisit="' + esc(p.user) + '"' + (p.homeOpen ? '' : ' disabled title="对方还没有开放基地"') + '>' +
+      return '<button type="button" class="fb-it' + (p.online ? ' live' : '') + '" ' + (farm ? 'data-ffvisit' : 'data-fbvisit') + '="' + esc(p.user) + '"' + (p[field] ? '' : ' disabled title="对方还没有开放' + label + '"') + '>' +
         '<span class="pav' + (p.avatar ? ' img' : '') + '">' + A.avatarInner(p.avatar, p.name || p.user) + '</span>' +
-        '<span class="fb-txt"><b>' + esc(p.name) + '</b><small>' + (p.homeOpen ? (p.homeN ? '展示中 ' + p.homeN + ' 只精灵' : '基地里还没有精灵') : '基地还没开放') + (p.online ? ' · 在线' : '') + '</small></span>' +
+        '<span class="fb-txt"><b>' + esc(p.name) + '</b><small>' + (p[field] ? (farm ? (p.farmN || 4) + ' 块田' : p.homeN ? '展示中 ' + p.homeN + ' 只精灵' : '基地里还没有精灵') : label + '还没开放') + (p.online ? ' · 在线' : '') + '</small></span>' +
         '<span class="fb-show">' + (p.show || []).slice(0, 3).map(monThumb).join('') + '</span></button>';
     }).join('') + '</div>';
   }
-  function fbDraw() { var el = $('base-friends'); if (el) el.innerHTML = fbInner(); }
-  function friendBases() {
+  function fbDraw() { var el = $('base-friends'); if (el) el.innerHTML = fbInner(); var f = $('farm-friends'); if (f) f.innerHTML = fbInner('farm'); }
+  function friendBases(kind) {
     if (online && (!st.players || Date.now() - (st.loadedAt || 0) > 30000)) setTimeout(load, 0);
-    return '<div id="base-friends">' + fbInner() + '</div>';
+    return '<div id="' + (kind === 'farm' ? 'farm-friends' : 'base-friends') + '">' + fbInner(kind) + '</div>';
   }
   document.addEventListener('click', function (e) {
     if (e.target.closest('[data-fbretry]')) { st.err = ''; fbDraw(); load(); return; }
-    var t = e.target.closest('[data-fbvisit]');
+    var t = e.target.closest('[data-fbvisit],[data-ffvisit]');
     if (t && !t.disabled) {
       var panel = t.closest('.bp-dlg'), close = panel && panel.querySelector('[data-bpx]');
       if (close) close.click();
-      openHome(t.dataset.fbvisit, 'base');
+      if (t.dataset.ffvisit) openFarm(t.dataset.ffvisit, 'farm'); else openHome(t.dataset.fbvisit, 'base');
     }
   });
   // 能不能观战：对方正在对战，并且是自己的好友（或者对方发了全服观战邀请）
@@ -198,14 +200,18 @@
 
   /* ---------- 拜访基地 ---------- */
   function openHome(user, from) {
-    st.view = { user: user, data: null, err: '', from: from || null };
+    openPlace(user, from, 'home');
+  }
+  function openFarm(user, from) { openPlace(user, from, 'farm'); }
+  function openPlace(user, from, kind) {
+    var view = st.view = { user: user, data: null, err: '', from: from || null, kind: kind };
     if (A.page() !== 'social') A.go('social'); else render();
     HSVIEW.to(0, 0);
-    api('GET', '/api/home?user=' + encodeURIComponent(user)).then(function (r) {
-      if (!st.view || st.view.user !== user) return;
-      if (r._code !== 200) st.view.err = r.error || '读取失败'; else st.view.data = r;
+    api('GET', '/api/' + kind + '?user=' + encodeURIComponent(user)).then(function (r) {
+      if (st.view !== view) return;
+      if (r._code !== 200) view.err = r.error || '读取失败'; else { view.data = r; if (kind === 'farm') r.offset = r.now - Date.now(); }
       render();
-    }).catch(function () { if (st.view) { st.view.err = '连不上服务器'; render(); } });
+    }).catch(function () { if (st.view === view) { view.err = '连不上服务器'; render(); } });
   }
   // 拜访别人的基地：点精灵弹出它的面板（2026-10-31），可以摸摸它
   function vmonPanel(i) {
@@ -261,7 +267,8 @@
     }).join('');
     var left = A.teaLeft(), mine = (A.acc().teams[A.acc().active] || []).map(A.mon).filter(Boolean);
     return back + '<b class="home-name">' + esc(d.homeName) + '</b><span class="hint">' + esc(d.name) + ' 的基地' + (d.online ? ' · 主人在线' : '') + ' · 基地音乐「' + (window.HSTRACK ? HSTRACK(d.bgm || 'base') : (d.bgm || 'base')) + '」</span></div>' +
-      (A.baseRoom ? A.baseRoom(d.layout, figs + (d.mons.length ? '' : '<p class="home-empty">基地里空荡荡的，主人还没有放精灵出来展示。</p>')) :   // 2026-10-31：基地改成基地，显示主人的房型和摆件
+      (A.baseRoom ? A.baseRoom(d.layout, figs + (d.mons.length ? '' : '<p class="home-empty">基地里空荡荡的，主人还没有放精灵出来展示。</p>') +
+        '<button type="button" class="scene-go" data-visitfarm="' + esc(d.user) + '"' + ((d.friend || d.me) && d.farmOpen ? '' : ' disabled title="对方种植园尚未开放，或尚未加为好友"') + '><span class="sg-ic" aria-hidden="true">🌱</span>前往种植园</button>') :   // 2026-10-31：基地改成基地，显示主人的房型和摆件
       '<div class="home-room"><img class="home-bg" src="' + BG.tea_p + '" alt="' + esc(d.homeName) + '">' + figs + '</div>') +
       (d.me ? '<p class="hint" style="margin-top:8px">这是你自己的基地。</p>' :
       '<div class="tea-bar"><span class="tape l"></span><div class="tea-txt"><b>挑战基地</b>' +
@@ -272,6 +279,38 @@
       '<button type="button" class="btn primary" data-teafight="1"' + (d.mons.length && mine.length ? '' : ' disabled') + '>' + (d.mons.length ? '挑战基地' : '没有可挑战的精灵') + '</button></div>') +
       hbSlot(d.user);
   }
+
+  function farmHTML() {
+    var v = st.view, d = v.data;
+    var back = '<div class="crumb home-crumb"><button type="button" class="btn ghost" data-back="1">‹ ' + (v.from === 'farm' ? '返回我的种植园' : v.from === 'base' ? '返回我的基地' : '返回社交') + '</button>';
+    if (!d) return back + '</div><p class="hint">' + esc(v.err || '正在前往种植园……') + '</p><button type="button" class="btn" data-vfarmrefresh="1">重试</button>';
+    if (!d.open) return back + '</div><p class="hint">这名好友的种植园还没有开放。</p>';
+    return '<div class="home-page farm-page visit-farm-page">' + back + '<b class="home-name">' + esc(d.name) + '的种植园</b></div>' +
+      '<div class="base-stage" style="--home-backdrop:url(' + new URL('images/base/farm.jpg', document.baseURI).href + ')">' + A.farmVisitorRoom(d) +
+      '<div class="base-side"><div class="bs-list"><button type="button" class="bs-it" data-vfarmrefresh="1" title="刷新种植园"><span class="bs-ic" aria-hidden="true">↻</span><span class="bs-t"><b>刷新</b></span></button><button type="button" class="bs-it" data-vfarmrules="1" title="偷菜规则"><span class="bs-ic" aria-hidden="true">ⓘ</span><span class="bs-t"><b>偷菜规则</b><small>今天还能偷 ' + A.fmt(d.stealLeft) + ' 份</small></span></button></div></div>' +
+      '<button type="button" class="scene-go" data-visithome="' + esc(d.user) + '"' + (d.homeOpen ? '' : ' disabled title="对方基地还没有开放"') + '><span class="sg-ic" aria-hidden="true">🏠</span>前往基地</button></div></div>';
+  }
+  function refreshFarm(quiet) {
+    var v = st.view; if (!v || v.kind !== 'farm' || v.farmLoading) return;
+    v.farmLoading = true;
+    api('GET', '/api/farm?user=' + encodeURIComponent(v.user)).then(function (r) {
+      if (st.view !== v) return;
+      v.farmLoading = false;
+      if (r._code === 200) { r.offset = r.now - Date.now(); v.data = r; v.err = ''; }
+      else { v.err = r.error || '读取失败'; if (r._code === 403 || r._code === 404) v.data = null; if (!quiet) A.toast(v.err); }
+      render();
+    }).catch(function () { if (st.view === v) { v.farmLoading = false; if (!quiet) A.toast('连不上服务器，请稍后重试'); } });
+  }
+  function stealCrop(i, button) {
+    var v = st.view, d = v && v.data, p = d && d.plots && d.plots[i];
+    if (!v || v.kind !== 'farm' || !p || !p.steal || !p.steal.n || v.stealing) return;
+    v.stealing = true; button.disabled = true;
+    A.farmSteal(d.user, i, function (r) {
+      if (st.view === v) { v.stealing = false; p.steal = { n: 0, why: 'done' }; d.stealLeft = r.left; render(); refreshFarm(true); }
+      A.toast('从 ' + d.name + ' 的种植园偷到了「' + A.itemName(r.crop) + '」×' + r.n + '，已放入储存箱。');
+    }, function (err) { if (st.view === v) { v.stealing = false; refreshFarm(true); } if (err) A.toast(err); });
+  }
+  setInterval(function () { if (A.page() === 'social' && st.view && st.view.kind === 'farm' && !A.inBattle() && document.visibilityState === 'visible') refreshFarm(true); }, 15000);
 
   /* ---------- 我的名片（编辑） ---------- */
   function myCard() {
@@ -327,7 +366,7 @@
     }
     var P = st.players || [], friends = P.filter(function (p) { return p.friend; }), on = P.filter(function (p) { return p.online; }).length;
     var focus = document.activeElement && document.activeElement.id === 'me-motto' ? $('me-motto').selectionStart : null;
-    if (st.view) { pg.innerHTML = '<div class="soc-head"><h2 class="sec">拜访基地</h2></div>' + homeHTML(); return; }
+    if (st.view) { pg.innerHTML = st.view.kind === 'farm' ? farmHTML() : '<div class="soc-head"><h2 class="sec">拜访基地</h2></div>' + homeHTML(); return; }
     var body;
     if (st.tab === 'mine') body = mineHTML();
     else if (st.tab === 'dm') body = dmListHTML();
@@ -353,7 +392,12 @@
       if ((t = e.target.closest('[data-tab]'))) { st.tab = t.dataset.tab; if (st.tab === 'mine' && !st.edit) startEdit(); render(); if (st.tab === 'dm') dmLoadList(); else if (st.tab !== 'mine') load(); return; }
       if ((t = e.target.closest('[data-myhome]'))) { A.goHome(); return; }
       if ((t = e.target.closest('[data-reload]'))) { load(); return; }
-      if ((t = e.target.closest('[data-back]'))) { var fromBase = st.view && st.view.from === 'base'; st.view = null; if (fromBase) { A.goHome(); return; } render(); load(); return; }
+      if ((t = e.target.closest('[data-back]'))) { var from = st.view && st.view.from; st.view = null; if (from === 'base') { A.goHome(); return; } if (from === 'farm') { A.goFarm(); return; } render(); load(); return; }
+      if ((t = e.target.closest('[data-visitfarm]'))) { if (!t.disabled) { if (st.view && st.view.data && st.view.data.me) { st.view = null; A.goFarm(); } else openFarm(t.dataset.visitfarm, st.view && st.view.from); } return; }
+      if ((t = e.target.closest('[data-visithome]'))) { if (!t.disabled) { if (st.view && st.view.data && st.view.data.me) { st.view = null; A.goHome(); } else openHome(t.dataset.visithome, st.view && st.view.from); } return; }
+      if ((t = e.target.closest('[data-vfarmrefresh]'))) { refreshFarm(false); return; }
+      if ((t = e.target.closest('[data-vfarmplot]'))) { if (!t.disabled) stealCrop(+t.dataset.vfarmplot, t); return; }
+      if ((t = e.target.closest('[data-vfarmrules]'))) { dialog('bp-box', '<h2>偷菜规则</h2>' + A.farmRules() + '<p>今天还能偷 ' + A.fmt(st.view.data.stealLeft) + ' / ' + A.fmt(st.view.data.stealDay) + ' 份。</p><div class="soc-foot"><button type="button" class="btn primary" data-ruleclose="1">关闭</button></div>', function (d, close) { d.addEventListener('click', function (e) { if (e.target.closest('[data-ruleclose]')) close(); }); }); return; }
       if ((t = e.target.closest('[data-home]'))) { if (!t.disabled) openHome(t.dataset.home); return; }
       if ((t = e.target.closest('[data-vsteal]'))) { doSteal(+t.dataset.vsteal, t); return; }
       if ((t = e.target.closest('[data-vmon]'))) { vmonPanel(+t.dataset.vmon); return; }
@@ -430,7 +474,7 @@
 
   function onMsg(m) {
     switch (m.type) {
-      case 'authed': st.wsOk = true; st.retry = 0; load(); render(); renderBrawl(); if (HB.castResync) HB.castResync(); dmLoadList(true); if (!hb.peeked) { hb.peeked = true; hbPeek(); } break;
+      case 'authed': st.wsOk = true; st.retry = 0; load(); render(); renderBrawl(); if (HB.castResync) HB.castResync(); dmLoadList(true); if (!hb.peeked) { hb.peeked = true; hbPeek(); farmPeek(); } break;
       case 'cast-viewers': if (HB.castViewers) HB.castViewers(m.n, m.names); break;
       case 'cast-invited': if (HB.castInvited) HB.castInvited(m.ok, m.ok ? '已向 ' + m.n + ' 位在线船员发出观战邀请，现在所有人都可以观战这场对战' : m.msg); break;
       case 'cast-note': if (HB.castNote) HB.castNote(m.msg); break;
@@ -438,6 +482,7 @@
       case 'watch': onWatch(m); break;
       case 'dm': dmGot(m); break;
       case 'home-ev': homeEv(m); break;
+      case 'farm-ev': farmEv(m); break;
       case 'dm-echo': dmEcho(m); break;
       case 'brawl-wait': if (st.bw.wait) { st.bw.wait.id = m.id; st.bw.wait.n = m.n; st.bw.wait.deadline = Date.now() + m.seconds * 1000; } renderBrawl(); break;
       case 'brawl-invite': brawlInvite(m); break;
@@ -1534,13 +1579,56 @@
     }).catch(function () {});
   }
 
+  function farmLogInner() {
+    if (fl.err) return '<p class="hint">' + esc(fl.err) + '</p><button type="button" class="btn" data-farmlogrefresh="1">重试</button>';
+    if (!fl.data) return '<p class="hint">正在读取种植园动态……</p>';
+    var logs = fl.data.logs || [];
+    return '<div class="soc-foot"><button type="button" class="btn ghost" data-farmlogrefresh="1">刷新动态</button></div>' + (logs.length ? '<ul class="hb-list">' + logs.map(function (e) {
+      var what = e.kind === 'visit' ? '来访了种植园' : e.kind === 'steal' ? '从田 ' + (e.i + 1) + ' 偷走「' + A.itemName(e.crop) + '」×' + e.n : e.kind === 'plant' ? '在田 ' + (e.i + 1) + ' 种下「' + A.itemName(e.seed) + '」' : '从田 ' + (e.i + 1) + ' 收获「' + A.itemName(e.crop) + '」×' + e.n + (e.stolen ? '（本轮被偷走 ' + e.stolen + '）' : '');
+      return '<li class="hb-ev' + (e.user !== meUser() && e.t > (fl.data.seen || 0) ? ' new' : '') + '">' + hbAv(e) + '<div><p><b>' + esc(e.name || e.user) + '</b> ' + esc(what) + '</p><small>' + hbClock(e.t) + '</small></div></li>';
+    }).join('') + '</ul>' : '<p class="hint">还没有种植园动态。</p>');
+  }
+  function farmLogDraw() { var e = $('farm-board'); if (e) e.innerHTML = farmLogInner(); }
+  function farmLogLoad(force) {
+    if (!online) return;
+    if (fl.loading) { if (force) fl.again = true; return; }
+    if (!force && fl.data && Date.now() - fl.at < 15000) return;
+    fl.loading = true;
+    api('GET', '/api/farm-log').then(function (r) {
+      fl.loading = false; fl.at = Date.now();
+      if (r._code === 200) { fl.data = r; fl.err = ''; fl.newN = 0; } else fl.err = r.error || '读取失败';
+      farmLogDraw(); if (A.farmRefresh) A.farmRefresh();
+      if (fl.again) { fl.again = false; farmLogLoad(true); }
+    }).catch(function () { fl.loading = false; fl.err = '连不上服务器'; farmLogDraw(); });
+  }
+  function farmBoard() {
+    if (!online) return '<p class="hint">联网登录后可查看种植园动态。</p>';
+    setTimeout(function () { farmLogLoad(true); }, 0);
+    return '<div id="farm-board">' + farmLogInner() + '</div>';
+  }
+  function farmEv(m) {
+    if (m.kind === 'steal' && A.farmStolen) A.farmStolen(m);
+    fl.at = 0;
+    if (m.user !== meUser()) fl.newN++;
+    if ($('farm-board')) farmLogLoad(true);
+    else if (A.farmRefresh) A.farmRefresh();
+    if (m.user !== meUser() && !A.inBattle()) A.toast('种植园：' + m.name + (m.kind === 'steal' ? ' 从田 ' + (m.i + 1) + ' 偷走「' + A.itemName(m.crop) + '」×' + m.n : ' 来拜访了你的种植园'));
+  }
+  function farmPeek() {
+    if (!online || !A.farmOpen || !A.farmOpen()) return;
+    api('GET', '/api/farm-log?peek=1').then(function (r) { if (r._code !== 200) return; fl.newN = r.newLog || 0; if (A.farmRefresh) A.farmRefresh(); if (fl.newN) A.toast('种植园有 ' + fl.newN + ' 条新动态，点「种植园动态」查看。'); }).catch(function () {});
+  }
+  document.addEventListener('click', function (e) { if (e.target.closest('[data-farmlogrefresh]')) { fl.err = ''; farmLogLoad(true); } });
+
   window.HSBRAWL = { render: renderBrawl };
   window.HSSOCIAL = { render: function () { if (!st.players) load(); render(); },
     // 正在拜访的基地的主人选的基地音乐（game.js 选界面音乐时用）
     visitBgm: function () { var d = st.view && st.view.data; return d && d.open && !d.noChar ? d.bgm || 'base' : null; },
     // 基地信息栏与留言板（game.js 的「我的基地」页面调用，不传参数就是自己的基地）
     homeBoard: function (owner, kind) { return hbSlot(owner || meUser(), kind); },
-    homeNew: function () { return hb.newN || 0; }, friendBases: friendBases, online: function () { return !!online; },
+    homeNew: function () { return hb.newN || 0; }, friendBases: friendBases, friendFarms: function () { return friendBases('farm'); }, online: function () { return !!online; },
+    farmBoard: farmBoard, farmNew: function () { return fl.newN; },
+    estatePending: function () { return A.page() === 'social' && !!st.view && !st.view.data && !st.view.err; },
     // 做题大王争霸赛：约对手对战、观看直播、看回放
     ctAsk: ctAsk, ctRematch: ctRematch, watch: function (user) { watchStart(user); }, replay: replayStart, wsOk: function () { return !!st.wsOk; } };
   if (A.homeRefresh) A.homeRefresh();   // 如果已经停在自己的基地页面，补上信息栏
