@@ -300,7 +300,7 @@
     deliverMail(); checkRankRewards(); daily(); homeSettle();
     setTimeout(function () { storyNewsCheck(); newsCheck(); }, 1500);
     ['holo', 'arena', 'log', 'bag', 'store', 'release', 'dex', 'items', 'social', 'explore'].forEach(function (p) { $('pg-' + p).hidden = p !== page; });
-    if (page !== 'bag' && ui.bagPanel) closeBagPanel();
+    if (page !== 'bag' && !(page === 'store' && ui.storePanel === 'detail') && ui.bagPanel) closeBagPanel();
     if (page !== 'store') ui.storePanel = null;
     if (page !== 'dex') ui.dexPanel = false;
     renderRename();
@@ -1198,9 +1198,13 @@
       return '<article class="bag-stat-card"><header><span>' + BASE_NAME[k] + '</span><strong class="' + (nm > 1 ? 'blue' : nm < 1 ? 'red' : '') + '">' + stat(m, k) + (nm > 1 ? '↑' : nm < 1 ? '↓' : '') + '</strong><small class="bag-stat-meta">种族 ' + s.base[k] + ' · 天赋 ' + (iv ? iv[k] : '？') + '</small></header><div class="bag-stat-ev"><span>学习力 ' + ev + '</span><button type="button" data-ev="' + k + '" data-d="1" aria-label="' + BASE_NAME[k] + '学习力加1"' + (room > 0 ? '' : ' disabled') + '>+1</button><button type="button" data-ev="' + k + '" data-d="10" aria-label="' + BASE_NAME[k] + '学习力加10"' + (room > 0 ? '' : ' disabled') + '>+10</button></div></article>';
     }).join('') + '</div>';
   }
-  function bagDetail(m) {
+  function profileAvailable() { return page === 'bag' || (page === 'store' && ui.storePanel === 'detail'); }
+  function profileHost() { return page === 'store' ? $('store-detail') : $('pg-bag'); }
+  function renderProfile() { if (page === 'store') renderStore(); else renderBag(); }
+  function profileListen(type, handler, options) { ['pg-bag', 'pg-store'].forEach(function (id) { $(id).addEventListener(type, handler, options); }); }
+  function bagDetail(m, store) {
     var tabs = [['base', '基础信息'], ['stats', '能力'], ['moves', '当前技能'], ['ins', '刻印'], ['items', '道具使用']];
-    var tab = ui.detailTab || 'base', content = '<p class="empty-note">从左边选择精灵，或点击空位添加。</p>';
+    var tab = (store ? ui.storeDetailTab : ui.detailTab) || 'base', content = '<p class="empty-note">从左边选择精灵，或点击空位添加。</p>';
     if (m) {
       var source = document.createElement('div'); source.innerHTML = monDetail(m);
       var section = function (key) { var el = source.querySelector('[data-mdfold="' + key + '"] .mdf-body'); return el ? el.innerHTML : ''; };
@@ -1209,16 +1213,17 @@
         var lore = form(m).d || SPMAP[m.sid].lore || '';
         head.querySelectorAll('.formdesc, .placeholder-note').forEach(function (el) { el.remove(); });
         var evolution = head.querySelector('.evo-line'); if (evolution) evolution.remove();
-        var note = head.querySelector('.hint'); if (note) note.textContent = stageLabel(SPMAP[m.sid], form(m).stage) + ' · ' + (acc.teams[acc.active][0] === m.u ? '当前配队首发' : '当前配队');
-        content = '<section class="bag-basic">' + head.outerHTML + (evolution ? evolution.outerHTML : '') + '<p class="bag-mon-lore">' + esc(lore || '暂无介绍。') + '</p><div class="bag-mon-actions">' + (acc.teams[acc.active][0] === m.u ? '' : '<button type="button" class="btn ghost" data-lead="' + acc.active + '">设为首发</button>') + '<button type="button" class="btn ghost" data-out="' + acc.active + '">移出配队</button></div></section>';
+        var note = head.querySelector('.hint'); if (note && !store) note.textContent = stageLabel(SPMAP[m.sid], form(m).stage) + ' · ' + (acc.teams[acc.active][0] === m.u ? '当前配队首发' : '当前配队');
+        var actions = source.querySelector('.d-actions'); if (actions) actions.classList.add('bag-mon-actions');
+        content = '<section class="bag-basic">' + head.outerHTML + (evolution ? evolution.outerHTML : '') + '<p class="bag-mon-lore">' + esc(lore || '暂无介绍。') + '</p>' + (store ? (actions ? actions.outerHTML : '') : '<div class="bag-mon-actions">' + (acc.teams[acc.active][0] === m.u ? '' : '<button type="button" class="btn ghost" data-lead="' + acc.active + '">设为首发</button>') + '<button type="button" class="btn ghost" data-out="' + acc.active + '">移出配队</button></div>') + '</section>';
       } else if (tab === 'moves') {
         var cards = ''; for (var i = 0; i < 4; i++) cards += i < m.moves.length ? bagMoveCard(m, m.moves[i], i) : '<div class="bag-skill empty-note">未装备技能</div>';
         content = '<section class="bag-current-skills"><div class="bag-ability">' + section('trait') + '</div><div class="bag-skill-grid">' + cards + '</div><button type="button" class="btn" data-move-panel="1">更换技能</button></section>';
       } else if (tab === 'stats') content = bagStats(m);
       else content = section(tab) || '<p class="empty-note">暂无可用道具。</p>';
     }
-    return '<header class="bag-detail-head"><h2 class="sec">精灵资料</h2><button type="button" class="btn ghost" data-exp-panel="1"' + (acc.teams[acc.active].length ? '' : ' disabled') + '>分配经验</button></header>' +
-      '<nav class="bag-detail-tabs" role="tablist" aria-label="精灵资料">' + tabs.map(function (t) { return '<button type="button" role="tab" data-detail-tab="' + t[0] + '" class="' + (tab === t[0] ? 'on' : '') + '" aria-selected="' + (tab === t[0]) + '">' + t[1] + '</button>'; }).join('') + '</nav><div class="bag-detail-body">' + content + '</div>';
+    return '<header class="bag-detail-head"><h2 class="sec">精灵资料</h2><div class="profile-head-actions"><button type="button" class="btn ghost" data-exp-panel="1"' + ((store ? !!m : acc.teams[acc.active].length) ? '' : ' disabled') + '>分配经验</button>' + (store ? '<button type="button" class="btn ghost" data-collection-close="1">关闭</button>' : '') + '</div></header>' +
+      '<nav class="bag-detail-tabs" role="tablist" aria-label="精灵资料">' + tabs.map(function (t) { return '<button type="button" role="tab" data-detail-tab="' + t[0] + '" class="' + (tab === t[0] ? 'on' : '') + '" aria-selected="' + (tab === t[0]) + '">' + t[1] + '</button>'; }).join('') + '</nav><div class="bag-detail-body' + (store ? ' collection-dialog-body' : '') + '">' + content + '</div>';
   }
   function renderBag() {
     var el = $('pg-bag');
@@ -1237,10 +1242,10 @@
     var kind = ui.bagPanel;
     ui.bagPanel = null;
     var d = $('bag-panel'); if (d) d.remove();
-    if (page === 'bag' && kind) { var selector = { teams: '[data-team-panel]', exp: '[data-exp-panel]', moves: '[data-move-panel]', pick: '[data-pickt]', skill: '[data-bag-skill="' + ui.skillIdx + '"]' }[kind], trigger = selector && $('pg-bag').querySelector(selector); if (trigger) trigger.focus(); }
+    if (profileAvailable() && kind) { var selector = { teams: '[data-team-panel]', exp: '[data-exp-panel]', moves: '[data-move-panel]', pick: '[data-pickt]', skill: '[data-bag-skill="' + ui.skillIdx + '"]' }[kind], trigger = selector && profileHost().querySelector(selector); if (trigger) trigger.focus({ preventScroll: true }); }
   }
   function renderBagPanel() {
-    var kind = ui.bagPanel; if (!kind || page !== 'bag') { closeBagPanel(); return; }
+    var kind = ui.bagPanel; if (!kind || !profileAvailable()) { closeBagPanel(); return; }
     var title = '', content = '', footer = '', m = mon(ui.sel), t = acc.teams[acc.active];
     if (kind === 'teams') {
       title = '切换配队';
@@ -1254,7 +1259,7 @@
       content = '<div class="picker-grid">' + list.map(function (x) { return '<button type="button" class="dmon" data-padd="' + ui.pick + '" data-u="' + x.u + '"><img src="' + form(x).img + '" alt=""><span class="nm">' + esc(form(x).name) + '</span><span class="lv">LV' + x.lv + '</span><span class="tc">' + tchips(SPMAP[x.sid].types) + '</span></button>'; }).join('') + '</div>' + (!list.length ? '<p class="empty-note">仓库里没有可以加入这支配队的精灵。</p>' : '');
     } else if (kind === 'exp' && m) {
       title = '分配经验';
-      content = '<div class="bag-exp-targets" aria-label="选择当前配队中的精灵">' + t.map(function (u) { var x = mon(u); return '<button type="button" class="btn' + (u === m.u ? ' primary' : '') + '" data-exp-target="' + u + '" aria-pressed="' + (u === m.u) + '">' + esc(form(x).name) + ' · LV' + x.lv + '</button>'; }).join('') + '</div><h3>' + esc(form(m).name) + '</h3>' + expBox(m);
+      content = (page === 'store' ? '' : '<div class="bag-exp-targets" aria-label="选择当前配队中的精灵">' + t.map(function (u) { var x = mon(u); return '<button type="button" class="btn' + (u === m.u ? ' primary' : '') + '" data-exp-target="' + u + '" aria-pressed="' + (u === m.u) + '">' + esc(form(x).name) + ' · LV' + x.lv + '</button>'; }).join('') + '</div>') + '<h3>' + esc(form(m).name) + '</h3>' + expBox(m);
     } else if (kind === 'moves' && m) {
       title = '更换技能'; var source = document.createElement('div'); source.innerHTML = monDetail(m); var moves = source.querySelector('[data-mdfold="moves"] .mdf-body');
       content = '<p class="hint flash" role="status">选择已学习的技能，最多装备 4 个；更改会自动保存。</p>' + (moves ? moves.innerHTML : '');
@@ -1269,7 +1274,7 @@
         var b = e.target.closest('button'); if (!b || b.disabled) return;
         if (b.dataset.teamChoice != null) { ui.teamChoice = +b.dataset.teamChoice; renderBagPanel(); return; }
         if (b.dataset.teamApply) { acc.active = ui.teamChoice; ui.sel = acc.teams[acc.active][0]; save(); closeBagPanel(); renderBag(); return; }
-        if (b.dataset.expTarget) { ui.sel = +b.dataset.expTarget; renderBag(); return; }
+        if (b.dataset.expTarget) { ui.sel = +b.dataset.expTarget; renderProfile(); return; }
         if (b.dataset.give || b.dataset.lvcap) { onDetailClick(e); return; }
         onBagClick(e);
       });
@@ -1294,18 +1299,18 @@
       else if (!e.shiftKey && (document.activeElement === last || !d.contains(document.activeElement))) { e.preventDefault(); first.focus(); }
     }
   });
-  $('pg-bag').addEventListener('skillinspect', function (e) { var card = e.target.closest('[data-bag-skill]'); if (card) { ui.skillIdx = +card.dataset.bagSkill; ui.bagPanel = 'skill'; renderBagPanel(); } });
+  profileListen('skillinspect', function (e) { var card = e.target.closest('[data-bag-skill]'); if (card) { ui.skillIdx = +card.dataset.bagSkill; ui.bagPanel = 'skill'; renderBagPanel(); } });
   function onBagClick(e) {
     if (dragJust) { e.stopPropagation(); return; }
     var t = e.target;
     if (t.id === 'wel-x') { ui.welcome = false; renderBag(); return; }
     var b = t.closest('button'); if (!b) return;
-    if (b.dataset.detailTab) { ui.detailTab = b.dataset.detailTab; renderBag(); return; }
+    if (b.dataset.detailTab) { if (page === 'store') ui.storeDetailTab = b.dataset.detailTab; else ui.detailTab = b.dataset.detailTab; renderProfile(); return; }
     if (b.dataset.teamPanel) { ui.teamChoice = acc.active; ui.bagPanel = 'teams'; renderBagPanel(); return; }
     if (b.dataset.expPanel) { ui.bagPanel = 'exp'; renderBagPanel(); return; }
     if (b.dataset.movePanel) { ui.bagPanel = 'moves'; renderBagPanel(); return; }
     if (b.dataset.bagSkill != null) { ui.skillIdx = +b.dataset.bagSkill; ui.bagPanel = 'skill'; renderBagPanel(); return; }
-    if (b.closest('#bag-detail')) { onDetailClick(e); return; }
+    if (b.closest('#bag-detail, #store-detail')) { onDetailClick(e); return; }
     if (b.dataset.rmt != null) { var tm = acc.teams[+b.dataset.rmt]; tm.splice(tm.indexOf(+b.dataset.u), 1); if (!tm.length && acc.active === +b.dataset.rmt) { var nz = acc.teams.findIndex(function (x) { return x.length; }); if (nz >= 0) acc.active = nz; } save(); renderBag(); return; }
     if (b.dataset.topen != null) { var ti = +b.dataset.topen; if (!ui.tOpen) ui.tOpen = {}; ui.tOpen[ti] = !ui.tOpen[ti]; if (!ui.tOpen[ti] && ui.pick === ti) ui.pick = -1; renderBag(); return; }
     if (b.dataset.tren != null) { closeBagPanel(); teamRename(+b.dataset.tren); return; }
@@ -1324,7 +1329,7 @@
   var skillDrag = null, skillDragClickUntil = 0;
   function skillDragStart() {
     var d = skillDrag;
-    if (!d || !d.grid.isConnected || page !== 'bag' || document.hidden) { skillDragEnd(false, true); return; }
+    if (!d || !d.grid.isConnected || !profileAvailable() || document.hidden) { skillDragEnd(false, true); return; }
     var r = d.card.getBoundingClientRect();
     d.dx = d.x - r.left; d.dy = d.y - r.top; d.to = d.from; d.on = true;
     document.dispatchEvent(new CustomEvent('skillreorderstart'));
@@ -1334,7 +1339,7 @@
     d.ghost.style.width = r.width + 'px'; d.ghost.style.height = r.height + 'px';
     d.ghost.style.left = r.left + 'px'; d.ghost.style.top = r.top + 'px';
     d.card.classList.add('skill-drag-source'); document.body.classList.add('bag-skills-dragging');
-    $('pg-bag').appendChild(d.ghost);
+    profileHost().appendChild(d.ghost);
   }
   function skillDragEnd(commit, blockClick) {
     if (!skillDrag) return;
@@ -1347,12 +1352,12 @@
     if (d.on || blockClick) skillDragClickUntil = Date.now() + 500;
     if (!d.on) return;
     var m = mon(d.u);
-    if (!commit || page !== 'bag' || !d.grid.isConnected || !m || ui.sel !== d.u || d.to < 0 || d.to === d.from || JSON.stringify(m.moves) !== d.order) return;
+    if (!commit || !profileAvailable() || !d.grid.isConnected || !m || ui.sel !== d.u || d.to < 0 || d.to === d.from || JSON.stringify(m.moves) !== d.order) return;
     var name = m.moves.splice(d.from, 1)[0]; m.moves.splice(d.to, 0, name);
-    save(); renderBag();
-    var card = $('pg-bag').querySelector('[data-bag-skill="' + d.to + '"]'); if (card && !d.touch) card.focus({ preventScroll: true });
+    save(); renderProfile();
+    var card = profileHost().querySelector('[data-bag-skill="' + d.to + '"]'); if (card && !d.touch) card.focus({ preventScroll: true });
   }
-  $('pg-bag').addEventListener('pointerdown', function (e) {
+  profileListen('pointerdown', function (e) {
     if (e.button > 0 || !e.isPrimary || skillDrag) return;
     skillDragClickUntil = 0;
     var card = e.target.closest('.bag-skill-grid [data-bag-skill]'), m = mon(ui.sel), touch = e.pointerType !== 'mouse';
@@ -1363,7 +1368,7 @@
   });
   window.addEventListener('pointermove', function (e) {
     var d = skillDrag; if (!d || d.id !== e.pointerId) return;
-    if (!d.grid.isConnected || page !== 'bag') { skillDragEnd(false, true); return; }
+    if (!d.grid.isConnected || !profileAvailable()) { skillDragEnd(false, true); return; }
     if (!d.on) {
       if (Math.hypot(e.clientX - d.x, e.clientY - d.y) < 6) return;
       if (d.touch) { skillDragEnd(false, true); return; }
@@ -1377,19 +1382,19 @@
   }, { passive: false });
   window.addEventListener('pointerup', function (e) { if (skillDrag && skillDrag.id === e.pointerId) skillDragEnd(true); });
   window.addEventListener('pointercancel', function (e) { if (skillDrag && skillDrag.id === e.pointerId) skillDragEnd(false, true); });
-  $('pg-bag').addEventListener('lostpointercapture', function (e) { if (skillDrag && skillDrag.id === e.pointerId) skillDragEnd(false, true); });
+  profileListen('lostpointercapture', function (e) { if (skillDrag && skillDrag.id === e.pointerId) skillDragEnd(false, true); });
   document.addEventListener('pointerdown', function (e) { if (skillDrag && skillDrag.id !== e.pointerId) skillDragEnd(false, true); }, true);
-  $('pg-bag').addEventListener('click', function (e) {
+  profileListen('click', function (e) {
     if (e.detail > 0 && Date.now() < skillDragClickUntil) { skillDragClickUntil = 0; e.preventDefault(); e.stopImmediatePropagation(); }
   }, true);
-  $('pg-bag').addEventListener('keydown', function (e) {
+  profileListen('keydown', function (e) {
     var card = e.target.closest('.bag-skill-grid [data-bag-skill]'), m = mon(ui.sel);
     var shift = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -2, ArrowDown: 2 }[e.key];
     if (!e.altKey || !card || !m || !shift) return;
     e.preventDefault(); skillDragEnd(false);
     var from = +card.dataset.bagSkill, to = from + shift; if (to < 0 || to >= m.moves.length) return;
-    var name = m.moves.splice(from, 1)[0]; m.moves.splice(to, 0, name); save(); renderBag();
-    $('pg-bag').querySelector('[data-bag-skill="' + to + '"]').focus({ preventScroll: true });
+    var name = m.moves.splice(from, 1)[0]; m.moves.splice(to, 0, name); save(); renderProfile();
+    profileHost().querySelector('[data-bag-skill="' + to + '"]').focus({ preventScroll: true });
   });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') skillDragEnd(false); });
   window.addEventListener('blur', function () { skillDragEnd(false); });
@@ -1517,7 +1522,7 @@
     }
   }
   function collectionClose(kind) {
-    if (kind === 'store') { ui.storePanel = null; renderStore(); }
+    if (kind === 'store') { if (ui.bagPanel) closeBagPanel(); ui.storePanel = null; renderStore(); }
     if (kind === 'dex') { ui.dexPanel = false; renderDex2(); }
   }
   ['store', 'release', 'dex'].forEach(function (kind) {
@@ -1530,7 +1535,7 @@
       var next = host.querySelector('[data-colpage="' + b.dataset.colpage + '"]'); if (next && !next.disabled) next.focus({ preventScroll: true });
     });
     host.addEventListener('keydown', function (e) {
-      var panel = host.querySelector('.collection-dialog'); if (!panel) return;
+      var panel = host.querySelector('.collection-dialog'); if (!panel || $('bag-panel')) return;
       if (e.key === 'Escape') { e.stopPropagation(); collectionClose(kind); return; }
       if (e.key !== 'Tab') return;
       var controls = [].filter.call(panel.querySelectorAll('button,input,select,summary,[tabindex="0"]'), function (el) { return !el.disabled && el.getClientRects().length; });
@@ -1560,15 +1565,16 @@
       }).join('') : '<p class="empty-note">没有符合条件的精灵。</p>') +
       '</div>' + collectionPager('store', part, list.length);
     if (ui.storePanel === 'filters') html += collectionModal('filters', '筛选与排序', filters);
-    if (ui.storePanel === 'detail' && m) html += collectionModal('detail', '精灵资料', '<p class="hint flash" role="status"></p><article class="detail" id="store-detail">' + monDetail(m) + '</article>');
+    if (ui.storePanel === 'detail' && m) html += '<div class="soc-dlg collection-dialog store-profile-dialog" data-panel="detail"><section class="soc-box collection-dialog-box store-profile-box" role="dialog" aria-modal="true" aria-label="精灵资料"><article class="bag-detail" id="store-detail">' + bagDetail(m, true) + '</article></section></div>';
     collectionRender('store', html);
+    if (ui.bagPanel) renderBagPanel();
   }
   $('pg-store').addEventListener('click', function (e) {
     if (e.target.classList.contains('collection-dialog') || e.target.closest('[data-collection-close]')) { collectionClose('store'); return; }
     var b = e.target.closest('button'); if (!b) return;
     if (b.dataset.mtab) { if (b.dataset.mtab === 'dex' && !dexOpen()) { toast('读完星际探索 · 荆楚号 · 学院部的剧情后，「黄冈秘鉴」才会开放。', prog('board').done ? '前往学院部' : '', '黄冈'); return; } go(b.dataset.mtab); return; }
     if (b.dataset.storeFilter) { ui.storePanel = 'filters'; renderStore(); return; }
-    if (b.closest('#store-detail')) { onDetailClick(e); return; }
+    if (b.closest('#store-detail')) { onBagClick(e); return; }
     if (b.dataset.ft != null) { ui.f.type = b.dataset.ft; collectionState('store').page = collectionState('store').anchor = 0; renderStore(); return; }
     if (b.dataset.flv) { var p = b.dataset.flv.split('-'); ui.f.min = +p[0]; ui.f.max = +p[1]; collectionState('store').page = collectionState('store').anchor = 0; renderStore(); return; }
     if (b.classList.contains('card')) { ui.sel = +b.dataset.u; ui.storePanel = 'detail'; renderStore(); }
@@ -1901,6 +1907,7 @@
   }
   function giveItems(o) { if (o) earn('misc', '', { items: o }); }   // 旧写法：新代码请直接用 earn，写明来源
   function rwList(R) { var a = [R.exp ? '累积经验 ×' + fmt(R.exp) : '', R.energy ? '能量 ×' + fmt(R.energy) : '', R.bgm ? '基地音乐「' + bgmName(R.bgm) + '」' : '']; if (R.items) for (var k in R.items) a.push(itemName(k) + ' ×' + R.items[k]); if (R.title) a.push('称号「' + TITLES.filter(function (x) { return x.id === R.title; })[0].n + '」'); if (R.mon) a.push(R.mon); (R.gift || []).forEach(function (g) { a.push(form(g).name + ' LV' + g.lv); }); return a.filter(Boolean); }
+  var PM = { panel: null, page: 0, mini: null, task: 0, chal: 'levels', last: {} };
   var ex = { view: 'planets', planet: 'earth', site: null, mode: null, host: null, i: 0, typing: false, auto: false, skip: false, timer: null, tick: null, full: '', log: [], pickSel: null };
   function story() { if (!acc.story) acc.story = {}; return acc.story; }
   function prog(site) { var st = story(); if (!st[site]) st[site] = { at: 0, done: false, ch: null }; return st[site]; }
@@ -2005,6 +2012,10 @@
     stopTimers(); setTimeout(bgmScene, 0);
     var el = $('pg-explore');
     if (ex.view === 'vn') { renderVN(); return; }
+    if (ex.view === 'sites' && planetOf(ex.planet) && planetOf(ex.planet).wild) {
+      var wanted = ex.fpart; ex.fpart = null;
+      planetMapEnter(ex.planet, null, null, ['story', 'challenge', 'task'].indexOf(wanted) >= 0 ? wanted : null); return;
+    }
     if (ex.view === 'field') { renderField(); return; }
     if (ex.view === 'area') { renderArea(); return; }
     if (ex.view === 'quests') ex.view = 'planets';   // 任务面板已经移到顶栏
@@ -3484,7 +3495,7 @@
     setTimeout(function () { kbwFetch(); }, 0);
     return '<article class="log-card wide pw-card" id="kbw-card-' + where + '">' + kbwInner() + '</article>';
   }
-  function kbwRedraw() { ['task', 'log'].forEach(function (w) { var el = $('kbw-card-' + w); if (el) el.innerHTML = kbwInner(); }); }
+  function kbwRedraw() { var map = false; ['task', 'log'].forEach(function (w) { var el = $('kbw-card-' + w); if (el) { if (el.closest('.planet-panel')) map = true; else el.innerHTML = kbwInner(); } }); if (map) renderField(); }
   setInterval(function () { if ($('kbw-card-task') || $('kbw-card-log')) kbwFetch(); }, 30000);
   // 区域里的BOSS（盐碱地的荒芜）：直接画在场景里，点它进BOSS页；没开放时显示开放条件
   function fieldBossHTML(R, si) {
@@ -3701,7 +3712,6 @@
     }
     return fields[rid];
   }
-  function loadField(rid) { delete fields[rid]; return fieldState(rid); }
   // 不在眼前的场景：按时间补算（离开的离开、该出现的出现）
   function catchUp(R, F, sc, now) {
     sc.slots.forEach(function (sl) {
@@ -3713,30 +3723,142 @@
     var F = fields[rid]; if (!F) return;
     F.scenes.forEach(function (sc) { sc.slots.forEach(function (sl) { if (sl.mon && sl.mon.id === id) { sl.mon = null; sl.next = Date.now() + between(FIELD_GAP); } }); });
   }
-  function enterField(rid) {
-    var R = regionById(rid); if (!R || !regionOpen(R)) return;
-    loadField(rid);
-    ex.view = 'field'; ex.region = rid; ex.planet = R.planet;
-    renderExplore(); loadGate($('pg-explore'), '正在进入' + R.name + '～'); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8);
-    setTimeout(cumberCheck, 400);
+  function enterField(rid, scene) {
+    var R = regionById(rid); if (!R || !planetMapCan(R)) return;
+    planetMapEnter(R.planet, rid, scene, null); loadGate($('pg-explore'), '正在进入' + R.name + '～'); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8);
   }
   function fieldMonHTML(m, cls) {
     return '<button type="button" class="wf-mon' + (m.face < 0 ? ' flip' : '') + (cls ? ' ' + cls : '') + '" data-wfid="' + m.id + '" data-csid="' + m.sid + '" data-cst="' + (m.corrupt ? 9 : form({ sid: m.sid, lv: m.lv }).stage || 0) + '" data-cctx="' + (m.corrupt ? 'mia' : 'wild') + '" title="' + esc(m.name) + ' LV' + m.lv + '" aria-label="和' + esc(m.name) + '对战" style="left:' + m.x.toFixed(2) + '%;top:' + m.y.toFixed(2) + '%;z-index:' + Math.round(m.y) + '"><i class="wf-sh" aria-hidden="true"></i><img src="' + m.img + '" alt=""></button>';
   }
+  function planetMapCan(R) {
+    return !!R && (regionOpen(R) || (R.id === 'salt' && planetOpen(planetOf('flora')) && !prog('flora1').done));
+  }
+  function planetMapScenes(R) {
+    if (fields[R.id]) return fields[R.id].scenes;
+    var bgs = (R.bgs || []).filter(function (k) { return BG[k]; });
+    if (regionFallen(R) && !R.record) { bgs = bgs.map(floraBg); if (R.id === 'forest') bgs.push('fl_jungle_corrupt'); }
+    var out = []; for (var i = 0; i < sceneCount(R); i++) { var key = bgs.length ? bgs[i % bgs.length] : ''; out.push({ bgKey: key, bg: BG[key] || '', flip: i >= bgs.length && i % 2 === 1, slots: [] }); }
+    return out;
+  }
+  function planetMapField(R) {
+    if (regionOpen(R)) return fieldState(R.id);
+    if (!PM.preview || PM.preview.rid !== R.id) PM.preview = { rid: R.id, scene: 0, scenes: planetMapScenes(R) };
+    return PM.preview;
+  }
+  function planetMapEnter(pid, rid, index, panel) {
+    var P = planetOf(pid); if (!P || !P.wild || !planetOpen(P)) { ex.view = 'planets'; renderExplore(); return; }
+    var last = PM.last[pid], R = rid ? regionById(rid) : last && regionById(last.rid);
+    if (!R || R.planet !== pid || !planetMapCan(R)) R = regionsOf(pid).filter(planetMapCan)[0];
+    if (!R) { ex.view = 'planets'; renderExplore(); return; }
+    ex.planet = pid; ex.region = R.id; ex.view = 'field';
+    var F = planetMapField(R);
+    if (index != null) F.scene = Math.max(0, Math.min(F.scenes.length - 1, Math.floor(+index) || 0));
+    else if (!last) F.scene = 0;
+    PM.panel = panel || null; PM.page = 0; PM.mini = R.id;
+    renderField(); setTimeout(bgmScene, 0); setTimeout(cumberCheck, 400);
+  }
+  function planetMapName(sc, R, i) { return BG_NAME[sc.bgKey] || BG_NAME[(sc.bgKey || '').replace(/_mia$|_corrupt$/, '')] || R.name + ' · 场景 ' + (i + 1); }
+  function planetMapPages(html, selector, size) {
+    var source = document.createElement('div'); source.innerHTML = html;
+    var items = [].slice.call(source.querySelectorAll(selector)), pages = Math.max(1, Math.ceil(items.length / size));
+    PM.page = Math.max(0, Math.min(pages - 1, PM.page));
+    items.forEach(function (el, i) { if (i < PM.page * size || i >= (PM.page + 1) * size) el.remove(); });
+    return { html: source.innerHTML, pager: pages > 1 ? '<nav class="planet-panel-pages" aria-label="面板翻页"><button type="button" class="btn ghost" data-map-page="-1" aria-label="上一页"' + (PM.page ? '' : ' disabled') + '>‹</button><span>' + (PM.page + 1) + ' / ' + pages + '</span><button type="button" class="btn ghost" data-map-page="1" aria-label="下一页"' + (PM.page < pages - 1 ? '' : ' disabled') + '>›</button></nav>' : '' };
+  }
+  function planetMiniMap(P) {
+    var regions = regionsOf(P.id).filter(function (R) { return !R.record || regionOpen(R); });
+    var R = regions.filter(function (R) { return R.id === PM.mini; })[0] || regions[0]; if (!R) return '<p>暂时没有可以前往的区域。</p>';
+    PM.mini = R.id; var F = planetMapField(regionById(ex.region));
+    return '<nav class="planet-region-tabs" aria-label="大场景">' + regions.map(function (r) { return '<button type="button" class="btn' + (r.id === R.id ? ' primary' : ' ghost') + '" data-map-region="' + r.id + '" aria-pressed="' + (r.id === R.id) + '">' + esc(r.name) + '</button>'; }).join('') + '</nav><div class="planet-mini-grid">' + planetMapScenes(R).map(function (sc, i) {
+      var on = ex.region === R.id && F.scene === i, open = planetMapCan(R);
+      return '<button type="button" class="planet-mini-scene' + (on ? ' on' : '') + '" data-map-rid="' + R.id + '" data-map-scene="' + i + '" aria-pressed="' + on + '"' + (open ? '' : ' disabled title="读完「降临芙罗拉」后开放"') + '><span class="planet-mini-image">' + (sc.bg ? '<img src="' + sc.bg + '" alt="">' : '') + '</span><b>' + esc(planetMapName(sc, R, i)) + '</b><small>' + (on ? '当前位置' : open ? '点击传送' : '未开放') + '</small></button>';
+    }).join('') + '</div>';
+  }
+  function planetChallengePanel(P) {
+    if (!CHAL[P.id]) return { html: '<p class="hint">这颗星球暂时没有关卡。</p>', pager: '' };
+    var source = document.createElement('div'); source.innerHTML = chalPage(P.id);
+    var wrap = source.querySelector('.ch-wrap'); if (!wrap) return { html: source.innerHTML, pager: '' };
+    var tab = PM.chal || 'levels', head = source.querySelector('.ch-dh'), cols = source.querySelectorAll('.ch-cols > div'), go = source.querySelector('.ch-go');
+    var nav = '<nav class="planet-panel-tabs">' + [['levels','关卡'],['detail','要求'],['team','出战'],['rewards','奖励'],['rank','排行']].map(function (t) { return '<button type="button" class="btn ' + (tab === t[0] ? 'primary' : 'ghost') + '" data-map-ctab="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</nav>';
+    var part;
+    if (tab === 'levels') part = planetMapPages(source.querySelector('.ch-chain').outerHTML, '.ch-node', innerHeight < 500 ? 12 : innerWidth <= 640 ? 15 : 20);
+    else if (tab === 'detail') part = { html: (head ? head.outerHTML : '') + (cols[0] ? cols[0].innerHTML : ''), pager: '' };
+    else if (tab === 'team') part = planetMapPages(cols[1] ? cols[1].innerHTML : '', '.ch-help', innerHeight < 500 ? 6 : innerHeight < 650 ? 3 : 6);
+    else if (tab === 'rank') {
+      var rank = source.querySelector('.cb-card'), mode = PM.rankMode || 'top';
+      if (rank) {
+        var remove = rank.querySelector(mode === 'top' ? '.cb-bars' : '.cb-top'); if (remove) remove.remove();
+        part = planetMapPages(rank.outerHTML, mode === 'top' ? '.cb-top > li' : '.cb-bars > li', innerHeight < 500 ? 3 : 8);
+        part.html = '<nav class="planet-panel-tabs"><button type="button" class="btn ' + (mode === 'top' ? 'primary' : 'ghost') + '" data-map-rank="top">船员排行</button><button type="button" class="btn ' + (mode === 'buckets' ? 'primary' : 'ghost') + '" data-map-rank="buckets">关卡分布</button></nav>' + part.html;
+      } else part = { html: '<p>暂无排行。</p>', pager: '' };
+    } else part = planetMapPages(wrap.children[1] ? wrap.children[1].outerHTML : '<p>暂无奖励。</p>', '.ch-mi', innerHeight < 500 ? 1 : innerHeight < 650 ? 3 : 4);
+    return { html: nav + '<div class="planet-challenge-content planet-challenge-' + tab + '">' + part.html + '</div>' + (go ? go.outerHTML : ''), pager: part.pager };
+  }
+  function planetTaskPanelCard(card) {
+    if (!card.classList.contains('pw-card')) return planetMapPages(card.outerHTML, '.pt-step', innerHeight < 500 ? 2 : 5);
+    var source = card.cloneNode(false), title = card.querySelector('h3'), tab = PM.taskPart || 'progress';
+    var tabs = '<nav class="planet-panel-tabs">' + [['progress','进度'],['rewards','奖励'],['rank','排行'],['info','详情']].map(function (t) { return '<button type="button" class="btn ' + (tab === t[0] ? 'primary' : 'ghost') + '" data-map-taskpart="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</nav>';
+    var get = function (selector) { return [].map.call(card.querySelectorAll(selector), function (el) { return el.outerHTML; }).join(''); }, part;
+    if (tab === 'rewards') part = planetMapPages(get('.pw-ms') || '<p class="hint">暂无可领取的奖励。</p>', '.pw-ms > li', innerHeight < 500 ? 2 : innerHeight < 650 ? 3 : 4);
+    else if (tab === 'rank') part = planetMapPages(get('.pw-top') || '<p class="hint">暂无排行。</p>', '.pw-top > li', innerHeight < 500 ? 3 : innerHeight < 650 ? 5 : 8);
+    else if (tab === 'info') part = planetMapPages([].filter.call(card.children, function (el) { return el.tagName === 'P'; }).map(function (el) { return '<div class="planet-task-note">' + el.outerHTML + '</div>'; }).join(''), '.planet-task-note', innerHeight < 500 ? 1 : 2);
+    else part = { html: get('.pt-bar, .pw-big, .pw-bar, .pw-me') || get('p.hint') || '<p class="hint">正在读取任务进度。</p>', pager: '' };
+    var go = [].map.call(card.querySelectorAll('button[data-fpart]'), function (el) { var button = el.cloneNode(true); button.removeAttribute('data-golog'); return button.outerHTML; }).join('');
+    source.innerHTML = (title ? title.outerHTML : '') + tabs + part.html + go;
+    return { html: source.outerHTML, pager: part.pager };
+  }
+  function planetMapPanel(P) {
+    if (!PM.panel) return '';
+    var kind = PM.panel, title = { story: '剧情', challenge: '关卡', task: '星球任务', map: '小地图' }[kind], part = { html: '', pager: '' };
+    if (kind === 'map') part.html = planetMiniMap(P);
+    else if (kind === 'story') {
+      var ids = P.storyIds || P.sites || [], story = storyTabs(ids).html(P.storyEmpty);
+      part = planetMapPages(story, ex.flSt === 'cg' ? '.cg-th' : '.site', ex.flSt === 'cg' ? (innerHeight < 650 ? 4 : 6) : (innerHeight < 500 ? 1 : innerHeight < 650 ? 2 : 3));
+    } else if (kind === 'challenge') part = planetChallengePanel(P);
+    else {
+      var source = document.createElement('div'); source.innerHTML = planetTasks(P.id);
+      var cards = source.querySelectorAll('article.pt-card, article.pw-card');
+      if (cards.length > 1) {
+        PM.task = Math.max(0, Math.min(cards.length - 1, PM.task));
+        var nav = '<nav class="planet-panel-tabs">' + [].map.call(cards, function (card, i) { var h = card.querySelector('h3'); return '<button type="button" class="btn ' + (i === PM.task ? 'primary' : 'ghost') + '" data-map-task="' + i + '">' + esc(h ? h.textContent : '任务 ' + (i + 1)) + '</button>'; }).join('') + '</nav>';
+        part = planetTaskPanelCard(cards[PM.task]); part.html = nav + part.html;
+      } else part = cards.length ? planetTaskPanelCard(cards[0]) : { html: source.innerHTML, pager: '' };
+    }
+    return '<div class="soc-dlg planet-panel" data-map-dialog="' + kind + '"><section class="soc-box planet-panel-box planet-panel-' + kind + '" role="dialog" aria-modal="true" aria-label="' + esc(P.name + ' · ' + title) + '"><header><h2>' + esc(P.name + ' · ' + title) + '</h2><button type="button" class="btn ghost" data-map-close="1">关闭</button></header><div class="planet-panel-body">' + part.html + '</div>' + part.pager + '</section></div>';
+  }
+  function planetMapRender(html) {
+    var host = $('pg-explore'), old = host.querySelector('.planet-panel'), active = document.activeElement;
+    var inPanel = old && old.contains(active), id = inPanel && active.id;
+    var attr = inPanel && [].find.call(active.attributes, function (a) { return a.name.indexOf('data-') === 0; });
+    host.innerHTML = html;
+    var panel = host.querySelector('.planet-panel');
+    if (panel) {
+      var focus = id ? $(id) : attr ? [].find.call(panel.querySelectorAll('[' + attr.name + ']'), function (el) { return el.getAttribute(attr.name) === attr.value; }) : null;
+      if (focus && !focus.disabled) focus.focus({ preventScroll: true }); else if (!old || inPanel) panel.querySelector('[data-map-close]').focus({ preventScroll: true });
+    } else if (old) { var trigger = host.querySelector('[data-map-panel="' + old.dataset.mapDialog + '"]'); if (trigger) trigger.focus({ preventScroll: true }); }
+  }
+  $('pg-explore').addEventListener('keydown', function (e) {
+    var panel = $('pg-explore').querySelector('.planet-panel'); if (!panel || !panel.contains(e.target)) return;
+    if (e.key === 'Escape') { e.stopPropagation(); PM.panel = null; renderField(); return; }
+    if (e.key !== 'Tab') return;
+    var controls = [].filter.call(panel.querySelectorAll('button,input,select,a[href]'), function (el) { return !el.disabled && el.getClientRects().length; });
+    var first = controls[0], last = controls[controls.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  });
   function renderField() {
     var R = regionById(ex.region);
-    if (!R || !regionOpen(R)) { ex.view = 'sites'; renderExplore(); return; }
-    var F = fieldState(R.id), P = planetOf(R.planet), sc = F.scenes[F.scene], n = F.scenes.length;
-    catchUp(R, F, sc, Date.now());
-    var bg = sc.bg ? '<img class="wf-bg' + (sc.flip ? ' flip' : '') + '" src="' + sc.bg + '" alt="">' : '<div class="wf-ph' + (sc.flip ? ' flip' : '') + '">' + regionArt(R.id) + '</div>';
-    var mons = sc.slots.filter(function (sl) { return sl.mon; }).map(function (sl) { return fieldMonHTML(sl.mon); }).join('');
-    var nav = n > 1 ? '<button type="button" class="wf-arrow l" data-wfnav="-1" aria-label="上一个场景">‹</button><button type="button" class="wf-arrow r" data-wfnav="1" aria-label="下一个场景">›</button>' +
-      '<span class="wf-dots" aria-label="场景 ' + (F.scene + 1) + ' / ' + n + '">' + F.scenes.map(function (x, i) { return '<i class="' + (i === F.scene ? 'on' : '') + '"></i>'; }).join('') + '</span>' : '';
-    var spareTip = R.pool && R.planet === 'flora' && spareActive() ? '<div class="spare-note"><span class="tape l"></span><b>主线任务 · 引出猎杀者</b>　手下留情：这些精灵不会倒下，体力剩 1 点时就会逃走，算作「假装击败」。已完成 <b>' + spareN() + ' / ' + SPARE_N + '</b>。</div>' : '';
-    $('pg-explore').innerHTML = '<div class="crumb"><button type="button" class="btn ghost" id="field-back">‹ 返回' + esc(P.name) + '</button><b>' + esc(P.name) + ' · ' + esc(R.name) + '</b>' + (n > 1 ? '<span class="hint">场景 ' + (F.scene + 1) + ' / ' + n + (BG_NAME[sc.bgKey] ? ' · ' + BG_NAME[sc.bgKey] : '') + '</span>' : '') + '</div>' +
-      invLine() + spareTip + '<div class="wf-scene' + (sc.corrupt ? ' miasma-bg' : '') + '" id="wf-scene">' + bg + mons + gatherNodesHTML(R.id, F.scene, n) + jadeHTML(R.id, F.scene) + riceBowlHTML(R, F.scene) + oreHTML(R, F, F.scene) + hornHTML(R, F, F.scene) + iceHTML(R, F, F.scene) + travelHTML(R, F.scene) + kbwHTML(R, F.scene) + storyGatherHTML(R, F.scene) + fmNpcHTML(F, F.scene) + fieldBossHTML(R, F.scene) + nav + '</div>' +
-      (R.pool ? '<p class="hint">点左右两边的箭头可以切换场景。每只精灵在自己的一小片范围里走动，待一会儿就会离开，过一阵又会有新的精灵出现，各走各的。点中哪只，就和哪只对战；打完、抓到或逃走之后，这只离开，过一会儿会有新的一只补上。采集点固定在场景里，每个每天可以采集 1 次：芙罗拉、坎伯兰、庞贝采到星砂 ×12，莱汀和白之星采到圣晶石 ×1。' + (RICE.regions.indexOf(R.id) >= 0 ? '带着「一碗饭」来的话，可以在任意一个场景里放下它。' : '') + '</p>' : '');
-    startFieldMove();
+    if (!R || !planetMapCan(R)) { ex.view = 'sites'; renderExplore(); return; }
+    var open = regionOpen(R), F = planetMapField(R), P = planetOf(R.planet), sc = F.scenes[F.scene], n = F.scenes.length;
+    ex.planet = R.planet; PM.last[P.id] = { rid: R.id, scene: F.scene };
+    if (open) catchUp(R, F, sc, Date.now());
+    var bg = sc.bg ? '<img class="wf-bg' + (sc.flip ? ' flip' : '') + '" src="' + sc.bg + '" alt="">' : '<div class="wf-ph">' + regionArt(R.id) + '</div>';
+    var mons = open ? sc.slots.filter(function (sl) { return sl.mon; }).map(function (sl) { return fieldMonHTML(sl.mon); }).join('') : '';
+    var nav = '<button type="button" class="wf-arrow l" data-wfnav="-1" aria-label="上一个小场景"' + (n > 1 ? '' : ' disabled') + '>‹</button><button type="button" class="wf-arrow r" data-wfnav="1" aria-label="下一个小场景"' + (n > 1 ? '' : ' disabled') + '>›</button><span class="wf-dots" aria-label="小场景 ' + (F.scene + 1) + ' / ' + n + '">' + F.scenes.map(function (x, i) { return '<i class="' + (i === F.scene ? 'on' : '') + '"></i>'; }).join('') + '</span>';
+    var resources = open ? gatherNodesHTML(R.id, F.scene, n) + jadeHTML(R.id, F.scene) + riceBowlHTML(R, F.scene) + oreHTML(R, F, F.scene) + hornHTML(R, F, F.scene) + iceHTML(R, F, F.scene) + storyGatherHTML(R, F.scene) : '';
+    var objects = open ? (resources ? '<div class="planet-map-resources" role="group" aria-label="场景物品">' + resources + '</div>' : '') + travelHTML(R, F.scene) + kbwHTML(R, F.scene) + fmNpcHTML(F, F.scene) + fieldBossHTML(R, F.scene) : '<button type="button" class="planet-story-pin" data-map-panel="story"><span aria-hidden="true">📖</span><b>降临芙罗拉</b></button>';
+    planetMapRender('<div class="planet-map-page"><div class="planet-map-stage"><div class="wf-scene' + (sc.corrupt ? ' miasma-bg' : '') + '" id="wf-scene">' + bg + mons + objects + nav + '</div><header class="planet-map-heading"><button type="button" class="btn ghost" data-map-exit="1" aria-label="返回星图">‹</button><div><small>' + esc(P.name + ' · ' + R.name) + '</small><h2>' + esc(planetMapName(sc, R, F.scene)) + '</h2></div></header><nav class="planet-map-tools" aria-label="星球功能">' + [['story','📖','剧情'],['challenge','⚔','关卡'],['task','📜','星球任务'],['map','🗺','小地图']].map(function (t) { return '<button type="button" data-map-panel="' + t[0] + '" aria-haspopup="dialog"><span aria-hidden="true">' + t[1] + '</span><b>' + t[2] + '</b></button>'; }).join('') + '</nav></div></div>' + planetMapPanel(P));
+    if (open) startFieldMove(); else stopField();
   }
   function startFieldMove() {
     stopField();
@@ -3765,7 +3887,7 @@
     }, 40);
   }
   function fieldNav(d) {
-    var F = fields[ex.region]; if (!F) return;
+    var R = regionById(ex.region), F = R && planetMapField(R); if (!F || ex.fighting) return;
     var n = F.scenes.length; F.scene = (F.scene + d + n) % n;
     renderField();
     setTimeout(cumberCheck, 400);
@@ -4002,7 +4124,7 @@
     CLOUD.api('GET', '/api/helpers').then(function (r) {
       ex.hpBusy = false; if (r._code !== 200) return;
       ex.helpers = r.helpers || []; ex.helpersT = Date.now();
-      if (page === 'explore' && ex.view === 'sites' && ex.fpart === 'challenge') renderExplore();
+      if (page === 'explore' && ((ex.view === 'sites' && ex.fpart === 'challenge') || (ex.view === 'field' && PM.panel === 'challenge'))) renderExplore();
       if ($('tp-dlg')) renderTeamPrep();
     }).catch(function () { ex.hpBusy = false; });
   }
@@ -4313,7 +4435,7 @@
     var C = CB[k] || (CB[k] = { data: null, at: 0, busy: false });
     if (!pwOnline() || C.busy || (C.data && Date.now() - C.at < 30000)) return;
     C.busy = true;
-    CLOUD.api('GET', '/api/chalboard?k=' + k).then(function (r) { C.busy = false; if (r._code === 200) { C.data = r; C.at = Date.now(); var el = $('cb-' + k); if (el) el.innerHTML = cbInner(k); } })
+    CLOUD.api('GET', '/api/chalboard?k=' + k).then(function (r) { C.busy = false; if (r._code === 200) { C.data = r; C.at = Date.now(); var el = $('cb-' + k); if (el) { if (el.closest('.planet-panel')) renderField(); else el.innerHTML = cbInner(k); } } })
       .catch(function () { C.busy = false; });
   }
   function cbVal(k, r) { return k === 'tower' ? (r.s ? '通关 ' + r.s + ' 次' : '最高第 ' + r.v + ' 层') : '第 ' + r.v + ' 关 · ★' + r.s; }
@@ -4612,7 +4734,7 @@
     setTimeout(function () { pwFetch(); }, 0);
     return '<article class="log-card wide pw-card" id="pw-card-' + where + '">' + pwInner() + '</article>';
   }
-  function pwRedraw() { ['log', 'task'].forEach(function (w) { var el = $('pw-card-' + w); if (el) el.innerHTML = pwInner(); }); }
+  function pwRedraw() { var map = false; ['log', 'task'].forEach(function (w) { var el = $('pw-card-' + w); if (el) { if (el.closest('.planet-panel')) map = true; else el.innerHTML = pwInner(); } }); if (map) renderField(); }
   setInterval(function () { if ($('pw-card-log') || $('pw-card-task')) pwFetch(); }, 30000);
 
   /* 芙罗拉玉：瘴气驱逐战开放后，芙罗拉星丛林、草甸的场景里每天有一定概率冒出来（每个场景每天最多一块，捡到 1~3 个） */
@@ -6141,9 +6263,9 @@
   }
   document.addEventListener('click', function (e) {   // 奥多亚克：背包 / 仓库资料里切换查看的形态
     var b = e.target.closest && e.target.closest('[data-odof]'); if (!b) return;
-    var u = +b.dataset.odof, m = mon(u), det = b.closest('.detail'), inBag = b.closest('#bag-panel, #bag-detail'); if (!m || (!det && !inBag)) return;
+    var u = +b.dataset.odof, m = mon(u), det = b.closest('.detail'), inBag = b.closest('#bag-panel, #bag-detail, #store-detail'); if (!m || (!det && !inBag)) return;
     ui.odoF = { u: u, f: b.dataset.of || '' };
-    if (inBag) renderBag(); else det.innerHTML = monDetail(m);
+    if (inBag) renderProfile(); else det.innerHTML = monDetail(m);
   });
   // 2026-10-24：改成在 document 上监听（按钮被重新渲染也不会失效），出错时把原因提示出来
   document.addEventListener('click', function (e) {
@@ -7761,6 +7883,7 @@
     if (ex.mode === 'replay' && $('vn')) { vnClick(e); return; }
     if (ex.view === 'shop' && shopClick(e)) return;
     if (e.target.closest('#bsoc')) { bsocClick(e); return; }
+    if (e.target.classList.contains('planet-panel')) { PM.panel = null; renderField(); return; }
     var b = e.target.closest('button, .dept.open'); if (!b) return;
     if (b.dataset.shipareas) {
       if (document.querySelector('.ship-areas-dialog')) return;
@@ -7768,6 +7891,17 @@
       panel.innerHTML = '<div class="soc-box ship-areas-box" role="dialog" aria-modal="true" aria-label="舰内区域"><div class="ship-areas-list">' + shipTiles() + '</div><div class="soc-foot"><button type="button" class="btn primary" data-shipareasclose="1">关闭</button></div></div>';
       $('pg-explore').appendChild(panel); panel.querySelector('[data-shipareasclose]').focus(); return;
     }
+    if (b.dataset.mapPanel) { PM.panel = b.dataset.mapPanel; PM.page = 0; PM.mini = ex.region; renderField(); return; }
+    if (b.dataset.mapClose || e.target.classList.contains('planet-panel')) { PM.panel = null; renderField(); return; }
+    if (b.dataset.mapExit) { PM.panel = null; ex.view = 'planets'; renderExplore(); return; }
+    if (b.dataset.mapRegion) { PM.mini = b.dataset.mapRegion; renderField(); return; }
+    if (b.dataset.mapRid && !b.disabled) { var MR = regionById(b.dataset.mapRid); if (MR && MR.planet === ex.planet && planetMapCan(MR)) enterField(MR.id, +b.dataset.mapScene); return; }
+    if (b.dataset.mapPage) { PM.page += +b.dataset.mapPage; renderField(); return; }
+    if (b.dataset.mapCtab) { PM.chal = b.dataset.mapCtab; PM.page = 0; renderField(); return; }
+    if (b.dataset.mapTask != null) { PM.task = +b.dataset.mapTask; PM.taskPart = 'progress'; PM.page = 0; renderField(); return; }
+    if (b.dataset.mapTaskpart) { PM.taskPart = b.dataset.mapTaskpart; PM.page = 0; renderField(); return; }
+    if (b.dataset.mapRank) { PM.rankMode = b.dataset.mapRank; PM.page = 0; renderField(); return; }
+    if (PM.panel === 'challenge' && b.dataset.chal != null) { PM.chal = 'detail'; PM.page = 0; }
     if (chalClick(b)) return;
     if (towerClick(b)) return;
     if (b.dataset.smq) { shipQuickGo(b.dataset.smq); return; }
@@ -7871,8 +8005,8 @@
     if (b.dataset.sdq || b.dataset.sdbuy) { if (!b.disabled) seedShopClick(b); return; }
     if (b.dataset.reap != null && b.dataset.reap !== '') { farmHarvest(+b.dataset.reap); return; }
     if (b.id === 'farm-back') { ex.view = 'area'; ex.area = '恩施'; ex.planet = 'jingchu'; renderExplore(); return; }
-    if (b.dataset.fpart) { ex.fpart = b.dataset.fpart; renderExplore(); return; }
-    if (b.dataset.flst) { ex.flSt = b.dataset.flst; renderExplore(); return; }
+    if (b.dataset.fpart) { if (ex.view === 'field') { PM.panel = b.dataset.fpart === 'catch' ? null : b.dataset.fpart; PM.page = 0; renderField(); } else { ex.fpart = b.dataset.fpart; renderExplore(); } return; }
+    if (b.dataset.flst) { ex.flSt = b.dataset.flst; PM.page = 0; renderExplore(); return; }
     if (b.dataset.cgview) { openCgView(b.dataset.cgview); return; }
     if (b.dataset.field && !b.disabled) { enterField(b.dataset.field); return; }
     if (b.dataset.gather != null && b.dataset.gather !== '') { gatherAt(+b.dataset.gather); return; }
@@ -7899,7 +8033,7 @@
     if (b.dataset.ctrep) { if (window.HSSOCIAL && window.HSSOCIAL.replay) window.HSSOCIAL.replay(b.dataset.ctrep); return; }
     if (b.dataset.planet && !b.disabled) { ex.planet = b.dataset.planet; ex.view = 'sites'; renderExplore(); loadGate($('pg-explore'), '正在前往' + planetOf(b.dataset.planet).name + '～'); mysteryRoll(planetOf(b.dataset.planet).name); return; }
     if (b.id === 'ex-back') { var P_ = ex.view === 'sites' && planetOf(ex.planet); if (P_ && P_.inStation) { ex.planet = 'station'; renderExplore(); return; } if (ex.view === 'bosshub' || (P_ && SHIP_SIDE[P_.id])) { ex.view = 'sites'; ex.planet = 'jingchu'; renderExplore(); return; } ex.view = 'planets'; renderExplore(); return; }
-    if (b.dataset.go && unlocked(b.dataset.go)) { ex.arc = false; startVN(b.dataset.go, 'replay', $('pg-explore'), b.dataset.from === '0'); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8); }
+    if (b.dataset.go && unlocked(b.dataset.go)) { PM.panel = null; ex.arc = false; startVN(b.dataset.go, 'replay', $('pg-explore'), b.dataset.from === '0'); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8); }
   });
 
   $('pg-explore').addEventListener('keydown', function (e) { var g = e.target.closest && e.target.closest('.dept.open'); if (g && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); g.dispatchEvent(new MouseEvent('click', { bubbles: true })); } });
@@ -8368,6 +8502,11 @@
       if (page === 'explore' && ex.view === 'farm') farmRefresh([m.i]);
     },
     farmSteal: function (owner, i, ok, fail) { txRun('farmSteal', { owner: owner, i: i }, function (r) { renderRes(); if (ok) ok(r); }, fail); },
+    layoutPlanetPanel: function () {
+      if (page !== 'explore' || ex.view !== 'field' || !PM.panel) return;
+      var key = (innerHeight < 500 ? 'short' : innerHeight < 650 ? 'medium' : 'tall') + ':' + (innerWidth <= 640 ? 'narrow' : 'wide');
+      if (PM.layout !== key) { PM.layout = key; renderField(); }
+    },
     layoutCollection: function (kind, cols, rows) {
       if (!ready() || page !== kind) return;
       var state = collectionState(kind); if (state.cols === cols && state.rows === rows) return;

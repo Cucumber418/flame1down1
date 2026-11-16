@@ -61,51 +61,52 @@ body.battle-touch #pg-bag .bag-workspace { grid-template-columns: minmax(0, 32%)
 #pg-bag .bag-team-footer { flex: 0 0 auto; display: flex; justify-content: center; }
 #pg-bag .bag-team-footer button { width: 100%; min-width: 0; padding: 6px 8px; font-size: calc(12px * var(--bag-type-scale)); white-space: normal; }
 
-#pg-bag .bag-detail {
+:is(#pg-bag, .store-profile-dialog) .bag-detail {
   grid-area: detail;
   display: flex; flex-direction: column; gap: 9px; padding: 12px; position: relative;
   background: var(--paper-2); border: 1.5px solid var(--ink); border-radius: 14px;
   overflow: hidden;
 }
-#pg-bag .bag-detail-head { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: nowrap; gap: 8px; }
-#pg-bag .bag-detail-head h2 { min-width: 0; font-size: calc(27px * var(--bag-type-scale)); line-height: 1; }
-#pg-bag .bag-detail-head button { flex: 0 0 auto; padding: 5px 10px; font-size: calc(12px * var(--bag-type-scale)); }
-#pg-bag .bag-detail-tabs { flex: 0 0 auto; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; }
-#pg-bag .bag-detail-tabs button {
+:is(#pg-bag, .store-profile-dialog) .bag-detail-head { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: nowrap; gap: 8px; }
+:is(#pg-bag, .store-profile-dialog) .bag-detail-head h2 { min-width: 0; font-size: calc(27px * var(--bag-type-scale)); line-height: 1; }
+:is(#pg-bag, .store-profile-dialog) .bag-detail-head button { flex: 0 0 auto; padding: 5px 10px; font-size: calc(12px * var(--bag-type-scale)); }
+:is(#pg-bag, .store-profile-dialog) .bag-detail-tabs { flex: 0 0 auto; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; }
+:is(#pg-bag, .store-profile-dialog) .bag-detail-tabs button {
   min-width: 0; padding: 6px 5px; border: 1.5px solid var(--rule); border-radius: 8px;
   background: var(--paper); font: inherit; font-size: calc(13px * var(--bag-type-scale)); line-height: 1.2; cursor: pointer;
 }
-#pg-bag .bag-detail-tabs button.on, #pg-bag .bag-detail-tabs button[aria-selected="true"] { border-color: var(--ink); background: var(--ink); color: #fff; }
-#pg-bag .bag-detail-body { flex: 1 1 0; min-height: 0; min-width: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
-#pg-bag .bag-detail-body > :first-child { margin-top: 0; }
-#pg-bag .bag-detail-body .d-head { grid-template-columns: minmax(80px, 31%) minmax(0, 1fr); gap: 12px; align-items: start; }
-#pg-bag .bag-detail-body .d-art { height: clamp(90px, 22vh, 170px); min-height: 0; overflow: hidden; display: grid; place-items: center; }
-#pg-bag .bag-detail-body .d-art img { width: 100%; height: 100%; min-height: 0; max-height: 100%; object-fit: contain; }
-#pg-bag .bag-detail-body .d-head h3 { font-size: calc(32px * var(--bag-type-scale)); line-height: 1.1; overflow-wrap: anywhere; }
-#pg-bag .bag-detail-body .dexno { font-size: calc(12px * var(--bag-type-scale)); }
-#pg-bag .bag-detail-body .formdesc, #pg-bag .bag-detail-body .evo-line { font-size: calc(12px * var(--bag-type-scale)); line-height: 1.4; }
-#pg-bag .bag-detail-body .formdesc { margin-top: 5px; }
-#pg-bag .bag-detail-body .lvbig { font-size: calc(13px * var(--bag-type-scale)); }
-#pg-bag .bag-detail-body .stats { font-size: calc(12px * var(--bag-type-scale)); }
-#pg-bag .bag-detail-body .stats .real { font-size: calc(11px * var(--bag-type-scale)); }
-#pg-bag .bag-detail-body .stats.evstats { grid-template-columns: auto 5ch minmax(18px, 1fr) auto auto; gap: 4px 6px; }
-#pg-bag .bag-detail-body .evhead, #pg-bag .bag-detail-body .ivhead { gap: 5px 8px; }
-#pg-bag .bag-mon-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-#pg-bag .bag-mon-actions .btn { padding: 4px 7px; font-size: calc(12px * var(--bag-type-scale)); }
-#pg-bag .bag-basic { display: flex; flex-direction: column; gap: 10px; }
-#pg-bag .bag-basic .d-head, #pg-bag .bag-basic .bag-mon-actions { margin: 0; }
-#pg-bag .bag-mon-lore { margin: 0; padding: 9px 10px; border: 1px dashed var(--rule); border-radius: 8px; background: var(--paper); font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
-#pg-bag .bag-current-skills { height: 100%; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
-#pg-bag .bag-ability { flex: 0 0 auto; max-height: 25%; overflow-y: auto; padding: 7px 9px; border: 1px dashed var(--rule); border-radius: 8px; background: var(--paper); font-size: calc(12px * var(--bag-type-scale)); line-height: 1.4; }
-#pg-bag .bag-ability p { margin: 0; }
-#pg-bag .bag-skill-grid { flex: 1 1 0; min-height: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); gap: 7px; }
-#pg-bag .bag-skill { min-width: 0; min-height: 0; padding: 7px 9px; display: flex; flex-direction: column; justify-content: center; gap: 4px; border: 1.5px solid var(--ink); border-radius: 9px; background: var(--paper); color: var(--ink); text-align: left; cursor: pointer; }
-#pg-bag .bag-skill .mn { color: var(--red); font-size: calc(15px * var(--bag-type-scale)); font-weight: 700; line-height: 1.2; overflow-wrap: anywhere; }
-#pg-bag .bag-skill .pp { color: var(--pencil); font-size: calc(11px * var(--bag-type-scale)); font-variant-numeric: tabular-nums; }
-#pg-bag .bag-skill .t2 { display: flex; flex-wrap: wrap; align-items: center; gap: 3px; font-size: calc(11px * var(--bag-type-scale)); line-height: 1.2; }
-#pg-bag .bag-skill .chip { padding: 2px 4px; font-size: calc(10px * var(--bag-type-scale)); }
-#pg-bag .bag-skill .md { display: block; flex: 0 0 auto; color: var(--blue); font-size: 12px; line-height: 1.3; white-space: normal; overflow-wrap: anywhere; }
-#pg-bag .bag-current-skills > button { flex: 0 0 auto; align-self: end; padding: 5px 12px; font-size: calc(12px * var(--bag-type-scale)); }
+:is(#pg-bag, .store-profile-dialog) .bag-detail-tabs button.on, :is(#pg-bag, .store-profile-dialog) .bag-detail-tabs button[aria-selected="true"] { border-color: var(--ink); background: var(--ink); color: #fff; }
+:is(#pg-bag, .store-profile-dialog) .bag-detail-body { flex: 1 1 0; min-height: 0; min-width: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+:is(#pg-bag, .store-profile-dialog) .bag-detail-body > :first-child { margin-top: 0; }
+:is(#pg-bag, .store-profile-dialog) .bag-detail-body .d-head { grid-template-columns: minmax(80px, 31%) minmax(0, 1fr); gap: 12px; align-items: start; }
+:is(#pg-bag, .store-profile-dialog) .bag-detail-body .d-art { height: clamp(90px, 22vh, 170px); min-height: 0; overflow: hidden; display: grid; place-items: center; }
+:is(#pg-bag, .store-profile-dialog) .bag-detail-body .d-art img { width: 100%; height: 100%; min-height: 0; max-height: 100%; object-fit: contain; }
+:is(#pg-bag, .store-profile-dialog) .bag-detail-body .d-head h3 { font-size: calc(32px * var(--bag-type-scale)); line-height: 1.1; overflow-wrap: anywhere; }
+:is(#pg-bag, .store-profile-dialog) .bag-detail-body .dexno { font-size: calc(12px * var(--bag-type-scale)); }
+:is(#pg-bag, .store-profile-dialog) .bag-detail-body .formdesc, :is(#pg-bag, .store-profile-dialog) .bag-detail-body .evo-line { font-size: calc(12px * var(--bag-type-scale)); line-height: 1.4; }
+:is(#pg-bag, .store-profile-dialog) .bag-detail-body .formdesc { margin-top: 5px; }
+:is(#pg-bag, .store-profile-dialog) .bag-detail-body .lvbig { font-size: calc(13px * var(--bag-type-scale)); }
+:is(#pg-bag, .store-profile-dialog) .bag-detail-body .stats { font-size: calc(12px * var(--bag-type-scale)); }
+:is(#pg-bag, .store-profile-dialog) .bag-detail-body .stats .real { font-size: calc(11px * var(--bag-type-scale)); }
+:is(#pg-bag, .store-profile-dialog) .bag-detail-body .stats.evstats { grid-template-columns: auto 5ch minmax(18px, 1fr) auto auto; gap: 4px 6px; }
+:is(#pg-bag, .store-profile-dialog) .bag-detail-body .evhead, :is(#pg-bag, .store-profile-dialog) .bag-detail-body .ivhead { gap: 5px 8px; }
+:is(#pg-bag, .store-profile-dialog) .bag-mon-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+:is(#pg-bag, .store-profile-dialog) .bag-mon-actions .btn { padding: 4px 7px; font-size: calc(12px * var(--bag-type-scale)); }
+.profile-head-actions { display: flex; align-items: center; flex: 0 0 auto; gap: 5px; min-width: 0; }
+:is(#pg-bag, .store-profile-dialog) .bag-basic { display: flex; flex-direction: column; gap: 10px; }
+:is(#pg-bag, .store-profile-dialog) .bag-basic .d-head, :is(#pg-bag, .store-profile-dialog) .bag-basic .bag-mon-actions { margin: 0; }
+:is(#pg-bag, .store-profile-dialog) .bag-mon-lore { margin: 0; padding: 9px 10px; border: 1px dashed var(--rule); border-radius: 8px; background: var(--paper); font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+:is(#pg-bag, .store-profile-dialog) .bag-current-skills { height: 100%; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
+:is(#pg-bag, .store-profile-dialog) .bag-ability { flex: 0 0 auto; max-height: 25%; overflow-y: auto; padding: 7px 9px; border: 1px dashed var(--rule); border-radius: 8px; background: var(--paper); font-size: calc(12px * var(--bag-type-scale)); line-height: 1.4; }
+:is(#pg-bag, .store-profile-dialog) .bag-ability p { margin: 0; }
+:is(#pg-bag, .store-profile-dialog) .bag-skill-grid { flex: 1 1 0; min-height: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); gap: 7px; }
+:is(#pg-bag, .store-profile-dialog) .bag-skill { min-width: 0; min-height: 0; padding: 7px 9px; display: flex; flex-direction: column; justify-content: center; gap: 4px; border: 1.5px solid var(--ink); border-radius: 9px; background: var(--paper); color: var(--ink); text-align: left; cursor: pointer; }
+:is(#pg-bag, .store-profile-dialog) .bag-skill .mn { color: var(--red); font-size: calc(15px * var(--bag-type-scale)); font-weight: 700; line-height: 1.2; overflow-wrap: anywhere; }
+:is(#pg-bag, .store-profile-dialog) .bag-skill .pp { color: var(--pencil); font-size: calc(11px * var(--bag-type-scale)); font-variant-numeric: tabular-nums; }
+:is(#pg-bag, .store-profile-dialog) .bag-skill .t2 { display: flex; flex-wrap: wrap; align-items: center; gap: 3px; font-size: calc(11px * var(--bag-type-scale)); line-height: 1.2; }
+:is(#pg-bag, .store-profile-dialog) .bag-skill .chip { padding: 2px 4px; font-size: calc(10px * var(--bag-type-scale)); }
+:is(#pg-bag, .store-profile-dialog) .bag-skill .md { display: block; flex: 0 0 auto; color: var(--blue); font-size: 12px; line-height: 1.3; white-space: normal; overflow-wrap: anywhere; }
+:is(#pg-bag, .store-profile-dialog) .bag-current-skills > button { flex: 0 0 auto; align-self: end; padding: 5px 12px; font-size: calc(12px * var(--bag-type-scale)); }
 
 @media (max-width: 680px) {
   .acct { gap: 5px; }
@@ -131,51 +132,51 @@ body.battle-touch #pg-bag .bag-workspace { grid-template-columns: minmax(0, 32%)
   #pg-bag .current-team .slot .lead { top: 2px; left: 2px; padding: 1px 3px; font-size: 8px; }
   #pg-bag .current-team .slot.addslot { flex-wrap: wrap; font-size: 11px; text-align: center; gap: 0 3px; }
   #pg-bag .bag-team-footer button { font-size: 11px; padding: 5px 2px; }
-  #pg-bag .bag-detail { padding: 7px; gap: 7px; border-radius: 10px; }
-  #pg-bag .bag-detail-head { gap: 4px; }
-  #pg-bag .bag-detail-head h2 { font-size: 21px; white-space: nowrap; }
-  #pg-bag .bag-detail-head button { font-size: 10px; padding: 5px 5px; }
-  #pg-bag .bag-detail-tabs { gap: 3px; }
-  #pg-bag .bag-detail-tabs button { font-size: 11px; padding: 4px 2px; border-radius: 6px; overflow-wrap: anywhere; }
-  #pg-bag .bag-detail-body .d-head { grid-template-columns: minmax(0, 1fr); gap: 6px; }
-  #pg-bag .bag-detail-body .d-art { width: 100%; height: clamp(64px, 17vh, 130px); }
-  #pg-bag .bag-detail-body .d-head h3 { font-size: 24px; margin-bottom: 4px; }
-  #pg-bag .bag-detail-body .dexno { font-size: 10px; }
-  #pg-bag .bag-detail-body .formdesc, #pg-bag .bag-detail-body .evo-line { font-size: 11px; line-height: 1.35; }
-  #pg-bag .bag-detail-body .hint { font-size: 11px; }
-  #pg-bag .bag-detail-body .chip { font-size: 10px; padding: 3px 5px; }
-  #pg-bag .bag-current-skills { gap: 6px; }
-  #pg-bag .bag-ability { font-size: 11px; padding: 5px; }
-  #pg-bag .bag-skill-grid { gap: 5px; }
-  #pg-bag .bag-skill { padding: 5px; gap: 3px; }
-  #pg-bag .bag-skill .mn { font-size: 12px; }
-  #pg-bag .bag-skill .pp, #pg-bag .bag-skill .t2 { font-size: 10px; }
-  #pg-bag .bag-skill .chip { font-size: 9px; padding: 2px 3px; }
-  #pg-bag .bag-current-skills > button { padding: 5px 8px; font-size: 11px; }
+  :is(#pg-bag, .store-profile-dialog) .bag-detail { padding: 7px; gap: 7px; border-radius: 10px; }
+  :is(#pg-bag, .store-profile-dialog) .bag-detail-head { gap: 4px; }
+  :is(#pg-bag, .store-profile-dialog) .bag-detail-head h2 { font-size: 21px; white-space: nowrap; }
+  :is(#pg-bag, .store-profile-dialog) .bag-detail-head button { font-size: 10px; padding: 5px 5px; }
+  :is(#pg-bag, .store-profile-dialog) .bag-detail-tabs { gap: 3px; }
+  :is(#pg-bag, .store-profile-dialog) .bag-detail-tabs button { font-size: 11px; padding: 4px 2px; border-radius: 6px; overflow-wrap: anywhere; }
+  :is(#pg-bag, .store-profile-dialog) .bag-detail-body .d-head { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  :is(#pg-bag, .store-profile-dialog) .bag-detail-body .d-art { width: 100%; height: clamp(64px, 17vh, 130px); }
+  :is(#pg-bag, .store-profile-dialog) .bag-detail-body .d-head h3 { font-size: 24px; margin-bottom: 4px; }
+  :is(#pg-bag, .store-profile-dialog) .bag-detail-body .dexno { font-size: 10px; }
+  :is(#pg-bag, .store-profile-dialog) .bag-detail-body .formdesc, :is(#pg-bag, .store-profile-dialog) .bag-detail-body .evo-line { font-size: 11px; line-height: 1.35; }
+  :is(#pg-bag, .store-profile-dialog) .bag-detail-body .hint { font-size: 11px; }
+  :is(#pg-bag, .store-profile-dialog) .bag-detail-body .chip { font-size: 10px; padding: 3px 5px; }
+  :is(#pg-bag, .store-profile-dialog) .bag-current-skills { gap: 6px; }
+  :is(#pg-bag, .store-profile-dialog) .bag-ability { font-size: 11px; padding: 5px; }
+  :is(#pg-bag, .store-profile-dialog) .bag-skill-grid { gap: 5px; }
+  :is(#pg-bag, .store-profile-dialog) .bag-skill { padding: 5px; gap: 3px; }
+  :is(#pg-bag, .store-profile-dialog) .bag-skill .mn { font-size: 12px; }
+  :is(#pg-bag, .store-profile-dialog) .bag-skill .pp, :is(#pg-bag, .store-profile-dialog) .bag-skill .t2 { font-size: 10px; }
+  :is(#pg-bag, .store-profile-dialog) .bag-skill .chip { font-size: 9px; padding: 2px 3px; }
+  :is(#pg-bag, .store-profile-dialog) .bag-current-skills > button { padding: 5px 8px; font-size: 11px; }
 }
 
 /* 低高度窗口中进一步压缩留白，仍保留左侧五个位置。 */
-body.bag-short #pg-bag .bag-detail { gap: 6px; padding: 7px; }
+:is(body.bag-short, .profile-short) :is(#pg-bag, .store-profile-dialog) .bag-detail { gap: 6px; padding: 7px; }
 body.bag-short #pg-bag .current-team { padding: 6px; gap: 5px; }
 body.bag-short #pg-bag .current-team > .bag.tbag { gap: 5px; }
 body.bag-short #pg-bag .current-team .slot { padding-block: 3px; }
 body.bag-short #pg-bag .current-team .slot .cimg img { max-height: 62px; }
 body.bag-short #pg-bag .current-team .slot .nm { font-size: calc(16px * var(--bag-type-scale)); }
-body.bag-short #pg-bag .bag-detail-body .d-art { height: 72px; }
-body.bag-short #pg-bag .bag-detail-body .d-head { gap: 6px; }
-body.bag-short #pg-bag .bag-detail-body .formdesc { margin-top: 3px; }
-body.bag-short #pg-bag .bag-current-skills { gap: 5px; }
+:is(body.bag-short, .profile-short) :is(#pg-bag, .store-profile-dialog) .bag-detail-body .d-art { height: 72px; }
+:is(body.bag-short, .profile-short) :is(#pg-bag, .store-profile-dialog) .bag-detail-body .d-head { gap: 6px; }
+:is(body.bag-short, .profile-short) :is(#pg-bag, .store-profile-dialog) .bag-detail-body .formdesc { margin-top: 3px; }
+:is(body.bag-short, .profile-short) :is(#pg-bag, .store-profile-dialog) .bag-current-skills { gap: 5px; }
 @media (max-width: 680px) {
   body.bag-short #pg-bag .current-team .slot .nm { font-size: 12px; }
   /* 窄资料栏保留实际能力、天赋与学习力按钮，装饰条不占一整列。 */
-  #pg-bag .bag-detail-body .stats.evstats { grid-template-columns: auto auto minmax(0, 1fr) auto; gap: 5px 4px; font-size: 11px; }
-  #pg-bag .bag-detail-body .stats.evstats > .bar { display: none; }
-  #pg-bag .bag-detail-body .stats.evstats .real { font-size: 10px; white-space: nowrap; }
-  #pg-bag .bag-detail-body .stats.evstats .real .bs { display: none; }
-  #pg-bag .bag-detail-body .stats.evstats .evc { gap: 2px; min-width: 0; }
-  #pg-bag .bag-detail-body .stats.evstats .evc b { min-width: 0; width: 3.5em; font-size: 10px; white-space: nowrap; }
-  #pg-bag .bag-detail-body .stats.evstats .evc b small { font-size: 8px; margin-left: 2px; }
-  #pg-bag .bag-detail-body .stats.evstats .evc button { min-height: 22px; padding: 3px; font-size: 10px; }
+  :is(#pg-bag, .store-profile-dialog) .bag-detail-body .stats.evstats { grid-template-columns: auto auto minmax(0, 1fr) auto; gap: 5px 4px; font-size: 11px; }
+  :is(#pg-bag, .store-profile-dialog) .bag-detail-body .stats.evstats > .bar { display: none; }
+  :is(#pg-bag, .store-profile-dialog) .bag-detail-body .stats.evstats .real { font-size: 10px; white-space: nowrap; }
+  :is(#pg-bag, .store-profile-dialog) .bag-detail-body .stats.evstats .real .bs { display: none; }
+  :is(#pg-bag, .store-profile-dialog) .bag-detail-body .stats.evstats .evc { gap: 2px; min-width: 0; }
+  :is(#pg-bag, .store-profile-dialog) .bag-detail-body .stats.evstats .evc b { min-width: 0; width: 3.5em; font-size: 10px; white-space: nowrap; }
+  :is(#pg-bag, .store-profile-dialog) .bag-detail-body .stats.evstats .evc b small { font-size: 8px; margin-left: 2px; }
+  :is(#pg-bag, .store-profile-dialog) .bag-detail-body .stats.evstats .evc button { min-height: 22px; padding: 3px; font-size: 10px; }
 }
   /* 手机横屏的高度优先留给五只精灵与资料，顶栏工具只在一行内横向滚动。 */
   body.bag-active.bag-short.bag-wide .acct { flex-wrap: nowrap; overflow-x: auto; overflow-y: visible; gap: 5px; scrollbar-width: none; }
@@ -205,17 +206,17 @@ body.bag-short #pg-bag .bag-current-skills { gap: 5px; }
   body.bag-active.bag-short.bag-wide #pg-bag .current-team .slot .tc { display: none; }
   body.bag-active.bag-short.bag-wide #pg-bag .current-team .slot .lead { font-size: 8px; padding: 0 2px; }
   body.bag-active.bag-short.bag-wide #pg-bag .bag-team-footer button { padding: 4px 6px; font-size: calc(11px * var(--bag-type-scale)); }
-  body.bag-active.bag-short.bag-wide #pg-bag .bag-detail-head h2 { font-size: calc(21px * var(--bag-type-scale)); }
-  body.bag-active.bag-short.bag-wide #pg-bag .bag-detail-head button { padding: 3px 8px; font-size: calc(11px * var(--bag-type-scale)); }
-  body.bag-active.bag-short.bag-wide #pg-bag .bag-detail-tabs button { padding: 4px 3px; font-size: calc(11px * var(--bag-type-scale)); }
-  body.bag-active.bag-short.bag-wide #pg-bag .bag-detail-body .d-head { grid-template-columns: minmax(56px, 26%) minmax(0, 1fr); gap: 7px; }
-  body.bag-active.bag-short.bag-wide #pg-bag .bag-detail-body .d-head h3 { font-size: calc(24px * var(--bag-type-scale)); }
-  body.bag-active.bag-short.bag-wide #pg-bag .bag-detail-body .evo-line { font-size: calc(11px * var(--bag-type-scale)); }
-  body.bag-active.bag-short.bag-wide #pg-bag .bag-ability { padding: 4px 6px; font-size: calc(11px * var(--bag-type-scale)); }
-  body.bag-active.bag-short.bag-wide #pg-bag .bag-skill { padding: 4px 6px; gap: 2px; }
-  body.bag-active.bag-short.bag-wide #pg-bag .bag-skill .mn { font-size: calc(13px * var(--bag-type-scale)); }
-  body.bag-active.bag-short.bag-wide #pg-bag .bag-skill .pp, body.bag-active.bag-short.bag-wide #pg-bag .bag-skill .t2 { font-size: calc(10px * var(--bag-type-scale)); }
-  body.bag-active.bag-short.bag-wide #pg-bag .bag-current-skills > button { padding: 3px 8px; font-size: calc(11px * var(--bag-type-scale)); }
+  :is(body.bag-active.bag-short.bag-wide, .profile-short.profile-wide) :is(#pg-bag, .store-profile-dialog) .bag-detail-head h2 { font-size: calc(21px * var(--bag-type-scale)); }
+  :is(body.bag-active.bag-short.bag-wide, .profile-short.profile-wide) :is(#pg-bag, .store-profile-dialog) .bag-detail-head button { padding: 3px 8px; font-size: calc(11px * var(--bag-type-scale)); }
+  :is(body.bag-active.bag-short.bag-wide, .profile-short.profile-wide) :is(#pg-bag, .store-profile-dialog) .bag-detail-tabs button { padding: 4px 3px; font-size: calc(11px * var(--bag-type-scale)); }
+  :is(body.bag-active.bag-short.bag-wide, .profile-short.profile-wide) :is(#pg-bag, .store-profile-dialog) .bag-detail-body .d-head { grid-template-columns: minmax(56px, 26%) minmax(0, 1fr); gap: 7px; }
+  :is(body.bag-active.bag-short.bag-wide, .profile-short.profile-wide) :is(#pg-bag, .store-profile-dialog) .bag-detail-body .d-head h3 { font-size: calc(24px * var(--bag-type-scale)); }
+  :is(body.bag-active.bag-short.bag-wide, .profile-short.profile-wide) :is(#pg-bag, .store-profile-dialog) .bag-detail-body .evo-line { font-size: calc(11px * var(--bag-type-scale)); }
+  :is(body.bag-active.bag-short.bag-wide, .profile-short.profile-wide) :is(#pg-bag, .store-profile-dialog) .bag-ability { padding: 4px 6px; font-size: calc(11px * var(--bag-type-scale)); }
+  :is(body.bag-active.bag-short.bag-wide, .profile-short.profile-wide) :is(#pg-bag, .store-profile-dialog) .bag-skill { padding: 4px 6px; gap: 2px; }
+  :is(body.bag-active.bag-short.bag-wide, .profile-short.profile-wide) :is(#pg-bag, .store-profile-dialog) .bag-skill .mn { font-size: calc(13px * var(--bag-type-scale)); }
+  :is(body.bag-active.bag-short.bag-wide, .profile-short.profile-wide) :is(#pg-bag, .store-profile-dialog) .bag-skill .pp, :is(body.bag-active.bag-short.bag-wide, .profile-short.profile-wide) :is(#pg-bag, .store-profile-dialog) .bag-skill .t2 { font-size: calc(10px * var(--bag-type-scale)); }
+  :is(body.bag-active.bag-short.bag-wide, .profile-short.profile-wide) :is(#pg-bag, .store-profile-dialog) .bag-current-skills > button { padding: 3px 8px; font-size: calc(11px * var(--bag-type-scale)); }
 
 
 @media (max-width: 360px) {
@@ -285,10 +286,10 @@ body.battle-touch .bag-skill { touch-action: manipulation; }
 .bag-stat-ev { display: flex; align-items: center; flex-wrap: wrap; gap: 3px; margin-top: 3px; }
 .bag-stat-ev > span { margin-right: auto; }
 .bag-stat-ev button { min-width: 22px; min-height: 22px; padding: 1px 3px; font: inherit; font-size: calc(10px * var(--bag-type-scale)); border: 1px solid var(--rule); border-radius: 5px; background: var(--paper-2); cursor: pointer; }
-body.bag-short.bag-wide .bag-stat-summary { margin-bottom: 4px; }
-body.bag-short.bag-wide .bag-stat-card { padding: 3px 6px; }
-body.bag-short.bag-wide .bag-stat-meta { margin-left: auto; }
-body.bag-short.bag-wide .bag-stat-ev { margin-top: 1px; }
+:is(body.bag-short.bag-wide, .profile-short.profile-wide) .bag-stat-summary { margin-bottom: 4px; }
+:is(body.bag-short.bag-wide, .profile-short.profile-wide) .bag-stat-card { padding: 3px 6px; }
+:is(body.bag-short.bag-wide, .profile-short.profile-wide) .bag-stat-meta { margin-left: auto; }
+:is(body.bag-short.bag-wide, .profile-short.profile-wide) .bag-stat-ev { margin-top: 1px; }
 .mv-power { white-space: nowrap; }
 @media (max-width: 520px) {
   .soc-dlg > .bag-panel-box { padding: 12px; gap: 8px; }
@@ -305,79 +306,79 @@ body.bag-short.bag-wide .bag-stat-ev { margin-top: 1px; }
 
 /* 手机沿用电脑的左右骨架和四技能格，五个资料页共用同一内容框。 */
 #pg-bag .current-team > .bag.tbag { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: repeat(5, minmax(0, 1fr)); }
-#pg-bag .bag-detail-body { position: relative; }
-#pg-bag .bag-skill-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); }
-#pg-bag .bag-skill { border-left: 5px solid var(--skill-color, var(--rule)); }
-#pg-bag .bag-skill[data-bag-skill] { position: relative; user-select: none; -webkit-user-select: none; cursor: grab; touch-action: none; -webkit-touch-callout: none; }
-#pg-bag .skill-drag-source { opacity: .35; }
-#pg-bag .skill-drop-to { outline: 3px solid var(--blue); outline-offset: -3px; background: var(--paper-2); }
+:is(#pg-bag, .store-profile-dialog) .bag-detail-body { position: relative; }
+:is(#pg-bag, .store-profile-dialog) .bag-skill-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); }
+:is(#pg-bag, .store-profile-dialog) .bag-skill { border-left: 5px solid var(--skill-color, var(--rule)); }
+:is(#pg-bag, .store-profile-dialog) .bag-skill[data-bag-skill] { position: relative; user-select: none; -webkit-user-select: none; cursor: grab; touch-action: none; -webkit-touch-callout: none; }
+:is(#pg-bag, .store-profile-dialog) .skill-drag-source { opacity: .35; }
+:is(#pg-bag, .store-profile-dialog) .skill-drop-to { outline: 3px solid var(--blue); outline-offset: -3px; background: var(--paper-2); }
 .bag-skills-dragging, .bag-skills-dragging * { cursor: grabbing !important; }
-#pg-bag .bag-skill-ghost { position: fixed; z-index: 1201; pointer-events: none; margin: 0; transform: rotate(-3deg) scale(1.04); box-shadow: 0 10px 24px #0004; opacity: .95; animation: bag-skill-lift .16s ease-out; }
+:is(#pg-bag, .store-profile-dialog) .bag-skill-ghost { position: fixed; z-index: 1201; pointer-events: none; margin: 0; transform: rotate(-3deg) scale(1.04); box-shadow: 0 10px 24px #0004; opacity: .95; animation: bag-skill-lift .16s ease-out; }
 @keyframes bag-skill-lift { from { transform: rotate(0) scale(1); box-shadow: 0 0 0 #0000; } to { transform: rotate(-3deg) scale(1.04); box-shadow: 0 10px 24px #0004; } }
-@media (prefers-reduced-motion: reduce) { #pg-bag .bag-skill-ghost { animation: none; } }
+@media (prefers-reduced-motion: reduce) { :is(#pg-bag, .store-profile-dialog) .bag-skill-ghost { animation: none; } }
 .skill-info-meta .t2 { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; }
 .skill-info-meta .tchip { display: inline-flex; color: #fff; border-radius: 999px; padding: 3px 7px; }
 .skill-hover { border-left: 5px solid var(--skill-color, var(--red)); }
 @media (max-width: 680px) {
-  #pg-bag .bag-detail-tabs { grid-template-columns: repeat(5, minmax(0, 1fr)); min-height: 36px; }
-  #pg-bag .bag-detail-body .d-head { grid-template-columns: minmax(55px, 34%) minmax(0, 1fr); gap: 6px; }
-  #pg-bag .bag-detail-body .d-head h3 { font-size: 20px; }
-  #pg-bag .bag-detail-body .d-art { height: 110px; }
+  :is(#pg-bag, .store-profile-dialog) .bag-detail-tabs { grid-template-columns: repeat(5, minmax(0, 1fr)); min-height: 36px; }
+  :is(#pg-bag, .store-profile-dialog) .bag-detail-body .d-head { grid-template-columns: minmax(55px, 34%) minmax(0, 1fr); gap: 6px; }
+  :is(#pg-bag, .store-profile-dialog) .bag-detail-body .d-head h3 { font-size: 20px; }
+  :is(#pg-bag, .store-profile-dialog) .bag-detail-body .d-art { height: 110px; }
 }
 /* 手机基础信息把立绘放在资料上方，矮屏改用较大的左右分栏。 */
 @media (max-width: 680px), (pointer: coarse) {
-  #pg-bag .bag-basic { gap: 8px; }
-  #pg-bag .bag-basic .d-head { grid-template-columns: minmax(0, 1fr); gap: 8px; }
-  #pg-bag .bag-basic .d-art { width: 100%; height: clamp(130px, calc(var(--bag-view-height) * .32), 220px); }
-  #pg-bag .bag-mon-lore { padding: 7px 8px; font-size: 12px; line-height: 1.5; }
-  body.bag-active.bag-short #pg-bag .bag-detail-body .bag-basic .d-head { grid-template-columns: minmax(0, 46%) minmax(0, 1fr); }
-  body.bag-short #pg-bag .bag-basic { gap: 5px; }
-  body.bag-short #pg-bag .bag-basic .d-art { height: clamp(80px, calc(var(--bag-view-height) * .22), 115px); }
-  body.bag-short #pg-bag .bag-basic .d-head h3 { font-size: 18px; margin-bottom: 3px; }
-  body.bag-short #pg-bag .bag-basic .d-head .dexno { display: block; font-size: 9px; line-height: 1; margin-bottom: 2px; }
-  body.bag-short #pg-bag .bag-basic .d-head .hint { font-size: 10px; line-height: 1.3; }
-  body.bag-short #pg-bag .bag-basic .d-head > div > p:not(.hint) { font-size: 11px; line-height: 1.2; margin-bottom: 2px !important; }
-  body.bag-short #pg-bag .bag-basic > .evo-line { margin: 0; font-size: 10px; line-height: 1.3; }
-  body.bag-short #pg-bag .bag-mon-lore { padding: 5px; font-size: 11px; line-height: 1.35; }
-  body.bag-short.bag-wide #pg-bag .bag-basic { display: grid; grid-template-columns: minmax(0, 36%) minmax(0, 1fr); gap: 5px 10px; }
-  body.bag-short.bag-wide #pg-bag .bag-basic .d-head { display: contents; }
-  body.bag-short.bag-wide #pg-bag .bag-basic .d-art { grid-column: 1; grid-row: 1 / 3; height: clamp(80px, calc(var(--bag-view-height) * .32), 120px); }
-  body.bag-short.bag-wide #pg-bag .bag-basic .d-head > div,
-  body.bag-short.bag-wide #pg-bag .bag-basic > .evo-line,
-  body.bag-short.bag-wide #pg-bag .bag-basic > .bag-mon-lore { grid-column: 2; }
-  body.bag-short.bag-wide #pg-bag .bag-basic > .bag-mon-actions { grid-column: 1; grid-row: 3; align-self: end; }
-  body.bag-active.bag-short.bag-wide #pg-bag .bag-basic .d-head h3 { font-size: 20px; margin-bottom: 2px; }
-  body.bag-short.bag-wide #pg-bag .bag-basic .d-head .hint { font-size: 11px; line-height: 1.3; }
-  body.bag-short.bag-wide #pg-bag .bag-basic .d-head > div > p:not(.hint) { margin-bottom: 2px !important; }
-  body.bag-short.bag-wide #pg-bag .bag-basic > .evo-line { margin: 0; font-size: 10px; line-height: 1.3; }
-  body.bag-short.bag-wide #pg-bag .bag-mon-lore { padding: 5px; line-height: 1.4; }
+  :is(#pg-bag, .store-profile-dialog) .bag-basic { gap: 8px; }
+  :is(#pg-bag, .store-profile-dialog) .bag-basic .d-head { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  :is(#pg-bag, .store-profile-dialog) .bag-basic .d-art { width: 100%; height: clamp(130px, calc(var(--bag-view-height) * .32), 220px); }
+  :is(#pg-bag, .store-profile-dialog) .bag-mon-lore { padding: 7px 8px; font-size: 12px; line-height: 1.5; }
+  body.bag-active.bag-short :is(#pg-bag, .store-profile-dialog) .bag-detail-body .bag-basic .d-head { grid-template-columns: minmax(0, 46%) minmax(0, 1fr); }
+  :is(body.bag-short, .profile-short) :is(#pg-bag, .store-profile-dialog) .bag-basic { gap: 5px; }
+  :is(body.bag-short, .profile-short) :is(#pg-bag, .store-profile-dialog) .bag-basic .d-art { height: clamp(80px, calc(var(--bag-view-height) * .22), 115px); }
+  :is(body.bag-short, .profile-short) :is(#pg-bag, .store-profile-dialog) .bag-basic .d-head h3 { font-size: 18px; margin-bottom: 3px; }
+  :is(body.bag-short, .profile-short) :is(#pg-bag, .store-profile-dialog) .bag-basic .d-head .dexno { display: block; font-size: 9px; line-height: 1; margin-bottom: 2px; }
+  :is(body.bag-short, .profile-short) :is(#pg-bag, .store-profile-dialog) .bag-basic .d-head .hint { font-size: 10px; line-height: 1.3; }
+  :is(body.bag-short, .profile-short) :is(#pg-bag, .store-profile-dialog) .bag-basic .d-head > div > p:not(.hint) { font-size: 11px; line-height: 1.2; margin-bottom: 2px !important; }
+  :is(body.bag-short, .profile-short) :is(#pg-bag, .store-profile-dialog) .bag-basic > .evo-line { margin: 0; font-size: 10px; line-height: 1.3; }
+  :is(body.bag-short, .profile-short) :is(#pg-bag, .store-profile-dialog) .bag-mon-lore { padding: 5px; font-size: 11px; line-height: 1.35; }
+  :is(body.bag-short.bag-wide, .profile-short.profile-wide) :is(#pg-bag, .store-profile-dialog) .bag-basic { display: grid; grid-template-columns: minmax(0, 36%) minmax(0, 1fr); gap: 5px 10px; }
+  :is(body.bag-short.bag-wide, .profile-short.profile-wide) :is(#pg-bag, .store-profile-dialog) .bag-basic .d-head { display: contents; }
+  :is(body.bag-short.bag-wide, .profile-short.profile-wide) :is(#pg-bag, .store-profile-dialog) .bag-basic .d-art { grid-column: 1; grid-row: 1 / 3; height: clamp(80px, calc(var(--bag-view-height) * .32), 120px); }
+  :is(body.bag-short.bag-wide, .profile-short.profile-wide) :is(#pg-bag, .store-profile-dialog) .bag-basic .d-head > div,
+  :is(body.bag-short.bag-wide, .profile-short.profile-wide) :is(#pg-bag, .store-profile-dialog) .bag-basic > .evo-line,
+  :is(body.bag-short.bag-wide, .profile-short.profile-wide) :is(#pg-bag, .store-profile-dialog) .bag-basic > .bag-mon-lore { grid-column: 2; }
+  :is(body.bag-short.bag-wide, .profile-short.profile-wide) :is(#pg-bag, .store-profile-dialog) .bag-basic > .bag-mon-actions { grid-column: 1; grid-row: 3; align-self: end; }
+  :is(body.bag-active.bag-short.bag-wide, .profile-short.profile-wide) :is(#pg-bag, .store-profile-dialog) .bag-basic .d-head h3 { font-size: 20px; margin-bottom: 2px; }
+  :is(body.bag-short.bag-wide, .profile-short.profile-wide) :is(#pg-bag, .store-profile-dialog) .bag-basic .d-head .hint { font-size: 11px; line-height: 1.3; }
+  :is(body.bag-short.bag-wide, .profile-short.profile-wide) :is(#pg-bag, .store-profile-dialog) .bag-basic .d-head > div > p:not(.hint) { margin-bottom: 2px !important; }
+  :is(body.bag-short.bag-wide, .profile-short.profile-wide) :is(#pg-bag, .store-profile-dialog) .bag-basic > .evo-line { margin: 0; font-size: 10px; line-height: 1.3; }
+  :is(body.bag-short.bag-wide, .profile-short.profile-wide) :is(#pg-bag, .store-profile-dialog) .bag-mon-lore { padding: 5px; line-height: 1.4; }
 }
-#pg-bag .bag-detail-body > .ins-box, #pg-bag .bag-detail-body > .md-items { margin: 0; padding: 8px; border-radius: 9px; background: var(--paper); }
-#pg-bag .bag-detail-body .ins-slots { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+:is(#pg-bag, .store-profile-dialog) .bag-detail-body > .ins-box, :is(#pg-bag, .store-profile-dialog) .bag-detail-body > .md-items { margin: 0; padding: 8px; border-radius: 9px; background: var(--paper); }
+:is(#pg-bag, .store-profile-dialog) .bag-detail-body .ins-slots { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 @media (max-width: 680px) {
-  #pg-bag .bag-detail-body .ins-slot { min-width: 0; padding: 4px; gap: 3px; font-size: 11px; overflow-wrap: anywhere; }
-  #pg-bag .bag-detail-body .ins-slot.on { flex-direction: column; align-items: start; }
-  #pg-bag .bag-detail-body .ins-slot span, #pg-bag .bag-detail-body .ins-slot small { font-size: 10px; }
-  #pg-bag .bag-detail-body .ins-slot .it-ic { width: 26px; height: 26px; }
-  #pg-bag .bag-detail-body .ins-slot .btn { max-width: 100%; padding: 3px; font-size: 10px; }
+  :is(#pg-bag, .store-profile-dialog) .bag-detail-body .ins-slot { min-width: 0; padding: 4px; gap: 3px; font-size: 11px; overflow-wrap: anywhere; }
+  :is(#pg-bag, .store-profile-dialog) .bag-detail-body .ins-slot.on { flex-direction: column; align-items: start; }
+  :is(#pg-bag, .store-profile-dialog) .bag-detail-body .ins-slot span, :is(#pg-bag, .store-profile-dialog) .bag-detail-body .ins-slot small { font-size: 10px; }
+  :is(#pg-bag, .store-profile-dialog) .bag-detail-body .ins-slot .it-ic { width: 26px; height: 26px; }
+  :is(#pg-bag, .store-profile-dialog) .bag-detail-body .ins-slot .btn { max-width: 100%; padding: 3px; font-size: 10px; }
 }
 
 /* 所有设备直接展示完整效果；手机将名称与 PP 并排，为说明留出高度。 */
 @media (max-width: 700px), (pointer: coarse) {
-  #pg-bag .bag-skill { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-content: center; gap: 3px; padding: 4px; }
-  #pg-bag .bag-skill .mn { grid-column: 1; grid-row: 1; font-size: 12px; }
-  #pg-bag .bag-skill .pp { grid-column: 2; grid-row: 1; align-self: start; font-size: 9px; white-space: nowrap; }
-  #pg-bag .bag-skill .t2 { grid-column: 1 / -1; grid-row: 2; font-size: 9px; gap: 2px; }
-  #pg-bag .bag-skill .t2 .chip { font-size: 8px; padding: 2px 3px; }
-  #pg-bag .bag-skill .md { grid-column: 1 / -1; grid-row: 3; font-size: 11px; line-height: 1.2; }
-  body.bag-short #pg-bag .bag-skill { padding: 3px; gap: 1px; }
-  body.bag-active.bag-short.bag-wide #pg-bag .bag-skill .mn { font-size: 12px; }
-  body.bag-active.bag-short.bag-wide #pg-bag .bag-skill .pp,
-  body.bag-active.bag-short.bag-wide #pg-bag .bag-skill .t2 { font-size: 9px; }
+  :is(#pg-bag, .store-profile-dialog) .bag-skill { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-content: center; gap: 3px; padding: 4px; }
+  :is(#pg-bag, .store-profile-dialog) .bag-skill .mn { grid-column: 1; grid-row: 1; font-size: 12px; }
+  :is(#pg-bag, .store-profile-dialog) .bag-skill .pp { grid-column: 2; grid-row: 1; align-self: start; font-size: 9px; white-space: nowrap; }
+  :is(#pg-bag, .store-profile-dialog) .bag-skill .t2 { grid-column: 1 / -1; grid-row: 2; font-size: 9px; gap: 2px; }
+  :is(#pg-bag, .store-profile-dialog) .bag-skill .t2 .chip { font-size: 8px; padding: 2px 3px; }
+  :is(#pg-bag, .store-profile-dialog) .bag-skill .md { grid-column: 1 / -1; grid-row: 3; font-size: 11px; line-height: 1.2; }
+  :is(body.bag-short, .profile-short) :is(#pg-bag, .store-profile-dialog) .bag-skill { padding: 3px; gap: 1px; }
+  :is(body.bag-active.bag-short.bag-wide, .profile-short.profile-wide) :is(#pg-bag, .store-profile-dialog) .bag-skill .mn { font-size: 12px; }
+  :is(body.bag-active.bag-short.bag-wide, .profile-short.profile-wide) :is(#pg-bag, .store-profile-dialog) .bag-skill .pp,
+  :is(body.bag-active.bag-short.bag-wide, .profile-short.profile-wide) :is(#pg-bag, .store-profile-dialog) .bag-skill .t2 { font-size: 9px; }
 }
 @media (hover: hover) and (pointer: fine) {
-  #pg-bag .bag-current-skills { min-height: 300px; }
-  #pg-bag .bag-skill-grid { min-height: 220px; }
+  :is(#pg-bag, .store-profile-dialog) .bag-current-skills { min-height: 300px; }
+  :is(#pg-bag, .store-profile-dialog) .bag-skill-grid { min-height: 220px; }
 }
 
 /* 六个主导航在手机上使用两个字，固定在同一排。 */

@@ -19,6 +19,13 @@
     var rows = Math.max(1, Math.floor((grid.clientHeight + 8) / 150));
     prop('--collection-cols', String(cols)); prop('--collection-rows', String(rows));
     HSACC.layoutCollection(page.id.slice(3), cols, rows);
+    var profile = page.querySelector('.store-profile-dialog'), box = profile && profile.querySelector('.store-profile-box');
+    page.classList.toggle('profile-short', !!box && box.clientHeight < 590);
+    page.classList.toggle('profile-wide', !!box && box.clientWidth >= 640 && box.clientWidth / box.clientHeight >= 1.2);
+    if (box) {
+      page.style.setProperty('--bag-view-height', box.clientHeight + 'px');
+      if (window.HSBAGVIEW) HSBAGVIEW.fit(profile);
+    }
   }
   function schedule() { if (!frame) frame = requestAnimationFrame(sync); }
   var observer = new MutationObserver(schedule);

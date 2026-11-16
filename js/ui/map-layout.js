@@ -8,14 +8,15 @@
   function sync() {
     frame = 0;
     var visitingEstate = !social.hidden && social.querySelector('.visit-farm-page, .visit-home-page');
-    var star = page.querySelector('.star-map-page'), home = visitingEstate || page.querySelector('.home-page'), ship = page.querySelector('.ship-map-page');
+    var star = page.querySelector('.star-map-page'), home = visitingEstate || page.querySelector('.home-page'), ship = page.querySelector('.ship-map-page'), planet = page.querySelector('.planet-map-page');
     var items = !inventory.hidden, target = items ? inventory : visitingEstate ? social : page;
-    var on = !body.classList.contains('no-acc') && (items || !!visitingEstate || (!page.hidden && !!(star || home || ship))) && !body.classList.contains('battle-active');
+    var on = !body.classList.contains('no-acc') && (items || !!visitingEstate || (!page.hidden && !!(star || home || ship || planet))) && !body.classList.contains('battle-active');
     flag('scene-page-active', on);
     flag('star-map-active', on && !items && !visitingEstate && !!star);
     flag('home-page-active', on && !items && !!home);
     flag('ship-page-active', on && !items && !visitingEstate && !!ship);
     flag('storage-active', on && items);
+    flag('planet-map-active', on && !items && !visitingEstate && !!planet);
     flag('farm-page-active', on && !items && !!home && home.classList.contains('farm-page'));
     if (!on || items || !home) flag('home-compact', false);
     if (!on || items || visitingEstate || !ship) flag('ship-paired', false);
@@ -33,6 +34,9 @@
         var minWidth = root.clientWidth <= 640 ? 104 : 124;
         HSACC.layoutItems(Math.max(1, Math.min(8, Math.floor((grid.clientWidth + 8) / (minWidth + 8)))), Math.max(1, Math.floor((grid.clientHeight + 8) / 96)));
       }
+    } else if (planet && !visitingEstate) {
+      prop('--planet-scene-height', planet.querySelector('.wf-scene').clientHeight + 'px');
+      if (window.HSACC && HSACC.layoutPlanetPanel) HSACC.layoutPlanetPanel();
     } else if (ship && !visitingEstate) {
       flag('ship-paired', height < 570);
     } else if (star && !visitingEstate) {

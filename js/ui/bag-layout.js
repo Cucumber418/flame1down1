@@ -4,6 +4,16 @@
   var body = document.body, root = document.documentElement, bag = document.getElementById('pg-bag');
   var frame = 0, was = false;
   function prop(key, value) { if (body.style.getPropertyValue(key) !== value) body.style.setProperty(key, value); }
+  function fitProfile(profile) {
+    var touch = matchMedia('(max-width: 700px), (pointer: coarse)').matches;
+    profile.querySelectorAll('.bag-skill .md').forEach(function (detail) {
+      var card = detail.closest('.bag-skill'), size = touch ? 11 : 12, min = touch ? 7.5 : 9;
+      detail.style.fontSize = size + 'px';
+      while (size > min && card.scrollHeight > card.clientHeight + 1) {
+        size -= .5; detail.style.fontSize = size + 'px';
+      }
+    });
+  }
   function sync() {
     frame = 0;
     var on = !bag.hidden && !body.classList.contains('battle-active');
@@ -22,14 +32,7 @@
     if (body.classList.contains('bag-wide') !== wide) body.classList.toggle('bag-wide', wide);
     var short = full < 650 || height < 400;
     if (body.classList.contains('bag-short') !== short) body.classList.toggle('bag-short', short);
-    var touch = matchMedia('(max-width: 700px), (pointer: coarse)').matches;
-    bag.querySelectorAll('.bag-skill .md').forEach(function (detail) {
-      var card = detail.closest('.bag-skill'), size = touch ? 11 : 12, min = touch ? 7.5 : 9;
-      detail.style.fontSize = size + 'px';
-      while (size > min && card.scrollHeight > card.clientHeight + 1) {
-        size -= .5; detail.style.fontSize = size + 'px';
-      }
-    });
+    fitProfile(bag);
   }
   function schedule() { if (!frame) frame = requestAnimationFrame(sync); }
   var observer = new MutationObserver(schedule);
@@ -40,6 +43,6 @@
   if (window.ResizeObserver) new ResizeObserver(schedule).observe(document.querySelector('.topbar'));
   window.addEventListener('resize', schedule);
   if (window.visualViewport) visualViewport.addEventListener('resize', schedule);
-  window.HSBAGVIEW = { sync: schedule };
+  window.HSBAGVIEW = { sync: schedule, fit: fitProfile };
   sync();
 })();
