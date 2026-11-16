@@ -5,7 +5,7 @@
   var battle = document.getElementById('battle'), arena = document.getElementById('pg-arena');
   var stats = document.getElementById('statsbox'), info = document.getElementById('battle-info-panel');
   var panels = { log: document.getElementById('battle-logbox'), stats: stats, info: info };
-  var current = null, frame = 0;
+  var current = null, frame = 0, effectTrigger = null;
 
   function flag(name, on) { if (body.classList.contains(name) !== on) body.classList.toggle(name, on); }
   function property(name, value) { if (body.style.getPropertyValue(name) !== value) body.style.setProperty(name, value); }
@@ -45,22 +45,34 @@
   }
   function schedule() { if (!frame) frame = requestAnimationFrame(sync); }
   function close(focus) {
-    var was = current;
+    var was = current, trigger = effectTrigger; effectTrigger = null;
     current = null;
     Object.keys(panels).forEach(function (key) {
       flag('battle-' + key + '-open', false);
-      document.getElementById('battle-' + key + '-toggle').setAttribute('aria-expanded', 'false');
+      var button = document.getElementById('battle-' + key + '-toggle'); if (button) button.setAttribute('aria-expanded', 'false');
       if (key !== 'info') { panels[key].removeAttribute('role'); panels[key].removeAttribute('aria-modal'); }
     });
     info.hidden = true;
-    if (focus && was) document.getElementById('battle-' + was + '-toggle').focus();
+    if (focus && trigger && trigger.isConnected) trigger.focus({ preventScroll: true });
+    else if (focus && was) (document.getElementById('battle-' + was + '-toggle') || document.getElementById('tab-moves')).focus();
   }
   function text(tag, value, parent) {
     var node = document.createElement(tag); node.textContent = value; parent.appendChild(node); return node;
   }
   function descriptions(selected) {
     var list = document.getElementById('battle-info-list'); list.textContent = '';
+    if (selected && selected.closest('.plate')) {
+      info.querySelector('h3').textContent = '效果详情';
+      info.setAttribute('aria-label', '效果详情');
+      var effect = document.createElement('div'); effect.className = 'battle-status-info';
+      text('h4', selected.closest('.plate').querySelector('.pn').textContent, effect);
+      var detail = document.createElement('div'); detail.className = 'battle-effect-detail';
+      var tip = selected.querySelector('.tip');
+      if (tip) [].forEach.call(tip.childNodes, function (node) { detail.appendChild(node.cloneNode(true)); });
+      effect.appendChild(detail); list.appendChild(effect); return;
+    }
     info.querySelector('h3').textContent = selected ? '技能效果' : '技能与状态说明';
+    info.setAttribute('aria-label', selected ? '技能效果' : '技能与状态说明');
     (selected ? [selected] : document.querySelectorAll('#mgrid .mv')).forEach(function (move) {
       var card = document.createElement('div'); card.className = 'battle-skill-info';
       HSSKILL.fill(move, card);
@@ -76,24 +88,30 @@
   function open(key, selected) {
     if (current === key) { close(true); return; }
     close(false); current = key;
+    effectTrigger = selected || null;
     if (key === 'info') { descriptions(selected); info.hidden = false; }
     panels[key].setAttribute('role', 'dialog'); panels[key].setAttribute('aria-modal', 'true');
     flag('battle-' + key + '-open', true);
-    document.getElementById('battle-' + key + '-toggle').setAttribute('aria-expanded', 'true');
+    var button = document.getElementById('battle-' + key + '-toggle'); if (button) button.setAttribute('aria-expanded', 'true');
     panels[key].querySelector('[data-battle-close]').focus();
   }
   Object.keys(panels).forEach(function (key) {
-    document.getElementById('battle-' + key + '-toggle').addEventListener('click', function () { open(key); });
+    var button = document.getElementById('battle-' + key + '-toggle'); if (button) button.addEventListener('click', function () { open(key); });
   });
   document.getElementById('mgrid').addEventListener('skillinspect', function (e) { open('info', e.target.closest('.mv')); });
+  function effectAt(target) { var el = target.closest && target.closest('.plate [tabindex="0"]'); return el && el.querySelector('.tip') ? el : null; }
   battle.addEventListener('click', function (e) {
     if (e.target.closest('[data-battle-close]')) { close(true); return; }
     // 点在面板外只关闭面板，不让这次点击误选下方的技能。
-    if (current && !panels[current].contains(e.target) && !e.target.closest('.battle-toolbar')) {
-      e.preventDefault(); e.stopImmediatePropagation(); close(true);
+    if (current && !panels[current].contains(e.target) && !e.target.closest('#battle-log-toggle, #battle-stats-toggle, [data-fullscreen]')) {
+      e.preventDefault(); e.stopImmediatePropagation(); close(true); return;
     }
+    var effect = effectAt(e.target);
+    if (effect) { e.preventDefault(); e.stopImmediatePropagation(); open('info', effect); }
   }, true);
   document.addEventListener('keydown', function (e) {
+    var effect = !current && effectAt(e.target);
+    if (effect && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.stopImmediatePropagation(); open('info', effect); return; }
     if (!current) return;
     if (e.key === 'Escape') { close(true); e.stopImmediatePropagation(); return; }
     if (/^[1-4]$/.test(e.key)) { e.preventDefault(); e.stopImmediatePropagation(); return; }

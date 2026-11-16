@@ -9,11 +9,11 @@
 <!-- 手写字体来自 Google Fonts，国内经常连不上；用 media=print 技巧异步加载，连不上也不会卡住页面，会自动用楷体代替 -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Long+Cang&display=swap" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="css/style.css?v=20261116-12">
-<link rel="stylesheet" href="css/battle-layout.css?v=20261115-5">
+<link rel="stylesheet" href="css/battle-layout.css?v=20261116-14">
 <link rel="stylesheet" href="css/bag-layout.css?v=20261116-13">
 <link rel="stylesheet" href="css/collection-layout.css?v=20261116-8">
 <link rel="stylesheet" href="css/map-layout.css?v=20261116-13">
-<link rel="stylesheet" href="css/planet-map.css?v=20261116-11">
+<link rel="stylesheet" href="css/planet-map.css?v=20261116-14">
 <link rel="stylesheet" href="css/storage-layout.css?v=20261115-8">
 <link rel="stylesheet" href="css/estate-view.css?v=20261116-1">
 </head>
@@ -109,13 +109,6 @@
 
   <!-- ============ 对战 ============ -->
   <section id="battle" hidden>
-    <div class="battle-toolbar" aria-label="战斗显示选项">
-      <b>精灵对战</b>
-      <button type="button" class="tab" id="battle-info-toggle" aria-controls="battle-info-panel" aria-expanded="false">技能说明</button>
-      <button type="button" class="tab" id="battle-log-toggle" aria-controls="battle-logbox" aria-expanded="false">记录</button>
-      <button type="button" class="tab" id="battle-stats-toggle" aria-controls="statsbox" aria-expanded="false" hidden>统计</button>
-      <button type="button" class="tab" data-fullscreen aria-label="全屏显示游戏" aria-pressed="false"><b>全屏</b></button>
-    </div>
     <div class="plates">
       <div class="plate" id="plate0"><span class="tape l"></span></div>
       <div class="vs">第<b id="turnNo">1</b>回合<span class="tmax" id="turnMax">上限 60</span></div>
@@ -151,6 +144,9 @@
           <button class="tab on" id="tab-moves" type="button">技能</button>
           <button class="tab" id="tab-team" type="button">精灵</button>
           <button class="tab" id="tab-items" type="button" hidden>道具</button>
+          <button type="button" class="tab" id="battle-log-toggle" aria-controls="battle-logbox" aria-expanded="false">记录</button>
+          <button type="button" class="tab" id="battle-stats-toggle" aria-controls="statsbox" aria-expanded="false" hidden>统计</button>
+          <button type="button" class="tab" data-fullscreen aria-label="全屏显示游戏" aria-pressed="false"><b>全屏</b></button>
           <button class="tab speed" id="btn-speed" type="button">动画：正常</button>
           <span class="emote-wrap"><button class="tab emote" id="btn-emote" type="button" hidden>😀 表情</button><span class="emote-pop" id="emote-pop" hidden></span></span>
           <button class="tab invite" id="btn-invite" type="button" hidden>邀请全服观战</button>
@@ -211,7 +207,7 @@ CLOUD.boot([
   'js/data/creatures.js',
   'js/data/story.js',
   'js/data/mail.js',
-  'js/data/changelog.js?v=20261116-13',
+  'js/data/changelog.js?v=20261116-14',
   'js/data/monchanges.js',
   'js/data/wild.js',
   'js/data/chatter.js',
@@ -234,12 +230,12 @@ CLOUD.boot([
   'js/engine/summon.js',
   'js/engine/endless.js',
   'js/ui/audio.js?v=20261116-6',
-  'js/ui/battle-ui.js?v=20261115-5',
-  'js/ui/game.js?v=20261116-13',
+  'js/ui/battle-ui.js?v=20261116-14',
+  'js/ui/game.js?v=20261116-14',
   'js/ui/social.js?v=20261116-13',
   'js/ui/board.js',
   'js/ui/display.js',
-  'js/ui/battle-layout.js?v=20261115-5',
+  'js/ui/battle-layout.js?v=20261116-14',
   'js/ui/bag-layout.js?v=20261116-13',
   'js/ui/collection-layout.js?v=20261116-8',
   'js/ui/map-layout.js?v=20261116-13',

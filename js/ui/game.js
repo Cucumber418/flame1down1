@@ -3402,7 +3402,12 @@
    * 击败：累积经验 ×3000，50% 掉落叶子喵的叶片（5 片在冶炼坊合成精元，精元在神农架 · 精灵保育仓孵化）。 */
   var TRAVEL = PVE.TRAVEL;
   function thash(h) { var x = (h * 2654435761) >>> 0; x ^= x >>> 13; x = Math.imul(x, 0x5bd1e995) >>> 0; x ^= x >>> 15; return x >>> 0; }
-  function sceneCount(R) { return Math.max(R.pool ? 2 : 1, (R.bgs || []).filter(function (k) { return BG[k]; }).length); }
+  function fieldBgs(R) {
+    var bgs = (R.bgs || []).slice();
+    if (R.id === 'salt' && prog('flora7').done) bgs.push('fl_lab');
+    return bgs.filter(function (k) { return BG[k]; });
+  }
+  function sceneCount(R) { return Math.max(R.pool ? 2 : 1, fieldBgs(R).length); }
   function travelAt(now) {
     var h = Math.floor(now / 3600000), s = thash(h + 7919), start = h * 3600000 + (s % 41) * 60000;
     var R = regionById(TRAVEL.regions[(s >>> 8) % TRAVEL.regions.length]);
@@ -3700,11 +3705,13 @@
   }
   function fieldState(rid) {
     var R = regionById(rid); if (!R) return null;   // 没有野外表（R.pool）的区域（盐碱地）也能进，只是没有野生精灵
+    var previous = fields[rid], resized = R.id === 'salt' && previous && previous.scenes.length !== sceneCount(R);
+    if (resized) delete fields[rid];   // 同一次游戏里通关主线后，立即补上实验室场景。
     if (!fields[rid]) {
-      var bgs = (R.bgs || []).filter(function (k) { return BG[k]; }), n = sceneCount(R), now = Date.now();
+      var bgs = fieldBgs(R), n = sceneCount(R), now = Date.now();
       var fallen = regionFallen(R);
       if (fallen && !R.record) { bgs = bgs.map(floraBg); if (R.id === 'forest') bgs.push('fl_jungle_corrupt'); }   // 瘴气化之后：每个场景换成画了深紫色脉络的 *_mia 版本，丛林再多一张瘴气丛林
-      var F = fields[rid] = { seq: 0, scene: Math.floor(Math.random() * n), scenes: [] };
+      var F = fields[rid] = { seq: 0, scene: resized ? Math.min(previous.scene, n - 1) : Math.floor(Math.random() * n), scenes: [] };
       for (var i = 0; i < n; i++) {
         var sc = { ice: R.id === 'wh_snow' && prog('iceYado').done && Math.random() < 0.01, bgKey: bgs.length ? bgs[i % bgs.length] : '', bg: bgs.length ? BG[bgs[i % bgs.length]] : '', flip: i >= bgs.length && i % 2 === 1, corrupt: fallen && !/_mia$|_corrupt$/.test(bgs[i % bgs.length] || ''), slots: FIELD_SLOTS.map(function (s) { return { hx: s.hx, hy: s.hy, r: s.r, mon: null, next: 0 }; }) };
         sc.slots.forEach(function (sl) { sl.si = i; sl.bgKey = sc.bgKey; if (R.pool) fillSlot(R, F, sl, now, true); });
@@ -3735,8 +3742,8 @@
     return !!R && (regionOpen(R) || (R.id === 'salt' && planetOpen(planetOf('flora')) && !prog('flora1').done));
   }
   function planetMapScenes(R) {
-    if (fields[R.id]) return fields[R.id].scenes;
-    var bgs = (R.bgs || []).filter(function (k) { return BG[k]; });
+    if (fields[R.id]) return fieldState(R.id).scenes;
+    var bgs = fieldBgs(R);
     if (regionFallen(R) && !R.record) { bgs = bgs.map(floraBg); if (R.id === 'forest') bgs.push('fl_jungle_corrupt'); }
     var out = []; for (var i = 0; i < sceneCount(R); i++) { var key = bgs.length ? bgs[i % bgs.length] : ''; out.push({ bgKey: key, bg: BG[key] || '', flip: i >= bgs.length && i % 2 === 1, slots: [] }); }
     return out;
@@ -3759,6 +3766,19 @@
     renderField(); setTimeout(bgmScene, 0); setTimeout(cumberCheck, 400);
   }
   function planetMapName(sc, R, i) { return BG_NAME[sc.bgKey] || BG_NAME[(sc.bgKey || '').replace(/_mia$|_corrupt$/, '')] || R.name + ' · 场景 ' + (i + 1); }
+  function planetLabHere() {
+    var F = fields.salt;
+    return ex.view === 'field' && ex.region === 'salt' && prog('flora7').done && F && F.scenes[F.scene].bgKey === 'fl_lab';
+  }
+  function planetLabScrollOpen() { return planetLabHere() && prog('barrenMys').done; }
+  function planetLabObjects(lab) {
+    if (ex.region !== 'salt' || !prog('flora7').done) return '';
+    return '<button type="button" class="planet-lab-door' + (lab ? ' lab-return' : '') + '" data-lab-scene="' + (lab ? '0' : '1') + '"><span aria-hidden="true">' + (lab ? '↩' : '🚪') + '</span><b>' + (lab ? '返回盐碱地' : '地下实验室') + '</b></button>' +
+      (lab && prog('barrenMys').done ? '<button type="button" class="planet-scroll-pin" data-map-panel="scroll" aria-haspopup="dialog" aria-label="查看实验室卷轴"><span aria-hidden="true">📜</span><b>卷轴</b></button>' : '');
+  }
+  function planetLabReport() {
+    return '<article class="planet-lab-report" aria-label="剧情中的实验报告">' + (SCRIPT.barrenMys || []).filter(function (step) { return step.labReport; }).map(function (step) { return '<p' + (step.labReport === 'signature' ? ' class="report-signature"' : '') + '>' + esc(step.t) + '</p>'; }).join('') + '</article>';
+  }
   function planetStoryPanel(P) {
     var ids = P.storyIds || P.sites || [], id = PM.story;
     if (!id || ids.indexOf(id) < 0) return storyTabs(ids, null, true).html(P.storyEmpty);
@@ -3812,10 +3832,12 @@
   }
   function planetMapPanel(P) {
     if (!PM.panel) return '';
-    var kind = PM.panel, title = { story: '剧情', challenge: '关卡', task: '星球任务', map: '小地图' }[kind], html;
+    var kind = PM.panel, title = { story: '剧情', challenge: '关卡', task: '星球任务', map: '小地图', scroll: '实验室卷轴' }[kind], html;
+    if (kind === 'scroll' && !planetLabScrollOpen()) { PM.panel = null; return ''; }
     if (kind === 'map') html = planetMiniMap(P);
     else if (kind === 'story') html = planetStoryPanel(P);
     else if (kind === 'challenge') html = planetChallengePanel(P);
+    else if (kind === 'scroll') html = planetLabReport();
     else {
       var source = document.createElement('div'); source.innerHTML = planetTasks(P.id);
       source.querySelectorAll('[data-golog]').forEach(function (el) { el.removeAttribute('data-golog'); });
@@ -3853,14 +3875,14 @@
   function renderField() {
     var R = regionById(ex.region);
     if (!R || !planetMapCan(R)) { ex.view = 'sites'; renderExplore(); return; }
-    var open = regionOpen(R), F = planetMapField(R), P = planetOf(R.planet), sc = F.scenes[F.scene], n = F.scenes.length;
+    var open = regionOpen(R), F = planetMapField(R), P = planetOf(R.planet), sc = F.scenes[F.scene], n = F.scenes.length, lab = sc.bgKey === 'fl_lab';
     ex.planet = R.planet; PM.last[P.id] = { rid: R.id, scene: F.scene };
     if (open) catchUp(R, F, sc, Date.now());
     var bg = sc.bg ? '<img class="wf-bg' + (sc.flip ? ' flip' : '') + '" src="' + sc.bg + '" alt="">' : '<div class="wf-ph">' + regionArt(R.id) + '</div>';
     var mons = open ? sc.slots.filter(function (sl) { return sl.mon; }).map(function (sl) { return fieldMonHTML(sl.mon); }).join('') : '';
     var nav = '<button type="button" class="wf-arrow l" data-wfnav="-1" aria-label="上一个小场景"' + (n > 1 ? '' : ' disabled') + '>‹</button><button type="button" class="wf-arrow r" data-wfnav="1" aria-label="下一个小场景"' + (n > 1 ? '' : ' disabled') + '>›</button><span class="wf-dots" aria-label="小场景 ' + (F.scene + 1) + ' / ' + n + '">' + F.scenes.map(function (x, i) { return '<i class="' + (i === F.scene ? 'on' : '') + '"></i>'; }).join('') + '</span>';
-    var resources = open ? gatherNodesHTML(R.id, F.scene, n) + jadeHTML(R.id, F.scene) + riceBowlHTML(R, F.scene) + oreHTML(R, F, F.scene) + hornHTML(R, F, F.scene) + iceHTML(R, F, F.scene) + storyGatherHTML(R, F.scene) : '';
-    var objects = open ? (resources ? '<div class="planet-map-resources" role="group" aria-label="场景物品">' + resources + '</div>' : '') + travelHTML(R, F.scene) + kbwHTML(R, F.scene) + fmNpcHTML(F, F.scene) + fieldBossHTML(R, F.scene) : '<button type="button" class="planet-story-pin" data-map-panel="story"><span aria-hidden="true">📖</span><b>降临芙罗拉</b></button>';
+    var resources = open && !lab ? gatherNodesHTML(R.id, F.scene, n) + jadeHTML(R.id, F.scene) + riceBowlHTML(R, F.scene) + oreHTML(R, F, F.scene) + hornHTML(R, F, F.scene) + iceHTML(R, F, F.scene) + storyGatherHTML(R, F.scene) : '';
+    var objects = open ? (resources ? '<div class="planet-map-resources" role="group" aria-label="场景物品">' + resources + '</div>' : '') + (lab ? '' : travelHTML(R, F.scene) + kbwHTML(R, F.scene) + fmNpcHTML(F, F.scene) + fieldBossHTML(R, F.scene)) + planetLabObjects(lab) : '<button type="button" class="planet-story-pin" data-map-panel="story"><span aria-hidden="true">📖</span><b>降临芙罗拉</b></button>';
     planetMapRender('<div class="planet-map-page"><div class="planet-map-stage"><div class="wf-scene' + (sc.corrupt ? ' miasma-bg' : '') + '" id="wf-scene">' + bg + mons + objects + nav + '</div><header class="planet-map-heading"><button type="button" class="btn ghost" data-map-exit="1" aria-label="返回星图">‹</button><div><small>' + esc(P.name + ' · ' + R.name) + '</small><h2>' + esc(planetMapName(sc, R, F.scene)) + '</h2></div></header><nav class="planet-map-tools" aria-label="星球功能">' + [['story','📖','剧情'],['challenge','⚔','关卡'],['task','📜','星球任务'],['map','🗺','小地图']].map(function (t) { return '<button type="button" data-map-panel="' + t[0] + '" aria-haspopup="dialog"><span aria-hidden="true">' + t[1] + '</span><b>' + t[2] + '</b></button>'; }).join('') + '</nav></div></div>' + planetMapPanel(P));
     if (open) startFieldMove(); else stopField();
   }
@@ -3893,7 +3915,7 @@
   function fieldNav(d) {
     var R = regionById(ex.region), F = R && planetMapField(R); if (!F || ex.fighting) return;
     var n = F.scenes.length; F.scene = (F.scene + d + n) % n;
-    renderField();
+    renderField(); setTimeout(bgmScene, 0);
     setTimeout(cumberCheck, 400);
   }
   function engageField(id) {
@@ -7900,7 +7922,8 @@
       panel.innerHTML = '<div class="soc-box ship-areas-box" role="dialog" aria-modal="true" aria-label="舰内区域"><div class="ship-areas-list">' + shipTiles() + '</div><div class="soc-foot"><button type="button" class="btn primary" data-shipareasclose="1">关闭</button></div></div>';
       $('pg-explore').appendChild(panel); panel.querySelector('[data-shipareasclose]').focus(); return;
     }
-    if (b.dataset.mapPanel) { PM.panel = b.dataset.mapPanel; PM.helpers = false; PM.story = null; PM.storyScroll = 0; renderField(); return; }
+    if (b.dataset.labScene != null && ex.region === 'salt' && prog('flora7').done) { enterField('salt', +b.dataset.labScene); return; }
+    if (b.dataset.mapPanel) { if (b.dataset.mapPanel === 'scroll' && !planetLabScrollOpen()) return; PM.panel = b.dataset.mapPanel; PM.helpers = false; PM.story = null; PM.storyScroll = 0; renderField(); return; }
     if (b.dataset.mapStory && PM.panel === 'story') {
       var PStory = planetOf(ex.planet), storyIds = PStory.storyIds || PStory.sites || [], storyBody = $('pg-explore').querySelector('.planet-panel-story .planet-panel-body');
       if (storyIds.indexOf(b.dataset.mapStory) < 0) return;
@@ -8633,6 +8656,7 @@
       if (ex.view === 'field' && ex.region === 'pp_lava') return 'pompeiiField';   // 庞贝星 · 熔岩原
       if (ex.view === 'sites' && ex.planet === 'pompeii') return 'pompeii';   // 庞贝星主界面
       if (ex.view === 'field' && ex.region === 'fl_record') return 'floraFallen';
+      if (planetLabHere()) return 'floraLab';
       if (ex.view === 'sites' && ex.planet === 'flora') return 'flora';
       if (ex.view === 'field' && fields[ex.region] && regionById(ex.region) && regionById(ex.region).planet === 'flora') {   // 芙罗拉星野外：草甸放 floraGrass，丛林放 floraForest
         var rid_ = regionById(ex.region).id;

@@ -10,25 +10,15 @@ body.battle-active #battle {
   position: fixed; inset: 0; z-index: 20;
   width: 100%; height: var(--battle-view-height, var(--game-view-height, 100vh));
   padding: max(8px, env(safe-area-inset-top, 0px)) max(8px, env(safe-area-inset-right, 0px)) max(8px, env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px));
-  display: grid; grid-template-areas: "toolbar" "plates" "field" "console";
+  display: grid; grid-template-areas: "plates" "field" "console";
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: calc(34px * var(--battle-type-scale)) calc(118px * var(--battle-type-scale)) minmax(0, 1fr) minmax(232px, 32%);
+  grid-template-rows: calc(118px * var(--battle-type-scale)) minmax(0, 1fr) minmax(232px, 32%);
   gap: 8px; overflow: hidden;
   background-color: var(--paper);
   background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
   background-size: 22px 22px;
 }
 body.battle-active #battle > * { min-width: 0; min-height: 0; }
-.battle-toolbar {
-  grid-area: toolbar; display: flex; align-items: center; gap: 6px;
-  min-width: 0; white-space: nowrap;
-}
-.battle-toolbar > b { margin-right: auto; font-size: calc(14px * var(--battle-type-scale)); }
-.battle-toolbar button {
-  flex: 0 0 auto; min-height: calc(30px * var(--battle-type-scale)); padding: 4px 9px; border: 1.5px solid var(--ink);
-  border-radius: 9px; background: var(--paper-2); color: var(--ink); font: inherit; font-size: calc(12px * var(--battle-type-scale)); cursor: pointer;
-}
-.battle-toolbar button[aria-expanded="true"] { background: var(--ink); color: #fff; }
 body.battle-active #battle .plates {
   grid-area: plates; display: grid; grid-template-columns: minmax(0, 1fr) 32px minmax(0, 1fr);
   gap: 6px; margin: 0; align-items: stretch;
@@ -46,6 +36,10 @@ body.battle-active #battle .pips { gap: 3px; }
 body.battle-active #battle .pips span { width: 8px; height: 8px; border-width: 1px; }
 body.battle-active #battle .chips { flex-wrap: nowrap; gap: 4px; min-height: 0; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; }
 body.battle-active #battle .chips .chip { flex: 0 0 auto; align-self: start; white-space: nowrap; }
+body.battle-active #battle .chips .chip[aria-haspopup="dialog"] { cursor: pointer; }
+.battle-effect-detail { white-space: pre-line; overflow-wrap: anywhere; }
+.battle-effect-detail > b, .battle-effect-detail .tipx { display: block; margin: 6px 0; }
+.battle-effect-detail .srow { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 8px; margin: 4px 0; }
 body.battle-active #battle .vs { display: grid; font-size: calc(12px * var(--battle-type-scale)); gap: 0; }
 body.battle-active #battle .vs b { font-size: calc(26px * var(--battle-type-scale)); }
 body.battle-active #battle .vs .tmax { font-size: calc(9px * var(--battle-type-scale)); }
@@ -85,9 +79,9 @@ body.battle-active #battle .endcard .btn { padding: 6px 10px; }
 
 /* 宽画面：左侧完整战场，右侧操作；高度充足时记录也保持可见。 */
 body.battle-active.battle-wide #battle {
-  grid-template-areas: "toolbar toolbar" "plates console" "field console";
+  grid-template-areas: "plates console" "field console";
   grid-template-columns: minmax(0, 1fr) minmax(300px, 37%);
-  grid-template-rows: calc(34px * var(--battle-type-scale)) calc(128px * var(--battle-type-scale)) minmax(0, 1fr);
+  grid-template-rows: calc(128px * var(--battle-type-scale)) minmax(0, 1fr);
 }
 body.battle-active.battle-wide #battle .plate { padding: 8px 10px; }
 body.battle-active.battle-wide #battle .cmd { flex: 1 1 0; }
@@ -97,9 +91,9 @@ body.battle-active #battle .log { min-height: 0; max-height: none; font-size: ca
 body.battle-active.battle-wide #battle .mv .md { -webkit-line-clamp: 3; }
 
 /* 矮画面不把技能压到战场下面：保持左右布局，详细说明和记录按需打开。 */
-body.battle-active.battle-short #battle { gap: 5px; grid-template-rows: calc(32px * var(--battle-type-scale)) calc(100px * var(--battle-type-scale)) minmax(0, 1fr) 224px; padding: 5px; }
+body.battle-active.battle-short #battle { gap: 5px; grid-template-rows: calc(100px * var(--battle-type-scale)) minmax(0, 1fr) 224px; padding: 5px; }
 body.battle-active.battle-short.battle-wide #battle {
-  grid-template-rows: calc(32px * var(--battle-type-scale)) calc(105px * var(--battle-type-scale)) minmax(0, 1fr);
+  grid-template-rows: calc(105px * var(--battle-type-scale)) minmax(0, 1fr);
   grid-template-columns: minmax(0, 1fr) minmax(300px, 41%);
 }
 body.battle-active.battle-short #battle .plate { padding: 5px 6px; grid-template-rows: minmax(0, 1fr) 8px 15px 19px; }
@@ -118,7 +112,7 @@ body.battle-active.battle-tiny #battle .tab { padding: 3px 7px; }
 body.battle-active.battle-log-open #battle .logbox,
 body.battle-active.battle-stats-open #battle .statsbox,
 body.battle-active.battle-info-open #battle .battle-info-panel {
-  position: absolute; z-index: 45; inset: 48px 12px 12px;
+  position: absolute; z-index: 45; inset: 8px 12px 12px;
   width: auto; max-width: 720px; max-height: none; min-height: 0; margin: 0 auto;
   background: var(--paper-2); border: 1.5px solid var(--ink); border-radius: 12px;
   box-shadow: 0 0 0 100vmax rgba(35, 34, 43, .32), 3px 3px 0 var(--ink);
@@ -159,9 +153,6 @@ body.battle-active #battle .sp-panel {
   overflow-y: auto; overscroll-behavior: contain;
 }
 @media (max-width: 480px) {
-  .battle-toolbar { gap: 4px; }
-  .battle-toolbar > b { font-size: 12px; }
-  .battle-toolbar button { padding-inline: 6px; font-size: 11px; }
   body.battle-active #battle .mv .t1 { flex-wrap: wrap; gap: 1px 4px; }
   body.battle-active #battle .mv .pp { margin-left: auto; }
 }
@@ -182,6 +173,6 @@ body.battle-active.battle-touch #battle .mv { display: flex; flex-direction: col
 body.battle-active.battle-touch #battle .mv .md { display: block; -webkit-line-clamp: unset; overflow: visible; overflow-wrap: anywhere; line-height: 1.2; font-size: calc(11px * var(--battle-type-scale)); }
 body.battle-active.battle-touch #battle .mv .mn { line-height: 1.1; }
 body.battle-active.battle-touch #battle .mv .t2 { flex: 0 0 auto; }
-body.battle-active.battle-touch:not(.battle-wide) #battle { grid-template-rows: calc(32px * var(--battle-type-scale)) calc(100px * var(--battle-type-scale)) minmax(0, 1fr) minmax(300px, 43%); }
+body.battle-active.battle-touch:not(.battle-wide) #battle { grid-template-rows: calc(100px * var(--battle-type-scale)) minmax(0, 1fr) minmax(300px, 43%); }
 body.battle-active.battle-touch:not(.battle-wide) #battle .plate { padding: 5px 6px; grid-template-rows: minmax(0, 1fr) 8px 15px 18px; }
 body.battle-active.battle-touch:not(.battle-wide) #battle .plate .pn { font-size: calc(18px * var(--battle-type-scale)); }

@@ -986,7 +986,7 @@
         '<div class="' + mbCls(sd) + '"><i class="' + hpClass(sd.hp, sd.maxhp) + mbFill(sd) + '" style="width:' + (sd.hp / sd.maxhp * 100) + '%"></i></div>' +
         '<div class="hprow"><span>' + hpTxt(sd) + '</span><span class="pips">' +
         sd.team.map(function (t) { var hide = i === 1 && rankOn() && !t.seen; return '<span class="' + (hide ? 'unk' : t.fainted ? 'dead' : '') + (t.active ? ' cur' : '') + '" title="' + esc(hide ? '还没派出' : t.nick || SPMAP[t.id].name) + '">' + (hide ? '?' : '') + '</span>'; }).join('') + '</span></div>' +
-        '<div class="chips">' + sd.chips.map(function (c) { return '<span class="chip sc ' + c.k + '" tabindex="0">' + esc(c.t) + (c.d ? '<span class="tip" role="tooltip"><b>' + esc(c.h || c.t) + '</b>' + esc(c.d) + '</span>' : '') + '</span>'; }).join('') + '</div>';
+        '<div class="chips">' + sd.chips.map(function (c) { return '<span class="chip sc ' + c.k + '" tabindex="0"' + (c.d ? ' role="button" aria-haspopup="dialog"' : '') + '>' + esc(c.t) + (c.d ? '<span class="tip" role="tooltip"><b>' + esc(c.h || c.t) + '</b>' + esc(c.d) + '</span>' : '') + '</span>'; }).join('') + '</div>';
       // 只更新内容，保留血条动画：首次整块写入，之后逐项更新
       var pkey = sd.id + '|' + sd.types.join(',') + '|' + sn.sides[1 - i].id + '|' + sn.sides[1 - i].types.join(',');
       if (!pl.dataset.ready || pl.dataset.id !== pkey) { pl.innerHTML = html; pl.dataset.ready = '1'; pl.dataset.id = pkey; }
