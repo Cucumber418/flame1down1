@@ -22,15 +22,14 @@
     if (body.classList.contains('bag-wide') !== wide) body.classList.toggle('bag-wide', wide);
     var short = full < 650 || height < 400;
     if (body.classList.contains('bag-short') !== short) body.classList.toggle('bag-short', short);
-    if (matchMedia('(hover: hover) and (pointer: fine)').matches) {
-      bag.querySelectorAll('.bag-skill .md').forEach(function (detail) {
-        var card = detail.closest('.bag-skill'), size = 12;
-        detail.style.fontSize = size + 'px';
-        while (size > 9 && card.scrollHeight > card.clientHeight + 1) {
-          size -= .5; detail.style.fontSize = size + 'px';
-        }
-      });
-    }
+    var touch = matchMedia('(max-width: 700px), (pointer: coarse)').matches;
+    bag.querySelectorAll('.bag-skill .md').forEach(function (detail) {
+      var card = detail.closest('.bag-skill'), size = touch ? 11 : 12, min = touch ? 7.5 : 9;
+      detail.style.fontSize = size + 'px';
+      while (size > min && card.scrollHeight > card.clientHeight + 1) {
+        size -= .5; detail.style.fontSize = size + 'px';
+      }
+    });
   }
   function schedule() { if (!frame) frame = requestAnimationFrame(sync); }
   var observer = new MutationObserver(schedule);
