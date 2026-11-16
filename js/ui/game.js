@@ -301,6 +301,8 @@
     setTimeout(function () { storyNewsCheck(); newsCheck(); }, 1500);
     ['holo', 'arena', 'log', 'bag', 'store', 'release', 'dex', 'items', 'social', 'explore'].forEach(function (p) { $('pg-' + p).hidden = p !== page; });
     if (page !== 'bag' && ui.bagPanel) closeBagPanel();
+    if (page !== 'store') ui.storePanel = null;
+    if (page !== 'dex') ui.dexPanel = false;
     renderRename();
     if (page === 'arena' && window.HSBATTLE && window.HSBATTLE.renderMode && $('battle').hidden) window.HSBATTLE.renderMode();
     if (page === 'social') { if (window.HSSOCIAL) window.HSSOCIAL.render(); }
@@ -1481,11 +1483,66 @@
     if (n >= TX.D.TEAM_MAX || !p) return '';
     return '<div class="team-lock"><b>🔒 ' + tName(n) + '</b><span class="hint">还可以再解锁 ' + (TX.D.TEAM_MAX - n) + ' 个配队</span><button class="btn primary" type="button" data-tunlock="1"' + ((acc.energy || 0) < p ? ' disabled title="能量不足"' : '') + '>用 ' + fmt(p) + ' 能量解锁</button></div>';
   }
+  function collectionState(kind) {
+    if (!ui.collections) ui.collections = {};
+    return ui.collections[kind] || (ui.collections[kind] = { page: 0, anchor: 0, cols: 3, rows: 3, size: 9 });
+  }
+  function collectionPage(kind, list) {
+    var state = collectionState(kind), pages = Math.max(1, Math.ceil(list.length / state.size));
+    state.page = Math.max(0, Math.min(pages - 1, state.page));
+    if (state.anchor >= list.length) state.anchor = state.page * state.size;
+    return { state: state, pages: pages, list: list.slice(state.page * state.size, (state.page + 1) * state.size) };
+  }
+  function collectionPager(kind, part, count) {
+    return '<nav class="collection-pages" aria-label="精灵翻页"><button type="button" class="btn ghost" data-colpage="-1" aria-label="上一页"' + (part.state.page ? '' : ' disabled') + '>‹</button><span role="status" aria-live="polite">' + (part.state.page + 1) + ' / ' + part.pages + '<small>共 ' + count + ' ' + (kind === 'dex' ? '类' : '只') + '</small></span><button type="button" class="btn ghost" data-colpage="1" aria-label="下一页"' + (part.state.page < part.pages - 1 ? '' : ' disabled') + '>›</button></nav>';
+  }
+  function collectionModal(kind, title, body) {
+    return '<div class="soc-dlg collection-dialog" data-panel="' + kind + '"><section class="soc-box collection-dialog-box" role="dialog" aria-modal="true" aria-label="' + esc(title) + '"><header><h2>' + esc(title) + '</h2><button type="button" class="btn ghost" data-collection-close="1">关闭</button></header><div class="collection-dialog-body">' + body + '</div></section></div>';
+  }
+  function collectionRender(kind, html) {
+    var host = $('pg-' + kind), old = host.querySelector('.collection-dialog'), active = document.activeElement;
+    var inPanel = old && old.contains(active), id = inPanel && active.id;
+    var attr = inPanel && [].find.call(active.attributes, function (a) { return a.name.indexOf('data-') === 0; });
+    var scroll = old ? old.querySelector('.collection-dialog-body').scrollTop : 0;
+    host.innerHTML = html;
+    var panel = host.querySelector('.collection-dialog');
+    if (panel) {
+      panel.querySelector('.collection-dialog-body').scrollTop = scroll;
+      var focus = id ? $(id) : attr ? [].find.call(panel.querySelectorAll('[' + attr.name + ']'), function (e) { return e.getAttribute(attr.name) === attr.value; }) : null;
+      if (focus && !focus.disabled) focus.focus({ preventScroll: true });
+      else if (!old || inPanel) panel.querySelector('[data-collection-close]').focus({ preventScroll: true });
+    } else if (old) {
+      var trigger = host.querySelector(kind === 'store' ? '[data-u="' + ui.sel + '"]' : '[data-hg="' + dexSel + '"]') || host.querySelector('[data-store-filter], .mons-tabs .on');
+      if (trigger) trigger.focus({ preventScroll: true });
+    }
+  }
+  function collectionClose(kind) {
+    if (kind === 'store') { ui.storePanel = null; renderStore(); }
+    if (kind === 'dex') { ui.dexPanel = false; renderDex2(); }
+  }
+  ['store', 'release', 'dex'].forEach(function (kind) {
+    var host = $('pg-' + kind);
+    host.classList.add('collection-page');
+    host.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-colpage]'); if (!b || b.disabled) return;
+      var state = collectionState(kind); state.page += +b.dataset.colpage; state.anchor = state.page * state.size;
+      if (kind === 'store') renderStore(); else if (kind === 'release') renderRelease(); else renderDex2();
+      var next = host.querySelector('[data-colpage="' + b.dataset.colpage + '"]'); if (next && !next.disabled) next.focus({ preventScroll: true });
+    });
+    host.addEventListener('keydown', function (e) {
+      var panel = host.querySelector('.collection-dialog'); if (!panel) return;
+      if (e.key === 'Escape') { e.stopPropagation(); collectionClose(kind); return; }
+      if (e.key !== 'Tab') return;
+      var controls = [].filter.call(panel.querySelectorAll('button,input,select,summary,[tabindex="0"]'), function (el) { return !el.disabled && el.getClientRects().length; });
+      var first = controls[0], last = controls[controls.length - 1];
+      if (e.shiftKey && (document.activeElement === first || !panel.contains(document.activeElement))) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && (document.activeElement === last || !panel.contains(document.activeElement))) { e.preventDefault(); first.focus(); }
+    });
+  });
   function renderStore() {
-    var f = ui.f, list = filtered(), m = mon(ui.sel), ivSort = f.sort === 'ivd' || f.sort === 'iva';   // 按天赋排序时，卡片上直接显示天赋评级
+    var f = ui.f, list = filtered(), part = collectionPage('store', list), m = mon(ui.sel), ivSort = f.sort === 'ivd' || f.sort === 'iva';   // 按天赋排序时，卡片上直接显示天赋评级
     var cnt = {}; acc.mons.forEach(function (x) { SPMAP[x.sid].types.forEach(function (t) { cnt[t] = (cnt[t] || 0) + 1; }); });
-    var html = monsTabs('store') + '<div class="page-head"><h2 class="sec">精灵仓库</h2><p class="hint flash" role="status"></p></div>' +
-      '<div class="filters" id="filters">' +
+    var filters = '<div class="filters" id="filters">' +
       '<div class="f-row"><span class="f-lab">属性</span><button type="button" class="fchip' + (!f.type ? ' on' : '') + '" data-ft="">全部<i>' + acc.mons.length + '</i></button>' +
       ALL_T.map(function (t) { return '<button type="button" class="fchip t' + (f.type === t ? ' on' : '') + (cnt[t] ? '' : ' zero') + '" style="--tc:' + TYPE_COLOR[t] + '" data-ft="' + t + '">' + t + '<i>' + (cnt[t] || 0) + '</i></button>'; }).join('') + '</div>' +
       '<div class="f-row"><span class="f-lab">等级</span>' + LV_PRE.map(function (p) { return '<button type="button" class="fchip' + (f.min === p[0] && f.max === p[1] ? ' on' : '') + '" data-flv="' + p[0] + '-' + p[1] + '">' + p[2] + '</button>'; }).join('') +
@@ -1493,32 +1550,36 @@
       '<div class="f-foot"><div class="f-row"><label class="f-lab" for="f-sort">排序</label><select id="f-sort">' +
       [['lvd', '等级从高到低'], ['lva', '等级从低到高'], ['ivd', '天赋评级从高到低'], ['iva', '天赋评级从低到高'], ['got', '获得顺序'], ['name', '名称']].map(function (o) { return '<option value="' + o[0] + '"' + (f.sort === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') +
       '</select><span class="hint">显示 ' + list.length + ' / ' + acc.mons.length + ' 只</span></div>' +
-      '</div></div>' +
-      '<div class="build"><div><div class="dex-grid" id="store-grid">' +
-      (list.length ? list.map(function (x) {
+      '</div></div>';
+    var html = monsTabs('store') + '<div class="collection-toolbar"><button type="button" class="btn ghost" data-store-filter="1" aria-haspopup="dialog">筛选 / 排序</button><span class="hint">' + esc(f.type || '全部属性') + ' · LV' + Math.min(f.min, f.max) + '–' + Math.max(f.min, f.max) + ' · ' + list.length + ' 只</span></div><div class="collection-grid dex-grid" id="store-grid" aria-label="仓库精灵">' +
+      (list.length ? part.list.map(function (x) {
         var ts = teamsOf(x.u);
         return '<button type="button" class="card' + (ui.sel === x.u ? ' sel' : '') + '" data-u="' + x.u + '">' +
-          (ts.length ? '<span class="tms">' + ts.map(function (y) { return '<span class="' + (acc.active === y.t ? 'on' : '') + '">' + tName(y.t) + (y.lead ? '·首发' : '') + '</span>'; }).join('') + '</span>' : '') +
+          (ts.length ? '<span class="tms" title="' + esc(ts.map(function (y) { return tName(y.t) + (y.lead ? '·首发' : ''); }).join('、')) + '"><span class="' + (ts.some(function (y) { return y.t === acc.active; }) ? 'on' : '') + '">' + (ts.some(function (y) { return y.t === acc.active; }) ? '当前配队' : '已配队') + (ts.length > 1 ? ' · ' + ts.length + ' 队' : '') + '</span></span>' : '') +
           '<img src="' + form(x).img + '" alt="' + esc(form(x).name) + '"><span class="nm">' + esc(form(x).name) + '</span><span class="lv">LV' + x.lv + (ivSort ? gradeTag(x) : '') + '</span><span class="meta">' + tchips(SPMAP[x.sid].types) + '</span></button>';
       }).join('') : '<p class="empty-note">没有符合条件的精灵。</p>') +
-      '</div></div><article class="detail" id="store-detail">' + monDetail(m) + '</article></div>';
-    $('pg-store').innerHTML = html;
+      '</div>' + collectionPager('store', part, list.length);
+    if (ui.storePanel === 'filters') html += collectionModal('filters', '筛选与排序', filters);
+    if (ui.storePanel === 'detail' && m) html += collectionModal('detail', '精灵资料', '<p class="hint flash" role="status"></p><article class="detail" id="store-detail">' + monDetail(m) + '</article>');
+    collectionRender('store', html);
   }
   $('pg-store').addEventListener('click', function (e) {
+    if (e.target.classList.contains('collection-dialog') || e.target.closest('[data-collection-close]')) { collectionClose('store'); return; }
     var b = e.target.closest('button'); if (!b) return;
     if (b.dataset.mtab) { if (b.dataset.mtab === 'dex' && !dexOpen()) { toast('读完星际探索 · 荆楚号 · 学院部的剧情后，「黄冈秘鉴」才会开放。', prog('board').done ? '前往学院部' : '', '黄冈'); return; } go(b.dataset.mtab); return; }
+    if (b.dataset.storeFilter) { ui.storePanel = 'filters'; renderStore(); return; }
     if (b.closest('#store-detail')) { onDetailClick(e); return; }
-    if (b.dataset.ft != null) { ui.f.type = b.dataset.ft; renderStore(); return; }
-    if (b.dataset.flv) { var p = b.dataset.flv.split('-'); ui.f.min = +p[0]; ui.f.max = +p[1]; renderStore(); return; }
-    if (b.classList.contains('card')) { ui.sel = +b.dataset.u; renderStore(); }
+    if (b.dataset.ft != null) { ui.f.type = b.dataset.ft; collectionState('store').page = collectionState('store').anchor = 0; renderStore(); return; }
+    if (b.dataset.flv) { var p = b.dataset.flv.split('-'); ui.f.min = +p[0]; ui.f.max = +p[1]; collectionState('store').page = collectionState('store').anchor = 0; renderStore(); return; }
+    if (b.classList.contains('card')) { ui.sel = +b.dataset.u; ui.storePanel = 'detail'; renderStore(); }
   });
   $('pg-store').addEventListener('change', function (e) {
     var t = e.target;
     if (t.id === 'f-min' || t.id === 'f-max') {
       var v = Math.max(1, Math.min(100, Math.round(+t.value) || (t.id === 'f-min' ? 1 : 100)));
-      ui.f[t.id === 'f-min' ? 'min' : 'max'] = v; renderStore(); return;
+      ui.f[t.id === 'f-min' ? 'min' : 'max'] = v; collectionState('store').page = collectionState('store').anchor = 0; renderStore(); return;
     }
-    if (t.id === 'f-sort') { ui.f.sort = t.value; renderStore(); return; }
+    if (t.id === 'f-sort') { ui.f.sort = t.value; collectionState('store').page = collectionState('store').anchor = 0; renderStore(); return; }
     if (t.closest('#store-detail')) onDetailChange(e);
   });
 
@@ -1529,16 +1590,16 @@
   function relTag(m) { var t = GROW.relTier(m.sid); return t < 0 ? '' : '<span class="rel-tier" style="--rc:' + REL_TC[t] + '">' + GROW.REL_TIER[t].n + (m.shiny ? ' · 异色' : '') + '</span>'; }
   function renderRelease() {
     var s = relSel(), list = acc.mons.slice().sort(function (a, b) { var ba = GROW.relBlock(acc, a) ? 1 : 0, bb = GROW.relBlock(acc, b) ? 1 : 0; return ba - bb || a.lv - b.lv || a.u - b.u; });
-    var pick = relPicked(), ex0 = 0, pt0 = 0; pick.forEach(function (m) { ex0 += GROW.relExp(m.lv); pt0 += GROW.relPt(m); });
-    var html = monsTabs('release') + '<div class="page-head"><h2 class="sec">精灵放生</h2></div>' +
+    var part = collectionPage('release', list), pick = relPicked(), ex0 = 0, pt0 = 0; pick.forEach(function (m) { ex0 += GROW.relExp(m.lv); pt0 += GROW.relPt(m); });
+    var html = monsTabs('release') +
       '<div class="rel-bar"><span class="rel-have">' + H.itemIcon('relPt') + '放生点数 <b>' + fmt((acc.items && acc.items.relPt) || 0) + '</b></span><span class="rel-legend">' + GROW.REL_TIER.map(function (T, i) { return '<span class="rel-tier" style="--rc:' + REL_TC[i] + '">' + T.n + ' ' + T.pt + ' 点</span>'; }).join('') + '</span></div>' +
-      '<div class="rel-act"><span>已选 <b>' + pick.length + '</b> 只' + (pick.length ? ' · 可获得 <b>' + fmt(ex0) + '</b> 经验、<b>' + fmt(pt0) + '</b> 放生点数' : '') + '</span><span class="rel-btns"><button type="button" class="btn ghost" data-relall="1" title="不包括异色和超过 30 级的精灵">选中全部常见精灵</button><button type="button" class="btn ghost" data-relclr="1"' + (pick.length ? '' : ' disabled') + '>清空</button><button type="button" class="btn primary" data-relgo="1"' + (pick.length ? '' : ' disabled') + '>放生</button></span></div>' +
-      '<div class="dex-grid rel-grid">' + list.map(function (m) {
+      '<div class="rel-act"><span>已选 <b>' + pick.length + '</b> 只' + (pick.length ? ' · 可获得 <b>' + fmt(ex0) + '</b> 经验、<b>' + fmt(pt0) + '</b> 放生点数' : '') + '</span><span class="rel-btns"><button type="button" class="btn ghost" data-relall="1" title="不包括异色和超过 30 级的精灵">全选常见</button><button type="button" class="btn ghost" data-relclr="1"' + (pick.length ? '' : ' disabled') + '>清空</button><button type="button" class="btn primary" data-relgo="1"' + (pick.length ? '' : ' disabled') + '>放生</button></span></div>' +
+      '<div class="collection-grid dex-grid rel-grid" aria-label="放生精灵">' + part.list.map(function (m) {
         var why = GROW.relBlock(acc, m), on = !why && s[m.u];
         return '<button type="button" class="card rel' + (on ? ' sel' : '') + (why ? ' lock' : '') + '" data-relu="' + m.u + '"' + (why ? ' aria-disabled="true"' : ' aria-pressed="' + !!on + '"') + '>' + (on ? '<span class="rel-ck" aria-hidden="true">✓</span>' : '') +
           '<img src="' + form(m).img + '" alt="' + esc(form(m).name) + '"><span class="nm">' + esc(form(m).name) + '</span><span class="lv">LV' + m.lv + '</span>' + relTag(m) +
           '<span class="meta">' + (why ? '🔒 ' + why : '+' + fmt(GROW.relExp(m.lv)) + ' 经验 · +' + GROW.relPt(m) + ' 点') + '</span></button>';
-      }).join('') + '</div>';
+      }).join('') + (!list.length ? '<p class="empty-note">还没有精灵。</p>' : '') + '</div>' + collectionPager('release', part, list.length);
     $('pg-release').innerHTML = html;
   }
   function releaseAsk() {
@@ -1613,13 +1674,11 @@
   function dexOrder() { var no = function (s) { var v = parseInt((s.evo && s.evo[0] && s.evo[0].no) || '', 10); return isNaN(v) ? -1 : v; }; return DEX_ALL.map(function (s, i) { return { s: s, i: i, n: no(s) }; }).sort(function (a, b) { return (a.n < 0) - (b.n < 0) || b.n - a.n || a.i - b.i; }).map(function (x) { return x.s; }); }
   function renderDex2() {
     syncSeen();
-    var n = litCount(), T = TITLES[0];
+    var n = litCount(), T = TITLES[0], part = collectionPage('dex', dexOrder());
     var ns = DEX_ALL.filter(function (s) { return !owned(s.id) && acc.seen && acc.seen[s.id] !== undefined; }).length;
     if (dexSel && !owned(dexSel)) dexSel = null;
-    var html = monsTabs('dex') + '<div class="page-head"><h2 class="sec">黄冈秘鉴</h2></div>' +
-      '<div class="dex-prog"><span class="tape l"></span><div><b>' + n + '</b> / ' + DEX_ALL.length + ' 类已点亮' + (ns ? '<small class="seen-n">　另有 ' + ns + ' 类见过</small>' : '') + '</div><div class="pbar2"><i style="width:' + (n / DEX_ALL.length * 100) + '%"></i></div>' +
-      '<span class="hint">' + ((acc.titles || []).indexOf(T.id) >= 0 ? '已获得称号「' + T.n + '」' : '再点亮 ' + Math.max(0, 3 - n) + ' 类，可获得称号「' + T.n + '」') + '</span></div>' +
-      '<div class="build"><div class="dex-grid hg-grid">' + dexOrder().map(function (s) {
+    var html = monsTabs('dex') + '<div class="collection-toolbar collection-progress" title="' + esc((acc.titles || []).indexOf(T.id) >= 0 ? '已获得称号「' + T.n + '」' : '再点亮 ' + Math.max(0, 3 - n) + ' 类，可获得称号「' + T.n + '」') + '"><span>已点亮 <b>' + n + '</b> / ' + DEX_ALL.length + (ns ? ' · 见过 ' + ns : '') + '</span><div class="pbar2"><i style="width:' + (n / DEX_ALL.length * 100) + '%"></i></div></div>' +
+      '<div class="collection-grid dex-grid hg-grid" aria-label="精灵图鉴">' + part.list.map(function (s) {
         var on = owned(s.id), best = 0;
         acc.mons.forEach(function (m) { if (m.sid === s.id) best = Math.max(best, stageOf(s, m.lv)); });
         var seen = !on && acc.seen && acc.seen[s.id] !== undefined, sf = seen ? seenForm(s) : null;
@@ -1629,8 +1688,9 @@
         return '<button type="button" class="card hg' + (on ? ' on' : seen ? ' off seen' : ' off unseen') + (dexSel === s.id ? ' sel' : '') + '" data-hg="' + s.id + '"' + (on ? '' : ' aria-disabled="true"') + '>' +
           (no ? '<span class="hgno">' + no + '</span>' : '') + (img ? '<img src="' + img + '" alt="">' : silTag(s.id, 0)) + '<span class="nm">' + (on ? esc(topName(s)) + '系' : seen ? esc(sf.name) : '？？？') + '</span>' +
           '<span class="meta">' + (on ? tchips(s.types) : '<span>' + (seen ? '见过 · 未获得' : '未获得') + '</span>') + '</span></button>';
-      }).join('') + '</div><article class="detail" id="hg-detail">' + hgDetail(dexSel) + '</article></div>';
-    $('pg-dex').innerHTML = html;
+      }).join('') + '</div>' + collectionPager('dex', part, DEX_ALL.length);
+    if (ui.dexPanel && dexSel) html += collectionModal('dex', '图鉴资料', '<article class="detail" id="hg-detail">' + hgDetail(dexSel) + '</article>');
+    collectionRender('dex', html);
   }
   function hgDetail(sid) {
     if (!sid) return '<p class="empty-note">点击已点亮的精灵，查看秘鉴里记载的资料。灰色的精灵还没有带回来过。</p>';
@@ -1649,6 +1709,7 @@
   }
   function total(s) { var n = 0; for (var k in s.base) n += s.base[k]; return n; }
   $('pg-dex').addEventListener('click', function (e) {
+    if (e.target.classList.contains('collection-dialog') || e.target.closest('[data-collection-close]')) { collectionClose('dex'); return; }
     var mt = e.target.closest('[data-mtab]'); if (mt) { go(mt.dataset.mtab); return; }
     var bg = e.target.closest('[data-abig]'); if (bg) { var q = bg.dataset.abig.split('|'); H.big(q[0], +q[1]); return; }
     var c = e.target.closest('[data-hg]'); if (!c) return;
@@ -1657,7 +1718,7 @@
       toast(acc.seen && acc.seen[sd.id] !== undefined ? '见过「' + seenForm(sd).name + '」，但还没有把它带回来，秘鉴里只记下了名字。' : '还没有带回过这一类精灵，秘鉴里这一页还是灰的。');
       return;
     }
-    dexSel = c.dataset.hg; renderDex2();
+    dexSel = c.dataset.hg; ui.dexPanel = true; renderDex2();
   });
 
   /* ---------- 星际探索：选星球 → 选地点 → 剧情（galgame 式对话） ---------- */
@@ -8307,6 +8368,13 @@
       if (page === 'explore' && ex.view === 'farm') farmRefresh([m.i]);
     },
     farmSteal: function (owner, i, ok, fail) { txRun('farmSteal', { owner: owner, i: i }, function (r) { renderRes(); if (ok) ok(r); }, fail); },
+    layoutCollection: function (kind, cols, rows) {
+      if (!ready() || page !== kind) return;
+      var state = collectionState(kind); if (state.cols === cols && state.rows === rows) return;
+      var first = state.anchor;
+      state.cols = cols; state.rows = rows; state.size = cols * rows; state.page = Math.floor(first / state.size);
+      if (kind === 'store') renderStore(); else if (kind === 'release') renderRelease(); else if (kind === 'dex') renderDex2();
+    },
     layoutItems: function (cols, rows) {
       if (!ready()) return;
       if (ui.itCols === cols && ui.itRows === rows) return;
