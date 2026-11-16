@@ -787,7 +787,7 @@
     for (var k = 0; ; k++) {
       var r = await remote(body);
       if (r && r.ok) return r;
-      if (r && r.net && k < 2) { var h = $('cmd-hint'); h.textContent = '网络不稳，正在重试……'; h.className = 'hint alert'; await wait(1500); continue; }
+      if (r && r.net && k < 2) { var h = $('cmd-hint'); h.textContent = '网络不稳，正在重试……'; h.className = 'hint alert'; h.hidden = false; await wait(1500); continue; }
       if (r && r.net) rSeq--;   // 下次点击重发同一个请求：服务器要是已经结算过，会直接回上次的结果
       return r || { ok: false, err: '' };
     }
@@ -986,7 +986,7 @@
         '<div class="' + mbCls(sd) + '"><i class="' + hpClass(sd.hp, sd.maxhp) + mbFill(sd) + '" style="width:' + (sd.hp / sd.maxhp * 100) + '%"></i></div>' +
         '<div class="hprow"><span>' + hpTxt(sd) + '</span><span class="pips">' +
         sd.team.map(function (t) { var hide = i === 1 && rankOn() && !t.seen; return '<span class="' + (hide ? 'unk' : t.fainted ? 'dead' : '') + (t.active ? ' cur' : '') + '" title="' + esc(hide ? '还没派出' : t.nick || SPMAP[t.id].name) + '">' + (hide ? '?' : '') + '</span>'; }).join('') + '</span></div>' +
-        '<div class="chips">' + sd.chips.map(function (c) { return '<span class="chip sc ' + c.k + '" tabindex="0"' + (c.d ? ' role="button" aria-haspopup="dialog"' : '') + '>' + esc(c.t) + (c.d ? '<span class="tip" role="tooltip"><b>' + esc(c.h || c.t) + '</b>' + esc(c.d) + '</span>' : '') + '</span>'; }).join('') + '</div>';
+        '<div class="chips">' + sd.chips.map(function (c) { return '<span class="chip sc ' + c.k + '" tabindex="0"' + (c.d ? ' role="button" aria-expanded="false"' : '') + '>' + esc(c.t) + (c.d ? '<span class="tip" role="tooltip"><b>' + esc(c.h || c.t) + '</b>' + esc(c.d) + '</span>' : '') + '</span>'; }).join('') + '</div>';
       // 只更新内容，保留血条动画：首次整块写入，之后逐项更新
       var pkey = sd.id + '|' + sd.types.join(',') + '|' + sn.sides[1 - i].id + '|' + sn.sides[1 - i].types.join(',');
       if (!pl.dataset.ready || pl.dataset.id !== pkey) { pl.innerHTML = html; pl.dataset.ready = '1'; pl.dataset.id = pkey; }
@@ -1146,8 +1146,8 @@
     else if (peerPick) hint.textContent = '等待 ' + pvp.foe + ' 选择下一只出战的精灵……' + pvpClock();
     else if (needMe) { hint.textContent = '【' + (me.nick || SPMAP[me.id].name) + '】已倒下，请选择下一只出战的精灵'; hint.className = 'hint alert'; }
     else if (locked) hint.textContent = '受「傲慢」影响，' + me.tm.noSwitch + ' 回合内无法切换精灵';
-    else hint.textContent = S.training ? '点击技能对木桩出招，也可按键盘 1–4 出招。伤害统计会实时更新。' : '点击技能出招，或在「精灵」页切换精灵（切换会占用本回合），也可按键盘 1–4 出招。' + pvpClock();
-    if (!lock && !needMe && window.HSSKILL && HSSKILL.touchUI()) hint.textContent = '轻触技能出招；效果已写在技能框内，也可长按放大查看。' + pvpClock();
+    else hint.textContent = pvpClock();
+    hint.hidden = !hint.textContent;
     $('btn-quit').disabled = !!S.over;
     $('btn-quit').textContent = S.training ? '结束训练' : S.wild ? '逃跑' : '认输';
     if (needMe && !lock) showTab('team');
@@ -1319,7 +1319,7 @@
     if (pvp.onEmote) pvp.onEmote(b.dataset.emote);
   });
   document.addEventListener('click', function () { var p = $('emote-pop'); if (p) p.hidden = true; });
-  function flashHint(t) { var h = $('cmd-hint'); if (h) { h.textContent = t; h.className = 'hint alert'; setTimeout(refreshCmd, 1500); } }
+  function flashHint(t) { var h = $('cmd-hint'); if (h) { h.textContent = t; h.className = 'hint alert'; h.hidden = false; setTimeout(refreshCmd, 1500); } }
   $('btn-invite').addEventListener('click', function () { if (pvp && CAST.on && caster && !this.disabled) { this.disabled = true; caster('invite', {}); } });
   $('btn-speed').addEventListener('click', function () { app.fast = !app.fast; this.textContent = '动画：' + (app.fast ? '快速' : '正常'); });
   $('btn-quit').addEventListener('click', function () {

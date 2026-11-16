@@ -36,10 +36,16 @@ body.battle-active #battle .pips { gap: 3px; }
 body.battle-active #battle .pips span { width: 8px; height: 8px; border-width: 1px; }
 body.battle-active #battle .chips { flex-wrap: nowrap; gap: 4px; min-height: 0; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; }
 body.battle-active #battle .chips .chip { flex: 0 0 auto; align-self: start; white-space: nowrap; }
-body.battle-active #battle .chips .chip[aria-haspopup="dialog"] { cursor: pointer; }
-.battle-effect-detail { white-space: pre-line; overflow-wrap: anywhere; }
-.battle-effect-detail > b, .battle-effect-detail .tipx { display: block; margin: 6px 0; }
-.battle-effect-detail .srow { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 8px; margin: 4px 0; }
+body.battle-active #battle .chips .chip[role="button"] { cursor: pointer; }
+/* 浮层挂在 body，避开状态栏的滚动裁切，保留原悬浮提示的深色样式。 */
+body.battle-active #battle .plate .tip { display: none !important; }
+.battle-effect-popover { position: fixed; z-index: 1200; width: max-content; max-width: min(280px, calc(100vw - 16px)); border-radius: 10px; background: var(--ink); color: #fff; box-shadow: 3px 3px 0 var(--red); font-size: 12.5px; line-height: 1.55; font-weight: 400; white-space: pre-line; overflow-wrap: anywhere; }
+.battle-effect-content { padding: 9px 11px; max-height: inherit; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; }
+.battle-effect-popover::before { content: ''; position: absolute; top: -5px; left: var(--effect-arrow-left, 16px); width: 10px; height: 10px; background: var(--ink); transform: translateX(-50%) rotate(45deg); }
+.battle-effect-popover.above::before { top: auto; bottom: -5px; }
+.battle-effect-content > b { display: block; color: var(--tape); margin-bottom: 3px; font-size: 13px; }
+.battle-effect-popover .tipx { display: block; margin-top: 6px; padding-top: 5px; border-top: 1px dashed #55525d; color: #cfcbbf; font-size: 12px; }
+.battle-effect-popover.tip-type { white-space: normal; }
 body.battle-active #battle .vs { display: grid; font-size: calc(12px * var(--battle-type-scale)); gap: 0; }
 body.battle-active #battle .vs b { font-size: calc(26px * var(--battle-type-scale)); }
 body.battle-active #battle .vs .tmax { font-size: calc(9px * var(--battle-type-scale)); }
