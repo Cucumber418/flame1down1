@@ -1,4 +1,4 @@
-/* 技能说明手势：轻触保留原操作，长按只查看；拖动、多指和取消不会出招。 */
+/* 战斗技能长按查看；背包的长按交给排序，轻触仍可查看说明。 */
 (function () {
   'use strict';
   var press = null, swallow = false, pointers = {}, hover = null;
@@ -7,7 +7,7 @@
     return matchMedia('(pointer: coarse)').matches || ((navigator.maxTouchPoints || 0) > 0 && Math.min((v ? v.width : innerWidth) * s, (v ? v.height : innerHeight) * s) <= 900);
   }
   function sync() { document.body.classList.toggle('battle-touch', touchUI()); hideHover(); }
-  function card(target) { return target.closest && !target.closest('.bag-skill-grip') && !document.body.classList.contains('bag-skills-dragging') ? target.closest('#mgrid .mv, .bag-skill') : null; }
+  function card(target) { return target.closest && !document.body.classList.contains('bag-skills-dragging') ? target.closest('#mgrid .mv, .bag-skill') : null; }
   function cancel(block) { if (press) { clearTimeout(press.timer); if (block) swallow = true; press = null; } }
   function inspect(el) { el.dispatchEvent(new CustomEvent('skillinspect', { bubbles: true })); }
   document.addEventListener('pointerdown', function (e) {
@@ -16,6 +16,7 @@
     if (Object.keys(pointers).length > 1 || !e.isPrimary) { cancel(true); return; }
     swallow = false; cancel(false);
     var el = card(e.target); if (!el || e.button > 0) return;
+    if (el.closest('.bag-skill-grid')) return;   // 背包技能整张卡长按拿起，避免同时弹出说明。
     press = { el: el, id: e.pointerId, x: e.clientX, y: e.clientY };
     press.timer = setTimeout(function () {
       if (!press || press.el !== el || document.hidden) return;
@@ -35,7 +36,7 @@
   document.addEventListener('click', function (e) {
     if (swallow && (e.detail > 0 || e.pointerType === 'touch' || e.pointerType === 'pen')) { e.preventDefault(); e.stopImmediatePropagation(); swallow = false; }
   }, true);
-  document.addEventListener('contextmenu', function (e) { if (card(e.target) && touchUI()) e.preventDefault(); });
+  document.addEventListener('contextmenu', function (e) { if ((card(e.target) || e.target.closest('.bag-skill-grid [data-bag-skill]')) && touchUI()) e.preventDefault(); });
   window.addEventListener('blur', function () { cancel(true); pointers = {}; });
   document.addEventListener('skillreorderstart', function () { cancel(true); hideHover(); });
   document.addEventListener('visibilitychange', function () { if (document.hidden) { cancel(true); pointers = {}; } });

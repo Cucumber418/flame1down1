@@ -308,13 +308,13 @@ body.bag-short.bag-wide .bag-stat-ev { margin-top: 1px; }
 #pg-bag .bag-detail-body { position: relative; }
 #pg-bag .bag-skill-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); }
 #pg-bag .bag-skill { border-left: 5px solid var(--skill-color, var(--rule)); }
-#pg-bag .bag-skill[data-bag-skill] { position: relative; user-select: none; -webkit-user-select: none; }
-#pg-bag .bag-skill[data-bag-skill] .mn { padding-right: 24px; }
-.bag-skill-grip { position: absolute; top: 2px; right: 2px; width: 26px; height: 28px; display: grid; place-items: center; font-size: 23px; line-height: 1; color: var(--pencil); cursor: grab; touch-action: none; -webkit-touch-callout: none; }
-#pg-bag .skill-drag-source { opacity: .45; }
+#pg-bag .bag-skill[data-bag-skill] { position: relative; user-select: none; -webkit-user-select: none; cursor: grab; touch-action: none; -webkit-touch-callout: none; }
+#pg-bag .skill-drag-source { opacity: .35; }
 #pg-bag .skill-drop-to { outline: 3px solid var(--blue); outline-offset: -3px; background: var(--paper-2); }
 .bag-skills-dragging, .bag-skills-dragging * { cursor: grabbing !important; }
-.bag-skill-ghost { position: fixed; z-index: 1201; pointer-events: none; padding: 8px 12px; border: 1.5px solid var(--ink); border-left: 5px solid var(--skill-color); border-radius: 8px; background: var(--paper); color: var(--ink); box-shadow: 0 6px 18px #0003; font-size: 13px; }
+#pg-bag .bag-skill-ghost { position: fixed; z-index: 1201; pointer-events: none; margin: 0; transform: rotate(-3deg) scale(1.04); box-shadow: 0 10px 24px #0004; opacity: .95; animation: bag-skill-lift .16s ease-out; }
+@keyframes bag-skill-lift { from { transform: rotate(0) scale(1); box-shadow: 0 0 0 #0000; } to { transform: rotate(-3deg) scale(1.04); box-shadow: 0 10px 24px #0004; } }
+@media (prefers-reduced-motion: reduce) { #pg-bag .bag-skill-ghost { animation: none; } }
 .skill-info-meta .t2 { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; }
 .skill-info-meta .tchip { display: inline-flex; color: #fff; border-radius: 999px; padding: 3px 7px; }
 .skill-hover { border-left: 5px solid var(--skill-color, var(--red)); }
