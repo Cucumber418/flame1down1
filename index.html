@@ -10,7 +10,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Long+Cang&display=swap" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="css/style.css?v=20261116-2">
 <link rel="stylesheet" href="css/battle-layout.css?v=20261115-5">
-<link rel="stylesheet" href="css/bag-layout.css?v=20261116-5">
+<link rel="stylesheet" href="css/bag-layout.css?v=20261116-6">
 <link rel="stylesheet" href="css/map-layout.css?v=20261116-2">
 <link rel="stylesheet" href="css/storage-layout.css?v=20261115-8">
 <link rel="stylesheet" href="css/estate-view.css?v=20261116-1">
@@ -23,11 +23,10 @@
       <button type="button" class="who-btn" id="who-btn" aria-haspopup="true" aria-expanded="false"><span class="av" id="who-av">?</span><span><span class="lab" id="who-title">做题家</span><br><b id="who-name"></b></span></button>
       <button type="button" class="mail-btn" id="mail-btn" aria-label="邮箱" title="邮箱"><span aria-hidden="true">✉</span><b>邮箱</b><i class="q-badge" id="mail-badge" hidden></i></button>
       <div class="snd-wrap"><button type="button" class="mail-btn snd-btn" id="snd-btn" aria-haspopup="true" aria-expanded="false" title="设置"><span aria-hidden="true">⚙</span><b>设置</b></button><div class="snd-menu" id="snd-menu" hidden></div></div>
-      <button type="button" class="mail-btn" id="wiki-btn" title="Wiki：精灵和技能资料"><span aria-hidden="true">📚</span><b>Wiki</b></button>
-      <button type="button" class="mail-btn" id="about-btn" title="关于"><span aria-hidden="true">ⓘ</span><b>关于</b></button>
-      <button type="button" class="mail-btn" id="board-btn" title="讨论区"><span aria-hidden="true">💬</span><b>讨论</b><i class="q-badge dot-badge" id="board-badge" hidden></i></button>
+      <button type="button" class="mail-btn" id="wiki-btn" aria-label="Wiki：精灵和技能资料" title="Wiki：精灵和技能资料"><span aria-hidden="true">📚</span><b>Wiki</b></button>
+      <button type="button" class="mail-btn" id="board-btn" aria-label="讨论区" title="讨论区"><span aria-hidden="true">💬</span><b>讨论</b><i class="q-badge dot-badge" id="board-badge" hidden></i></button>
       <span class="res" id="res" hidden></span>
-      <div class="qtop-wrap" id="qtop-wrap"><button type="button" class="mail-btn qtop-btn" id="qtop-btn" aria-haspopup="dialog" title="任务"><span aria-hidden="true">📜</span><b>任务</b><i class="q-badge" id="qtop-badge" hidden></i></button><div class="qtop-pop" id="qtop-pop" hidden></div></div>
+      <div class="qtop-wrap" id="qtop-wrap"><button type="button" class="mail-btn qtop-btn" id="qtop-btn" aria-label="任务" aria-haspopup="dialog" title="任务"><span aria-hidden="true">📜</span><b>任务</b><i class="q-badge" id="qtop-badge" hidden></i></button><div class="qtop-pop" id="qtop-pop" hidden></div></div>
       <button type="button" class="mail-btn fullscreen-btn" id="fullscreen-btn" aria-label="全屏显示游戏" aria-pressed="false" title="全屏显示游戏"><span aria-hidden="true">⛶</span><b>全屏</b></button>
       <div class="who-menu" id="who-menu" hidden>
         <div class="gender-box" id="gender-box"></div>
@@ -201,7 +200,7 @@
 <script src="js/ui/land.js?v=20261115-5"></script>
 <script src="js/ui/skill-inspect.js?v=20261116-4"></script>
 <script src="js/ui/loader.js"></script>
-<script src="js/net/cloud.js"></script>
+<script src="js/net/cloud.js?v=20261116-6"></script>
 <script>
 CLOUD.boot([
   'js/data/assets.js',
@@ -232,7 +231,7 @@ CLOUD.boot([
   'js/engine/award.js',
   'js/engine/summon.js',
   'js/engine/endless.js',
-  'js/ui/audio.js',
+  'js/ui/audio.js?v=20261116-6',
   'js/ui/battle-ui.js?v=20261115-5',
   'js/ui/game.js?v=20261116-4',
   'js/ui/social.js?v=20261116-2',

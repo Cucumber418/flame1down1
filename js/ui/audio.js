@@ -179,12 +179,22 @@
       '<label class="snd-row snd-vol' + (any ? '' : ' off') + '">音量 <input type="range" id="snd-vol" min="0" max="100" step="5" value="' + cfg.vol + '"' + (any ? '' : ' disabled') + '><output id="snd-out">' + cfg.vol + '</output></label>' +
       '<label class="snd-row">主界面 <select id="snd-uitrack"><option value="new"' + (cfg.uiOld ? '' : ' selected') + '>' + NAMES.ui + '</option><option value="old"' + (cfg.uiOld ? ' selected' : '') + '>' + NAMES.uiOld + '</option></select></label>' +
       '<b class="set-h">对战</b><label class="snd-row"><input type="checkbox" id="set-fx"' + (fxOn ? ' checked' : '') + '> 技能特效</label>' +
-      '<label class="snd-row"><input type="checkbox" id="set-shake"' + (window.HSFX && !HSFX.shake() ? '' : ' checked') + '> 普通命中抖动</label>';
+      '<label class="snd-row"><input type="checkbox" id="set-shake"' + (window.HSFX && !HSFX.shake() ? '' : ' checked') + '> 普通命中抖动</label>' +
+      '<b class="set-h">游戏</b>' +
+      (window.CLOUD && CLOUD.user && CLOUD.user() ? '<button type="button" class="btn" data-set-account="1">☁ 账号管理</button>' : '') +
+      '<button type="button" class="btn" data-set-about="1">ⓘ 关于</button>';
   }
   if (btn && menu) {
     drawBtn();
     btn.addEventListener('click', function (e) { e.stopPropagation(); menu.hidden = !menu.hidden; btn.setAttribute('aria-expanded', String(!menu.hidden)); if (!menu.hidden) drawMenu(); });
-    menu.addEventListener('click', function (e) { e.stopPropagation(); });
+    menu.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var account = e.target.closest('[data-set-account]'), about = e.target.closest('[data-set-about]');
+      if (!account && !about) return;
+      menu.hidden = true; btn.setAttribute('aria-expanded', 'false'); btn.focus({ preventScroll: true });
+      if (account && window.CLOUD && CLOUD.account) CLOUD.account();
+      if (about && window.HSBOARD) HSBOARD.about();
+    });
     menu.addEventListener('input', function (e) {
       if (e.target.id === 'snd-vol') { cfg.vol = +e.target.value; document.getElementById('snd-out').textContent = cfg.vol; saveCfg(); drawBtn(); if (cur) fadeTo(target(), 150); }
     });

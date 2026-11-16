@@ -185,7 +185,7 @@
     window.addEventListener('online', function () { schedule(0); });
   }
 
-  /* ---------- 顶部的账号条 ---------- */
+  /* ---------- 设置中的账号管理；日常同步静默进行 ---------- */
   var STATUS = {
     ok: ['已同步', 'ok'], wait: ['有改动，即将保存', ''], saving: ['保存中…', ''], offline: ['网络断开，恢复后自动保存', 'bad'],
     err: ['保存失败，稍后重试', 'bad'], conflict: ['存档冲突', 'bad'], expired: ['登录已失效', 'bad']
@@ -193,37 +193,40 @@
   function setStatus(s, msg) {
     st.status = s; var el = $('cloud-st'); if (!el) return;
     var t = STATUS[s] || ['', '']; el.textContent = msg && s === 'err' ? '保存失败：' + msg : t[0]; el.className = 'cl-st ' + t[1];
+    el.hidden = t[1] !== 'bad';
     var rl = $('cloud-relogin'); if (rl) rl.hidden = s !== 'expired';
   }
-  function renderBar() {
-    var mh = $('who') || document.querySelector('.masthead'); if (!mh || $('cloud-bar')) return;
-    var bar = document.createElement('div'); bar.className = 'cloud-bar'; bar.id = 'cloud-bar';
-    bar.innerHTML = '<button type="button" class="cloud-pill" id="cloud-pill" aria-haspopup="true" aria-expanded="false"><span class="cl-ic" aria-hidden="true">☁</span><b>' + esc(st.user) + '</b><span class="cl-st" id="cloud-st"></span></button>' +
-      '<div class="cloud-menu" id="cloud-menu" hidden>' +
+  function openAccount() {
+    if (!st.user || $('cloud-account')) return;
+    var trigger = document.activeElement;
+    dialog('<h2 id="cloud-account-title">账号管理</h2>' +
       '<p>登录账号：<b>' + esc(st.user) + '</b><br>进度会自动保存到服务器，换设备登录同一个账号就能接着玩。</p>' +
+      '<p class="cl-st" id="cloud-st" hidden></p>' +
       '<button type="button" class="btn" id="cloud-relogin" hidden>重新登录</button>' +
       '<form id="cloud-pw" class="cl-pw"><b>修改密码</b><input type="password" id="cl-old" placeholder="原密码" autocomplete="current-password"><input type="password" id="cl-new" placeholder="新密码（至少 6 位）" autocomplete="new-password"><button class="btn" type="submit">确认修改</button><p id="cl-pw-msg"></p></form>' +
       '<button type="button" class="btn" id="cloud-switch">切换账号</button>' +
-      '<button type="button" class="btn danger" id="cloud-out">退出登录</button><p class="cl-menu-tip">切换账号：回到登录界面，这个账号记住的密码保留。<br>退出登录：这台设备不再记住这个账号的密码。</p></div>';
-    mh.appendChild(bar);
-    var pill = $('cloud-pill'), menu = $('cloud-menu');
-    pill.addEventListener('click', function (e) { e.stopPropagation(); menu.hidden = !menu.hidden; pill.setAttribute('aria-expanded', String(!menu.hidden)); });
-    menu.addEventListener('click', function (e) { e.stopPropagation(); });
-    document.addEventListener('click', function () { if (!menu.hidden) { menu.hidden = true; pill.setAttribute('aria-expanded', 'false'); } });
-    $('cloud-out').addEventListener('click', function () { leave(true); });
-    $('cloud-switch').addEventListener('click', function () { leave(false); });
-    $('cloud-relogin').addEventListener('click', function () { relogin(); });
-    $('cloud-pw').addEventListener('submit', function (e) {
-      e.preventDefault();
-      var msg = $('cl-pw-msg'), np = $('cl-new').value;
-      if (np.length < 6) { msg.textContent = '新密码至少 6 位'; return; }
-      msg.textContent = '提交中…';
-      api('POST', '/api/password', { old: $('cl-old').value, pass: np }).then(function (r) {
-        if (r._code === 200) { msg.textContent = '已修改。其他设备需要用新密码重新登录。'; $('cl-old').value = ''; $('cl-new').value = ''; }
-        else msg.textContent = r.error || '修改失败';
-      }).catch(function () { msg.textContent = '连不上服务器'; });
+      '<button type="button" class="btn danger" id="cloud-out">退出登录</button><p class="cl-menu-tip">切换账号：回到登录界面，这个账号记住的密码保留。<br>退出登录：这台设备不再记住这个账号的密码。</p>' +
+      '<div class="ob-foot"><button type="button" class="btn primary" data-account-close="1">关闭</button></div>', function (d, close) {
+      d.id = 'cloud-account'; d.querySelector('[role="dialog"]').setAttribute('aria-labelledby', 'cloud-account-title');
+      function done() { close(); if (trigger && trigger.isConnected) trigger.focus({ preventScroll: true }); }
+      d.addEventListener('click', function (e) { if (e.target === d || e.target.closest('[data-account-close]')) done(); });
+      d.addEventListener('keydown', function (e) { if (e.key === 'Escape') { e.stopPropagation(); done(); } });
+      $('cloud-out').addEventListener('click', function () { leave(true); });
+      $('cloud-switch').addEventListener('click', function () { leave(false); });
+      $('cloud-relogin').addEventListener('click', function () { relogin(); });
+      $('cloud-pw').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var msg = $('cl-pw-msg'), oldInput = $('cl-old'), newInput = $('cl-new'), np = newInput.value;
+        if (np.length < 6) { msg.textContent = '新密码至少 6 位'; return; }
+        msg.textContent = '提交中…';
+        api('POST', '/api/password', { old: oldInput.value, pass: np }).then(function (r) {
+          if (r._code === 200) { msg.textContent = '已修改。其他设备需要用新密码重新登录。'; oldInput.value = ''; newInput.value = ''; }
+          else msg.textContent = r.error || '修改失败';
+        }).catch(function () { msg.textContent = '连不上服务器'; });
+      });
+      setStatus(st.status || (lsGet(DIRTY) === '1' ? 'wait' : 'ok'));
+      d.querySelector('[data-account-close]').focus({ preventScroll: true });
     });
-    setStatus(lsGet(DIRTY) === '1' ? 'wait' : 'ok');
   }
 
   // 退出登录（forget = true：这台设备忘掉这个账号的密码）/ 切换账号（forget = false：记住的密码留着，回到登录界面选别的账号）
@@ -418,7 +421,7 @@
     var L = window.LOADER ? LOADER.show('正在登船～', { delay: 250 }) : null;   // 加载面板（js/ui/loader.js）：按已经加载的脚本数走进度条
     (function next() {
       if (L) L.set((total - list.length) / total);
-      if (!list.length) { if (L) L.done(); if (st.user) { renderBar(); setTimeout(syncProfile, 1500); } return; }
+      if (!list.length) { if (L) L.done(); if (st.user) { setStatus(lsGet(DIRTY) === '1' ? 'wait' : 'ok'); setTimeout(syncProfile, 1500); } return; }
       var s = document.createElement('script'); s.src = list.shift();
       s.onload = next;
       s.onerror = function () { if (L) L.close(); alert('加载 ' + s.src + ' 失败，请刷新页面重试'); };
@@ -480,7 +483,7 @@
     }).then(function (r) {
       if (r._code === 200 && r.ok) { st.rev = r.rev; lsSet(REV, String(r.rev)); return end(r); }
       if (r._code === 409 && r.update) { end(null); showUpdate(true); return { ok: false, err: '' }; }
-      if (r._code === 401) { setStatus('expired'); return end({ ok: false, err: '登录已失效，请先重新登录（点右上角的账号）。' }); }
+      if (r._code === 401) { setStatus('expired'); return end({ ok: false, err: '登录已失效，请先重新登录（设置 → 账号管理）。' }); }
       return end({ ok: false, err: r.error || '没能完成，请稍后再试。' });
     }, function () { return end({ ok: false, err: '连不上服务器，这次没有兑换，请稍后再试。' }); });
   }
@@ -499,7 +502,7 @@
     }).then(function (r) {
       if (r._code === 200 && r.ok) { var rv = (r.end && r.end.rev) || r.rev; if (rv) { st.rev = rv; lsSet(REV, String(rv)); } return end(r); }
       if (r._code === 409 && r.update) { end(null); showUpdate(true); return { ok: false, err: '游戏已经更新了，刷新页面后再来挑战吧。' }; }
-      if (r._code === 401) { setStatus('expired'); return end({ ok: false, err: '登录已失效，请先重新登录（点右上角的账号）。' }); }
+      if (r._code === 401) { setStatus('expired'); return end({ ok: false, err: '登录已失效，请先重新登录（设置 → 账号管理）。' }); }
       return end({ ok: false, gone: r._code === 410, draft: !!r.draft, err: r.error || '服务器没有回应，请稍后再试。' });
     }, function () { return end({ ok: false, net: true, err: '网络不稳，没连上服务器。' }); });
   }
@@ -530,5 +533,5 @@
     setInterval(checkVersion, 3 * 60 * 1000);
     document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') checkVersion(); });
   }
-  window.CLOUD = { boot: boot, user: function () { return st.user; }, token: function () { return st.token; }, api: api, flush: flush, tx: tx, pve: pve, resync: resync, claim: claim };
+  window.CLOUD = { boot: boot, user: function () { return st.user; }, token: function () { return st.token; }, account: openAccount, api: api, flush: flush, tx: tx, pve: pve, resync: resync, claim: claim };
 })();
