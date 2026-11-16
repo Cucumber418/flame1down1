@@ -1907,7 +1907,7 @@
   }
   function giveItems(o) { if (o) earn('misc', '', { items: o }); }   // 旧写法：新代码请直接用 earn，写明来源
   function rwList(R) { var a = [R.exp ? '累积经验 ×' + fmt(R.exp) : '', R.energy ? '能量 ×' + fmt(R.energy) : '', R.bgm ? '基地音乐「' + bgmName(R.bgm) + '」' : '']; if (R.items) for (var k in R.items) a.push(itemName(k) + ' ×' + R.items[k]); if (R.title) a.push('称号「' + TITLES.filter(function (x) { return x.id === R.title; })[0].n + '」'); if (R.mon) a.push(R.mon); (R.gift || []).forEach(function (g) { a.push(form(g).name + ' LV' + g.lv); }); return a.filter(Boolean); }
-  var PM = { panel: null, helpers: false, story: null, storyScroll: 0, last: {} };
+  var PM = { panel: null, helpers: false, challenge: null, story: null, storyScroll: 0, last: {} };
   var ex = { view: 'planets', planet: 'earth', site: null, mode: null, host: null, i: 0, typing: false, auto: false, skip: false, timer: null, tick: null, full: '', log: [], pickSel: null };
   function story() { if (!acc.story) acc.story = {}; return acc.story; }
   function prog(site) { var st = story(); if (!st[site]) st[site] = { at: 0, done: false, ch: null }; return st[site]; }
@@ -3762,7 +3762,7 @@
     var F = planetMapField(R);
     if (index != null) F.scene = Math.max(0, Math.min(F.scenes.length - 1, Math.floor(+index) || 0));
     else if (!last) F.scene = 0;
-    PM.panel = panel || null; PM.helpers = false; PM.story = null;
+    PM.panel = panel || null; PM.helpers = false; PM.challenge = null; PM.story = null;
     renderField(); setTimeout(bgmScene, 0); setTimeout(cumberCheck, 400);
   }
   function planetMapName(sc, R, i) { return BG_NAME[sc.bgKey] || BG_NAME[(sc.bgKey || '').replace(/_mia$|_corrupt$/, '')] || R.name + ' · 场景 ' + (i + 1); }
@@ -3810,9 +3810,8 @@
       }).join('') + '</div></section>';
     }).join('') || '<p>暂时没有可以前往的区域。</p>';
   }
-  function planetChallengePanel(P) {
-    if (!CHAL[P.id]) return '<p class="hint">这颗星球暂时没有关卡。</p>';
-    var source = document.createElement('div'); source.innerHTML = chalPage(P.id);
+  function planetChallengeSource(P) {
+    var source = document.createElement('div'); source.innerHTML = CHAL[P.id] ? chalPage(P.id, true) : '<p class="hint">这颗星球暂时没有关卡。</p>';
     var helpers = source.querySelector('.ch-helpers');
     if (helpers) {
       var T = chalTeam(), h = T.helper, f = h && form(h.mon), trigger = document.createElement('button');
@@ -3820,12 +3819,33 @@
       trigger.innerHTML = (h ? '<img src="' + f.img + '" alt=""><span><b>' + esc(f.name) + '</b><small>LV' + h.mon.lv + ' · ' + esc(h.owner) + '</small></span>' : '<span><b>未携带助战</b><small>可选择教官或好友的助战精灵</small></span>') + '<strong>' + (h ? '更换助战' : '选择助战') + ' ›</strong>';
       helpers.replaceWith(trigger);
     }
-    return source.innerHTML;
+    return source;
   }
+  function planetChallengePanel(source) {
+    var chain = source.querySelector('.ch-chain'); if (!chain) return source.innerHTML;
+    chain.querySelectorAll('[data-chal]').forEach(function (button) {
+      button.dataset.mapChal = button.dataset.chal; button.removeAttribute('data-chal'); button.disabled = false; button.setAttribute('aria-haspopup', 'dialog');
+    });
+    return '<div class="planet-challenge-home"><div class="planet-challenge-tools"><button type="button" class="btn" data-map-challenge="stars" aria-haspopup="dialog">★ 星级目标</button><button type="button" class="btn" data-map-challenge="progress" aria-haspopup="dialog">全服进度</button></div>' + chain.outerHTML + '</div>';
+  }
+  function planetChallengeDialog(P, source) {
+    if (!PM.challenge) return '';
+    var view = PM.challenge, title = { stars: '星级目标', progress: '全服进度', level: '挑战关卡' }[view], html = '';
+    if (view === 'level') {
+      var detail = source.querySelector('.ch-detail'); if (!detail) return '';
+      if (!chalLevelOpen(P.id, ex.chal)) detail.querySelector('.ch-dh').insertAdjacentHTML('afterend', '<p class="hint">此关尚未开放，通过前一关后即可挑战。</p>');
+      html = detail.outerHTML;
+    } else if (view === 'stars') {
+      var total = source.querySelector('.ch-head .hint'), mile = source.querySelector('.ch-mile');
+      html = (total ? '<p class="hint">' + esc(total.textContent) + '</p>' : '') + (mile ? mile.outerHTML : '');
+    } else { var board = source.querySelector('.cb-card'); html = board ? board.outerHTML : '<p class="hint">暂无全服进度。</p>'; }
+    return '<div class="soc-dlg planet-challenge-dialog" data-challenge-view="' + view + '" data-challenge-index="' + ex.chal + '"><section class="soc-box planet-panel-box" role="dialog" aria-modal="true" aria-label="' + title + '"' + (PM.helpers ? ' inert aria-hidden="true"' : '') + '><header><h2>' + title + '</h2><button type="button" class="btn ghost" data-map-challenge-close="1">关闭</button></header><div class="planet-panel-body" data-map-scroll-key="challenge:' + view + (view === 'level' ? ':' + ex.chal : '') + '">' + html + '</div></section></div>';
+  }
+  function planetChallengeClose() { PM.helpers = false; PM.challenge = null; renderField(); }
   function planetHelperDialog() {
-    if (!PM.helpers || PM.panel !== 'challenge' || !helperOk()) return '';
+    if (!PM.helpers || PM.panel !== 'challenge' || PM.challenge !== 'level' || !helperOk()) return '';
     var T = chalTeam();
-    return '<div class="soc-dlg planet-helper-dialog"><section class="soc-box planet-panel-box" role="dialog" aria-modal="true" aria-label="选择助战精灵"><header><h2>选择助战精灵</h2><button type="button" class="btn ghost" data-map-helper-close="1">关闭</button></header><div class="planet-panel-body planet-helper-body"><div class="ch-helpers"><button type="button" class="ch-help' + (!T.helper ? ' on' : '') + '" data-chhelp="" aria-pressed="' + !T.helper + '"><span class="ch-none">不带助战</span></button>' + helperList().map(function (h) {
+    return '<div class="soc-dlg planet-helper-dialog"><section class="soc-box planet-panel-box" role="dialog" aria-modal="true" aria-label="选择助战精灵"><header><h2>选择助战精灵</h2><button type="button" class="btn ghost" data-map-helper-close="1">关闭</button></header><div class="planet-panel-body planet-helper-body" data-map-scroll-key="helper"><div class="ch-helpers"><button type="button" class="ch-help' + (!T.helper ? ' on' : '') + '" data-chhelp="" aria-pressed="' + !T.helper + '"><span class="ch-none">不带助战</span></button>' + helperList().map(function (h) {
       var f = form(h.mon), on = T.helper && T.helper.key === h.key;
       return '<button type="button" class="ch-help' + (on ? ' on' : '') + '" data-chhelp="' + esc(h.key) + '" aria-pressed="' + !!on + '"><img src="' + f.img + '" alt=""><b>' + esc(f.name) + '</b><small>LV' + h.mon.lv + ' · ' + esc(h.owner) + '</small></button>';
     }).join('') + '</div></div></section></div>';
@@ -3833,39 +3853,42 @@
   function planetMapPanel(P) {
     if (!PM.panel) return '';
     var kind = PM.panel, title = { story: '剧情', challenge: '关卡', task: '星球任务', map: '小地图', scroll: '实验室卷轴' }[kind], html;
+    var challenge = kind === 'challenge' ? planetChallengeSource(P) : null;
+    if (challenge && !challenge.querySelector('.ch-chain')) { PM.challenge = null; PM.helpers = false; }
     if (kind === 'scroll' && !planetLabScrollOpen()) { PM.panel = null; return ''; }
     if (kind === 'map') html = planetMiniMap(P);
     else if (kind === 'story') html = planetStoryPanel(P);
-    else if (kind === 'challenge') html = planetChallengePanel(P);
+    else if (kind === 'challenge') html = planetChallengePanel(challenge);
     else if (kind === 'scroll') html = planetLabReport();
     else {
       var source = document.createElement('div'); source.innerHTML = planetTasks(P.id);
       source.querySelectorAll('[data-golog]').forEach(function (el) { el.removeAttribute('data-golog'); });
       html = source.innerHTML;
     }
-    return '<div class="soc-dlg planet-panel" data-map-dialog="' + kind + '"><section class="soc-box planet-panel-box planet-panel-' + kind + '" role="dialog" aria-modal="true" aria-label="' + esc(P.name + ' · ' + title) + '"' + (PM.helpers ? ' inert aria-hidden="true"' : '') + '><header><h2>' + esc(P.name + ' · ' + title) + '</h2><button type="button" class="btn ghost" data-map-close="1">关闭</button></header><div class="planet-panel-body">' + html + '</div></section>' + planetHelperDialog() + '</div>';
+    return '<div class="soc-dlg planet-panel" data-map-dialog="' + kind + '"><section class="soc-box planet-panel-box planet-panel-' + kind + '" role="dialog" aria-modal="true" aria-label="' + esc(P.name + ' · ' + title) + '"' + (PM.helpers || (kind === 'challenge' && PM.challenge) ? ' inert aria-hidden="true"' : '') + '><header><h2>' + esc(P.name + ' · ' + title) + '</h2><button type="button" class="btn ghost" data-map-close="1">关闭</button></header><div class="planet-panel-body">' + html + '</div></section>' + (challenge ? planetChallengeDialog(P, challenge) : '') + planetHelperDialog() + '</div>';
   }
   function planetMapRender(html) {
     var host = $('pg-explore'), old = host.querySelector('.planet-panel'), active = document.activeElement;
     var inPanel = old && old.contains(active), id = inPanel && active.id;
     var attr = inPanel && [].find.call(active.attributes, function (a) { return a.name.indexOf('data-') === 0; });
-    var kind = old && old.dataset.mapDialog, hadHelper = old && old.querySelector('.planet-helper-dialog');
-    var scroll = old ? [].map.call(old.querySelectorAll('.planet-panel-body'), function (el) { return el.scrollTop; }) : [];
+    var kind = old && old.dataset.mapDialog, hadHelper = old && old.querySelector('.planet-helper-dialog'), hadChallenge = old && old.querySelector('.planet-challenge-dialog');
+    var scroll = {}; if (old) old.querySelectorAll('.planet-panel-body').forEach(function (el) { scroll[el.dataset.mapScrollKey || 'root'] = el.scrollTop; });
     host.innerHTML = html;
     var panel = host.querySelector('.planet-panel');
     if (panel) {
-      var scope = panel.querySelector('.planet-helper-dialog') || panel;
-      if (kind === panel.dataset.mapDialog) panel.querySelectorAll('.planet-panel-body').forEach(function (el, i) { el.scrollTop = scroll[i] || 0; });
+      var scope = panel.querySelector('.planet-helper-dialog') || panel.querySelector('.planet-challenge-dialog') || panel;
+      if (kind === panel.dataset.mapDialog) panel.querySelectorAll('.planet-panel-body').forEach(function (el) { el.scrollTop = scroll[el.dataset.mapScrollKey || 'root'] || 0; });
       var focus = id ? $(id) : attr ? [].find.call(scope.querySelectorAll('[' + attr.name + ']'), function (el) { return el.getAttribute(attr.name) === attr.value; }) : null;
-      if (hadHelper && !PM.helpers) focus = panel.querySelector('[data-map-helper]');
+      if (hadChallenge && !PM.challenge) focus = panel.querySelector(hadChallenge.dataset.challengeView === 'level' ? '[data-map-chal="' + hadChallenge.dataset.challengeIndex + '"]' : '[data-map-challenge="' + hadChallenge.dataset.challengeView + '"]');
+      else if (hadHelper && !PM.helpers) focus = panel.querySelector('[data-map-helper]');
       if (focus && !focus.disabled) focus.focus({ preventScroll: true });
       else if (!old || inPanel) scope.querySelector('header button').focus({ preventScroll: true });
     } else if (old) { var trigger = host.querySelector('[data-map-panel="' + old.dataset.mapDialog + '"]'); if (trigger) trigger.focus({ preventScroll: true }); }
   }
   $('pg-explore').addEventListener('keydown', function (e) {
-    var panel = $('pg-explore').querySelector('.planet-helper-dialog') || $('pg-explore').querySelector('.planet-panel');
+    var panel = $('pg-explore').querySelector('.planet-helper-dialog') || $('pg-explore').querySelector('.planet-challenge-dialog') || $('pg-explore').querySelector('.planet-panel');
     if (!panel || !panel.contains(e.target)) return;
-    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); if (PM.panel === 'story' && PM.story) { planetStoryBack(); return; } if (PM.helpers) PM.helpers = false; else PM.panel = null; renderField(); return; }
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); if (PM.panel === 'story' && PM.story) { planetStoryBack(); return; } if (PM.helpers) PM.helpers = false; else if (PM.panel === 'challenge' && PM.challenge) { planetChallengeClose(); return; } else PM.panel = null; renderField(); return; }
     if (e.key !== 'Tab') return;
     var controls = [].filter.call(panel.querySelectorAll('button,input,select,a[href]'), function (el) { return !el.disabled && !el.closest('[inert]') && el.getClientRects().length; });
     var first = controls[0], last = controls[controls.length - 1];
@@ -4167,14 +4190,14 @@
     var own = team.filter(function (m) { return ex.chalOwn.indexOf(m.u) >= 0; }).slice(0, HP ? 4 : 5);
     return { team: team, own: own, helper: HP };
   }
-  function chalPage(P) {
+  function chalPage(P, preview) {
     if (!chalOpen()) {
       return '<div class="fl-soon"><span class="tape r"></span><b>挑战 · 关卡副本</b><p>古城防卫部的明明教官在芙罗拉星上划出了一条挑战路线：一关接一关，每一关都会根据表现评出 1~3 颗星。</p><p class="stars3" aria-hidden="true">☆ ☆ ☆</p>' +
         (prog('flora1').done ? '<p class="hint">去荆楚号 · 襄阳 · 古城防卫部，找明明教官接取挑战任务。</p><button type="button" class="btn primary" data-tpgo="襄阳">前往古城防卫部</button>' : '<p class="hint">读完主线「降临芙罗拉」后，去古城防卫部找明明教官。</p>') + '</div>';
     }
     if (P === 'kamble' && !prog('kb1').done) return '<div class="fl-soon"><span class="tape r"></span><b>挑战 · 关卡副本</b><p class="hint">读完第二章第十二段「远航」、抵达坎伯兰星后开放。</p></div>';
     if (ex.chalP !== P) { ex.chalP = P; ex.chal = null; }   // 换了星球：重新选关
-    var L = CHAL[P], sel = ex.chal != null && L[ex.chal] && chalLevelOpen(P, ex.chal) ? ex.chal : (function () { var k = 0; L.forEach(function (x, i) { if (chalLevelOpen(P, i)) k = i; }); return k; })();
+    var L = CHAL[P], sel = ex.chal != null && L[ex.chal] && (preview || chalLevelOpen(P, ex.chal)) ? ex.chal : (function () { var k = 0; L.forEach(function (x, i) { if (chalLevelOpen(P, i)) k = i; }); return k; })();
     ex.chal = sel;
     if (helperOk()) loadHelpers();
     var total = L.reduce(function (a, x) { return a + chalStars(x.id); }, 0);
@@ -4195,7 +4218,7 @@
         var f = form(h.mon), on = T.helper && T.helper.key === h.key;
         return '<button type="button" class="ch-help' + (on ? ' on' : '') + '" data-chhelp="' + esc(h.key) + '"><img src="' + f.img + '" alt=""><b>' + esc(f.name) + '</b><small>LV' + h.mon.lv + ' · ' + esc(h.owner) + '</small></button>';
       }).join('') + '</div><p class="hint">' + (bsOnline() ? (ex.helpers && ex.helpers.length ? '好友在名片里放的助战精灵都在这里。' : '好友在名片里放了助战精灵后，也会出现在这里。') : '联网登录后，还能借用好友名片里的助战精灵。') + '自己也可以在「社交 → 我的名片」里挂一只助战精灵。</p>';
-    var ready_ = T.own.length > 0;
+    var ready_ = T.own.length > 0 && chalLevelOpen(P, sel);
     return '<div class="ch-wrap"><div class="ch-head"><b>' + (P === 'kamble' ? '坎伯兰星' : '芙罗拉星') + ' · 挑战路线</b><span class="hint">共 ' + L.length + ' 关 · 已获得 ' + total + ' / ' + L.length * 3 + ' 颗星</span></div>' + chalStarHTML(total, P) + chain +
       '<article class="ch-detail"><span class="tape r"></span><div class="ch-dh"><span class="sc-tag">第 ' + (sel + 1) + ' 关</span><h3>' + esc(x.n) + '</h3>' + starRow(chalStars(x.id), rec && rec.s) + '</div>' +
       '<div class="ch-cols"><div><h4>敌人</h4><ul class="ch-foes">' + foes + '</ul>' +
@@ -4334,7 +4357,7 @@
       renderExplore(); return true;
     }
     if (b.dataset.chgo) {
-      var gi = +b.dataset.chgo;
+      var gi = +b.dataset.chgo; if (!chalLevelOpen(chalP(), gi)) return true;
       if (gi === 1 && chalP() === 'flora' && unlocked('fl_chal2') && !prog('fl_chal2').done) { ex.chalHelper = 'mm'; startVN('fl_chal2', 'replay', $('pg-explore'), true); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8); return true; }   // 第二关：先强制播完明明教官的助战教学
       openLineup(chalP(), gi); return true;
     }
@@ -7913,6 +7936,7 @@
     if (ex.mode === 'replay' && $('vn')) { vnClick(e); return; }
     if (ex.view === 'shop' && shopClick(e)) return;
     if (e.target.closest('#bsoc')) { bsocClick(e); return; }
+    if (e.target.classList.contains('planet-challenge-dialog')) { planetChallengeClose(); return; }
     if (e.target.classList.contains('planet-helper-dialog')) { PM.helpers = false; renderField(); return; }
     if (e.target.classList.contains('planet-panel')) { PM.panel = null; PM.helpers = false; renderField(); return; }
     var b = e.target.closest('button, .dept.open'); if (!b) return;
@@ -7923,7 +7947,7 @@
       $('pg-explore').appendChild(panel); panel.querySelector('[data-shipareasclose]').focus(); return;
     }
     if (b.dataset.labScene != null && ex.region === 'salt' && prog('flora7').done) { enterField('salt', +b.dataset.labScene); return; }
-    if (b.dataset.mapPanel) { if (b.dataset.mapPanel === 'scroll' && !planetLabScrollOpen()) return; PM.panel = b.dataset.mapPanel; PM.helpers = false; PM.story = null; PM.storyScroll = 0; renderField(); return; }
+    if (b.dataset.mapPanel) { if (b.dataset.mapPanel === 'scroll' && !planetLabScrollOpen()) return; PM.panel = b.dataset.mapPanel; PM.helpers = false; PM.challenge = null; PM.story = null; PM.storyScroll = 0; renderField(); return; }
     if (b.dataset.mapStory && PM.panel === 'story') {
       var PStory = planetOf(ex.planet), storyIds = PStory.storyIds || PStory.sites || [], storyBody = $('pg-explore').querySelector('.planet-panel-story .planet-panel-body');
       if (storyIds.indexOf(b.dataset.mapStory) < 0) return;
@@ -7934,15 +7958,18 @@
     }
     if (b.dataset.mapStoryBack) { planetStoryBack(); return; }
     if (b.dataset.mapClose) { PM.panel = null; PM.helpers = false; renderField(); return; }
-    if (b.dataset.mapHelper) { PM.helpers = true; renderField(); return; }
+    if (b.dataset.mapChallengeClose) { planetChallengeClose(); return; }
+    if (b.dataset.mapChallenge && PM.panel === 'challenge' && chalOpen()) { PM.challenge = b.dataset.mapChallenge; PM.helpers = false; renderField(); return; }
+    if (b.dataset.mapChal != null && PM.panel === 'challenge' && chalOpen()) {
+      var challengeIndex = +b.dataset.mapChal; if (!CHAL[ex.planet] || !CHAL[ex.planet][challengeIndex]) return;
+      ex.chalP = ex.planet; ex.chal = challengeIndex; PM.challenge = 'level'; PM.helpers = false; renderField(); return;
+    }
+    if (b.dataset.mapHelper && PM.challenge === 'level') { PM.helpers = true; renderField(); return; }
     if (b.dataset.mapHelperClose) { PM.helpers = false; renderField(); return; }
     if (b.dataset.mapExit) { PM.panel = null; PM.helpers = false; ex.view = 'planets'; renderExplore(); return; }
     if (b.dataset.mapRid && !b.disabled) { var MR = regionById(b.dataset.mapRid); if (MR && MR.planet === ex.planet && planetMapCan(MR)) enterField(MR.id, +b.dataset.mapScene); return; }
     if (b.dataset.chhelp !== undefined && PM.helpers) PM.helpers = false;
-    if (chalClick(b)) {
-      if (PM.panel === 'challenge' && b.dataset.chal != null) { var detail = $('pg-explore').querySelector('.planet-panel .ch-detail'); if (detail) detail.scrollIntoView({ block: 'start' }); }
-      return;
-    }
+    if (chalClick(b)) return;
     if (towerClick(b)) return;
     if (b.dataset.smq) { shipQuickGo(b.dataset.smq); return; }
     if (b.dataset.area) { teleport(b.dataset.area); return; }

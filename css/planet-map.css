@@ -80,6 +80,13 @@
 .planet-panel .ch-node > button { width: 100%; min-width: 0; }
 .planet-panel .ch-node b { font-size: 12px; white-space: normal; }
 .planet-panel .ch-node .ch-no { width: 40px; height: 40px; font-size: 22px; }
+.planet-panel .ch-node.locked > button { cursor: pointer; }
+.planet-challenge-tools { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; }
+.planet-challenge-tools > .btn { min-width: 0; padding: 9px 6px; font-size: 14px; }
+.planet-challenge-dialog { z-index: 900; }
+.planet-challenge-dialog > .planet-panel-box { width: 100%; max-width: 850px; height: min(720px, var(--dialog-height)); display: flex; flex-direction: column; min-width: 0; min-height: 0; padding: 12px; gap: 10px; overflow: hidden; }
+.planet-challenge-dialog .ch-detail { box-shadow: none; }
+.planet-challenge-dialog .cb-card { margin: 0; }
 .planet-panel .ch-detail { scroll-margin-top: 8px; }
 .planet-panel .ch-mile { grid-template-columns: minmax(0, 1fr); }
 .planet-panel .ch-mi { min-width: 0; }
