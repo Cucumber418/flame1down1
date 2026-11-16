@@ -189,11 +189,6 @@ body.bag-short #pg-bag .current-team .slot .nm { font-size: calc(16px * var(--ba
     width: min(420px, calc(100% - 24px)); max-width: calc(100% - 24px);
     max-height: calc(var(--bag-full-height, var(--game-view-height)) - 24px); overflow: auto; overscroll-behavior: contain;
   }
-  body.bag-active.bag-short.bag-wide .acct .who-btn { min-height: 30px; padding-block: 1px; }
-  body.bag-active.bag-short.bag-wide .acct .mail-btn { padding: 3px 7px; font-size: calc(11px * var(--bag-font-scale, 1)); }
-  body.bag-active.bag-short.bag-wide .topbar { gap: 5px; margin-bottom: 6px; }
-  body.bag-active.bag-short.bag-wide .mainnav { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 5px; }
-  body.bag-active.bag-short.bag-wide .mainnav .nav { min-height: 28px; padding: 4px 2px; font-size: 14px; }
   body.bag-active.bag-short.bag-wide #pg-bag { gap: 5px; }
   body.bag-active.bag-short.bag-wide #pg-bag > .mons-tabs .tab { padding: 3px 14px; font-size: calc(11px * var(--bag-type-scale)); }
   body.bag-active.bag-short.bag-wide #pg-bag .bag-workspace { gap: 8px; }

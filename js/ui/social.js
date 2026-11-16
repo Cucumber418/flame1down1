@@ -370,11 +370,12 @@
   function render() {
     var pg = $('pg-social'); if (!pg || A.page() !== 'social' || !A.ready()) return;
     if (!online) {
-      pg.innerHTML = '<div class="soc-empty"><span class="tape l"></span><p>社交功能需要联网：用服务器网址打开游戏并登录账号后，就能看到其他船员、加好友和切磋。</p><p class="hint">现在是双击 index.html 打开的本地版，存档只在这台电脑上。</p></div>';
+      pg.innerHTML = '<div class="social-page-content" tabindex="0" aria-label="社交内容"><div class="soc-empty"><span class="tape l"></span><p>社交功能需要联网：用服务器网址打开游戏并登录账号后，就能看到其他船员、加好友和切磋。</p><p class="hint">现在是双击 index.html 打开的本地版，存档只在这台电脑上。</p></div></div>';
       return;
     }
     var P = st.players || [], friends = P.filter(function (p) { return p.friend; }), on = P.filter(function (p) { return p.online; }).length;
     var focus = document.activeElement && document.activeElement.id === 'me-motto' ? $('me-motto').selectionStart : null;
+    var oldContent = pg.querySelector('.social-page-content'), oldScroll = oldContent ? oldContent.scrollTop : 0;
     if (st.view) { pg.innerHTML = st.view.kind === 'farm' ? farmHTML() : homeHTML(); return; }
     var body;
     if (st.tab === 'mine') body = mineHTML();
@@ -392,13 +393,14 @@
       '<button type="button" class="sub' + (st.tab === 'mine' ? ' on' : '') + '" data-tab="mine" role="tab" aria-selected="' + (st.tab === 'mine') + '">我的名片</button>' +
       '<button type="button" class="sub sub-go" data-myhome="1" title="' + (A.homeOpen() ? '直接去我的基地' : '读完「陆羽茶室」支线后开放') + '">我的基地' + (hb.newN ? '<i class="q-badge" title="基地里有新动态或新留言">' + hb.newN + '</i>' : '') + ' ›</button>' +
       '<span class="soc-on">' + (st.wsOk ? '<span class="dot on"></span>' + on + ' 人在线' : '<span class="dot"></span>正在连接服务器……') + '</span></div>' +
-      body;
+      '<div class="social-page-content" tabindex="0" aria-label="社交内容">' + body + '</div>';
+    pg.querySelector('.social-page-content').scrollTop = oldScroll;
     if (focus != null && $('me-motto')) { var ta = $('me-motto'); ta.focus(); ta.setSelectionRange(focus, focus); }
   }
   if ($('pg-social')) {
     $('pg-social').addEventListener('click', function (e) {
       var t;
-      if ((t = e.target.closest('[data-tab]'))) { st.tab = t.dataset.tab; if (st.tab === 'mine' && !st.edit) startEdit(); render(); if (st.tab === 'dm') dmLoadList(); else if (st.tab !== 'mine') load(); return; }
+      if ((t = e.target.closest('[data-tab]'))) { if (st.tab !== t.dataset.tab) { var content = $('pg-social').querySelector('.social-page-content'); if (content) content.scrollTop = 0; } st.tab = t.dataset.tab; if (st.tab === 'mine' && !st.edit) startEdit(); render(); if (st.tab === 'dm') dmLoadList(); else if (st.tab !== 'mine') load(); return; }
       if ((t = e.target.closest('[data-myhome]'))) { A.goHome(); return; }
       if ((t = e.target.closest('[data-reload]'))) { load(); return; }
       if ((t = e.target.closest('[data-back]'))) { var from = st.view && st.view.from; st.view = null; if (from === 'base') { A.goHome(); return; } if (from === 'farm') { A.goFarm(); return; } render(); load(); return; }

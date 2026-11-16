@@ -5298,15 +5298,19 @@
   function logUnread() { if (!acc) return 0; if (!LOG_KEYS) { try { LOG_KEYS = logEntries().map(function (x) { return logKeyOf(x.t); }); } catch (e) { LOG_KEYS = []; } } var R = logRead(); return LOG_KEYS.filter(function (k) { return !R[k]; }).length; }
   function logMarkRead(t) { var k = logKeyOf(t), R = logRead(); if (!R[k]) { R[k] = Date.now(); save(); navDots(); } }
   function renderLog() {
+    var host = $('pg-log'), oldNav = host.querySelector('.log-nav'), oldView = host.querySelector('.log-view'), oldTab = host.querySelector('.log-nv.on');
+    var navScroll = oldNav ? oldNav.scrollTop : 0, viewScroll = oldView ? oldView.scrollTop : 0;
     var E = logEntries(), sel = E.filter(function (x) { return x.t === ui.logSel; })[0] ? ui.logSel : (E.filter(function (x) { return x.t === '版本更新-基地全面翻新！'; })[0] || E[0]).t;   // 每次进入航行日志默认显示「新玩法-圣晶石召唤」
     ui.logSel = sel; LOG_KEYS = E.map(function (x) { return logKeyOf(x.t); });
     logMarkRead(sel);
     $('pg-log').innerHTML = '<div class="log-split"><nav class="log-nav" role="tablist" aria-label="航行日志">' + E.map(function (x) { var p = x.t.split('-'), ty = p.length > 1 ? p.shift() : '', nm = p.join('-'), on = x.t === sel; return '<button type="button" role="tab" class="log-nv' + (on ? ' on' : '') + '" aria-selected="' + on + '" data-logsel="' + esc(x.t) + '">' + (ty ? '<small>' + esc(ty) + '</small>' : '') + '<b>' + esc(nm) + '</b>' + (!logRead()[logKeyOf(x.t)] && x.t !== sel ? '<i class="red-dot" aria-label="未读"></i>' : '') + '</button>'; }).join('') + '</nav>' +
-      '<div class="log-view">' + E.map(function (x) { return '<section class="log-sec" data-logsec="' + esc(x.t) + '"' + (x.t === sel ? '' : ' hidden') + '>' + x.h + '</section>'; }).join('') + '</div></div>';
+      '<div class="log-view" tabindex="0" role="region" aria-label="日志内容">' + E.map(function (x) { return '<section class="log-sec" data-logsec="' + esc(x.t) + '"' + (x.t === sel ? '' : ' hidden') + '>' + x.h + '</section>'; }).join('') + '</div></div>';
+    host.querySelector('.log-nav').scrollTop = navScroll;
+    if (oldTab && oldTab.dataset.logsel === sel) host.querySelector('.log-view').scrollTop = viewScroll;
   }
   $('pg-log').addEventListener('click', function (e) {
     var b = e.target.closest('[data-logsel]');
-    if (b) { ui.logSel = b.dataset.logsel; logMarkRead(ui.logSel); var rd = b.querySelector('.red-dot'); if (rd) rd.remove(); [].forEach.call(document.querySelectorAll('#pg-log .log-nv'), function (x) { var on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-selected', on); }); [].forEach.call(document.querySelectorAll('#pg-log .log-sec'), function (x) { x.hidden = x.dataset.logsec !== ui.logSel; }); if (window.innerWidth <= 760) { var v = document.querySelector('#pg-log .log-view'); if (v) v.scrollIntoView({ behavior: 'smooth', block: 'start' }); } return; }
+    if (b) { ui.logSel = b.dataset.logsel; logMarkRead(ui.logSel); var rd = b.querySelector('.red-dot'); if (rd) rd.remove(); [].forEach.call(document.querySelectorAll('#pg-log .log-nv'), function (x) { var on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-selected', on); }); [].forEach.call(document.querySelectorAll('#pg-log .log-sec'), function (x) { x.hidden = x.dataset.logsec !== ui.logSel; }); var v = document.querySelector('#pg-log .log-view'); if (v) v.scrollTop = 0; return; }
     var w = e.target.closest('[data-logwar]'); if (w) { ui.logWar = w.dataset.logwar; renderLog(); return; }
   });
   /* 航行日志（2026-11-01）：各个内容先显示成小板块，点开才是完整面板；完整的卡片放在隐藏的 #log-store 里

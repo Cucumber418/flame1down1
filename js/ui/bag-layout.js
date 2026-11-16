@@ -25,7 +25,7 @@
     var scale = 1;
     prop('--bag-full-height', full + 'px');
     prop('--bag-font-scale', String(1 / scale));
-    var height = Math.max(120, full - HSVIEW.top(bag) - 12);
+    var height = Math.max(120, full - HSVIEW.top(bag) - 10);
     prop('--bag-view-height', height + 'px');
     var width = parseFloat(body.style.width) || root.clientWidth / z;
     var wide = width >= 640 && width / full >= 1.25;

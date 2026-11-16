@@ -1,8 +1,28 @@
-/* 地图、基地和储存箱占用顶栏以下的视口；子页面使用各自的正常滚动布局。 */
+/* 主页面占用顶栏以下的同一视口；日志左右栏与社交内容各自在框内滚动。 */
 body.scene-page-active { overflow: hidden; }
 body.scene-page-active .sheet { height: var(--scene-full-height, 100dvh); min-height: 0; overflow: hidden; padding-block: 8px; }
 body.scene-page-active #pg-explore, body.scene-page-active #pg-items { height: var(--scene-view-height); min-height: 0; }
 body.scene-page-active #pg-social { height: var(--scene-view-height); min-height: 0; }
+body.scene-page-active #pg-log { height: var(--scene-view-height); min-height: 0; }
+body.log-page-active #pg-log { overflow: hidden; }
+body.log-page-active .log-split { width: 100%; height: 100%; min-width: 0; min-height: 0; grid-template-columns: clamp(88px, 28%, 220px) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: 10px; align-items: stretch; }
+body.log-page-active :is(.log-nav, .log-view) { min-width: 0; min-height: 0; height: 100%; max-height: none; overflow-x: hidden; overflow-y: auto; touch-action: pan-y; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+body.log-page-active .log-nav { flex-direction: column; }
+body.log-page-active .log-nv { flex: 0 0 auto; min-width: 0; max-width: 100%; padding: 8px; border-left: 4px solid transparent; border-bottom: 0; overflow-wrap: anywhere; }
+body.log-page-active .log-nv.on { border-left-color: var(--red); }
+body.log-page-active .log-view { padding: 0 5px 5px 0; }
+body.log-page-active .log-view :is(.log-sec, .log-card, .pt-card, .ch-mi, .log-grid) { min-width: 0; max-width: 100%; }
+body.log-page-active .log-view :is(p, li, h3, b, small) { overflow-wrap: anywhere; }
+body.social-page-active #pg-social { display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+body.social-page-active .soc-tabs { flex: 0 0 auto; margin-bottom: 8px; }
+.social-page-content { flex: 1 1 0; min-height: 0; min-width: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; -webkit-overflow-scrolling: touch; scrollbar-width: thin; padding: 2px 5px 6px 2px; }
+@media (max-width: 640px) {
+  body.log-page-active .log-split { gap: 6px; }
+  body.log-page-active .log-nav { padding: 3px; }
+  body.log-page-active .log-nv { padding: 7px 4px; }
+  body.log-page-active .log-nv b { font-size: 12px; }
+  body.log-page-active .log-nv small { font-size: 10px; }
+}
 .star-map-page { height: 100%; min-height: 0; display: flex; flex-direction: column; gap: 8px; padding: 0 4px 4px 0; }
 .star-map-page .mayar { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
 .star-map-page .mayar h3 { flex: 0 0 auto; font-size: 26px; line-height: 1.15; padding: 8px 12px; }
