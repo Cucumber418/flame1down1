@@ -18,8 +18,8 @@ var TX = (function () {
   /* ---------- 价格表 ---------- */
   var D = {
     // 荆门 · 物资仓储的商城（能量）：捕捉装置、补药的价格写在 battle.js 的 ITEMS 里
-    SHOP: ['cap1', 'rename'],   // 2026-10-25：体力补药、强能体力补药下架
-    SHOP_MAX: 99, RENAME_PRICE: 1000,
+    SHOP: ['cap1', 'rename', 'nameTag'],   // 2026-10-25：体力补药、强能体力补药下架
+    SHOP_MAX: 99, RENAME_PRICE: 1000, NAME_TAG_PRICE: 20000,
     // 竞技代币商店
     TOKEN_SHOP: [
       { k: 'moonStone', price: 2 }, { k: 'boneDust', price: 2 },   // 2026-10-18：小月亮、骨刃的隐藏技能和等级上限道具
@@ -95,7 +95,7 @@ var TX = (function () {
   function spaRec(acc) { if (!acc.spa || !Array.isArray(acc.spa.u)) acc.spa = { u: [], got: {} }; if (!acc.spa.got) acc.spa.got = {}; return acc.spa; }
   function num(v) { v = +v; return isFinite(v) ? v : 0; }
   function cnt(v, max) { return typeof v === 'number' && v === Math.floor(v) && v >= 1 && v <= max ? v : 0; }   // 数量必须是 1~max 的整数
-  function price(k) { return k === 'rename' ? D.RENAME_PRICE : (typeof ITEMS !== 'undefined' && ITEMS[k] && ITEMS[k].price) || 0; }
+  function price(k) { return k === 'nameTag' ? D.NAME_TAG_PRICE : k === 'rename' ? D.RENAME_PRICE : (typeof ITEMS !== 'undefined' && ITEMS[k] && ITEMS[k].price) || 0; }
   function no(err) { return { ok: false, err: err }; }
 
   /* ---------- 各种交易 ---------- */

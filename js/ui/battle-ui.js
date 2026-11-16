@@ -170,6 +170,7 @@
   function itemIcon(k) {
     // 2026-10-25：活力花卉、药草、hp 药水、pp 药水换成像素小图；药水右下角的小标写着回复多少
     var PX = { exp: 'exp', energy: 'energy', c_flower: 'flower', c_herb: 'herb', pot100: ['hp_potion', '100'], pot200: ['hp_potion', '200'], pp5: ['pp_potion', '5'], pp10: ['pp_potion', '10'], pp15: ['pp_potion', '15'], pp20: ['pp_potion', '20'], m_psac: 'poison_sac', antidote: 'antidote', ev50: ['ev_potion', '50'], evAny: ['ev_potion', '100'] }[k];
+    if (k === 'nameTag') return '<img class="it-ic it-px" src="images/items/name_tag.jpg" alt="">';
     if (k === 'grail') return '<img class="it-ic" src="images/items/grail.webp" alt="">';
     if (k === 'relPt') return '<img class="it-ic" src="images/items/rel_pt.svg" alt="">';   // 放生点数（2026-11-01）   // 圣杯（2026-11-01）
     if (k === 'iceAncient') return '<img class="it-ic" src="images/items/ice_ancient.webp" alt="">';   // 远古冰块

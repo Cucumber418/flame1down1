@@ -173,7 +173,7 @@
         return;
       }
       save(); done(res);
-    }, function () { txBusy = false; setTimeout(txNext, 0); toast('连不上服务器，这次没有兑换，请稍后再试。'); });
+    }, function () { txBusy = false; setTimeout(txNext, 0); if (fail) fail('连不上服务器，请稍后再试。'); else toast('连不上服务器，这次没有兑换，请稍后再试。'); });
   }
   function savePage() { try { localStorage.setItem(PKEY, page); } catch (e) {} }
 
@@ -763,6 +763,7 @@
       '<p style="margin:0 0 6px"><span class="lvbig">LV' + m.lv + '</span>' + tchips(s.types) + '</p>' +
       '<p class="hint">' + stageLabel(s, f.stage) + (!isFin(s, f.stage) ? ' · 最终进化为' + (s.placeholder || s.tbdForms ? '？' : s.name) : '') +
       (ts.length ? ' · ' + ts.map(function (x) { return tName(x.t) + (x.lead ? '首发' : ''); }).join('、') : ' · 未加入配队') + '</p>' +
+      '<div class="mon-naming">' + (m.nickname ? '<p class="hint">种族：' + esc(f.speciesName) + '</p>' : '') + '<button type="button" class="btn ghost" data-monrename="1"' + (!m.renameUnlocked && !(acc.items.nameTag > 0) ? ' disabled' : '') + '>' + (m.renameUnlocked ? '改名（永久免费）' : '使用命名牌解锁改名（消耗 1 张）') + '</button>' + (!m.renameUnlocked ? '<p class="hint">命名牌：冶炼坊 5 圣晶石合成，或商城 20000 能量购买。</p>' : '') + '</div>' +
       (f.d ? '<p class="formdesc">' + esc(f.d) + '</p>' : '') + evoLine(m) + formSwitchHTML(m) + (s.placeholder ? '<p class="placeholder-note" style="margin-top:6px">数值和技能还是占位，二阶和最终形态还没画出来</p>' : s.tbdForms ? '<p class="placeholder-note" style="margin-top:6px">二阶和最终形态还没画出来</p>' : '') + '</div></div>' +
       mdFold('exp', '经验', '', expBox(m)) + mdFold('stats', '能力', '性格 · ' + m.nat, stats) +
       mdFold('trait', '特性', esc(s.ability.n), '<div class="trait"><p><b>特性 · ' + esc(s.ability.n) + '</b>　<span class="blue">' + esc(s.ability.d) + '</span></p>' + (s.ability.extra ? '<p class="blue" style="font-size:13px">' + esc(s.ability.extra) + '</p>' : '') +
@@ -804,6 +805,11 @@
     var m = mon(ui.sel); if (!m) return;
     var b = e.target.closest('button'); if (!b) return;
     if (b.dataset.abig) { var q = b.dataset.abig.split('|'); H.big(q[0], +q[1]); return; }
+    if (b.dataset.monrename) {
+      if (m.renameUnlocked) monRename(m);
+      else applyMonItem('nameTag', m, null, function (r) { toast(r.msg); if (r.ok) { renderTop(); monRename(mon(m.u)); } });
+      return;
+    }
     if (b.dataset.insslot) { insPick(m, +b.dataset.insslot); return; }
     if (b.dataset.insx) { if (b.disabled) return; txRun('insX', { u: m.u }, function () { renderTop(); toast(form(m).name + ' 的第 3 个刻印槽开启了！'); }); return; }
     if (b.dataset.ev) {
@@ -872,7 +878,7 @@
    * 一般道具：捕捉装置、补药（对战中用）、改名卡、自律训练装置、挑战许可
    * 储存箱（主菜单，黄冈秘鉴和社交中间）列出所有道具 */
   var USE_ITEMS = GROW.USE_ITEMS;   // 精灵道具的数据和用法在 js/engine/grow.js（服务器和浏览器共用，2026-10-25）
-  var MON_ORDER = ['formDev', 'earthShard', 'floraJade', 'kbDrop', 'ppAsh', 'ltOrb', 'whFrost', 'moonStone', 'boneDust', 'tgPearl', 'brTwig', 'odoFin', 'hrDisk', 'phLeaf', 'fencArc', 'deathTok', 'ivMoon', 'ivBone', 'ivReroll', 'ev50', 'evAny', 'evTagore', 'natAny', 'natRand', 'natTagore', 'evReset', 'fruit1', 'fruit2'], GEN_ORDER = ['trans', 'helmet', 'dive', 'auto', 'rename', 'cap1', 'cap2', 'cap3', 'pot1', 'pot2', 'pot200'];
+  var MON_ORDER = ['nameTag', 'formDev', 'earthShard', 'floraJade', 'kbDrop', 'ppAsh', 'ltOrb', 'whFrost', 'moonStone', 'boneDust', 'tgPearl', 'brTwig', 'odoFin', 'hrDisk', 'phLeaf', 'fencArc', 'deathTok', 'ivMoon', 'ivBone', 'ivReroll', 'ev50', 'evAny', 'evTagore', 'natAny', 'natRand', 'natTagore', 'evReset', 'fruit1', 'fruit2'], GEN_ORDER = ['trans', 'helmet', 'dive', 'auto', 'rename', 'cap1', 'cap2', 'cap3', 'pot1', 'pot2', 'pot200'];
   // 剧情道具：主线里拿到的，不能使用也不会消耗
   var KEY_ITEMS = {
     trans: { name: '精灵翻译器', d: '汉街总部国际A座的情报显示，这个翻译器能凭一己之力考到雅思 6.5 分。这样一来，翻译精灵的语言也一定能行吧……', img: 'translator' },
@@ -955,6 +961,7 @@
     evReset: ['把学习力退回去的胶囊。', '用在一只精灵身上，已经分配的学习力全部退回「可分配学习力」，可以重新分配。', '竞技代币商店（80 竞技代币）；先驱之塔的代币商店（200 先驱代币）。'],
     fruit1: ['一颗饱满的果子。', '用在一只精灵身上，直接增加经验（每颗 = 精灵等级 × 100）。到了等级上限就不能用。', '竞技代币商店（30 竞技代币）。'],
     fruit2: ['长得特别快的果子。', '用在一只精灵身上，直接增加经验（每颗 = 精灵等级 × 250）。到了等级上限就不能用。', '竞技代币商店（60 竞技代币）；先驱之塔的代币商店（60 先驱代币）；明明代币抽奖。'],
+    nameTag: ['给精灵使用的命名牌。', '消耗 1 张，对选中的个体永久解锁无限次免费改名；在精灵资料中改名，留空可恢复默认名。', '黄石 · 冶炼坊用圣晶石 ×5 合成；荆门 · 商城用 20000 能量购买。'],
     formDev: ['用圣晶石和星砂做成的小装置。', '用在一只精灵身上，永久解锁一个它长到过的更小形态的外观；之后在精灵资料的「外观形态」里随时免费切换。只改外观。', '黄石 · 冶炼坊用圣晶石 ×6、星砂 ×300 合成。'],
     earthShard: ['出发前从地球上带来的元素结晶，带着家乡的气息。', '每 100 个让三只初始精灵（叶粒之果、水臂领主、涅槃方头一系）领悟一个还没领悟的隐藏技能；它们到 LV70 后，也用它解锁 LV75（500 个）、LV80（1,000 个）的等级上限。', '读完黄冈 · 学院部的支线「隐藏技能」得 1,000 个。'],
     moonStone: ['一块映着新月微光的石头。', '每 100 个让小月亮一系领悟一个隐藏技能；到 LV70 后也用它解锁更高的等级上限。', '竞技代币商店（2 竞技代币）。'],
@@ -1061,6 +1068,7 @@
     return '<div class="md-items"><h4>精灵道具 <span class="hint">直接用在' + esc(form(m).name) + '身上</span></h4>' + ks.map(function (k) {
       var it = USE_ITEMS[k], act;
       if (it.kind === 'jade') { var jl = jadeMoves(m), jok = jl.length && acc.items[k] >= it.cost; act = jl.length ? '<select data-mnat="1" aria-label="要领悟的隐藏技能">' + jl.map(function (n) { return '<option value="' + n + '">' + n + '</option>'; }).join('') + '</select><button type="button" class="btn" data-muse="' + k + '"' + (jok ? '' : ' disabled title="需要 ' + it.cost + ' 个"') + '>' + (jok ? '用 ' + it.cost + ' 个领悟' : '需要 ' + it.cost + ' 个') + '</button>' : '<button type="button" class="btn" disabled>隐藏技能已全部领悟</button>'; }
+      else if (it.kind === 'nameTag') act = '<button type="button" class="btn" data-muse="' + k + '"' + (m.renameUnlocked ? ' disabled' : '') + '>' + (m.renameUnlocked ? '已解锁免费改名' : '使用 · 永久解锁改名') + '</button>';
       else if (it.kind === 'form') { var fo = formOpts(m); act = fo.length ? '<select data-mnat="1" aria-label="要解锁的形态">' + fo.map(function (x) { return '<option value="' + x.i + '">' + esc(x.n) + '</option>'; }).join('') + '</select><button type="button" class="btn" data-muse="' + k + '">解锁</button>' : '<button type="button" class="btn" disabled>没有可以解锁的形态</button>'; }
       else if (it.kind === 'nat') act = '<select data-mnat="1" aria-label="新的性格">' + NAT_KEYS.filter(function (n) { return n !== m.nat; }).map(function (n) { return '<option value="' + n + '">' + n + '（' + natText(n) + '）</option>'; }).join('') + '</select><button type="button" class="btn" data-muse="' + k + '">改性格</button>';
       else if (it.kind === 'iv' || it.kind === 'iv2') act = '<button type="button" class="btn" data-muse="' + k + '">使用 · 重组天赋</button>';
@@ -1068,7 +1076,7 @@
       else if (it.kind === 'exp') act = '<button type="button" class="btn" data-muse="' + k + '"' + (atCap(m) ? ' disabled' : '') + '>' + (atCap(m) ? '已到等级上限' : '使用 · +' + fmt(m.lv * it.rate) + ' 经验') + '</button>';
       else if (it.kind === 'evreset') act = '<button type="button" class="btn" data-muse="' + k + '"' + (evSum(m) ? '' : ' disabled') + '>' + (evSum(m) ? '使用 · 退回 ' + evSum(m) + ' 点' : '没有分配过学习力') + '</button>';
       else { var room = evRoom(m); act = '<button type="button" class="btn" data-muse="' + k + '"' + (room ? '' : ' disabled title="学习力已经到上限了"') + '>' + (room ? '使用 · +' + Math.min(100, room) + ' 学习力' : '学习力已满') + '</button>'; }
-      return '<div class="md-it"><b>' + it.name + ' <span class="cnt">×' + acc.items[k] + '</span></b><span class="hint">' + esc(it.kind === 'jade' ? '每 ' + it.cost + ' 个领悟一个隐藏技能' : it.kind === 'form' ? '每个给这只精灵永久解锁一个形态' : it.kind === 'nat' ? '把性格改成你选的性格' : it.kind === 'natRand' ? '性格随机换成另一种' : it.kind === 'iv' ? '六项天赋全部重新随机' : it.kind === 'iv2' ? '六项天赋重新随机，每项掷两次取高' : it.kind === 'exp' ? '直接给这只精灵增加经验' : it.kind === 'evreset' ? '已分配的学习力全部退回' : '直接增加 100 点可分配学习力') + '</span><span class="md-act">' + act + '</span></div>';
+      return '<div class="md-it"><b>' + it.name + ' <span class="cnt">×' + acc.items[k] + '</span></b><span class="hint">' + esc(it.kind === 'nameTag' ? '永久解锁这个个体的无限次免费改名' : it.kind === 'jade' ? '每 ' + it.cost + ' 个领悟一个隐藏技能' : it.kind === 'form' ? '每个给这只精灵永久解锁一个形态' : it.kind === 'nat' ? '把性格改成你选的性格' : it.kind === 'natRand' ? '性格随机换成另一种' : it.kind === 'iv' ? '六项天赋全部重新随机' : it.kind === 'iv2' ? '六项天赋重新随机，每项掷两次取高' : it.kind === 'exp' ? '直接给这只精灵增加经验' : it.kind === 'evreset' ? '已分配的学习力全部退回' : '直接增加 100 点可分配学习力') + '</span><span class="md-act">' + act + '</span></div>';
     }).join('') + '</div>';
   }
   function growText(min) { return min >= 60 && min % 60 === 0 ? (min / 60) + ' 小时' : min + ' 分钟'; }
@@ -1080,7 +1088,7 @@
     var listed = ['m_lcleaf', 'e_leafcat', 'e_pluto', 'e_odo'].concat(SUM_ESS);
     var evt = MAT_ORDER.filter(function (k) { return listed.indexOf(k) < 0; });
     return [
-      { id: 'mon', n: '精灵培养', subs: [['特产 · 隐藏技能与等级上限', byKind(['jade'])], ['性格 · 天赋 · 学习力', byKind(['nat', 'natRand', 'iv', 'iv2', 'ev', 'evreset'])], ['经验', byKind(['exp'])], ['形态', byKind(['form'])]] },
+      { id: 'mon', n: '精灵培养', subs: [['特产 · 隐藏技能与等级上限', byKind(['jade'])], ['性格 · 天赋 · 学习力', byKind(['nat', 'natRand', 'iv', 'iv2', 'ev', 'evreset'])], ['经验', byKind(['exp'])], ['形态与命名', byKind(['form', 'nameTag'])]] },
       { id: 'battle', n: '战斗道具', subs: [['捕捉装置', ['cap1', 'cap2', 'cap3']], ['hp药水', ['pot100', 'pot200']], ['PP 药水', ['pp10', 'pp20', 'pp5', 'pp15']], ['解毒药剂', ['antidote']]] },
       { id: 'mat', n: '材料', subs: [['采集物', GATHER_ORDER], ['种子', SEED_ORDER], ['作物', CROP_ORDER], ['精灵素材与精元', listed], ['活动道具', evt]] },
       { id: 'ins', n: '刻印', subs: [['常规刻印', SUMMON.INS_NORMAL1.concat(SUMMON.INS_NORMAL2)], ['限定刻印', INS_KEYS.filter(function (k) { return SUMMON.INS[k].lim; })], ['刻印激活晶片', ['insChip']]] },
@@ -1123,17 +1131,17 @@
         if (!mons.some(function (m) { return m.u === ui.itTarget; })) ui.itTarget = mons.length ? mons[0].u : null;
         var tm = mon(ui.itTarget);
         act = (mons.length ? '<h5 class="ib-act-h">使用</h5>' + '<div class="it-step"><b>1. 选择精灵</b><div class="it-mons">' + mons.map(function (m) {
-          var f = form(m), sub = it.kind === 'jade' ? (jadeMoves(m).length ? '还有 ' + jadeMoves(m).length + ' 个隐藏技能可领悟' : '隐藏技能已全部领悟') : it.kind === 'form' ? (formOpts(m).length ? '还能解锁 ' + formOpts(m).length + ' 个形态' : '没有可以解锁的形态') : it.kind === 'nat' ? '性格 ' + m.nat : it.kind === 'exp' ? (atCap(m) ? '已到等级上限' : '可得 ' + fmt(m.lv * it.rate) + ' 经验') : it.kind === 'evreset' ? '已分配 ' + evSum(m) + ' 点' : it.kind === 'iv' || it.kind === 'iv2' ? '天赋合计 ' + (ivOf(m) ? STAT_KEYS.reduce(function (a, x) { return a + m.iv[x]; }, 0) : '？') : '可再加 ' + evRoom(m) + ' 点';
+          var f = form(m), sub = it.kind === 'nameTag' ? (m.renameUnlocked ? '已解锁免费改名' : '使用后永久免费改名') : it.kind === 'jade' ? (jadeMoves(m).length ? '还有 ' + jadeMoves(m).length + ' 个隐藏技能可领悟' : '隐藏技能已全部领悟') : it.kind === 'form' ? (formOpts(m).length ? '还能解锁 ' + formOpts(m).length + ' 个形态' : '没有可以解锁的形态') : it.kind === 'nat' ? '性格 ' + m.nat : it.kind === 'exp' ? (atCap(m) ? '已到等级上限' : '可得 ' + fmt(m.lv * it.rate) + ' 经验') : it.kind === 'evreset' ? '已分配 ' + evSum(m) + ' 点' : it.kind === 'iv' || it.kind === 'iv2' ? '天赋合计 ' + (ivOf(m) ? STAT_KEYS.reduce(function (a, x) { return a + m.iv[x]; }, 0) : '？') : '可再加 ' + evRoom(m) + ' 点';
           return '<label class="it-mon' + (m.u === ui.itTarget ? ' on' : '') + '"><input type="radio" name="it-t" value="' + m.u + '"' + (m.u === ui.itTarget ? ' checked' : '') + '><img src="' + f.img + '" alt=""><span><b>' + esc(f.name) + '</b><small>LV' + m.lv + ' · ' + sub + '</small></span></label>';
         }).join('') + '</div></div>' +
-          (it.kind === 'jade' ? (tm && jadeMoves(tm).length ? '<div class="it-step"><b>2. 选择隐藏技能</b><select id="it-nat" aria-label="要领悟的隐藏技能">' + jadeMoves(tm).map(function (n) { return '<option value="' + n + '">' + n + '（' + esc(LEARN[n] ? '原本要' + LEARN[n] : '原本 LV50 习得') + '）</option>'; }).join('') + '</select></div>' : '') + '<p class="hint">一次消耗 ' + it.cost + ' 个，你现在有 ' + acc.items[k] + ' 个。</p>'
+          (it.kind === 'nameTag' ? '<p class="hint">消耗 1 张命名牌，只为选中的这个个体永久解锁免费改名。解锁后在精灵资料中点击「改名」。</p>' : it.kind === 'jade' ? (tm && jadeMoves(tm).length ? '<div class="it-step"><b>2. 选择隐藏技能</b><select id="it-nat" aria-label="要领悟的隐藏技能">' + jadeMoves(tm).map(function (n) { return '<option value="' + n + '">' + n + '（' + esc(LEARN[n] ? '原本要' + LEARN[n] : '原本 LV50 习得') + '）</option>'; }).join('') + '</select></div>' : '') + '<p class="hint">一次消耗 ' + it.cost + ' 个，你现在有 ' + acc.items[k] + ' 个。</p>'
             : it.kind === 'form' ? (tm && formOpts(tm).length ? '<div class="it-step"><b>2. 选择要解锁的形态</b><select id="it-nat" aria-label="要解锁的形态">' + formOpts(tm).map(function (x) { return '<option value="' + x.i + '">' + esc(x.n) + '</option>'; }).join('') + '</select></div>' : '') + '<p class="hint">给这只精灵永久解锁一个形态，之后在精灵资料里随时免费切换。只改外观，数值和技能都不变。</p>'
             : it.kind === 'nat' ? '<div class="it-step"><b>2. 选择性格</b><select id="it-nat" aria-label="新的性格">' + NAT_KEYS.map(function (n) { var cur = tm && tm.nat === n, pick = ui.itNat && (!tm || ui.itNat !== tm.nat) ? ui.itNat : NAT_KEYS.filter(function (x) { return !tm || x !== tm.nat; })[0]; return '<option value="' + n + '"' + (pick === n ? ' selected' : '') + (cur ? ' disabled' : '') + '>' + n + '（' + natText(n) + '）' + (cur ? ' · 当前' : '') + '</option>'; }).join('') + '</select></div>'
             : it.kind === 'iv' || it.kind === 'iv2' ? '<p class="hint">' + (tm && ivOf(tm) ? esc(form(tm).name) + ' 现在的天赋：' + STAT_KEYS.map(function (x) { return BASE_NAME[x] + ' ' + tm.iv[x]; }).join('，') + '。' : '') + '</p>'
             : it.kind === 'natRand' ? '<p class="hint">' + (tm ? esc(form(tm).name) + ' 现在是「' + tm.nat + '」性格，用了之后会随机变成另一种性格。' : '') + '</p>'
             : it.kind === 'exp' ? '<p class="hint">' + (tm ? esc(form(tm).name) + ' 现在 LV' + tm.lv + '，吃一颗得到 ' + fmt(tm.lv * it.rate) + ' 点经验。' : '') + '</p>'
             : '<p class="hint">' + (tm ? esc(form(tm).name) + ' 学习力：已分配 ' + evSum(tm) + '，可分配 ' + (tm.evFree || 0) + '，还能再加 ' + evRoom(tm) + ' 点。' : '') + '</p>') +
-          '<button type="button" class="btn primary" data-ituse="' + k + '"' + ((it.kind === 'jade' && (!tm || !jadeMoves(tm).length || acc.items[k] < it.cost)) || (it.kind === 'form' && (!tm || !formOpts(tm).length)) || (it.kind === 'ev' && tm && !evRoom(tm)) || (it.kind === 'exp' && tm && atCap(tm)) || (it.kind === 'evreset' && tm && !evSum(tm)) ? ' disabled' : '') + '>使用 ' + (it.cost || 1) + ' 个' + itemName(k) + '</button>'
+          '<button type="button" class="btn primary" data-ituse="' + k + '"' + ((it.kind === 'nameTag' && (!tm || tm.renameUnlocked)) || (it.kind === 'jade' && (!tm || !jadeMoves(tm).length || acc.items[k] < it.cost)) || (it.kind === 'form' && (!tm || !formOpts(tm).length)) || (it.kind === 'ev' && tm && !evRoom(tm)) || (it.kind === 'exp' && tm && atCap(tm)) || (it.kind === 'evreset' && tm && !evSum(tm)) ? ' disabled' : '') + '>使用 ' + (it.cost || 1) + ' 个' + itemName(k) + '</button>'
           : '<p class="hint red">' + esc(it.none || '你还没有能用这个道具的精灵（' + (it.sids || [it.sid]).filter(function (x) { return SPMAP[x]; }).map(function (x) { return SPMAP[x].name; }).join('、') + '一系）。') + '</p>');
       }
       else if (MATS[k] && MATS[k].hatch) act = '<button type="button" class="btn" data-itgo="nursery">去精灵保育仓</button>';
@@ -1153,6 +1161,25 @@
   function closeItemDetail() {
     var key = ui.itSel; ui.itSel = null; ui.itMsg = ''; renderItems();
     var button = key && $('pg-items').querySelector('[data-itsel="' + key + '"]'); if (button) button.focus();
+  }
+  function monRename(m) {
+    var old = $('mon-rename-dlg'); if (old) old.remove();
+    var d = document.createElement('div'); d.id = 'mon-rename-dlg'; d.className = 'soc-dlg';
+    d.innerHTML = '<form class="soc-box" role="dialog" aria-modal="true" aria-label="精灵改名" style="max-width:380px"><h2>精灵改名</h2><input data-newname="1" value="' + esc(m.nickname || '') + '" aria-label="精灵的新名字" autocomplete="off"><p class="hint">已永久解锁，改名免费且不限次数。最多 ' + GROW.MON_NAME_MAX + ' 个字，留空恢复默认名。</p><p class="hint red" data-nameerr="1" role="alert"></p><div class="soc-foot"><button type="button" class="btn ghost" data-namecancel="1">取消</button><button type="submit" class="btn primary">保存</button></div></form>';
+    document.body.appendChild(d);
+    var inp = d.querySelector('input'), submit = d.querySelector('[type="submit"]'), busy = false;
+    inp.focus(); inp.select();
+    function close() { if (!busy) { d.remove(); var trigger = document.querySelector('[data-monrename]'); if (trigger) trigger.focus(); } }
+    d.addEventListener('click', function (e) { if (e.target === d || e.target.closest('[data-namecancel]')) close(); });
+    d.addEventListener('keydown', function (e) { if (e.key === 'Escape') { e.preventDefault(); close(); } });
+    d.querySelector('form').addEventListener('submit', function (e) {
+      e.preventDefault(); if (busy) return;
+      busy = true; submit.disabled = true;
+      txRun('monRename', { u: m.u, name: inp.value }, function (r) {
+        busy = false; d.remove(); renderTop(); toast(r.msg);
+        var trigger = document.querySelector('[data-monrename]'); if (trigger) trigger.focus();
+      }, function (err) { busy = false; submit.disabled = false; d.querySelector('[data-nameerr]').textContent = err; });
+    });
   }
   function teamRename(i) {
     var old = $('tren-dlg'); if (old) old.remove();
@@ -5095,7 +5122,7 @@
   function clKey(c) { return c.date + '|' + c.title; }
   function newsCheck() {
     if (ex.baseEdit || !ready() || typeof CHANGELOG === 'undefined' || !CHANGELOG.length || acc.newsDay === dayStr()) return;
-    if (!$('battle').hidden || ex.fighting || (ex.mode && (ex.mode === 'intro' || ex.view === 'vn')) || $('news') || $('mailbox') || $('story-news')) return;
+    if (!$('battle').hidden || ex.fighting || (ex.mode && (ex.mode === 'intro' || ex.view === 'vn')) || $('news') || $('mailbox') || $('story-news') || document.querySelector('.soc-dlg')) return;
     var first = !Array.isArray(acc.newsSeen), seen = first ? [] : acc.newsSeen;   // 第一次弹：只列最近 3 条，不然一下子十几条太多
     var fresh = first ? CHANGELOG.slice(0, 3) : CHANGELOG.filter(function (c) { return seen.indexOf(clKey(c)) < 0; });
     var list = fresh.length ? fresh.slice(0, 5) : CHANGELOG.slice(0, 1);
@@ -6510,10 +6537,10 @@
   /* ---------- 商城：荆门 · 物资仓储 ---------- */
   var shopQty = {};
   // 不在战斗里用的商品
-  var SHOP_X = { rename: { name: '改名卡', price: TX.D.RENAME_PRICE, d: '使用后可以修改做题家名字（最多 ' + NAME_MAX + ' 个字）。兑换后点右上角的名字，在菜单里使用。' } };
+  var SHOP_X = { nameTag: { name: '命名牌', price: TX.D.NAME_TAG_PRICE, d: GROW.USE_ITEMS.nameTag.d }, rename: { name: '改名卡', price: TX.D.RENAME_PRICE, d: '使用后可以修改做题家名字（最多 ' + NAME_MAX + ' 个字）。兑换后点右上角的名字，在菜单里使用。' } };
   function goods(k) { return ITEMS[k] || SHOP_X[k]; }
   function renderShop() {
-    var grp = [['捕捉装置', ['cap1']], ['其他', ['rename']]];
+    var grp = [['捕捉装置', ['cap1']], ['其他', ['rename', 'nameTag']]];
     $('pg-explore').innerHTML = '<div class="crumb"><button type="button" class="btn ghost" id="ex-area">‹ 返回物资仓储</button><b>物资仓储 · 商城</b></div>' +
       '<div class="shop-bal"><span class="tape l"></span>当前能量 <b>' + fmt(acc.energy) + '</b></div>' +
       grp.map(function (g) {

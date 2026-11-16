@@ -8,6 +8,7 @@ var GROW = (function () {
   'use strict';
   var EV_TOTAL0 = EV_TOTAL;
   var USE_ITEMS = {
+    nameTag: { name: '命名牌', sid: null, kind: 'nameTag', sd: '给一只精灵永久解锁无限次免费改名。', d: '对一只精灵使用后消耗 1 张命名牌，永久解锁这个个体的改名功能。之后在精灵资料里可以无限次免费改名。冶炼坊用 5 个圣晶石合成，或在商城用 20000 能量购买。' },
     ivReroll: { name: '天赋重组合剂', sid: null, kind: 'iv', d: '把你的任意一只精灵的六项天赋（0~31）全部重新随机。新的天赋可能更高，也可能更低。' },
     natTagore: { name: '泰戈尔性格药剂', sid: 'tagore', kind: 'nat', d: '把你的一只泰戈尔（小胖虎、胖虎也可以）的性格改成你指定的性格。' },
     ev50: { name: '50学习力合剂', sid: null, kind: 'ev', amt: 50, d: '为你的任意一只精灵直接增加 50 点学习力。加进「可分配学习力」，再在精灵资料里自己分配；学习力总量最多 ' + EV_TOTAL0 + '。' },   // 2026-10-27：通用学习力合剂拆成 50、100 两种
@@ -70,6 +71,11 @@ var GROW = (function () {
     if (!it || !(I[k] > 0)) return no('没有这个道具了。');
     if (!itemFits(k, m)) return no('先选一只' + (it.sids ? it.sids.map(function (x) { return SPMAP[x].name; }).join('、') : it.sid ? SPMAP[it.sid].name : '精灵') + '。');
     var name = ACC.form(m).name;
+    if (it.kind === 'nameTag') {
+      if (m.renameUnlocked) return no('这只精灵已经解锁免费改名，无需再使用命名牌。');
+      m.renameUnlocked = true; I[k]--;
+      return { ok: true, msg: name + ' 已永久解锁免费改名，请在精灵资料中点击「改名」。' };
+    }
     if (it.kind === 'jade') {
       if (I[k] < it.cost) return no(it.name + '不够：需要 ' + it.cost + ' 个，你现在有 ' + I[k] + ' 个。');
       var left = jadeMoves(m); if (!left.length) return no(name + ' 已经领悟了全部隐藏技能。');
@@ -417,6 +423,20 @@ var GROW = (function () {
     return { ok: true, mons: got };
   });
 
+  // 个体昵称与权限由服务器交易保存；空名字恢复当前形态的默认名。
+  var MON_NAME_MAX = 12;
+  TX.add('monRename', function (a, args) {
+    var m = monOf(a, args);
+    if (!m) return no('找不到这只精灵');
+    if (!m.renameUnlocked) return no('请先对这只精灵使用命名牌。');
+    if (typeof args.name !== 'string') return no('请输入名字。');
+    var v = args.name.trim();
+    if (Array.from(v).length > MON_NAME_MAX) return no('名字最多 ' + MON_NAME_MAX + ' 个字。');
+    if (/[<>\x00-\x1f\x7f-\x9f\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]/.test(v)) return no('名字不能包含控制字符或尖括号。');
+    if (v) m.nickname = v; else delete m.nickname;
+    return { ok: true, name: v, msg: v ? '已改名为「' + v + '」。' : '已恢复默认名字。' };
+  });
+
   /* ---------- 冶炼坊：合成、特产互换（2026-10-25 起走交易） ---------- */
   var FORGE = [
     { id: 'cap2', out: { cap2: 1 }, need: { g_sand: 50 } },   // 2026-10-25：星砂 2 → 50
@@ -428,6 +448,7 @@ var GROW = (function () {
     { id: 'antidote', out: { antidote: 1 }, need: { m_psac: 1, c_herb: 5 } },   // 2026-10-27：解毒药剂
     { id: 'bowl', out: { c_bowl: 1 }, need: { c_rice: 500 } },
     { id: 'lcEssence', out: { e_leafcat: 1 }, need: { m_lcleaf: 5 } },
+    { id: 'nameTag', out: { nameTag: 1 }, need: { g_core: 5 } },
     { id: 'formDev', out: { formDev: 1 }, need: { g_core: 6, g_sand: 300 } },
     { id: 'horn', out: { m_horn: 1 }, need: { m_hfhorn: 60 } }
   ];
@@ -567,7 +588,7 @@ var GROW = (function () {
     return { ok: true, want: want, give: give, today: had + give, cap: BRAWL_CAP, none: !!rec.none, r: rec.r, daily: dh };
   });
 
-  return { REL_TIER: REL_TIER, REL_SHINY: REL_SHINY, REL_MAX: REL_MAX, relTier: relTier, relExp: relExp, relPt: relPt, relBlock: relBlock, starterU: starterU, FORGE: FORGE, FORGE_Q: FORGE_Q, GX_KEYS: GX_KEYS, GX_IN: GX_IN, GX_OUT: GX_OUT, GX_SRC: GX_SRC, gxOut: gxOut, farmOpen: farmOpen, farmNet: farmNet, FARM_STEAL_DAY: FARM_STEAL_DAY, farmStealLeft: farmStealLeft, farmStealView: farmStealView, farmStealFrom: farmStealFrom, FARM_N: FARM_N, FARM_EXTRA_MAX: FARM_EXTRA_MAX, PLOT_PRICE: PLOT_PRICE, SEED_PRICE: SEED_PRICE, SEED_SHOP: SEED_SHOP, SEED_SHOP_MAX: SEED_SHOP_MAX, farmN: farmN, SEEDS: SEEDS, HELP_RW: HELP_RW, BRAWL_WIN: BRAWL_WIN, BRAWL_LOSE: BRAWL_LOSE, BRAWL_CAP: BRAWL_CAP, SPA_GAP: SPA_GAP, spaMons: spaMons, HOME_CAP_H: HOME_CAP_H, STEAL_DAY: STEAL_DAY, homeNet: homeNet, stealLeft: stealLeft, stealView: stealView, stealFrom: stealFrom, AUTO_DAYS: AUTO_DAYS, DAY_MS: DAY_MS, HATCH: HATCH, STORY_GIFT: STORY_GIFT, RANK_GIFT: RANK_GIFT, USE_ITEMS: USE_ITEMS, CAP_STEPS: CAP_STEPS, GEM_OF: GEM_OF, CAP_SID: CAP_SID, capGem: capGem, capNext: capNext, formLabel: formLabel, natText: natText,
+  return { MON_NAME_MAX: MON_NAME_MAX, REL_TIER: REL_TIER, REL_SHINY: REL_SHINY, REL_MAX: REL_MAX, relTier: relTier, relExp: relExp, relPt: relPt, relBlock: relBlock, starterU: starterU, FORGE: FORGE, FORGE_Q: FORGE_Q, GX_KEYS: GX_KEYS, GX_IN: GX_IN, GX_OUT: GX_OUT, GX_SRC: GX_SRC, gxOut: gxOut, farmOpen: farmOpen, farmNet: farmNet, FARM_STEAL_DAY: FARM_STEAL_DAY, farmStealLeft: farmStealLeft, farmStealView: farmStealView, farmStealFrom: farmStealFrom, FARM_N: FARM_N, FARM_EXTRA_MAX: FARM_EXTRA_MAX, PLOT_PRICE: PLOT_PRICE, SEED_PRICE: SEED_PRICE, SEED_SHOP: SEED_SHOP, SEED_SHOP_MAX: SEED_SHOP_MAX, farmN: farmN, SEEDS: SEEDS, HELP_RW: HELP_RW, BRAWL_WIN: BRAWL_WIN, BRAWL_LOSE: BRAWL_LOSE, BRAWL_CAP: BRAWL_CAP, SPA_GAP: SPA_GAP, spaMons: spaMons, HOME_CAP_H: HOME_CAP_H, STEAL_DAY: STEAL_DAY, homeNet: homeNet, stealLeft: stealLeft, stealView: stealView, stealFrom: stealFrom, AUTO_DAYS: AUTO_DAYS, DAY_MS: DAY_MS, HATCH: HATCH, STORY_GIFT: STORY_GIFT, RANK_GIFT: RANK_GIFT, USE_ITEMS: USE_ITEMS, CAP_STEPS: CAP_STEPS, GEM_OF: GEM_OF, CAP_SID: CAP_SID, capGem: capGem, capNext: capNext, formLabel: formLabel, natText: natText,
     itemFits: itemFits, jadeMoves: jadeMoves, formOpts: formOpts, evRoom: evRoom, applyMonItem: applyMonItem };
 })();
 if (typeof module !== 'undefined') module.exports = GROW;

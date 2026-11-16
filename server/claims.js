@@ -189,7 +189,7 @@ function keyFix(oldData, newData) {
  * 精灵的等级、经验、天赋、学习力、性格、隐藏技能、异色、等级上限、形态解锁只能由服务器改（对战结算、交易）。
  * 上传的存档里这些变了、或者凭空多了精灵，就是浏览器自己改的。MON_MODE：'observe' 只记录（/status 的 mons），'enforce' 改回服务器的。 */
 var MON_MODE = 'enforce';
-var MON_KEYS = ['sid', 'lv', 'exp', 'iv', 'ev', 'evFree', 'nat', 'hl', 'shiny', 'lvCap', 'fu', 'got'];
+var MON_KEYS = ['sid', 'lv', 'exp', 'iv', 'ev', 'evFree', 'nat', 'hl', 'shiny', 'lvCap', 'fu', 'got', 'renameUnlocked', 'nickname'];
 var mstat = { checked: 0, bad: 0, fixed: 0, last: [] };
 function same(x, y) { return JSON.stringify(x === undefined ? null : x) === JSON.stringify(y === undefined ? null : y); }
 function monCheck(A, B) {

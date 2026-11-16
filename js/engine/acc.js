@@ -29,7 +29,7 @@ var ACC = (function () {
     if (!n) n = s.name + '·' + stageLabel(s, st);
     var img = formImg(s, st), sk = isFin(s, st) ? s.id : s.id + '_s' + (st + 1);
     if (m.shiny && typeof SHINY_SPRITES !== 'undefined') { if (m.shiny === 2 && SHINY_SPRITES[sk + '_2']) img = SHINY_SPRITES[sk + '_2']; else if (SHINY_SPRITES[sk]) img = SHINY_SPRITES[sk]; }
-    return { name: n, img: img, stage: st, unsure: unsure, no: s.evo[st].no || '', d: s.evo[st].d || '', shiny: shinyV(m.shiny) };
+    return { name: m.renameUnlocked && m.nickname ? m.nickname : n, speciesName: n, img: img, stage: st, unsure: unsure, no: s.evo[st].no || '', d: s.evo[st].d || '', shiny: shinyV(m.shiny) };
   }
   function learnLv(i) { return i === 0 ? 1 : i * 5; }
   function hidOk(lv, hl, n) { return hl && LEARN[n] ? hl.indexOf(n) >= 0 && lv >= HIDDEN_MIN_LV : lv >= 50; }
