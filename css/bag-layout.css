@@ -92,6 +92,9 @@ body.battle-touch #pg-bag .bag-workspace { grid-template-columns: minmax(0, 32%)
 #pg-bag .bag-detail-body .evhead, #pg-bag .bag-detail-body .ivhead { gap: 5px 8px; }
 #pg-bag .bag-mon-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 #pg-bag .bag-mon-actions .btn { padding: 4px 7px; font-size: calc(12px * var(--bag-type-scale)); }
+#pg-bag .bag-basic { display: flex; flex-direction: column; gap: 10px; }
+#pg-bag .bag-basic .d-head, #pg-bag .bag-basic .bag-mon-actions { margin: 0; }
+#pg-bag .bag-mon-lore { margin: 0; padding: 9px 10px; border: 1px dashed var(--rule); border-radius: 8px; background: var(--paper); font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
 #pg-bag .bag-current-skills { height: 100%; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
 #pg-bag .bag-ability { flex: 0 0 auto; max-height: 25%; overflow-y: auto; padding: 7px 9px; border: 1px dashed var(--rule); border-radius: 8px; background: var(--paper); font-size: calc(12px * var(--bag-type-scale)); line-height: 1.4; }
 #pg-bag .bag-ability p { margin: 0; }
@@ -305,6 +308,13 @@ body.bag-short.bag-wide .bag-stat-ev { margin-top: 1px; }
 #pg-bag .bag-detail-body { position: relative; }
 #pg-bag .bag-skill-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); }
 #pg-bag .bag-skill { border-left: 5px solid var(--skill-color, var(--rule)); }
+#pg-bag .bag-skill[data-bag-skill] { position: relative; user-select: none; -webkit-user-select: none; }
+#pg-bag .bag-skill[data-bag-skill] .mn { padding-right: 24px; }
+.bag-skill-grip { position: absolute; top: 2px; right: 2px; width: 26px; height: 28px; display: grid; place-items: center; font-size: 23px; line-height: 1; color: var(--pencil); cursor: grab; touch-action: none; -webkit-touch-callout: none; }
+#pg-bag .skill-drag-source { opacity: .45; }
+#pg-bag .skill-drop-to { outline: 3px solid var(--blue); outline-offset: -3px; background: var(--paper-2); }
+.bag-skills-dragging, .bag-skills-dragging * { cursor: grabbing !important; }
+.bag-skill-ghost { position: fixed; z-index: 1201; pointer-events: none; padding: 8px 12px; border: 1.5px solid var(--ink); border-left: 5px solid var(--skill-color); border-radius: 8px; background: var(--paper); color: var(--ink); box-shadow: 0 6px 18px #0003; font-size: 13px; }
 .skill-info-meta .t2 { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; }
 .skill-info-meta .tchip { display: inline-flex; color: #fff; border-radius: 999px; padding: 3px 7px; }
 .skill-hover { border-left: 5px solid var(--skill-color, var(--red)); }
@@ -313,6 +323,34 @@ body.bag-short.bag-wide .bag-stat-ev { margin-top: 1px; }
   #pg-bag .bag-detail-body .d-head { grid-template-columns: minmax(55px, 34%) minmax(0, 1fr); gap: 6px; }
   #pg-bag .bag-detail-body .d-head h3 { font-size: 20px; }
   #pg-bag .bag-detail-body .d-art { height: 110px; }
+}
+/* 手机基础信息把立绘放在资料上方，矮屏改用较大的左右分栏。 */
+@media (max-width: 680px), (pointer: coarse) {
+  #pg-bag .bag-basic { gap: 8px; }
+  #pg-bag .bag-basic .d-head { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  #pg-bag .bag-basic .d-art { width: 100%; height: clamp(130px, calc(var(--bag-view-height) * .32), 220px); }
+  #pg-bag .bag-mon-lore { padding: 7px 8px; font-size: 12px; line-height: 1.5; }
+  body.bag-active.bag-short #pg-bag .bag-detail-body .bag-basic .d-head { grid-template-columns: minmax(0, 46%) minmax(0, 1fr); }
+  body.bag-short #pg-bag .bag-basic { gap: 5px; }
+  body.bag-short #pg-bag .bag-basic .d-art { height: clamp(80px, calc(var(--bag-view-height) * .22), 115px); }
+  body.bag-short #pg-bag .bag-basic .d-head h3 { font-size: 18px; margin-bottom: 3px; }
+  body.bag-short #pg-bag .bag-basic .d-head .dexno { display: block; font-size: 9px; line-height: 1; margin-bottom: 2px; }
+  body.bag-short #pg-bag .bag-basic .d-head .hint { font-size: 10px; line-height: 1.3; }
+  body.bag-short #pg-bag .bag-basic .d-head > div > p:not(.hint) { font-size: 11px; line-height: 1.2; margin-bottom: 2px !important; }
+  body.bag-short #pg-bag .bag-basic > .evo-line { margin: 0; font-size: 10px; line-height: 1.3; }
+  body.bag-short #pg-bag .bag-mon-lore { padding: 5px; font-size: 11px; line-height: 1.35; }
+  body.bag-short.bag-wide #pg-bag .bag-basic { display: grid; grid-template-columns: minmax(0, 36%) minmax(0, 1fr); gap: 5px 10px; }
+  body.bag-short.bag-wide #pg-bag .bag-basic .d-head { display: contents; }
+  body.bag-short.bag-wide #pg-bag .bag-basic .d-art { grid-column: 1; grid-row: 1 / 3; height: clamp(80px, calc(var(--bag-view-height) * .32), 120px); }
+  body.bag-short.bag-wide #pg-bag .bag-basic .d-head > div,
+  body.bag-short.bag-wide #pg-bag .bag-basic > .evo-line,
+  body.bag-short.bag-wide #pg-bag .bag-basic > .bag-mon-lore { grid-column: 2; }
+  body.bag-short.bag-wide #pg-bag .bag-basic > .bag-mon-actions { grid-column: 1; grid-row: 3; align-self: end; }
+  body.bag-active.bag-short.bag-wide #pg-bag .bag-basic .d-head h3 { font-size: 20px; margin-bottom: 2px; }
+  body.bag-short.bag-wide #pg-bag .bag-basic .d-head .hint { font-size: 11px; line-height: 1.3; }
+  body.bag-short.bag-wide #pg-bag .bag-basic .d-head > div > p:not(.hint) { margin-bottom: 2px !important; }
+  body.bag-short.bag-wide #pg-bag .bag-basic > .evo-line { margin: 0; font-size: 10px; line-height: 1.3; }
+  body.bag-short.bag-wide #pg-bag .bag-mon-lore { padding: 5px; line-height: 1.4; }
 }
 #pg-bag .bag-detail-body > .ins-box, #pg-bag .bag-detail-body > .md-items { margin: 0; padding: 8px; border-radius: 9px; background: var(--paper); }
 #pg-bag .bag-detail-body .ins-slots { grid-template-columns: repeat(3, minmax(0, 1fr)); }

@@ -7,7 +7,7 @@
     return matchMedia('(pointer: coarse)').matches || ((navigator.maxTouchPoints || 0) > 0 && Math.min((v ? v.width : innerWidth) * s, (v ? v.height : innerHeight) * s) <= 900);
   }
   function sync() { document.body.classList.toggle('battle-touch', touchUI()); hideHover(); }
-  function card(target) { return target.closest && target.closest('#mgrid .mv, .bag-skill'); }
+  function card(target) { return target.closest && !target.closest('.bag-skill-grip') && !document.body.classList.contains('bag-skills-dragging') ? target.closest('#mgrid .mv, .bag-skill') : null; }
   function cancel(block) { if (press) { clearTimeout(press.timer); if (block) swallow = true; press = null; } }
   function inspect(el) { el.dispatchEvent(new CustomEvent('skillinspect', { bubbles: true })); }
   document.addEventListener('pointerdown', function (e) {
@@ -37,6 +37,7 @@
   }, true);
   document.addEventListener('contextmenu', function (e) { if (card(e.target) && touchUI()) e.preventDefault(); });
   window.addEventListener('blur', function () { cancel(true); pointers = {}; });
+  document.addEventListener('skillreorderstart', function () { cancel(true); hideHover(); });
   document.addEventListener('visibilitychange', function () { if (document.hidden) { cancel(true); pointers = {}; } });
 
   function fill(el, target) {

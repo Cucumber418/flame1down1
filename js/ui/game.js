@@ -1185,7 +1185,8 @@
     var odoF = m.sid === 'odo' && ui.odoF && ui.odoF.u === m.u ? ui.odoF.f : '';
     var mv = M[odoMoveAs(name, odoF)] || M[name];
     if (!mv) return '<div class="bag-skill empty-note">未装备技能</div>';
-    return '<button type="button" class="bag-skill" style="--skill-color:' + TYPE_COLOR[mv.type] + '" data-bag-skill="' + i + '" aria-label="' + esc(mv.name) + '，查看技能信息">' +
+    return '<button type="button" class="bag-skill" style="--skill-color:' + TYPE_COLOR[mv.type] + '" data-bag-skill="' + i + '" aria-keyshortcuts="Alt+ArrowLeft Alt+ArrowRight Alt+ArrowUp Alt+ArrowDown" aria-label="' + esc(mv.name) + '，查看技能信息，Alt加方向键调整顺序">' +
+      '<span class="bag-skill-grip" aria-hidden="true" title="拖动调整技能顺序">⠿</span>' +
       '<span class="mn">' + esc(mv.name) + '</span><span class="pp">PP ' + mv.pp + '</span><span class="t2">' + tchip(mv.type) + '<span class="mv-kind">' + mv.cat + '</span><span class="mv-power">威力 ' + (mv.power || '—') + '</span></span>' +
       '<span class="md">' + esc(mv.d) + (mv.pri ? ' · 先制 +' + mv.pri : '') + '</span></button>';
   }
@@ -1204,9 +1205,11 @@
       var section = function (key) { var el = source.querySelector('[data-mdfold="' + key + '"] .mdf-body'); return el ? el.innerHTML : ''; };
       if (tab === 'base') {
         var head = source.querySelector('.d-head');
+        var lore = form(m).d || SPMAP[m.sid].lore || '';
         head.querySelectorAll('.formdesc, .placeholder-note').forEach(function (el) { el.remove(); });
+        var evolution = head.querySelector('.evo-line'); if (evolution) evolution.remove();
         var note = head.querySelector('.hint'); if (note) note.textContent = stageLabel(SPMAP[m.sid], form(m).stage) + ' · ' + (acc.teams[acc.active][0] === m.u ? '当前配队首发' : '当前配队');
-        content = head.outerHTML + '<div class="bag-mon-actions">' + (acc.teams[acc.active][0] === m.u ? '' : '<button type="button" class="btn ghost" data-lead="' + acc.active + '">设为首发</button>') + '<button type="button" class="btn ghost" data-out="' + acc.active + '">移出配队</button></div>';
+        content = '<section class="bag-basic">' + head.outerHTML + (evolution ? evolution.outerHTML : '') + '<p class="bag-mon-lore">' + esc(lore || '暂无介绍。') + '</p><div class="bag-mon-actions">' + (acc.teams[acc.active][0] === m.u ? '' : '<button type="button" class="btn ghost" data-lead="' + acc.active + '">设为首发</button>') + '<button type="button" class="btn ghost" data-out="' + acc.active + '">移出配队</button></div></section>';
       } else if (tab === 'moves') {
         var cards = ''; for (var i = 0; i < 4; i++) cards += i < m.moves.length ? bagMoveCard(m, m.moves[i], i) : '<div class="bag-skill empty-note">未装备技能</div>';
         content = '<section class="bag-current-skills"><div class="bag-ability">' + section('trait') + '</div><div class="bag-skill-grid">' + cards + '</div><button type="button" class="btn" data-move-panel="1">更换技能</button></section>';
@@ -1315,6 +1318,69 @@
   }
   $('pg-bag').addEventListener('click', onBagClick);
   $('pg-bag').addEventListener('change', function (e) { if (e.target.closest('#bag-detail')) onDetailChange(e); });
+
+  // 技能排序：鼠标拖动整张卡，触屏拖动右上角的柄，卡面保留长按说明。
+  var skillDrag = null, skillDragClickUntil = 0;
+  function skillDragEnd(commit) {
+    if (!skillDrag) return;
+    var d = skillDrag; skillDrag = null;
+    if (d.ghost) d.ghost.remove();
+    d.card.classList.remove('skill-drag-source');
+    d.grid.querySelectorAll('.skill-drop-to').forEach(function (el) { el.classList.remove('skill-drop-to'); });
+    document.body.classList.remove('bag-skills-dragging');
+    if (d.card.hasPointerCapture(d.id)) d.card.releasePointerCapture(d.id);
+    if (!d.on) return;
+    skillDragClickUntil = Date.now() + 500;
+    var m = mon(d.u);
+    if (!commit || page !== 'bag' || !d.grid.isConnected || !m || ui.sel !== d.u || d.to < 0 || d.to === d.from || JSON.stringify(m.moves) !== d.order) return;
+    var name = m.moves.splice(d.from, 1)[0]; m.moves.splice(d.to, 0, name);
+    save(); renderBag();
+    var card = $('pg-bag').querySelector('[data-bag-skill="' + d.to + '"]'); if (card && !d.touch) card.focus({ preventScroll: true });
+  }
+  $('pg-bag').addEventListener('pointerdown', function (e) {
+    if (e.button > 0 || !e.isPrimary || skillDrag) return;
+    var card = e.target.closest('.bag-skill-grid [data-bag-skill]'), m = mon(ui.sel), touch = e.pointerType !== 'mouse';
+    if (!card || !m || m.moves.length < 2 || (touch && !e.target.closest('.bag-skill-grip'))) return;
+    skillDrag = { card: card, grid: card.parentElement, id: e.pointerId, u: m.u, order: JSON.stringify(m.moves), count: m.moves.length, from: +card.dataset.bagSkill, to: -1, x: e.clientX, y: e.clientY, touch: touch, on: false };
+    card.setPointerCapture(e.pointerId);
+  });
+  window.addEventListener('pointermove', function (e) {
+    var d = skillDrag; if (!d || d.id !== e.pointerId) return;
+    if (!d.grid.isConnected || page !== 'bag') { skillDragEnd(false); return; }
+    if (!d.on) {
+      if (Math.hypot(e.clientX - d.x, e.clientY - d.y) < 6) return;
+      d.on = true; d.card.classList.add('skill-drag-source'); document.body.classList.add('bag-skills-dragging');
+      document.dispatchEvent(new CustomEvent('skillreorderstart'));
+      d.ghost = document.createElement('div'); d.ghost.className = 'bag-skill-ghost';
+      d.ghost.textContent = d.card.querySelector('.mn').textContent; d.ghost.style.setProperty('--skill-color', d.card.style.getPropertyValue('--skill-color'));
+      document.body.appendChild(d.ghost);
+    }
+    e.preventDefault();
+    d.ghost.style.left = (e.clientX + 12) + 'px'; d.ghost.style.top = (e.clientY + 12) + 'px';
+    var hit = document.elementFromPoint(e.clientX, e.clientY), target = hit && hit.closest('.bag-skill');
+    d.to = target && target.parentElement === d.grid ? Math.min([].indexOf.call(d.grid.children, target), d.count - 1) : -1;
+    [].forEach.call(d.grid.children, function (el, i) { el.classList.toggle('skill-drop-to', i === d.to && i !== d.from); });
+  }, { passive: false });
+  window.addEventListener('pointerup', function (e) { if (skillDrag && skillDrag.id === e.pointerId) skillDragEnd(true); });
+  window.addEventListener('pointercancel', function (e) { if (skillDrag && skillDrag.id === e.pointerId) skillDragEnd(false); });
+  $('pg-bag').addEventListener('lostpointercapture', function (e) { if (skillDrag && skillDrag.id === e.pointerId) skillDragEnd(false); });
+  document.addEventListener('pointerdown', function (e) { if (skillDrag && skillDrag.id !== e.pointerId) skillDragEnd(false); }, true);
+  $('pg-bag').addEventListener('click', function (e) {
+    if (e.detail > 0 && Date.now() < skillDragClickUntil) { skillDragClickUntil = 0; e.preventDefault(); e.stopImmediatePropagation(); }
+  }, true);
+  $('pg-bag').addEventListener('keydown', function (e) {
+    var card = e.target.closest('.bag-skill-grid [data-bag-skill]'), m = mon(ui.sel);
+    var shift = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -2, ArrowDown: 2 }[e.key];
+    if (!e.altKey || !card || !m || !shift) return;
+    e.preventDefault(); skillDragEnd(false);
+    var from = +card.dataset.bagSkill, to = from + shift; if (to < 0 || to >= m.moves.length) return;
+    var name = m.moves.splice(from, 1)[0]; m.moves.splice(to, 0, name); save(); renderBag();
+    $('pg-bag').querySelector('[data-bag-skill="' + to + '"]').focus({ preventScroll: true });
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') skillDragEnd(false); });
+  window.addEventListener('blur', function () { skillDragEnd(false); });
+  window.addEventListener('resize', function () { skillDragEnd(false); });
+  document.addEventListener('visibilitychange', function () { if (document.hidden) skillDragEnd(false); });
   $('pg-items').addEventListener('click', function (e) {
     if (e.target.classList.contains('ib-dialog')) { closeItemDetail(); return; }
     var b = e.target.closest('button'); if (!b || b.disabled) return;
