@@ -77,7 +77,6 @@
   function showBubble(el) {
     if (!el || !hoverAllowed()) return;
     clearTimeout(hideTimer); unlabel(); source = el; inner.textContent = '';
-    bubble.style.setProperty('--skill-accent', getComputedStyle(el).getPropertyValue('--tc').trim() || '#c42f3a');
     var head = document.createElement('div'); head.className = 'skill-bubble-head';
     var title = document.createElement('h4'), name = el.querySelector('.mn').cloneNode(true);
     name.querySelectorAll('.mv-blocked').forEach(function (n) { n.remove(); });

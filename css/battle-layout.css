@@ -264,36 +264,42 @@ body.battle-active.battle-desktop.battle-tiny #battle { grid-template-rows: 84px
 body.battle-active.battle-desktop.battle-tiny #battle .mv .md { display: none; }
 body.battle-active.battle-desktop :is(.toast, .display-status) { left: 50%; }
 
-/* 技能效果气泡：沿用纸张配色，以技能属性色点缀。 */
+/* 技能效果气泡：与界面的方格本、胶带和红蓝笔批注一致。 */
 .skill-bubble {
-  --skill-accent: var(--red);
   position: fixed; z-index: 1200; width: min(328px, calc(100vw - 24px));
-  max-height: 340px; color: var(--ink); background: #fffdf7;
-  border: 1px solid #ded8ca; border-radius: 15px;
-  box-shadow: 0 12px 32px #23222b24, 0 3px 8px #23222b12;
+  max-height: 340px; color: var(--ink); background: var(--paper);
+  border: 1.5px solid var(--ink); border-radius: 10px;
+  box-shadow: 3px 3px 0 var(--ink);
   font-family: var(--f-body); font-size: 13px; line-height: 1.6;
   animation: skill-bubble-in .14s ease-out;
 }
 .skill-bubble::before {
   content: ''; position: absolute; left: var(--skill-arrow-left, 50%); bottom: -6px;
-  width: 11px; height: 11px; background: #fffdf7;
-  border-right: 1px solid #ded8ca; border-bottom: 1px solid #ded8ca;
+  width: 11px; height: 11px; background: var(--paper);
+  border-right: 1.5px solid var(--ink); border-bottom: 1.5px solid var(--ink);
   transform: translateX(-50%) rotate(45deg); pointer-events: none;
 }
 .skill-bubble.below::before { top: -6px; bottom: auto; transform: translateX(-50%) rotate(225deg); }
+.skill-bubble::after {
+  content: ''; position: absolute; top: -8px; left: 17px;
+  width: 65px; height: 17px; background: var(--tape);
+  transform: rotate(-4deg); pointer-events: none;
+}
 .skill-bubble-inner {
-  position: relative; max-height: inherit; padding: 15px 17px;
+  position: relative; max-height: inherit; padding: 16px 16px 12px;
   overflow: auto; overscroll-behavior: contain; border-radius: inherit;
-  background: linear-gradient(120deg, color-mix(in srgb, var(--skill-accent) 7%, #fffdf7), #fffdf7 65%);
+  background-color: var(--paper);
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 22px 22px;
 }
 .skill-bubble-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.skill-bubble-title { min-width: 0; margin: 0; color: var(--skill-accent); font-size: 17px; font-weight: 700; line-height: 1.35; overflow-wrap: anywhere; }
-.skill-bubble-pp { flex: 0 0 auto; padding: 2px 7px; background: #ffffffbc; border: 1px solid #e8e2d5; border-radius: 6px; color: var(--pencil); font-size: 11px; font-variant-numeric: tabular-nums; }
-.skill-bubble-meta { display: flex; flex-wrap: wrap; gap: 5px; margin: 10px 0 12px; }
-.skill-bubble-meta > * { display: inline-flex; align-items: center; padding: 3px 7px; border-radius: 5px; background: #ede9df; font-size: 11px; line-height: 1.2; }
-.skill-bubble-meta > .tchip { color: #fff; }
-.skill-bubble-description { margin: 0; padding-top: 10px; border-top: 1px solid #e7e1d4; font-size: 13px; line-height: 1.75; white-space: pre-line; overflow-wrap: anywhere; }
+.skill-bubble-title { min-width: 0; margin: 0; color: var(--red); font-family: var(--f-hand); font-size: 28px; font-weight: 400; line-height: 1.1; overflow-wrap: anywhere; }
+.skill-bubble-pp { flex: 0 0 auto; padding-bottom: 1px; border-bottom: 1px dashed var(--rule); color: var(--pencil); font-size: 11px; font-variant-numeric: tabular-nums; }
+.skill-bubble-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin: 8px 0 10px; }
+.skill-bubble-meta > * { display: inline-flex; align-items: center; color: var(--pencil); font-size: 11px; line-height: 1.2; }
+.skill-bubble-meta > .tchip { padding: 3px 7px; border-radius: 999px; color: #fff; }
+.skill-bubble-description { margin: 0; padding-top: 8px; border-top: 1px dashed var(--rule); color: var(--blue); font-size: 13px; line-height: 1.75; white-space: pre-line; overflow-wrap: anywhere; }
 .skill-bubble-note { margin: 9px 0 0; color: var(--pencil); font-size: 11px; line-height: 1.5; }
 body:not(.battle-desktop) .skill-bubble { display: none; }
-@keyframes skill-bubble-in { from { opacity: 0; translate: 0 4px; } to { opacity: 1; translate: 0 0; } }
+@keyframes skill-bubble-in { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .skill-bubble { animation: none; } }
