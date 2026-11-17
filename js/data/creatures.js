@@ -160,6 +160,13 @@ var SP = [
 var DUMMY = { id: 'dummy', name: '木桩', types: ['无'], type: '无', base: { hp: 100, atk: 0, def: 50, spa: 0, spd: 50, spe: 0 }, ability: { n: '无', d: '训练用木桩，不会攻击，体力无限' }, moves: [], hidden: [], def: [] };
 // 只在账号系统里出现的精灵（不进入竞技对战，也不参与强度测算）：占位精灵，以及竞技名单固定之后新加的所有精灵
 var EXTRA_SP = [
+  { id: 'clementi', name: '克莱门蒂', types: ['火'], artPlaceholder: true,
+    base: { hp: 108, atk: 70, def: 88, spa: 103, spd: 72, spe: 94 },
+    evo: [{ n: '克莱', lv: 1, no: '075', d: '立绘暂用占位图。' }, { lv: 30, no: '076', d: '立绘暂用占位图。' }], evoLvSure: false,
+    ability: { n: '终律', d: '两种及以上音律在同一回合成功触发时，将本次异常状态延长至2回合，清空自身全部音律，并吸取对方等同于双方平均等级的体力。' },
+    lore: '克莱 → 克莱门蒂。以音律引动火焰的精灵，立绘暂用占位图。',
+    moves: ['火球', '头铁', '加温', '火焰漩涡', '耀目之曲', '火焰车', '灼灼之音', '星火清籁', '眩惑之律'],
+    hidden: ['余烬燃烧', '音焚烬灭'], def: ['耀目之曲', '灼灼之音', '眩惑之律', '星火清籁'] },
   { id: 'fate', name: 'fate3', types: ['超能'], artPlaceholder: true,
     base: { hp: 120, atk: 60, def: 70, spa: 110, spd: 70, spe: 100 },
     evo: [{ n: 'fate1', lv: 1, no: '072', d: '名称暂定，立绘暂用占位图。' }, { n: 'fate2', lv: 25, no: '073', d: '名称暂定，立绘暂用占位图。' }, { lv: 50, no: '074', d: '名称暂定，立绘暂用占位图。' }], evoLvSure: false,

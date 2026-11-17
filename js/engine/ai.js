@@ -6,6 +6,7 @@
 /* ---------- 电脑 AI ---------- */
 function estAttack(me, foe, mv) {
   if (mv.cat === '变化') return 0;
+  if (mv.custom === 'clementFinale' && !hasStatus(foe)) return 0;
   if (mv.custom === 'poisonHeart' && !(foe.st['中毒'] > 0)) return 0;
   if (mv.fixedOnly) return fixedAmount(me, foe, mv) * hitChance(me, foe, mv);
   if (mv.custom === 'originBlade' && foe.stages.spe <= -6) return foe.hp + 1;
@@ -32,6 +33,10 @@ function scoreMove(S, me, foe, mv) {
     s = d / foe.maxhp * 100;
     if (mv.drain && hpR < 0.6) s += 12;
     if (mv.custom === 'transferDown' && STG.some(function (k) { return me.stages[k] < 0; })) s += 15;
+    if (mv.rhythm && !me.tm[mv.rhythm]) s += ability(me) === '终律' ? 24 : 14;
+    if (mv.custom === 'clementEmber') s += Math.floor(me.hp / 5) / foe.maxhp * 70 - (hpR < 0.3 ? 15 : 3);
+    if (mv.custom === 'clementFinale' && !hasStatus(foe)) return -100;
+    if (mv.custom === 'clementFinale') s += 8 * Object.keys(foe.st).filter(function (k) { return foe.st[k] > 0 && ST_DESC[k]; }).length;
     if (mv.custom === 'fateLuck') s += (fateCount(me, 'luck') === 2 ? -10 : hpR < 0.85 ? 15 : 0);
     if (mv.custom === 'fateDoom') s += fateCount(foe, 'doom') === 2 ? -8 : 15;
     if (mv.custom === 'fateBurn') s += 7 * Math.min(6 - me.stages.spa, fateCount(me, 'luck') + fateCount(foe, 'luck')) + 5 * Math.min(6 + foe.stages.spd, fateCount(me, 'doom') + fateCount(foe, 'doom'));
@@ -57,6 +62,7 @@ function scoreMove(S, me, foe, mv) {
   var faster = speedOf(me) > speedOf(foe);
   var c = mv.custom;
   switch (c) {
+    case 'clementClean': s += STG.some(function (k) { return me.stages[k] < 0; }) ? 30 : -20; break;
     case 'fateField': s += S.fateTurns > 0 ? -10 : 16; break;
     case 'sure3': s += me.tm.sure3 || me.tm.ear ? -20 : 10; break;
     case 'ear': s += me.tm.ear ? -20 : 16; break;

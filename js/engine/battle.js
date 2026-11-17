@@ -6,7 +6,8 @@
 var STG = ['atk', 'def', 'spa', 'spd', 'spe', 'acc', 'eva'];
 var STG_NAME = { atk: '物攻', def: '物防', spa: '特攻', spd: '特防', spe: '速度', acc: '命中', eva: '闪避' };
 var BASE_NAME = { hp: '体力', atk: '物攻', def: '物防', spa: '特攻', spd: '特防', spe: '速度' };
-var TM_NAME = { odoAtk: '全弹搭载', odoDef: '强效外壳', brandCd: '烙印冷却', etchCd: '蚀迹冷却', lmE: '雷明·电', lmL: '雷明·光', tcloud: '闪电云', cap: '逆鳞', genggu: '恒压', green: '绿色幻境', immune: '免疫异常', reflect: '风王结界', dodge: '光滑皮肤',
+var RHYTHMS = { rhythmLight: { name: '耀音律', status: '失明' }, rhythmBurn: { name: '灼音律', status: '烧伤' }, rhythmConfuse: { name: '惑音律', status: '混乱' } };
+var TM_NAME = { rhythmLight: '耀音律', rhythmBurn: '灼音律', rhythmConfuse: '惑音律', odoAtk: '全弹搭载', odoDef: '强效外壳', brandCd: '烙印冷却', etchCd: '蚀迹冷却', lmE: '雷明·电', lmL: '雷明·光', tcloud: '闪电云', cap: '逆鳞', genggu: '恒压', green: '绿色幻境', immune: '免疫异常', reflect: '风王结界', dodge: '光滑皮肤',
   noSwitch: '无法切换', prio: '先制+1', rain: '祈雨', tri: '三相归元', soul: '收魂',
   voidPhys: '虚空化', induct: '电磁感应', vortex: '闪电漩涡', fenglei: '风雷滚滚', counter: '反击风暴', parryBan: '被招架', noStat: '禁用变化', enCrit: '引爆', darkside: '月之暗面', hail: '冰雹', noBoost: '禁止强化',
   seal: '万灵封印', liuhuo: '流火', calm: '静谧水域', halfPhys: '物伤减半', tide: '黑雾潮汐', vuln: '易伤', weak: '伤害-30%',
@@ -169,7 +170,7 @@ var ST_DESC = {
   流血: '每回合结束损失60点体力（机械系免疫）', 中毒: '每回合结束损失1/16最大体力×层数；可无限叠加，叠加时回合数取较长的一方', 烧伤: '每回合结束损失1/8最大体力（火系精灵免疫）',
   失明: '攻击时有50%概率落空', 冻伤: '每回合结束损失1/8最大体力（冰系精灵免疫）', 混乱: '攻击时有40%概率攻击自己'
 };
-var TM_DESC = {
+var TM_DESC = { rhythmLight: '每回合初有60%概率使对方失明1回合', rhythmBurn: '每回合初有60%概率使对方烧伤1回合', rhythmConfuse: '每回合初有60%概率使对方混乱1回合',
   odoAtk: '全弹搭载：造成的伤害提升25%', odoDef: '强效外壳：受到的伤害减少20%',
   brandCd: '闪电烙印麻痹过后的冷却：这段时间里叠不上闪电烙印',
   etchCd: '光辉蚀迹失明期间的冷却：这段时间里叠不上蚀迹', lmE: '特性「雷明」：每回合结束对对方造成25点固定伤害', lmL: '特性「雷明」：每回合结束恢复20体力', tcloud: '闪电云：每回合结束对对方造成100点固定伤害',
@@ -258,6 +259,7 @@ function abilityLive(m, foe) {
 }
 function chipsOf(m, foe, S) {
   var c = [];
+  Object.keys(RHYTHMS).forEach(function (t) { if (m.tm[t] > 0) c.push({ t: TM_NAME[t] + ' ' + m.tm[t], k: 'fx', h: TM_NAME[t] + ' · 剩 ' + m.tm[t] + ' 回合', d: TM_DESC[t] }); });
   if (fateCount(m, 'luck')) c.push({ t: '幸运 ×' + fateCount(m, 'luck'), k: 'fx', h: '幸运 · ' + fateCount(m, 'luck') + ' 层', d: '命运标记，持续至战斗结束，换下场时保留。直接获得每层恢复1/8最大体力；每3层转化为1层厄运并损失1/4最大体力' });
   if (fateCount(m, 'doom')) c.push({ t: '厄运 ×' + fateCount(m, 'doom'), k: 'st', h: '厄运 · ' + fateCount(m, 'doom') + ' 层', d: '命运标记，持续至战斗结束，换下场时保留。直接获得每层损失1/8最大体力；每3层转化为1层幸运并恢复1/4最大体力' });
   if (S && S.fateTurns > 0) c.push({ t: '命运 ' + S.fateTurns, k: 'fx', h: '无常命运 · 剩 ' + S.fateTurns + ' 回合', d: '每回合结束时，双方在场精灵获得同种命运标记：幸运或厄运，各50%概率。切换精灵不会结束领域' });
@@ -305,7 +307,7 @@ function chipsOf(m, foe, S) {
   if (m.fx.moonNext) c.push({ t: '月蚀 · 下次攻击+15%', k: 'fx', h: '月蚀', d: '刚转换过属性，下一次攻击伤害提升15%，命中后恢复 1/6 最大体力' });
   if (m.perm && m.perm.moonFull) c.push({ t: '光影之月', k: 'fx', h: '光影之月（永久，下场保留）', d: '属性：光 + 暗影\n技能属性：固定为' + (m.perm.moonMv ? '暗影系' : '原属性') + '\n伤害 +15%\n使用技能时，其余技能各恢复1点PP，并恢复 1/6 最大体力\n无法使用月之暗面 / 月之亮面' });
   if (m.fx.sureCrit) c.push({ t: m.fx.sureHit ? '必中必暴' : '下次暴击', k: 'fx', h: m.fx.sureHit ? '必中必暴' : '下次暴击', d: m.fx.sureHit ? '下一次攻击必定命中并造成致命一击' : '下一次攻击必定致命一击' });
-  for (var t in m.tm) if (m.tm[t] > 0) c.push({ t: (TM_NAME[t] || t) + ' ' + m.tm[t], k: FOE_TM[t] ? 'st' : 'fx', h: (TM_NAME[t] || t) + ' · 剩 ' + m.tm[t] + ' 回合', d: TM_DESC[t] || '' });
+  for (var t in m.tm) if (m.tm[t] > 0 && !RHYTHMS[t]) c.push({ t: (TM_NAME[t] || t) + ' ' + m.tm[t], k: FOE_TM[t] ? 'st' : 'fx', h: (TM_NAME[t] || t) + ' · 剩 ' + m.tm[t] + ' 回合', d: TM_DESC[t] || '' });
   return c;
 }
 // 当前全部具体能力值（含能力等级、特性、场上效果）
@@ -677,6 +679,11 @@ function resolveTurn(S, acts) {
   S.turnActed = [false, false]; S.silenced = [false, false]; S.order = [];
   S.sides.forEach(function (sd) { sd.team.forEach(function (m) { if (m.fx) m.fx.lateNow = 0; }); });   // 歼灭速率：「这回合被抢先出手」只算当回合
   log(S, evs, '第 ' + S.turn + ' 回合', 'turn');
+  if (rhythmStart(S, evs)) {
+    checkOver(S, evs);
+    if (S.over) { S.turn++; return evs; }
+    if ([0, 1].some(function (i) { var m = act(S, i); return m.fainted || (m.boss && m.boss.broken); })) acts = acts.map(function (a) { return a.kind === 'move' ? { kind: 'pass' } : a; });
+  }
   [0, 1].forEach(function (i) { var em = act(S, i); if (!em.fainted && em.insFx && em.insFx.elec && RNG() < 0.2) { log(S, evs, nm(em) + '的刻印「迅疾之电」发动了', 'fxl'); changeStages(S, evs, i, { spe: 1 }); } });   // 2026-11-01
   if (S.turn === 1 && !S.ambushed) { S.ambushed = 1; var amb = act(S, 1); if (amb.boss && amb.boss.ambush && !act(S, 0).fainted) { RV(amb, 'ambush'); log(S, evs, nm(amb) + '使用了「突然袭击」！', 'use'); E(S, evs, 'use', { side: 1, move: '突然袭击', type: typesOf(amb)[0] }); applyDamage(S, evs, 0, amb.boss.ambush, null, {}); if (act(S, 0).fainted && !S.over) { checkOver(S, evs); } } }
   if (S.turn === 1 && !S.nebOpen) { var nb = act(S, 1); if (nb.boss && nb.boss.neb && !act(S, 0).fainted && M['强烈恒星风']) { S.nebOpen = 1; log(S, evs, nm(nb) + '一现身，就释放了恒星风暴！', 'crit'); useMove(S, evs, 1, M['强烈恒星风'], -1, true); checkOver(S, evs); if (S.over) { S.turn++; return evs; } } }   // 玫瑰星云：开局先放一次强烈恒星风
@@ -962,6 +969,60 @@ function fateTick(S, evs) {
   if (!S.fateTurns) log(S, evs, '命运领域消散了', 'fxl');
 }
 
+function rhythmStart(S, evs) {
+  var owners = [0, 1].filter(function (i) { var m = act(S, i); return !m.fainted && Object.keys(RHYTHMS).some(function (k) { return m.tm[k] > 0; }); });
+  owners.sort(function (a, b) { return speedOf(act(S, b)) - speedOf(act(S, a)) || a - b; });
+  owners.forEach(function (i) {
+    var m = act(S, i), j = 1 - i, foe = act(S, j), successes = [];
+    if (m.fainted || (m.boss && m.boss.broken)) return;
+    Object.keys(RHYTHMS).forEach(function (key) {
+      if (!(m.tm[key] > 0)) return;
+      if (--m.tm[key] <= 0) delete m.tm[key];
+      if (foe.fainted || (foe.boss && foe.boss.broken) || RNG() >= 0.6) return;
+      var r = RHYTHMS[key], before = foe.st[r.status] || 0;
+      log(S, evs, nm(m) + '的' + r.name + '响起了', 'fxl');
+      addStatus(S, evs, j, r.status, 1, i);
+      // 被免疫、反弹，或未实际刷新时，不计作成功触发。
+      if ((foe.st[r.status] || 0) > before) successes.push(r.status);
+    });
+    if (ability(m) === '终律' && successes.length >= 2 && !foe.fainted) {
+      successes.forEach(function (k) { foe.st[k] = Math.max(foe.st[k] || 0, 2); });
+      Object.keys(RHYTHMS).forEach(function (k) { delete m.tm[k]; });
+      E(S, evs, 'stage', { side: i });
+      log(S, evs, nm(m) + '的「终律」发动了！', 'fxl');
+      var n = Math.floor(((m.lv || LV) + (foe.lv || LV)) / 2);
+      var got = loseHp(S, evs, j, n, '终律吸取了' + nm(foe) + '的体力', true);
+      if (got > 0 && !m.fainted) heal(S, evs, i, got);
+    }
+  });
+  return owners.length > 0;
+}
+function applyClementMove(S, evs, i, mv) {
+  var me = act(S, i), j = 1 - i, foe = act(S, j);
+  if (me.fainted) return;
+  if (mv.rhythm && RHYTHMS[mv.rhythm]) {
+    me.tm[mv.rhythm] = 3;
+    E(S, evs, 'stage', { side: i });
+    log(S, evs, nm(me) + '奏起了' + RHYTHMS[mv.rhythm].name, 'fxl');
+  }
+  if (mv.custom === 'clementEmber') {
+    var paid = loseHp(S, evs, i, Math.floor(me.hp / 5), nm(me) + '燃烧了余烬，消耗1/5当前体力', true);
+    if (paid > 0 && !foe.fainted) applyDamage(S, evs, j, paid, i, {});
+  }
+  if (mv.custom === 'clementFinale' && !foe.fainted) {
+    var cleared = Object.keys(foe.st).filter(function (k) { return foe.st[k] > 0 && ST_DESC[k]; });
+    cleared.forEach(function (k) { delete foe.st[k]; if (k === '中毒') delete foe.fx.poison; });
+    E(S, evs, 'stage', { side: j });
+    if (cleared.length) {
+      log(S, evs, '音焚烬灭清除了' + nm(foe) + '的异常状态', 'fxl');
+      var before = foe.stages.spa;
+      changeStages(S, evs, j, { spa: -cleared.length }, i);
+      var stolen = Math.max(0, before - foe.stages.spa);
+      if (stolen) changeStages(S, evs, i, { spa: stolen });
+    }
+  }
+}
+
 function useMove(S, evs, i, mv, slotIdx, extra) {
   if (!extra) RV(act(S, i), 'mute');
   var me = act(S, i), j = 1 - i, foe = act(S, j);
@@ -1007,6 +1068,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   if (hitBlocked(foe, mt)) { log(S, evs, nm(foe) + '毫发无伤！只有' + foe.onlyHit.join('、') + '系技能才能命中它', 'bad'); me.fx.boostNext = 0; return; }
   if (foe.boss && ((foe.boss.noPhys && mv.cat === '物攻') || (foe.boss.noSpec && mv.cat === '特攻'))) { RV(foe, mv.cat === '物攻' ? 'noPhys' : 'noSpec'); log(S, evs, nm(foe) + '免疫' + (mv.cat === '物攻' ? '物理' : '特殊') + '攻击，毫发无伤！', 'bad'); me.fx.boostNext = 0; return; }   // 无尽作战
   if (i === 1 && S.en && S.en.ghostT === S.turn && !act(S, 0).fainted) { log(S, evs, '幽灵形态：' + nm(foe) + '化作虚影，闪开了攻击！', 'fxl'); me.fx.boostNext = 0; return; }
+  if (mv.custom === 'clementFinale' && !hasStatus(foe)) { E(S, evs, 'miss', { side: j }); log(S, evs, '对方没有异常状态，音焚烬灭未能命中'); me.fx.boostNext = 0; return; }
   if (mv.custom === 'poisonHeart' && !(foe.st['中毒'] > 0)) { E(S, evs, 'miss', { side: j }); log(S, evs, '但是没有命中！（渗透孢子只能命中中毒的敌人）'); me.fx.boostNext = 0; return; }
   var sure = me.fx.sureHit; if (sure) me.fx.sureHit = 0;
   if (me.tm.sure3 > 0 || me.tm.ear > 0) sure = 1;
@@ -1129,6 +1191,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   if (mv.recoil && total > 0 && !me.fainted) loseHp(S, evs, i, Math.max(1, Math.floor(total * mv.recoil)), nm(me) + '受到了反弹伤害');   // 烈焰冲锋
   if (total > 0 && me.tm.induct > 0) { log(S, evs, '电磁感应生效', 'fxl'); changeStages(S, evs, i, { spa: 1 }); }
   applyFateMove(S, evs, i, mv);
+  applyClementMove(S, evs, i, mv);
   me.fx.hqRaw = raw;   // 这一招算出来的伤害（不按对方剩余体力截断），隐藏技能「淬命之焰」的领悟条件用
   if (foe.fainted) {
     if (i === 0) hqKO(S, evs, me, foe, mv);
@@ -1278,6 +1341,11 @@ function doStatus(S, evs, i, mv) {
   function foeTimer(key, n, text) { foe.tm[key] = n; E(S, evs, 'stage', { side: j }); log(S, evs, text, 'bad'); }
   function flag(text) { E(S, evs, 'stage', { side: i }); log(S, evs, text, 'fxl'); }
   switch (c) {
+    case 'clementClean':
+      var cleaned = false; STG.forEach(function (k) { if (me.stages[k] < 0) { me.stages[k] = 0; cleaned = true; } });
+      if (cleaned) { me.tm.mist = 5; flag(nm(me) + '解除了能力下降，5回合内免疫能力下降'); }
+      else log(S, evs, '没有需要解除的能力下降');
+      break;
     case 'fateField': S.fateTurns = 4; E(S, evs, 'stage', { side: i }); log(S, evs, '命运领域展开：接下来4回合，双方将在回合结束时获得同种命运标记', 'fxl'); break;
     case 'sure3': timer('sure3', 3, nm(me) + '竖起耳朵仔细聆听：3回合内攻击必定命中'); break;
     case 'ear': timer('ear', 3, nm(me) + '的灵耳捕捉到了一切声音：3回合内攻击必定命中，对方若试图闪避会被识破'); break;
@@ -1856,6 +1924,7 @@ function endOfTurn(S, evs) {
     var m = act(S, i); if (m.fainted) return;
     for (var s in m.st) { if (m.st[s] > 0 && --m.st[s] <= 0) { delete m.st[s]; if (s === '中毒') delete m.fx.poison; log(S, evs, nm(m) + '的「' + s + '」状态解除了'); } }
     for (var t in m.tm) {
+      if (RHYTHMS[t]) continue;
       if (m.tm[t] > 0 && --m.tm[t] <= 0) {
         delete m.tm[t];
         if (t === 'darkside') { log(S, evs, nm(m) + '离开了月之暗面，恢复原来的属性'); moonSwitch(S, evs, i); }

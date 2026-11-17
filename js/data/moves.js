@@ -359,10 +359,17 @@ var M = {
   厄运眷顾: { type: '超能', cat: '特攻', power: 75, custom: 'fateDoom', d: '威力75，命中后使对方获得1层厄运，25%概率额外获得1层' },
   幸运垂降: { type: '超能', cat: '特攻', power: 75, custom: 'fateLuck', d: '威力75，命中后自身获得1层幸运，25%概率额外获得1层' },
   极速: { type: '普通', cat: '变化', selfStage: { spe: 2 }, d: '提升自身2级速度' },
-  无常命运: { type: '超能', cat: '变化', custom: 'fateField', pp: 10, d: '展开持续4回合的命运领域。每回合结束时，双方在场精灵同时获得1层幸运或1层厄运，两者概率各为50%；双方获得的标记种类相同。使用当回合计入持续时间，重复使用刷新持续时间' },
-  烬燃命运: { type: '火', cat: '特攻', power: 50, custom: 'fateBurn', d: '威力50，命中后清除双方在场精灵的全部幸运与厄运。每清除1层幸运，提升自身1级特攻；每清除1层厄运，降低对方1级特防。能力等级仍受通常的上下限限制' },
-  逆转命运: { type: '超能', cat: '特攻', power: 80, custom: 'fateSwap', hidden: true, d: '威力80，命中后交换双方在场精灵持有的整组幸运与厄运层数。只调整标记层数，不触发获得或转换效果' },
-  辩证命运: { type: '超能', cat: '特攻', power: 80, custom: 'fateInvert', hidden: true, d: '威力80，命中后将自身持有的幸运与厄运层数互换。只调整标记层数，不触发获得或转换效果' }
+  无常命运: { type: '超能', cat: '变化', custom: 'fateField', pp: 10, d: '展开持续4回合的命运领域。每回合结束时，双方在场精灵同时获得1层幸运或1层厄运，两者概率各为50%；双方获得的标记种类相同' },
+  烬燃命运: { type: '火', cat: '特攻', power: 50, custom: 'fateBurn', d: '威力50，命中后清除双方在场精灵的全部幸运与厄运。每清除1层幸运，提升自身1级特攻；每清除1层厄运，降低对方1级特防' },
+  逆转命运: { type: '超能', cat: '特攻', power: 80, custom: 'fateSwap', hidden: true, d: '威力80，命中后交换双方在场精灵持有的整组幸运与厄运层数' },
+  辩证命运: { type: '超能', cat: '特攻', power: 80, custom: 'fateInvert', hidden: true, d: '威力80，命中后将自身持有的幸运与厄运层数互换' },
+  // —— 克莱门蒂（火）
+  耀目之曲: { type: '光', cat: '特攻', power: 80, rhythm: 'rhythmLight', d: '威力80，获得3回合耀音律：每回合初有60%概率使对方失明1回合。' },
+  灼灼之音: { type: '火', cat: '特攻', power: 80, rhythm: 'rhythmBurn', d: '威力80，获得3回合灼音律：每回合初有60%概率使对方烧伤1回合。' },
+  眩惑之律: { type: '超能', cat: '特攻', power: 80, rhythm: 'rhythmConfuse', d: '威力80，获得3回合惑音律：每回合初有60%概率使对方混乱1回合。' },
+  星火清籁: { type: '火', cat: '变化', custom: 'clementClean', d: '解除自身能力下降；成功后，5回合内免疫能力下降。' },
+  余烬燃烧: { type: '火', cat: '特攻', power: 90, custom: 'clementEmber', hidden: true, d: '威力90，扣除自身1/5当前体力，对对方附加等量固定伤害。' },
+  音焚烬灭: { type: '火', cat: '特攻', power: 100, custom: 'clementFinale', hidden: true, d: '威力100，仅能命中存在异常状态的对手；清除其全部异常状态，每清除一种，吸取对方1级特攻。' }
 };
 (function () {
   for (var n in M) {
