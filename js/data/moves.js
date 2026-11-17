@@ -364,12 +364,12 @@ var M = {
   逆转命运: { type: '超能', cat: '特攻', power: 80, custom: 'fateSwap', hidden: true, d: '威力80，命中后交换双方在场精灵持有的整组幸运与厄运层数' },
   辩证命运: { type: '超能', cat: '特攻', power: 80, custom: 'fateInvert', hidden: true, d: '威力80，命中后将自身持有的幸运与厄运层数互换' },
   // —— 克莱门蒂（火）
-  耀目之曲: { type: '光', cat: '特攻', power: 80, rhythm: 'rhythmLight', d: '威力80，获得3回合耀音律：每回合初有60%概率使对方失明1回合。' },
-  灼灼之音: { type: '火', cat: '特攻', power: 80, rhythm: 'rhythmBurn', d: '威力80，获得3回合灼音律：每回合初有60%概率使对方烧伤1回合。' },
-  眩惑之律: { type: '超能', cat: '特攻', power: 80, rhythm: 'rhythmConfuse', d: '威力80，获得3回合惑音律：每回合初有60%概率使对方混乱1回合。' },
-  星火清籁: { type: '火', cat: '变化', custom: 'clementClean', d: '解除自身能力下降；成功后，5回合内免疫能力下降。' },
-  余烬燃烧: { type: '火', cat: '特攻', power: 90, custom: 'clementEmber', hidden: true, d: '威力90，扣除自身1/5当前体力，对对方附加等量固定伤害。' },
-  音焚烬灭: { type: '火', cat: '特攻', power: 100, custom: 'clementFinale', hidden: true, d: '威力100，仅能命中存在异常状态的对手；清除其全部异常状态，每清除一种，吸取对方1级特攻。' }
+  耀目之曲: { type: '光', cat: '特攻', power: 80, rhythm: 'rhythmLight', d: '威力80，自身附加3回合耀音律，每回合初有60%概率使对方失明1回合' },
+  灼灼之音: { type: '火', cat: '特攻', power: 80, rhythm: 'rhythmBurn', d: '威力80，自身附加3回合灼音律，每回合初有60%概率使对方烧伤1回合' },
+  眩惑之律: { type: '超能', cat: '特攻', power: 80, rhythm: 'rhythmConfuse', d: '威力80，自身附加3回合惑音律，每回合初有60%概率使对方混乱1回合' },
+  星火清籁: { type: '火', cat: '变化', custom: 'clementClean', d: '解除自身能力下降状态，若成功则5回合内免疫能力下降' },
+  余烬燃烧: { type: '火', cat: '特攻', power: 90, custom: 'clementEmber', hidden: true, d: '威力90，扣除自身1/5当前体力，附加等量固定伤害' },
+  音焚烬灭: { type: '火', cat: '特攻', power: 100, custom: 'clementFinale', hidden: true, d: '威力100，仅能命中存在异常状态的对手，清除对方所有异常状态，每清除一种，吸取对方1级特攻' }
 };
 (function () {
   for (var n in M) {
