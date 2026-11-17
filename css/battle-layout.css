@@ -198,21 +198,21 @@ body.battle-active.battle-desktop #battle .plates {
   gap: 12px;
 }
 body.battle-active.battle-desktop #battle .vs {
-  display: flex; flex-direction: row; flex-wrap: wrap; align-content: center;
-  align-items: center; justify-content: center; gap: 4px 12px; color: var(--ink); font-family: var(--f-body);
+  display: flex; flex-direction: column; flex-wrap: nowrap;
+  align-items: center; justify-content: flex-start; gap: 4px; color: var(--ink); font-family: var(--f-body);
 }
 body.battle-active.battle-desktop #battle .battle-round {
   display: inline-flex; flex-direction: row; gap: 4px; align-items: baseline;
-  font-size: 17px; white-space: nowrap;
+  font-size: 17px; line-height: 1.1; white-space: nowrap;
 }
-body.battle-active.battle-desktop #battle .vs b { font-size: 26px; }
-body.battle-active.battle-desktop #battle .vs .tmax { flex: 0 0 100%; text-align: center; font-size: 10px; order: 2; }
+body.battle-active.battle-desktop #battle .vs b { font-size: 26px; line-height: 1; }
+body.battle-active.battle-desktop #battle .vs .tmax { flex: 0 0 auto; text-align: center; font-size: 10px; order: 2; }
 body.battle-active.battle-desktop #battle .vs .speed {
-  font-size: 13px; padding: 6px 10px; min-height: 32px;
+  order: -1; font-size: 13px; padding: 6px 10px; min-height: 32px;
   border-radius: 8px; background: var(--paper-2); white-space: nowrap;
 }
 body.battle-active.battle-desktop #battle .console {
-  display: grid; grid-template-columns: minmax(190px, 28%) minmax(0, 1fr) minmax(150px, 19%);
+  display: grid; grid-template-columns: minmax(180px, 1fr) minmax(0, 2fr) minmax(180px, 1fr);
   grid-template-rows: minmax(0, 1fr) auto;
   grid-template-areas: "log moves actions" "log hint actions";
   gap: 5px 8px;
