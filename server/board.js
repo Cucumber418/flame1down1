@@ -14,6 +14,7 @@ var path = require('path');
 var fs = require('fs');
 var crypto = require('crypto');
 var A = require('./accounts');
+var CONTENT = require('../js/engine/content');
 
 var FILE = path.join(A.DATA_DIR, 'board.json');
 var MAX_POSTS = 2000, MAX_LEN = 300, GAP_MS = 15 * 1000;
@@ -57,6 +58,8 @@ A.use(function (req, res, url) {
       d.posts.splice(k, 1); store(d);
       return A.reply(res, 200, { ok: true });
     }
+    var contentErr = CONTENT.error(body.text, '内容');
+    if (contentErr) return A.reply(res, 400, { error: contentErr });
     var text = clean(body.text);
     if (!text) return A.reply(res, 400, { error: '留言不能是空的' });
     var now = Date.now();

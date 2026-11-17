@@ -18,6 +18,7 @@ var path = require('path');
 var fs = require('fs');
 var crypto = require('crypto');
 var A = require('./accounts');
+var CONTENT = require('../js/engine/content');
 
 var FILE = path.join(A.DATA_DIR, 'bossboard.json');
 var MAX_LEN = 500, GAP_MS = 10 * 1000, VOTES = ['up', 'down', 'fun'];
@@ -74,6 +75,8 @@ A.use(function (req, res, url) {
     var find = function (id) { for (var i = 0; i < L.posts.length; i++) if (L.posts[i].id === id) return i; return -1; };
     if (url === '/api/boss-post') {
       if (!cleared(accOf(A.loadUser(who.user)), key)) return A.reply(res, 403, { error: '通过这个难度之后才能发攻略' });
+      var contentErr = CONTENT.error(body.text, '内容');
+      if (contentErr) return A.reply(res, 400, { error: contentErr });
       var text = clean(body.text), stars = parseInt(body.stars, 10);
       if (!text) return A.reply(res, 400, { error: '攻略不能是空的' });
       if (!(stars >= 1 && stars <= 5)) return A.reply(res, 400, { error: '请给出 1~5 星的评分' });

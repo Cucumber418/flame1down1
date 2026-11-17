@@ -16,6 +16,7 @@
 var path = require('path');
 var fs = require('fs');
 var A = require('./accounts');
+var CONTENT = require('../js/engine/content');
 
 var FILE = path.join(A.DATA_DIR, 'dm.json');
 var MAX_LEN = 300, KEEP = 500, GAP_MS = 1000;
@@ -70,6 +71,8 @@ A.use(function (req, res, url) {
       var to = A.loadUser(String(body.to || ''));
       if (!to) return A.reply(res, 404, { error: '没有这个玩家' });
       if (to.name === me.name) return A.reply(res, 400, { error: '不能给自己发私信' });
+      var contentErr = CONTENT.error(body.text, '内容');
+      if (contentErr) return A.reply(res, 400, { error: contentErr });
       var text = clean(body.text); if (!text) return A.reply(res, 400, { error: '私信不能是空的' });
       var now = Date.now();
       if (last[me.name] && now - last[me.name] < GAP_MS) return A.reply(res, 429, { error: '发得太快了' });

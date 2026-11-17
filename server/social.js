@@ -58,6 +58,7 @@
 
 var crypto = require('crypto');
 var A = require('./accounts');
+var CONTENT = require('../js/engine/content');
 var pvp = require('./pvp');   // 联网对战的服务器裁判（2026-10-24）
 
 var CH_SECONDS = 30;          // 宣战弹窗等待回应的时间
@@ -718,6 +719,8 @@ function onMessage(ws, msg) {
     case 'danmaku': {   // 观众发弹幕 / 表情：只有观众能看到，争霸赛的回放里也会保留
       var dw = castOf(String(msg.user || ''));
       if (!dw || ws.watching !== dw || !ws.user) return true;
+      var contentErr = CONTENT.error(msg.text, '弹幕') || CONTENT.error(msg.e, '弹幕');
+      if (contentErr) { out(ws, { type: 'content-error', msg: contentErr }); return true; }
       if (ws.dmAt && Date.now() - ws.dmAt < 1500) return true;
       ws.dmAt = Date.now();
       var dtx = str(msg.text, 30).replace(/[\u0000-\u001f]/g, '').trim(), de = str(msg.e, 32);

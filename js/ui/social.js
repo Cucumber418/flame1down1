@@ -360,6 +360,8 @@
       '</section></div>';
   }
   function saveCard() {
+    var contentErr = CONTENT.error(st.edit.motto, '名片签名');
+    if (contentErr) { var msg = $('me-msg'); if (msg) msg.textContent = contentErr; A.toast(contentErr); return; }
     var acc = A.acc();
     acc.card = { show: st.edit.show.slice(0, SHOW_MAX), motto: Array.from(st.edit.motto).slice(0, MOTTO_MAX).join(''), helper: st.edit.helpers.length ? st.edit.helpers[0] : null, helpers: st.edit.helpers.slice(0, HELP_MAX) };
     st.edit.dirty = false; A.save(); render();
@@ -460,6 +462,7 @@
 
   /* ---------- 和服务器的实时连接（在线状态、切磋） ---------- */
   function send(obj) {
+    if (obj.type === 'danmaku') { var contentErr = CONTENT.error(obj.text, '弹幕') || CONTENT.error(obj.e, '弹幕'); if (contentErr) { A.toast(contentErr); return false; } }
     if (!st.ws || st.ws.readyState !== 1) return false;
     // 战况里记录隐藏技能领悟进度的字段（hq 开头）互相引用，对方也用不到，发送前去掉
     st.ws.send(JSON.stringify(obj, function (k, v) { return k.slice(0, 2) === 'hq' ? undefined : v; }));
@@ -512,6 +515,7 @@
       case 'challenged': challenged(m); break;
       case 'match': startMatch(m); break;
       case 'prep': onPrep(m); break;
+      case 'content-error': A.toast(m.msg || '内容含有敏感词，请修改后再试。'); break;
       case 'prep-err': A.toast(m.msg || '选择不符合要求'); break;
       case 'ct-series': ctSeries(m); break;
       case 'ct-rematch-ask': ctRematchAsk(m); break;
@@ -1218,6 +1222,8 @@
     var W = st.watch; if (!W || W.replay) return;
     var inp = $('bl-in'), t = e ? '' : (inp ? inp.value.trim() : '');
     if (!t && !e) return;
+    var contentErr = CONTENT.error(t, '弹幕') || CONTENT.error(e, '弹幕');
+    if (contentErr) { A.toast(contentErr); return; }
     if (W.dmAt && Date.now() - W.dmAt < 1500) { A.toast('发得太快了，歇一下'); return; }
     W.dmAt = Date.now();
     send({ type: 'danmaku', user: W.user, text: t, e: e || '' });

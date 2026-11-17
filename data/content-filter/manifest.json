@@ -1,0 +1,14 @@
+{
+  "source": "https://github.com/konsheng/Sensitive-lexicon",
+  "sourceCommit": "68a595fb24d31bd9f882c081b4252443a69ac57b",
+  "license": "MIT",
+  "categories": {
+    "politics": 848,
+    "adult": 291,
+    "ads": 79,
+    "abuse": 33,
+    "gamblingFraud": 31
+  },
+  "uniqueWords": 1270,
+  "sha256": "c708e372228ab1dacb5d190feea0989046eac6342afa1b9ae848fb4220b14929"
+}

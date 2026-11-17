@@ -87,6 +87,8 @@
 
   /* ---------- 和服务器通信 ---------- */
   function api(method, url, body, opts) {
+    var contentErr = window.CONTENT && CONTENT.requestError(url, body);
+    if (contentErr) return Promise.resolve({ _code: 400, error: contentErr });
     var h = { 'Content-Type': 'application/json' };
     if (st.token) h.Authorization = 'Bearer ' + st.token;
     // 2026-10-26：请求超过 25 秒没有回应就放弃（按网络不通处理，调用方会提示重试），免得对战一直卡在「等服务器」

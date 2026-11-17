@@ -25,6 +25,7 @@ var path = require('path');
 var fs = require('fs');
 var crypto = require('crypto');
 var A = require('./accounts');
+var CONTENT = require('../js/engine/content');
 
 var FILE = path.join(A.DATA_DIR, 'homelog.json');
 var KEEP_LOG = 200, KEEP_MSG = 300, MAX_LEN = 200, MERGE_MS = 30 * 60 * 1000, MSG_GAP = 10 * 1000, EV_GAP = 300;
@@ -106,6 +107,8 @@ A.use(function (req, res, url) {
     var d = load(), now = Date.now();
 
     if (url === '/api/home-ev') {
+      var contentErr = CONTENT.error(body.mon, '精灵名字');
+      if (contentErr) return A.reply(res, 400, { error: contentErr });
       if (owner.name === me.name) return A.reply(res, 200, { ok: true });   // 自己的茶室不记
       if (lastEv[me.name] && now - lastEv[me.name] < EV_GAP) return A.reply(res, 200, { ok: true });
       lastEv[me.name] = now;
@@ -132,6 +135,8 @@ A.use(function (req, res, url) {
       return A.reply(res, 200, { ok: true });
     }
     // 留言
+    var contentErr = CONTENT.error(body.text, '内容');
+    if (contentErr) return A.reply(res, 400, { error: contentErr });
     var text = clean(body.text, MAX_LEN);
     if (!text) return A.reply(res, 400, { error: '留言不能是空的' });
     if (lastMsg[me.name] && now - lastMsg[me.name] < MSG_GAP) return A.reply(res, 429, { error: '留言太快了，' + Math.ceil((MSG_GAP - (now - lastMsg[me.name])) / 1000) + ' 秒后再试' });

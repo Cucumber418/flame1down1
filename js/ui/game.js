@@ -635,6 +635,8 @@
     e.preventDefault();
     var v = Array.from($('rn-name').value.trim()).slice(0, NAME_MAX).join('');
     if (!v) { $('rn-msg').textContent = '名字不能为空'; return; }
+    var contentErr = CONTENT.error(v, '做题家名字');
+    if (contentErr) { $('rn-msg').textContent = contentErr; return; }
     if (v === acc.name) { $('rn-msg').textContent = '和现在的名字一样'; return; }
     if (!(acc.items.rename > 0)) { renaming = false; renderRename(); return; }
     var old = acc.name;
@@ -690,6 +692,8 @@
   }
   $('onboard').addEventListener('click', function (e) { if (ex.mode === 'intro' && $('vn')) vnClick(e); });
   function createAccount(name) {
+    var contentErr = CONTENT.error(name, '做题家名字');
+    if (contentErr) { var msg = $('ob-msg'); if (msg) msg.textContent = contentErr; return; }
     acc = { v: 1, name: name, gender: ui.ob.gender === 'f' ? 'f' : 'm', created: Date.now(), starter: null, rival: null, next: 1, mons: [], teams: [[], []], active: 0, introDone: false, story: {}, exp: 0, energy: 0, items: {}, expV: expV(), matsV: 1, milV: 3, split8: 1, titles: [] };
     save(); renderTop(); HSVIEW.to(0, 0);
   }
@@ -1192,6 +1196,8 @@
     d.querySelector('form').addEventListener('submit', function (e) {
       e.preventDefault();
       var v = inp.value.replace(/[<>]/g, '').trim().slice(0, 10);
+      var contentErr = CONTENT.error(v, '配队名字');
+      if (contentErr) { toast(contentErr); return; }
       if (!acc.tNames) acc.tNames = [];
       acc.tNames[i] = v || null; if (!acc.tNames.some(function (x) { return x; })) delete acc.tNames;
       save(); d.remove(); renderBag(); renderRes && renderRes(); toast(v ? '配队改名为「' + v + '」' : '已恢复默认名字');
@@ -7761,6 +7767,8 @@
     var ip = $('home-name'); if (!ip) return;
     var v = Array.from(ip.value.trim()).slice(0, 10).join('');
     if (!v) { toast('名字不能为空。'); return; }
+    var contentErr = CONTENT.error(v, '基地名字');
+    if (contentErr) { toast(contentErr); return; }
     home().name = v; save(); ex.homeEdit = false; renderHome(); toast('基地改名为「' + v + '」。');
   }
   function toggleHomeMon(u) {

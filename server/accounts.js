@@ -20,6 +20,7 @@
 var fs = require('fs');
 var path = require('path');
 var crypto = require('crypto');
+var CONTENT = require('../js/engine/content');
 
 var DATA_DIR = process.env.DATA_DIR || path.resolve(__dirname, '..', '..', 'flame1down-data');
 var USER_DIR = path.join(DATA_DIR, 'users');
@@ -195,6 +196,8 @@ function handle(req, res) {
     if (url === '/api/register' && req.method === 'POST') {
       var name = String(body.user || '').trim(), pass = String(body.pass || '');
       if (!NAME_RE.test(name)) return reply(res, 400, { error: '账号名要 2–16 个字，只能用汉字、字母、数字和下划线' });
+      var contentErr = CONTENT.error(name, '账号名') || CONTENT.saveError(body.data);
+      if (contentErr) return reply(res, 400, { error: contentErr });
       if (pass.length < 6 || pass.length > 64) return reply(res, 400, { error: '密码要 6–64 位' });
       if (body.data != null && !validData(body.data)) return reply(res, 400, { error: '存档格式不对' });
       if (tooMany(ip)) return reply(res, 429, { error: '尝试次数太多，请 15 分钟后再试' });
@@ -226,6 +229,8 @@ function handle(req, res) {
 
     if (url === '/api/save' && req.method === 'PUT') {
       if (!validData(body.data)) return reply(res, 400, { error: '存档格式不对' });
+      var contentErr = CONTENT.saveError(body.data, me.save && me.save.data);
+      if (contentErr) return reply(res, 400, { error: contentErr });
       var cur = me.save ? me.save.rev : 0;
       // 管理员恢复过的存档（save.guard）：保护期内拒绝进度明显倒退的上传（不管是不是强行覆盖）
       var G = me.save && me.save.guard;

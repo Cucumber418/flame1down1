@@ -461,6 +461,8 @@ var GROW = (function () {
     var v = args.name.trim();
     if (Array.from(v).length > MON_NAME_MAX) return no('名字最多 ' + MON_NAME_MAX + ' 个字。');
     if (/[<>\x00-\x1f\x7f-\x9f\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]/.test(v)) return no('名字不能包含控制字符或尖括号。');
+    var contentErr = CONTENT.error(v, '精灵名字');
+    if (contentErr) return no(contentErr);
     if (v) m.nickname = v; else delete m.nickname;
     return { ok: true, name: v, msg: v ? '已改名为「' + v + '」。' : '已恢复默认名字。' };
   });
