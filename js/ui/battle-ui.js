@@ -713,6 +713,7 @@
     }
   }
   function startBattle() {
+    quitArmed = 0;
     setFieldBg(null);
     if (training()) return startTraining();
     remote = null;
@@ -738,6 +739,7 @@
   // 剧情对战（由星际探索调用）：opt = { p, a, foe, onEnd(result) }
   function setFieldBg(src, corrupt) { var f = $('field'); f.classList.toggle('scene', !!src); f.classList.toggle('miasma-bg', !!corrupt); f.style.backgroundImage = src ? 'linear-gradient(rgba(251,250,243,.32), rgba(251,250,243,.18)), url(' + src + ')' : ''; }
   function startStory(opt) {
+    quitArmed = 0;
     setFieldBg(opt.bg || null, opt.corrupt);
     // 战斗里一律放战斗曲：默认「寻常」，剧情可以指定专属曲（如第八段的变异玛西露姆用 dis-communication）。
     // FaceTheEnemy（遇敌曲）只在剧情对话里遇敌前后用来渲染气氛（剧本行 bgm: 'faceEnemyScene'），进入战斗后不再放（2026-10-17）
@@ -873,6 +875,7 @@
     return left <= 30 ? '（剩余 ' + left + ' 秒，超时将自动出招）' : '';
   }
   function startPvp(opt) {
+    quitArmed = 0;
     setFieldBg(null); bgm('pvp');
     PV = opt.side; pvp = opt; pvp.waiting = false; pvp.q = Promise.resolve(); pvp.deadline = Date.now() + opt.seconds * 1000;
     app.S = opt.S; storyEnd = null; itemUsed = null;
@@ -1101,6 +1104,20 @@
     });
   }
   var tab = 'moves';
+  function quitLabel() {
+    var S = app.S;
+    return S && S.training ? '结束训练' : document.body.classList.contains('battle-desktop') || S && S.wild ? '逃跑' : '认输';
+  }
+  function refreshControls() {
+    var S = app.S; if (!S) return;
+    var desktop = document.body.classList.contains('battle-desktop');
+    $('tab-items').hidden = !S.items && !desktop;
+    $('tab-items').disabled = !S.items;
+    $('tab-team').hidden = !!S.training && !desktop;
+    $('tab-team').disabled = !!S.training;
+    if (!quitArmed || Date.now() - quitArmed >= 3000) $('btn-quit').textContent = quitLabel();
+  }
+  document.addEventListener('battlelayoutchange', refreshControls);
   function showTab(t) {
     tab = t; $('tab-moves').classList.toggle('on', t === 'moves'); $('tab-team').classList.toggle('on', t === 'team'); $('tab-items').classList.toggle('on', t === 'items');
     $('mgrid').hidden = t !== 'moves'; $('tgrid').hidden = t !== 'team'; $('igrid').hidden = t !== 'items';
@@ -1132,7 +1149,7 @@
         '<span class="hpt">' + (t.fainted ? '已倒下' : k === S.sides[PV].active ? '出战中 · ' + t.hp + '/' + t.maxhp : t.hp + '/' + t.maxhp) + '</span></span></button>';
     }).join('');
     var its = S.items;
-    $('tab-items').hidden = !its;
+    refreshControls();
     if (!its && tab === 'items') showTab('moves');
     if (its) $('igrid').innerHTML = (S.endless ? Object.keys(its).filter(function (k) { return ITEMS[k]; }) : ITEM_ORDER).map(function (k) {   // 无尽作战：只列这次作战的能力和消耗品
       var it = ITEMS[k], n = its[k] || 0, cap = !!it.cap, dis = lock || needMe || n <= 0 || (cap && (!S.wild || S.wild.noCatch)) || (it.heal && me.hp >= me.maxhp) || (it.cure && !(me.st[it.cure] > 0)) || (it.pp && ppFull(me));
@@ -1151,9 +1168,8 @@
     else hint.textContent = pvpClock();
     hint.hidden = !hint.textContent;
     $('btn-quit').disabled = !!S.over;
-    $('btn-quit').textContent = S.training ? '结束训练' : S.wild ? '逃跑' : '认输';
+    if (!quitArmed || Date.now() - quitArmed >= 3000) $('btn-quit').textContent = quitLabel();
     if (needMe && !lock) showTab('team');
-    $('tab-team').hidden = !!S.training;
   }
 
   async function doTurn(pAct) {
@@ -1323,18 +1339,18 @@
   document.addEventListener('click', function () { var p = $('emote-pop'); if (p) p.hidden = true; });
   function flashHint(t) { var h = $('cmd-hint'); if (h) { h.textContent = t; h.className = 'hint alert'; h.hidden = false; setTimeout(refreshCmd, 1500); } }
   $('btn-invite').addEventListener('click', function () { if (pvp && CAST.on && caster && !this.disabled) { this.disabled = true; caster('invite', {}); } });
-  $('btn-speed').addEventListener('click', function () { app.fast = !app.fast; this.textContent = '动画：' + (app.fast ? '快速' : '正常'); });
+  $('btn-speed').addEventListener('click', function () { app.fast = !app.fast; this.textContent = '动画：' + (app.fast ? '快速' : '正常'); this.setAttribute('aria-pressed', String(app.fast)); });
   $('btn-quit').addEventListener('click', function () {
     var b = this;
     if (busy || !app.S || app.S.over) return;
     if (app.S.training) { app.S.over = 'train'; showEnd(); return; }
     if (remote && app.S.wild) { addLog('你带着精灵们逃走了。', 'dmg'); rApply({ op: 'quit' }); return; }
     if (app.S.wild) { app.S.over = 'flee'; addLog('你带着精灵们逃走了。', 'dmg'); showEnd(); return; }
-    if (pvp && Date.now() - quitArmed < 3000) { b.textContent = '认输'; quitArmed = 0; pvp.onQuit(); return; }
-    if (remote && Date.now() - quitArmed < 3000) { quitArmed = 0; b.textContent = '认输'; addLog('你认输了。', 'bad'); rApply({ op: 'quit' }); return; }
-    if (Date.now() - quitArmed < 3000) { app.S.over = 'lose'; app.S.quit = true; addLog('你认输了。', 'bad'); b.textContent = '认输'; showEnd(); return; }
+    if (pvp && Date.now() - quitArmed < 3000) { b.textContent = quitLabel(); quitArmed = 0; pvp.onQuit(); return; }
+    if (remote && Date.now() - quitArmed < 3000) { quitArmed = 0; b.textContent = quitLabel(); addLog('你认输了。', 'bad'); rApply({ op: 'quit' }); return; }
+    if (Date.now() - quitArmed < 3000) { app.S.over = 'lose'; app.S.quit = true; addLog('你认输了。', 'bad'); b.textContent = quitLabel(); showEnd(); return; }
     quitArmed = Date.now(); b.textContent = '再点一次确认';
-    setTimeout(function () { b.textContent = '认输'; }, 3000);
+    setTimeout(function () { b.textContent = quitLabel(); }, 3000);
   });
   $('btn-again').addEventListener('click', function () { if (rankOn()) { $('btn-back').click(); return; } $('log').innerHTML = ''; startBattle(); });
   $('btn-back').addEventListener('click', function () {
@@ -1367,6 +1383,7 @@
         if (d.mode) app.mode = d.mode;
         app.loadout = d.loadout; app.bag = d.bag; app.sel = d.sel || app.bag[0] || 'dragon'; app.fast = !!d.fast;
         $('btn-speed').textContent = '动画：' + (app.fast ? '快速' : '正常');
+        $('btn-speed').setAttribute('aria-pressed', String(app.fast));
         if (d.screen === 'battle' && d.S) {
           app.S = d.S; app.screen = 'battle'; app.lastP = d.lastP;
           $('builder').hidden = true; $('battle').hidden = false;

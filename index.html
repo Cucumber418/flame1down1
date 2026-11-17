@@ -111,7 +111,7 @@
   <section id="battle" hidden>
     <div class="plates">
       <div class="plate" id="plate0"><span class="tape l"></span></div>
-      <div class="vs">第<b id="turnNo">1</b>回合<span class="tmax" id="turnMax">上限 60</span></div>
+      <div class="vs"><span class="battle-round">第<b id="turnNo">1</b>回合</span><span class="tmax" id="turnMax">上限 60</span></div>
       <div class="plate r" id="plate1"><span class="tape r"></span></div>
     </div>
     <div class="field" id="field">
@@ -147,7 +147,7 @@
           <button type="button" class="tab" id="battle-log-toggle" aria-controls="battle-logbox" aria-expanded="false">记录</button>
           <button type="button" class="tab" id="battle-stats-toggle" aria-controls="statsbox" aria-expanded="false" hidden>统计</button>
           <button type="button" class="tab" data-fullscreen aria-label="全屏显示游戏" aria-pressed="false"><b>全屏</b></button>
-          <button class="tab speed" id="btn-speed" type="button">动画：正常</button>
+          <button class="tab speed" id="btn-speed" type="button" aria-pressed="false">动画：正常</button>
           <span class="emote-wrap"><button class="tab emote" id="btn-emote" type="button" hidden>😀 表情</button><span class="emote-pop" id="emote-pop" hidden></span></span>
           <button class="tab invite" id="btn-invite" type="button" hidden>邀请全服观战</button>
           <button class="tab quit" id="btn-quit" type="button">认输</button>
@@ -160,6 +160,7 @@
       <div class="logbox" id="battle-logbox">
         <button type="button" class="tab battle-panel-close" data-battle-close="log" aria-label="关闭战斗记录">关闭</button>
         <h4>战斗记录 <span class="cast-wrap"><button type="button" class="cast-n" id="cast-n" hidden></button><span class="cast-pop" id="cast-pop" hidden></span></span></h4>
+        <div class="battle-tools" id="battle-tools"></div>
         <div class="log" id="log" aria-live="polite"></div>
       </div>
     </div>

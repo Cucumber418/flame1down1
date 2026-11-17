@@ -6,6 +6,22 @@
   var stats = document.getElementById('statsbox'), info = document.getElementById('battle-info-panel');
   var panels = { log: document.getElementById('battle-logbox'), stats: stats, info: info };
   var current = null, frame = 0, panelTrigger = null;
+  var controls = [document.getElementById('btn-speed'), document.getElementById('battle-stats-toggle'), document.querySelector('#battle .emote-wrap'), document.getElementById('btn-invite')].map(function (el) {
+    var home = document.createComment('battle control position'); el.before(home);
+    return { el: el, home: home };
+  });
+  function desktopLayout(on) {
+    var changed = body.classList.contains('battle-desktop') !== on;
+    flag('battle-desktop', on);
+    controls.forEach(function (control, i) {
+      var target = on ? (i === 0 ? battle.querySelector('.vs') : document.getElementById('battle-tools')) : control.home.parentNode;
+      if (control.el.parentNode !== target) {
+        if (on) target.appendChild(control.el); else target.insertBefore(control.el, control.home.nextSibling);
+      }
+    });
+    if (on && current === 'log') close(false);
+    if (changed) document.dispatchEvent(new CustomEvent('battlelayoutchange'));
+  }
 
   function flag(name, on) { if (body.classList.contains(name) !== on) body.classList.toggle(name, on); }
   function property(name, value) { if (body.style.getPropertyValue(name) !== value) body.style.setProperty(name, value); }
@@ -13,7 +29,7 @@
     frame = 0;
     var active = !battle.hidden && !arena.hidden;
     flag('battle-active', active);
-    if (!active) { hideEffect(); close(false); return; }
+    if (!active) { desktopLayout(false); hideEffect(); close(false); return; }
     var z = parseFloat(body.style.zoom) || 1;
     var height = parseFloat(body.style.getPropertyValue('--game-view-height')) || (window.visualViewport ? visualViewport.height : root.clientHeight) / z;
     var width = parseFloat(body.style.width) || root.clientWidth / z;
@@ -24,6 +40,7 @@
     flag('battle-wide', width >= 640 && width / height >= 1.25);
     flag('battle-short', height < 560);
     flag('battle-tiny', height < 420);
+    desktopLayout(width >= 760 && !matchMedia('(pointer: coarse)').matches);
     var field = document.getElementById('field');
     property('--battle-toast-top', (field.offsetTop + 8) + 'px');
     property('--battle-toast-left', (field.offsetLeft + field.offsetWidth / 2) + 'px');
