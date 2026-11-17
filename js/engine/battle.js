@@ -214,6 +214,7 @@ function abilityLive(m, foe) {
   var ab = ability(m), t = m.fx.fieldT || 0, on, f = foe && !foe.fainted ? foe : null;
   var lowSelf = m.hp <= m.maxhp / 3;
   switch (ab) {
+    case '无常': return (abilObj(m).d || '') + ' ' + (abilObj(m).extra || '');
     case '旅行': return '每次被替换上场时，提升1级速度（首发上场不触发）';
     case '脚伤': return '脚底被瘴气浸透，陷入永久的流血状态，无法被解除';
     case '重构': return '切换形态时恢复 100 体力' + (m.perm && m.perm.odoForm ? '（当前：' + (m.perm.odoForm === 'atk' ? '歼灭形态' : '护阵形态') + '）' : '（当前：稳态）');
@@ -255,8 +256,11 @@ function abilityLive(m, foe) {
   }
   return abilObj(m) ? abilObj(m).d : '';
 }
-function chipsOf(m, foe) {
+function chipsOf(m, foe, S) {
   var c = [];
+  if (fateCount(m, 'luck')) c.push({ t: '幸运 ×' + fateCount(m, 'luck'), k: 'fx', h: '幸运 · ' + fateCount(m, 'luck') + ' 层', d: '命运标记，持续至战斗结束，换下场时保留。直接获得每层恢复1/8最大体力；每3层转化为1层厄运并损失1/4最大体力' });
+  if (fateCount(m, 'doom')) c.push({ t: '厄运 ×' + fateCount(m, 'doom'), k: 'st', h: '厄运 · ' + fateCount(m, 'doom') + ' 层', d: '命运标记，持续至战斗结束，换下场时保留。直接获得每层损失1/8最大体力；每3层转化为1层幸运并恢复1/4最大体力' });
+  if (S && S.fateTurns > 0) c.push({ t: '命运 ' + S.fateTurns, k: 'fx', h: '无常命运 · 剩 ' + S.fateTurns + ' 回合', d: '每回合结束时，双方在场精灵获得同种命运标记：幸运或厄运，各50%概率。切换精灵不会结束领域' });
   var abo = abilObj(m);
   if (abo && abo.n !== '无' && !(m.id === 'rosette' && abo.n === '星云')) c.push({ t: '特性 · ' + abo.n, k: 'ab' + (/^生效中/.test(abilityLive(m, foe)) ? ' on' : ''), d: abilityLive(m, foe), h: abo.n + ' · 当前效果' });
   STG.forEach(function (k) { var v = m.stages[k]; if (v) c.push({ t: STG_NAME[k] + (v > 0 ? '+' : '') + v, k: v > 0 ? 'up' : 'down', h: STG_NAME[k] + (v > 0 ? ' 提升' : ' 下降'), d: stageText(k, v) }); });
@@ -360,7 +364,7 @@ function snap(S) {
     sides: S.sides.map(function (sd) {
       var m = sd.team[sd.active];
       var ab = abilObj(m) || { n: '无', d: '图鉴里还没写特性' };
-      return { id: m.id, name: m.nick || sp(m).name, img: liveImg(m), types: typesOf(m), lv: m.lv || LV, lvq: !!m.lvq, dummy: m.id === 'dummy' && !m.breakable, ability: { n: ab.n, d: ab.d, extra: ab.extra || '' }, stats: statSheet(m, S.sides[1 - S.sides.indexOf(sd)].team[S.sides[1 - S.sides.indexOf(sd)].active]), hp: m.hp, maxhp: m.maxhp, bars: m.boss && m.boss.bars ? [m.boss.bar || 0, m.boss.bars.length] : null, fainted: m.fainted, chips: chipsOf(m, S.sides[1 - S.sides.indexOf(sd)].team[S.sides[1 - S.sides.indexOf(sd)].active]),
+      return { id: m.id, name: m.nick || sp(m).name, img: liveImg(m), types: typesOf(m), lv: m.lv || LV, lvq: !!m.lvq, dummy: m.id === 'dummy' && !m.breakable, ability: { n: ab.n, d: ab.d, extra: ab.extra || '' }, stats: statSheet(m, S.sides[1 - S.sides.indexOf(sd)].team[S.sides[1 - S.sides.indexOf(sd)].active]), hp: m.hp, maxhp: m.maxhp, bars: m.boss && m.boss.bars ? [m.boss.bar || 0, m.boss.bars.length] : null, fainted: m.fainted, chips: chipsOf(m, S.sides[1 - S.sides.indexOf(sd)].team[S.sides[1 - S.sides.indexOf(sd)].active], S),
         team: sd.team.map(function (x, k) { return { id: x.id, nick: x.nick || null, fainted: x.fainted, active: k === sd.active, hp: x.hp, maxhp: x.maxhp, seen: !!x.seen }; }) };
     })
   };
@@ -398,12 +402,12 @@ function CS(S) { return S.cs || (S.cs = { crit: 0, st: {}, up6: 0, down6: 0, hea
 // 伤害数字的来源（2026-10-24）：异常状态的持续伤害显示状态名，其他非技能直击的伤害显示「固伤」
 var DOT_KINDS = ['寄生', '溺水', '流血', '中毒', '烧伤', '冻伤', '凋零之蚀'];
 function dotKind(why) { for (var i = 0; i < DOT_KINDS.length; i++) if (why && why.indexOf(DOT_KINDS[i]) >= 0 && why.indexOf('额外吸取') < 0) return DOT_KINDS[i]; return 'fixed'; }
-function loseHp(S, evs, j, amt, why) {
+function loseHp(S, evs, j, amt, why, exact) {
   var t = act(S, j); if (t.fainted || amt <= 0 || (t.boss && t.boss.broken)) return 0;
   if (t.id === 'dummy' && !t.breakable) { amt = Math.floor(amt); recordDummy(S, amt, why ? (S.curMove && why.indexOf('混沌水域') < 0 && why.indexOf('额外吸取') < 0 ? S.curMove : dotLabel(why)) : null); E(S, evs, 'hit', { side: j, amount: amt }); if (why) log(S, evs, why + '（' + amt + '）'); return amt; }
   if (t.boss && t.boss.stRes && why && dotKind(why) !== 'fixed') { amt = Math.max(1, amt * (1 - t.boss.stRes)); RV(t, 'stRes'); }
   if (t.boss && t.boss.eSt && why && dotKind(why) !== 'fixed') { amt = Math.max(1, amt * (1 - t.boss.eSt)); RV(t, 'eSt'); }   // 无尽作战「异常抗性」
-  if (t.boss && t.boss.fixRes && dotKind(why) === 'fixed') { amt = Math.max(1, amt * (1 - t.boss.fixRes)); RV(t, 'fixRes'); }   // 玫瑰星云「稀薄粒子」：异常状态的持续伤害只有两成（2026-11-01）
+  if (!exact && t.boss && t.boss.fixRes && dotKind(why) === 'fixed') { amt = Math.max(1, amt * (1 - t.boss.fixRes)); RV(t, 'fixRes'); }   // 玫瑰星云「稀薄粒子」：异常状态的持续伤害只有两成（2026-11-01）
   amt = Math.min(t.hp, Math.floor(amt)); t.hp -= amt;
   E(S, evs, 'hit', { side: j, amount: amt, kind: dotKind(why) });
   if (why) log(S, evs, why);
@@ -894,6 +898,70 @@ function parryWin(S, evs, p, k, banName) {
   if (ability(me) === '招架' && !foe.fainted) { foe.fx.banMv = banName; foe.tm.parryBan = 2; log(S, evs, nm(me) + '的「招架」：' + nm(foe) + '下回合不能使用「' + banName + '」', 'fxl'); }
   E(S, evs, 'stage', { side: p }); E(S, evs, 'stage', { side: q });
 }
+// 命运标记是双方通用的战斗标记，不属于异常状态或能力等级。
+// 单独保存，切换、净化异常状态和重置能力等级都不会清掉它们。
+function fateCount(m, kind) { var n = m && m.fate && m.fate[kind]; return typeof n === 'number' && isFinite(n) ? Math.max(0, Math.floor(n)) : 0; }
+function fateState(m) { return { luck: fateCount(m, 'luck'), doom: fateCount(m, 'doom') }; }
+function fateConvert(S, evs, i) {
+  var m = act(S, i);
+  while (!m.fainted && !(m.boss && m.boss.broken) && (fateCount(m, 'luck') >= 3 || fateCount(m, 'doom') >= 3)) {
+    var lucky = fateCount(m, 'luck') >= 3, from = lucky ? 'luck' : 'doom', to = lucky ? 'doom' : 'luck';
+    m.fate[from] -= 3; m.fate[to]++;
+    E(S, evs, 'stage', { side: i });
+    log(S, evs, nm(m) + (lucky ? '的3层幸运转化为1层厄运，损失1/4最大体力' : '的3层厄运转化为1层幸运，恢复1/4最大体力'), lucky ? 'bad' : 'good');
+    // 转换产出的层数不再触发获得效果；仍可与已有层数合并，继续进行三层转换。
+    if (lucky) loseHp(S, evs, i, Math.max(1, Math.floor(m.maxhp / 4)), '命运转换使' + nm(m) + '损失了体力', true);
+    else heal(S, evs, i, Math.max(1, Math.floor(m.maxhp / 4)));
+  }
+}
+function gainFate(S, evs, i, kind, n) {
+  if (kind !== 'luck' && kind !== 'doom') return;
+  var m = act(S, i); if (m.fainted || (m.boss && m.boss.broken)) return;
+  m.fate = fateState(m);
+  for (var k = 0; k < n && !m.fainted && !(m.boss && m.boss.broken); k++) {
+    m.fate[kind]++;
+    E(S, evs, 'stage', { side: i });
+    log(S, evs, nm(m) + '获得了1层' + (kind === 'luck' ? '幸运' : '厄运') + '（幸运 ' + m.fate.luck + ' 层，厄运 ' + m.fate.doom + ' 层）', kind === 'luck' ? 'good' : 'bad');
+    if (kind === 'luck') heal(S, evs, i, Math.max(1, Math.floor(m.maxhp / 8)));
+    else loseHp(S, evs, i, Math.max(1, Math.floor(m.maxhp / 8)), '厄运使' + nm(m) + '损失了1/8最大体力', true);
+    if (!m.fainted && !(m.boss && m.boss.broken)) fateConvert(S, evs, i);
+  }
+}
+function applyFateMove(S, evs, i, mv) {
+  var me = act(S, i), j = 1 - i, foe = act(S, j), c = mv.custom;
+  if (me.fainted) return;
+  if (c === 'fateLuck') gainFate(S, evs, i, 'luck', RNG() < 0.25 ? 2 : 1);
+  if (c === 'fateDoom' && !foe.fainted) gainFate(S, evs, j, 'doom', RNG() < 0.25 ? 2 : 1);
+  if (c === 'fateBurn') {
+    var luck = fateCount(me, 'luck') + fateCount(foe, 'luck'), doom = fateCount(me, 'doom') + fateCount(foe, 'doom');
+    me.fate = { luck: 0, doom: 0 }; foe.fate = { luck: 0, doom: 0 };
+    E(S, evs, 'stage', { side: i });
+    log(S, evs, '烬燃命运清除了双方的全部命运标记（幸运 ' + luck + ' 层，厄运 ' + doom + ' 层）', 'fxl');
+    if (luck) changeStages(S, evs, i, { spa: luck });
+    if (doom && !foe.fainted) changeStages(S, evs, j, { spd: -doom }, i);
+  }
+  if (c === 'fateSwap' && !foe.fainted) {
+    var own = fateState(me), other = fateState(foe);
+    me.fate = other; foe.fate = own;
+    E(S, evs, 'stage', { side: i });
+    log(S, evs, '逆转命运交换了双方的幸运与厄运层数', 'fxl');
+  }
+  if (c === 'fateInvert') {
+    me.fate = { luck: fateCount(me, 'doom'), doom: fateCount(me, 'luck') };
+    E(S, evs, 'stage', { side: i });
+    log(S, evs, nm(me) + '反转了自身的幸运与厄运层数', 'fxl');
+  }
+}
+function fateTick(S, evs) {
+  if (!(S.fateTurns > 0) || S.over) return;
+  var kind = RNG() < 0.5 ? 'luck' : 'doom';
+  S.fateTurns--;
+  log(S, evs, '无常命运降下了' + (kind === 'luck' ? '幸运' : '厄运') + '，双方获得相同的命运标记', 'fxl');
+  // 同一回合只抽签一次；一方倒下也照常为另一方结算，避免先后顺序偏袒某一方。
+  gainFate(S, evs, 0, kind, 1); gainFate(S, evs, 1, kind, 1);
+  if (!S.fateTurns) log(S, evs, '命运领域消散了', 'fxl');
+}
+
 function useMove(S, evs, i, mv, slotIdx, extra) {
   if (!extra) RV(act(S, i), 'mute');
   var me = act(S, i), j = 1 - i, foe = act(S, j);
@@ -1060,6 +1128,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   else if (mv.selfTiredHit && !me.fainted) { me.st['疲惫'] = mv.selfTiredHit + 1; E(S, evs, 'stage', { side: i }); log(S, evs, nm(me) + '耗尽了力气，陷入「疲惫」状态（' + mv.selfTiredHit + '回合）', 'bad'); }   // 全弹发射
   if (mv.recoil && total > 0 && !me.fainted) loseHp(S, evs, i, Math.max(1, Math.floor(total * mv.recoil)), nm(me) + '受到了反弹伤害');   // 烈焰冲锋
   if (total > 0 && me.tm.induct > 0) { log(S, evs, '电磁感应生效', 'fxl'); changeStages(S, evs, i, { spa: 1 }); }
+  applyFateMove(S, evs, i, mv);
   me.fx.hqRaw = raw;   // 这一招算出来的伤害（不按对方剩余体力截断），隐藏技能「淬命之焰」的领悟条件用
   if (foe.fainted) {
     if (i === 0) hqKO(S, evs, me, foe, mv);
@@ -1209,6 +1278,7 @@ function doStatus(S, evs, i, mv) {
   function foeTimer(key, n, text) { foe.tm[key] = n; E(S, evs, 'stage', { side: j }); log(S, evs, text, 'bad'); }
   function flag(text) { E(S, evs, 'stage', { side: i }); log(S, evs, text, 'fxl'); }
   switch (c) {
+    case 'fateField': S.fateTurns = 4; E(S, evs, 'stage', { side: i }); log(S, evs, '命运领域展开：接下来4回合，双方将在回合结束时获得同种命运标记', 'fxl'); break;
     case 'sure3': timer('sure3', 3, nm(me) + '竖起耳朵仔细聆听：3回合内攻击必定命中'); break;
     case 'ear': timer('ear', 3, nm(me) + '的灵耳捕捉到了一切声音：3回合内攻击必定命中，对方若试图闪避会被识破'); break;
     case 'lightStaff':
@@ -1739,6 +1809,7 @@ function endOfTurn(S, evs) {
   S.sides.forEach(function (sd) { sd.team.forEach(function (m) { if (m.fx) { m.fx.starNow = 0; m.fx.canyueNow = 0; } }); });
   bombTick(S, evs);
   if (S.over) return;
+  fateTick(S, evs);
   miasmaTick(S, evs);
   miasmaField(S, evs);
   humusField(S, evs);

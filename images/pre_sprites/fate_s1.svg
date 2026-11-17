@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" role="img" aria-label="fate1 临时立绘">
+<ellipse cx="160" cy="286" rx="95" ry="12" fill="#23222b" opacity=".1"/>
+<path d="M160 35 264 95v125l-104 60-104-60V95Z" fill="#f7f5ef" stroke="#4f769e" stroke-width="5" stroke-dasharray="10 7"/>
+<circle cx="160" cy="144" r="64" fill="#4f769e" opacity=".12"/>
+<text x="160" y="174" text-anchor="middle" font-family="sans-serif" font-size="85" fill="#4f769e">?</text>
+<text x="160" y="235" text-anchor="middle" font-family="sans-serif" font-size="26" fill="#4f769e">fate1</text>
+</svg>

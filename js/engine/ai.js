@@ -32,6 +32,10 @@ function scoreMove(S, me, foe, mv) {
     s = d / foe.maxhp * 100;
     if (mv.drain && hpR < 0.6) s += 12;
     if (mv.custom === 'transferDown' && STG.some(function (k) { return me.stages[k] < 0; })) s += 15;
+    if (mv.custom === 'fateLuck') s += (fateCount(me, 'luck') === 2 ? -10 : hpR < 0.85 ? 15 : 0);
+    if (mv.custom === 'fateDoom') s += fateCount(foe, 'doom') === 2 ? -8 : 15;
+    if (mv.custom === 'fateBurn') s += 7 * Math.min(6 - me.stages.spa, fateCount(me, 'luck') + fateCount(foe, 'luck')) + 5 * Math.min(6 + foe.stages.spd, fateCount(me, 'doom') + fateCount(foe, 'doom'));
+    if (mv.custom === 'fateInvert' && fateCount(me, 'luck') === 2 && fateCount(me, 'doom') < 2) s += 10; // 避免下次获得幸运时立即转化反噬
     if (mv.custom === 'tide' && !me.tm.tide) s += 30;
     if (mv.custom === 'vuln' && !foe.tm.vuln) s += 10;
     if (mv.custom === 'weak3' && !foe.tm.weak) s += 10;
@@ -53,6 +57,7 @@ function scoreMove(S, me, foe, mv) {
   var faster = speedOf(me) > speedOf(foe);
   var c = mv.custom;
   switch (c) {
+    case 'fateField': s += S.fateTurns > 0 ? -10 : 16; break;
     case 'sure3': s += me.tm.sure3 || me.tm.ear ? -20 : 10; break;
     case 'ear': s += me.tm.ear ? -20 : 16; break;
     case 'lightStaff': s += foe.tm.noHeal ? 4 : 14; break;

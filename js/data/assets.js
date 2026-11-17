@@ -5,6 +5,7 @@
 
 // 精灵立绘（最终形态）  →  images/sprites/
 var SPRITES = {
+  "fate": "images/sprites/fate.svg",
   "dragon": "images/sprites/dragon.png",
   "leaf": "images/sprites/leaf.webp",
   "gorgon": "images/sprites/gorgon_v2.webp",
@@ -63,6 +64,8 @@ var LINEART = {
 
 // 进化前形态立绘（_s1 一阶，_s2 二阶）  →  images/pre_sprites/
 var PRE_SPRITES = {
+  "fate_s1": "images/pre_sprites/fate_s1.svg",
+  "fate_s2": "images/pre_sprites/fate_s2.svg",
   "dragon_s1": "images/pre_sprites/dragon_s1.png",
   "dragon_s2": "images/pre_sprites/dragon_s2.png",
   "leaf_s1": "images/pre_sprites/leaf_s1.webp",
