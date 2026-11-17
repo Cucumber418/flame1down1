@@ -188,10 +188,11 @@ body.battle-active #battle .battle-round { display: flex; flex-direction: column
 
 /* 电脑版：完整横向战场，下方依次为记录、技能与四个操作按钮。 */
 body.battle-active.battle-desktop #battle {
+  max-width: var(--page-width); margin-inline: auto;
   grid-template-areas: "plates" "field" "console";
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: 112px minmax(0, 1fr) clamp(170px, 30vh, 270px);
-  padding: 8px; gap: 8px;
+  padding: 8px var(--page-gutter); gap: 8px;
 }
 body.battle-active.battle-desktop #battle .plates {
   grid-template-columns: minmax(0, 1fr) minmax(260px, 25%) minmax(0, 1fr);
@@ -255,7 +256,8 @@ body.battle-active.battle-desktop #battle .battle-tools:has(> button:not([hidden
 body.battle-active.battle-desktop #battle .battle-tools .tab { min-height: 25px; padding: 3px 7px; font-size: 11px; }
 body.battle-active.battle-desktop #battle .battle-tools .emote-wrap:has(#btn-emote[hidden]) { display: none; }
 body.battle-active.battle-desktop #battle .battle-tools .emote-pop { top: auto; bottom: 100%; }
-body.battle-active.battle-desktop.battle-short #battle { grid-template-areas: "plates" "field" "console"; grid-template-columns: minmax(0, 1fr); grid-template-rows: 92px minmax(0, 1fr) clamp(160px, 30vh, 200px); gap: 5px; padding: 5px; }
+body.battle-active.battle-desktop.battle-short #battle { grid-template-areas: "plates" "field" "console"; grid-template-columns: minmax(0, 1fr); grid-template-rows: 92px minmax(0, 1fr) clamp(160px, 30vh, 200px); gap: 5px; padding: 5px var(--page-gutter); }
 body.battle-active.battle-desktop.battle-short #battle .mv .md { font-size: 11px; -webkit-line-clamp: 2; }
 body.battle-active.battle-desktop.battle-tiny #battle { grid-template-rows: 84px minmax(0, 1fr) 150px; }
 body.battle-active.battle-desktop.battle-tiny #battle .mv .md { display: none; }
+body.battle-active.battle-desktop :is(.toast, .display-status) { left: 50%; }

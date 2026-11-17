@@ -7,6 +7,8 @@ img{max-width:100%}
 
 /* Layout: 一页摊开的方格本。上方是背包/血条卡（贴着胶带），中间是方格纸战场，下方是指令区和红蓝笔写的战斗记录 */
 :root {
+  --page-width: 1120px;
+  --page-gutter: 16px;
   --desk: #e6e0d0;
   --paper: #fbfaf3;
   --paper-2: #ffffff;
@@ -35,7 +37,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--blue); outl
 
 .sheet {
   overflow-x: clip;
-  max-width: 1120px; margin: 0 auto; padding-inline: 16px; padding-block: 18px 40px;
+  max-width: var(--page-width); margin: 0 auto; padding-inline: var(--page-gutter); padding-block: 18px 40px;
   background-color: var(--paper);
   background-image:
     linear-gradient(var(--grid) 1px, transparent 1px),
