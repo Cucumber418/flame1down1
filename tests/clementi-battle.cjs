@@ -15,7 +15,7 @@ assert.deepEqual(copy(C.SPMAP.clementi.types),['火']);assert.equal(C.SPMAP.clem
 assert.equal(Object.values(C.SPMAP.clementi.base).reduce((a,b)=>a+b),535);
 for(const [lv,name]of [[1,'克莱'],[29,'克莱'],[30,'克莱门蒂']]){const f=C.ACC.form({sid:'clementi',lv});assert.equal(f.name,name);assert(fs.existsSync(path.join(root,f.img)));}
 for(const n of C.SPMAP.clementi.moves)assert(C.M[n],n);
-for(const n of ['余烬燃烧','音焚烬灭']){assert(!C.ACC.avail('clementi',49,[]).includes(n));assert(C.ACC.avail('clementi',50,[]).includes(n));}
+for(const n of ['余烬燃烧','音焚烬灭']){assert(!C.ACC.avail('clementi',50,[]).includes(n));assert(C.ACC.avail('clementi',50,[n]).includes(n));assert(C.ACC.avail('clementi',50).includes(n));}
 // Rhythms belong to the caster, last the next three starts, and never stack.
 let S=battle();hit(S,'耀目之曲');assert.equal(mon(S).tm.rhythmLight,3);assert.equal(mon(S,1).tm.rhythmLight,undefined);
 C.endOfTurn(S,[]);assert.equal(mon(S).tm.rhythmLight,3);

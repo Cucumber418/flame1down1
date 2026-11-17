@@ -881,7 +881,7 @@
    * 一般道具：捕捉装置、补药（对战中用）、改名卡、自律训练装置、挑战许可
    * 储存箱（主菜单，黄冈秘鉴和社交中间）列出所有道具 */
   var USE_ITEMS = GROW.USE_ITEMS;   // 精灵道具的数据和用法在 js/engine/grow.js（服务器和浏览器共用，2026-10-25）
-  var MON_ORDER = ['nameTag', 'formDev', 'earthShard', 'floraJade', 'kbDrop', 'ppAsh', 'ltOrb', 'whFrost', 'moonStone', 'boneDust', 'tgPearl', 'brTwig', 'odoFin', 'hrDisk', 'phLeaf', 'fencArc', 'deathTok', 'ivMoon', 'ivBone', 'ivReroll', 'ev50', 'evAny', 'evTagore', 'natAny', 'natRand', 'natTagore', 'evReset', 'fruit1', 'fruit2'], GEN_ORDER = ['trans', 'helmet', 'dive', 'auto', 'rename', 'cap1', 'cap2', 'cap3', 'pot1', 'pot2', 'pot200'];
+  var MON_ORDER = ['nameTag', 'formDev', 'earthShard', 'floraJade', 'kbDrop', 'ppAsh', 'ltOrb', 'whFrost', 'moonStone', 'boneDust', 'tgPearl', 'brTwig', 'odoFin', 'fireNote', 'hrDisk', 'phLeaf', 'fencArc', 'deathTok', 'ivMoon', 'ivBone', 'ivReroll', 'ev50', 'evAny', 'evTagore', 'natAny', 'natRand', 'natTagore', 'evReset', 'fruit1', 'fruit2'], GEN_ORDER = ['trans', 'helmet', 'dive', 'auto', 'rename', 'cap1', 'cap2', 'cap3', 'pot1', 'pot2', 'pot200'];
   // 剧情道具：主线里拿到的，不能使用也不会消耗
   var KEY_ITEMS = {
     trans: { name: '精灵翻译器', d: '汉街总部国际A座的情报显示，这个翻译器能凭一己之力考到雅思 6.5 分。这样一来，翻译精灵的语言也一定能行吧……', img: 'translator' },
@@ -971,6 +971,7 @@
     boneDust: ['泛着幽光的骨粉，摸上去凉凉的。', '每 100 个让骨刃一系领悟一个隐藏技能；到 LV70 后也用它解锁更高的等级上限。', '竞技代币商店（2 竞技代币）。'],
     tgPearl: ['泰戈尔一声虎啸凝成的珠子。', '每 100 个让泰戈尔一系领悟一个隐藏技能；到 LV70 后也用它解锁 LV75（500 个）、LV80（1,000 个）的等级上限。', '首次击败困难难度的泰戈尔得 80 个；泰戈尔每周挑战每次 15 / 30 / 50 个（简单 / 普通 / 困难）。'],
     brTwig: ['从荒芜体内的古代除草程序里提取出的一小瓶药剂。', '每 100 个让荒芜一系领悟一个隐藏技能；到 LV70 后也用它解锁 LV75（500 个）、LV80（1,000 个）的等级上限。', '首次击败普通难度的荒芜得 40 个、困难难度得 80 个；荒芜每周挑战每次 15 / 30 / 50 个（简单 / 普通 / 困难）。'],
+    fireNote: ['凝聚烈焰的音符', '每100个让克莱一系领悟一个隐藏技能，也用于突破等级上限', '首次击败普通难度的克莱门蒂获得40个；每周挑战每次15 / 30个（简单 / 普通）'],
     odoFin: ['从深海的奥多亚克身上脱落的古老鳍甲。', '每 100 个让奥多亚克一系领悟一个隐藏技能；到 LV70 后也用它解锁 LV75（500 个）、LV80（1,000 个）的等级上限。', '首次击败普通难度的奥多亚克得 40 个、困难难度得 80 个；奥多亚克每周挑战每次 15 / 30 / 50 个（简单 / 普通 / 困难）。'],
     hrDisk: ['盘面上的星点会自己转动的小星盘。', '每 100 个让幽灵鱼一系（幽灵鱼、哈蒙德、哈尔达蒙）领悟一个隐藏技能。', '击败野外随机出现的幽灵鱼，每只掉落 50–70 个。'],
     deathTok: ['先驱之塔死神留下的代币。', '1 颗让帕努托尔一系领悟一个隐藏技能；在先驱之塔的代币商店兑换「帕努托尔的精元」也要 1 颗。', '击败先驱之塔第 60 层的死神「帕努托尔」获得，一个账号最多 3 颗。'],
@@ -6222,6 +6223,7 @@
     phantom: '圣晶石召唤：当期 UP 精灵叶粒魔种的精元（每抽 5%，第 50 抽必出），在精灵保育仓孵化',
     tagore: '首次击败简单难度的BOSS「泰戈尔」（荆楚号 · 襄阳 · 古城防卫部），获得 LV10 小胖虎',
     barren: '首次击败简单难度的BOSS「荒芜」（芙罗拉星 · 盐碱地），获得 LV10 枯叶灵',
+    clementi: '首次击败简单难度的BOSS「克莱门蒂」（庞贝星 · 饮火城），获得LV10克莱',
     odo: '首次击败简单难度的BOSS「奥多亚克」（坎伯兰星 · 深海区），获得「奥多的精元」，在精灵保育仓孵化',
     leafcat: '击败旅行精灵叶子喵有机会掉落叶片，5 片在黄石 · 冶炼坊合成「叶子喵的精元」，在精灵保育仓孵化（叶子喵要完成世界任务「旅行猫」后才会出现）',
     pluto: '先驱之塔的代币商店：用先驱代币和死神代币兑换「帕努托尔的精元」，在精灵保育仓孵化',

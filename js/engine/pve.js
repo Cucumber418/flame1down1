@@ -223,6 +223,12 @@ var PVE = (function () {
             { nick: '奥多亚克 · 虹霓暴走', maxhp: 4000, moves: ['流形蛮冲', '全弹搭载', '究极爆破', '解析导弹', '坚守阵地', '强效外壳', '重构坚甲', '侵扰投弹'],   // 掌握歼灭、护阵两种形态的全部技能
               boss: { dr: 0.15, rainbow: 1, orderRepl: 1, pp: 99, healCd: 25 } }
           ] }
+      ] },
+    clementi: { name: '克莱门蒂', sid: 'clementi', planet: 'pompeii', region: 'pp_city', bg: 'pp_core',
+      d: '栖居于庞贝星饮火城的火系BOSS，以音律引动烈焰',
+      lv: [
+        { diff: '简单', lv: 40, hp: 1000, boss: { dr: 0.15, pp: 99 }, bgm: 'boss', open: function (a, now) { return done(a, 'flora1'); }, lockText: '开放庞贝星后开放', reward: { mon: { sid: 'clementi', lv: 10 } } },
+        { diff: '普通', lv: 65, hp: 3000, boss: { dr: 0.15, tuning: 1, chord: 0.65, pp: 99 }, bgm: 'boss2', open: function (a, now) { return bossWon(a, 'clementi', 0); }, lockText: '击败简单难度后开放', reward: { items: { fireNote: 40 } } }
       ] }
   };
   // 2026-10-19：每个BOSS每档难度首次击败都送马亚尔晶体，难度越高越多（简单 100 / 普通 200 / 困难 400）
@@ -243,7 +249,9 @@ var PVE = (function () {
     { boss: 'barren', d: 2, exp: 5000, item: { brTwig: 50 }, drops: [{ items: { floraJade: 20 } }, { items: { evAny: 1 } }, { energy: 2000 }, { exp: 2000 }] },
     { boss: 'odo', d: 0, exp: 2000, item: { odoFin: 15 }, cry: [10, 20], drops: [{ items: { kbDrop: 8 } }, { energy: 1000 }, { exp: 1000 }] },
     { boss: 'odo', d: 1, exp: 3500, item: { odoFin: 30 }, cry: [20, 40], drops: [{ items: { kbDrop: 12 } }, { items: { evAny: 1 } }, { energy: 1500 }, { exp: 1500 }] },
-    { boss: 'odo', d: 2, exp: 5000, item: { odoFin: 50 }, cry: [40, 80], drops: [{ items: { kbDrop: 20 } }, { items: { evAny: 1 } }, { energy: 2000 }, { exp: 2000 }] }
+    { boss: 'odo', d: 2, exp: 5000, item: { odoFin: 50 }, cry: [40, 80], drops: [{ items: { kbDrop: 20 } }, { items: { evAny: 1 } }, { energy: 2000 }, { exp: 2000 }] },
+    { boss: 'clementi', d: 0, exp: 2000, item: { fireNote: 15 }, cry: [10, 20], drops: [{ items: { ppAsh: 8 } }, { energy: 1000 }, { exp: 1000 }] },
+    { boss: 'clementi', d: 1, exp: 3500, item: { fireNote: 30 }, cry: [20, 40], drops: [{ items: { ppAsh: 12 } }, { items: { evAny: 1 } }, { energy: 1500 }, { exp: 1500 }] }
   ];
   var EWK = {
     types: [{ t: '草', item: 'floraJade' }, { t: '水', item: 'kbDrop' }, { t: '火', item: 'ppAsh' }, { t: '冰', item: 'whFrost' }, { t: '电', item: 'ltOrb' },

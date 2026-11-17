@@ -168,6 +168,7 @@
       (lim ? '<path d="M32 4l4 6h-8zM56 18l-2 7-5-5zM8 18l7 2-5 5z" fill="#fff4b0" stroke-width="1.5"/>' : '') + '</g><text x="32" y="40" text-anchor="middle" font-size="20" font-weight="700" fill="#23222b" font-family="sans-serif">' + ch + '</text></svg>';
   }
   function itemIcon(k) {
+    if (k === 'fireNote') return '<img class="it-ic" src="images/items/fire_note.svg" alt="">';
     // 2026-10-25：活力花卉、药草、hp 药水、pp 药水换成像素小图；药水右下角的小标写着回复多少
     var PX = { exp: 'exp', energy: 'energy', c_flower: 'flower', c_herb: 'herb', pot100: ['hp_potion', '100'], pot200: ['hp_potion', '200'], pp5: ['pp_potion', '5'], pp10: ['pp_potion', '10'], pp15: ['pp_potion', '15'], pp20: ['pp_potion', '20'], m_psac: 'poison_sac', antidote: 'antidote', ev50: ['ev_potion', '50'], evAny: ['ev_potion', '100'] }[k];
     if (k === 'nameTag') return '<img class="it-ic it-px" src="images/items/name_tag.jpg" alt="">';

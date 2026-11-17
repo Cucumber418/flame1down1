@@ -44,11 +44,12 @@ var GROW = (function () {
   USE_ITEMS.phLeaf = { name: '魔化之叶', sid: null, sids: ['phantom'], kind: 'jade', cost: 100, sd: '叶粒魔种一系的专属道具。可以让幻境叶果领悟隐藏技能，也能提高它的等级上限。', d: '叶粒魔种一系的专属道具。100 个可以让一只叶粒魔种一系领悟一个隐藏技能，也用来提高幻境叶果的等级上限。召唤代币商店兑换。' };
   USE_ITEMS.iceAncient = { name: '远古冰块', sid: null, sids: ['wild'], kind: 'jade', cost: 100, sd: '亚哆一系的专属道具。可以让亚哆领悟隐藏技能，也能提高亚哆的等级上限。', d: '从白之星冰层深处凿下来的冰块，冻着比冰更古老的东西。100 个可以让一只亚哆一系领悟一个隐藏技能；也用来提高亚哆一系的等级上限。击碎封着亚哆的冰块时获得 80～120 个，击败白之星的野生精灵有 10% 几率掉落 10～20 个。' };   // 2026-11-01
   USE_ITEMS.mmEye = { name: '雷明之眼', sid: null, sids: ['leiming'], kind: 'jade', cost: 100, sd: '雷明灯一系的专属道具。100 个可以让一只雷明灯一系领悟一个隐藏技能。', d: '明明代币抽奖从第 5 个奖池起，每逢 5 的倍数的奖池里有 50 个。100 个可以让一只雷明灯一系（进化前的形态也可以）领悟一个还没领悟的隐藏技能。' };
+  USE_ITEMS.fireNote = { name: '烈火音符', sid: null, sids: ['clementi'], kind: 'jade', cost: 100, sd: '克莱一系的专属道具，可领悟隐藏技能和提高等级上限', d: '100 个可让一只克莱或克莱门蒂领悟一个隐藏技能；LV70 后用于突破等级上限，LV75 需500个、LV80 需1000个，之后每2级需500个与1个圣杯；普通首通获得40个，每周挑战每次获得15 / 30个（简单 / 普通）', none: '首次击败简单难度的BOSS「克莱门蒂」可获得克莱' };
   // 等级上限：喂经验最高到 LV70；用星球特产 / BOSS专属道具解锁到 75、80
   var CAP_STEPS = [{ lv: 75, jade: 500 }, { lv: 80, jade: 1000 }];
   for (var cl = 82; cl <= 100; cl += 2) CAP_STEPS.push({ lv: cl, jade: 500, grail: 1 });   // 2026-11-01：80 级以后每 2 级突破一次，要 500 个对应道具和 1 个圣杯
   var GEM_OF = { 草: 'floraJade', 水: 'kbDrop', 火: 'ppAsh', 电: 'ltOrb', 冰: 'whFrost' };
-  var CAP_SID = { tagore: 'tgPearl', barren: 'brTwig', odo: 'odoFin', wild: 'iceAncient', phantom: 'phLeaf', tiago: 'earthShard', leaf: 'earthShard', squid: 'earthShard', shroom: 'earthShard', moon: 'moonStone', bone: 'boneDust' };
+  var CAP_SID = { clementi: 'fireNote', tagore: 'tgPearl', barren: 'brTwig', odo: 'odoFin', wild: 'iceAncient', phantom: 'phLeaf', tiago: 'earthShard', leaf: 'earthShard', squid: 'earthShard', shroom: 'earthShard', moon: 'moonStone', bone: 'boneDust' };
   function capGem(m) { if (CAP_SID[m.sid]) return CAP_SID[m.sid]; var t = SPMAP[m.sid] ? SPMAP[m.sid].types : []; for (var i = 0; i < t.length; i++) if (GEM_OF[t[i]]) return GEM_OF[t[i]]; return null; }
   function capNext(m) { var g = capGem(m); if (!g) return null; var c = ACC.capLv(m); for (var i = 0; i < CAP_STEPS.length; i++) if (CAP_STEPS[i].lv > c) return { lv: CAP_STEPS[i].lv, jade: CAP_STEPS[i].jade, grail: CAP_STEPS[i].grail || 0, k: g }; return null; }
   function formLabel(s, i) { var n = formRawName(s, i); return n ? n.replace('?', '') : s.name + '·' + stageLabel(s, i); }
