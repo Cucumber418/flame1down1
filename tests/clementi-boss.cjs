@@ -38,9 +38,9 @@ S=battle();mon(S).st['睡眠']=3;C.RNG=()=>.9;pp=mon(S).moves[0].pp;C.useMove(S,
 const env={now:Date.UTC(2026,10,17),rand:()=>0},A={mons:[],teams:[[]],active:0,next:1,items:{},exp:0,energy:0,story:{flora1:{done:true}}};
 let player=C.ACC.newMon(A,'leaf',70,env);A.teams[0]=[player.u];const B=C.PVE.MODES.boss,W=C.PVE.MODES.weekly,args={k:'clementi',d:0};
 assert(B.start(A,{...args,d:1},env).err);assert(W.start(A,args,env).err);let st=B.start(A,args,env);assert(!st.err);assert.equal(st.a[0].maxhp,1000);assert(!st.a[0].boss.tuning);
-let outcome={res:'win',seen:[true],downs:[{lv:40}]};let rep=B.end(A,st.ctx,outcome,env);assert(rep.first);assert.equal(A.mons.filter(m=>m.sid==='clementi').length,1);assert.equal(A.items.m_mcry,100);assert(boss.lv[1].open(A,env.now));
-st=B.start(A,args,env);rep=B.end(A,st.ctx,outcome,env);assert(!rep.first);assert.equal(A.mons.filter(m=>m.sid==='clementi').length,1);assert.equal(A.items.m_mcry,100);
-st=B.start(A,{...args,d:1},env);assert(!st.err);assert.equal(st.a[0].maxhp,3000);assert.equal(st.a[0].boss.chord,.65);assert(!st.a[0].boss.immortal);B.end(A,st.ctx,outcome,env);assert.equal(A.items.fireNote,40);
+let outcome={res:'win',seen:[true],downs:[{lv:40}]};let rep=B.end(A,st.ctx,outcome,env);assert(rep.first);assert.equal(A.mons.filter(m=>m.sid==='clementi').length,0);assert.equal(A.items.m_mcry,100);assert(boss.lv[1].open(A,env.now));
+st=B.start(A,args,env);rep=B.end(A,st.ctx,outcome,env);assert(!rep.first);assert.equal(A.mons.filter(m=>m.sid==='clementi').length,0);assert.equal(A.items.m_mcry,100);
+st=B.start(A,{...args,d:1},env);assert(!st.err);assert.equal(st.a[0].maxhp,3000);assert.equal(st.a[0].boss.chord,.65);assert(!st.a[0].boss.immortal);B.end(A,st.ctx,outcome,env);assert.equal(A.items.fireNote,40);assert.equal(A.mons.filter(m=>m.sid==='clementi').length,1);assert.equal(A.mons.find(m=>m.sid==='clementi').lv,10);
 st=W.start(A,{...args,d:1},env);assert(!st.err);let permits=A.permit.n;W.end(A,st.ctx,{...outcome,res:'lose'},env);assert.equal(A.permit.n,permits);assert.equal(A.items.fireNote,40);
 st=W.start(A,{...args,d:1},env);W.end(A,st.ctx,outcome,env);assert.equal(A.items.fireNote,70);assert.equal(A.permit.n,permits-1);
 // Exclusive item unlock is per individual, uses 100 notes, and is also the cap currency.

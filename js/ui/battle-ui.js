@@ -1116,7 +1116,7 @@
     if (!usable) html = '<button type="button" class="mv" data-mi="-1"' + (lock || needMe ? ' disabled' : '') + ' style="--tc:' + TYPE_COLOR['普通'] + '"><span class="t1"><span class="mn">挣扎</span><span class="pp">PP —</span></span><span class="t2">' + tchip('普通') + '<span class="mv-kind">物攻</span><span class="mv-power">威力 ' + STRUGGLE.power + '</span></span><span class="md">' + STRUGGLE.d + '</span></button>';
     else me.moves.forEach(function (slot, i) {
       var m = liveMove(me, M[slot.n]), mt = mvType(me, m), e = m.cat === '变化' ? 1 : effT(mt, foeTypes);
-      html += '<button type="button" class="mv" data-mi="' + i + '"' + (lock || needMe || slot.pp <= 0 || moveBlocked(me, slot) ? ' disabled' : '') + ' style="--tc:' + TYPE_COLOR[mt] + '" title="' + esc(m.d) + '">' +
+      html += '<button type="button" class="mv" data-mi="' + i + '"' + (lock || needMe || slot.pp <= 0 || moveBlocked(me, slot) ? ' disabled' : '') + ' style="--tc:' + TYPE_COLOR[mt] + '">' +
         '<span class="t1"><span class="mn">' + (i + 1) + '. ' + m.name + (moveBlocked(me, slot) ? '<span class="mv-blocked">（' + blockWhy(me, slot) + '）</span>' : '') + '</span><span class="pp">PP ' + slot.pp + '/' + slot.max + '</span></span>' +
         '<span class="t2">' + tchip(mt) + '<span class="mv-kind">' + m.cat + '</span><span class="mv-power">威力 ' + (m.power || '—') + '</span><span class="mv-extra">' + (m.pri ? ' · 先制+' + m.pri : '') + '</span>' +
         (hitBlocked(foe, mt) && (m.cat !== '变化' || targetsFoe(m)) ? '<span class="eff0">无法命中</span>' : e > 1 ? '<span class="eff2">克制 ×' + e + '</span>' : e < 1 ? '<span class="eff0">被抵抗 ×' + e + '</span>' : '') + '</span>' +

@@ -223,15 +223,6 @@ body.battle-touch .bag-skill, body.battle-touch .bag-skill * {
   -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
 }
 body.battle-touch .bag-skill { touch-action: manipulation; }
-.skill-hover {
-  position: fixed; z-index: 1200; width: max-content; max-width: min(360px, calc(100% - 16px));
-  max-height: calc(100vh - 16px); overflow: auto; pointer-events: none;
-  padding: 12px; border: 1.5px solid var(--ink); border-radius: 10px;
-  background: var(--paper-2); color: var(--ink); box-shadow: 3px 3px 0 var(--ink);
-  font-size: 13px; line-height: 1.5; overflow-wrap: anywhere;
-}
-.skill-hover h4 { margin: 0 0 5px; color: var(--red); font-size: 15px; }
-.skill-hover p { margin: 4px 0 0; }
 
 /* 配队、经验和技能选择都在独立纸卡中完成，只让内容区滚动。 */
 .soc-dlg > .bag-panel-box {
@@ -313,7 +304,6 @@ body.battle-touch .bag-skill { touch-action: manipulation; }
 @media (prefers-reduced-motion: reduce) { :is(#pg-bag, .store-profile-dialog) .bag-skill-ghost { animation: none; } }
 .skill-info-meta .t2 { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; }
 .skill-info-meta .tchip { display: inline-flex; color: #fff; border-radius: 999px; padding: 3px 7px; }
-.skill-hover { border-left: 5px solid var(--skill-color, var(--red)); }
 @media (max-width: 680px) {
   :is(#pg-bag, .store-profile-dialog) .bag-detail-tabs { grid-template-columns: repeat(5, minmax(0, 1fr)); min-height: 36px; }
   :is(#pg-bag, .store-profile-dialog) .bag-detail-body .d-head { grid-template-columns: minmax(55px, 34%) minmax(0, 1fr); gap: 6px; }

@@ -1,12 +1,12 @@
 /* 战斗技能长按查看；背包的长按交给排序，轻触仍可查看说明。 */
 (function () {
   'use strict';
-  var press = null, swallow = false, pointers = {}, hover = null;
+  var press = null, swallow = false, pointers = {};
   function touchUI() {
     var v = window.visualViewport, s = v ? v.scale : 1;
     return matchMedia('(pointer: coarse)').matches || ((navigator.maxTouchPoints || 0) > 0 && Math.min((v ? v.width : innerWidth) * s, (v ? v.height : innerHeight) * s) <= 900);
   }
-  function sync() { document.body.classList.toggle('battle-touch', touchUI()); hideHover(); }
+  function sync() { document.body.classList.toggle('battle-touch', touchUI()); }
   function card(target) { return target.closest && !document.body.classList.contains('bag-skills-dragging') ? target.closest('#mgrid .mv, .bag-skill') : null; }
   function cancel(block) { if (press) { clearTimeout(press.timer); if (block) swallow = true; press = null; } }
   function inspect(el) { el.dispatchEvent(new CustomEvent('skillinspect', { bubbles: true })); }
@@ -38,7 +38,7 @@
   }, true);
   document.addEventListener('contextmenu', function (e) { if ((card(e.target) || e.target.closest('.bag-skill-grid [data-bag-skill]')) && touchUI()) e.preventDefault(); });
   window.addEventListener('blur', function () { cancel(true); pointers = {}; });
-  document.addEventListener('skillreorderstart', function () { cancel(true); hideHover(); });
+  document.addEventListener('skillreorderstart', function () { cancel(true); });
   document.addEventListener('visibilitychange', function () { if (document.hidden) { cancel(true); pointers = {}; } });
 
   function fill(el, target) {
@@ -51,19 +51,6 @@
       target.appendChild(line);
     });
   }
-  function hideHover() { if (hover) { hover.remove(); hover = null; } }
-  document.addEventListener('pointerover', function (e) {
-    var el = card(e.target);
-    if (!el || e.pointerType !== 'mouse' || touchUI() || (e.relatedTarget && el.contains(e.relatedTarget))) return;
-    hideHover(); hover = document.createElement('div'); hover.className = 'skill-hover'; hover.setAttribute('role', 'tooltip');
-    hover.style.setProperty('--skill-color', el.style.getPropertyValue('--skill-color') || el.style.getPropertyValue('--tc'));
-    if (el.hasAttribute('title')) { el.dataset.inspectTitle = el.title; el.removeAttribute('title'); }
-    fill(el, hover); document.body.appendChild(hover);
-    var r = el.getBoundingClientRect(), tip = hover.getBoundingClientRect();
-    hover.style.left = Math.max(8, Math.min(innerWidth - tip.width - 8, r.left)) + 'px';
-    hover.style.top = Math.max(8, r.bottom + tip.height + 8 <= innerHeight ? r.bottom + 8 : r.top - tip.height - 8) + 'px';
-  });
-  document.addEventListener('pointerout', function (e) { var el = card(e.target); if (el && (!e.relatedTarget || !el.contains(e.relatedTarget))) { hideHover(); if (el.dataset.inspectTitle != null) { el.title = el.dataset.inspectTitle; delete el.dataset.inspectTitle; } } });
   window.addEventListener('resize', function () { cancel(true); sync(); });
   if (window.visualViewport) visualViewport.addEventListener('resize', sync);
   var coarse = matchMedia('(pointer: coarse)');

@@ -202,8 +202,8 @@ var PVE = (function () {
     barren: { name: '荒芜', sid: 'barren', planet: 'flora', region: 'salt', bg: 'fl_salt',
       d: '潜伏在芙罗拉星盐碱地地底的草系BOSS。盐碱地里的瘴气，就是从它身上散出来的。',
       lv: [
-        { diff: '简单', lv: 40, hp: 1000, boss: { dr: 0.15, mia: 1, pp: 99 }, bgm: 'boss3', open: function (a, now) { return done(a, 'flora1') && (chalStars(a, 'fl5') > 0 || bossWon(a, 'barren', 0)); }, lockText: '通过芙罗拉星挑战第五关「猎手的领地」后开放', reward: { mon: { sid: 'barren', lv: 10 } } },
-        { diff: '普通', lv: 65, hp: 3000, boss: { dr: 0.15, mia: 1, puppet: 1, pp: 99 }, bgm: 'boss3', open: function (a, now) { return bossWon(a, 'barren', 0); }, lockText: '击败简单难度后开放', reward: { items: { brTwig: 40 } } },
+        { diff: '简单', lv: 40, hp: 1000, boss: { dr: 0.15, mia: 1, pp: 99 }, bgm: 'boss3', open: function (a, now) { return done(a, 'flora1') && (chalStars(a, 'fl5') > 0 || bossWon(a, 'barren', 0)); }, lockText: '通过芙罗拉星挑战第五关「猎手的领地」后开放', reward: {} },
+        { diff: '普通', lv: 65, hp: 3000, boss: { dr: 0.15, mia: 1, puppet: 1, pp: 99 }, bgm: 'boss3', open: function (a, now) { return bossWon(a, 'barren', 0); }, lockText: '击败简单难度后开放', reward: { mon: { sid: 'barren', lv: 10 }, items: { brTwig: 40 } } },
         // 困难：完成主线「第十段 · 瘴气之源」后，2026-10-18 16:00（北京时间）解锁
         { diff: '困难', lv: 70, hp: 6000, boss: { dr: 0.15, mia: 1, immortal: 1, puppet: 1, puppetLv: 70, humus: 1, weed: 1, weedDmg: 30, rebirth: 1, pp: 99 }, bgm: 'boss3',   // 开场和困难泰戈尔第一形态同一首，蜕生后切 before the end（battle-ui 里的钩子）
           open: function (a, now) { return done(a, 'flora6') && now >= Date.UTC(2026, 9, 18, 8, 0, 0); },
@@ -213,8 +213,8 @@ var PVE = (function () {
     odo: { name: '奥多亚克', sid: 'odo', planet: 'kamble', region: 'kb_deep', bg: 'kb_abyss',
       d: '沉睡在坎伯兰星深海古代神殿附近的机械水系精灵，会在歼灭形态和护阵形态之间切换。',
       lv: [
-        { diff: '简单', lv: 40, hp: 1000, boss: { dr: 0.15, pp: 99 }, bgm: 'boss3', open: function (a, now) { return done(a, 'flora1'); }, lockText: '开放坎伯兰星后开放', reward: { items: { e_odo: 1 } } },
-        { diff: '普通', lv: 65, hp: 3000, boss: { dr: 0.15, ambush: 200, pp: 99 }, bgm: 'boss3', open: function (a, now) { return bossWon(a, 'odo', 0); }, lockText: '击败简单难度后开放', reward: { items: { odoFin: 40 } } },
+        { diff: '简单', lv: 40, hp: 1000, boss: { dr: 0.15, pp: 99 }, bgm: 'boss3', open: function (a, now) { return done(a, 'flora1'); }, lockText: '开放坎伯兰星后开放', reward: {} },
+        { diff: '普通', lv: 65, hp: 3000, boss: { dr: 0.15, ambush: 200, pp: 99 }, bgm: 'boss3', open: function (a, now) { return bossWon(a, 'odo', 0); }, lockText: '击败简单难度后开放', reward: { mon: { sid: 'odo', lv: 10 }, items: { odoFin: 40 } } },
         { diff: '困难', lv: 70, hp: 2500, boss: { dr: 0.15, ambush: 400, odoRate: 1, odoWill: 1, rainbow: 1, odoSwap: 1, pp: 99 }, bgm: 'boss3', open: function (a, now) { return bossWon(a, 'odo', 1); }, lockText: '击败普通难度后开放', reward: { title: 'odoClean', exp: 50000, items: { odoFin: 80 } },
           hpText: '歼灭形态 2500 · 护阵形态 5000 · 虹霓暴走 4000', bgmAt: { 2: 'vitalVoyage' },
           team: [
@@ -227,8 +227,8 @@ var PVE = (function () {
     clementi: { name: '克莱门蒂', sid: 'clementi', planet: 'pompeii', region: 'pp_city', bg: 'pp_core',
       d: '栖居于庞贝星饮火城的火系BOSS，以音律引动烈焰',
       lv: [
-        { diff: '简单', lv: 40, hp: 1000, boss: { dr: 0.15, pp: 99 }, bgm: 'boss', open: function (a, now) { return done(a, 'flora1'); }, lockText: '开放庞贝星后开放', reward: { mon: { sid: 'clementi', lv: 10 } } },
-        { diff: '普通', lv: 65, hp: 3000, boss: { dr: 0.15, tuning: 1, chord: 0.65, pp: 99 }, bgm: 'boss2', open: function (a, now) { return bossWon(a, 'clementi', 0); }, lockText: '击败简单难度后开放', reward: { items: { fireNote: 40 } } }
+        { diff: '简单', lv: 40, hp: 1000, boss: { dr: 0.15, pp: 99 }, bgm: 'boss', open: function (a, now) { return done(a, 'flora1'); }, lockText: '开放庞贝星后开放', reward: {} },
+        { diff: '普通', lv: 65, hp: 3000, boss: { dr: 0.15, tuning: 1, chord: 0.65, pp: 99 }, bgm: 'boss2', open: function (a, now) { return bossWon(a, 'clementi', 0); }, lockText: '击败简单难度后开放', reward: { mon: { sid: 'clementi', lv: 10 }, items: { fireNote: 40 } } }
       ] }
   };
   // 2026-10-19：每个BOSS每档难度首次击败都送马亚尔晶体，难度越高越多（简单 100 / 普通 200 / 困难 400）
