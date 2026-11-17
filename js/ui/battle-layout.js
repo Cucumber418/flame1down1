@@ -6,7 +6,7 @@
   var stats = document.getElementById('statsbox'), info = document.getElementById('battle-info-panel');
   var panels = { log: document.getElementById('battle-logbox'), stats: stats, info: info };
   var current = null, frame = 0, panelTrigger = null;
-  var controls = [document.getElementById('btn-speed'), document.getElementById('battle-stats-toggle'), document.querySelector('#battle .emote-wrap'), document.getElementById('btn-invite')].map(function (el) {
+  var controls = [document.getElementById('btn-speed'), document.getElementById('battle-stats-toggle'), document.querySelector('#battle .emote-wrap'), document.getElementById('btn-invite'), document.getElementById('cmd-hint')].map(function (el) {
     var home = document.createComment('battle control position'); el.before(home);
     return { el: el, home: home };
   });
@@ -14,9 +14,12 @@
     var changed = body.classList.contains('battle-desktop') !== on;
     flag('battle-desktop', on);
     controls.forEach(function (control, i) {
-      var target = on ? (i === 0 ? battle.querySelector('.vs') : document.getElementById('battle-tools')) : control.home.parentNode;
+      var status = control.el.id === 'cmd-hint';
+      var target = on ? (i === 0 ? battle.querySelector('.vs') : status ? panels.log : document.getElementById('battle-tools')) : control.home.parentNode;
       if (control.el.parentNode !== target) {
-        if (on) target.appendChild(control.el); else target.insertBefore(control.el, control.home.nextSibling);
+        if (on && status) target.insertBefore(control.el, document.getElementById('log'));
+        else if (on) target.appendChild(control.el);
+        else target.insertBefore(control.el, control.home.nextSibling);
       }
     });
     if (on && current === 'log') close(false);

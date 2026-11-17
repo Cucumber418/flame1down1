@@ -1159,10 +1159,8 @@
     }).join('');
     var hint = $('cmd-hint');
     hint.className = 'hint';
-    if (S.over) hint.textContent = '对战结束';
-    else if (busy) hint.textContent = '回合进行中……';
-    else if (pvp && pvp.waiting) hint.textContent = '已选择，等待 ' + pvp.foe + ' 行动……' + pvpClock();
-    else if (peerPick) hint.textContent = '等待 ' + pvp.foe + ' 选择下一只出战的精灵……' + pvpClock();
+    if (S.over || busy) hint.textContent = '';
+    else if ((pvp && pvp.waiting) || peerPick) hint.textContent = pvpClock();
     else if (needMe) { hint.textContent = '【' + (me.nick || SPMAP[me.id].name) + '】已倒下，请选择下一只出战的精灵'; hint.className = 'hint alert'; }
     else if (locked) hint.textContent = '受「傲慢」影响，' + me.tm.noSwitch + ' 回合内无法切换精灵';
     else hint.textContent = pvpClock();
