@@ -179,14 +179,14 @@ body.battle-active.battle-touch #battle .mv { display: flex; flex-direction: col
 body.battle-active.battle-touch #battle .mv .md { display: block; -webkit-line-clamp: unset; overflow: visible; overflow-wrap: anywhere; line-height: 1.2; font-size: calc(11px * var(--battle-type-scale)); }
 body.battle-active.battle-touch #battle .mv .mn { line-height: 1.1; }
 body.battle-active.battle-touch #battle .mv .t2 { flex: 0 0 auto; }
-body.battle-active.battle-touch:not(.battle-wide) #battle { grid-template-rows: calc(100px * var(--battle-type-scale)) minmax(0, 1fr) minmax(300px, 43%); }
-body.battle-active.battle-touch:not(.battle-wide) #battle .plate { padding: 5px 6px; grid-template-rows: minmax(0, 1fr) 8px 15px 18px; }
-body.battle-active.battle-touch:not(.battle-wide) #battle .plate .pn { font-size: calc(18px * var(--battle-type-scale)); }
+body.battle-active.battle-touch:not(.battle-wide):not(.battle-desktop) #battle { grid-template-rows: calc(100px * var(--battle-type-scale)) minmax(0, 1fr) minmax(300px, 43%); }
+body.battle-active.battle-touch:not(.battle-wide):not(.battle-desktop) #battle .plate { padding: 5px 6px; grid-template-rows: minmax(0, 1fr) 8px 15px 18px; }
+body.battle-active.battle-touch:not(.battle-wide):not(.battle-desktop) #battle .plate .pn { font-size: calc(18px * var(--battle-type-scale)); }
 
 body.battle-active #battle .battle-round { display: flex; flex-direction: column; align-items: center; }
 #battle .battle-tools { display: none; }
 
-/* 电脑版：完整横向战场，下方依次为记录、技能与四个操作按钮。 */
+/* 电脑版与平板共用：完整横向战场，下方依次为记录、技能与四个操作按钮。 */
 body.battle-active.battle-desktop #battle {
   max-width: var(--page-width); margin-inline: auto;
   grid-template-areas: "plates" "field" "console";
@@ -238,9 +238,9 @@ body.battle-active.battle-desktop #battle-log-toggle,
 body.battle-active.battle-desktop #battle .tabs > [data-fullscreen] { display: none !important; }
 body.battle-active.battle-desktop #battle :is(.mgrid, .tgrid) { grid-area: moves; width: 100%; height: 100%; min-height: 0; }
 body.battle-active.battle-desktop #battle .mgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); gap: 8px; }
-body.battle-active.battle-desktop #battle .mv { padding: 8px 12px 8px 15px; gap: 8px; }
+body.battle-active.battle-desktop #battle .mv { display: grid; padding: 8px 12px 8px 15px; gap: 8px; }
 body.battle-active.battle-desktop #battle .mv:hover:not(:disabled) { transform: none; }
-body.battle-active.battle-desktop #battle .mv .mn { font-size: 17px; }
+body.battle-active.battle-desktop #battle .mv .mn { font-size: 17px; line-height: 1.2; }
 body.battle-active.battle-desktop #battle .mv .pp,
 body.battle-active.battle-desktop #battle .mv .t2 { font-size: 12px; }
 body.battle-active.battle-desktop #battle #mgrid .mv :is(.md, .mv-blocked),

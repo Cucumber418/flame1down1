@@ -43,7 +43,10 @@
     flag('battle-wide', width >= 640 && width / height >= 1.25);
     flag('battle-short', height < 560);
     flag('battle-tiny', height < 420);
-    desktopLayout(width >= 760 && !matchMedia('(pointer: coarse)').matches);
+    var coarse = matchMedia('(pointer: coarse)').matches;
+    // 平板按屏幕短边识别，避免 Safari 工具栏压低可用高度后误判为手机。
+    var tablet = (coarse || (navigator.maxTouchPoints || 0) > 0) && Math.min(screen.width, screen.height) >= 700;
+    desktopLayout((width >= 760 && !coarse) || (tablet && width >= 700));
     var field = document.getElementById('field');
     property('--battle-toast-top', (field.offsetTop + 8) + 'px');
     property('--battle-toast-left', (field.offsetLeft + field.offsetWidth / 2) + 'px');
@@ -52,7 +55,7 @@
     document.getElementById('battle-stats-toggle').hidden = stats.hidden;
     positionEffect();
     if (current === 'stats' && stats.hidden) close(false);
-    if (body.classList.contains('battle-touch')) {
+    if (body.classList.contains('battle-touch') && !body.classList.contains('battle-desktop')) {
       var unit = 1 / scale;
       document.querySelectorAll('#mgrid .mv').forEach(function (move) {
         var detail = move.querySelector('.md'); if (!detail) return;
