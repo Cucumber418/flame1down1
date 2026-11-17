@@ -1,4 +1,4 @@
-/* 战斗技能长按查看；背包的长按交给排序，轻触仍可查看说明。 */
+/* 电脑战斗技能悬停气泡；触屏长按查看，背包长按仍交给排序。 */
 (function () {
   'use strict';
   var press = null, swallow = false, pointers = {};
@@ -51,6 +51,65 @@
       target.appendChild(line);
     });
   }
+  var grid = document.getElementById('mgrid'), source = null, hideTimer = 0;
+  var bubble = document.createElement('div'); bubble.id = 'battle-skill-bubble'; bubble.className = 'skill-bubble';
+  bubble.hidden = true; bubble.setAttribute('role', 'tooltip');
+  var inner = document.createElement('div'); inner.className = 'skill-bubble-inner'; bubble.appendChild(inner); document.body.appendChild(bubble);
+  function hoverCard(target) { return target.closest && target.closest('#mgrid .mv'); }
+  function hoverAllowed() { return document.body.classList.contains('battle-desktop') && document.body.classList.contains('battle-active') && !grid.hidden; }
+  function unlabel() { if (source) { var ids = (source.getAttribute('aria-describedby') || '').split(/\s+/).filter(function (id) { return id && id !== bubble.id; }); if (ids.length) source.setAttribute('aria-describedby', ids.join(' ')); else source.removeAttribute('aria-describedby'); } }
+  function hideBubble() { clearTimeout(hideTimer); unlabel(); source = null; bubble.hidden = true; }
+  function leaveBubble() { clearTimeout(hideTimer); hideTimer = setTimeout(hideBubble, 130); }
+  function positionBubble() {
+    if (!source || !source.isConnected || !hoverAllowed()) { hideBubble(); return; }
+    var r = source.getBoundingClientRect(), w = document.documentElement.clientWidth, h = innerHeight;
+    if (!r.width || !r.height) { hideBubble(); return; }
+    bubble.style.maxHeight = '340px';
+    var size = bubble.getBoundingClientRect(), above = r.top - 24, below = h - r.bottom - 24;
+    var onTop = above >= size.height || above >= below;
+    bubble.style.maxHeight = Math.max(60, Math.min(340, onTop ? above : below)) + 'px';
+    size = bubble.getBoundingClientRect();
+    var x = Math.max(12, Math.min(w - size.width - 12, r.left + r.width / 2 - size.width / 2));
+    bubble.style.left = x + 'px'; bubble.style.top = Math.max(12, onTop ? r.top - size.height - 12 : r.bottom + 12) + 'px';
+    bubble.style.setProperty('--skill-arrow-left', Math.max(18, Math.min(size.width - 18, r.left + r.width / 2 - x)) + 'px');
+    bubble.classList.toggle('below', !onTop);
+  }
+  function showBubble(el) {
+    if (!el || !hoverAllowed()) return;
+    clearTimeout(hideTimer); unlabel(); source = el; inner.textContent = '';
+    bubble.style.setProperty('--skill-accent', getComputedStyle(el).getPropertyValue('--tc').trim() || '#c42f3a');
+    var head = document.createElement('div'); head.className = 'skill-bubble-head';
+    var title = document.createElement('h4'), name = el.querySelector('.mn').cloneNode(true);
+    name.querySelectorAll('.mv-blocked').forEach(function (n) { n.remove(); });
+    title.className = 'skill-bubble-title'; title.textContent = name.textContent.replace(/^\d+\.\s*/, ''); head.appendChild(title);
+    var pp = document.createElement('span'); pp.className = 'skill-bubble-pp'; pp.textContent = el.querySelector('.pp').textContent; head.appendChild(pp); inner.appendChild(head);
+    var meta = document.createElement('div'); meta.className = 'skill-bubble-meta';
+    el.querySelectorAll('.t2 > .tchip, .t2 > .mv-kind, .t2 > .mv-power').forEach(function (n) { meta.appendChild(n.cloneNode(true)); }); inner.appendChild(meta);
+    var detail = document.createElement('p'); detail.className = 'skill-bubble-description'; detail.textContent = el.querySelector('.md').textContent; inner.appendChild(detail);
+    var notes = Array.from(el.querySelectorAll('.mv-extra, .eff2, .eff0, .mv-blocked')).map(function (n) { return n.textContent.replace(/^\s*·\s*/, '').trim(); }).filter(Boolean);
+    if (notes.length) { var note = document.createElement('p'); note.className = 'skill-bubble-note'; note.textContent = notes.join(' · '); inner.appendChild(note); }
+    var ids = (el.getAttribute('aria-describedby') || '').split(/\s+/).filter(Boolean); ids.push(bubble.id); el.setAttribute('aria-describedby', ids.join(' '));
+    bubble.hidden = false; positionBubble();
+  }
+  document.addEventListener('pointerover', function (e) { var el = hoverCard(e.target); if (e.pointerType === 'mouse' && el && !el.contains(e.relatedTarget)) showBubble(el); });
+  document.addEventListener('pointerout', function (e) { var el = hoverCard(e.target); if (el && !el.contains(e.relatedTarget) && !bubble.contains(e.relatedTarget)) leaveBubble(); });
+  grid.addEventListener('focusin', function (e) { var el = hoverCard(e.target); if (el && el.matches(':focus-visible')) showBubble(el); });
+  grid.addEventListener('focusout', leaveBubble);
+  bubble.addEventListener('pointerenter', function () { clearTimeout(hideTimer); }); bubble.addEventListener('pointerleave', leaveBubble);
+  document.addEventListener('pointerdown', function (e) { if (!bubble.contains(e.target)) hideBubble(); }, true);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !bubble.hidden) { hideBubble(); e.preventDefault(); e.stopImmediatePropagation(); } }, true);
+  window.addEventListener('blur', hideBubble); window.addEventListener('resize', hideBubble);
+  document.addEventListener('visibilitychange', function () { if (document.hidden) hideBubble(); });
+  new MutationObserver(function () {
+    if (!source) return;
+    if (!hoverAllowed()) { hideBubble(); return; }
+    if (!source.isConnected) {
+      var live = grid.querySelector('[data-mi="' + source.dataset.mi + '"]');
+      if (live && live.querySelector('.mn').textContent === source.querySelector('.mn').textContent && (live.matches(':hover') || bubble.matches(':hover'))) showBubble(live);
+      else hideBubble();
+    } else positionBubble();
+  }).observe(grid, { childList: true, attributes: true, attributeFilter: ['hidden'] });
+  new MutationObserver(function () { if (!hoverAllowed()) hideBubble(); }).observe(document.body, { attributes: true, attributeFilter: ['class'] });
   window.addEventListener('resize', function () { cancel(true); sync(); });
   if (window.visualViewport) visualViewport.addEventListener('resize', sync);
   var coarse = matchMedia('(pointer: coarse)');
