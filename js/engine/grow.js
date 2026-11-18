@@ -476,6 +476,7 @@ var GROW = (function () {
     { id: 'pot200', out: { pot200: 1 }, need: { c_herb: 2 } },
     { id: 'pp10', out: { pp10: 1 }, need: { c_flower: 3 } },   // PP 药水：只合成 10PP、20PP（大的更划算）
     { id: 'pp20', out: { pp20: 1 }, need: { c_flower: 5 } },
+    { id: 'fruit1', out: { fruit1: 1 }, need: { c_exp: 10 } },
     { id: 'antidote', out: { antidote: 1 }, need: { m_psac: 1, c_herb: 5 } },   // 2026-10-27：解毒药剂
     { id: 'bowl', out: { c_bowl: 1 }, need: { c_rice: 500 } },
     { id: 'lcEssence', out: { e_leafcat: 1 }, need: { m_lcleaf: 5 } },
@@ -508,12 +509,13 @@ var GROW = (function () {
   });
 
   /* ---------- 太空种植园：种下种子，到时间收获 ----------
-   * 药草、活力花卉收获时有 20% 的概率掉 1 颗种子（back），水稻种子一定退回。种子在生态舱的种子商店用能量买（seedShop），
+   * 药草、活力花卉、经验原果收获时有 20% 的概率掉 1 颗种子（back），水稻种子一定退回。种子在生态舱的种子商店用能量买（seedShop），
    * 商店还卖额外的种植栏位：基础 4 块田，最多再加 2 块（a.farm.extra；2026-11-04 起一共 6 块，原来最多 8 块，多买的由 award.js 退还） */
-  var FARM_N = 4, FARM_EXTRA_MAX = 2, PLOT_PRICE = [2000, 4000, 8000, 16000], SEED_PRICE = 100, SEED_SHOP = ['s_herb', 's_flower'], SEED_SHOP_MAX = 99;
+  var FARM_N = 4, FARM_EXTRA_MAX = 2, PLOT_PRICE = [2000, 4000, 8000, 16000], SEED_PRICE = 100, SEED_SHOP = ['s_herb', 's_flower', 's_exp'], SEED_SHOP_MAX = 99;
   var SEEDS = {
     s_herb: { name: '药草种子', d: '绿色的药草籽，在恩施 · 生态舱的种子商店出售。种下去要 8 小时，收获药草；收获时有 20% 的概率掉落 1 颗药草种子。', crop: 'c_herb', min: 480, yield: 50, back: 0.2 },
     s_flower: { name: '活力花种子', d: '蓝色的花籽，在恩施 · 生态舱的种子商店出售。种下去要 8 小时，收获活力花卉；收获时有 20% 的概率掉落 1 颗活力花种子。', crop: 'c_flower', min: 480, yield: 50, back: 0.2 },
+    s_exp: { name: '经验种子', d: '在种植园的种子商店用100能量购买，种下8小时后收获50个经验原果；收获时有20%概率返还1颗经验种子', crop: 'c_exp', min: 480, yield: 50, back: 0.2 },
     s_rice: { name: '水稻种子', d: '在芙罗拉星击败野生精灵时偶尔掉落的稻种。种下去要 12 小时，收获一大把米饭，种子会退回来。', crop: 'c_rice', min: 720, yield: 250, back: 1 }
   };
   function farmN(a) { return FARM_N + Math.max(0, Math.min(FARM_EXTRA_MAX, (a && a.farm && a.farm.extra) | 0)); }

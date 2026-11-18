@@ -926,13 +926,14 @@
   var SEEDS = GROW.SEEDS;   // 在 js/engine/grow.js
 
   var CROPS = {
+    c_exp: { name: '经验原果', d: '种植经验种子收获的原果，10个可在黄石 · 冶炼坊合成1个成长果实' },
     c_herb: { name: '药草', d: '太空种植园收获的药草。1 份可以在冶炼坊合成一瓶 100hp药水，2 份合成一瓶 200hp药水。' },
     c_rice: { name: '米饭', d: '水稻收获后煮好的米饭，一粒一粒数得清。500 粒可以在冶炼坊盛成一碗饭。' },
     c_flower: { name: '活力花卉', d: '太空种植园收获的蓝色小花，闻一闻就精神了。可以在冶炼坊炼成 pp 药水：3 朵一瓶 10PP、5 朵一瓶 20PP。' },
     c_bowl: { name: '一碗饭', d: '满满一碗香喷喷的米饭。拿到庞贝星的熔岩原，放在一个场景里，说不定会引来爱吃米饭的精灵。' }
   };
-  var SEED_ORDER = ['s_herb', 's_flower', 's_rice'];
-  var CROP_ORDER = ['c_herb', 'c_flower', 'c_rice', 'c_bowl'];
+  var SEED_ORDER = ['s_herb', 's_flower', 's_exp', 's_rice'];
+  var CROP_ORDER = ['c_herb', 'c_flower', 'c_exp', 'c_rice', 'c_bowl'];
   var BAG_ORDER = MON_ORDER.concat(GEN_ORDER);
   /* 储存箱里每个道具的说明，分三栏：简介（是什么）、用途（怎么用、能做什么）、获得方式（2026-10-25 整理） */
   var SPEC_OF = { floraJade: ['芙罗拉星', '玛西露姆、六尾风王、卡莱奥丹', '草', '芙罗拉星的丛林、草甸'], kbDrop: ['坎伯兰星', '坎克托斯、戈耳贡、塞壬', '水', '坎伯兰星的水面、浅水区、深海区'], ppAsh: ['庞贝星', '赫菲斯托、费尔茅斯、冲锋火鸡', '火', '庞贝星的熔岩原、饮火城'], ltOrb: ['莱汀陨石带', '雷公、法拉第', '电', '莱汀陨石带'], whFrost: ['白之星', '霜冻之冠', '冰', '白之星'] };
@@ -962,7 +963,7 @@
     evAny: ['一管学习力合剂。', '用在任意一只精灵身上，增加 100 点可分配学习力，再在精灵资料里自己分配（学习力总量有上限）。', '竞技代币商店（100 竞技代币）；先驱之塔的代币商店（150 先驱代币）；BOSS 每周挑战、明明代币抽奖（每逢 4 的倍数的奖池）、排位赛季段位奖励。'],
     evTagore: ['泰戈尔专用的学习力合剂。', '用在泰戈尔一系，增加 100 点可分配学习力。', '泰戈尔每周挑战有机会掉落。'],
     evReset: ['把学习力退回去的胶囊。', '用在一只精灵身上，已经分配的学习力全部退回「可分配学习力」，可以重新分配。', '竞技代币商店（80 竞技代币）；先驱之塔的代币商店（200 先驱代币）。'],
-    fruit1: ['一颗饱满的果子。', '用在一只精灵身上，直接增加经验（每颗 = 精灵等级 × 100）。到了等级上限就不能用。', '竞技代币商店（30 竞技代币）。'],
+    fruit1: ['一颗饱满的果子。', '用在一只精灵身上，直接增加经验（每颗 = 精灵等级 × 100）。到了等级上限就不能用。', '竞技代币商店（30 竞技代币）；黄石 · 冶炼坊用经验原果 ×10 合成。'],
     fruit2: ['长得特别快的果子。', '用在一只精灵身上，直接增加经验（每颗 = 精灵等级 × 250）。到了等级上限就不能用。', '竞技代币商店（60 竞技代币）；先驱之塔的代币商店（60 先驱代币）；明明代币抽奖。'],
     nameTag: ['给精灵使用的命名牌。', '消耗 1 张，对选中的个体永久解锁无限次免费改名；在基础信息中点击名字旁的小羽毛改名，留空可恢复默认名。', '黄石 · 冶炼坊用圣晶石 ×5 合成；荆门 · 商城用 20000 能量购买。'],
     formDev: ['用圣晶石和星砂做成的小装置。', '用在一只精灵身上，永久解锁一个它长到过的更小形态的外观；之后在精灵资料的「外观形态」里随时免费切换。只改外观。', '黄石 · 冶炼坊用圣晶石 ×6、星砂 ×300 合成。'],
@@ -981,7 +982,9 @@
     g_core: ['雷暴和永冻里凝出来的核。', '黄石 · 冶炼坊用来合成华为捕捉装置（4 个一个）和形态切换装置。', '活动「明明教官的试炼」每关每个难度首次通过；芙罗拉星挑战路线累计星数奖励；瘴气驱逐战的全服里程碑奖励；明明代币抽奖。'],
     s_herb: ['绿色的药草籽。', '在恩施 · 太空种植园种下，8 小时后收获药草 ×50；收获时有 20% 的概率掉落 1 颗药草种子。', '恩施 · 生态舱的种子商店（100 能量）；第一次在芙罗拉星的丛林或草甸采集送 4 颗；支线「伟大的种植园」。'],
     s_flower: ['蓝色的花籽。', '在恩施 · 太空种植园种下，8 小时后收获活力花卉 ×50；收获时有 20% 的概率掉落 1 颗活力花种子。', '恩施 · 生态舱的种子商店（100 能量）。'],
+    s_exp: ['蕴藏成长能量的种子', '在太空种植园种下，8小时后收获经验原果 ×50；收获时有20%概率返还1颗经验种子', '种植园 · 种子商店：100能量 / 颗'],
     s_rice: ['芙罗拉星野外的稻种。', '在恩施 · 太空种植园种下，12 小时后收获米饭 ×250，种子会退回来。', '在芙罗拉星击败野生精灵时有 10% 的概率掉落。'],
+    c_exp: ['种植园收获的经验原果', '黄石 · 冶炼坊用10个合成1个成长果实', '在种植园种下经验种子，8小时后收获'],
     c_herb: ['太空种植园收获的药草。', '黄石 · 冶炼坊用 1 份合成 100hp药水、2 份合成 200hp药水。', '在太空种植园种药草种子收获。'],
     c_flower: ['太空种植园收获的蓝色小花，闻一闻就精神了。', '黄石 · 冶炼坊炼成 pp 药水：3 朵一瓶 10PP、5 朵一瓶 20PP，大的更划算。', '在太空种植园种活力花种子收获。'],
     c_rice: ['水稻收获后煮好的米饭，一粒一粒数得清。', '黄石 · 冶炼坊用 500 粒盛成一碗饭。', '在太空种植园种水稻种子收获。'],
@@ -7039,7 +7042,7 @@
   function farmPanelHTML(k) {
     var body = '', ttl = '', cls = '', owned = SEED_ORDER.filter(function (s0) { return acc.items[s0] > 0; });
     var seedBtn = function (attr, s0, extra) { var S = SEEDS[s0]; return '<button type="button" class="fs-seed" ' + attr + '>' + H.itemIcon(s0) + '<span><b>' + esc(itemName(s0)) + '</b><small>持有 ' + acc.items[s0] + ' 颗 · ' + growText(S.min) + '成熟，收获「' + esc(itemName(S.crop)) + '」×' + S.yield + (extra ? ' · ' + extra : '') + '</small></span></button>'; };
-    var noSeed = '<p class="hint">没有可以种的种子。药草种子、活力花种子在种子商店用能量买；水稻种子在芙罗拉星击败野生精灵时有 10% 的概率掉落。</p><div class="soc-foot" style="justify-content:flex-start"><button type="button" class="btn primary" data-fpanel="shop">去种子商店</button></div>';
+    var noSeed = '<p class="hint">没有可以种的种子。药草种子、活力花种子、经验种子在种子商店用能量买；水稻种子在芙罗拉星击败野生精灵时有 10% 的概率掉落。</p><div class="soc-foot" style="justify-content:flex-start"><button type="button" class="btn primary" data-fpanel="shop">去种子商店</button></div>';
     if (k.indexOf('sow:') === 0) {
       var i = +k.slice(4), F = farm(); if (farmState(i, F) !== 'empty') return '';
       ttl = '田 ' + (i + 1) + ' · 种点什么？';
@@ -7054,7 +7057,7 @@
     else if (k === 'shop') { ttl = '种子商店'; cls = ' wide'; body = seedShopBody(); }
     else if (k === 'stock') {
       ttl = '作物仓库';
-      body = stockBar('种子', SEED_ORDER) + stockBar('作物', CROP_ORDER) + '<p class="hint">药草：黄石 · 冶炼坊 1 份合成 100hp药水、2 份合成 200hp药水。活力花卉：3 朵炼成 10PP 药水、5 朵炼成 20PP 药水。米饭：500 粒在冶炼坊盛成一碗饭，可以在庞贝星熔岩原引来米饭火鸡。</p>';
+      body = stockBar('种子', SEED_ORDER) + stockBar('作物', CROP_ORDER) + '<p class="hint">药草：黄石 · 冶炼坊 1 份合成 100hp药水、2 份合成 200hp药水。活力花卉：3 朵炼成 10PP 药水、5 朵炼成 20PP 药水。经验原果：10个合成1个成长果实。米饭：500 粒在冶炼坊盛成一碗饭，可以在庞贝星熔岩原引来米饭火鸡。</p>';
     } else return '';
     return '<div class="soc-dlg bp-dlg"><div class="soc-box bp-box' + cls + '" role="dialog" aria-modal="true" aria-label="' + ttl + '"><span class="tape l"></span><span class="tape r"></span><h2>' + ttl + '</h2>' + body +
       '<div class="soc-foot"><button type="button" class="btn primary" data-bpx="1">关闭</button></div></div></div>';
@@ -7108,7 +7111,7 @@
     empty.slice(0, n).forEach(function (i) { farmPlant(i, seed, true, function (y) { if (y) ok++; if (!--left && ok) toast('种下了 ' + ok + ' 块「' + itemName(seed) + '」，' + growText(SEEDS[seed].min) + '后可以收获。'); }); });
   }
 
-  /* ---------- 种子商店：恩施 · 生态舱（交易 seedShop，js/engine/grow.js）：药草种子、活力花种子各 100 能量，另卖额外的种植栏位 ---------- */
+  /* ---------- 种子商店：恩施 · 生态舱（交易 seedShop，js/engine/grow.js）：药草、活力花、经验种子各 100 能量，另卖额外的种植栏位 ---------- */
   function seedShopBody() {
     var cards = GROW.SEED_SHOP.map(function (k) {
       var q = shopQty['sd-' + k] || 1, cost = GROW.SEED_PRICE * q, ok = acc.energy >= cost, S = SEEDS[k];

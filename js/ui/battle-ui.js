@@ -168,6 +168,7 @@
       (lim ? '<path d="M32 4l4 6h-8zM56 18l-2 7-5-5zM8 18l7 2-5 5z" fill="#fff4b0" stroke-width="1.5"/>' : '') + '</g><text x="32" y="40" text-anchor="middle" font-size="20" font-weight="700" fill="#23222b" font-family="sans-serif">' + ch + '</text></svg>';
   }
   function itemIcon(k) {
+    if (k === 'fruit1' || k === 'fruit2') return '<img class="it-ic it-px" src="images/items/' + (k === 'fruit1' ? 'growth_fruit' : 'rapid_growth_fruit') + '.png" alt="">';
     if (k === 'fireNote') return '<img class="it-ic" src="images/items/fire_note.svg" alt="">';
     // 2026-10-25：活力花卉、药草、hp 药水、pp 药水换成像素小图；药水右下角的小标写着回复多少
     var PX = { exp: 'exp', energy: 'energy', c_flower: 'flower', c_herb: 'herb', pot100: ['hp_potion', '100'], pot200: ['hp_potion', '200'], pp5: ['pp_potion', '5'], pp10: ['pp_potion', '10'], pp15: ['pp_potion', '15'], pp20: ['pp_potion', '20'], m_psac: 'poison_sac', antidote: 'antidote', ev50: ['ev_potion', '50'], evAny: ['ev_potion', '100'] }[k];
@@ -205,7 +206,7 @@
       moonStone: ['moon', '#9b87e6'], boneDust: ['pile', '#d9d4c7', '#fff'], tgPearl: ['orb', '#f0a43a'], brTwig: ['twig', '#8b6b3f'], deathTok: ['coin', '#2b2a33', '死'],
       ivMoon: ['flask', '#e86fb2', '天'], ivBone: ['flask', '#b07ad9', '天'], ivReroll: ['flask', '#e86fb2', '重'], evAny: ['flask', '#d9534f', '学'], evTagore: ['flask', '#e08a2e', '学'],
       natAny: ['pill', '#8e6fd6', '性'], natTagore: ['flask', '#8e6fd6', '性'], evReset: ['pill', '#9aa0a6', '退'], fruit1: ['fruit', '#e74c3c'], fruit2: ['fruit', '#f39c12', '✦'],
-      g_sand: ['pile', '#f2d58a', '#fff6c8'], g_core: ['orb', '#ff8a3d', '✦'], s_herb: ['seed', '#8bc34a'], s_flower: ['seed', '#4a90e2'], s_rice: ['seed', '#e8d9a8'], c_herb: ['leaf', '#4caf50'], c_flower: ['flower', '#5aa2f0'], c_rice: ['grain', '#f5f0dc'],
+      g_sand: ['pile', '#f2d58a', '#fff6c8'], g_core: ['orb', '#ff8a3d', '✦'], s_herb: ['seed', '#8bc34a'], s_flower: ['seed', '#4a90e2'], s_rice: ['seed', '#e8d9a8'], s_exp: ['seed', '#c79545'], c_exp: ['fruit', '#9ebc54', '经'], c_herb: ['leaf', '#4caf50'], c_flower: ['flower', '#5aa2f0'], c_rice: ['grain', '#f5f0dc'],
       mmTok: ['coin', '#4a6a8a', '明'], mmEye: ['orb', '#f2c94c', '眼'], e_leiming: ['orb', '#e8b830', '精'], e_odo: ['orb', '#5a7aa8', '精'], odoFin: ['gem', '#6a86b8'], hrDisk: ['coin', '#7b5ac8', '✦'], exp: ['orb', '#3b8fd9', '经'], energy: ['orb', '#e0a020', '能'],
       e_pluto: ['orb', '#5b4a8a', '精'], ctTicket: ['ticket', '#f2c94c', '券'], ctShare: ['ticket', '#b5452c', '享'], permit: ['ticket', '#c42f3a', '许'], auto: ['box', '#5b8fd0', '自']
     }[k];
