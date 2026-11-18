@@ -5102,15 +5102,17 @@
     }).join('') + '</ul><p class="hint">每天 0:00 刷新。每天 7 个：必定有 3 个竞技对战任务，开放精灵大乱斗后经常会有 1 个大乱斗任务，其余从探索类任务里抽取。</p>';
   }
 
-  /* ---------- 航行日志：活动、每日任务、排位奖励、下期预告 ---------- */
-  // 「近期改动」专栏：内容写在 js/data/changelog.js，最新一条展开，更早的折叠
+  /* ---------- 航行日志：近期重点、精灵与挑战、培养与基地、活动与任务 ---------- */
+  // 更新记录保留原始日期；同一天的旧公告收在同一折叠组
   function changelogHTML() {
     var L = typeof CHANGELOG !== 'undefined' ? CHANGELOG : [];
     if (!L.length) return '';
     var one = function (c) { return '<div class="cl-entry"><p class="cl-h"><b>' + esc(c.title) + '</b><span>' + esc(c.date) + '</span></p><ul>' + c.items.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul></div>'; };
+    var days = [], groups = {};
+    L.slice(1).forEach(function (c) { if (!groups[c.date]) { days.push(c.date); groups[c.date] = []; } groups[c.date].push(c); });
     return '<article class="log-card wide changelog"><span class="tape l"></span><span class="chip log-tag">近期改动</span><h3>更新公告</h3>' +
-      '<p class="hint">技能、数值和玩法的改动都会公布在这里，最新的在最上面。</p>' + L.slice(0, 1).map(one).join('') +
-      (L.length > 1 ? '<details class="cl-more"><summary>更早的改动（' + (L.length - 1) + ' 条）</summary>' + L.slice(1).map(one).join('') + '</details>' : '') + '</article>';
+      '<p class="hint">同类调整合并整理，历史记录按日期查看。</p>' + L.slice(0, 1).map(one).join('') +
+      days.map(function (d) { return '<details class="cl-more"><summary>' + esc(d) + ' · ' + groups[d].length + ' 条更新</summary>' + groups[d].map(one).join('') + '</details>'; }).join('') + '</article>';
   }
   // 「精灵改动」专栏（2026-10-19）：内容写在 js/data/monchanges.js。加强红色 ▲、削弱绿色 ▼、调整灰色 ◆
   function monChangesHTML() {
@@ -5337,14 +5339,43 @@
       '<div class="bl-thumbs">' + ks.map(function (k) { return '<button type="button" class="bl-th' + (k === cur ? ' on' : '') + '" data-logroom="' + k + '"><img src="' + BASE_UI[k].img + '" alt=""><span>' + esc(R[k].n) + '</span></button>'; }).join('') + '</div>' +
       '<p>原来的茶室升级成了<b>基地</b>！一共 ' + ks.length + ' 种房型：星空甲板、海底穹顶、沙海舰桥、雪原树屋，在基地商城里用能量购买，随时切换。</p>' +
       '<p>点「编辑基地」可以自由摆放<b>摆件</b>：地板摆件放在地上，墙饰挂在墙上，按住拖动、左右转向，最多摆 40 个。精元转化仪可以直接孵化精元，留言板能收到好友的留言，展示的精灵也会在基地里走来走去。</p>' +
+      '<p><b>精灵展示已更新</b>：面板列出全部开放槽位与空槽位，点击「添加精灵」或「切换精灵」，从分页列表中选择。切换时结算原精灵的展示经验，其他槽位保持原位。</p>' +
       '<p>好友可以来拜访你的基地，在「社交」里点「基地」就能去看看大家布置得怎么样。</p>' + gift +
       (op ? '<button type="button" class="btn primary" data-golog="myhome">前往我的基地</button>' : '<p class="hint">读完荆楚号 · 天门支线「陆羽茶室」后开放基地。</p>') + '</article>';
   }
+  function logTopics() { return typeof LOG_TOPICS !== 'undefined' ? LOG_TOPICS : []; }
+  function topicLogHTML(c) {
+    var art = c.sid ? '<img src="' + SPRITES[c.sid] + '" alt="' + esc(c.title) + '">' : c.icon ? H.itemIcon(c.icon) + (c.icon === 'fruit1' ? H.itemIcon('fruit2') : '') : '';
+    var open = c.go !== 'boss-clementi' || bossOpen('clementi');
+    if (c.go === 'myfarm') open = farmOpen();
+    return '<article class="log-card wide log-topic"><span class="tape r"></span><span class="chip log-tag">' + esc(c.tag) + '</span><h3>' + esc(c.title) + '</h3>' +
+      (art ? '<div class="log-topic-art' + (c.icon ? ' items' : '') + '">' + art + '</div>' : '') +
+      '<ul class="log-topic-list">' + c.items.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>' +
+      (c.go ? '<div class="soc-foot"><button type="button" class="btn primary" data-golog="' + esc(c.go) + '"' + (open ? '' : ' disabled') + '>' + esc(c.action) + '</button></div>' : '') +
+      (!open ? '<p class="hint">' + (c.go === 'myfarm' ? '读完支线「伟大的种植园」后开放种植园' : '读完主线「降临芙罗拉」后开放挑战') + '</p>' : '') + '</article>';
+  }
+  function recentLogHTML() {
+    var cards = logTopics().map(function (c) { return { key: c.key, tag: c.tag, title: c.title, text: c.summary || c.items[0] }; });
+    cards.splice(5, 0, { key: '版本更新-基地全面翻新！', tag: '基地展示', title: '基地槽位与分页选宠', text: '全部槽位一览，空位添加精灵，已有精灵随时切换' });
+    return '<article class="log-card wide log-recent"><span class="tape l"></span><span class="chip log-tag">近期重点</span><h3>本期更新</h3><p class="hint">新精灵、培养方式与玩法更新，点击查看</p>' +
+      '<div class="log-highlights">' + cards.map(function (c) { return '<button type="button" class="log-highlight" data-logsel="' + esc(c.key) + '"><small>' + esc(c.tag) + '</small><b>' + esc(c.title) + '</b><span>' + esc(c.text) + '</span><em>查看详情 ›</em></button>'; }).join('') + '</div></article>';
+  }
+  var LOG_GROUPS = ['近期重点', '待领取', '精灵与挑战', '培养与基地', '活动与任务', '公告与交流'];
+  function logGroupOf(t) {
+    var ty = t.split('-')[0];
+    if (ty === '限时领取') return '待领取';
+    if (['获取精灵', '精灵推荐', 'BOSS挑战', '平衡调整', '新精灵', '挑战规则'].indexOf(ty) >= 0) return '精灵与挑战';
+    if (['版本更新', '新玩法'].indexOf(ty) >= 0) return '培养与基地';
+    if (['限时活动', '全服任务', '常驻活动', '新活动', '精灵王争霸赛'].indexOf(ty) >= 0) return '活动与任务';
+    return '公告与交流';
+  }
   function logEntries() {
-    var E = [], add = function (t, h) { if (h) E.push({ t: t, h: h }); };
+    var E = [], add = function (t, h, group) { if (h) E.push({ t: t, h: h, group: group || logGroupOf(t) }); };
     var now = new Date(), on = mysteryTime();
     var wait = on ? '' : (function () { var t = new Date(now); t.setHours(MYSTERY.from, 0, 0, 0); var m = Math.max(0, Math.round((t - now) / 60000)); return '距离今天的活动开始还有 ' + Math.floor(m / 60) + ' 小时 ' + (m % 60) + ' 分钟'; })();
     ['comp1'].forEach(function (id) { var G0 = TX.D.GIFTS[id]; if (G0 && !(acc.gifts && acc.gifts[id])) add('限时领取-' + G0.name, giftLogHTML(id)); });   // 还没领的礼包放在最上面（领完自动消失）；基地改版纪念礼包改在「基地全面翻新！」里领（2026-11-03）
+    add('近期重点-本期更新', recentLogHTML(), '近期重点');
+    logTopics().forEach(function (c) { add(c.key, topicLogHTML(c), c.group); });
     add('版本更新-基地全面翻新！', baseLogHTML());
     add('船员交流-QQ群', '<article class="log-card wide qq-card"><span class="tape l"></span><span class="tape r"></span><div class="qq-txt"><span class="chip log-tag">船员交流</span><h3>QQ 群：<b class="qq-no">' + QQ_GROUP + '</b></h3><p class="hint">攻略、组队切磋、bug 反馈、新精灵立绘抢先看，都在群里。</p></div><button type="button" class="btn primary" data-copyqq="1">复制群号</button></article>');
     add('新玩法-圣晶石召唤', summonLogHTML());
@@ -5370,10 +5401,10 @@
       tmp.querySelectorAll('.log-card, .pt-card').forEach(function (el) { var tg = el.querySelector('.log-tag'), h3 = el.querySelector('h3'); add((tg ? tg.textContent.replace(/\s*·.*$/, '') : '公告') + '-' + (h3 ? h3.textContent.replace(/^🎁\s*/, '') : ''), el.outerHTML); });
     });
     add('更新公告-近期改动', changelogHTML());
-    return E;
+    return LOG_GROUPS.reduce(function (out, group) { return out.concat(E.filter(function (x) { return x.group === group; })); }, []);
   }
   // 小红点（2026-11-02）：航行日志没读过的条目、飞船终端里可以领取 / 免费的东西
-  function logKeyOf(t) { return t === '更新公告-近期改动' && typeof CHANGELOG !== 'undefined' && CHANGELOG[0] ? t + '|' + CHANGELOG[0].date + CHANGELOG[0].title : t; }
+  function logKeyOf(t) { return (t === '更新公告-近期改动' || t === '近期重点-本期更新') && typeof CHANGELOG !== 'undefined' && CHANGELOG[0] ? t + '|' + CHANGELOG[0].date + CHANGELOG[0].title : t; }
   function logRead() { return acc.logRead || (acc.logRead = {}); }
   var LOG_KEYS = null;   // 上次算出来的全部条目（算航行日志的小红点用）
   function logUnread() { if (!acc) return 0; if (!LOG_KEYS) { try { LOG_KEYS = logEntries().map(function (x) { return logKeyOf(x.t); }); } catch (e) { LOG_KEYS = []; } } var R = logRead(); return LOG_KEYS.filter(function (k) { return !R[k]; }).length; }
@@ -5381,17 +5412,18 @@
   function renderLog() {
     var host = $('pg-log'), oldNav = host.querySelector('.log-nav'), oldView = host.querySelector('.log-view'), oldTab = host.querySelector('.log-nv.on');
     var navScroll = oldNav ? oldNav.scrollTop : 0, viewScroll = oldView ? oldView.scrollTop : 0;
-    var E = logEntries(), sel = E.filter(function (x) { return x.t === ui.logSel; })[0] ? ui.logSel : (E.filter(function (x) { return x.t === '版本更新-基地全面翻新！'; })[0] || E[0]).t;   // 每次进入航行日志默认显示「新玩法-圣晶石召唤」
+    var E = logEntries(), sel = E.filter(function (x) { return x.t === ui.logSel; })[0] ? ui.logSel : '近期重点-本期更新';
     ui.logSel = sel; LOG_KEYS = E.map(function (x) { return logKeyOf(x.t); });
     logMarkRead(sel);
-    $('pg-log').innerHTML = '<div class="log-split"><nav class="log-nav" role="tablist" aria-label="航行日志">' + E.map(function (x) { var p = x.t.split('-'), ty = p.length > 1 ? p.shift() : '', nm = p.join('-'), on = x.t === sel; return '<button type="button" role="tab" class="log-nv' + (on ? ' on' : '') + '" aria-selected="' + on + '" data-logsel="' + esc(x.t) + '">' + (ty ? '<small>' + esc(ty) + '</small>' : '') + '<b>' + esc(nm) + '</b>' + (!logRead()[logKeyOf(x.t)] && x.t !== sel ? '<i class="red-dot" aria-label="未读"></i>' : '') + '</button>'; }).join('') + '</nav>' +
+    var group = '';
+    $('pg-log').innerHTML = '<div class="log-split"><nav class="log-nav" role="tablist" aria-label="航行日志">' + E.map(function (x) { var p = x.t.split('-'), ty = p.length > 1 ? p.shift() : '', nm = p.join('-'), on = x.t === sel, heading = group === x.group ? '' : '<div class="log-group" role="presentation">' + esc(x.group) + '</div>'; group = x.group; return heading + '<button type="button" role="tab" class="log-nv' + (on ? ' on' : '') + '" aria-selected="' + on + '" data-logsel="' + esc(x.t) + '">' + (ty ? '<small>' + esc(ty) + '</small>' : '') + '<b>' + esc(nm) + '</b>' + (!logRead()[logKeyOf(x.t)] && x.t !== sel ? '<i class="red-dot" aria-label="未读"></i>' : '') + '</button>'; }).join('') + '</nav>' +
       '<div class="log-view" tabindex="0" role="region" aria-label="日志内容">' + E.map(function (x) { return '<section class="log-sec" data-logsec="' + esc(x.t) + '"' + (x.t === sel ? '' : ' hidden') + '>' + x.h + '</section>'; }).join('') + '</div></div>';
-    host.querySelector('.log-nav').scrollTop = navScroll;
+    host.querySelector('.log-nav').scrollTop = oldTab && oldTab.dataset.logsel === sel ? navScroll : 0;
     if (oldTab && oldTab.dataset.logsel === sel) host.querySelector('.log-view').scrollTop = viewScroll;
   }
   $('pg-log').addEventListener('click', function (e) {
     var b = e.target.closest('[data-logsel]');
-    if (b) { ui.logSel = b.dataset.logsel; logMarkRead(ui.logSel); var rd = b.querySelector('.red-dot'); if (rd) rd.remove(); [].forEach.call(document.querySelectorAll('#pg-log .log-nv'), function (x) { var on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-selected', on); }); [].forEach.call(document.querySelectorAll('#pg-log .log-sec'), function (x) { x.hidden = x.dataset.logsec !== ui.logSel; }); var v = document.querySelector('#pg-log .log-view'); if (v) v.scrollTop = 0; return; }
+    if (b) { ui.logSel = b.dataset.logsel; logMarkRead(ui.logSel); [].forEach.call(document.querySelectorAll('#pg-log .log-nv'), function (x) { var on = x.dataset.logsel === ui.logSel; x.classList.toggle('on', on); x.setAttribute('aria-selected', on); if (on) { var rd = x.querySelector('.red-dot'); if (rd) rd.remove(); } }); [].forEach.call(document.querySelectorAll('#pg-log .log-sec'), function (x) { x.hidden = x.dataset.logsec !== ui.logSel; }); var v = document.querySelector('#pg-log .log-view'); if (v) v.scrollTop = 0; return; }
     var w = e.target.closest('[data-logwar]'); if (w) { ui.logWar = w.dataset.logwar; renderLog(); return; }
   });
   /* 航行日志（2026-11-01）：各个内容先显示成小板块，点开才是完整面板；完整的卡片放在隐藏的 #log-store 里
@@ -5517,6 +5549,10 @@
     }
     var lr = e.target.closest('[data-logroom]'); if (lr) { ui.logRoom = lr.dataset.logroom; var lv0 = document.querySelector('.log-view'), lsc = lv0 ? lv0.scrollTop : 0; renderLog(); var lv1 = document.querySelector('.log-view'); if (lv1) lv1.scrollTop = lsc; return; }   // 基地翻新：切换宣传图
     var g = e.target.closest('[data-golog]'); if (g) { if (g.dataset.golog === 'boss-barren') { ex.view = 'boss'; ex.boss = 'barren'; go('explore'); return; } if (g.dataset.golog === 'boss-odo') { ex.view = 'boss'; ex.boss = 'odo'; go('explore'); return; }
+      if (g.dataset.golog === 'boss-clementi') { if (!bossOpen('clementi')) return; ex.view = 'boss'; ex.boss = ex.bossK = 'clementi'; ex.bossD = 0; ex.planet = 'pompeii'; go('explore'); return; }
+      if (g.dataset.golog === 'boss-list') { ex.view = 'bosshub'; go('explore'); return; }
+      if (g.dataset.golog === 'myfarm') { HSACC.goFarm(); return; }
+      if (g.dataset.golog === 'endless') { ex.view = 'endless'; ex.planet = 'jingchu'; go('explore'); return; }
       if (g.dataset.golog === 'summon') { ex.view = 'summon'; ex.planet = 'jingchu'; go('explore'); return; }
       if (g.dataset.golog === 'myhome') { ex.view = 'home'; ex.area = '天门'; ex.planet = 'jingchu'; go('explore'); renderExplore(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8); return; }
       if (g.dataset.golog === 'flora-catch') { ex.planet = 'flora'; ex.view = 'sites'; ex.fpart = 'catch'; go('explore'); renderExplore(); return; }
