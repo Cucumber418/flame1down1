@@ -51,15 +51,15 @@
       target.appendChild(line);
     });
   }
-  var grid = document.getElementById('mgrid'), source = null, hideTimer = 0;
+  var grid = document.getElementById('mgrid'), source = null, hideTimer = 0, pinned = false;
   var bubble = document.createElement('div'); bubble.id = 'battle-skill-bubble'; bubble.className = 'skill-bubble';
   bubble.hidden = true; bubble.setAttribute('role', 'tooltip');
   var inner = document.createElement('div'); inner.className = 'skill-bubble-inner'; bubble.appendChild(inner); document.body.appendChild(bubble);
   function hoverCard(target) { return target.closest && target.closest('#mgrid .mv'); }
   function hoverAllowed() { return document.body.classList.contains('battle-desktop') && document.body.classList.contains('battle-active') && !grid.hidden; }
   function unlabel() { if (source) { var ids = (source.getAttribute('aria-describedby') || '').split(/\s+/).filter(function (id) { return id && id !== bubble.id; }); if (ids.length) source.setAttribute('aria-describedby', ids.join(' ')); else source.removeAttribute('aria-describedby'); } }
-  function hideBubble() { clearTimeout(hideTimer); unlabel(); source = null; bubble.hidden = true; }
-  function leaveBubble() { clearTimeout(hideTimer); hideTimer = setTimeout(hideBubble, 130); }
+  function hideBubble() { clearTimeout(hideTimer); unlabel(); source = null; pinned = false; bubble.hidden = true; }
+  function leaveBubble() { if (pinned) return; clearTimeout(hideTimer); hideTimer = setTimeout(hideBubble, 130); }
   function positionBubble() {
     if (!source || !source.isConnected || !hoverAllowed()) { hideBubble(); return; }
     var r = source.getBoundingClientRect(), w = document.documentElement.clientWidth, h = innerHeight;
@@ -74,9 +74,9 @@
     bubble.style.setProperty('--skill-arrow-left', Math.max(18, Math.min(size.width - 18, r.left + r.width / 2 - x)) + 'px');
     bubble.classList.toggle('below', !onTop);
   }
-  function showBubble(el) {
+  function showBubble(el, pin) {
     if (!el || !hoverAllowed()) return;
-    clearTimeout(hideTimer); unlabel(); source = el; inner.textContent = '';
+    clearTimeout(hideTimer); unlabel(); source = el; pinned = !!pin; inner.textContent = '';
     var head = document.createElement('div'); head.className = 'skill-bubble-head';
     var title = document.createElement('h4'), name = el.querySelector('.mn').cloneNode(true);
     name.querySelectorAll('.mv-blocked').forEach(function (n) { n.remove(); });
@@ -87,7 +87,7 @@
     var detail = document.createElement('p'); detail.className = 'skill-bubble-description'; detail.textContent = el.querySelector('.md').textContent; inner.appendChild(detail);
     var notes = Array.from(el.querySelectorAll('.mv-extra, .eff2, .eff0, .mv-blocked')).map(function (n) { return n.textContent.replace(/^\s*·\s*/, '').trim(); }).filter(Boolean);
     if (notes.length) { var note = document.createElement('p'); note.className = 'skill-bubble-note'; note.textContent = notes.join(' · '); inner.appendChild(note); }
-    var ids = (el.getAttribute('aria-describedby') || '').split(/\s+/).filter(Boolean); ids.push(bubble.id); el.setAttribute('aria-describedby', ids.join(' '));
+    var ids = (el.getAttribute('aria-describedby') || '').split(/\s+/).filter(function (id) { return id && id !== bubble.id; }); ids.push(bubble.id); el.setAttribute('aria-describedby', ids.join(' '));
     bubble.hidden = false; positionBubble();
   }
   document.addEventListener('pointerover', function (e) { var el = hoverCard(e.target); if (e.pointerType === 'mouse' && el && !el.contains(e.relatedTarget)) showBubble(el); });
@@ -104,7 +104,7 @@
     if (!hoverAllowed()) { hideBubble(); return; }
     if (!source.isConnected) {
       var live = grid.querySelector('[data-mi="' + source.dataset.mi + '"]');
-      if (live && live.querySelector('.mn').textContent === source.querySelector('.mn').textContent && (live.matches(':hover') || bubble.matches(':hover'))) showBubble(live);
+      if (live && live.querySelector('.mn').textContent === source.querySelector('.mn').textContent && (pinned || live.matches(':hover') || bubble.matches(':hover'))) showBubble(live, pinned);
       else hideBubble();
     } else positionBubble();
   }).observe(grid, { childList: true, attributes: true, attributeFilter: ['hidden'] });
@@ -113,6 +113,6 @@
   if (window.visualViewport) visualViewport.addEventListener('resize', sync);
   var coarse = matchMedia('(pointer: coarse)');
   if (coarse.addEventListener) coarse.addEventListener('change', sync); else if (coarse.addListener) coarse.addListener(sync);
-  window.HSSKILL = { touchUI: touchUI, fill: fill, inspect: inspect };
+  window.HSSKILL = { touchUI: touchUI, fill: fill, inspect: inspect, showBubble: showBubble };
   sync();
 })();

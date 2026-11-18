@@ -104,7 +104,12 @@
   Object.keys(panels).forEach(function (key) {
     var button = document.getElementById('battle-' + key + '-toggle'); if (button) button.addEventListener('click', function () { open(key); });
   });
-  document.getElementById('mgrid').addEventListener('skillinspect', function (e) { open('info', e.target.closest('.mv')); });
+  document.getElementById('mgrid').addEventListener('skillinspect', function (e) {
+    var move = e.target.closest('.mv');
+    if (body.classList.contains('battle-desktop')) {
+      close(false); hideEffect(); HSSKILL.showBubble(move, true);
+    } else open('info', move);
+  });
   var effectSource = null, effectPinned = false, effectTimer = 0;
   var effectPop = document.createElement('div');
   effectPop.id = 'battle-effect-popover'; effectPop.hidden = true; effectPop.setAttribute('role', 'tooltip');
