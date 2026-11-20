@@ -6247,47 +6247,125 @@
   }
   /* ---------- Wiki（2026-10-24）：顶栏入口，按图鉴编号列出所有精灵的全部技能，
    * 标出隐藏技能用什么道具解锁、等级上限用什么道具提升，以及精灵的获得方式；可以按属性筛选 ---------- */
-  // 2026-11-03：按游戏里实际的获得途径重新核对（野外出现的地点由 wikiGet 按 js/data/wild.js 自动补上）
-  var SUM_RARE = '圣晶石召唤：抽到稀有精灵的精元（随机一种），在精灵保育仓孵化';
+  // 获得方式以独立条目保存，跳转时再次检查当前进度
+  var SUM_RARE = { text: '圣晶石召唤：随机获得稀有精灵精元，在精灵保育仓孵化', go: 'summon|saint' };
   var WIKI_GET = {
-    leaf: '初始精灵（三选一）；芙罗拉星丛林、草甸的稀有野生精灵；' + SUM_RARE,
-    squid: '初始精灵（三选一）；坎伯兰星水面、浅水区的稀有野生精灵；' + SUM_RARE,
-    shroom: '初始精灵（三选一）；庞贝星熔岩原、饮火城的稀有野生精灵；' + SUM_RARE,
-    kaleo: '芙罗拉星丛林的稀有野生精灵；' + SUM_RARE,
-    leibniz: '莱汀陨石带 · 雷暴陨石群的稀有野生精灵「莱克」（3% 是异色）',
-    turkey: '在庞贝星熔岩原的某个场景放下一碗米饭（冶炼坊用米饭合成）后，那个场景刷新精灵时偶尔会出现；' + SUM_RARE,
-    siren: '在坎伯兰星水面的冥岛吹响奇声号角后出现；' + SUM_RARE,
-    hauris: '每天 16:00–24:00 切换探索场景时偶尔出现的神秘精灵「幽灵鱼」（LV10，可以捕捉）；' + SUM_RARE,
-    phantom: '圣晶石召唤：当期 UP 精灵叶粒魔种的精元（每抽 5%，第 50 抽必出），在精灵保育仓孵化',
-    tagore: '首次击败简单难度的BOSS「泰戈尔」（荆楚号 · 襄阳 · 古城防卫部），获得 LV10 小胖虎',
-    barren: '首次击败普通难度的BOSS「荒芜」（芙罗拉星 · 盐碱地），获得 LV10 枯叶灵',
-    clementi: '首次击败普通难度的BOSS「克莱门蒂」（庞贝星 · 饮火城），获得LV10克莱',
-    odo: '首次击败普通难度的BOSS「奥多亚克」（坎伯兰星 · 深海区），直接获得 LV10 奥多',
-    leafcat: '击败旅行精灵叶子喵有机会掉落叶片，5 片在黄石 · 冶炼坊合成「叶子喵的精元」，在精灵保育仓孵化（叶子喵要完成世界任务「旅行猫」后才会出现）',
-    pluto: '先驱之塔的代币商店：用先驱代币和死神代币兑换「帕努托尔的精元」，在精灵保育仓孵化',
-    leiming: '活动「明明教官的试炼」：明明代币抽奖第 10、30、50、70……个奖池的「雷明灯的精元」，在精灵保育仓孵化（10% 是异色）',
-    moon: '平衡排位首次达到铂金段位的奖励（LV10 小月亮）',
-    bone: '平衡排位首次达到王者段位的奖励（LV10 凶骨）',
-    aegis: '支线「明明教官的礼物」（荆楚号 · 襄阳 · 古城防卫部），获得 LV10 董之马',
-    wild: '世界任务「冰封深处的小精灵？」（白之星，读完第一章后开放）送一只 LV15 亚哆；之后永冻冰原上偶尔会出现封着亚哆的冰块，出战配队同时带草、火、水系精灵就能化开冰块，和 LV20～25 的亚哆对战并捕捉（每小时一次）',
-    firemouse: '庞贝星饮火城 · 炙热核心的野生精灵（只在这个场景出现）；炙热核心里那只瑟瑟发抖的火月鼠：出战配队带 3 只火系精灵去找它说话，它会跟你走（LV18，每个账号一次）',
-    tiago: '第一届做题大王争霸赛：参赛奖励「神秘精灵兑换券」在储存箱里兑换（LV10）；参赛选手也可以用「S1争霸赛精灵分享券」送给好友（LV10）',
-    dragon: '星际探索中暂时无法获得；竞技对战（平衡排位、模拟对战）里可以直接使用',
-    inkarm: '星际探索中暂时无法获得；竞技对战（平衡排位、模拟对战）里可以直接使用'
+    leaf: [{ text: '初始精灵（三选一）' }, SUM_RARE],
+    squid: [{ text: '初始精灵（三选一）' }, SUM_RARE],
+    shroom: [{ text: '初始精灵（三选一）' }, SUM_RARE],
+    kaleo: [SUM_RARE],
+    turkey: [{ text: '在庞贝星 · 熔岩原放下一碗米饭后，刷新精灵时偶尔出现', go: 'rice|pp_lava' }, SUM_RARE],
+    siren: [{ text: '在坎伯兰星 · 水面 · 冥岛吹响奇声号角后出现', go: 'horn|kb_surf|kb_isle' }, SUM_RARE],
+    hauris: [{ text: '每天16:00–24:00切换探索场景时偶尔出现的神秘精灵「幽灵鱼」（LV10，可以捕捉）', go: 'mystery' }, SUM_RARE],
+    phantom: [{ text: '圣晶石召唤：当期UP叶粒魔种的精元（每抽5%，第50抽必出），在精灵保育仓孵化', go: 'up|phantom' }],
+    tagore: [{ text: '首次击败简单难度BOSS「泰戈尔」（荆楚号 · 襄阳 · 古城防卫部），获得LV10小胖虎', go: 'boss|tiger|0' }],
+    barren: [{ text: '首次击败普通难度BOSS「荒芜」（芙罗拉星 · 盐碱地），获得LV10枯叶灵', go: 'boss|barren|1' }],
+    clementi: [{ text: '首次击败普通难度BOSS「克莱门蒂」（庞贝星 · 饮火城），获得LV10克莱', go: 'boss|clementi|1' }],
+    odo: [{ text: '首次击败普通难度BOSS「奥多亚克」（坎伯兰星 · 深海区），获得LV10奥多', go: 'boss|odo|1' }],
+    leafcat: [{ text: '击败旅行精灵叶子喵有机会掉落叶片，完成世界任务「旅行猫」后才会出现', go: 'travel' }, { text: '5片叶子喵的叶片在黄石 · 冶炼坊合成精元，再到精灵保育仓孵化', go: 'forge|lcEssence' }],
+    pluto: [{ text: '先驱之塔 · 代币商店：用先驱代币和死神代币兑换「帕努托尔的精元」，在精灵保育仓孵化', go: 'tower|shop' }],
+    leiming: [{ text: '明明教官的试炼：明明代币抽奖第10、30、50、70……个奖池获得精元，在精灵保育仓孵化（10%是异色）', go: 'mmgacha' }],
+    moon: [{ text: '平衡排位首次达到铂金段位的奖励（LV10小月亮）', go: 'rank|4' }],
+    bone: [{ text: '平衡排位首次达到王者段位的奖励（LV10凶骨）', go: 'rank|10' }],
+    aegis: [{ text: '支线「明明教官的礼物」（荆楚号 · 襄阳 · 古城防卫部），获得LV10董之马', go: 'quest|mingming' }],
+    wild: [{ text: '世界任务「冰封深处的小精灵？」（白之星，读完第一章后开放），获得LV15亚哆', go: 'quest|iceYado' }, { text: '完成任务后，在永冻冰原化开封着亚哆的冰块并捕捉（LV20～25，每小时一次，配队需同时有草、火、水系精灵）', go: 'ice|wh_snow' }],
+    firemouse: [{ text: '炙热核心里瑟瑟发抖的火月鼠：带3只火系精灵去和它说话，获得LV18火月鼠（每个账号一次）', go: 'fmgift|pp_city|pp_core' }],
+    tiago: [{ text: '第一届做题大王争霸赛参赛奖励：在储存箱使用「神秘精灵兑换券」，兑换LV10尖盔虫', go: 'items|ctTicket' }, { text: '参赛选手使用「S1争霸赛精灵分享券」赠送好友LV10尖盔虫', go: 'items|ctShare' }],
+    dragon: [{ text: '星际探索中暂时无法获得' }, { text: '竞技对战（平衡排位、模拟对战）中可以直接使用', go: 'arena' }],
+    inkarm: [{ text: '星际探索中暂时无法获得' }, { text: '竞技对战（平衡排位、模拟对战）中可以直接使用', go: 'arena' }]
   };
-  function wikiNo(s) { var n = (s.evo || []).map(function (e) { return e.no; }).filter(Boolean); return n.length ? +n[0] : 9999; }   // 没有编号的排在最后
+  function wikiNo(s) { var n = (s.evo || []).map(function (e) { return e.no; }).filter(Boolean); return n.length ? +n[0] : 9999; }
   function wikiGet(sid) {
-    var where = [];
+    var rows = (WIKI_GET[sid] || []).slice();
     WILD_REGIONS.forEach(function (R) {
-      if (R.record) return;   // 瘴气污染的记录：驱逐战用的地图，不能捕捉
-      var hit = (WILD[R.pool] || []).some(function (w) { return w.sid === sid && w.w > 0; }) || (R.bgs || []).some(function (bk) { return ((typeof WILD_SCENE !== 'undefined' && WILD_SCENE[bk]) || []).some(function (w) { return w.sid === sid && w.w > 0; }); });   // w = 0 的不会自然出现（米饭火鸡、亚哆）
-      if (hit) { var P = planetOf(R.planet); where.push((P ? P.name + ' · ' : '') + R.name); }
+      if (R.record) return;
+      var base = (WILD[R.pool] || []).filter(function (w) { return w.sid === sid && w.w > 0; }), P = planetOf(R.planet);
+      var label = (P ? P.name + ' · ' : '') + R.name;
+      if (base.length) rows.push({ text: '野外捕捉：' + label + (base[0].rare ? '（稀有精灵）' : '') + (sid === 'leibniz' ? '，莱克有3%概率为异色' : ''), go: 'field|' + R.id });
+      if (!base.length) (R.bgs || []).forEach(function (bk) {
+        if (((typeof WILD_SCENE !== 'undefined' && WILD_SCENE[bk]) || []).some(function (w) { return w.sid === sid && w.w > 0; })) rows.push({ text: '野外捕捉：' + label + ' · ' + (BG_NAME[bk] || bk) + '（只在此场景出现）', go: 'field|' + R.id + '|' + bk });
+      });
     });
-    var t = WIKI_GET[sid] || '';
-    if (where.length && !/野生精灵/.test(t)) t = (t ? t + '；' : '') + '野外：' + where.join('、');
-    return t || '暂未开放获得';
+    return rows.length ? rows : [{ text: '暂未开放获得' }];
   }
-  function wikiItem(k, tail) { var inf = itemInfo(k); return '<div class="wk-it"><b>' + esc(itemName(k)) + '</b>' + (tail ? '<span class="wk-tail">' + esc(tail) + '</span>' : '') + (inf && inf.get ? '<small>获得方式：' + esc(inf.get) + '</small>' : '') + '</div>'; }   // 2026-10-27：只写获得方式
+  function wikiRouteOpen(route) {
+    if (!ready() || !route) return false;
+    var q = route.split('|'), kind = q[0], id = q[1], R = regionById(id), S = SITES[id];
+    if (['field', 'rice', 'horn', 'ice', 'fmgift'].indexOf(kind) >= 0) {
+      if (!R || !regionOpen(R) || !planetOpen(planetOf(R.planet))) return false;
+      if (kind === 'rice') return !!(acc.items.c_bowl > 0 || (acc.riceBowl && acc.riceBowl.rid === id));
+      if (kind === 'horn') return acc.items.m_horn > 0;
+      if (kind === 'ice') return prog('iceYado').done && teamHasType(['草', '火', '水']) && acc.iceH !== Math.floor(Date.now() / 3600000);
+      if (kind === 'fmgift') return !acc.fmNpc && fmFireN() >= FMNPC.need;
+      return true;
+    }
+    if (kind === 'boss') return levelOpen(id, +q[2]) && !bossWon(id, +q[2]);
+    if (kind === 'weekly') return weeklyOpen() && WEEKLIES.some(function (w) { return w.boss === id && bossWon(id, w.d); });
+    if (kind === 'ewk') return weeklyOpen() && !!ewkType(id);
+    if (kind === 'purge') return pwOpen();
+    if (kind === 'quest') return !!S && unlocked(id) && !prog(id).done;
+    if (kind === 'rank') return arenaOpen() && !rankRec().got[id];
+    if (kind === 'arena' || kind === 'tokens') return arenaOpen();
+    if (kind === 'tower') return planetOpen(planetOf('tower'));
+    if (kind === 'items') return acc.items[id] > 0;
+    if (kind === 'up') return SUMMON.banner(Date.now()).up === id;
+    if (kind === 'summon' || kind === 'forge') return true;
+    if (kind === 'mmgacha') return mmLive() && (!!acc.mm || mmOpen());
+    if (kind === 'travel') { var t = travelAt(Date.now()); return travelOpen() && t.active && !travelDone(t.h); }
+    if (kind === 'mystery') return mysteryTime() && WILD_REGIONS.some(function (R) { return !R.record && regionOpen(R) && planetOpen(planetOf(R.planet)); });
+    return false;
+  }
+  function wikiSourceRows(rows, key) {
+    return '<ul class="wk-sources">' + rows.map(function (r, i) { return '<li class="wk-source"><span>' + esc(r.text) + '</span>' + (wikiRouteOpen(r.go) ? '<button type="button" class="wk-source-go" data-wkgo="' + esc(key + '|' + i) + '" aria-label="前往获得页面：' + esc(r.text) + '" title="前往获得页面"><span aria-hidden="true">→</span></button>' : '') + '</li>'; }).join('') + '</ul>';
+  }
+  function wikiItemGet(k) {
+    var inf = itemInfo(k), text = inf && inf.get || '';
+    return text.split(/[；;]/).reduce(function (out, t) {
+      t = t.trim(); var route = '', found, host = Object.keys(BOSSES).filter(function (id) { return capGem({ sid: BOSSES[id].sid }) === k; })[0];
+      if (/竞技代币商店/.test(t)) route = 'tokens';
+      else if (/先驱之塔.*(商店|兑换)/.test(t)) route = 'tower|shop';
+      else if (/先驱之塔/.test(t)) route = 'tower|climb';
+      else if (/召唤代币商店/.test(t)) route = 'summon|shop';
+      else if (/圣晶石召唤/.test(t)) route = 'summon|saint';
+      else if (/明明代币抽奖/.test(t)) route = 'mmgacha';
+      else if (/冶炼坊/.test(t)) route = 'forge';
+      else if (/兑换券/.test(t)) route = 'items|ctTicket';
+      else if (/旅行精灵叶子喵/.test(t)) route = 'travel';
+      else if (/幽灵鱼/.test(t)) route = 'mystery';
+      else if (/化开.*冰块/.test(t)) route = 'ice|wh_snow';
+      else if (/每周挑战/.test(t)) { found = Object.keys(BOSSES).filter(function (id) { return t.indexOf(BOSSES[id].name) >= 0; })[0]; if (found || host) route = 'weekly|' + (found || host); else if (SPEC_EWK[k]) route = 'ewk|' + SPEC_EWK[k]; }
+      else if (/瘴气驱逐战/.test(t)) route = 'purge';
+      else if (/首次击败/.test(t)) { found = Object.keys(BOSSES).filter(function (id) { return t.indexOf(BOSSES[id].name) >= 0; })[0]; if (found || host) { found = found || host; if (/普通.*困难/.test(t)) { var parts = t.split('、困难'); out.push({ text: parts[0], go: 'boss|' + found + '|1' }); out.push({ text: '首次击败困难难度的' + BOSSES[found].name + parts[1].replace(/^难度/, ''), go: 'boss|' + found + '|2' }); return out; } route = 'boss|' + found + '|' + (/普通/.test(t) ? 1 : /困难/.test(t) ? 2 : 0); } }
+      else if (/支线/.test(t)) { found = Object.keys(SITES).filter(function (id) { return SITES[id].side && t.indexOf(SITES[id].chapter.split(' · ').pop()) >= 0; })[0]; if (found) route = 'quest|' + found; }
+      else { found = WILD_REGIONS.filter(function (R) { var P = planetOf(R.planet); return !R.record && R.pool && P && t.indexOf(P.name) >= 0; })[0]; if (found) route = 'field|' + found.id; }
+      if (t) out.push({ text: t, go: route }); return out;
+    }, []);
+  }
+  function wikiItem(k, tail) { return '<div class="wk-it"><b>' + esc(itemName(k)) + '</b>' + (tail ? '<span class="wk-tail">' + esc(tail) + '</span>' : '') + '<small>获得方式</small>' + wikiSourceRows(wikiItemGet(k), 'item|' + k) + '</div>'; }
+  function wikiSourceGo(route) {
+    if (!wikiRouteOpen(route)) return false;
+    var q = route.split('|'), kind = q[0], id = q[1];
+    if (kind === 'quest') {
+      var S = SITES[id];
+      if (S.planet !== 'jingchu' && planetOf(S.planet).wild) { ex.planet = S.planet; ex.view = 'sites'; ex.fpart = 'story'; go('explore'); PM.story = id; renderField(); }
+      else { ex.qtab = S.event ? 'event' : 'side'; ex.qsel = id; openQuests(); }
+      return true;
+    }
+    if (kind === 'items') { ui.itSel = id; ui.itTab = 'all'; ui.itPage = 0; go('items'); return true; }
+    if (kind === 'arena' || kind === 'rank' || kind === 'tokens') { go('arena'); if (kind === 'rank') $('mode-rank').click(); if (kind === 'tokens') openTokenShop(); return true; }
+    if (kind === 'mystery') { var region = WILD_REGIONS.filter(function (R) { return !R.record && regionOpen(R) && planetOpen(planetOf(R.planet)); })[0]; return wikiSourceGo('field|' + region.id); }
+    if (kind === 'travel') { go('log'); ui.logSel = '获取精灵-旅行精灵叶子喵'; renderLog(); return true; }
+    if (kind === 'purge') { go('log'); ui.logSel = '全服任务-坎伯兰星保卫战'; ui.logWar = 'pw'; renderLog(); return true; }
+    if (kind === 'ewk') { ex.view = 'ewk'; ex.ewkT = id; go('explore'); return true; }
+    if (['field', 'rice', 'horn', 'ice', 'fmgift'].indexOf(kind) >= 0) { var R = regionById(id), i = q[2] ? fieldBgs(R).indexOf(q[2]) : 0; ex.planet = R.planet; ex.region = id; ex.view = 'field'; go('explore'); enterField(id, Math.max(0, i)); return true; }
+    if (kind === 'boss' || kind === 'weekly') { ex.boss = ex.bossK = id; if (kind === 'weekly') { ex.wk = WEEKLIES.findIndex(function (w) { return w.boss === id && wkOpen(w); }); ex.view = 'weekly'; } else { ex.view = 'boss'; ex.bossD = +q[2]; } go('explore'); return true; }
+    ex.planet = kind === 'tower' ? 'tower' : 'jingchu';
+    ex.view = kind === 'tower' ? 'sites' : kind === 'mmgacha' ? 'mmGacha' : kind === 'up' ? 'summon' : kind;
+    if (kind === 'tower') ex.twTab = id || 'shop';
+    if (kind === 'summon' || kind === 'up') ex.sumTab = kind === 'up' ? 'saint' : id || 'saint';
+    if (kind === 'forge' && id) { var r = forgeOf(id); if (r) ex.fgCat = forgeCatOf(r); }
+    go('explore'); return true;
+  }
   /* 2026-10-24：Wiki 改成和竞技对战「精灵图鉴」一样的样式：左边卡片网格（按图鉴编号），右边资料面板 */
   var WK = { sel: null, t: '', v: null };
   function wikiNoText(s) { var a = (s.evo || []).map(function (e) { return e.no; }).filter(Boolean); return a.length ? 'No.' + a[0] + (a.length > 1 ? '–' + a[a.length - 1] : '') : ''; }
@@ -6322,7 +6400,7 @@
     return '<span class="tape r"></span>' +
       '<div class="d-head"><div class="d-art wk-zoomable" data-wkzoom="1" title="点击查看大图"><img src="' + vImg + '" alt="' + esc(vName) + '"></div><div><h3>' + (ev.no ? '<span class="dexno">No.' + ev.no + '</span>' : '') + esc(vName) + '</h3>' + tchips(s.types) +
       (s.evo && !fin ? '<p class="formnote">' + stageLabel(s, v) + '形态 · 下方的能力、特性和技能按最终形态「' + esc(s.name) + '」显示</p>' : '') + (vLore ? '<p class="lore">' + esc(vLore) + '</p>' : '') + '</div></div>' +
-      '<div class="wk-get2"><b>获得方式</b><span>' + esc(wikiGet(s.id)) + '</span></div>' + evo +
+      '<div class="wk-get2"><b>获得方式</b>' + wikiSourceRows(wikiGet(s.id), 'mon|' + s.id) + '</div>' + evo +
       '<div class="stats">' + stats + '</div>' +
       (s.ability ? '<div class="trait"><p><b>特性 · ' + esc(s.ability.n) + '</b>　<span class="blue">' + esc(s.ability.d || '') + '</span></p></div>' : '') +
       '<div><div class="moves-head"><h4>全部技能</h4><span class="hint">普通技能按等级习得；带「隐藏」的要另外领悟</span></div>' + (s.id === 'odo' && fin ? odoTabs(odoF, 'data-wkof') : '') + '<div class="mlist">' +
@@ -6367,6 +6445,12 @@
     draw(false);
     d.addEventListener('click', function (e) {
       if (e.target === d || e.target.closest('[data-wkx]')) { d.remove(); return; }
+      var source = e.target.closest('[data-wkgo]');
+      if (source) {
+        var path = source.dataset.wkgo.split('|'), rows = path[0] === 'mon' ? wikiGet(path[1]) : wikiItemGet(path[1]), row = rows[+path[2]];
+        if (!row || !wikiRouteOpen(row.go)) { draw(false); return; }
+        d.remove(); wikiSourceGo(row.go); return;
+      }
       var pt = e.target.closest('[data-wkpart]'); if (pt) { WK.part = pt.dataset.wkpart; draw(false); return; }
       var b = e.target.closest('[data-wkt]'); if (b) { WK.t = b.dataset.wkt || ''; draw(false); return; }
       var c = e.target.closest('[data-wks]'); if (c) { WK.sel = c.dataset.wks; WK.v = null; WK.of = ''; draw(true); return; }

@@ -2593,8 +2593,16 @@ h2.sec { font-family: var(--f-hand); font-weight: 400; font-size: 28px; margin: 
 .wk-build .d-art img { max-width: 100%; max-height: 138px; object-fit: contain; }
 .wk-build .dexno { font-family: var(--f-body); font-size: 14px; color: var(--pencil); margin-right: 8px; vertical-align: middle; }
 .wk-build .card .hgno { top: 6px; left: 8px; }
-.wk-get2 { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; padding: 8px 10px; background: var(--paper); border: 1px dashed var(--rule); border-radius: 10px; font-size: 13.5px; }
+.wk-get2 { display: grid; grid-template-columns: minmax(0, 1fr); gap: 3px; padding: 8px 10px; background: var(--paper); border: 1px dashed var(--rule); border-radius: 10px; font-size: 13.5px; }
 .wk-get2 b { color: var(--red); white-space: nowrap; }
+.wk-sources { display: grid; min-width: 0; margin: 0; padding: 0; list-style: none; }
+.wk-source { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 34px; padding: 7px 0; border-bottom: 1px dashed var(--rule); }
+.wk-source:last-child { border-bottom: 0; }
+.wk-source > span { min-width: 0; overflow-wrap: anywhere; }
+.wk-source-go { display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border: 1px solid var(--rule); border-radius: 8px; background: var(--paper-2); color: var(--blue); font: inherit; font-size: 23px; line-height: 1; cursor: pointer; }
+.wk-source-go:hover { color: var(--red); border-color: var(--red); }
+.wk-source-go:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.wk-it .wk-sources { color: var(--pencil); font-size: 12px; }
 .wk-mrow { cursor: default; }
 .wk-mrow .wk-lv { font-size: 11.5px; font-weight: 700; color: var(--blue); min-width: 64px; padding-top: 2px; font-variant-numeric: tabular-nums; }
 .wk-mrow.hid .wk-lv { color: var(--red); }
