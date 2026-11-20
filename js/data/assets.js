@@ -6,7 +6,7 @@
 // 精灵立绘（最终形态）  →  images/sprites/
 var SPRITES = {
   "clementi": "images/sprites/clementi.png",
-  "fate": "images/sprites/fate.svg",
+  "fate": "images/sprites/fate.png",
   "dragon": "images/sprites/dragon.png",
   "leaf": "images/sprites/leaf.webp",
   "gorgon": "images/sprites/gorgon_v2.webp",
