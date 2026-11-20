@@ -8379,7 +8379,7 @@
       else if (e.animationName === 'vncgShake') { cgWrap.classList.remove('shake'); cgWrap.classList.add('full'); cgFit(); }   // 定格：按屏幕比例挑竖版 / 横版，铺满或居中
     });
     show();
-    try { $('vn').focus({ preventScroll: true }); } catch (er) {}
+    try { if ($('vn-end').hidden) $('vn').focus({ preventScroll: true }); } catch (er) {}
   }
   function stopTimers() { clearTimeout(ex.timer); clearInterval(ex.tick); ex.timer = null; ex.tick = null; clearInterval(ex.farmTick); stopField(); }
   function setBg(k) {
@@ -8626,17 +8626,19 @@
     ex.auto = false; ex.skip = false;
     $('vn-chars').innerHTML = ''; $('vn-mons').innerHTML = ''; $('vn-box').hidden = true; $('vn-choices').hidden = true;
     $('vn-end').hidden = false;
-    $('vn-end').innerHTML = '<div class="vn-endbox"><span class="sc-tag">' + SITES[ex.site].chapter + '</span><b>完</b>' + (failMsg ? '<p><b class="red">' + esc(failMsg) + '</b></p>' : '') +
+    $('vn-end').innerHTML = '<div class="vn-endbox" role="dialog" aria-modal="true" aria-labelledby="vn-end-heading"><header class="vn-endhead"><span class="sc-tag">' + esc(SITES[ex.site].chapter) + '</span><h2 class="vn-end-title" id="vn-end-heading">完</h2></header><div class="vn-endbody" tabindex="0" role="region" aria-label="任务完成与奖励说明">' + (failMsg ? '<p><b class="red">' + esc(failMsg) + '</b></p>' : '') +
       (R ? '<p>获得奖励</p><div class="vn-reward">' + rwList(R).map(function (x) { return '<span>' + x + '</span>'; }).join('') + '</div>' : '') +
       (ex.site === 'rare' && !nxt ? '<p><b class="red">任务：捕捉一种稀有精灵，然后回学院部汇报。</b></p>' : '') + (R && R.title ? '<p><b class="red">获得称号「' + TITLES.filter(function (x) { return x.id === R.title; })[0].n + '」！</b><br><span class="hint">点击右上角的名字即可佩戴</span></p>' : '') +
       (chPaid ? '<div class="vn-chap"><b>「' + chPaid.n + '」完成！</b><p>章节大奖</p><div class="vn-reward">' + rwList(chPaid.reward).map(function (x) { return '<span>' + x + '</span>'; }).join('') + '</div></div>' : '') +
       (nxt && !unlocked(nxt) && SITES[nxt].needText && !SITES[ex.site].endText ? '<p><b class="red">任务：' + SITES[nxt].needText + '。</b></p>' : '') +
       (UNLOCK[ex.site] && !SITES[ex.site].endText ? '<p><b class="red">「' + UNLOCK[ex.site] + '」已开放！</b>' + (ex.site === 'storage' ? '<br><span class="hint">在荆楚号 · 荆门 · 物资仓储里进入</span>' : ex.site === 'medal' ? '<br><span class="hint">在荆楚号 · 黄冈 · 学院部里进入</span>' : '') + '</p>' : '') +
       '<p>' + (SITES[ex.site].endText ? SITES[ex.site].endText : nxt && !unlocked(nxt) ? '完成任务后，下一段「' + SITES[nxt].chapter.split(' · ')[1] + '」就会开放。' : nxt ? (SITES[nxt].event ? '活动任务「' : SITES[nxt].side ? '支线「' : '下一段「') + SITES[nxt].chapter.split(' · ')[1] + '」已解锁，可在星际探索 · ' + nxtP.name + (SITES[nxt].dept ? ' · ' + DEPTS[SITES[nxt].dept][0] : '') + '中继续。' : '后续剧情正在制作中。') + '</p>' +
-      '<div class="row">' + (intro ? (INTRO_SITES.indexOf(ex.site) >= 0 && INTRO_SITES[INTRO_SITES.indexOf(ex.site) + 1] ? '<button type="button" class="btn primary" data-vn="inext" data-nx="' + INTRO_SITES[INTRO_SITES.indexOf(ex.site) + 1] + '">继续下一段</button>' : '<button type="button" class="btn primary" data-vn="enter">进入游戏</button>')
+      '</div><div class="row vn-endactions">' + (intro ? (INTRO_SITES.indexOf(ex.site) >= 0 && INTRO_SITES[INTRO_SITES.indexOf(ex.site) + 1] ? '<button type="button" class="btn primary" data-vn="inext" data-nx="' + INTRO_SITES[INTRO_SITES.indexOf(ex.site) + 1] + '">继续下一段</button>' : '<button type="button" class="btn primary" data-vn="enter">进入游戏</button>')
         : ex.arc ? '<button type="button" class="btn" data-vn="replay">重温一遍</button>' + (ex.arcQ && ex.arcQ.length ? '<button type="button" class="btn" data-vn="next" data-nx="' + ex.arcQ[0] + '">连播下一段：' + esc(SITES[ex.arcQ[0]].chapter) + '</button>' : '') + '<button type="button" class="btn primary" data-vn="exit">返回剧情回顾</button>'
         : '<button type="button" class="btn" data-vn="replay">重温一遍</button>' + (nxt && unlocked(nxt) ? '<button type="button" class="btn" data-vn="next" data-nx="' + nxt + '">继续下一段</button>' : '') + '<button type="button" class="btn primary" data-vn="exit">' + (SITES[ex.site].dept ? '返回区域' : '返回地点') + '</button>') + '</div></div>';
     syncBtns();
+    var endButton = $('vn-end').querySelector('.vn-endactions .primary');
+    if (endButton) endButton.focus({ preventScroll: true });
   }
   function syncBtns() { var a = $('vn-auto'), s = $('vn-skip'); if (a) a.classList.toggle('on', ex.auto); if (s) s.classList.toggle('on', ex.skip); }
   function setUiOff(on) { var v = $('vn'); if (!v) return; v.classList.toggle('ui-off', on); if (on) { ex.autoWas = ex.auto; ex.auto = false; stopTimers(); if (ex.typing) doneTyping(); syncBtns(); } }
