@@ -8,15 +8,16 @@
   function sync() {
     frame = 0;
     var visitingEstate = !social.hidden && social.querySelector('.visit-farm-page, .visit-home-page');
-    var star = page.querySelector('.star-map-page'), home = visitingEstate || page.querySelector('.home-page'), ship = page.querySelector('.ship-map-page'), planet = page.querySelector('.planet-map-page');
+    var star = page.querySelector('.star-map-page'), home = visitingEstate || page.querySelector('.home-page'), ship = page.querySelector('.ship-map-page'), planet = page.querySelector('.planet-map-page'), forge = page.querySelector('.forge-page');
     var activity = !!christmas && !christmas.hidden;
     var items = !inventory.hidden, journal = !log.hidden, socialMain = !social.hidden && !visitingEstate, exploring = !page.hidden;
     var target = activity ? christmas : journal ? log : !social.hidden ? social : items ? inventory : page;
-    var on = !body.classList.contains('no-acc') && (activity || journal || socialMain || items || !!visitingEstate || (exploring && !!(star || home || ship || planet))) && !body.classList.contains('battle-active');
+    var on = !body.classList.contains('no-acc') && (activity || journal || socialMain || items || !!visitingEstate || (exploring && !!(star || home || ship || planet || forge))) && !body.classList.contains('battle-active');
     flag('scene-page-active', on);
     flag('star-map-active', on && exploring && !!star);
     flag('home-page-active', on && (!!visitingEstate || exploring) && !!home);
     flag('ship-page-active', on && exploring && !!ship);
+    flag('forge-page-active', on && exploring && !!forge);
     flag('storage-active', on && items);
     flag('planet-map-active', on && exploring && !!planet);
     flag('farm-page-active', on && (!!visitingEstate || exploring) && !!home && home.classList.contains('farm-page'));
@@ -33,7 +34,7 @@
     prop('--scene-full-height', full + 'px');
     var height = estate ? full : Math.max(0, full - HSVIEW.top(target) - 10);
     prop('--scene-view-height', height + 'px');
-    if (activity || journal || socialMain) { flag('home-compact', false); flag('ship-paired', false); return; }
+    if (activity || journal || socialMain || exploring && !!forge) { flag('home-compact', false); flag('ship-paired', false); return; }
     if (items) {
       var grid = inventory.querySelector('.ib-grid');
       if (grid && window.HSACC) {

@@ -37,3 +37,15 @@
 .shop-detail-box footer p { flex: 1; margin: 0; }.shop-detail-box footer .btn { flex: 0 0 auto; }
 @media(max-width:640px) { .shop-display-grid { grid-template-columns: repeat(2,minmax(0,1fr)) !important; gap: 8px !important; }.shop-product { min-height: 108px; padding: 10px 7px; gap: 6px; }.shop-product-icon { width: 52px; height: 48px; }.shop-product b { font-size: 12px; }.shop-detail-box { padding: 14px; gap: 10px; }.shop-detail-box h2 { font-size: 25px; }.shop-detail-icon { width: 48px; height: 52px; flex-basis: 48px; } }
 @media(max-height:520px) { .shop-detail-box { padding: 12px; gap: 7px; }.shop-detail-box > header { gap: 8px; }.shop-detail-icon { height: 38px; width: 38px; flex-basis: 38px; }.shop-detail-box h2 { font-size: 23px; }.shop-description { font-size: 13px; }.shop-quantity-head { margin-top: 8px; } }
+
+/* 冶炼保持一屏高度，返回与分类固定，配方区可滚动到底 */
+.forge-page { height: 100%; min-height: 0; min-width: 0; display: flex; flex-direction: column; gap: 8px; padding-bottom: 4px; }
+.forge-page > .crumb, .forge-page > .forge-tabs { flex: 0 0 auto; margin: 0; }
+.forge-page > .forge-tabs { display: flex; flex-wrap: wrap; gap: 6px; padding: 2px 0; }
+.forge-page > .forge-catalog { flex: 1 1 0; min-height: 0; min-width: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; scrollbar-width: thin; padding: 3px 6px 8px 3px; margin: 0; }
+.forge-catalog:focus-visible { outline: 1px dashed var(--red); outline-offset: -1px; }
+@media (max-height: 580px) { .forge-page .shop-product { min-height: 100px; padding: 8px; gap: 5px; }.forge-page .shop-product-icon { height: 45px; width: 50px; }.forge-page .forge-tabs .tab { padding: 6px 10px; } }
+@media (min-width: 900px) { .forge-catalog.shop-display-grid { grid-template-columns: repeat(4,minmax(0,1fr)) !important; }.forge-page .shop-product { min-height: 110px; padding: 9px; gap: 6px; }.forge-page .shop-product-icon { width: 56px; height: 52px; } }
+.forge-catalog { scrollbar-gutter: stable; scrollbar-color: var(--pencil) transparent; }
+.forge-catalog::-webkit-scrollbar { width: 6px; }.forge-catalog::-webkit-scrollbar-thumb { background: var(--pencil); border-radius: 4px; }
+.forge-catalog > .gx-card { grid-column: auto; }
