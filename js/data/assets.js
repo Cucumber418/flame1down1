@@ -212,7 +212,10 @@ var BG = {
 // 角色立绘、立绘差分、图标  →  images/characters/
 var CHARS = {
   "bttp_christmas": "images/characters/bttp_christmas.png",
-  "christmas_four": "images/characters/christmas_four.png",
+  "christmas_oct": "images/characters/christmas_oct.png",
+  "christmas_unicorn": "images/characters/christmas_unicorn.png",
+  "christmas_may": "images/characters/christmas_may.png",
+  "christmas_ace": "images/characters/christmas_ace.png",
   "vanber_christmas": "images/characters/vanber_christmas.png",
   "threego_christmas": "images/characters/threego_christmas.png",
   "ship_icon": "images/characters/ship_icon_v3.webp",

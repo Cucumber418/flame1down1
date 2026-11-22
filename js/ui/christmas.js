@@ -105,7 +105,7 @@ var HSCHRISTMAS = (function () {
     if (bg === 'hl_cabin') maybeStory('gifts'); else if (bg === 'hl_shop') maybeStory('shop');
     else if (bg === 'hl_wonderland' && CHRISTMAS.wonderOpen(HSACC.acc()) && !CHRISTMAS.story(HSACC.acc()).knightIntro && !storyBusy) knightStory();
   }
-  function friendsHTML(walk) { return '<div class="xmas-friends' + (walk ? ' walking' : '') + '" aria-label="OCT、Unicorn、May和Ace">' + [0,1,2,3].map(function (i) { return '<span style="--friend:' + i + ';background-image:url(' + CHARS.christmas_four + ')"></span>'; }).join('') + '</div>'; }
+  function friendsHTML(walk) { return '<div class="xmas-friends' + (walk ? ' walking' : '') + '" aria-label="OCT、Unicorn、May和Ace">' + ['oct','unicorn','may','ace'].map(function (name,i) { return '<span style="--friend:' + i + '"><img src="' + CHARS['christmas_' + name] + '" alt="' + ['OCT','Unicorn','May','Ace'][i] + '"></span>'; }).join('') + '</div>'; }
   function knightStory() {
     storyDialog([
       { n: '你', t: '管道后方竟通向另一片雪地。小屋前，一个戴着恶魔角、手持黑暗树枝的身影正试着推开房门。' },
