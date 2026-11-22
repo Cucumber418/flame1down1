@@ -355,6 +355,14 @@ var M = {
   闪光飞叶: { type: '草', cat: '特攻', power: 100, custom: 'flashLeaf', pp: 10, d: '威力100，命中后使对方下一次受到攻击时，额外降低其1级命中' },
   灵耳谛听: { type: '普通', cat: '变化', hidden: true, custom: 'ear', pp: 5, d: '3回合内攻击必定命中；期间对方若试图主动闪避（使用提升闪避或闪避攻击的技能），则使其下一次受到的攻击威力翻倍' },
   星星魔法: { type: '光', cat: '特攻', power: 25, hidden: true, custom: 'starMagic', pp: 15, d: '威力25，每使用一次，威力比上一次提升25点，最高125；换下场也会保留。达到最高威力后，命中时有50%概率降低对方1级速度' },
+  // —— 巴洛霍尔（普通）：护盾、净化与能力等级锁定
+  践踏: { type: '普通', cat: '物攻', power: 10, tgtStage: { def: -1 }, d: '威力10，降低对方1级物防' },
+  纯净护盾: { type: '普通', cat: '变化', custom: 'barlowShield', d: '4回合内每回合初获得50点护盾' },
+  能量弹: { type: '普通', cat: '物攻', power: 85, fixed: 40, d: '威力85，附加40点固定伤害' },
+  纯净领域: { type: '普通', cat: '变化', custom: 'barlowField', d: '5回合内自身在场时，双方能力等级无法变化' },
+  纯化: { type: '普通', cat: '特攻', power: 75, custom: 'barlowPurify', hidden: true, d: '威力75，命中后消除对方能力提升，每消除1级恢复自身50点体力' },
+  本源之姿: { type: '普通', cat: '变化', custom: 'barlowOrigin', heal: 0.25, hidden: true, d: '恢复1/4最大体力，下2次攻击命中后恢复1/5最大体力' },
+
   // —— 巴利海雅（普通）：PP消耗与连续施法
   撞击: { type: '普通', cat: '物攻', power: 35, d: '威力35' },
   灵力: { type: '普通', cat: '变化', selfStage: { spa: 1 }, d: '提升自身1级特攻' },

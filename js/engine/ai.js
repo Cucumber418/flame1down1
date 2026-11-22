@@ -25,7 +25,7 @@ var CUSTOM_SCORE = { nextCrit: 18, voidPhys: 22, induct: 16, stealDef: 22, steal
   seal: 14, melt: 30, calm: 26, halfPhys5: 22, halfPhys3: 18, chaosWater: 30, wither: 34, swamp: 10, mist: 10, jungle: 22, siren: 36,
   silentSea: 0, dr40: 22, weak2: 18, crit2: 30, endure: 16, sureHitNext: 0, retal: 20, block100: 24, recoilQ: 18, dodgeOne: 18, capacitor: 0, rice: 16, rice3: 34 };
 function scoreMove(S, me, foe, mv) {
-  var hpR = me.hp / me.maxhp, s = 0;
+  var hpR = me.hp / me.maxhp, s = 0, locked = pureFieldActive(S);
   if (mv.cat !== '变化') {
     var d = estAttack(me, foe, mv);
     if (mv.fixedOnly === 'selfBlast') return d >= foe.hp && hpR < 0.5 ? 210 : (hpR < 0.25 ? d / foe.maxhp * 100 : -50);
@@ -34,7 +34,7 @@ function scoreMove(S, me, foe, mv) {
     if (mv.drain && hpR < 0.6) s += 12;
     if (mv.custom === 'transferDown' && STG.some(function (k) { return me.stages[k] < 0; })) s += 15;
     if (mv.custom === 'baliBeam' && missingPP(foe) < foe.moves.reduce(function (n, sl) { return n + sl.max; }, 0)) s += ability(me) === '绫彩' ? 12 : 5;
-    if (mv.custom === 'baliAbsorb') s += 5;
+    if (mv.custom === 'baliAbsorb' && !locked) s += 5;
     if (mv.rhythm && !me.tm[mv.rhythm]) s += ability(me) === '终律' ? 24 : 14;
     if (mv.custom === 'clementEmber') s += Math.floor(me.hp / 5) / foe.maxhp * 70 - (hpR < 0.3 ? 15 : 3);
     if (mv.custom === 'clementFinale' && !hasStatus(foe)) return -100;
@@ -47,26 +47,31 @@ function scoreMove(S, me, foe, mv) {
     if (mv.custom === 'vuln' && !foe.tm.vuln) s += 10;
     if (mv.custom === 'weak3' && !foe.tm.weak) s += 10;
     if (mv.custom === 'canyue') s += 6 * Math.min(4, me.flags.canyue || 0);
-    if (mv.tgtStage) s += 4;
+    if (mv.custom === 'barlowPurify' && !locked) s += Math.min(45, posSum(foe) * (hpR < 0.8 ? 12 : 6));
+    if (mv.tgtStage && !locked) s += 4;
     if (mv.status && (!foe.st[mv.status.k] || mv.status.k === '中毒') && !(mv.status.k === '流血' && typesOf(foe).indexOf('机械') >= 0)) s += 18 * mv.status.chance;
     return s;
   }
   if (mv.heal || mv.healLost) s += hpR < 0.4 ? (mv.healLost ? 30 : 45) * (1 - hpR) + 6 : 0;   // 2026-10-24：电脑少用回血技能（原来体力 55% 以下就积极回血）
-  if (mv.selfStage) for (var k in mv.selfStage) if (me.stages[k] < 4 && !me.tm.noBoost && !me.tm.seal) s += (hpR > 0.5 ? 16 : 4) * mv.selfStage[k];
+  if (mv.selfStage && !locked) for (var k in mv.selfStage) if (me.stages[k] < 4 && !me.tm.noBoost && !me.tm.seal) s += (hpR > 0.5 ? 16 : 4) * mv.selfStage[k];
   if (mv.selfStage && me.tm.seal > 0) s -= 40;
-  if (mv.selfStageOne && !me.tm.noBoost && !me.tm.seal) s += hpR > 0.5 ? 8 : 2;
-  if (mv.tgtStage) for (var k2 in mv.tgtStage) if (foe.stages[k2] > -4 && !foe.tm.mist) s += 9 * Math.abs(mv.tgtStage[k2]);
+  if (mv.selfStageOne && !locked && !me.tm.noBoost && !me.tm.seal) s += hpR > 0.5 ? 8 : 2;
+  if (mv.tgtStage && !locked) for (var k2 in mv.tgtStage) if (foe.stages[k2] > -4 && !foe.tm.mist) s += 9 * Math.abs(mv.tgtStage[k2]);
   var stImmune = mv.status && ((mv.status.k === '寄生' && typesOf(foe).indexOf('草') >= 0) || (mv.status.k === '流血' && typesOf(foe).indexOf('机械') >= 0));
   if (mv.status && !stImmune && (!foe.st[mv.status.k] || mv.status.k === '中毒' || (mv.status.refresh && foe.st[mv.status.k] <= 2)) && !foe.tm.immune && !foe.tm.reflect) s += 38 * mv.status.chance;
   if (stImmune && !mv.tgtStage) s -= 40;
-  if (mv.clearTgtUp && mv.cat === '变化') { var up = 0; STG.forEach(function (k) { if (foe.stages[k] > 0) up += foe.stages[k]; }); s += up ? 14 * up : -25; }
+  if (mv.clearTgtUp && !locked && mv.cat === '变化') { var up = 0; STG.forEach(function (k) { if (foe.stages[k] > 0) up += foe.stages[k]; }); s += up ? 14 * up : -25; }
   if (mv.status && foe.tm.reflect) s -= 30;
   var faster = speedOf(me) > speedOf(foe);
   var c = mv.custom;
   switch (c) {
+    case 'barlowShield': s += me.tm.pureShield ? -20 : 24; break;
+    case 'barlowField': s += locked ? -20 : (foe.moves.some(function (sl) { var m = M[sl.n]; return sl.pp > 0 && m && (m.selfStage || m.tgtStage); }) ? 24 : 5); break;
+    case 'barlowOrigin': s += me.fx.originHits ? -15 : 16; break;
     case 'baliBarrier': s += me.tm.halfSpec ? -20 : (foe.moves.some(function (sl) { return sl.pp > 0 && M[sl.n] && M[sl.n].cat === '特攻'; }) ? 24 : -10); break;
     case 'baliStance': s += me.fx.prismAttacks ? -20 : (hpR > 0.4 ? 30 : 8); break;
-    case 'clementClean': s += STG.some(function (k) { return me.stages[k] < 0; }) ? 30 : -20; break;
+    case 'clementClean': s += !locked && STG.some(function (k) { return me.stages[k] < 0; }) ? 30 : -20; break;
+    case 'stealAtk': case 'stealDef': s += locked ? -20 : CUSTOM_SCORE[c]; break;
     case 'fateField': s += S.fateTurns > 0 ? -10 : 16; break;
     case 'sure3': s += me.tm.sure3 || me.tm.ear ? -20 : 10; break;
     case 'ear': s += me.tm.ear ? -20 : 16; break;
@@ -106,7 +111,7 @@ function scoreMove(S, me, foe, mv) {
         if (c === 'calm') s += 30 * (1 - hpR);
       }
   }
-  if (mv.clearSelfDown) { var neg = 0; STG.forEach(function (k) { if (me.stages[k] < 0) neg -= me.stages[k]; }); s += neg * 14; }
+  if (mv.clearSelfDown && !locked) { var neg = 0; STG.forEach(function (k) { if (me.stages[k] < 0) neg -= me.stages[k]; }); s += neg * 14; }
   return s;
 }
 // 电脑难度参数：randomP 乱出招概率；noise 估分噪声；switchP 考虑换人的概率；dumbRepl 倒下后随便换

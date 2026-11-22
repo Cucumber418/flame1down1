@@ -160,6 +160,13 @@ var SP = [
 var DUMMY = { id: 'dummy', name: '木桩', types: ['无'], type: '无', base: { hp: 100, atk: 0, def: 50, spa: 0, spd: 50, spe: 0 }, ability: { n: '无', d: '训练用木桩，不会攻击，体力无限' }, moves: [], hidden: [], def: [] };
 // 只在账号系统里出现的精灵（不进入竞技对战，也不参与强度测算）：占位精灵，以及竞技名单固定之后新加的所有精灵
 var EXTRA_SP = [
+  { id: 'barlow', name: '巴洛霍尔', types: ['普通'],
+    base: { hp: 84, atk: 106, def: 85, spa: 80, spd: 80, spe: 89 },
+    evo: [{ n: '巴洛', lv: 1, no: '080' }, { n: '巴洛恒', lv: 25, no: '081' }, { lv: 50, no: '082' }], evoLvSure: false,
+    ability: { n: '纯净', d: '每次替换上场时，为己方所有存活的场下精灵净化各1层负面印记' },
+    lore: '巴洛 → 巴洛恒 → 巴洛霍尔',
+    moves: ['撞击', '磨刀', '践踏', '猛冲击', '纯净护盾', '切裂', '遁走', '能量弹', '纯净领域'],
+    hidden: ['纯化', '本源之姿'], def: ['纯净护盾', '能量弹', '纯净领域', '切裂'] },
   { id: 'bali', name: '巴利海雅', types: ['普通'],
     base: { hp: 85, atk: 75, def: 80, spa: 115, spd: 85, spe: 95 },
     evo: [{ n: '巴利', lv: 1, no: '077' }, { n: '巴利恒', lv: 25, no: '078' }, { lv: 50, no: '079' }], evoLvSure: false,
