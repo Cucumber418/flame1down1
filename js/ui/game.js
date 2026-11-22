@@ -348,6 +348,7 @@
       else toast('读完星际探索 · 荆楚号 · 孝感大厅的剧情后，「竞技对战」才会开放。', prog('board').done ? '前往孝感大厅' : '', '孝感');
       return;
     }
+    if (b.dataset.page === 'christmas') ui.xmasPanel = 'home';
     if (b.dataset.page === 'explore' && (ex.view === 'mmArena' || ex.view === 'mmGacha')) { ex.view = 'sites'; ex.planet = 'station'; }
     if (b.dataset.page === 'explore' && shipCtx()) ex.view = 'planets';   // 在荆楚号里点「星际探索」：回到星图   // 在全息作战里点「星际探索」：回到空间站
     go(b.dataset.page);
@@ -926,7 +927,9 @@
   INS_ITEMS.insChip = { name: '刻印激活晶片', d: '开启一只精灵的第 3 个刻印槽。在精灵资料的「刻印」里使用。圣晶石召唤有 2% 的概率获得。' };
   INS_ITEMS.fPt = { name: '友情点', d: '友情点召唤用的点数。社交里每天可以给每位好友各送一次经验（双方各 200 点，自己每天从送礼最多拿 2000 点）；借用好友的助战精灵，双方各 100 点（每天最多 1000 点）。' };
   INS_ITEMS.sumTok = { name: '召唤代币', d: '每次圣晶石召唤送 10 个，抽到当期 UP 再送 200 个。可以在召唤代币商店兑换圣晶石、UP 精灵的专属道具和限定刻印。' };
-  var MAT_ORDER = SUM_ESS.concat(['m_lcleaf', 'e_leafcat', 'e_pluto', 'e_odo', 'm_psac', 'm_hfhorn', 'm_horn', 'm_mcry', 'm_cu', 'm_fe', 'ctTicket', 'ctShare']);
+  MATS.xmasBell = { name: '圣诞铃铛', d: 'Vanber的圣诞任务奖励，较为稀少，可在Threego的苏格兰杂货铺兑换道具' };
+  MATS.xmasCandy = { name: '拐杖糖', d: 'Vanber的圣诞任务奖励，可在Threego的苏格兰杂货铺兑换基础道具' };
+  var MAT_ORDER = SUM_ESS.concat(['xmasBell', 'xmasCandy', 'm_lcleaf', 'e_leafcat', 'e_pluto', 'e_odo', 'm_psac', 'm_hfhorn', 'm_horn', 'm_mcry', 'm_cu', 'm_fe', 'ctTicket', 'ctShare']);
   // 太空种植园只种药草。min 是成熟分钟，yield 是收获数量。收获时退回种子。
   var SEEDS = GROW.SEEDS;   // 在 js/engine/grow.js
 
@@ -971,12 +974,14 @@
     fruit1: ['一颗饱满的果子。', '用在一只精灵身上，直接增加经验（每颗 = 精灵等级 × 100）。到了等级上限就不能用。', '竞技代币商店（30 竞技代币）；黄石 · 冶炼坊用经验原果 ×10 合成。'],
     fruit2: ['长得特别快的果子。', '用在一只精灵身上，直接增加经验（每颗 = 精灵等级 × 250）。到了等级上限就不能用。', '竞技代币商店（60 竞技代币）；先驱之塔的代币商店（60 先驱代币）；明明代币抽奖。'],
     nameTag: ['给精灵使用的命名牌。', '消耗 1 张，对选中的个体永久解锁无限次免费改名；在基础信息中点击名字旁的小羽毛改名，留空可恢复默认名。', '黄石 · 冶炼坊用圣晶石 ×5 合成；荆门 · 商城用 20000 能量购买。'],
-    formDev: ['用圣晶石和星砂做成的小装置。', '用在一只精灵身上，永久解锁一个它长到过的更小形态的外观；之后在精灵资料的「外观形态」里随时免费切换。只改外观。', '黄石 · 冶炼坊用圣晶石 ×6、星砂 ×300 合成。'],
+    formDev: ['用圣晶石和星砂做成的小装置。', '用在一只精灵身上，永久解锁一个它长到过的更小形态的外观；之后在精灵资料的「外观形态」里随时免费切换。只改外观。', '黄石 · 冶炼坊用圣晶石 ×6、星砂 ×300 合成；圣诞活动 · Threego的苏格兰杂货铺兑换'],
     earthShard: ['出发前从地球上带来的元素结晶，带着家乡的气息。', '每 100 个让三只初始精灵（叶粒之果、水臂领主、涅槃方头一系）领悟一个还没领悟的隐藏技能；它们到 LV70 后，也用它解锁 LV75（500 个）、LV80（500 个）的等级上限。', '读完黄冈 · 学院部的支线「隐藏技能」得 1,000 个。'],
     moonStone: ['一块映着新月微光的石头。', '每 100 个让小月亮一系领悟一个隐藏技能；到 LV70 后也用它解锁更高的等级上限。', '竞技代币商店（2 竞技代币）。'],
     boneDust: ['泛着幽光的骨粉，摸上去凉凉的。', '每 100 个让骨刃一系领悟一个隐藏技能；到 LV70 后也用它解锁更高的等级上限。', '竞技代币商店（2 竞技代币）。'],
     tgPearl: ['泰戈尔一声虎啸凝成的珠子。', '每 100 个让泰戈尔一系领悟一个隐藏技能；到 LV70 后也用它解锁 LV75（500 个）、LV80（500 个）的等级上限。', '首次击败困难难度的泰戈尔得 80 个；泰戈尔每周挑战每次 15 / 30 / 50 个（简单 / 普通 / 困难）。'],
     brTwig: ['从荒芜体内的古代除草程序里提取出的一小瓶药剂。', '每 100 个让荒芜一系领悟一个隐藏技能；到 LV70 后也用它解锁 LV75（500 个）、LV80（500 个）的等级上限。', '首次击败普通难度的荒芜得 40 个、困难难度得 80 个；荒芜每周挑战每次 15 / 30 / 50 个（简单 / 普通 / 困难）。'],
+    xmasBell: ['Vanber准备的稀有圣诞铃铛', '在Threego的苏格兰杂货铺兑换道具', '圣诞活动 · Vanber的圣诞礼物'],
+    xmasCandy: ['红白相间的圣诞拐杖糖', '在Threego的苏格兰杂货铺兑换基础道具', '圣诞活动 · Vanber的圣诞礼物'],
     crossEssence: ['凝聚着海伦娜星能量的十字精粹', '每100个解锁巴洛或巴利一系的一个隐藏技能，LV75、LV80突破各需500个', '击败海伦娜星 · 圣诞城堡的野生精灵，每只掉落1–6个'],
     fireNote: ['凝聚烈焰的音符', '每100个让克莱一系领悟一个隐藏技能，也用于突破等级上限', '首次击败普通难度的克莱门蒂获得40个；每周挑战每次15 / 30个（简单 / 普通）'],
     odoFin: ['从深海的奥多亚克身上脱落的古老鳍甲。', '每 100 个让奥多亚克一系领悟一个隐藏技能；到 LV70 后也用它解锁 LV75（500 个）、LV80（500 个）的等级上限。', '首次击败普通难度的奥多亚克得 40 个、困难难度得 80 个；奥多亚克每周挑战每次 15 / 30 / 50 个（简单 / 普通 / 困难）。'],
@@ -1770,18 +1775,16 @@
   });
 
   /* ---------- 星际探索：选星球 → 选地点 → 剧情（galgame 式对话） ---------- */
-  function renderChristmas() {
-    var open = PVE.helenaOpen(acc);
-    $('pg-christmas').innerHTML = '<div class="page-head"><h2 class="sec">圣诞</h2><span class="hint">一场意外带来的冬日旅程</span></div>' +
-      '<section class="xmas-home"><span class="tape l"></span><button type="button" class="xmas-planet" data-helena' + (open ? '' : ' disabled') + '><span class="xmas-planet-art"><img src="images/planets/helena_v2.png" alt="戴着圣诞帽的海伦娜星"></span><span class="xmas-planet-info"><small>圣诞活动</small><b>海伦娜星</b><span>雪夜城堡、秘密小屋与杂货铺</span><em>' + (open ? '前往海伦娜星 ›' : '完成地球主线后解锁') + '</em></span></button></section>' +
-      '<p class="xmas-coming hint">其他活动内容制作中</p>';
+  function renderChristmas() { HSCHRISTMAS.render($('pg-christmas'), acc, ui.xmasPanel || 'home', PVE.helenaOpen(acc)); }
+  function goChristmas(panel) {
+    if (!PVE.helenaOpen(acc)) { toast('完成地球主线后开放圣诞活动'); return; }
+    if ((panel === 'gifts' && !CHRISTMAS.sceneOpen(acc, 1)) || (panel === 'shop' && !CHRISTMAS.sceneOpen(acc, 2))) { toast(panel === 'gifts' ? '先带上巴洛，去城堡大门敲门' : '先完成Vanber的一项任务'); return; }
+    ui.xmasPanel = panel || 'home';
+    if (panel === 'gifts') txRun('christmas', { a: 'visit' }, function () { if (page === 'christmas') renderChristmas(); });
+    go('christmas');
   }
-  $('pg-christmas').addEventListener('click', function (e) {
-    if (!e.target.closest('[data-helena]') || !PVE.helenaOpen(acc)) return;
-    ex.planet = 'helena'; ex.view = 'sites'; go('explore');
-  });
   var PLANETS = [
-    { id: 'helena', name: '海伦娜星', d: '被不明黑洞牵引而来的圣诞星球，城堡、小屋和杂货铺均可自由进入', sites: ['helenaArrival'], wild: true, ptype: '圣诞星球', color: ['#bcdce7', '#ba3545'], img: 'images/planets/helena_v2.png', after: 'jiuquan' },
+    { id: 'helena', name: '海伦娜星', d: '被不明黑洞牵引而来的圣诞星球，城堡大门后藏着熟悉的人影', sites: ['helenaArrival'], wild: true, ptype: '圣诞星球', color: ['#bcdce7', '#ba3545'], img: 'images/planets/helena_v2.png', after: 'jiuquan' },
     { id: 'earth', name: '地球', d: '我们出发的地方。', sites: ['school', 'river', 'jiuquan'] },
     { id: 'jingchu', name: '荆楚号', d: '环绕地球运行的星际探索舰，轮廓和湖北省一模一样。', sites: ['board', 'xiaogan', 'academy', 'storage'], ship: true, after: 'jiuquan' },
     { id: 'station', name: '空间站', d: '停泊在荆楚号后方的空间站，先驱之塔就建在这里。', sites: [], station: true, after: 'flora1' },
@@ -1813,7 +1816,7 @@
     潜江: ['食堂', '餐饮补给'], 仙桃: ['体能馆', '体能与失重训练']
   };
   var SITES = {
-    helenaArrival: { name: '意外的圣诞航行', planet: 'helena', chapter: '活动 · 意外的圣诞航行', side: true, event: true, bg: 'cockpit_p', after: 'jiuquan', need: function () { return PVE.helenaOpen(acc); }, needText: '完成地球主线', endText: '海伦娜星已开放，三个场景均可自由前往' },
+    helenaArrival: { name: '意外的圣诞航行', planet: 'helena', chapter: '活动 · 意外的圣诞航行', side: true, event: true, bg: 'cockpit_p', after: 'jiuquan', need: function () { return PVE.helenaOpen(acc); }, needText: '完成地球主线', endText: '海伦娜星已开放，试着敲敲城堡大门' },
     school: { name: '省实验中学', planet: 'earth', chapter: '第一段 · 月考之后', bg: 'gate', d: '月考成绩公布后的第二天，张老师有一件「天大的好事」要宣布，还要为你们挑选伙伴精灵。' },
     river: { name: '武昌江边', planet: 'earth', chapter: '第二段 · 江边出发', bg: 'qiyi', d: '出发的日子到了。从起义门到彭刘杨路，再坐大巴驶过长江大桥，一路向西。', after: 'school' },
     jiuquan: { name: '酒泉卫星发射中心', planet: 'earth', chapter: '第三段 · 准备发射', bg: 'jslc', d: '穿过戈壁和沙丘，大巴终于抵达发射中心。在这里，你们遇见了要去太空寻找奶弟的女孩 Threego。', after: 'river' },
@@ -3700,7 +3703,7 @@
       ['多喝热水', function () { fmSay(['……谢谢，更冷了。'], [['咳，我还是认真想想办法吧', function () { acc.fmAsk = 1; save(); fmNpcTalk(); }]]); }],
       ['我来想办法', function () { acc.fmAsk = 1; save(); fmNpcTalk(); }]]);
   }
-  function regionById(rid) { for (var i = 0; i < WILD_REGIONS.length; i++) if (WILD_REGIONS[i].id === rid) return WILD_REGIONS[i]; return null; }
+  function regionById(rid) { return PVE.regionById(rid); }
   function stopField() {
     if (fieldTick) { clearInterval(fieldTick); fieldTick = null; }
     if (fieldRefresh) { clearInterval(fieldRefresh); fieldRefresh = null; }
@@ -3726,6 +3729,7 @@
     if (m.x > prev + 0.02) m.face = 1; else if (m.x < prev - 0.02) m.face = -1;
   }
   function spawnFieldMon(R, slot, force) {
+    if (!PVE.sceneWild(R, slot.si, slot.bgKey)) return null;
     var sp;
     if (force && force.srv) sp = force.srv;   // 服务器刷出来的（号角引来的塞米）
     else if (srvMode() && !force) { sp = wqTake(R, slot); if (!sp) return null; }   // 用服务器网址玩时：种类、等级、异色都由服务器掷
@@ -3783,7 +3787,7 @@
       var F = fields[rid] = { seq: 0, scene: resized ? Math.min(previous.scene, n - 1) : Math.floor(Math.random() * n), scenes: [] };
       for (var i = 0; i < n; i++) {
         var sc = { ice: R.id === 'wh_snow' && prog('iceYado').done && Math.random() < 0.01, bgKey: bgs.length ? bgs[i % bgs.length] : '', bg: bgs.length ? BG[bgs[i % bgs.length]] : '', flip: i >= bgs.length && i % 2 === 1, corrupt: fallen && !/_mia$|_corrupt$/.test(bgs[i % bgs.length] || ''), slots: FIELD_SLOTS.map(function (s) { return { hx: s.hx, hy: s.hy, r: s.r, mon: null, next: 0 }; }) };
-        sc.slots.forEach(function (sl) { sl.si = i; sl.bgKey = sc.bgKey; if (R.pool) fillSlot(R, F, sl, now, true); });
+        sc.slots.forEach(function (sl) { sl.si = i; sl.bgKey = sc.bgKey; if (PVE.sceneWild(R, sl.si, sl.bgKey)) fillSlot(R, F, sl, now, true); });
         F.scenes.push(sc);
       }
     }
@@ -3793,7 +3797,7 @@
   function catchUp(R, F, sc, now) {
     sc.slots.forEach(function (sl) {
       if (sl.mon && now >= sl.mon.die + FIELD_FADE) { sl.next = sl.mon.die + FIELD_FADE + between(FIELD_GAP); sl.mon = null; }
-      if (!sl.mon && now >= sl.next && R.pool) fillSlot(R, F, sl, now);
+      if (!sl.mon && now >= sl.next && PVE.sceneWild(R, sl.si, sl.bgKey)) fillSlot(R, F, sl, now);
     });
   }
   function replaceFieldMon(rid, id) {   // 打完、抓到或逃走：这只离开，过一会儿再补一只
@@ -3823,14 +3827,17 @@
     return PM.preview;
   }
   function planetMapEnter(pid, rid, index, panel) {
+    if (rid === 'hl_cabin' || rid === 'hl_shop') { index = rid === 'hl_cabin' ? 1 : 2; rid = 'hl_castle'; }
     var P = planetOf(pid); if (!P || !P.wild || !planetOpen(P)) { ex.view = 'planets'; renderExplore(); return; }
     var last = PM.last[pid], R = rid ? regionById(rid) : last && regionById(last.rid);
     if (!R || R.planet !== pid || !planetMapCan(R)) R = regionsOf(pid).filter(planetMapCan)[0];
     if (!R) { ex.view = 'planets'; renderExplore(); return; }
+    if (R.planet === 'helena' && index != null && !CHRISTMAS.sceneOpen(acc, +index)) { toast(+index === 1 ? '先带上巴洛，去城堡大门敲门' : '先完成Vanber的一项任务'); index = 0; }
     ex.planet = pid; ex.region = R.id; ex.view = 'field';
     var F = planetMapField(R);
     if (index != null) F.scene = Math.max(0, Math.min(F.scenes.length - 1, Math.floor(+index) || 0));
     else if (!last) F.scene = 0;
+    if (R.planet === 'helena' && !CHRISTMAS.sceneOpen(acc, F.scene)) F.scene = 0;
     PM.panel = panel || null; PM.helpers = false; PM.challenge = null; PM.story = null;
     renderField(); setTimeout(bgmScene, 0); setTimeout(cumberCheck, 400);
   }
@@ -3874,8 +3881,8 @@
     return regionsOf(P.id).filter(function (R) { return !R.record || regionOpen(R); }).map(function (R) {
       var open = planetMapCan(R);
       return '<section class="planet-mini-region"><h3>' + esc(R.name) + (open ? '' : ' <small>未开放</small>') + '</h3><div class="planet-mini-grid">' + planetMapScenes(R).map(function (sc, i) {
-        var on = ex.region === R.id && F.scene === i;
-        return '<button type="button" class="planet-mini-scene' + (on ? ' on' : '') + '" data-map-rid="' + R.id + '" data-map-scene="' + i + '" aria-pressed="' + on + '"' + (open ? '' : ' disabled title="读完「降临芙罗拉」后开放"') + '><span class="planet-mini-image">' + (sc.bg ? '<img src="' + sc.bg + '" alt="">' : '') + '</span><b>' + esc(planetMapName(sc, R, i)) + '</b><small>' + (on ? '当前位置' : open ? '点击传送' : '未开放') + '</small></button>';
+        var on = ex.region === R.id && F.scene === i, sceneOpen = open && (R.planet !== 'helena' || CHRISTMAS.sceneOpen(acc, i));
+        return '<button type="button" class="planet-mini-scene' + (on ? ' on' : '') + '" data-map-rid="' + R.id + '" data-map-scene="' + i + '" aria-pressed="' + on + '"' + (sceneOpen ? '' : ' disabled title="' + (R.planet === 'helena' ? i === 1 ? '带上巴洛，尝试敲开城堡大门' : '完成Vanber的一项任务后开放' : '读完降临芙罗拉后开放') + '"') + '><span class="planet-mini-image">' + (sc.bg ? '<img src="' + sc.bg + '" alt="">' : '') + '</span><b>' + esc(planetMapName(sc, R, i)) + '</b><small>' + (on ? '当前位置' : sceneOpen ? '点击传送' : R.planet === 'helena' ? i === 1 ? '先敲开城堡大门' : '先完成Vanber的一项任务' : '未开放') + '</small></button>';
       }).join('') + '</div></section>';
     }).join('') || '<p>暂时没有可以前往的区域。</p>';
   }
@@ -3964,19 +3971,29 @@
     if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
     else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
   });
+  function christmasNpcHTML(sc) {
+    if (sc.bgKey === 'hl_castle') return '<button type="button" class="xmas-door planet-story-pin" data-xmas-door style="left:45%;top:67%"><span aria-hidden="true">🚪</span><b>城堡大门</b></button>';
+    var who = sc.bgKey === 'hl_cabin' ? 'vanber' : sc.bgKey === 'hl_shop' ? 'threego' : '';
+    if (!who) return '';
+    return '<button type="button" class="xmas-scene-npc" data-xmas-open="' + (who === 'vanber' ? 'gifts' : 'shop') + '" style="left:' + (who === 'vanber' ? 65 : 70) + '%;top:90%" aria-label="' + (who === 'vanber' ? 'Vanber的圣诞礼物' : 'Threego的苏格兰杂货铺') + '"><img src="' + CHARS[who + '_christmas'] + '" alt="戴着圣诞帽的' + (who === 'vanber' ? 'Vanber' : 'Threego') + '"><span>' + (who === 'vanber' ? 'Vanber · 圣诞任务' : 'Threego · 兑换道具') + '</span></button>';
+  }
+  document.addEventListener('click', function (e) { var b = e.target.closest('[data-xmas-open]'); if (b && !ex.fighting) goChristmas(b.dataset.xmasOpen); });
   function renderField() {
+    if (ex.region === 'hl_cabin' || ex.region === 'hl_shop') { var oldScene = ex.region === 'hl_cabin' ? 1 : 2; ex.region = 'hl_castle'; fieldState(ex.region).scene = oldScene; }
     var R = regionById(ex.region);
     if (!R || !planetMapCan(R)) { ex.view = 'sites'; renderExplore(); return; }
-    var open = regionOpen(R), F = planetMapField(R), P = planetOf(R.planet), sc = F.scenes[F.scene], n = F.scenes.length, lab = sc.bgKey === 'fl_lab';
+    var F = planetMapField(R); if (R.planet === 'helena' && !CHRISTMAS.sceneOpen(acc, F.scene)) F.scene = 0;
+    var open = regionOpen(R), P = planetOf(R.planet), sc = F.scenes[F.scene], n = F.scenes.length, lab = sc.bgKey === 'fl_lab';
     ex.planet = R.planet; PM.last[P.id] = { rid: R.id, scene: F.scene };
     if (open) catchUp(R, F, sc, Date.now());
     var bg = sc.bg ? '<img class="wf-bg' + (sc.flip ? ' flip' : '') + '" src="' + sc.bg + '" alt="">' : '<div class="wf-ph">' + regionArt(R.id) + '</div>';
     var mons = open ? sc.slots.filter(function (sl) { return sl.mon; }).map(function (sl) { return fieldMonHTML(sl.mon); }).join('') : '';
     var nav = '<button type="button" class="wf-arrow l" data-wfnav="-1" aria-label="上一个小场景"' + (n > 1 ? '' : ' disabled') + '>‹</button><button type="button" class="wf-arrow r" data-wfnav="1" aria-label="下一个小场景"' + (n > 1 ? '' : ' disabled') + '>›</button><span class="wf-dots" aria-label="小场景 ' + (F.scene + 1) + ' / ' + n + '">' + F.scenes.map(function (x, i) { return '<i class="' + (i === F.scene ? 'on' : '') + '"></i>'; }).join('') + '</span>';
     var resources = open && !lab ? gatherNodesHTML(R.id, F.scene, n) + jadeHTML(R.id, F.scene) + riceBowlHTML(R, F.scene) + oreHTML(R, F, F.scene) + hornHTML(R, F, F.scene) + iceHTML(R, F, F.scene) + storyGatherHTML(R, F.scene) : '';
-    var objects = open ? (resources ? '<div class="planet-map-resources" role="group" aria-label="场景物品">' + resources + '</div>' : '') + (lab ? '' : travelHTML(R, F.scene) + kbwHTML(R, F.scene) + fmNpcHTML(F, F.scene) + fieldBossHTML(R, F.scene)) + planetLabObjects(lab) : '<button type="button" class="planet-story-pin" data-map-panel="story"><span aria-hidden="true">📖</span><b>降临芙罗拉</b></button>';
+    var objects = open ? christmasNpcHTML(sc) + (resources ? '<div class="planet-map-resources" role="group" aria-label="场景物品">' + resources + '</div>' : '') + (lab ? '' : travelHTML(R, F.scene) + kbwHTML(R, F.scene) + fmNpcHTML(F, F.scene) + fieldBossHTML(R, F.scene)) + planetLabObjects(lab) : '<button type="button" class="planet-story-pin" data-map-panel="story"><span aria-hidden="true">📖</span><b>降临芙罗拉</b></button>';
     planetMapRender('<div class="planet-map-page"><div class="planet-map-stage"><div class="wf-scene' + (sc.corrupt ? ' miasma-bg' : '') + '" id="wf-scene" data-environment="' + SCENE_MOTION.kind('', 0, sc.bgKey) + '">' + bg + mons + objects + nav + '</div><header class="planet-map-heading"><button type="button" class="btn ghost" data-map-exit="1" aria-label="返回星图">‹</button><div><small>' + esc(P.name + ' · ' + R.name) + '</small><h2>' + esc(planetMapName(sc, R, F.scene)) + '</h2></div></header><nav class="planet-map-tools" aria-label="星球功能">' + [['story','📖','剧情'],['challenge','⚔','关卡'],['task','📜','星球任务'],['map','🗺','小地图']].map(function (t) { return '<button type="button" data-map-panel="' + t[0] + '" aria-haspopup="dialog"><span aria-hidden="true">' + t[1] + '</span><b>' + t[2] + '</b></button>'; }).join('') + '</nav></div></div>' + planetMapPanel(P));
     if (open) startFieldMove(); else stopField();
+    if (R.planet === 'helena') setTimeout(function () { HSCHRISTMAS.sceneEntered(sc.bgKey); }, 200);
   }
   function startFieldMove() {
     stopField();
@@ -3990,7 +4007,7 @@
       sc.slots.forEach(function (sl) {
         var m = sl.mon;
         if (!m) {   // 空位：时间到了就出现一只新的（淡入）
-          if (R.pool && now >= sl.next) { var nm_ = fillSlot(R, F, sl, now); if (nm_) scene.insertAdjacentHTML('beforeend', fieldMonHTML(nm_, 'wf-in')); }
+          if (PVE.sceneWild(R, sl.si, sl.bgKey) && now >= sl.next) { var nm_ = fillSlot(R, F, sl, now); if (nm_) scene.insertAdjacentHTML('beforeend', fieldMonHTML(nm_, 'wf-in')); }
           return;
         }
         var el = scene.querySelector('[data-wfid="' + m.id + '"]');
@@ -4008,7 +4025,9 @@
   }
   function fieldNav(d) {
     var R = regionById(ex.region), F = R && planetMapField(R); if (!F || ex.fighting) return;
-    var n = F.scenes.length; F.scene = (F.scene + d + n) % n;
+    var n = F.scenes.length, next = (F.scene + d + n) % n;
+    if (R.planet === 'helena' && !CHRISTMAS.sceneOpen(acc, next)) { toast(next === 1 ? '先带上巴洛，去城堡大门敲门' : '先完成Vanber的一项任务'); return; }
+    F.scene = next;
     renderField(); setTimeout(bgmScene, 0);
     setTimeout(cumberCheck, 400);
   }
@@ -5872,6 +5891,15 @@
           var ui = saved.ui || {}, route = ui.route || {};
           Object.keys(route).forEach(function (k) { if (['view','planet','region','site','i','mode','area','boss','bossFrom','twPick','room'].indexOf(k) >= 0) ex[k] = route[k]; });
           ex.mode = route.mode || null; page = 'explore';
+          if (ex.view === 'field') {
+            var R = regionById(ex.region);
+            if (R) {
+              var F0 = fieldState(R.id), keys0 = R.bgs || [], inferred = keys0.findIndex(function (k) { return ui.bg && ui.bg.indexOf('/' + k + '.') >= 0 || ui.bg && ui.bg.indexOf('/' + k + '_') >= 0; });
+              var alias = ex.region === 'hl_cabin' ? 1 : ex.region === 'hl_shop' ? 2 : -1;
+              F0.scene = Math.max(0, Math.min(F0.scenes.length - 1, route.scene != null ? route.scene : alias >= 0 ? alias : inferred >= 0 ? inferred : 0));
+              ex.region = R.id; ui.bg = F0.scenes[F0.scene].bg || ui.bg;
+            }
+          }
           if (ex.mode === 'intro') ex.host = $('pg-explore');
           d.remove();
           pveRemote(saved.kind, {}, ui, function (end, res) {
@@ -5906,6 +5934,7 @@
     var presentation = {}, route = {};
     ['bg','back','where','corrupt','cuts','stars','env'].forEach(function (k) { if (ui[k] != null && typeof ui[k] !== 'function') presentation[k] = ui[k]; });
     ['view','planet','region','site','i','mode','area','boss','bossFrom','twPick','room'].forEach(function (k) { if (ex[k] != null) route[k] = ex[k]; });
+    if (ex.view === 'field' && fields[ex.region]) route.scene = fields[ex.region].scene;
     presentation.route = route;
     (resumeReply ? Promise.resolve(resumeReply) : CLOUD.pve({ op: 'start', kind: kind, args: args, ui: presentation })).then(function (r) {
       if (!r || !r.ok) { pveBusy = false; L.close(); if (r && r.err) toast(r.err); if (ui.fail) ui.fail(r); if (r && r.pending) { pveChecked = false; pveResumeCheck(); } return; }
@@ -6395,6 +6424,7 @@
       if (kind === 'fmgift') return !acc.fmNpc && fmFireN() >= FMNPC.need;
       return true;
     }
+    if (kind === 'christmas') return PVE.helenaOpen(acc) && (id === 'gifts' ? CHRISTMAS.sceneOpen(acc,1) : CHRISTMAS.sceneOpen(acc,2));
     if (kind === 'boss') return levelOpen(id, +q[2]) && !bossWon(id, +q[2]);
     if (kind === 'weekly') return weeklyOpen() && WEEKLIES.some(function (w) { return w.boss === id && bossWon(id, w.d); });
     if (kind === 'ewk') return weeklyOpen() && !!ewkType(id);
@@ -6418,7 +6448,9 @@
     var inf = itemInfo(k), text = inf && inf.get || '';
     return text.split(/[；;]/).reduce(function (out, t) {
       t = t.trim(); var route = '', found, host = Object.keys(BOSSES).filter(function (id) { return capGem({ sid: BOSSES[id].sid }) === k; })[0];
-      if (k === 'crossEssence') route = 'field|hl_castle';
+      if (/Vanber的圣诞礼物/.test(t)) route = 'christmas|gifts';
+      else if (/Threego的苏格兰杂货铺/.test(t)) route = 'christmas|shop';
+      else if (k === 'crossEssence') route = 'field|hl_castle';
       else if (/竞技代币商店/.test(t)) route = 'tokens';
       else if (/先驱之塔.*(商店|兑换)/.test(t)) route = 'tower|shop';
       else if (/先驱之塔/.test(t)) route = 'tower|climb';
@@ -6442,6 +6474,7 @@
   function wikiSourceGo(route) {
     if (!wikiRouteOpen(route)) return false;
     var q = route.split('|'), kind = q[0], id = q[1];
+    if (kind === 'christmas') { goChristmas(id); return true; }
     if (kind === 'quest') {
       var S = SITES[id];
       if (S.planet !== 'jingchu' && planetOf(S.planet).wild) { ex.planet = S.planet; ex.view = 'sites'; ex.fpart = 'story'; go('explore'); PM.story = id; renderField(); }
@@ -8931,6 +8964,10 @@
       var f = form({ sid: raw.sid, lv: lv, shiny: shinyV(raw.shiny) });
       return { id: raw.sid, lv: lv, moves: mv, nick: f.name, img: f.img, shiny: shinyV(raw.shiny), ev: ev, iv: iv, nat: raw.nat && NATURES[raw.nat] ? raw.nat : null, emblem: raw.emblem && EMBLEMS[raw.sid] ? EMBLEMS[raw.sid].m : null };
     },
+    christmasTx: function (args, ok, fail) { txRun('christmas', args, ok, fail); },
+    goChristmas: goChristmas,
+    goHelena: function (scene) { if (!PVE.helenaOpen(acc)) return; ex.planet = 'helena'; page = 'explore'; planetMapEnter('helena', 'hl_castle', scene == null ? 0 : scene, null); renderTop(); },
+    loginVisit: function (ok, fail) { txRun('loginVisit', {}, ok, fail); },
     signin: function (ok, fail) { txRun('signin', {}, ok, fail); },
     resumePending: function () { return srvMode() && (!pveChecked || pveResumeBusy); },
     inBattle: function () { return !$('battle').hidden; },

@@ -833,11 +833,12 @@ var PVE = (function () {
    * 浏览器进入场景时向服务器要一批「刷出来的精灵」（server/pve.js 的 op: 'wild'），只是把它们画出来、让它们走动；
    * 点中开战时只告诉服务器是哪一只（编号），服务器按记下的资料开打，捕捉、掉落、各种任务计数都在服务器上算。
    * ========================================================== */
-  function regionById(rid) { for (var i = 0; i < WILD_REGIONS.length; i++) if (WILD_REGIONS[i].id === rid) return WILD_REGIONS[i]; return null; }
+  function regionById(rid) { if (rid === 'hl_cabin' || rid === 'hl_shop') rid = 'hl_castle'; for (var i = 0; i < WILD_REGIONS.length; i++) if (WILD_REGIONS[i].id === rid) return WILD_REGIONS[i]; return null; }
   function helenaOpen(a) { return ['school', 'river', 'jiuquan'].every(function (id) { return done(a, id); }); }
   function regionOpen(a, R) { return R.planet === 'helena' ? helenaOpen(a) : R.record ? done(a, 'flora7') : done(a, 'flora1'); }
   function floraFallen(a) { return done(a, 'flora6') && !done(a, 'flora7'); }
   function regionFallen(a, R) { return !!R && R.planet === 'flora' && (R.record || floraFallen(a)); }
+  function sceneWild(R, si, bgKey) { return !!R.pool && (!R.wildScenes || R.wildScenes.indexOf(bgKey || (R.bgs || [])[si]) >= 0); }
   function sceneCount(R) { if (R.sceneN) return R.sceneN; return Math.max(R.pool ? 2 : 1, (R.bgs || []).filter(function (k) { return BG[k]; }).length); }
   function rollShiny(w, rand) { var r = rand(); return w.shiny2 && r < w.shiny2 ? 2 : !!(w.shiny && r < (w.shiny2 || 0) + w.shiny); }
   function rollWild(pool, extra, rand) {   // extra：只在这个场景出现的精灵（WILD_SCENE），和区域表合在一起抽
@@ -916,6 +917,7 @@ var PVE = (function () {
   function wildRoll(a, R, si, bgKey, kind, rand) {
     if (kind === 'mystery') return { sid: MYSTERY.sid, lv: MYSTERY.lv, rate: MYSTERY.rate, shiny: rand() < MYSTERY.shiny, corrupt: false, bait: false, mystery: true };
     if (R.planet === 'helena' && (!(si >= 0 && si < sceneCount(R)) || kind || (bgKey && (R.bgs || [])[si] !== bgKey))) return null;
+    if (!sceneWild(R, si, bgKey)) return null;
     var hit = null, corrupt = regionFallen(a, R);
     if (kind === 'horn') hit = { w: { sid: HORN.sid, lv: [HORN.lv, HORN.lv], rate: HORN.rate, rare: true, w: 0 }, lv: HORN.lv };
     else {
@@ -1110,7 +1112,7 @@ var PVE = (function () {
     end: function (a, c, B, env) { return { res: B.res, quit: B.quit }; }
   };
 
-  return { MODES: MODES, RANK_EXP: RANK_EXP, RANK_EXP_N: RANK_EXP_N, RANK_TOKEN: RANK_TOKEN, rankState: rankState, rankApply: rankApply, newDraft: newDraft, readKey: readKey, regionById: regionById, regionOpen: regionOpen, helenaOpen: helenaOpen, floraFallen: floraFallen, regionFallen: regionFallen, sceneCount: sceneCount, rollShiny: rollShiny, rollWild: rollWild,
+  return { MODES: MODES, RANK_EXP: RANK_EXP, RANK_EXP_N: RANK_EXP_N, RANK_TOKEN: RANK_TOKEN, rankState: rankState, rankApply: rankApply, newDraft: newDraft, readKey: readKey, regionById: regionById, regionOpen: regionOpen, helenaOpen: helenaOpen, floraFallen: floraFallen, regionFallen: regionFallen, sceneCount: sceneCount, sceneWild: sceneWild, rollShiny: rollShiny, rollWild: rollWild,
     MM_CORE: MM_CORE, MYSTERY: MYSTERY, mysteryTime: mysteryTime, RICE: RICE, HORN: HORN, TRAVEL: TRAVEL, travelAt: travelAt, KBW: KBW, kbwAt: kbwAt, kbwOpen: kbwOpen, kbwFought: kbwFought, PURGE: PURGE, purgeRec: purgeRec, purgeActive: purgeActive, SPARE_N: SPARE_N, spareActive: spareActive, PW: PW, wildRoll: wildRoll, LEAF_ALLY: LEAF_ALLY, FIGHTS: FIGHTS, fightTeam: fightTeam, resolveFoeEntry: resolveFoeEntry, CUMBER: CUMBER, NPC_WIN_EXP: NPC_WIN_EXP, NPC_HOURS: NPC_HOURS, NPC_FROM: NPC_FROM, NPC_TO: NPC_TO, NPC_AI_RANK: NPC_AI_RANK, NPC: NPC, NPC_SECRET: NPC_SECRET, NPC_POOL: NPC_POOL, npcPlan: npcPlan, bjDay: bjDay, TEA_DAILY: TEA_DAILY, TEA_EXP: TEA_EXP, MM: MM, MM_NICK: MM_NICK, MM_TEAM: MM_TEAM, MM_TEAM_HARD: MM_TEAM_HARD, MM_DIFF: MM_DIFF, MM_FINAL: MM_FINAL, mmFoes: mmFoes, mmDay: mmDay, CHAL: CHAL, starOk: starOk, chalLevelOpen: chalLevelOpen, chalTotal: chalTotal, MM_HELPER: MM_HELPER, ONLY3: ONLY3, BOSSES: BOSSES, BOSS_CRY: BOSS_CRY, WEEKLIES: WEEKLIES, EWK: EWK, PERMIT: PERMIT, SECRET_FX: SECRET_FX,
     wkKey: wkKey, recKey: recKey, bossRec: bossRec, bossWon: bossWon, levelOpen: levelOpen, wkOpen: wkOpen, weeklyOpen: weeklyOpen, wkNum: wkNum, ewkPool: ewkPool, ewkType: ewkType, ewkSid: ewkSid, ewkFoes: ewkFoes, ewkDrop: ewkDrop,
     permits: permits, seedSeenFx: seedSeenFx, chalStars: chalStars, myTeam: myTeam,

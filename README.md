@@ -412,6 +412,8 @@ Threego、Dr.黄、Bttp 每天会在一个随机时段回到自己在陆羽茶�
 
 `audio/library/` 放还没接入游戏的原始音乐素材（目前有 Flora3TheGreatCover、Chase、Dis-communication、GrassTalk、Memory、Saver），接入时再搬进 `audio/`、改成 `bgm_xxx.mp3` 命名、调响度，并在 `js/ui/audio.js` 的 `TRACKS` 里加一条。
 
+圣诞活动曲 `bgm_christmas_day.mp3` 与海伦娜星曲 `bgm_christmas_eve.mp3` 也按此标准处理，实测均约 −16 LUFS；两首原始上传文件分别约 −10 与 −26 LUFS。
+
 **以后换曲子也要先调响度**，否则会忽大忽小：
 
 ```

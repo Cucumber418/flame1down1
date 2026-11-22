@@ -1,36 +1,105 @@
-/* 圣诞活动页与日志、社交共用顶栏以下的剩余视口。 */
+/* 圣诞活动与日志共用顶栏以下的剩余视口 */
 #mainnav.mainnav { grid-template-columns: repeat(7, minmax(0, 1fr)); }
 body.christmas-page-active #pg-christmas { height: var(--scene-view-height); min-height: 0; display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
 #pg-christmas > .page-head { flex: 0 0 auto; gap: 4px 12px; margin: 0; }
 #pg-christmas > .page-head .sec { margin: 0; }
-.xmas-home { flex: 1 1 0; min-height: 0; position: relative; display: flex; padding: clamp(10px, 2vw, 20px); border: 1.5px solid var(--ink); border-radius: 14px; background: var(--paper); }
-.xmas-planet { flex: 1 1 0; min-width: 0; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); grid-template-rows: minmax(0, 1fr); align-items: stretch; gap: clamp(12px, 3vw, 32px); width: 100%; padding: clamp(12px, 2vw, 24px); border: 1.5px solid var(--rule); border-radius: 12px; background: var(--paper-2); color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
-.xmas-planet:hover:not(:disabled) { border-color: var(--red); box-shadow: 3px 3px 0 var(--red); }
-.xmas-planet:focus-visible { outline: 3px solid var(--red); outline-offset: 4px; }
-.xmas-planet:disabled { cursor: default; }
-.xmas-planet-art { min-width: 0; min-height: 0; position: relative; display: block; }
-.xmas-planet-art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
-.xmas-planet-info { min-width: 0; min-height: 0; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 12px; overflow-y: auto; overflow-wrap: anywhere; }
-.xmas-planet-info small { color: var(--red); }
-.xmas-planet-info b { flex: 0 0 auto; font-family: var(--f-hand); font-size: clamp(30px, 4.8vw, 56px); font-weight: 400; line-height: 1.15; }
-.xmas-planet-info em { flex: 0 0 auto; width: fit-content; max-width: 100%; margin-top: 6px; padding-bottom: 4px; border-bottom: 1px dashed var(--red); color: var(--red); font-style: normal; }
-.xmas-planet:disabled .xmas-planet-info em { color: var(--pencil); border-color: var(--rule); }
 .xmas-coming { flex: 0 0 auto; margin: 0; padding: 6px; text-align: center; }
 @media (max-width: 640px) {
   #mainnav { gap: 4px; }
   #mainnav .nav { padding: 8px 2px; font-size: 12px; gap: 0; }
   #mainnav .nav-icon, #mainnav .nav-label { display: none; }
   #mainnav .nav-short { display: inline; }
-  .xmas-planet { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; gap: 12px; text-align: center; }
-  .xmas-planet-info { align-items: center; gap: 8px; }
-  .xmas-planet-info b { font-size: 34px; }
 }
 @media (max-height: 520px) {
   #pg-christmas > .page-head .hint { display: none; }
-  .xmas-home { padding: 8px; }
-  .xmas-planet { grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); grid-template-rows: minmax(0, 1fr); gap: 12px; padding: 8px; text-align: left; }
-  .xmas-planet-info { align-items: flex-start; gap: 5px; font-size: 12px; }
-  .xmas-planet-info b { font-size: 30px; }
-  .xmas-planet-info em { margin-top: 2px; padding-bottom: 2px; }
   .xmas-coming { padding: 2px; font-size: 12px; }
+}
+/* 三个活动入口与子页面均限制在顶栏以下的一屏内 */
+#pg-christmas .page-head { flex-wrap: wrap; }
+#pg-christmas .page-head .sec { font-size: clamp(21px, 3vw, 32px); }
+.xmas-wallet { display: flex; flex: 0 0 auto; gap: 12px; flex-wrap: wrap; font-size: 13px; }
+.xmas-wallet > span, .xmas-rewards, .xmas-price { display: inline-flex; align-items: center; gap: 4px; }
+.xmas-wallet .it-ic, .xmas-rewards .it-ic, .xmas-price .it-ic { width: 24px; height: 24px; flex: 0 0 24px; }
+.xmas-cards { flex: 1 1 0; min-height: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.xmas-card { position: relative; min-width: 0; min-height: 0; padding: 18px 12px; border: 1.5px solid var(--ink); border-radius: 12px; background: var(--paper); color: var(--ink); font: inherit; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.xmas-card:hover:not(:disabled) { border-color: var(--red); box-shadow: 3px 3px 0 var(--red); }
+.xmas-card img { flex: 1 1 0; min-height: 0; width: 100%; object-fit: contain; }
+.xmas-card > span:last-child { flex: 0 0 auto; display: grid; gap: 9px; justify-items: center; text-align: center; }
+.xmas-card b { font-family: var(--f-hand); font-weight: 400; font-size: clamp(21px, 2.4vw, 32px); }
+.xmas-card small { color: var(--pencil); font-size: 12px; }
+.xmas-card em { color: var(--red); font-size: 13px; font-style: normal; }
+.xmas-card:disabled { cursor: default; }
+.xmas-host { flex: 0 0 auto; display: flex; align-items: center; gap: 12px; min-height: 0; padding: 6px 10px; border: 1px solid var(--rule); border-radius: 9px; background: var(--paper); }
+.xmas-host img { width: 55px; height: 80px; object-fit: contain; }
+.xmas-host p { flex: 1; min-width: 0; margin: 0; font-size: 14px; }
+.xmas-host .btn { font-size: 12px; flex: 0 0 auto; }
+.xmas-scroll { flex: 1 1 0; min-height: 0; overflow-y: auto; padding: 2px; }
+.xmas-task-list { display: grid; gap: 8px; align-content: start; }
+.xmas-task { display: flex; gap: 12px; justify-content: space-between; align-items: center; padding: 12px; border: 1px solid var(--rule); border-radius: 9px; background: var(--paper); }
+.xmas-task > div { display: grid; gap: 5px; flex: 1; }
+.xmas-task small { font-size: 12px; color: var(--pencil); }
+.xmas-task progress { width: 100%; max-width: 300px; height: 7px; accent-color: var(--red); }
+.xmas-task .btn { flex: 0 0 auto; }
+.xmas-rewards { font-size: 12px; }
+.xmas-all { flex: 0 0 auto; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding: 10px; border: 1.5px dashed var(--red); border-radius: 8px; }
+.xmas-all > span { display: grid; gap: 5px; }
+.xmas-reset { flex: 0 0 auto; margin: 0; text-align: center; font-size: 12px; }
+.xmas-shop-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; align-content: start; }
+.xmas-good { min-width: 0; display: grid; align-content: start; gap: 8px; padding: 12px; border: 1px solid var(--rule); border-radius: 8px; background: var(--paper); }
+.xmas-good-title { display: flex; align-items: center; gap: 8px; }
+.xmas-good-title .it-ic { width: 42px; height: 42px; flex: 0 0 42px; }
+.xmas-good small { color: var(--pencil); }
+.xmas-buy { display: flex; align-items: center; gap: 6px; }
+.xmas-buy input { min-width: 0; width: 70px; flex: 1; max-width: 100px; padding: 7px; border: 1px solid var(--rule); border-radius: 5px; background: var(--paper-2); color: var(--ink); font: inherit; }
+.xmas-buy .btn { flex: 0 0 auto; }
+.xmas-pages { flex: 0 0 auto; display: flex; gap: 10px; align-items: center; justify-content: center; }
+.xmas-scene-npc { position: absolute; z-index: 99; transform: translate(-50%, -100%); width: clamp(90px, calc(var(--planet-scene-height) * .25), 210px); height: 49%; padding: 0; background: none; border: 0; cursor: pointer; display: flex; flex-direction: column; align-items: center; }
+.xmas-scene-npc img { min-height: 0; width: 100%; height: 100%; object-fit: contain; object-position: bottom; }
+.xmas-scene-npc span { flex: 0 0 auto; padding: 4px 8px; border: 1px solid var(--rule); border-radius: 5px; background: var(--paper); font: inherit; font-size: 12px; color: var(--ink); white-space: nowrap; }
+@media (max-width: 640px) {
+  .xmas-cards { grid-template-columns: minmax(0, 1fr); grid-template-rows: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .xmas-card { flex-direction: row; padding: 8px; gap: 8px; }
+  .xmas-card img { flex: 0 0 34%; height: 100%; }
+  .xmas-card > span:last-child { flex: 1; min-width: 0; justify-items: start; text-align: left; gap: 5px; }
+  .xmas-card b { font-size: 22px; }
+  .xmas-host { gap: 7px; }
+  .xmas-host img { width: 36px; height: 52px; }
+  .xmas-host p { font-size: 12px; }
+  .xmas-host .btn { max-width: 75px; padding: 6px; }
+  .xmas-good { padding: 8px; gap: 6px; }
+  .xmas-good-title { flex-wrap: wrap; gap: 3px; font-size: 13px; }
+  .xmas-good-title .it-ic { width: 30px; height: 30px; flex-basis: 30px; }
+  .xmas-buy input { width: 40px; padding: 5px; }
+  .xmas-buy .btn { padding: 6px; font-size: 12px; }
+}
+@media (max-height: 520px) {
+  .xmas-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: minmax(0, 1fr); }
+  .xmas-card { flex-direction: row; padding: 7px; gap: 4px; }
+  .xmas-card img { flex: 0 0 30%; width: 30%; height: 100%; }
+  .xmas-card > span:last-child { flex: 1; min-width: 0; gap: 4px; }
+  .xmas-card b { font-size: 19px; }
+  .xmas-card small { display: none; }
+  .xmas-host { padding: 3px 7px; }
+  .xmas-host img { width: 28px; height: 32px; }
+  .xmas-task { padding: 8px; }
+  .xmas-all { padding: 5px 8px; }
+}
+.xmas-story-box { width: min(580px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; overflow-y: auto; }
+.xmas-story-art { justify-self: center; width: 130px; height: min(30dvh, 220px); object-fit: contain; }
+.xmas-story-text { min-width: 0; line-height: 1.8; }
+.xmas-story-text b { color: var(--red); }
+.xmas-story-text p { margin: 5px 0; }
+.xmas-story-box .soc-foot { flex-wrap: wrap; }
+@media (max-height: 520px) { .xmas-story-box { grid-template-columns: minmax(0, 1fr); padding: 14px; gap: 8px; } .xmas-story-art { width: 90px; height: 100px; grid-row: span 2; } .xmas-story-box .soc-foot { grid-column: 1 / -1; } .xmas-story-text p { font-size: 13px; } }
+
+@media (max-height: 520px) { .xmas-story-box.has-art { grid-template-columns: 90px minmax(0, 1fr); } }
+@media (max-height: 420px) {
+  body.christmas-page-active #pg-christmas { gap: 5px; }
+  #pg-christmas .page-head .sec { font-size: 19px; }
+  .xmas-host { display: none; }
+  .xmas-wallet { font-size: 12px; gap: 8px; }
+  .xmas-task-list { min-height: 58px; }
+  .xmas-all > span { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+  .xmas-all .btn, .xmas-pages .btn { padding: 5px 8px; font-size: 12px; }
+  .xmas-reset { font-size: 10px; }
 }

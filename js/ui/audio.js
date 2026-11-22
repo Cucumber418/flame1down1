@@ -33,7 +33,7 @@
   var TRACKS = {
     normal: 'audio/bgm_normal.mp3', boss: 'audio/bgm_boss.mp3', boss2: 'audio/bgm_boss2.mp3', boss3: 'audio/bgm_boss3.mp3', tigerFinal: 'audio/bgm_tiger_final.mp3',
     stage: 'audio/bgm_stage.mp3', pvp: 'audio/bgm_pvp.mp3', faceEnemy: 'audio/bgm_face_enemy.mp3', disCommunication: 'audio/bgm_dis_communication.mp3',
-    christmasDay: 'audio/bgm_christmas_day.m4a', christmasEve: 'audio/bgm_christmas_eve.m4a',
+    christmasDay: 'audio/bgm_christmas_day.mp3', christmasEve: 'audio/bgm_christmas_eve.mp3',
     ui: 'audio/bgm_ui_hms.mp3', arena: 'audio/bgm_arena.mp3', earth: 'audio/bgm_earth.mp3',
     flora: 'audio/bgm_flora.mp3', floraGrass: 'audio/bgm_flora_grass.mp3', floraForest: 'audio/bgm_flora_forest.mp3', floraFallen: 'audio/bgm_flora_fallen.mp3',
     ngc2237: 'audio/bgm_ngc2237.mp3',

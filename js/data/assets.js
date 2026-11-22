@@ -210,6 +210,8 @@ var BG = {
 
 // 角色立绘、立绘差分、图标  →  images/characters/
 var CHARS = {
+  "vanber_christmas": "images/characters/vanber_christmas.png",
+  "threego_christmas": "images/characters/threego_christmas.png",
   "ship_icon": "images/characters/ship_icon_v3.webp",
   "zwg": "images/characters/zwg.webp",
   "mm": "images/characters/mm.webp",   // 明明教官（暂定立绘）

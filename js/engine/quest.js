@@ -57,6 +57,7 @@ var QST = (function () {
   }
   // 加进度：返回这次刚完成的任务的名字
   function hit(a, kind, n, now) {
+    if (typeof CHRISTMAS !== 'undefined') CHRISTMAS.hit(a, kind, n, now);
     var D = daily(a, now), out = [];
     D.list.forEach(function (t) { var d = DAILY[t.id]; if (d && d.kind === kind && t.p < d.n) { t.p = Math.min(d.n, t.p + (n || 1)); if (t.p >= d.n) out.push(d.t); } });
     return out;
