@@ -1,4 +1,6 @@
 /* 圣诞活动与日志共用顶栏以下的剩余视口 */
+.xmas-loading { visibility: hidden !important; pointer-events: none !important; }
+.xmas-load-error { max-width: min(420px, calc(100vw - 24px)); }
 #mainnav.mainnav { grid-template-columns: repeat(7, minmax(0, 1fr)); }
 body.christmas-page-active #pg-christmas { height: var(--scene-view-height); min-height: 0; display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
 #pg-christmas > .page-head { flex: 0 0 auto; gap: 4px 12px; margin: 0; }

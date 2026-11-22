@@ -2,6 +2,53 @@
 var HSCHRISTMAS = (function () {
   'use strict';
   var shopPage = 0, busy = false, storyBusy = false, SIZE = 6;
+  // 各入口共用星球加载面板；下载并解码后才揭开界面，整段剧情也一起预载
+  var imageCache = {};
+  function imageReady(src) {
+    if (imageCache[src]) return imageCache[src];
+    var promise = new Promise(function (resolve, reject) {
+      var im = new Image(), timer = setTimeout(function () { finish(false); }, 30000), settled = false;
+      function finish(ok) { if (settled) return; settled = true; clearTimeout(timer); im.onload = im.onerror = null; if (ok) resolve(im); else reject(new Error('图片未加载完成')); }
+      im.onload = function () { if (im.decode) im.decode().then(function () { finish(true); }, function () { finish(false); }); else finish(true); };
+      im.onerror = function () { finish(false); }; im.src = src;
+    });
+    imageCache[src] = promise;
+    promise.catch(function () { if (imageCache[src] === promise) delete imageCache[src]; });
+    return promise;
+  }
+  function images(srcs, step) {
+    var list = (srcs || []).filter(function (s,i,a) { return s && a.indexOf(s) === i; }), n = 0;
+    return Promise.all(list.map(function (src) { return imageReady(src).then(function () { if (step) step(++n,list.length); }); }));
+  }
+  function gate(el, message, done, extra, loader) {
+    if (!el) return;
+    if (el._xmasLoad) el._xmasLoad.cancel();
+    var L = loader || LOADER.show(message || '正在加载圣诞活动～', {delay:120}), ticket = {}, failed = null;
+    ticket.cancel = function () { L.close(); if (failed) failed.remove(); };
+    el._xmasLoad = ticket; el.classList.add('xmas-loading'); el.setAttribute('data-xmas-loading','');
+    function current() { return el._xmasLoad === ticket && el.isConnected && !el.hidden; }
+    function clear() { if (el._xmasLoad !== ticket) return; delete el._xmasLoad; el.classList.remove('xmas-loading'); el.removeAttribute('data-xmas-loading'); }
+    var srcs = (extra || []).concat([].map.call(el.querySelectorAll('img[src]'), function (im) { return im.getAttribute('src'); }));
+    L.to(.4);
+    images(srcs,function (n,total) { L.set(.4 + .55*n/total); }).then(function () {
+      if (!current()) return;
+      return Promise.all([].map.call(el.querySelectorAll('img[src]'),function (im) {
+        if (im.complete && !im.naturalWidth) im.src = im.getAttribute('src');
+        return im.decode ? im.decode() : imageReady(im.getAttribute('src'));
+      }));
+    }).then(function () {
+      if (!current()) { clear(); L.close(); return; }
+      L.done(function () { var valid = current(); clear(); if (valid && done) done(); });
+    }).catch(function () {
+      L.close(); if (!current()) { clear(); return; }
+      failed = document.createElement('div'); failed.className = 'soc-dlg'; failed.innerHTML = '<section class="soc-box xmas-load-error" role="alertdialog" aria-modal="true" aria-label="资源加载未完成"><h3>资源还没加载好</h3><p>网络暂时不稳，重试后再进入</p><div class="soc-foot"><button class="btn" data-xmas-load-back>' + (el.classList.contains('page') ? '返回日志' : '返回') + '</button><button class="btn primary" data-xmas-load-retry>重新加载</button></div></section>'; document.body.appendChild(failed);
+      failed.addEventListener('click',function (e) {
+        if (!current()) { failed.remove(); clear(); return; }
+        if (e.target.closest('[data-xmas-load-retry]')) { failed.remove(); failed = null; gate(el,message,done,extra); }
+        else if (e.target.closest('[data-xmas-load-back]')) { failed.remove(); clear(); if (el.id === 'xmas-story') storyBusy = false; if (el.id === 'xmas-knight') busy = false; if (el.classList.contains('page')) HSACC.go('log'); else el.remove(); }
+      }); failed.querySelector('[data-xmas-load-retry]').focus();
+    });
+  }
   function esc(s) { return HSUI.esc(String(s)); }
   function icon(k) { return HSUI.itemIcon(k); }
   function wallet(a) { var i = a.items || {}; return '<div class="xmas-wallet"><span>' + icon('xmasBell') + '圣诞铃铛 <b>' + (i.xmasBell || 0) + '</b></span><span>' + icon('xmasCandy') + '拐杖糖 <b>' + (i.xmasCandy || 0) + '</b></span></div>'; }
@@ -20,7 +67,6 @@ var HSCHRISTMAS = (function () {
       el.innerHTML = header + wallet(a) + '<section class="xmas-cards">' + cards.map(function (c) { var allowed = open && (c[0] === 'helena' || CHRISTMAS.sceneOpen(a, c[0] === 'gifts' ? 1 : 2)); return '<button type="button" class="xmas-card" ' + (c[0] === 'helena' ? 'data-helena' : 'data-xmas-open="' + c[0] + '"') + (allowed ? '' : ' disabled') + '><span class="tape l"></span><img src="' + c[3] + '" alt=""><span><b>' + c[1] + '</b><small>' + c[2] + '</small><em>' + (allowed ? '前往 ›' : !open ? '完成地球主线后解锁' : c[0] === 'gifts' ? '先带上巴洛，敲开城堡大门' : '先完成Vanber的一项任务') + '</em></span></button>'; }).join('') + '</section><p class="xmas-coming hint">更多圣诞活动待补充</p>';
       return;
     }
-    setTimeout(function () { if (!el.hidden) maybeStory(panel); }, 100);
     if (panel === 'gifts') {
       var r = CHRISTMAS.read(a, Date.now()), all = CHRISTMAS.TASKS.every(function (t) { return (r.progress[t.id] || 0) >= t.n; });
       el.innerHTML = header + wallet(a) + npc(panel) + '<div class="xmas-scroll xmas-task-list">' + CHRISTMAS.TASKS.map(function (t) {
@@ -38,7 +84,9 @@ var HSCHRISTMAS = (function () {
   function storyDialog(lines, action, after) {
     if (storyBusy || document.getElementById('xmas-story')) return;
     storyBusy = true;
-    var d = document.createElement('div'), at = 0, portrait = '', friends = false, scene = action === 'knightIntro' ? 'hl_wonderland' : action === 'shopIntro' ? 'hl_shop' : action === 'shopHint' ? 'hl_cabin' : 'hl_castle'; d.className = 'soc-dlg xmas-story-layer'; d.id = 'xmas-story'; document.body.appendChild(d);
+    var d = document.createElement('div'), at = 0, portrait = '', friends = false, scene = action === 'knightIntro' ? 'hl_wonderland' : action === 'shopIntro' ? 'hl_shop' : action === 'shopHint' ? 'hl_cabin' : 'hl_castle'; d.className = 'soc-dlg xmas-story-layer xmas-loading'; d.id = 'xmas-story'; document.body.appendChild(d);
+    var assets = [BG[scene]]; if (action === 'cabinIntro') assets.push(BG.hl_cabin);
+    lines.forEach(function (l) { if (l.img) assets.push(CHARS[l.img]); if (l.friends) ['oct','unicorn','may','ace'].forEach(function (k) { assets.push(CHARS['christmas_'+k]); }); });
     function draw() {
       var l = lines[at];
       if (l.img) portrait = l.img;
@@ -53,7 +101,7 @@ var HSCHRISTMAS = (function () {
         '<div class="vn-box xmas-story-box" style="--cc:' + color + '"><div class="vn-name" id="xmas-story-name">' + esc(l.n) + '</div>' +
         '<p class="vn-text xmas-story-text" id="xmas-story-text">' + esc(l.t) + '</p><small class="hint red" data-xmas-story-error role="alert" hidden></small>' +
         '<div class="xmas-story-actions">' + (l.choices ? l.choices.map(function (q) { return '<button class="vn-opt" data-xmas-next>' + esc(q) + '</button>'; }).join('') : '<button class="btn primary" data-xmas-next>' + (at < lines.length - 1 ? '继续 ›' : '知道了') + '</button>') + '</div></div></section>';
-      d.querySelector('[data-xmas-next]').focus({ preventScroll: true });
+      if (!d.classList.contains('xmas-loading')) d.querySelector('[data-xmas-next]').focus({ preventScroll: true });
     }
     d.addEventListener('click', function (e) {
       var b = e.target.closest('[data-xmas-next]'); if (!b || b.disabled) return;
@@ -61,8 +109,9 @@ var HSCHRISTMAS = (function () {
       b.disabled = true;
       function done() { d.remove(); storyBusy = false; if (after) after(); }
       if (!action) { done(); return; }
-      HSACC.christmasTx({ a: action }, done, function (err) { b.disabled = false; var error = d.querySelector('[data-xmas-story-error]'); error.hidden = false; error.textContent = err || '网络不稳，请重试'; });
-    }); draw();
+      var L = LOADER.show('正在继续圣诞旅程～', {delay:120}); L.to(.8);
+      HSACC.christmasTx({ a: action }, function () { L.done(done); }, function (err) { L.close(); b.disabled = false; var error = d.querySelector('[data-xmas-story-error]'); error.hidden = false; error.textContent = err || '网络不稳，请重试'; });
+    }); draw(); gate(d,'正在载入圣诞剧情～',function () { d.querySelector('[data-xmas-next]').focus({preventScroll:true}); },assets);
   }
   function cabinStory() {
     storyDialog([
@@ -139,21 +188,23 @@ var HSCHRISTMAS = (function () {
       if (!e.target.closest('[data-pipe-check]')) return;
       if (!CHRISTMAS.pipeSolved(rot)) { d.querySelector('.xmas-pipe-status').textContent = '还没连到出口，再转一转试试'; return; }
       waiting = true; d.querySelector('[data-pipe-check]').disabled = true;
-      HSACC.christmasTx({a:'pipes',rot:rot},function () { d.remove(); HSACC.goWonderland(); },function (err) { waiting = false; d.querySelector('[data-pipe-check]').disabled = false; d.querySelector('.xmas-pipe-status').textContent = err; });
+      var L = LOADER.show('正在打开圣诞仙境的入口～', {delay:120}); L.to(.7);
+      HSACC.christmasTx({a:'pipes',rot:rot},function () { L.done(function () { d.remove(); HSACC.goWonderland(); }); },function (err) { L.close(); waiting = false; d.querySelector('[data-pipe-check]').disabled = false; d.querySelector('.xmas-pipe-status').textContent = err; });
     });
-    d.addEventListener('keydown',function (e) { if (e.key==='Escape'&&!waiting) d.remove(); }); draw(); d.querySelector('[data-pipe-tile]').focus({preventScroll:true});
+    d.addEventListener('keydown',function (e) { if (e.key==='Escape'&&!waiting) d.remove(); }); draw(); gate(d,'正在准备管道拼图～',function () { d.querySelector('[data-pipe-tile]').focus({preventScroll:true}); });
   }
   function openKnight() {
     if (busy || storyBusy || HSACC.inBattle() || document.getElementById('xmas-knight')) return;
     if (!CHRISTMAS.knightOpen(HSACC.acc())) { if (CHRISTMAS.wonderOpen(HSACC.acc())) knightStory(); return; }
     busy = true;
+    var L = LOADER.show('正在载入讨伐活动～', {delay:120}); L.to(.5);
     HSACC.christmasTx({a:'knightVisit'},function () {
       busy = false; var a = HSACC.acc(), k = CHRISTMAS.story(a).knight, d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'xmas-knight';
       d.innerHTML = '<section class="soc-box xmas-knight-box" role="dialog" aria-modal="true" aria-labelledby="xmas-knight-title"><header><div><small class="hint">圣诞仙境 · 可重复挑战</small><h2 id="xmas-knight-title">讨伐鲁普雷希特骑士</h2></div><button class="btn ghost" data-knight-close aria-label="关闭讨伐活动">×</button></header>' + wallet(a) + '<div class="xmas-knight-host"><img src="' + CHARS.bttp_christmas + '" alt="戴恶魔角、手持黑暗树枝的bttp"><p>「击败我的召唤精灵？那就再来一只。」<small>每次挑战一只，击败后获得拐杖糖并补充新目标</small></p></div><div class="xmas-knight-targets">' + k.slots.map(function (t,i) { var f = ACC.form(t); return '<article><img src="' + f.img + '" alt=""><b>' + esc(f.name) + '</b><span>LV' + t.lv + '</span><small>' + icon('xmasCandy') + '×' + CHRISTMAS.KNIGHT_CANDY[i] + '</small><button class="btn primary" data-knight-fight="' + i + '" data-target-id="' + t.id + '">挑战</button></article>'; }).join('') + '</div><p class="hint">已击败 ' + k.wins + ' 只 · 无次数限制 · 失败可重试</p></section>';
       document.body.appendChild(d);
       d.addEventListener('click', function (e) { var b = e.target.closest('[data-knight-fight]'); if (e.target.closest('[data-knight-close]')) { d.remove(); return; } if (!b) return; var slot = +b.dataset.knightFight, id = +b.dataset.targetId; d.remove(); HSACC.fightChristmasKnight(slot,id); });
-      d.addEventListener('keydown',function (e) { if (e.key==='Escape') d.remove(); }); d.querySelector('[data-knight-fight]').focus({preventScroll:true});
-    },function (err) { busy = false; HSACC.toast(err); });
+      d.addEventListener('keydown',function (e) { if (e.key==='Escape') d.remove(); }); gate(d,'正在载入讨伐活动～',function () { d.querySelector('[data-knight-fight]').focus({preventScroll:true}); },null,L);
+    },function (err) { L.close(); busy = false; HSACC.toast(err); });
   }
   function sceneObjects(bg) {
     if (bg === 'hl_shop') return '<button class="xmas-secret-corner" data-xmas-pipes aria-label="查看杂货铺角落的管道"><span aria-hidden="true">✦</span><b>' + (CHRISTMAS.wonderOpen(HSACC.acc()) ? '通往圣诞仙境' : '神秘角落') + '</b></button>';
@@ -167,11 +218,13 @@ var HSCHRISTMAS = (function () {
     var door = e.target.closest('[data-xmas-door]');
     if (door && !busy && !storyBusy) {
       busy = true;
+      var L = LOADER.show('正在敲开城堡大门～', {delay:120}); L.to(.7);
       HSACC.christmasTx({ a: 'door' }, function (r) {
-        busy = false;
+        L.done(function () { busy = false;
         if (r.needsBarlow) storyDialog([{ n: '熟悉的声音', t: '想进来？先带一只巴洛到背包里吧。它愿意跟着你、听你的话，才说明你是会好好对待精灵的人。' }, { n: '你', t: '这声音听起来好熟悉……先把巴洛放进出战背包，再来敲门吧。' }], null);
         else if (!CHRISTMAS.story(HSACC.acc()).cabinIntro) cabinStory(); else HSACC.goHelena(1);
-      }, function (err) { busy = false; HSACC.toast(err); }); return;
+        });
+      }, function (err) { L.close(); busy = false; HSACC.toast(err); }); return;
     }
     var home = e.target.closest('[data-helena]'); if (home) { HSACC.goHelena(0); return; }
     var scene = e.target.closest('[data-xmas-scene]'); if (scene) { HSACC.goHelena(+scene.dataset.xmasScene); return; }
@@ -180,7 +233,8 @@ var HSCHRISTMAS = (function () {
     var b = claim || all || buy; if (!b || b.disabled || busy) return;
     var args = claim ? { a: 'claim', id: claim.dataset.xmasClaim } : all ? { a: 'all' } : { a: 'buy', id: buy.dataset.xmasBuy, n: Number(buy.closest('[data-xmas-good]').querySelector('input').value) };
     busy = true; b.disabled = true;
-    HSACC.christmasTx(args, function (r) { busy = false; HSACC.renderRes(); redraw(); HSACC.toast(r.already ? '已经领取过了' : args.a === 'buy' ? '已兑换' + HSACC.itemName(r.k) + ' ×' + r.n : '获得圣诞铃铛 ×' + r.bell + '、拐杖糖 ×' + r.candy); }, function (err) { busy = false; redraw(); HSACC.toast(err || '暂时无法完成，请重试'); });
+    var L = LOADER.show(args.a === 'buy' ? '正在兑换圣诞道具～' : '正在领取圣诞礼物～', {delay:120}); L.to(.7);
+    HSACC.christmasTx(args, function (r) { L.done(function () { busy = false; HSACC.renderRes(); redraw(); HSACC.toast(r.already ? '已经领取过了' : args.a === 'buy' ? '已兑换' + HSACC.itemName(r.k) + ' ×' + r.n : '获得圣诞铃铛 ×' + r.bell + '、拐杖糖 ×' + r.candy); }); }, function (err) { L.close(); busy = false; redraw(); HSACC.toast(err || '暂时无法完成，请重试'); });
   });
-  return { render: render, sceneEntered: sceneEntered, sceneObjects: sceneObjects, openKnight: openKnight };
+  return { render: render, gate: gate, images: images, maybeStory: maybeStory, sceneEntered: sceneEntered, sceneObjects: sceneObjects, openKnight: openKnight };
 })();

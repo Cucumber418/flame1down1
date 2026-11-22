@@ -336,7 +336,7 @@
   function go(p) {
     if (p === 'christmas' && PVE.helenaOpen(acc) && !prog('helenaArrival').done && !(typeof SPA !== 'undefined' && SPA.on && ex.view === 'spa')) {
       stopTimers(); page = 'explore'; ex.planet = 'helena'; ex.view = 'vn';
-      startVN0('helenaArrival', 'replay', $('pg-explore')); savePage(); renderTop(); HSVIEW.to(0, 0); return;
+      startVN0('helenaArrival', 'replay', $('pg-explore')); savePage(); renderTop(); HSCHRISTMAS.gate($('pg-explore'), '正在载入圣诞序章～', function () { startVN0('helenaArrival', 'replay', $('pg-explore')); }, vnAssets('helenaArrival')); HSVIEW.to(0, 0); return;
     }
     if (p !== 'explore' && $('en-modal')) $('en-modal').remove(); if (typeof SPA !== 'undefined' && SPA.on && page === 'explore' && ex.view === 'spa' && p !== 'explore') { spaLeaveAsk(function () { go(p); }); return; }
     if (ex.mode === 'replay' && p !== 'explore') { stopTimers(); ex.mode = null; ex.view = 'sites'; } PAGE_Y[page] = HSVIEW.y(); if (p === 'log' && page !== 'log') ui.logSel = null; page = p; ui.pick = -1; savePage(); renderTop(); var y0 = PAGE_Y[p] || 0; HSVIEW.to(0, y0); requestAnimationFrame(function () { if (page === p) HSVIEW.to(0, y0); }); }
@@ -1775,12 +1775,19 @@
   });
 
   /* ---------- 星际探索：选星球 → 选地点 → 剧情（galgame 式对话） ---------- */
-  function renderChristmas() { HSCHRISTMAS.render($('pg-christmas'), acc, ui.xmasPanel || 'home', PVE.helenaOpen(acc)); }
+  function renderChristmas() {
+    var el = $('pg-christmas'), panel = ui.xmasPanel || 'home';
+    HSCHRISTMAS.render(el, acc, panel, PVE.helenaOpen(acc));
+    HSCHRISTMAS.gate(el, '正在载入' + (panel === 'gifts' ? 'Vanber的圣诞礼物' : panel === 'shop' ? 'Threego的苏格兰杂货铺' : '圣诞活动') + '～', function () { HSCHRISTMAS.maybeStory(panel); });
+  }
   function goChristmas(panel) {
     if (!PVE.helenaOpen(acc)) { toast('完成地球主线后开放圣诞活动'); return; }
     if ((panel === 'gifts' && !CHRISTMAS.sceneOpen(acc, 1)) || (panel === 'shop' && !CHRISTMAS.sceneOpen(acc, 2))) { toast(panel === 'gifts' ? '先带上巴洛，去城堡大门敲门' : '先完成Vanber的一项任务'); return; }
     ui.xmasPanel = panel || 'home';
-    if (panel === 'gifts') txRun('christmas', { a: 'visit' }, function () { if (page === 'christmas') renderChristmas(); });
+    if (panel === 'gifts') {
+      var L = LOADER.show('正在载入Vanber的圣诞礼物～', {delay:120}); L.to(.7);
+      txRun('christmas', { a: 'visit' }, function () { L.done(function () { go('christmas'); }); }, function (err) { L.close(); toast(err); }); return;
+    }
     go('christmas');
   }
   var PLANETS = [
@@ -2476,7 +2483,7 @@
   }
   // 进入星球 / 场景时：这一页的图片还没下载完，就先盖上加载面板，全部到了再显示（2026-10-27）
   function loadGate(el, msg) {
-    if (!el || typeof LOADER === 'undefined') return;
+    if (!el || typeof LOADER === 'undefined' || el.hasAttribute('data-xmas-loading')) return;
     var imgs = Array.prototype.filter.call(el.querySelectorAll('img'), function (im) { return im.getAttribute('src') && !im.complete && im.loading !== 'lazy'; });
     if (!imgs.length) return;
     var L = LOADER.show(msg || '加载中～', { delay: 120 }), n = 0, fin = false, tot = imgs.length;
@@ -3993,7 +4000,9 @@
     var objects = open ? christmasNpcHTML(sc) + (resources ? '<div class="planet-map-resources" role="group" aria-label="场景物品">' + resources + '</div>' : '') + (lab ? '' : travelHTML(R, F.scene) + kbwHTML(R, F.scene) + fmNpcHTML(F, F.scene) + fieldBossHTML(R, F.scene)) + planetLabObjects(lab) : '<button type="button" class="planet-story-pin" data-map-panel="story"><span aria-hidden="true">📖</span><b>降临芙罗拉</b></button>';
     planetMapRender('<div class="planet-map-page"><div class="planet-map-stage"><div class="wf-scene' + (sc.corrupt ? ' miasma-bg' : '') + '" id="wf-scene" data-environment="' + SCENE_MOTION.kind('', 0, sc.bgKey) + '">' + bg + mons + objects + nav + '</div><header class="planet-map-heading"><button type="button" class="btn ghost" data-map-exit="1" aria-label="返回星图">‹</button><div><small>' + esc(P.name + ' · ' + R.name) + '</small><h2>' + esc(planetMapName(sc, R, F.scene)) + '</h2></div></header><nav class="planet-map-tools" aria-label="星球功能">' + [['story','📖','剧情'],['challenge','⚔','关卡'],['task','📜','星球任务'],['map','🗺','小地图']].map(function (t) { return '<button type="button" data-map-panel="' + t[0] + '" aria-haspopup="dialog"><span aria-hidden="true">' + t[1] + '</span><b>' + t[2] + '</b></button>'; }).join('') + '</nav></div></div>' + planetMapPanel(P));
     if (open) startFieldMove(); else stopField();
-    if (R.planet === 'helena') setTimeout(function () { HSCHRISTMAS.sceneEntered(sc.bgKey); }, 200);
+    if (R.planet === 'helena') HSCHRISTMAS.gate($('pg-explore'), '正在进入' + planetMapName(sc,R,F.scene) + '～', function () {
+      if (page === 'explore' && ex.view === 'field' && ex.region === R.id && F.scenes[F.scene] === sc) HSCHRISTMAS.sceneEntered(sc.bgKey);
+    });
   }
   function startFieldMove() {
     stopField();
@@ -5957,7 +5966,9 @@
       if (!r || !r.ok) { pveBusy = false; L.close(); if (r && r.err) toast(r.err); if (ui.fail) ui.fail(r); if (r && r.pending) { pveChecked = false; pveResumeCheck(); } return; }
       if (r.acc) adoptAcc(r.acc);
       L.set(0.72).text(ui.loadText2 || '正在布置战场～');
-      LOADER.images(battleImgs(r.S, ui.bg), function (n, t) { L.set(0.72 + 0.27 * n / t); }, function () { L.done(function () { pveBusy = false; go(r); }); });
+      var finishLoad = function () { L.done(function () { pveBusy = false; go(r); }); };
+      if (kind === 'christmasKnight' || ['hl_castle','hl_cabin','hl_shop','hl_wonderland'].some(function (k) { return BG[k] === ui.bg; })) HSCHRISTMAS.images(battleImgs(r.S, ui.bg), function (n,t) { L.set(.72 + .27*n/t); }).then(finishLoad, function () { L.close(); pveBusy = false; toast('战斗图片未加载完成，请继续保存的战斗重试'); pveChecked = false; pveResumeCheck(); });
+      else LOADER.images(battleImgs(r.S, ui.bg), function (n, t) { L.set(0.72 + 0.27 * n / t); }, function () { L.done(function () { pveBusy = false; go(r); }); });
     }, function () { pveBusy = false; L.close(); });
     function go(r) {
       var o = r.opt || {}, endE = null;
