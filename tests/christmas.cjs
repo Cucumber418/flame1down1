@@ -30,4 +30,11 @@ assert.equal(E.TX.run(a,'christmas',{a:'buy',id:'not-an-item',n:1},env).ok,false
 // Currencies persist across days, tasks and all-complete rewards reset at Beijing midnight.
 const next=Date.parse('2026-11-22T16:00:00Z');assert.equal(E.CHRISTMAS.read(a,next).day,'2026-11-23');assert.equal(E.CHRISTMAS.read(a,next).all,false);assert.equal(a.items.xmasCandy,50);assert(E.CHRISTMAS.sceneOpen(a,1));assert(E.CHRISTMAS.sceneOpen(a,2));
 assert.equal(E.TX.run(a,'christmas',{a:'all'},{...env,now:next}).ok,false);assert.equal(E.TX.run(a,'christmas',{a:'claim',id:'wild'},{...env,now:next}).ok,false);
+// Claim reminders include task rewards and the unclaimed all-complete pack.
+let badge=account();badge.christmasStory={cabinOpen:true,cabinIntro:true};
+assert(!E.CHRISTMAS.claimable(badge,now));E.CHRISTMAS.hit(badge,'wildWin',1,now);assert(E.CHRISTMAS.claimable(badge,now));
+assert(E.TX.run(badge,'christmas',{a:'claim',id:'hello'},env).ok);assert(!E.CHRISTMAS.claimable(badge,now));
+for(const t of E.CHRISTMAS.TASKS){badge.christmas.progress[t.id]=t.n;badge.christmas.claimed[t.id]=true;}
+assert(E.CHRISTMAS.claimable(badge,now));badge.christmas.all=true;assert(!E.CHRISTMAS.claimable(badge,now));assert(!E.CHRISTMAS.claimable(badge,next));
+const locked=copy(badge);locked.items.xmasBell=2;assert(!E.TX.run(locked,'christmas',{a:'buy',id:'tree',n:1},env).ok);assert(!E.TX.run(locked,'christmas',{a:'giftBuy',id:'tree',n:1},env).ok);
 console.log('PASS Christmas: Earth/active-backpack Barlow/cabin/task/shop story gates, read-only preview, real sign-in/PVE task progress, daily reset, idempotent task/all rewards, persistent currencies, batch purchases and invalid/insufficient rejection');

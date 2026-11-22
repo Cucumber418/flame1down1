@@ -2171,7 +2171,7 @@
   // 主导航上的小红点：航行日志（没读过的）、飞船终端（有东西可以领 / 免费）
   function navDots() {
     if (!acc) return;
-    var want = { log: logUnread() > 0, ship: shipDot() };
+    var want = { log: logUnread() > 0, ship: shipDot(), christmas: CHRISTMAS.claimable(acc,Date.now()) };
     Object.keys(want).forEach(function (pg) {
       var b = document.querySelector('#mainnav .nav[data-page="' + pg + '"]'); if (!b) return;
       var d = b.querySelector('.red-dot');
@@ -3979,7 +3979,7 @@
     if (sc.bgKey === 'hl_castle') return '<button type="button" class="xmas-door planet-story-pin" data-xmas-door style="left:45%;top:67%"><span aria-hidden="true">🚪</span><b>城堡大门</b></button>';
     var who = sc.bgKey === 'hl_cabin' ? 'vanber' : sc.bgKey === 'hl_shop' ? 'threego' : '';
     if (!who) return HSCHRISTMAS.sceneObjects(sc.bgKey);
-    return HSCHRISTMAS.sceneObjects(sc.bgKey) + '<button type="button" class="xmas-scene-npc" data-xmas-open="' + (who === 'vanber' ? 'gifts' : 'shop') + '" style="left:' + (who === 'vanber' ? 65 : 70) + '%;top:90%" aria-label="' + (who === 'vanber' ? 'Vanber的圣诞礼物' : 'Threego的苏格兰杂货铺') + '"><img src="' + CHARS[who + '_christmas'] + '" alt="戴着圣诞帽的' + (who === 'vanber' ? 'Vanber' : 'Threego') + '"><span>' + (who === 'vanber' ? 'Vanber · 圣诞任务' : 'Threego · 兑换道具') + '</span></button>';
+    return HSCHRISTMAS.sceneObjects(sc.bgKey) + '<button type="button" class="xmas-scene-npc" data-xmas-open="' + (who === 'vanber' ? 'gifts' : 'shop') + '" style="left:' + (who === 'vanber' ? 65 : 70) + '%;top:90%" aria-label="' + (who === 'vanber' ? 'Vanber的圣诞礼物' : 'Threego的苏格兰杂货铺') + '"><img src="' + CHARS[who + '_christmas'] + '" alt="戴着圣诞帽的' + (who === 'vanber' ? 'Vanber' : 'Threego') + '"><span>' + (who === 'vanber' ? 'Vanber · 圣诞任务' : 'Threego · 兑换道具') + '</span>' + (who === 'vanber' && CHRISTMAS.claimable(acc,Date.now()) ? '<i class="red-dot" aria-label="圣诞任务奖励可领取"></i>' : '') + '</button>';
   }
   document.addEventListener('click', function (e) { var b = e.target.closest('[data-xmas-open]'); if (b && !ex.fighting) goChristmas(b.dataset.xmasOpen); });
   function renderField() {
@@ -6833,8 +6833,7 @@
     if (kind === 'shop') { if (D.SHOP.indexOf(k)<0) return null; item(k); var x = goods(k); energy(x.price); offer.limit=D.SHOP_MAX; op='shop'; args.k=k; }
     else if (kind === 'token') { var x=D.TOKEN_SHOP.find(function(x){return x.k===k;});if(!x)return null;item(k);pay('tokens',x.price,tokens(),'竞技代币');offer.limit=D.TOKEN_MAX;op='token';args.k=k; }
     else if (kind === 'tower') { var x=D.TW_SHOP[+k];if(!x)return null;item(x.k);pay('twTok',x.cost,twRec().tok,'先驱代币');if(x.death)pay('deathTok',x.death,I.deathTok);offer.limit=D.TOWER_MAX;op='tower';args.i=+k; }
-    else if (kind === 'christmas') { var x=CHRISTMAS.SHOP.find(function(x){return x.id===k;});if(!x)return null;item(x.k);pay(x.coin,x.price,I[x.coin]);offer.limit=999;op='christmas';args={a:'buy',id:k}; }
-    else if (kind === 'vanber') { offer.name='圣诞树';offer.icon='<img src="images/base/christmas_tree.png" alt="">';offer.desc='圣诞节限定地板家具，兑换后在基地的编辑界面摆放';offer.owned=decoOwn('d12');offer.limit=999;pay('xmasBell',1,I.xmasBell);op='christmas';args={a:'giftBuy',id:'tree'}; }
+    else if (kind === 'christmas') { var x=CHRISTMAS.SHOP.find(function(x){return x.id===k;});if(!x)return null;if(x.deco){offer.name=TX.D.BASE_DECO[x.k].n;offer.icon='<img src="'+DECO_IMG[x.k]+'" alt="">';offer.desc='圣诞节限定地板家具，兑换后在基地的编辑界面摆放';offer.owned=decoOwn(x.k);}else item(x.k);pay(x.coin,x.price,I[x.coin]);offer.limit=999;op='christmas';args={a:'buy',id:k}; }
     else if (kind === 'seed') { op='seedShop';args.k=k;if(k==='plot'){var f=farm(),steps=GROW.PLOT_PRICE.slice(f.extra,GROW.FARM_EXTRA_MAX);offer.name='额外种植栏位';offer.icon=H.itemIcon('s_herb');offer.desc='增加一块种植田，价格随已购买栏位递增';offer.limit=steps.length;energy(0,steps);offer.owned=farmN();}else{if(GROW.SEED_SHOP.indexOf(k)<0)return null;item(k);offer.desc=SEEDS[k].d;offer.limit=GROW.SEED_SHOP_MAX;energy(GROW.SEED_PRICE);} }
     else if (kind === 'forge') { var x=forgeOf(k);if(!x)return null;var out=Object.keys(x.out)[0];item(out);offer.name=forgeOutText(x,1);offer.give=x.out;offer.limit=FORGE_Q;Object.keys(x.need).forEach(function(m){pay(m,x.need[m],I[m]);});op='forge';args.id=k; }
     else if (kind === 'gx') {
@@ -6860,8 +6859,7 @@
     offer.buy=function(n,ok,fail){txRun(op,Object.assign({},args,{n:n}),ok,fail);};
     offer.after=function(){
       renderRes();
-      if(kind==='vanber')goChristmas('gifts');
-      else if(kind==='christmas')goChristmas('shop');
+      if(kind==='christmas')goChristmas('shop');
       else if(kind==='token'){var d=$('tkshop');if(d)d.querySelector('.tkshop').innerHTML=tokenShopHTML();}
       else if(kind==='seed')seedShopRefresh();
       else if(kind==='forge'||kind==='gx'){if(kind==='gx'){ex.gxFrom=args.from;ex.gxTo=args.to;}renderForge();}

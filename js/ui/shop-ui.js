@@ -3,7 +3,7 @@ var HSSHOP = (function () {
   'use strict';
   var MAP = [
     ['buy','shop','.shop-it'],['tkbuy','token','.tk-it'],['twbuy','tower','.tw-item'],
-    ['xmas-buy','christmas','.xmas-good'],['vb-buy','vanber','.shop-it'],['sdbuy','seed','.shop-it'],['smelt','forge','.shop-it'],
+    ['xmas-buy','christmas','.xmas-good'],['sdbuy','seed','.shop-it'],['smelt','forge','.shop-it'],
     ['gxgo','gx','.gx-card'],['sumbuy','summon','.shop-it'],['bbuy','base','.bs-room,.shop-it'],
     ['tsbuy','tea','.shop-it'],['spabuy','spa','.spa-good'],['spabgmbuy','spaBgm',null],
     ['enbuy','endless','.en-sh'],['orebuy','ore','.shop-it']

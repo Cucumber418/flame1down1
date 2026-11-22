@@ -8,6 +8,7 @@ var CHRISTMAS = (function () {
     { id: 'wild', kind: 'wildWin', n: 3, t: '击败3只野生精灵', bell: 1, candy: 15 }
   ];
   var SHOP = [
+    { id: 'tree', k: 'd12', deco: true, coin: 'xmasBell', price: 1 },
     { id: 'fruit1', k: 'fruit1', coin: 'xmasCandy', price: 20 },
     { id: 'fruit2', k: 'fruit2', coin: 'xmasCandy', price: 50 },
     { id: 'cap1', k: 'cap1', coin: 'xmasCandy', price: 5 },
@@ -56,6 +57,11 @@ var CHRISTMAS = (function () {
     if (old && old.day === day && old.progress && old.claimed) return old;
     return { day: day, progress: { signin: a.checkin && a.checkin.days && a.checkin.days.indexOf(day) >= 0 ? 1 : 0 }, claimed: {}, all: false };
   }
+  function claimable(a, now) {
+    if (!sceneOpen(a,1)) return false;
+    var r=read(a,now);
+    return TASKS.some(function(t){return !r.claimed[t.id] && (r.progress[t.id] || 0)>=t.n;}) || !r.all && TASKS.every(function(t){return (r.progress[t.id] || 0)>=t.n;});
+  }
   function state(a, now) { return a.christmas = read(a, now); }
   function hit(a, kind, n, now) {
     if (!open(a) || !TASKS.some(function (t) { return t.kind === kind; })) return;
@@ -90,20 +96,15 @@ var CHRISTMAS = (function () {
       a.christmasStory.shopOpen = true; return { ok: true };
     }
     if (args.a === 'shopIntro') { if (!sceneOpen(a, 2)) return { ok: false, err: '先完成Vanber的一项任务' }; a.christmasStory.shopIntro = true; return { ok: true }; }
-    if (args.a === 'giftBuy') {
-      if (!sceneOpen(a,1) || !story(a).cabinIntro) return {ok:false,err:'先去见Vanber'};
-      var n=args.n,I=a.items || {};if(args.id!=='tree'||!Number.isInteger(n)||n<1||n>999)return {ok:false,err:'兑换数量不对'};
-      if((I.xmasBell || 0)<n)return {ok:false,err:'圣诞铃铛不足'};
-      I.xmasBell-=n;a.items=I;var B=a.baseInv || (a.baseInv={});if(!B.deco)B.deco={};B.deco.d12=(B.deco.d12 || 0)+n;
-      return {ok:true,k:'d12',n:n};
-    }
     if (args.a === 'buy') {
       if (!sceneOpen(a, 2) || !story(a).shopIntro) return { ok: false, err: '先完成Vanber的一项任务，再去见杂货铺的主人' };
       var s = SHOP.filter(function (x) { return x.id === args.id; })[0], n = args.n;
       if (!s || !Number.isInteger(n) || n < 1 || n > 999) return { ok: false, err: '兑换数量应为1–999的整数' };
       var I = a.items || {}, cost = s.price * n;
       if (!Number.isSafeInteger(cost) || (I[s.coin] || 0) < cost) return { ok: false, err: '活动货币不足' };
-      I[s.coin] -= cost; I[s.k] = (I[s.k] || 0) + n; a.items = I;
+      I[s.coin] -= cost; a.items = I;
+      if (s.deco) { var B=a.baseInv || (a.baseInv={});if(!B.deco)B.deco={};B.deco[s.k]=(B.deco[s.k] || 0)+n; }
+      else I[s.k] = (I[s.k] || 0) + n;
       return { ok: true, k: s.k, n: n, cost: cost, coin: s.coin };
     }
     if (!sceneOpen(a, 1)) return { ok: false, err: '先带上巴洛，敲开城堡大门' };
@@ -143,7 +144,7 @@ var CHRISTMAS = (function () {
       return rep;
     }
   };
-  return { TASKS: TASKS, SHOP: SHOP, ALL: ALL, read: read, hit: hit, story: story, sceneOpen: sceneOpen,
+  return { TASKS: TASKS, SHOP: SHOP, ALL: ALL, read: read, claimable: claimable, hit: hit, story: story, sceneOpen: sceneOpen,
     PIPES: PIPES, PIPE_START: PIPE_START, pipeMask: pipeMask, pipeReach: pipeReach, pipeSolved: pipeSolved,
     wonderOpen: wonderOpen, knightOpen: knightOpen, knightState: knightState, knightWin: knightWin, KNIGHT_CANDY: KNIGHT_CANDY };
 })();
