@@ -1,13 +1,13 @@
 /* 阵容占满可用画幅，具体操作在分页弹窗中完成 */
-body.arena-page-active #pg-arena { min-height:var(--scene-view-height); height:auto; display:flex; flex-direction:column; overflow:visible; padding-bottom:16px; }
+body.arena-page-active #pg-arena { height:var(--scene-view-height); min-height:0; display:flex; flex-direction:column; overflow-x:hidden; overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; padding-bottom:8px; }
 body.arena-page-active #arena-crumb { flex:0 0 auto; margin-bottom:8px; }
-body.arena-page-active #builder { flex:1 1 auto; min-height:0; overflow:visible; }
+body.arena-page-active #builder { flex:1 1 0; min-height:0; overflow:visible; }
 #arena-home { height:auto; min-height:0; width:100%; display:flex; flex-direction:column; justify-content:flex-start; max-width:1120px; margin:0 auto; gap:18px; padding:12px 8px; }
 .arena-welcome { text-align:center; } .arena-welcome h2 { margin:4px 0; font-size:28px; }
 #arena-home .modebar { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; width:100%; margin:0; align-items:stretch; }
 #arena-home .mode { min-width:0; min-height:195px; padding:18px 14px; display:flex; flex-direction:column; justify-content:flex-start; gap:10px; border-radius:16px; text-align:center; background:var(--paper-2); border:1.5px solid var(--ink); box-shadow:3px 3px 0 var(--ink); }
 #arena-home .mode b { display:block; margin:0; font-size:24px; } #arena-home .mode span { display:block; min-width:0; font-size:13px; line-height:1.6; overflow-wrap:anywhere; }
-#arena-work { min-height:0; height:var(--scene-view-height); display:flex; flex-direction:column; gap:8px; }
+#arena-work { min-height:0; height:100%; display:flex; flex-direction:column; gap:8px; }
 .arena-mode-head { display:flex; align-items:center; justify-content:space-between; gap:8px; flex:0 0 auto; } .arena-mode-head h2 { margin:0; font-size:19px; }
 #arena-scroll { flex:1 1 0; min-height:0; overflow-y:auto; overflow-x:hidden; display:flex; flex-direction:column; gap:8px; overscroll-behavior:contain; }
 .arena-event-hide { display:none!important; }
