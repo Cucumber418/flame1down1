@@ -71,16 +71,53 @@
     d.addEventListener('click',function(e){var p=e.target.closest('[data-picker-page]');if(p&&!p.disabled){page+=+p.dataset.pickerPage;draw();}var b=e.target.closest('[data-arena-choose]');if(b&&!b.disabled){var r=HSBATTLE.arenaEdit('select',b.dataset.arenaChoose,index);if(r.ok)skills(b.dataset.arenaChoose);else d.querySelector('.arena-panel-message').textContent=r.msg;}});
     draw();
   }
+  // 与精灵背包「更换技能」保持同一套勾选列表：名称、属性、威力、PP、效果均直接显示。
   function skills(id, own) {
-    var sp=SPMAP[id]; if(!sp)return;
-    var page=0, move=null, d=modal(esc(own?ACC.form(own).name:sp.name)+' · 技能', '<div class="arena-skills"></div>', null, 'skills');
-    function loadout(){return own?ACC.battleMon(HSACC.acc(),own).moves.slice():HSBATTLE.loadout(id);}
+    var sp = SPMAP[id]; if (!sp) return;
+    var d = modal(esc(own ? ACC.form(own).name : sp.name) + ' · 更换技能',
+      '<div class="arena-skills"></div>', null, 'skills');
+    function loadout() { return own ? ACC.battleMon(HSACC.acc(), own).moves.slice() : HSBATTLE.loadout(id); }
     function draw(message) {
-      var lo=loadout(), s=HSBATTLE.arenaState(), list=own?lo:sp.moves.concat(sp.hidden), pages=Math.max(1,Math.ceil(list.length/6)), inBag=s.bag.indexOf(id), body=d.querySelector('.arena-skills');page=Math.max(0,Math.min(page,pages-1));
-      if(move){var m=M[move],on=lo.indexOf(move)>=0;body.innerHTML='<button type="button" class="btn ghost arena-move-back" data-move-back>‹ 返回技能配置</button><div class="arena-move-info"><h3>'+esc(m.name)+'</h3>'+HSUI.tchip(m.type)+'<p class="hint">'+m.cat+' · '+(m.power?'威力'+m.power+' · ':'')+'PP '+m.pp+'</p><p>'+esc(m.d)+'</p></div><p class="arena-panel-message" role="status">'+esc(message||'')+'</p>'+(own?'':'<button type="button" class="btn primary" data-move-toggle>'+ (on?'卸下技能':lo.length>=4?'请先卸下一个技能':'装备技能')+'</button>');return;}
-      body.innerHTML='<p class="arena-skill-summary">'+(own?'自己的配置 · LV'+own.lv:'已装备 '+lo.length+' / 4')+'</p><div class="arena-equipped">'+[0,1,2,3].map(function(i){return lo[i]?'<button type="button" data-move-info="'+esc(lo[i])+'">'+esc(M[lo[i]].name)+'</button>':'<span>空技能位</span>';}).join('')+'</div><div class="arena-move-grid">'+list.slice(page*6,page*6+6).map(function(n){var m=M[n],on=lo.indexOf(n)>=0;return '<button type="button" class="arena-move-choice'+(on?' on':'')+'" data-move-info="'+esc(n)+'"><b>'+esc(m.name)+(on?' ✓':'')+'</b><small>'+m.type+' · '+m.cat+'</small><small>'+(m.power?'威力 '+m.power+' · ':'')+'PP '+m.pp+'</small></button>';}).join('')+'</div>'+pager(page,pages,'data-move-page')+'<p class="arena-panel-message" role="status">'+esc(message||'点击技能查看效果并装备或卸下')+'</p><div class="arena-mon-actions">'+(!own&&inBag>0&&!s.training?'<button type="button" class="btn ghost" data-mon-lead>设为首发</button>':'')+(!own&&s.mode==='sandbox'?'<button type="button" class="btn ghost" data-mon-replace>'+(s.training?'切换精灵':'更换精灵')+'</button>'+(!s.training&&inBag>=0?'<button type="button" class="btn ghost" data-mon-remove>移出阵容</button>':''):'')+'<button type="button" class="btn primary" data-arena-close>完成</button></div>';
+      var body = d.querySelector('.arena-skills'), oldList = body.querySelector('.arena-skill-list');
+      var scroll = oldList ? oldList.scrollTop : 0;
+      var lo = loadout(), state = HSBATTLE.arenaState(), inBag = state.bag.indexOf(id);
+      var list = own ? sp.moves.concat(sp.hidden).filter(function (n) { return lo.indexOf(n) >= 0; }) : sp.moves.concat(sp.hidden);
+      var rows = list.map(function (n) {
+        var m = M[n]; if (!m) return '';
+        var on = lo.indexOf(n) >= 0;
+        var meta = m.cat + (m.power ? ' · 威力' + m.power : '') + (m.pri ? ' · 先制+' + m.pri : '') + ' · PP' + m.pp;
+        return '<label class="mrow' + (on ? ' on' : '') + (m.hidden ? ' hid' : '') + '">' +
+          '<input type="checkbox" data-arena-amove="' + esc(n) + '"' + (on ? ' checked' : '') +
+          (own ? ' disabled' : '') + ' aria-label="' + esc(n) + '，' + (on ? '卸下' : '装备') + '技能">' +
+          '<span class="l1"><span class="mn">' + esc(m.name) + '</span>' + HSUI.tchip(m.type) +
+          '<span class="mm">' + esc(meta) + '</span>' + (m.hidden ? '<span class="tag sc hidtag">隐藏技能</span>' : '') + '</span>' +
+          '<span class="md">' + esc(m.d || '') + '</span></label>';
+      }).join('');
+      body.innerHTML = '<div class="arena-skill-intro"><div class="moves-head"><h4>出战技能 <span class="' +
+        (lo.length === 4 ? 'blue' : 'red') + '">' + lo.length + '/4</span></h4></div>' +
+        '<p class="hint">' + (own ? '自己的精灵 · LV' + own.lv + '，请到精灵背包更换技能。' :
+        '直接勾选已学习技能的模拟配置，最多装备4个；更改自动保存。') + '</p></div>' +
+        '<div class="arena-skill-list mlist">' + (rows || '<p class="hint">暂无可用技能</p>') + '</div>' +
+        '<p class="arena-panel-message" role="status">' + esc(message || '') + '</p>' +
+        '<div class="arena-mon-actions">' +
+        (!own && inBag > 0 && !state.training ? '<button type="button" class="btn ghost" data-mon-lead>设为首发</button>' : '') +
+        (!own && state.mode === 'sandbox' ? '<button type="button" class="btn ghost" data-mon-replace>' +
+          (state.training ? '切换精灵' : '更换精灵') + '</button>' +
+          (!state.training && inBag >= 0 ? '<button type="button" class="btn ghost" data-mon-remove>移出阵容</button>' : '') : '') +
+        '<button type="button" class="btn primary" data-arena-close>完成</button></div>';
+      body.querySelector('.arena-skill-list').scrollTop = scroll;
     }
-    d.addEventListener('click',function(e){var b=e.target.closest('[data-move-info]');if(b){move=b.dataset.moveInfo;draw();return;}b=e.target.closest('[data-move-page]');if(b&&!b.disabled){page+=+b.dataset.movePage;draw();return;}if(e.target.closest('[data-move-back]')){move=null;draw();return;}if(e.target.closest('[data-move-toggle]')){var r=HSBATTLE.arenaEdit('move',id,move);if(r.ok){move=null;draw();}else draw(r.msg);return;}if(e.target.closest('[data-mon-lead]')){HSBATTLE.arenaEdit('lead',id);draw('已设为首发');}if(e.target.closest('[data-mon-remove]')){HSBATTLE.arenaEdit('remove',id);if(active)active.close();}if(e.target.closest('[data-mon-replace]'))choose(HSBATTLE.arenaState().bag.indexOf(id));});
+    d.addEventListener('change', function (e) {
+      var input = e.target.closest('[data-arena-amove]');
+      if (!input || own) return;
+      var result = HSBATTLE.arenaEdit('move', id, input.dataset.arenaAmove);
+      draw(result.ok ? '' : result.msg);
+    });
+    d.addEventListener('click', function (e) {
+      if (e.target.closest('[data-mon-lead]')) { HSBATTLE.arenaEdit('lead', id); draw('已设为首发'); }
+      if (e.target.closest('[data-mon-remove]')) { HSBATTLE.arenaEdit('remove', id); if (active) active.close(); }
+      if (e.target.closest('[data-mon-replace]')) choose(HSBATTLE.arenaState().bag.indexOf(id));
+    });
     draw();
   }
   document.addEventListener('click',function(e){
