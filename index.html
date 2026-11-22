@@ -17,7 +17,7 @@
 <link rel="stylesheet" href="css/storage-layout.css?v=20261115-8">
 <link rel="stylesheet" href="css/estate-view.css?v=20261116-1">
 <link rel="stylesheet" href="css/shop-ui.css?v=20261122-2">
-<link rel="stylesheet" href="css/arena.css?v=20261122-1">
+<link rel="stylesheet" href="css/arena.css?v=20261122-2">
 <link rel="stylesheet" href="css/christmas.css?v=20261122-7">
 <link rel="stylesheet" href="css/daily-login.css?v=20261122-2">
 <link rel="stylesheet" href="css/season-theme.css?v=20261122-4">
@@ -76,7 +76,7 @@
       <button type="button" class="sub" id="sub-train" role="tab" aria-selected="false">训练</button>
       <span class="hint" id="sub-hint">与随机配置的电脑对战</span>
     </div>
-    <div id="sandbox-source" class="subbar" aria-label="沙盒精灵来源"><button type="button" class="sub on" data-sandbox-source="wiki">Wiki 全部精灵</button><button type="button" class="sub" data-sandbox-source="backpack">自己的背包</button></div>
+    <div id="sandbox-source" class="subbar" aria-label="沙盒精灵来源"><button type="button" class="sub on" data-sandbox-source="wiki">自由配队</button><button type="button" class="sub" data-sandbox-source="backpack">自己的背包</button></div>
     <div class="bagbox">
       <span class="tape l"></span><span class="tape r"></span>
       <div class="bag-head">
@@ -105,14 +105,6 @@
         <button class="btn ghost" id="btn-random" type="button">随机背包</button>
         <button class="btn primary" id="btn-start" type="button">开始对战</button>
       </div>
-    </div>
-    <div class="build">
-      <div>
-        <h2 class="sec">精灵图鉴</h2>
-        <div class="dex-grid" id="dex"></div>
-        <details class="chartbox" id="chartbox"><summary>属性克制表（试验版）</summary><div id="chart"></div></details>
-      </div>
-      <article class="detail" id="detail"></article>
     </div>
   </section>
 
@@ -246,13 +238,13 @@ CLOUD.boot([
   'js/engine/summon.js',
   'js/engine/endless.js',
   'js/ui/audio.js?v=20261122-3',
-  'js/ui/battle-ui.js?v=20261122-2',
+  'js/ui/battle-ui.js?v=20261122-3',
   'js/ui/scene-motion.js?v=20261122-2',
   'js/ui/christmas.js?v=20261122-7',
   'js/ui/game.js?v=20261122-11',
   'js/ui/shop-ui.js?v=20261122-3',
   'js/ui/daily-login.js?v=20261122-2',
-  'js/ui/arena.js?v=20261122-1',
+  'js/ui/arena.js?v=20261122-2',
   'js/ui/social.js?v=20261116-13',
   'js/ui/board.js',
   'js/ui/display.js',

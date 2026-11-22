@@ -91,8 +91,8 @@
     if (!bwOpen) $('brawl-sub').textContent = '未开放 · 持有 3 只精灵后，去孝感大厅找 Dr.黄';
     var bw = app.mode === 'brawl' && bwOpen;
     $('mode-brawl').classList.toggle('on', bw); $('mode-brawl').setAttribute('aria-selected', bw);
-    $('brawl').hidden = !bw; document.querySelector('#builder .bagbox').hidden = bw; document.querySelector('.build').hidden = bw || ownSandbox();
-    if (bw) { $('rankcard').hidden = true; $('subbar').hidden = true; if (window.HSBRAWL) window.HSBRAWL.render(); return; }
+    $('brawl').hidden = !bw; document.querySelector('#builder .bagbox').hidden = bw;
+    if (bw) { $('rankcard').hidden = true; $('subbar').hidden = true; if (window.HSBRAWL) window.HSBRAWL.render(); if (window.HSARENA) HSARENA.sync(); return; }
     var rc = $('rankcard'); rc.hidden = app.mode !== 'rank';
     $('subbar').hidden = app.mode !== 'sandbox';
     $('sub-battle').classList.toggle('on', app.sub === 'battle'); $('sub-battle').setAttribute('aria-selected', app.sub === 'battle');
@@ -127,7 +127,7 @@
   function renderTrain() {
     var s = SPMAP[app.sel], lo = app.loadout[app.sel];
     $('ts-mon').innerHTML = '<img src="' + SPRITES[s.id] + '" alt=""><div><span class="nm">' + s.name + '</span> ' + tchips(s.types) +
-      '<p class="hint">训练精灵为图鉴中当前选中的精灵，可在下方切换并配置技能。</p><p class="ts-moves">' + (lo.length ? lo.map(function (n) { return M[n].name; }).join('、') : '尚未选择技能') + '</p></div>';
+      '<p class="hint">点击出战精灵配置技能，通过选择面板切换训练精灵。</p><p class="ts-moves">' + (lo.length ? lo.map(function (n) { return M[n].name; }).join('、') : '尚未选择技能') + '</p></div>';
     $('ts-lv').value = app.train.lv; $('ts-lvr').value = app.train.lv; $('ts-def' + app.train.def).checked = true; renderTrainNote();
   }
   $('mode-sandbox').addEventListener('click', function () { app.mode = 'sandbox'; saveMode(); renderMode(); renderBuilder(); });
@@ -355,139 +355,27 @@
       }).join('') + '</div>';
   }
   function renderBag() {
-    if (ownSandbox()) {
-      var team = ownTeam(); $('draft').hidden = true; $('trainset').hidden = true; $('bag').hidden = false; $('btn-random').hidden = true;
-      $('bag-title').textContent = '自己的出战背包'; $('bag-hint').textContent = '按当前配队顺序出战，沿用等级、形态、技能、性格、天赋和学习力，可在精灵背包中调整';
-      $('bag').innerHTML = team.map(function (m) { var f = ACC.form(m); return '<li><div class="slot filled"><img src="' + f.img + '" alt=""><span class="nm">' + esc(f.name) + '</span><small>LV' + m.lv + '</small></div></li>'; }).join('');
-      $('bag-msg').textContent = team.length ? '已选 ' + team.length + ' 只，对手等级按我方平均等级匹配' : '请先在精灵背包中配置出战精灵';
-      $('btn-start').disabled = !team.length; $('btn-start').textContent = '使用自己的背包出战'; return;
-    }
-    var rank = app.mode === 'rank', d = rank ? ensureDraft() : null, drafting = rank && d.pick == null, tr = training();
-    $('trainset').hidden = !tr;
-    if (tr) {
-      $('draft').hidden = true; $('bag').hidden = true; $('btn-random').hidden = true;
-      $('bag-title').textContent = '训练设置'; $('bag-hint').textContent = '选择一只精灵、我方等级和木桩防御。开始后可连续出招，系统会统计造成的伤害。';
-      renderTrain();
-      var n = app.loadout[app.sel].length;
-      $('bag-msg').textContent = n === 4 ? '准备就绪' : SPMAP[app.sel].name + '尚需选满 4 个技能';
-      $('bag-msg').className = 'hint' + (n === 4 ? '' : ' red');
-      $('btn-start').disabled = n !== 4; $('btn-start').textContent = '开始训练 · ' + SPMAP[app.sel].name;
-      return;
-    }
-    $('draft').hidden = !drafting; $('bag').hidden = drafting;
-    $('btn-random').hidden = rank;
-    $('bag-title').textContent = rank ? (drafting ? '本局阵容选择' : '本局出战阵容（阵容 ' + 'AB'[d.pick] + '）') : '我的背包';
-    $('bag-hint').textContent = rank ? (drafting ? '点击精灵可在下方查看资料。' : '阵容已锁定。可拖动精灵调整出场顺序（第 1 位为首发），并为每只精灵选择 4 个技能。') : '拖动背包里的精灵可调整顺序（触屏长按后拖动），排在第 1 位的为首发。点击精灵即可选中并查看资料；选中后，卡片右上角可直接「移出」或「放进背包」。';
-    if (drafting) { renderDraft(); $('bag-msg').textContent = '请先选择一套阵容'; $('bag-msg').className = 'hint red'; $('btn-start').disabled = true; $('btn-start').textContent = '开始平衡排位 · ' + rankFull(app.rank.r, app.rank.dv); return; }
-    var html = '';
-    for (var i = 0; i < 5; i++) {
-      var id = B()[i];
+    var own = ownSandbox(), rank = app.mode === 'rank', d = rank ? ensureDraft() : null, drafting = rank && d.pick == null, tr = training();
+    $('draft').hidden = !drafting; $('trainset').hidden = !tr; $('bag').hidden = drafting; $('btn-random').hidden = rank || own || tr;
+    $('bag-title').textContent = tr ? '训练精灵' : own ? '自己的出战背包' : rank ? '本局出战阵容' : '出战阵容';
+    $('bag-hint').textContent = own ? '沿用自己的等级与技能' : '点击精灵配置技能，排在第1位的为首发';
+    if (drafting) { renderDraft(); $('bag').innerHTML = ''; $('bag-msg').textContent = '先选择一套本局阵容'; $('btn-start').disabled = true; $('btn-start').textContent = '开始平衡排位'; return; }
+    if (tr) renderTrain();
+    var ids = tr ? [app.sel] : own ? ownTeam().map(function (m) { return m.sid; }) : B(), count = tr ? 1 : 5, html = '';
+    for (var i = 0; i < count; i++) {
+      var id = ids[i], m = own && ownTeam()[i];
       if (id) {
-        var s = SPMAP[id], n = app.loadout[id].length;
-        html += '<li><button type="button" class="slot filled' + (app.sel === id ? ' sel' : '') + '" data-id="' + id + '">' +
-          (i === 0 ? '<span class="lead">首发</span>' : '') +
-          '<img src="' + SPRITES[id] + '" alt="">' + '<span class="nm">' + s.name + '</span><span class="tc">' + tchips(s.types) + '</span>' +
-          (n !== 4 ? '<span class="warn">技能 ' + n + '/4</span>' : '') + '</button>' +
-          (app.sel === id && !rank ? '<button type="button" class="qx" data-rm="' + id + '" aria-label="把' + s.name + '移出背包">✕ 移出</button>' : '') + '</li>';
-      } else html += '<li><div class="slot"><div class="empty">空位</div></div></li>';
+        var sp = SPMAP[id], f = m ? ACC.form(m) : { img: SPRITES[id], name: sp.name }, n = m ? ACC.battleMon(HSACC.acc(), m).moves.length : app.loadout[id].length;
+        html += '<li><button type="button" class="slot filled" ' + (own ? 'data-arena-own="' + m.u + '"' : 'data-id="' + id + '"') + '>' +
+          (!tr && i === 0 ? '<span class="lead">首发</span>' : '') + '<img src="' + f.img + '" alt=""><span class="nm">' + esc(f.name) + '</span>' +
+          '<small class="slot-note">' + (m ? 'LV' + m.lv : n + '/4 技能') + '</small></button></li>';
+      } else html += '<li><button type="button" class="slot empty-slot" data-arena-add' + (own || rank ? ' disabled' : '') + '><span class="empty-plus">＋</span><span>' + (own ? '空位' : '添加精灵') + '</span></button></li>';
     }
     $('bag').innerHTML = html;
-    var bad = B().filter(function (id) { return app.loadout[id].length !== 4; });
-    var rank = app.mode === 'rank', need = rank && B().length < 5;
-    var msg = !B().length ? '背包中至少需要 1 只精灵' : need ? '平衡排位需要携带 5 只精灵，尚缺 ' + (5 - B().length) + ' 只' : bad.length ? SPMAP[bad[0]].name + '尚需选满 4 个技能' :
-      rank ? '阵容已就绪，对手阵容将在对战中逐一揭晓' : '已选 ' + B().length + ' 只，电脑将随机携带 5 只';
-    $('bag-msg').textContent = msg;
-    var blocked = !B().length || bad.length > 0 || need;
-    $('bag-msg').className = 'hint' + (blocked ? ' red' : '');
-    $('btn-start').disabled = blocked;
-    $('btn-start').textContent = rank ? '开始平衡排位 · ' + rankFull(app.rank.r, app.rank.dv) : '开始对战';
-  }
-  function renderDex() {
-    var quick = !training() && app.mode !== 'rank';
-    $('dex').innerHTML = (app.mode === 'rank' ? RANK_ROSTER : WIKI_SP).map(function (s) {
-      var inb = B().indexOf(s.id) >= 0, q = '';
-      if (quick && app.sel === s.id) q = inb ? '<button type="button" class="qx" data-rm="' + s.id + '">✕ 移出背包</button>' : B().length < 5 ? '<button type="button" class="qa" data-add="' + s.id + '">＋ 放进背包</button>' : '';
-      return '<div class="cw">' + q + '<button type="button" class="card' + (app.sel === s.id ? ' sel' : '') + '" data-id="' + s.id + '">' +
-        (!training() && inb && !q ? '<span class="inbag">背包中</span>' : '') + (training() && app.sel === s.id ? '<span class="inbag">训练中</span>' : '') +
-        '<img src="' + SPRITES[s.id] + '" alt="' + s.name + '的手绘立绘"><span class="nm">' + s.name + '</span>' +
-        '<span class="meta">' + tchips(s.types) + '<span>种族值 ' + total(s) + (s.unsure && s.unsure.length >= 6 ? '?' : '') + '</span></span></button></div>';
-    }).join('');
-  }
-  function moveRow(n, s) {
-    var m = M[n], on = app.loadout[s.id].indexOf(n) >= 0, id = 'mv-' + s.id + '-' + n;
-    var meta = m.cat + (m.power ? ' · 威力' + m.power : '') + (m.pri ? ' · 先制+' + m.pri : '') + ' · PP' + m.pp;
-    var emb = s.emblem && s.emblem.m === n ? ' <span class="tag">纹章</span>' : '';
-    return '<label class="mrow' + (on ? ' on' : '') + (m.hidden ? ' hid' : '') + '" for="' + id + '">' +
-      '<input type="checkbox" id="' + id + '" data-move="' + n + '"' + (on ? ' checked' : '') + '>' +
-      '<span class="l1"><span class="mn">' + m.name + '</span>' + atkTip(m.type) + '<span class="mm">' + meta + '</span>' +
-      (m.hidden ? '<span class="tag sc hidtag" tabindex="0">隐藏<span class="tip" role="tooltip"><b>隐藏技能</b>' + (LEARN[n] ? '要在战斗中满足特定条件才能领悟（精灵需 LV' + HIDDEN_MIN_LV + ' 以上）' : '达到 LV50 时习得') + '<span class="tipx">试验版里可以直接选用</span></span></span>' : '') + emb + '</span>' +
-      '<span class="md">' + esc(m.d) + '</span></label>';
-  }
-  function renderDetail() {
-    var s = SPMAP[app.sel], inBag = B().indexOf(s.id) >= 0, n = app.loadout[s.id].length;
-    var stats = '';
-    ['hp', 'atk', 'def', 'spa', 'spd', 'spe'].forEach(function (k) {
-      var b = s.base[k], q = s.unsure && s.unsure.indexOf(k) >= 0;
-      stats += '<span>' + BASE_NAME[k] + '</span><span>' + b + (q ? '<span class="q" title="照片里这一项没看清，先按这个数，告诉我正确数值就能改">?</span>' : '') + '</span>' +
-        '<span class="bar"><i style="width:' + Math.min(100, b / 150 * 100) + '%"></i></span>' +
-        '<span class="real">LV100：' + calcStat(b, k) + '</span>';
-    });
-    stats += '<span class="sum">种族值总和 ' + total(s) + (s.unsure ? (s.unsure.length >= 6 ? ' · 图鉴里还没写种族值，这些都是暂定数值' : ' · 带 <span class="red">?</span> 的数值是照片里没看清、暂定的') : '') + '</span>';
-    // 当前查看的形态（点进化链切换）；默认最终形态
-    var v = app.evoView && app.evoView.id === s.id && s.evo ? app.evoView.i : evoLast(s), fin = isFin(s, v);
-    var ev = s.evo ? s.evo[v] : {}, vName = !fin ? String(ev.n || s.name + '·' + stageLabel(s, v)).replace('?', '') : s.name;
-    var vImg = s.evo ? formImg(s, v) : SPRITES[s.id], vLore = ev.d || (!fin ? '' : s.lore || '');
-    $('detail').innerHTML =
-      '<span class="tape r"></span>' +
-      '<div class="d-head"><button type="button" class="d-art" data-big="' + v + '" title="点击查看大图" aria-label="查看' + esc(vName) + '的大图"><img src="' + vImg + '" alt="' + esc(vName) + '"></button>' +
-      '<div><h3>' + (ev.no ? '<span class="dexno">No.' + ev.no + '</span>' : '') + esc(vName) + '</h3>' + tchips(s.types) +
-      (!fin ? '<p class="formnote">' + stageLabel(s, v) + '形态 · ' + (v === 0 ? 'LV1' : 'LV' + s.evo[v].lv) + '–' + (s.evo[v + 1].lv - 1) + ' · 下方的能力、特性和技能按最终形态「' + s.name + '」显示</p>' : s.evo ? '<p class="formnote">最终形态 · LV' + s.evo[v].lv + ' 起 · 下方的能力、特性和技能按此形态显示</p>' : '') +
-      (vLore ? '<p class="lore">' + esc(vLore) + '</p>' : '') +
-      (fin && LINEART[s.id] ? '<figure class="sketch"><img src="' + LINEART[s.id] + '" alt="' + s.name + '的手绘原画"><figcaption>原画手稿</figcaption></figure>' : '') + '</div></div>' +
-      evoChain(s) +
-      '<div class="stats">' + stats + '</div>' +
-      '<div class="trait"><p><b>特性 · ' + s.ability.n + '</b>　<span class="blue">' + esc(s.ability.d) + '</span></p>' + (s.ability.extra ? '<p class="blue" style="font-size:13px">' + esc(s.ability.extra) + '</p>' : '') +
-      (s.emblem ? '<p><b>纹章 · ' + s.emblem.m + '*</b>　<span class="blue">' + esc(s.emblem.d) + '</span></p>' : '') + '</div>' +
-      '<div><div class="moves-head"><h4>出战技能 <span class="' + (n === 4 ? 'blue' : 'red') + '">' + n + '/4</span></h4>' +
-      '<span class="hint">鼠标移到「隐藏」上可看学习条件，试验版里可以直接选用</span></div>' +
-      '<div class="mlist" id="mlist">' + s.moves.map(function (m) { return moveRow(m, s); }).join('') + s.hidden.map(function (m) { return moveRow(m, s); }).join('') + '</div></div>' +
-      '<div class="d-actions">' +
-      (app.mode === 'rank' ? (inBag ? '<button class="btn" type="button" id="btn-lead"' + (B()[0] === s.id ? ' disabled' : '') + '>设为首发</button>' : '<span class="hint">平衡排位中只能使用本局选定的阵容</span>') :
-      inBag ? '<button class="btn" type="button" id="btn-lead"' + (B()[0] === s.id ? ' disabled' : '') + '>设为首发</button><button class="btn ghost" type="button" id="btn-remove">移出背包</button>'
-        : '<button class="btn primary" type="button" id="btn-add"' + (B().length >= 5 ? ' disabled' : '') + '>放进背包</button>' + (B().length >= 5 ? '<span class="hint">背包已满 5 只，先移出一只</span>' : '')) +
-      '</div>';
-  }
-  function renderChart() {
-    var types = Object.keys(TYPE_COLOR);
-    $('chart').innerHTML = types.map(function (t) {
-      var up = [], dn = [];
-      types.forEach(function (d) { var e = eff(t, d); if (e > 1) up.push(d); else if (e < 1) dn.push(d); });
-      return '<div class="chartrow">' + tchip(t) + '<div class="cl"><span class="lab">克制</span>' + (up.length ? up.map(tchip).join('') : '<span class="lab">无</span>') +
-        '<span class="lab" style="margin-left:8px">被抵抗</span>' + (dn.length ? dn.map(tchip).join('') : '<span class="lab">无</span>') + '</div></div>';
-    }).join('') + '<p class="hint" style="margin:8px 0 2px">双属性精灵按两个属性的倍率相乘计算。</p>';
-  }
-  function evoChain(s) {
-    if (!s.evo) return '';
-    var st = s.evo.map(function (e, i) {
-      var img = formImg(s, i);
-      var name = formRawName(s, i);
-      var unsure = name && name.slice(-1) === '?';
-      if (unsure) name = name.slice(0, -1);
-      return { img: img, name: name, unsure: unsure, lv: e.lv, stage: stageLabel(s, i) };
-    });
-    var html = '<div class="evo"><div class="evo-head"><h4>进化链</h4><span class="hint">点击形态查看它的资料，点上方的大图可以放大' + (s.evoLvSure ? '' : ' · 进化等级在图鉴里没写，暂按 ' + s.evo.slice(1).map(function (e) { return 'LV' + e.lv; }).join(' / ')) + '</span></div><ol class="evo-row' + (s.evo.length === 2 ? ' n2' : '') + '">';
-    st.forEach(function (x, i) {
-      if (i > 0) html += '<li class="evo-arrow" aria-hidden="true"><span>LV' + x.lv + '</span></li>';
-      var cur = (app.evoView && app.evoView.id === s.id ? app.evoView.i : evoLast(s)) === i;
-      html += '<li><button type="button" class="evo-card' + (isFin(s, i) ? ' final' : '') + (cur ? ' cur' : '') + '" data-evo="' + i + '" aria-pressed="' + cur + '">' +
-        '<span class="evo-img"><img src="' + x.img + '" alt="' + (x.name || s.name + st[i].stage) + '"></span>' +
-        '<span class="evo-name">' + (x.name ? esc(x.name) + (x.unsure ? '<i class="q" title="字迹没看清">?</i>' : '') : '<span class="nn">名字没拍到</span>') + '</span>' +
-        '<span class="evo-lv">' + (s.evo[i].no ? 'No.' + s.evo[i].no + ' · ' : '') + x.stage + ' · ' + (i === 0 ? 'LV1 起' : 'LV' + x.lv + ' 进化') + '</span></button></li>';
-    });
-    var descs = s.evo.filter(function (e) { return e.d; });
-    html += '</ol>';
-    if (descs.length) html += '<dl class="evo-desc">' + s.evo.map(function (e, i) { return e.d ? '<dt>No.' + e.no + ' ' + esc(formRawName(s, i) || '') + '</dt><dd>' + esc(e.d) + '</dd>' : ''; }).join('') + '</dl>';
-    return html + '</div>';
+    var bad = !own && ids.filter(function (id) { return app.loadout[id].length !== 4; }), blocked = !ids.length || bad && bad.length || rank && ids.length !== 5;
+    $('bag-msg').textContent = !ids.length ? '请先配置出战精灵' : bad && bad.length ? SPMAP[bad[0]].name + '还需选满4个技能' : tr ? 'LV' + app.train.lv + ' · 木桩双防种族值 ' + app.train.def : '已选 ' + ids.length + ' 只 · 准备就绪';
+    $('bag-msg').className = 'hint' + (blocked ? ' red' : ''); $('btn-start').disabled = !!blocked;
+    $('btn-start').textContent = tr ? '开始训练' : rank ? '开始平衡排位' : own ? '使用自己的背包出战' : '开始对战';
   }
   function openLightbox(s, i) {
     var lb = $('lightbox'), e = s.evo[i];
@@ -499,8 +387,8 @@
     lb.dataset.sid = s.id; lb.dataset.i = i; lb.hidden = false; $('lb-close').focus();
   }
   function closeLightbox() { $('lightbox').hidden = true; }
-  function renderBuilder() { renderBag(); renderDex(); renderDetail(); }
-  renderChart();
+  function renderBuilder() { renderBag(); if (window.HSARENA) HSARENA.sync(); }
+
 
   function quickBag(e) {
     if (app.mode === 'rank' || training()) return false;
@@ -543,7 +431,7 @@
     renderBuilder();
   }
   $('bag').addEventListener('pointerdown', function (e) {
-    if (training() || e.button > 0 || e.target.closest('.qx')) return;
+    if (training() || ownSandbox() || e.button > 0 || e.target.closest('.qx')) return;
     var sl = e.target.closest('.slot.filled'); if (!sl) return;
     var lis = [].slice.call($('bag').children);
     drag = { el: sl, id: sl.dataset.id, from: lis.indexOf(sl.parentNode), to: -1, x0: e.clientX, y0: e.clientY, touch: e.pointerType !== 'mouse', on: false };
@@ -563,27 +451,7 @@
   window.addEventListener('pointercancel', function () { dragEnd(false); });
   document.addEventListener('touchmove', function (e) { if (drag && drag.on) e.preventDefault(); }, { passive: false });
   $('bag').addEventListener('contextmenu', function (e) { if (drag) e.preventDefault(); });
-  $('bag').addEventListener('click', function (e) { if (dragJustEnded) { e.stopPropagation(); return; } if (quickBag(e)) return; var b = e.target.closest('[data-id]'); if (b) { app.sel = b.dataset.id; renderBuilder(); } });
-  $('dex').addEventListener('click', function (e) { if (quickBag(e)) return; var b = e.target.closest('[data-id]'); if (b) { app.sel = b.dataset.id; renderBuilder(); } });
-  $('detail').addEventListener('change', function (e) {
-    var cb = e.target.closest('input[data-move]'); if (!cb) return;
-    var lo = app.loadout[app.sel], n = cb.dataset.move;
-    if (cb.checked) { if (lo.length >= 4) { cb.checked = false; flashMsg('最多带 4 个技能，先取消一个'); return; } lo.push(n); }
-    else lo.splice(lo.indexOf(n), 1);
-    saveLoadout();
-    renderBag(); renderDetail();
-  });
-  $('detail').addEventListener('click', function (e) {
-    var ev = e.target.closest('[data-evo]'); if (ev) { app.evoView = { id: app.sel, i: +ev.dataset.evo }; renderDetail(); return; }
-    var bg = e.target.closest('[data-big]'); if (bg) { openLightbox(SPMAP[app.sel], +bg.dataset.big); return; }
-    var t = e.target;
-    if (app.mode === 'rank' && (t.id === 'btn-add' || t.id === 'btn-remove')) return;
-    if (t.id === 'btn-add' && B().length < 5) B().push(app.sel);
-    else if (t.id === 'btn-remove') B().splice(B().indexOf(app.sel), 1);
-    else if (t.id === 'btn-lead') { var bb = B(); bb.splice(bb.indexOf(app.sel), 1); bb.unshift(app.sel); if (app.mode === 'rank') saveDraft(); }
-    else return;
-    renderBuilder();
-  });
+  $('bag').addEventListener('click', function (e) { if (dragJustEnded) { e.stopPropagation(); return; } if (quickBag(e)) return; var b = e.target.closest('[data-id]'); if (b) { app.sel = b.dataset.id; if (window.HSARENA) HSARENA.skills(app.sel); } });
   function flashMsg(t) { $('bag-msg').textContent = t; $('bag-msg').className = 'hint red'; }
   $('lb-close').addEventListener('click', closeLightbox);
   $('lightbox').addEventListener('click', function (e) { if (e.target.id === 'lightbox') closeLightbox(); });
@@ -597,7 +465,7 @@
   $('draft').addEventListener('click', function (e) {
     var pk = e.target.closest('[data-pick]');
     if (pk) { var d = ensureDraft(); if (!d.opts) return; d.pick = +pk.dataset.pick; d.order = d.opts[d.pick].slice(); saveDraft(); app.sel = d.order[0]; renderBuilder(); return; }
-    var m = e.target.closest('[data-id]'); if (m) { app.sel = m.dataset.id; renderDex(); renderDetail(); }
+    var m = e.target.closest('[data-id]'); if (m && window.HSARENA) HSARENA.skills(m.dataset.id);
   });
   $('btn-random').addEventListener('click', function () { app.bag = shuffle(WIKI_SP.map(function (s) { return s.id; })).slice(0, 5); app.sel = app.bag[0]; renderBuilder(); });
   $('btn-start').addEventListener('click', function () { startBattle(); });
@@ -929,7 +797,38 @@
       addLog(note, 'bad'); showEnd();
     });
   }
-  window.HSBATTLE = { setSource: function (s) { app.source = s === 'backpack' ? s : 'wiki'; renderMode(); renderBuilder(); }, rankRules: function () { return '<p>S2 赛季 · ' + RANK_ROSTER.length + ' 只已上色精灵参加排位</p><p>胜利获得1星，满3星晋级，失败扣1星，0星失败降级，黑铁保底。铂金至宗师含五个小段，每局最多' + MAX_TURNS + '回合</p><p>' + esc(rankDesc(app.rank.r, app.rank.stars, app.rank.dv)) + '</p>' + rankExpHTML() + (window.HSACC ? HSACC.rankRwHTML() : ''); }, renderMode: function () { renderMode(); if (app.mode !== 'brawl') renderBuilder(); }, start: startStory, startPvp: startPvp, pvpApply: pvpApply, pvpAbort: pvpAbort, pvpActive: function () { return !!pvp; },
+  function arenaState() {
+    var d = app.mode === 'rank' ? ensureDraft() : null;
+    return { mode: app.mode, training: training(), own: ownSandbox(), selected: app.sel, bag: B().slice(),
+      drafting: !!d && d.pick == null, draft: d && d.opts, train: { lv: app.train.lv, def: app.train.def } };
+  }
+  function arenaEdit(op, id, arg) {
+    var s = SPMAP[id];
+    if (!s || ownSandbox() || app.mode !== 'sandbox' && app.mode !== 'rank') return { ok: false, msg: '当前模式无法修改' };
+    var bag = B(), idx = bag.indexOf(id);
+    if (op === 'select') {
+      if (app.mode !== 'sandbox') return { ok:false, msg:'排位阵容已锁定' };
+      if (training()) app.sel = id;
+      else {
+        if (idx >= 0 && idx !== arg) return { ok:false, msg:'这只精灵已经在阵容中了' };
+        if (arg >= 0 && arg < bag.length) bag[arg] = id;
+        else if (bag.length < 5) bag.push(id);
+        else return { ok:false, msg:'阵容已满，请先选择要更换的精灵' };
+        app.sel = id;
+      }
+    } else if (op === 'move') {
+      if (s.moves.concat(s.hidden).indexOf(arg) < 0) return { ok:false, msg:'无法配置这个技能' };
+      var lo = app.loadout[id], mi = lo.indexOf(arg);
+      if (mi >= 0) lo.splice(mi, 1);
+      else if (lo.length < 4) lo.push(arg);
+      else return { ok:false, msg:'最多装备4个技能，请先卸下一个' };
+      saveLoadout();
+    } else if (op === 'lead' && idx >= 0) { bag.splice(idx, 1); bag.unshift(id); if (app.mode === 'rank') saveDraft(); }
+    else if (op === 'remove' && app.mode === 'sandbox' && !training() && idx >= 0) bag.splice(idx, 1);
+    else return { ok:false, msg:'无法完成此操作' };
+    renderBuilder(); return { ok:true };
+  }
+  window.HSBATTLE = { arenaState: arenaState, arenaEdit: arenaEdit, setSource: function (s) { app.source = s === 'backpack' ? s : 'wiki'; renderMode(); renderBuilder(); }, rankRules: function () { return '<p>S2 赛季 · ' + RANK_ROSTER.length + ' 只已上色精灵参加排位</p><p>胜利获得1星，满3星晋级，失败扣1星，0星失败降级，黑铁保底。铂金至宗师含五个小段，每局最多' + MAX_TURNS + '回合</p><p>' + esc(rankDesc(app.rank.r, app.rank.stars, app.rank.dv)) + '</p>' + rankExpHTML() + (window.HSACC ? HSACC.rankRwHTML() : ''); }, renderMode: function () { renderMode(); if (app.mode !== 'brawl') renderBuilder(); }, start: startStory, startPvp: startPvp, pvpApply: pvpApply, pvpAbort: pvpAbort, pvpActive: function () { return !!pvp; },
     // 竞技对战里给每只精灵记住的配招（平衡模式切磋选技能时沿用，改了也会记回来）
     loadout: function (id) { return app.loadout[id] ? app.loadout[id].slice() : []; },
     // 观战转播：social.js 连上服务器后把发送函数交给这里
