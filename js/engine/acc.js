@@ -13,7 +13,7 @@ var ACC = (function () {
   var TEAM_SIZE = 5, MAX_LV = 100, BASE_CAP = 70;
   var STAT_KEYS = ['hp', 'atk', 'def', 'spa', 'spd', 'spe'], NAT_KEYS = Object.keys(NATURES);
   // 隐藏技能只能用道具解锁的种族（2026-10-18）
-  var HL_GATED = { clementi: 1, mush: 1, wind: 1, kaleo: 1, pede: 1, gorgon: 1, hephaestus: 1, firemouse: 1, leigong: 1, faraday: 1, frost: 1, tagore: 1, barren: 1, pluto: 1, leaf: 1, squid: 1, shroom: 1, moon: 1, bone: 1, siren: 1, leiming: 1, odo: 1, leafcat: 1, turkey: 1, hauris: 1, phantom: 1, leibniz: 1, tiago: 1 };
+  var HL_GATED = { bali: 1, barlow: 1, clementi: 1, mush: 1, wind: 1, kaleo: 1, pede: 1, gorgon: 1, hephaestus: 1, firemouse: 1, leigong: 1, faraday: 1, frost: 1, tagore: 1, barren: 1, pluto: 1, leaf: 1, squid: 1, shroom: 1, moon: 1, bone: 1, siren: 1, leiming: 1, odo: 1, leafcat: 1, turkey: 1, hauris: 1, phantom: 1, leibniz: 1, tiago: 1 };
   function envOf(env) { return { now: env && env.now != null ? env.now : Date.now(), rand: env && env.rand ? env.rand : Math.random }; }
 
   /* ---------- 精灵实例 ---------- */

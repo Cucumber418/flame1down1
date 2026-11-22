@@ -27,6 +27,7 @@ var STY = (function () {
 
   /* ---------- 每段剧情的开放条件（和 game.js 的 SITES 一致：after 是前一段，need 是额外条件） ---------- */
   var SITES = {
+    helenaArrival: { after: 'jiuquan', need: function (a) { return PVE.helenaOpen(a); } },
     school: {}, river: { after: 'school' }, jiuquan: { after: 'river' }, board: { after: 'jiuquan' },
     academy: { after: 'board' }, flora1: { after: 'board' }, flora2: { after: 'flora1' },
     flora3: { after: 'flora2', need: function (a) { return ((a.story && a.story.flora2 && a.story.flora2.spare) || 0) >= PVE.SPARE_N; } },

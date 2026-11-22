@@ -298,7 +298,7 @@
     syncBattle();
     deliverMail(); checkRankRewards(); daily(); homeSettle();
     setTimeout(function () { storyNewsCheck(); newsCheck(); }, 1500);
-    ['holo', 'arena', 'log', 'bag', 'store', 'release', 'dex', 'items', 'social', 'explore'].forEach(function (p) { $('pg-' + p).hidden = p !== page; });
+    ['holo', 'arena', 'log', 'christmas', 'bag', 'store', 'release', 'dex', 'items', 'social', 'explore'].forEach(function (p) { $('pg-' + p).hidden = p !== page; });
     if (page !== 'bag' && !(page === 'store' && ui.storePanel === 'detail') && ui.bagPanel) closeBagPanel();
     if (page !== 'store') ui.storePanel = null;
     if (page !== 'dex') ui.dexPanel = false;
@@ -307,6 +307,7 @@
     if (page === 'social') { if (window.HSSOCIAL) window.HSSOCIAL.render(); }
     else if (page === 'bag') renderBag();
     else if (page === 'log') renderLog();
+    else if (page === 'christmas') renderChristmas();
     else if (page === 'dex') renderDex2();
     else if (page === 'store') renderStore();
     else if (page === 'release') renderRelease();
@@ -332,7 +333,12 @@
     });
     setTimeout(navDots, 0);
   }
-  function go(p) { if (p !== 'explore' && $('en-modal')) $('en-modal').remove(); if (typeof SPA !== 'undefined' && SPA.on && page === 'explore' && ex.view === 'spa' && p !== 'explore') { spaLeaveAsk(function () { go(p); }); return; }
+  function go(p) {
+    if (p === 'christmas' && PVE.helenaOpen(acc) && !prog('helenaArrival').done && !(typeof SPA !== 'undefined' && SPA.on && ex.view === 'spa')) {
+      stopTimers(); page = 'explore'; ex.planet = 'helena'; ex.view = 'vn';
+      startVN0('helenaArrival', 'replay', $('pg-explore')); savePage(); renderTop(); HSVIEW.to(0, 0); return;
+    }
+    if (p !== 'explore' && $('en-modal')) $('en-modal').remove(); if (typeof SPA !== 'undefined' && SPA.on && page === 'explore' && ex.view === 'spa' && p !== 'explore') { spaLeaveAsk(function () { go(p); }); return; }
     if (ex.mode === 'replay' && p !== 'explore') { stopTimers(); ex.mode = null; ex.view = 'sites'; } PAGE_Y[page] = HSVIEW.y(); if (p === 'log' && page !== 'log') ui.logSel = null; page = p; ui.pick = -1; savePage(); renderTop(); var y0 = PAGE_Y[p] || 0; HSVIEW.to(0, y0); requestAnimationFrame(function () { if (page === p) HSVIEW.to(0, y0); }); }
   var PAGE_Y = {};   // 2026-11-01：切换大栏时记住每一栏的滚动位置，回来时停在原来的地方
   $('mainnav').addEventListener('click', function (e) {
@@ -880,7 +886,7 @@
    * 一般道具：捕捉装置、补药（对战中用）、改名卡、自律训练装置、挑战许可
    * 储存箱（主菜单，黄冈秘鉴和社交中间）列出所有道具 */
   var USE_ITEMS = GROW.USE_ITEMS;   // 精灵道具的数据和用法在 js/engine/grow.js（服务器和浏览器共用，2026-10-25）
-  var MON_ORDER = ['nameTag', 'formDev', 'earthShard', 'floraJade', 'kbDrop', 'ppAsh', 'ltOrb', 'whFrost', 'moonStone', 'boneDust', 'tgPearl', 'brTwig', 'odoFin', 'fireNote', 'hrDisk', 'phLeaf', 'fencArc', 'deathTok', 'ivMoon', 'ivBone', 'ivReroll', 'ev50', 'evAny', 'evTagore', 'natAny', 'natRand', 'natTagore', 'evReset', 'fruit1', 'fruit2'], GEN_ORDER = ['trans', 'helmet', 'dive', 'auto', 'rename', 'cap1', 'cap2', 'cap3', 'pot1', 'pot2', 'pot200'];
+  var MON_ORDER = ['crossEssence', 'nameTag', 'formDev', 'earthShard', 'floraJade', 'kbDrop', 'ppAsh', 'ltOrb', 'whFrost', 'moonStone', 'boneDust', 'tgPearl', 'brTwig', 'odoFin', 'fireNote', 'hrDisk', 'phLeaf', 'fencArc', 'deathTok', 'ivMoon', 'ivBone', 'ivReroll', 'ev50', 'evAny', 'evTagore', 'natAny', 'natRand', 'natTagore', 'evReset', 'fruit1', 'fruit2'], GEN_ORDER = ['trans', 'helmet', 'dive', 'auto', 'rename', 'cap1', 'cap2', 'cap3', 'pot1', 'pot2', 'pot200'];
   // 剧情道具：主线里拿到的，不能使用也不会消耗
   var KEY_ITEMS = {
     trans: { name: '精灵翻译器', d: '汉街总部国际A座的情报显示，这个翻译器能凭一己之力考到雅思 6.5 分。这样一来，翻译精灵的语言也一定能行吧……', img: 'translator' },
@@ -971,6 +977,7 @@
     boneDust: ['泛着幽光的骨粉，摸上去凉凉的。', '每 100 个让骨刃一系领悟一个隐藏技能；到 LV70 后也用它解锁更高的等级上限。', '竞技代币商店（2 竞技代币）。'],
     tgPearl: ['泰戈尔一声虎啸凝成的珠子。', '每 100 个让泰戈尔一系领悟一个隐藏技能；到 LV70 后也用它解锁 LV75（500 个）、LV80（500 个）的等级上限。', '首次击败困难难度的泰戈尔得 80 个；泰戈尔每周挑战每次 15 / 30 / 50 个（简单 / 普通 / 困难）。'],
     brTwig: ['从荒芜体内的古代除草程序里提取出的一小瓶药剂。', '每 100 个让荒芜一系领悟一个隐藏技能；到 LV70 后也用它解锁 LV75（500 个）、LV80（500 个）的等级上限。', '首次击败普通难度的荒芜得 40 个、困难难度得 80 个；荒芜每周挑战每次 15 / 30 / 50 个（简单 / 普通 / 困难）。'],
+    crossEssence: ['凝聚着海伦娜星能量的十字精粹', '每100个解锁巴洛或巴利一系的一个隐藏技能，LV75、LV80突破各需500个', '击败海伦娜星 · 圣诞城堡的野生精灵，每只掉落1–6个'],
     fireNote: ['凝聚烈焰的音符', '每100个让克莱一系领悟一个隐藏技能，也用于突破等级上限', '首次击败普通难度的克莱门蒂获得40个；每周挑战每次15 / 30个（简单 / 普通）'],
     odoFin: ['从深海的奥多亚克身上脱落的古老鳍甲。', '每 100 个让奥多亚克一系领悟一个隐藏技能；到 LV70 后也用它解锁 LV75（500 个）、LV80（500 个）的等级上限。', '首次击败普通难度的奥多亚克得 40 个、困难难度得 80 个；奥多亚克每周挑战每次 15 / 30 / 50 个（简单 / 普通 / 困难）。'],
     hrDisk: ['盘面上的星点会自己转动的小星盘。', '每 100 个让幽灵鱼一系（幽灵鱼、哈蒙德、哈尔达蒙）领悟一个隐藏技能。', '击败野外随机出现的幽灵鱼，每只掉落 50–70 个。'],
@@ -1763,7 +1770,18 @@
   });
 
   /* ---------- 星际探索：选星球 → 选地点 → 剧情（galgame 式对话） ---------- */
+  function renderChristmas() {
+    var open = PVE.helenaOpen(acc);
+    $('pg-christmas').innerHTML = '<div class="page-head"><h2 class="sec">圣诞</h2><span class="hint">一场意外带来的冬日旅程</span></div>' +
+      '<section class="xmas-home"><span class="tape l"></span><button type="button" class="xmas-planet" data-helena' + (open ? '' : ' disabled') + '><span class="xmas-planet-art"><img src="images/planets/helena.png" alt="戴着圣诞帽的海伦娜星"></span><span class="xmas-planet-info"><small>圣诞活动</small><b>海伦娜星</b><span>雪夜城堡、秘密小屋与杂货铺</span><em>' + (open ? '前往海伦娜星 ›' : '完成地球主线后解锁') + '</em></span></button></section>' +
+      '<p class="xmas-coming hint">其他活动内容制作中</p>';
+  }
+  $('pg-christmas').addEventListener('click', function (e) {
+    if (!e.target.closest('[data-helena]') || !PVE.helenaOpen(acc)) return;
+    ex.planet = 'helena'; ex.view = 'sites'; go('explore');
+  });
   var PLANETS = [
+    { id: 'helena', name: '海伦娜星', d: '被不明黑洞牵引而来的圣诞星球，城堡、小屋和杂货铺均可自由进入', sites: ['helenaArrival'], wild: true, ptype: '圣诞星球', color: ['#bcdce7', '#ba3545'], img: 'images/planets/helena.png', after: 'jiuquan' },
     { id: 'earth', name: '地球', d: '我们出发的地方。', sites: ['school', 'river', 'jiuquan'] },
     { id: 'jingchu', name: '荆楚号', d: '环绕地球运行的星际探索舰，轮廓和湖北省一模一样。', sites: ['board', 'xiaogan', 'academy', 'storage'], ship: true, after: 'jiuquan' },
     { id: 'station', name: '空间站', d: '停泊在荆楚号后方的空间站，先驱之塔就建在这里。', sites: [], station: true, after: 'flora1' },
@@ -1781,8 +1799,8 @@
   var KB_STAGE_SITES = [];
   function kbStage() { return prog('kb8').done ? 0 : prog('kb7').done ? 4 : prog('kb6').done ? 2 : 0; }   // 2026-11-01：打赢玫瑰星云（第十九段）后变回蓝色   // 2026-10-31：保卫战期间变红一些，星云显现之后最红
   // 马亚尔星系：星系图上每颗星球的位置（% 坐标）和大小（占图宽的 %）；没有星球的位置显示「？」
-  var MAYAR = { flora: [84.1, 51.4, 12], kamble: [58.3, 63.4, 9], pompeii: [30.4, 42.3, 8.5], laiting: [16.2, 28.2, 11], white: [8.5, 58, 7.5], kongyan: [43.3, 21.1, 8.5], ivy: [59.8, 26.6, 8] };   // 白之星离太阳最远
-  var MAYAR_UNK = [[35.9, 28.9], [71.3, 54.3]];
+  var MAYAR = { helena: [71.3, 32, 8.5], flora: [84.1, 51.4, 12], kamble: [58.3, 63.4, 9], pompeii: [30.4, 42.3, 8.5], laiting: [16.2, 28.2, 11], white: [8.5, 58, 7.5], kongyan: [43.3, 21.1, 8.5], ivy: [59.8, 26.6, 8] };   // 白之星离太阳最远
+  var MAYAR_UNK = [[35.9, 28.9]];
   function regionsOf(pid) { return WILD_REGIONS.filter(function (R) { return R.planet === pid; }); }
   function planetOf(pid) { return PLANETS.filter(function (p) { return p.id === pid; })[0]; }
   // 荆楚号的 17 个部门，对应湖北省的 17 个市州（林区）
@@ -1795,6 +1813,7 @@
     潜江: ['食堂', '餐饮补给'], 仙桃: ['体能馆', '体能与失重训练']
   };
   var SITES = {
+    helenaArrival: { name: '意外的圣诞航行', planet: 'helena', chapter: '活动 · 意外的圣诞航行', side: true, event: true, bg: 'cockpit_p', after: 'jiuquan', need: function () { return PVE.helenaOpen(acc); }, needText: '完成地球主线', endText: '海伦娜星已开放，三个场景均可自由前往' },
     school: { name: '省实验中学', planet: 'earth', chapter: '第一段 · 月考之后', bg: 'gate', d: '月考成绩公布后的第二天，张老师有一件「天大的好事」要宣布，还要为你们挑选伙伴精灵。' },
     river: { name: '武昌江边', planet: 'earth', chapter: '第二段 · 江边出发', bg: 'qiyi', d: '出发的日子到了。从起义门到彭刘杨路，再坐大巴驶过长江大桥，一路向西。', after: 'school' },
     jiuquan: { name: '酒泉卫星发射中心', planet: 'earth', chapter: '第三段 · 准备发射', bg: 'jslc', d: '穿过戈壁和沙丘，大巴终于抵达发射中心。在这里，你们遇见了要去太空寻找奶弟的女孩 Threego。', after: 'river' },
@@ -1851,6 +1870,7 @@
   Object.assign(BG_NAME, { lt_field: '雷暴星尘', lt_jupiter: '巨星之下' });
   Object.assign(BG_NAME, { kb_shore: '黄昏礁滩', kb_dusk: '暮色海面', kb_wave: '巨浪', black: '', kb_dock: '水星码头', kb_isle: '冥岛', kb_lookup: '仰望水面', kb_shoal: '群灵深海', kb_temple: '古代神殿', kb_floor: '幽深地', kb_abyss: '深渊潜底' });
   Object.assign(BG_NAME, { fl_path: '林间小路', fl_lake: '草甸湖畔', fl_beech: '山毛榉林', fl_maple: '丛林边缘', fl_meadow: '草甸', fl_sun: '丛林深处', fl_salt: '盐碱地', fl_village: '叶之村落', fl_horizon: '草甸尽头', fl_jungle_corrupt: '瘴气丛林' });
+  Object.assign(BG_NAME, { hl_castle: '圣诞城堡', hl_cabin: '秘密小屋', hl_shop: '杂货铺' });
   Object.keys(BG_NAME).forEach(function (k) { if (BG[k + '_mia']) BG_NAME[k + '_mia'] = BG_NAME[k]; });
   // 角色（立绘为占位）
   var CAST = {
@@ -1889,7 +1909,7 @@
   function rareOwned() { var R = rareList(); return acc.mons.filter(function (m) { return R.indexOf(m.sid) >= 0; })[0] || null; }
   // 稀有精灵：野外表里标了 rare 的种类。三主宠也算，但这个账号开局选的那只不算。拥有几类按种类去重
   function rareKinds() { var R = rareList(), o = {}; acc.mons.forEach(function (m) { if (R.indexOf(m.sid) >= 0) o[m.sid] = 1; }); return Object.keys(o).length; }
-  function planetOpen(P) { return !P.soon && (!P.after || prog(P.after).done); }   // soon：已经放上星图，内容还没做
+  function planetOpen(P) { if (P.id === 'helena') return PVE.helenaOpen(acc); return !P.soon && (!P.after || prog(P.after).done); }   // soon：已经放上星图，内容还没做
   var UNLOCK = { core: '星球采矿', xiaogan: '竞技对战', academy: '黄冈秘鉴', storage: '商城', tea: '茶室', brawl: '精灵大乱斗', tiger2: '泰戈尔 · 普通难度', fl_chal: '芙罗拉星 · 挑战', fl_chal2: '助战精灵', plant: '太空种植园', medal: '授勋馆', spa: '温泉疗养' };
   function brawlOpen() { return !!(acc && acc.story && acc.story.brawl && acc.story.brawl.done); }
   function brawlPlayed() { return !!(acc && acc.stats && acc.stats.brawls > 0); }
@@ -3442,7 +3462,7 @@
     if (R.id === 'salt' && prog('flora7').done) bgs.push('fl_lab');
     return bgs.filter(function (k) { return BG[k]; });
   }
-  function sceneCount(R) { return Math.max(R.pool ? 2 : 1, fieldBgs(R).length); }
+  function sceneCount(R) { if (R.sceneN) return R.sceneN; return Math.max(R.pool ? 2 : 1, fieldBgs(R).length); }
   function travelAt(now) {
     var h = Math.floor(now / 3600000), s = thash(h + 7919), start = h * 3600000 + (s % 41) * 60000;
     var R = regionById(TRAVEL.regions[(s >>> 8) % TRAVEL.regions.length]);
@@ -4006,7 +4026,7 @@
   function floraBg(k) { return k && floraFallen() && BG[k + '_mia'] ? k + '_mia' : k; }
   // 对战背景：传入背景键。F.bg 可以写成 'fl_salt' 这样的键，统一在这里换成图片地址
   function fightBg(k) { return BG[k] || null; }
-  function regionOpen(R) { if (R.record) return prog('flora7').done; return R.planet === 'flora' ? prog('flora1').done : planetOpen(planetOf(R.planet)); }
+  function regionOpen(R) { if (R.planet === 'helena') return PVE.helenaOpen(acc); if (R.record) return prog('flora7').done; return R.planet === 'flora' ? prog('flora1').done : planetOpen(planetOf(R.planet)); }
   // 服务器结算的野外对战。args：{ id } 服务器刷出来的那只 / { travel } 旅行精灵；o：显示用的资料
   function startWildRemote(args, o) {
     var ui = { bg: o.bg, back: o.back, where: o.where,
@@ -4042,6 +4062,7 @@
         if (r.psac) msg.push('它掉下了蘑菇毒囊 ×' + r.psac + '，已放入储存箱（加 5 个药草可以合成解毒药剂）。');
         if (r.horn) msg.push('它掉下了赫菲角片 ×' + r.horn + '，已放入储存箱（60 片可以合成奇声号角）。');
         if (r.iceGot) msg.push('化开的冰块里凿下了远古冰块 ×' + r.iceGot + '，已放入储存箱。');
+        if (r.crossDrop) msg.push('获得十字精粹 ×' + r.crossDrop + '，已放入储存箱。');
         if (r.iceDrop) msg.push('它掉下了远古冰块 ×' + r.iceDrop + '，已放入储存箱（100 个可以让亚哆领悟隐藏技能）。');
         if (r.disk) msg.push('它掉下了星盘 ×' + r.disk + '，已放入储存箱（100 个可以让一只幽灵鱼一系领悟隐藏技能）。');
         if (r.bowl) msg.push('放在熔岩原的那碗米饭被吃得一粒不剩。');
@@ -5548,6 +5569,7 @@
     }
     var lr = e.target.closest('[data-logroom]'); if (lr) { ui.logRoom = lr.dataset.logroom; var lv0 = document.querySelector('.log-view'), lsc = lv0 ? lv0.scrollTop : 0; renderLog(); var lv1 = document.querySelector('.log-view'); if (lv1) lv1.scrollTop = lsc; return; }   // 基地翻新：切换宣传图
     var g = e.target.closest('[data-golog]'); if (g) { if (g.dataset.golog === 'boss-barren') { ex.view = 'boss'; ex.boss = 'barren'; go('explore'); return; } if (g.dataset.golog === 'boss-odo') { ex.view = 'boss'; ex.boss = 'odo'; go('explore'); return; }
+      if (g.dataset.golog === 'christmas') { go('christmas'); return; }
       if (g.dataset.golog === 'boss-clementi') { if (!bossOpen('clementi')) return; ex.view = 'boss'; ex.boss = ex.bossK = 'clementi'; ex.bossD = 0; ex.planet = 'pompeii'; go('explore'); return; }
       if (g.dataset.golog === 'boss-list') { ex.view = 'bosshub'; go('explore'); return; }
       if (g.dataset.golog === 'myfarm') { HSACC.goFarm(); return; }
@@ -6322,7 +6344,8 @@
     var inf = itemInfo(k), text = inf && inf.get || '';
     return text.split(/[；;]/).reduce(function (out, t) {
       t = t.trim(); var route = '', found, host = Object.keys(BOSSES).filter(function (id) { return capGem({ sid: BOSSES[id].sid }) === k; })[0];
-      if (/竞技代币商店/.test(t)) route = 'tokens';
+      if (k === 'crossEssence') route = 'field|hl_castle';
+      else if (/竞技代币商店/.test(t)) route = 'tokens';
       else if (/先驱之塔.*(商店|兑换)/.test(t)) route = 'tower|shop';
       else if (/先驱之塔/.test(t)) route = 'tower|climb';
       else if (/召唤代币商店/.test(t)) route = 'summon|shop';
@@ -8613,6 +8636,7 @@
   }
   function finishShow(R, chPaid, firstDone, failMsg) {
     var intro = ex.mode === 'intro';
+    if (ex.site === 'helenaArrival' && prog('helenaArrival').done && !failMsg) { stopTimers(); ex.mode = null; ex.view = 'sites'; go('christmas'); return; }
     if (!$('vn-end')) { if (R || chPaid) renderRes(); return; }   // 已经离开剧情画面了
     if (ex.site === 'flora6' && firstDone) setTimeout(floraFallenNotice, 600);
     if ((ex.site === 'kb6' || ex.site === 'kb7' || ex.site === 'kb8') && firstDone) { fields = {}; var kbTo = ex.site === 'kb8' ? 0 : ex.site === 'kb7' ? 4 : 2; setTimeout(function () { kbShiftNotice(kbTo); }, 600); }

@@ -1,0 +1,26 @@
+/* 圣诞活动入口沿用纸张、细描边与胶带的界面样式 */
+#mainnav.mainnav { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.xmas-home { position: relative; padding: 18px; border: 1.5px solid var(--ink); border-radius: 14px; background: var(--paper); }
+.xmas-planet { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(0, 1.4fr); align-items: center; gap: 24px; width: 100%; padding: 20px; border: 1.5px solid var(--rule); border-radius: 12px; background: var(--paper-2); color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+.xmas-planet:hover:not(:disabled) { border-color: var(--red); box-shadow: 3px 3px 0 var(--red); }
+.xmas-planet:focus-visible { outline: 3px solid var(--red); outline-offset: 4px; }
+.xmas-planet:disabled { cursor: default; }
+.xmas-planet-art { display: grid; place-items: center; min-height: 230px; }
+.xmas-planet-art img { width: 100%; max-width: 290px; max-height: 290px; object-fit: contain; }
+.xmas-planet-info { display: grid; gap: 12px; }
+.xmas-planet-info small { color: var(--red); }
+.xmas-planet-info b { font-family: var(--f-title); font-size: 36px; }
+.xmas-planet-info em { width: fit-content; margin-top: 10px; padding-bottom: 4px; border-bottom: 1px dashed var(--red); color: var(--red); font-style: normal; }
+.xmas-coming { padding: 18px; text-align: center; }
+@media (max-width: 640px) {
+  #mainnav { gap: 4px; }
+  #mainnav .nav { padding: 8px 2px; font-size: 12px; gap: 0; }
+  #mainnav .nav-icon, #mainnav .nav-label { display: none; }
+  #mainnav .nav-short { display: inline; }
+  .xmas-home { padding: 12px; }
+  .xmas-planet { grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 16px; text-align: center; }
+  .xmas-planet-art { min-height: 160px; }
+  .xmas-planet-art img { max-width: 210px; max-height: 210px; }
+  .xmas-planet-info { justify-items: center; }
+  .xmas-planet-info b { font-size: 30px; }
+}

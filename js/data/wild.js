@@ -4,6 +4,10 @@
  * ========================================================== */
 
 var WILD_POOLS = {
+  hl_castle: [
+    { sid: 'barlow', lv: [5, 10], w: 99.5, rate: 0.7, tag: '较高' },
+    { sid: 'bali', lv: [10, 10], w: 0.5, rate: 0.45, tag: '中等', rare: true }
+  ],
   forest: [
     { sid: 'mush', lv: [1, 5], w: 64.25, rate: 0.65, tag: '较高', shiny: 0.05, shiny2: 0.005 },   // 5% 蓝色异色，0.5% 黄色异色
     { sid: 'wind', lv: [1, 3], w: 35, rate: 0.85, tag: '极高' },
@@ -59,6 +63,9 @@ var WILD_SCENE = {
   pp_core: [{ sid: 'firemouse', lv: [14, 18], w: 11.1, rate: 0.5, tag: '中等', shiny: 0.03 }]   // 火月鼠：只在饮火城 · 炙热核心
 };
 var WILD_REGIONS = [
+  { id: 'hl_castle', planet: 'helena', name: '圣诞城堡', en: 'Christmas Castle', d: '雪夜里亮着灯的圣诞城堡，巴洛在城堡前游荡，偶尔能遇见稀有的巴利', pool: 'hl_castle', sceneN: 1, bgs: ['hl_castle'] },
+  { id: 'hl_cabin', planet: 'helena', name: '秘密小屋', en: 'Secret Cabin', d: '壁炉映着圣诞树的影子，这间温暖的小屋可以自由进出', sceneN: 1, bgs: ['hl_cabin'] },
+  { id: 'hl_shop', planet: 'helena', name: '杂货铺', en: 'General Store', d: '红色墙壁旁摆着琳琅满目的货架', sceneN: 1, bgs: ['hl_shop'] },
   { id: 'forest', planet: 'flora', name: '丛林', en: 'Forest', d: '高大的树木遮住了天空，林下潮湿又安静。玛西很常见，偶尔能撞见稀有的卡莱。', pool: 'forest', bgs: ['fl_path', 'fl_beech', 'fl_sun', 'fl_maple'] },
   { id: 'grass', planet: 'flora', name: '草甸', en: 'Grassland', d: '一望无际的草甸，风吹过时像绿色的海浪。卡罗成群地在这里奔跑。', pool: 'grass', bgs: ['fl_meadow', 'fl_lake', 'fl_horizon'] },
   // 2026-10-24：芙罗拉星恢复以后，用来做「瘴气驱逐战」的地方：两张瘴气化的地图（草甸、丛林），里面依然是瘴气精灵
