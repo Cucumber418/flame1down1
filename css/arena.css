@@ -1,20 +1,20 @@
 /* 阵容占满可用画幅，具体操作在分页弹窗中完成 */
-body.arena-page-active #pg-arena { height:var(--scene-view-height); min-height:0; display:flex; flex-direction:column; overflow:hidden; }
+body.arena-page-active #pg-arena { min-height:var(--scene-view-height); height:auto; display:flex; flex-direction:column; overflow:visible; padding-bottom:16px; }
 body.arena-page-active #arena-crumb { flex:0 0 auto; margin-bottom:8px; }
-body.arena-page-active #builder { flex:1 1 0; min-height:0; overflow:hidden; }
-#arena-home { height:100%; min-height:0; display:flex; flex-direction:column; justify-content:center; max-width:920px; margin:auto; gap:18px; padding:12px; }
+body.arena-page-active #builder { flex:1 1 auto; min-height:0; overflow:visible; }
+#arena-home { height:auto; min-height:0; width:100%; display:flex; flex-direction:column; justify-content:flex-start; max-width:1120px; margin:0 auto; gap:18px; padding:12px 8px; }
 .arena-welcome { text-align:center; } .arena-welcome h2 { margin:4px 0; font-size:28px; }
-#arena-home .modebar { grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin:0; }
-#arena-home .mode { min-height:120px; padding:18px; border-radius:14px; text-align:left; background:var(--paper-2); border:1.5px solid var(--ink); }
-#arena-home .mode b { display:block; margin-bottom:8px; font-size:21px; } #arena-home .mode span { font-size:12px; line-height:1.6; }
-#arena-work { height:100%; min-height:0; display:flex; flex-direction:column; gap:8px; }
+#arena-home .modebar { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; width:100%; margin:0; align-items:stretch; }
+#arena-home .mode { min-width:0; min-height:195px; padding:18px 14px; display:flex; flex-direction:column; justify-content:flex-start; gap:10px; border-radius:16px; text-align:center; background:var(--paper-2); border:1.5px solid var(--ink); box-shadow:3px 3px 0 var(--ink); }
+#arena-home .mode b { display:block; margin:0; font-size:24px; } #arena-home .mode span { display:block; min-width:0; font-size:13px; line-height:1.6; overflow-wrap:anywhere; }
+#arena-work { min-height:0; height:var(--scene-view-height); display:flex; flex-direction:column; gap:8px; }
 .arena-mode-head { display:flex; align-items:center; justify-content:space-between; gap:8px; flex:0 0 auto; } .arena-mode-head h2 { margin:0; font-size:19px; }
-#arena-scroll { flex:1 1 0; min-height:0; overflow:hidden; display:flex; flex-direction:column; gap:8px; }
+#arena-scroll { flex:1 1 0; min-height:0; overflow-y:auto; overflow-x:hidden; display:flex; flex-direction:column; gap:8px; overscroll-behavior:contain; }
 .arena-event-hide { display:none!important; }
 #arena-options { display:flex; justify-content:space-between; align-items:center; gap:8px; flex:0 0 auto; }
 #arena-options .subbar { margin:0; gap:5px; flex-wrap:nowrap; } #arena-options .sub { padding:6px 10px; font-size:13px; white-space:nowrap; }
 #sub-hint { display:none; }
-#arena-scroll .bagbox { margin:0; padding:12px; flex:1 1 0; min-height:0; display:flex; flex-direction:column; gap:8px; overflow:hidden; }
+#arena-scroll .bagbox { margin:0; padding:12px; flex:1 1 0; min-height:0; display:flex; flex-direction:column; gap:8px; overflow-y:auto; overflow-x:hidden; }
 #arena-scroll .bag-head { flex:0 0 auto; margin:0; display:block; } #arena-scroll .bag-head h2 { font-size:17px; margin:0; }
 #arena-scroll .bag-head .hint { font-size:12px; margin:3px 0 0; }
 #arena-team-tools { display:flex; gap:6px; flex:0 0 auto; }
@@ -88,7 +88,7 @@ body.arena-page-active #builder { flex:1 1 0; min-height:0; overflow:hidden; }
 .shop-costs li > span { display:flex; align-items:center; gap:7px; } .shop-costs li > span > .it-ic { width:26px; height:26px; flex:0 0 26px; vertical-align:middle; }
 @media (max-width:640px) {
  body.arena-page-active .arena-crumb { display:flex; align-items:center; flex-wrap:nowrap; } .arena-crumb b { display:none; }
- #arena-home { gap:12px; padding:3px; } #arena-home .modebar { gap:10px; } #arena-home .mode { min-height:135px; padding:12px; }
+ #arena-home { gap:12px; padding:3px; } #arena-home .modebar { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; } #arena-home .mode { min-height:148px; padding:12px; }
  #arena-home .mode b { font-size:18px; } #arena-home .mode span { font-size:11px; } .arena-welcome h2 { font-size:24px; }
  .arena-mode-head h2 { font-size:16px; } .arena-mode-head .btn { padding:6px 9px; }
  #arena-options { gap:4px; } #arena-options .sub { font-size:11px; padding:6px 8px; }
@@ -111,7 +111,7 @@ body.arena-page-active #builder { flex:1 1 0; min-height:0; overflow:hidden; }
  .arena-existing-panel .dopt-head .btn { padding:6px 8px; font-size:12px; }
 }
 @media (max-height:550px) {
- #arena-work, #arena-scroll { gap:5px; } #arena-home { gap:7px; padding:2px; } #arena-home .mode { min-height:0; padding:8px 12px; }
+ #arena-work, #arena-scroll { gap:5px; } #arena-home { gap:7px; padding:2px; } #arena-home .mode { min-height:125px; padding:9px 10px; }
  #arena-home .modebar { gap:7px; } #arena-home .mode b { font-size:17px; margin-bottom:2px; } .arena-welcome h2 { font-size:21px; }
  #arena-scroll .bag-head .hint, #arena-scroll .rankcard .rc-txt, #arena-scroll .rankcard .rc-rec { display:none; }
  .arena-mode-head .btn, #arena-scroll .bag-actions .btn { padding:4px 8px; font-size:12px; }
@@ -126,4 +126,12 @@ body.arena-page-active #builder { flex:1 1 0; min-height:0; overflow:hidden; }
  .arena-pick-mon, .arena-move-choice { gap:2px; padding:4px; } .arena-pick-mon b, .arena-move-choice b { font-size:13px; }
  .arena-move-choice small { font-size:10px; } .arena-mon-actions .btn { padding:4px 8px; }
  .arena-existing-panel #ts-note { display:none; } .arena-existing-panel .dmon img { height:30px; }
+}
+
+/* Space-station-style entrance: four cards in one horizontal row on landscape. */
+@media (max-width:760px) and (orientation:landscape) {
+  #arena-home .modebar { grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
+  #arena-home .mode { min-height:135px; padding:10px 6px; }
+  #arena-home .mode b { font-size:16px; }
+  #arena-home .mode span { font-size:11px; line-height:1.35; }
 }
