@@ -48,6 +48,15 @@ body.arena-page-active #builder { flex:1 1 0; min-height:0; overflow:hidden; }
 .arena-editor { height:min(650px,calc(100dvh - 24px)); }
 .arena-editor .arena-details-body { flex:1 1 0; display:flex; flex-direction:column; overflow:hidden; }
 .arena-picker, .arena-skills { min-height:0; height:100%; display:flex; flex-direction:column; gap:8px; }
+/* 竞技技能配置复用背包的 mrow 勾选列表与技能说明，不再使用六宫格分页。 */
+.arena-skill-intro { flex:0 0 auto; }
+.arena-skill-intro .hint { margin:5px 0 0; font-size:12px; }
+.arena-skill-list.mlist { flex:1 1 0; min-height:0; overflow-y:auto; overscroll-behavior:contain; scrollbar-width:thin; align-content:start; grid-auto-rows:max-content; margin-top:0; padding:2px 4px 4px 0; }
+.arena-skill-list .mrow { min-width:0; background:var(--paper-2); border-color:var(--rule); }
+.arena-skill-list .mrow.on { background:var(--paper); border-color:var(--red); }
+.arena-skill-list .mrow .l1 { min-width:0; }
+.arena-skill-list .mrow input:disabled { opacity:.7; }
+
 .arena-search { display:flex; align-items:center; gap:10px; font-size:12px; flex:0 0 auto; }
 .arena-search input { min-width:0; flex:1; border:1px solid var(--ink); border-radius:8px; padding:8px; background:var(--paper); color:var(--ink); font:inherit; }
 .arena-picker-grid, .arena-move-grid { flex:1 1 0; min-height:0; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); grid-template-rows:repeat(2,minmax(0,1fr)); gap:8px; }
