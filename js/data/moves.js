@@ -355,7 +355,17 @@ var M = {
   闪光飞叶: { type: '草', cat: '特攻', power: 100, custom: 'flashLeaf', pp: 10, d: '威力100，命中后使对方下一次受到攻击时，额外降低其1级命中' },
   灵耳谛听: { type: '普通', cat: '变化', hidden: true, custom: 'ear', pp: 5, d: '3回合内攻击必定命中；期间对方若试图主动闪避（使用提升闪避或闪避攻击的技能），则使其下一次受到的攻击威力翻倍' },
   星星魔法: { type: '光', cat: '特攻', power: 25, hidden: true, custom: 'starMagic', pp: 15, d: '威力25，每使用一次，威力比上一次提升25点，最高125；换下场也会保留。达到最高威力后，命中时有50%概率降低对方1级速度' },
-  // —— fate（超能）：命运标记与领域
+  // —— 巴利海雅（普通）：PP消耗与连续施法
+  撞击: { type: '普通', cat: '物攻', power: 35, d: '威力35' },
+  灵力: { type: '普通', cat: '变化', selfStage: { spa: 1 }, d: '提升自身1级特攻' },
+  破防射线: { type: '普通', cat: '特攻', power: 10, tgtStage: { spd: -1 }, d: '威力10，降低对方1级特防' },
+  彩色屏障: { type: '普通', cat: '变化', custom: 'baliBarrier', d: '4回合内受到的特殊攻击伤害减半' },
+  原力吸收: { type: '普通', cat: '特攻', power: 70, drain: 0.5, custom: 'baliAbsorb', d: '威力70，恢复造成伤害一半的体力，50%概率随机吸取对方1级实际能力' },
+  绫彩光束: { type: '普通', cat: '特攻', power: 100, custom: 'baliBeam', d: '威力100，降低对方随机技能2点PP' },
+  斑斓之姿: { type: '普通', cat: '变化', custom: 'baliStance', hidden: true, d: '下3次主动攻击拆为威力减半的2次攻击，每次附加完整技能效果' },
+  幻想切割: { type: '普通', cat: '特攻', power: 80, custom: 'baliFantasy', hidden: true, d: '威力80，对方技能每缺少1点PP，威力提高5' },
+
+  // —— 查士丁尼（超能）：命运标记与领域
   厄运眷顾: { type: '超能', cat: '特攻', power: 75, custom: 'fateDoom', d: '威力75，命中后使对方获得1层厄运，25%概率额外获得1层' },
   幸运垂降: { type: '超能', cat: '特攻', power: 75, custom: 'fateLuck', d: '威力75，命中后自身获得1层幸运，25%概率额外获得1层' },
   极速: { type: '普通', cat: '变化', selfStage: { spe: 2 }, d: '提升自身2级速度' },

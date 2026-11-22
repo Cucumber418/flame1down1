@@ -33,6 +33,8 @@ function scoreMove(S, me, foe, mv) {
     s = d / foe.maxhp * 100;
     if (mv.drain && hpR < 0.6) s += 12;
     if (mv.custom === 'transferDown' && STG.some(function (k) { return me.stages[k] < 0; })) s += 15;
+    if (mv.custom === 'baliBeam' && missingPP(foe) < foe.moves.reduce(function (n, sl) { return n + sl.max; }, 0)) s += ability(me) === '绫彩' ? 12 : 5;
+    if (mv.custom === 'baliAbsorb') s += 5;
     if (mv.rhythm && !me.tm[mv.rhythm]) s += ability(me) === '终律' ? 24 : 14;
     if (mv.custom === 'clementEmber') s += Math.floor(me.hp / 5) / foe.maxhp * 70 - (hpR < 0.3 ? 15 : 3);
     if (mv.custom === 'clementFinale' && !hasStatus(foe)) return -100;
@@ -62,6 +64,8 @@ function scoreMove(S, me, foe, mv) {
   var faster = speedOf(me) > speedOf(foe);
   var c = mv.custom;
   switch (c) {
+    case 'baliBarrier': s += me.tm.halfSpec ? -20 : (foe.moves.some(function (sl) { return sl.pp > 0 && M[sl.n] && M[sl.n].cat === '特攻'; }) ? 24 : -10); break;
+    case 'baliStance': s += me.fx.prismAttacks ? -20 : (hpR > 0.4 ? 30 : 8); break;
     case 'clementClean': s += STG.some(function (k) { return me.stages[k] < 0; }) ? 30 : -20; break;
     case 'fateField': s += S.fateTurns > 0 ? -10 : 16; break;
     case 'sure3': s += me.tm.sure3 || me.tm.ear ? -20 : 10; break;

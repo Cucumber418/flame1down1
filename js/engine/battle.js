@@ -10,7 +10,7 @@ var RHYTHMS = { rhythmLight: { name: '耀音律', status: '失明' }, rhythmBurn
 var TM_NAME = { rhythmLight: '耀音律', rhythmBurn: '灼音律', rhythmConfuse: '惑音律', odoAtk: '全弹搭载', odoDef: '强效外壳', brandCd: '烙印冷却', etchCd: '蚀迹冷却', lmE: '雷明·电', lmL: '雷明·光', tcloud: '闪电云', cap: '逆鳞', genggu: '恒压', green: '绿色幻境', immune: '免疫异常', reflect: '风王结界', dodge: '光滑皮肤',
   noSwitch: '无法切换', prio: '先制+1', rain: '祈雨', tri: '三相归元', soul: '收魂',
   voidPhys: '虚空化', induct: '电磁感应', vortex: '闪电漩涡', fenglei: '风雷滚滚', counter: '反击风暴', parryBan: '被招架', noStat: '禁用变化', enCrit: '引爆', darkside: '月之暗面', hail: '冰雹', noBoost: '禁止强化',
-  seal: '万灵封印', liuhuo: '流火', calm: '静谧水域', halfPhys: '物伤减半', tide: '黑雾潮汐', vuln: '易伤', weak: '伤害-30%',
+  seal: '万灵封印', liuhuo: '流火', calm: '静谧水域', halfPhys: '物伤减半', halfSpec: '特伤减半', tide: '黑雾潮汐', vuln: '易伤', weak: '伤害-30%',
   swamp: '孢子沼泽', mist: '白雾', jungle: '丛林法则', siren: '海妖之歌', sirenOn: '海妖之歌', dr40: '减伤40%', crit2: '必定暴击', retal: '寂灭幽映',
   block: '坚不可摧', recoil: '磁暴反冲', sure3: '谛听', ear: '灵耳谛听', noHeal: '禁疗' };
 var FOE_TM = { parryBan: 1, noStat: 1, sirenOn: 1, brandCd: 1, etchCd: 1, noSwitch: 1, soul: 1, noBoost: 1, seal: 1, vuln: 1, weak: 1, noHeal: 1 };
@@ -183,7 +183,7 @@ var TM_DESC = { rhythmLight: '每回合初有60%概率使对方失明1回合', r
   vortex: '每回合结束降低对方1级命中', fenglei: '每回合结束一半概率降低对方1级速度，否则提升自身1级速度', darkside: '精灵属性和技能属性都变成暗影系',
   hail: '每回合结束对对方造成其1/10最大体力的伤害', noBoost: '无法提升能力等级',
   seal: '无法提升能力等级；强行提升会损失1/4当前体力', liuhuo: '火系技能威力+5', calm: '每回合恢复1/5最大体力',
-  halfPhys: '受到的物理伤害减半', tide: '从使用的下回合起，每回合结束额外发动一次黑雾潮汐（共4次）', vuln: '受到的伤害提升30%',
+  halfPhys: '受到的物理伤害减半', halfSpec: '受到的特殊攻击伤害减半', tide: '从使用的下回合起，每回合结束额外发动一次黑雾潮汐（共4次）', vuln: '受到的伤害提升30%',
   weak: '造成的伤害降低30%', swamp: '施加异常状态的成功率×1.5', mist: '免疫能力下降',
   jungle: '对体力比例低于自己的敌人伤害提升70%', siren: '倒计时结束时，若自己还在场，对方失去全部体力', sirenOn: '海妖之歌：倒计时结束时，若唱歌的精灵还在场，失去全部体力；换下场就会解除',
   dr40: '受到的伤害减免40%', crit2: '攻击必定致命一击', retal: '受到攻击时降低对方1级物攻、特攻、命中',
@@ -303,6 +303,7 @@ function chipsOf(m, foe, S) {
   if (m.perm && m.perm.wither) c.push({ t: '凋零之蚀' + (witherN(m) > 1 ? ' ×' + witherN(m) : ''), k: 'st', h: '凋零之蚀 · ' + witherN(m) + ' 层', d: '每回合结束损失 ' + witherN(m) + '/' + WITHER_DIV + ' 最大体力（每层 1/' + WITHER_DIV + '，最多 ' + WITHER_MAX + ' 层），持续到战斗结束。当前每回合损失 ' + witherDot(m) + ' 点' });
   if (m.fx.charge) c.push({ t: '爆燃蓄力 ×' + m.fx.charge, k: 'fx', h: '爆燃蓄力 · ' + m.fx.charge + ' / 3', d: '下一次攻击伤害提升 ' + m.fx.charge * 10 + '%，攻击时全部消耗。下场时清空。' });
   if (m.fx.boostNext) c.push({ t: '潜水蓄力', k: 'fx', h: '潜水蓄力', d: '下一次攻击伤害提升50%' });
+  if (m.fx.prismAttacks) c.push({ t: '斑斓之姿 ' + m.fx.prismAttacks, k: 'fx', h: '斑斓之姿', d: '剩余' + m.fx.prismAttacks + '次主动攻击拆为威力减半的2次攻击，每次附加完整技能效果' });
   if (m.fx.moon) c.push({ t: '月升 ×' + m.fx.moon, k: 'fx', h: '月升 · ' + m.fx.moon + ' / 5', d: '达到5层时转化为光影之月。下场时清空。' });
   if (m.fx.moonNext) c.push({ t: '月蚀 · 下次攻击+15%', k: 'fx', h: '月蚀', d: '刚转换过属性，下一次攻击伤害提升15%，命中后恢复 1/6 最大体力' });
   if (m.perm && m.perm.moonFull) c.push({ t: '光影之月', k: 'fx', h: '光影之月（永久，下场保留）', d: '属性：光 + 暗影\n技能属性：固定为' + (m.perm.moonMv ? '暗影系' : '原属性') + '\n伤害 +15%\n使用技能时，其余技能各恢复1点PP，并恢复 1/6 最大体力\n无法使用月之暗面 / 月之亮面' });
@@ -355,7 +356,7 @@ function statSheet(m, foe) {
   if (m.boss && m.boss.dr) dmgIn *= 1 - m.boss.dr;
   if (m.boss && m.boss.eternal) dmgIn *= 1.2;
   rows.push({ k: '造成伤害', v: '×' + (Math.round(dmgOut * 100) / 100), note: '特性与场上效果合计（不含属性克制）' });
-  rows.push({ k: '受到伤害', v: '×' + (Math.round(dmgIn * 100) / 100), note: m.tm.halfPhys > 0 ? '另外物理伤害减半' : '' });
+  rows.push({ k: '受到伤害', v: '×' + (Math.round(dmgIn * 100) / 100), note: [m.tm.halfPhys > 0 ? '物理伤害减半' : '', m.tm.halfSpec > 0 ? '特殊攻击伤害减半' : ''].filter(Boolean).join('，') });
   var pri = m.tm.prio > 0 ? '+1' : '0';
   rows.push({ k: '先制加成', v: pri });
   return rows;
@@ -588,9 +589,10 @@ function movePower(me, foe, mv) {
     case 'punish': power += 20 * posSum(foe); break;
     case 'canyue': power = canyuePow(me.fx.canyueNow ? (me.flags.canyue || 1) - 1 : me.flags.canyue || 0); break;
     case 'starMagic': var sn = me.perm.star || 0; power = Math.min(STAR_MAX, 25 * (me.fx.starNow ? sn : sn + 1)); break;
+    case 'baliFantasy': power += 5 * missingPP(foe); break;
   }
   if (foe.fx && foe.fx.earMark) power *= 2;
-  return power;
+  return mv.prismHalf ? power / 2 : power;
 }
 function calcDamage(me, foe, mv, firstMover, est) {
   var power = movePower(me, foe, mv), t = mvType(me, mv);
@@ -654,6 +656,7 @@ function calcDamage(me, foe, mv, firstMover, est) {
   if (foe.perm.melt) mod *= 1 + 0.2 * foe.perm.melt;
   if (foe.fx.leiyin) { mod *= 1.2; if (!est) foe.fx.leiyin = 0; }
   if (phys && foe.tm.halfPhys > 0) mod *= 0.5;
+  if (!phys && foe.tm.halfSpec > 0) mod *= 0.5;
   if (foe.tm.dr40 > 0) mod *= 0.6;
   if (foe.boss && foe.boss.dr) { mod *= 1 - foe.boss.dr; if (!est) RV(foe, 'dr'); }   // BOSS「星球聚能」
   // 玫瑰星云「疏散星团」（2026-11-01 改为BOSS特效，按体力管变化）：阿尔法 伤害 +50%；贝塔 受伤 -30%；欧米茄 先出手伤害 +50%、后出手受伤 -30%
@@ -1049,14 +1052,54 @@ function applyClementMove(S, evs, i, mv) {
   }
 }
 
+// PP消耗和削减共用入口：只统计实际损失，恢复PP不会抵消已经发生的损失
+function missingPP(m) {
+  return m.moves.reduce(function (n, sl) { return n + Math.max(0, sl.max - sl.pp); }, 0);
+}
+function spendPP(S, evs, i, slotIdx, n) {
+  var m = act(S, i), sl = m.moves[slotIdx];
+  if (!sl || (m.boss && ((m.boss.immortal && !m.boss.ppLim) || m.boss.ppInf))) return 0;
+  var lost = Math.min(Math.max(0, sl.pp), n), owner = act(S, 1 - i);
+  sl.pp -= lost;
+  if (lost && !owner.fainted && ability(owner) === '绫彩') owner.fx.rainbowPP = (owner.fx.rainbowPP || 0) + lost;
+  return lost;
+}
+function applyBaliMove(S, evs, i, mv) {
+  var me = act(S, i), j = 1 - i, foe = act(S, j);
+  if (me.fainted || foe.fainted) return;
+  if (mv.custom === 'baliBeam') {
+    var slots = foe.moves.map(function (sl, k) { return sl.pp > 0 ? k : -1; }).filter(function (k) { return k >= 0; });
+    if (slots.length) {
+      var k = slots[rint(0, slots.length - 1)], lost = spendPP(S, evs, j, k, 2);
+      E(S, evs, 'stage', { side: j });
+      log(S, evs, lost ? nm(foe) + '的「' + foe.moves[k].n + '」损失了' + lost + '点PP' : nm(foe) + '的技能PP没有减少', 'fxl');
+    }
+  }
+  if (mv.custom === 'baliAbsorb' && RNG() < 0.5) {
+    var key = ['atk', 'def', 'spa', 'spd', 'spe'][rint(0, 4)], down = {}, up = {}, before = foe.stages[key];
+    down[key] = -1; changeStages(S, evs, j, down, i);
+    var stolen = Math.max(0, before - foe.stages[key]);
+    if (stolen) { up[key] = stolen; changeStages(S, evs, i, up); }
+  }
+}
 function useMove(S, evs, i, mv, slotIdx, extra) {
+  var me = act(S, i), split = !extra && me.fx.prismAttacks > 0 && liveMove(me, mv).cat !== '变化';
+  if (!split) return useMoveCore(S, evs, i, mv, slotIdx, extra);
+  var half = Object.assign({}, liveMove(me, mv), { prismHalf: true }), token = { armed: false };
+  useMoveCore(S, evs, i, half, slotIdx, false, token);
+  if (token.armed && !S.over && !me.fainted && !act(S, 1 - i).fainted) useMoveCore(S, evs, i, half, -1, true);
+}
+function useMoveCore(S, evs, i, mv, slotIdx, extra, splitToken) {
   if (!extra) RV(act(S, i), 'mute');
   var me = act(S, i), j = 1 - i, foe = act(S, j);
   mv = liveMove(me, mv);
   if (me.fainted || (me.boss && me.boss.broken)) return;
   if (!extra && cantAct(S, evs, me)) return;
+  if (!extra && !mv.struggle && slotIdx >= 0 && me.moves[slotIdx] && me.moves[slotIdx].pp <= 0 && !(me.boss && ((me.boss.immortal && !me.boss.ppLim) || me.boss.ppInf))) {
+    log(S, evs, nm(me) + '的「' + mv.name + '」PP已耗尽，无法使用', 'bad'); return;
+  }
   if (slotIdx >= 0 && moveBlocked(me, me.moves[slotIdx])) { log(S, evs, (me.tm && me.tm.parryBan === 1 && me.fx.banMv === mv.name ? nm(me) + '的「' + mv.name + '」刚被招架过，这回合无法使用' : me.tm && me.tm.noStat === 1 && mv.cat === '变化' ? nm(me) + '被压制弧光压制，无法使用「' + mv.name + '」' : me.enNS && mv.cat === '变化' ? '对方的「禁止变化」生效中，' + nm(me) + '无法使用「' + mv.name + '」' : (me.flags && me.flags.sy && mv.cat === '变化' ? '沈阳大街上不讲究这些花架子，' + nm(me) + '无法使用「' : nm(me) + '处于光影之月，无法使用「') + mv.name + '」'), 'bad'); return; }
-  if (!mv.struggle && slotIdx >= 0 && !(me.boss && ((me.boss.immortal && !me.boss.ppLim) || me.boss.ppInf))) me.moves[slotIdx].pp--;
+  if (!mv.struggle && slotIdx >= 0 && !(me.boss && ((me.boss.immortal && !me.boss.ppLim) || me.boss.ppInf))) spendPP(S, evs, i, slotIdx, 1);
   if (me.boss && me.boss.healCd && mv.heal && !extra) S.bossHealAt = S.turn;   // 回血技能的冷却（见 ai.js 的 aiChoose）
   // ppLim：先驱之塔的死神虽有「不朽」，PP 也有限   // 「不朽」：PP 无限
   if (S.silenced[i] && !extra) { log(S, evs, nm(me) + '的「' + mv.name + '」被黑暗吞没，失效了！', 'bad'); return; }
@@ -1091,6 +1134,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
 
   if (foe.fainted) { log(S, evs, '但是没有目标'); return; }
   if (foe.boss && foe.boss.broken) { log(S, evs, nm(foe) + '的这管体力已经被击破，攻击没有效果', 'fxl'); me.fx.boostNext = 0; return; }
+  if (splitToken) { splitToken.armed = true; me.fx.prismAttacks--; E(S, evs, 'stage', { side: i }); }
   if (hitBlocked(foe, mt)) { log(S, evs, nm(foe) + '毫发无伤！只有' + foe.onlyHit.join('、') + '系技能才能命中它', 'bad'); me.fx.boostNext = 0; return; }
   if (foe.boss && ((foe.boss.noPhys && mv.cat === '物攻') || (foe.boss.noSpec && mv.cat === '特攻'))) { RV(foe, mv.cat === '物攻' ? 'noPhys' : 'noSpec'); log(S, evs, nm(foe) + '免疫' + (mv.cat === '物攻' ? '物理' : '特殊') + '攻击，毫发无伤！', 'bad'); me.fx.boostNext = 0; return; }   // 无尽作战
   if (i === 1 && S.en && S.en.ghostT === S.turn && !act(S, 0).fainted) { log(S, evs, '幽灵形态：' + nm(foe) + '化作虚影，闪开了攻击！', 'fxl'); me.fx.boostNext = 0; return; }
@@ -1218,6 +1262,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   if (total > 0 && me.tm.induct > 0) { log(S, evs, '电磁感应生效', 'fxl'); changeStages(S, evs, i, { spa: 1 }); }
   applyFateMove(S, evs, i, mv);
   applyClementMove(S, evs, i, mv);
+  applyBaliMove(S, evs, i, mv);
   me.fx.hqRaw = raw;   // 这一招算出来的伤害（不按对方剩余体力截断），隐藏技能「淬命之焰」的领悟条件用
   if (foe.fainted) {
     if (i === 0) hqKO(S, evs, me, foe, mv);
@@ -1367,6 +1412,8 @@ function doStatus(S, evs, i, mv) {
   function foeTimer(key, n, text) { foe.tm[key] = n; E(S, evs, 'stage', { side: j }); log(S, evs, text, 'bad'); }
   function flag(text) { E(S, evs, 'stage', { side: i }); log(S, evs, text, 'fxl'); }
   switch (c) {
+    case 'baliBarrier': timer('halfSpec', 4, nm(me) + '展开彩色屏障：4回合内特殊攻击伤害减半'); break;
+    case 'baliStance': me.fx.prismAttacks = 3; flag(nm(me) + '展露斑斓之姿，下3次主动攻击将拆为两次'); break;
     case 'clementClean':
       var cleaned = false; STG.forEach(function (k) { if (me.stages[k] < 0) { me.stages[k] = 0; cleaned = true; } });
       if (cleaned) { me.tm.mist = 5; flag(nm(me) + '解除了能力下降，5回合内免疫能力下降'); }
@@ -1948,6 +1995,15 @@ function endOfTurn(S, evs) {
     if (!m.fainted && ability(m) === '爆燃' && m.fx.atkT !== S.turn && (m.fx.charge || 0) < 3 && !S.over) { m.fx.charge = (m.fx.charge || 0) + 1; E(S, evs, 'stage', { side: i }); log(S, evs, nm(m) + '的「爆燃」蓄力了（' + m.fx.charge + ' / 3），下一次攻击伤害 +' + m.fx.charge * 10 + '%', 'fxl'); }
     if (!m.fainted) m.fx.fieldT = (m.fx.fieldT || 0) + 1;
   });
+  // 两方回合末行动结算完毕后，绫彩统一兑现本回合的PP损失
+  [0, 1].forEach(function (i) {
+    var m = act(S, i), lost = m.fx.rainbowPP || 0;
+    if (lost && !m.fainted && ability(m) === '绫彩') {
+      log(S, evs, nm(m) + '的「绫彩」恢复了体力（对方损失' + lost + '点PP）', 'fxl');
+      heal(S, evs, i, lost * 15);
+    }
+  });
+  S.sides.forEach(function (sd) { sd.team.forEach(function (m) { delete m.fx.rainbowPP; }); });
   [0, 1].forEach(function (i) {
     var m = act(S, i); if (m.fainted) return;
     for (var s in m.st) { if (m.st[s] > 0 && --m.st[s] <= 0) { delete m.st[s]; if (s === '中毒') delete m.fx.poison; log(S, evs, nm(m) + '的「' + s + '」状态解除了'); } }

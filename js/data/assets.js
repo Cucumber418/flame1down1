@@ -5,6 +5,7 @@
 
 // 精灵立绘（最终形态）  →  images/sprites/
 var SPRITES = {
+  "bali": "images/sprites/bali.png",
   "clementi": "images/sprites/clementi.png",
   "fate": "images/sprites/fate.png",
   "dragon": "images/sprites/dragon.png",
@@ -66,8 +67,10 @@ var LINEART = {
 // 进化前形态立绘（_s1 一阶，_s2 二阶）  →  images/pre_sprites/
 var PRE_SPRITES = {
   "clementi_s1": "images/pre_sprites/clementi_s1.png",
-  "fate_s1": "images/pre_sprites/fate_s1.webp",
-  "fate_s2": "images/pre_sprites/fate_s2.webp",
+  "fate_s1": "images/pre_sprites/fate_s1.png",
+  "fate_s2": "images/pre_sprites/fate_s2.png",
+  "bali_s1": "images/pre_sprites/bali_s1.png",
+  "bali_s2": "images/pre_sprites/bali_s2.png",
   "dragon_s1": "images/pre_sprites/dragon_s1.png",
   "dragon_s2": "images/pre_sprites/dragon_s2.png",
   "leaf_s1": "images/pre_sprites/leaf_s1.webp",

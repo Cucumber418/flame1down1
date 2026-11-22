@@ -10,7 +10,11 @@ function hit(S,name,roll=.5){C.RNG=()=>roll;C.useMove(S,[],0,C.M[name],-1);}
 function directOnly(S,name,roll=.5){C.RNG=()=>roll;C.useMove(S,[],0,{...C.M[name],custom:null},-1);}
 assert.deepEqual(copy(C.SPMAP.fate.base),{hp:120,atk:60,def:70,spa:110,spd:70,spe:100});assert.deepEqual(copy(C.SPMAP.fate.types),['超能']);assert.equal(C.SPMAP.fate.ability.n,'无常');
 assert(C.EXTRA_SP.some(s=>s.id==='fate'));assert(!C.SP.some(s=>s.id==='fate'));
-for(const [lv,name] of [[1,'fate1'],[24,'fate1'],[25,'fate2'],[49,'fate2'],[50,'fate3']]){let f=C.ACC.form({sid:'fate',lv});assert.equal(f.name,name);assert(fs.existsSync(path.join(root,f.img)));}
+for(const [lv,name] of [[1,'查士'],[24,'查士'],[25,'查丁'],[49,'查丁'],[50,'查士丁尼']]){let f=C.ACC.form({sid:'fate',lv});assert.equal(f.name,name);assert(fs.existsSync(path.join(root,f.img)));}
+// Stable species ID keeps old saves and player-chosen nicknames compatible with the rename.
+assert.equal(C.ACC.form({sid:'fate',lv:5,nickname:'fate1'}).name,'查士');
+assert.equal(C.ACC.form({sid:'fate',lv:30,renameUnlocked:true,nickname:'审判者'}).name,'审判者');
+assert.equal(C.ACC.form({sid:'fate',lv:30}).d,'显露出了另一个侧面，严苛而无私的侧面。');
 assert(!C.ACC.avail('fate',49,[]).includes('逆转命运'));assert(C.ACC.avail('fate',50,[]).includes('逆转命运'));assert(C.ACC.avail('fate',50,[]).includes('辩证命运'));
 let S=battle();gain(S,0,'luck');assert.equal(mon(S).hp,500);assert.deepEqual(marks(S),{luck:1,doom:0});
 S=battle('leaf','tagore');gain(S,1,'doom');assert.equal(mon(S,1).hp,300);assert.deepEqual(marks(S,1),{luck:0,doom:1}); // Universal, even without 无常.

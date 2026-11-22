@@ -160,6 +160,13 @@ var SP = [
 var DUMMY = { id: 'dummy', name: '木桩', types: ['无'], type: '无', base: { hp: 100, atk: 0, def: 50, spa: 0, spd: 50, spe: 0 }, ability: { n: '无', d: '训练用木桩，不会攻击，体力无限' }, moves: [], hidden: [], def: [] };
 // 只在账号系统里出现的精灵（不进入竞技对战，也不参与强度测算）：占位精灵，以及竞技名单固定之后新加的所有精灵
 var EXTRA_SP = [
+  { id: 'bali', name: '巴利海雅', types: ['普通'],
+    base: { hp: 85, atk: 75, def: 80, spa: 115, spd: 85, spe: 95 },
+    evo: [{ n: '巴利', lv: 1, no: '077' }, { n: '巴利恒', lv: 25, no: '078' }, { lv: 50, no: '079' }], evoLvSure: false,
+    ability: { n: '绫彩', d: '对方每损失1点PP，回合末恢复自身15点体力' },
+    lore: '巴利 → 巴利恒 → 巴利海雅',
+    moves: ['撞击', '灵力', '破防射线', '原力光线', '彩色屏障', '原力吸收', '透明射线', '凝神', '绫彩光束'],
+    hidden: ['斑斓之姿', '幻想切割'], def: ['彩色屏障', '原力吸收', '凝神', '绫彩光束'] },
   { id: 'clementi', name: '克莱门蒂', types: ['火'],
     base: { hp: 108, atk: 70, def: 88, spa: 103, spd: 72, spe: 94 },
     evo: [{ n: '克莱', lv: 1, no: '075', d: '克莱门蒂的初始形态' }, { lv: 30, no: '076', d: '以音律引动烈焰的火系精灵' }], evoLvSure: false,
