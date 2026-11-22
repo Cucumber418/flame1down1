@@ -835,7 +835,7 @@ var PVE = (function () {
    * ========================================================== */
   function regionById(rid) { if (rid === 'hl_cabin' || rid === 'hl_shop') rid = 'hl_castle'; for (var i = 0; i < WILD_REGIONS.length; i++) if (WILD_REGIONS[i].id === rid) return WILD_REGIONS[i]; return null; }
   function helenaOpen(a) { return ['school', 'river', 'jiuquan'].every(function (id) { return done(a, id); }); }
-  function regionOpen(a, R) { return R.planet === 'helena' ? helenaOpen(a) : R.record ? done(a, 'flora7') : done(a, 'flora1'); }
+  function regionOpen(a, R) { return R.planet === 'helena' ? helenaOpen(a) && (R.id !== 'hl_wonderland' || !!(a.christmasStory && a.christmasStory.wonderOpen)) : R.record ? done(a, 'flora7') : done(a, 'flora1'); }
   function floraFallen(a) { return done(a, 'flora6') && !done(a, 'flora7'); }
   function regionFallen(a, R) { return !!R && R.planet === 'flora' && (R.record || floraFallen(a)); }
   function sceneWild(R, si, bgKey) { return !!R.pool && (!R.wildScenes || R.wildScenes.indexOf(bgKey || (R.bgs || [])[si]) >= 0); }

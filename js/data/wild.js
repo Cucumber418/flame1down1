@@ -64,6 +64,7 @@ var WILD_SCENE = {
 };
 var WILD_REGIONS = [
   { id: 'hl_castle', planet: 'helena', name: '圣诞城堡', en: 'Christmas Castle', d: '城堡、秘密小屋和杂货铺相连，可左右切换；城堡前常能遇见巴洛，偶尔有稀有的巴利', pool: 'hl_castle', sceneN: 3, bgs: ['hl_castle', 'hl_cabin', 'hl_shop'], wildScenes: ['hl_castle'] },
+  { id: 'hl_wonderland', planet: 'helena', name: '圣诞仙境', en: 'Christmas Wonderland', d: '杂货铺角落的管道通向雪中小屋；阻止自称鲁普雷希特骑士的bttp，反复讨伐他召唤的精灵', sceneN: 1, bgs: ['hl_wonderland'] },
   { id: 'forest', planet: 'flora', name: '丛林', en: 'Forest', d: '高大的树木遮住了天空，林下潮湿又安静。玛西很常见，偶尔能撞见稀有的卡莱。', pool: 'forest', bgs: ['fl_path', 'fl_beech', 'fl_sun', 'fl_maple'] },
   { id: 'grass', planet: 'flora', name: '草甸', en: 'Grassland', d: '一望无际的草甸，风吹过时像绿色的海浪。卡罗成群地在这里奔跑。', pool: 'grass', bgs: ['fl_meadow', 'fl_lake', 'fl_horizon'] },
   // 2026-10-24：芙罗拉星恢复以后，用来做「瘴气驱逐战」的地方：两张瘴气化的地图（草甸、丛林），里面依然是瘴气精灵

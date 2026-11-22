@@ -4,8 +4,8 @@ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'flame-helena-'));process.env.DAT
 const A=require('../server/accounts'),T=require('../server/tx');require('../server/pve');
 const E=T.engine(),env={now:Date.now(),rand:()=>.5},copy=x=>JSON.parse(JSON.stringify(x));
 function fixture(open=true){const a={v:1,name:'雪旅人',introDone:true,next:1,mons:[],teams:[[]],active:0,story:{},items:{},energy:10000,exp:0};if(open)for(const id of ['school','river','jiuquan'])a.story[id]={done:true,rewarded:true,core:true,gave:{bribe:true}};const m=E.ACC.newMon(a,'barlow',100,env);m.moves=['能量弹','践踏','切裂','遁走'];a.teams[0]=[m.u];return a;}
-const regions=E.WILD_REGIONS.filter(r=>r.planet==='helena'),castle=E.PVE.regionById('hl_castle');assert.equal(regions.length,1);
-for(const R of regions){assert(!E.PVE.regionOpen(fixture(false),R));assert(E.PVE.regionOpen(fixture(),R));assert.equal(E.PVE.sceneCount(R),3);for(const b of R.bgs)assert(fs.existsSync(path.join(__dirname,'..',E.BG[b])));}
+const regions=E.WILD_REGIONS.filter(r=>r.planet==='helena'),castle=E.PVE.regionById('hl_castle');assert.equal(regions.length,2);
+for(const R of regions){assert(!E.PVE.regionOpen(fixture(false),R));assert.equal(E.PVE.regionOpen(fixture(),R),R.id!=='hl_wonderland');assert.equal(E.PVE.sceneCount(R),R.id==='hl_castle'?3:1);for(const b of R.bgs)assert(fs.existsSync(path.join(__dirname,'..',E.BG[b])));}
 for(const missing of ['school','river','jiuquan']){const a=fixture();delete a.story[missing];assert(!E.PVE.helenaOpen(a));}
 assert.equal(E.PVE.wildRoll(fixture(),castle,0,'hl_castle','',()=>0).sid,'barlow');assert.equal(E.PVE.wildRoll(fixture(),castle,0,'hl_castle','',()=>.999).sid,'bali');assert.equal(E.PVE.wildRoll(fixture(),castle,1,'hl_castle','',()=>0),null);
 assert.equal(E.PVE.wildRoll(fixture(),castle,0,'kb_isle','horn',()=>0),null);assert.equal(E.PVE.wildRoll(fixture(),castle,0,'pp_core','',()=>0),null);

@@ -14,7 +14,7 @@ body.christmas-page-active #pg-christmas { height: var(--scene-view-height); min
   #pg-christmas > .page-head .hint { display: none; }
   .xmas-coming { padding: 2px; font-size: 12px; }
 }
-/* 三个活动入口与子页面均限制在顶栏以下的一屏内 */
+/* 活动入口与子页面均限制在顶栏以下的一屏内 */
 #pg-christmas .page-head { flex-wrap: wrap; }
 #pg-christmas .page-head .sec { font-size: clamp(21px, 3vw, 32px); }
 .xmas-wallet { display: flex; flex: 0 0 auto; gap: 12px; flex-wrap: wrap; font-size: 13px; }
@@ -132,3 +132,65 @@ body.christmas-page-active #pg-christmas { height: var(--scene-view-height); min
   .xmas-all .btn, .xmas-pages .btn { padding: 5px 8px; font-size: 12px; }
   .xmas-reset { font-size: 10px; }
 }
+/* 杂货铺秘密角落、管道拼图与鲁普雷希特讨伐 */
+.xmas-corner-link { flex: 0 0 auto; display: flex; justify-content: space-between; gap: 8px; border: 0; border-bottom: 1px dashed var(--rule); background: transparent; padding: 3px 6px; color: var(--pencil); font: inherit; font-size: 12px; cursor: pointer; }
+.xmas-corner-link span { color: var(--red); }
+.xmas-secret-corner { position: absolute; z-index: 101; left: 12%; bottom: 15%; display: grid; justify-items: center; gap: 3px; padding: 8px; border: 0; background: transparent; cursor: pointer; color: var(--paper); font: inherit; text-shadow: 0 1px 4px var(--ink); }
+.xmas-secret-corner > span { font-size: 30px; color: #ffdc8c; }
+.xmas-secret-corner b { font-size: 12px; padding: 4px 6px; border-radius: 4px; background: rgba(35,34,43,.65); }
+.xmas-pipe-box, .xmas-knight-box { width: min(680px, calc(100vw - 24px)); max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); min-height: 0; overflow-y: auto; padding: 18px; display: flex; flex-direction: column; gap: 10px; }
+.xmas-pipe-box > header, .xmas-knight-box > header { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex: 0 0 auto; }
+.xmas-pipe-box h2, .xmas-knight-box h2 { font-family: var(--f-hand); font-size: clamp(23px, 4vw, 32px); font-weight: 400; margin: 0; }
+.xmas-pipe-box p, .xmas-knight-box p { margin: 0; }
+.xmas-pipe-board-wrap { position: relative; padding: 0 45px; margin: 0 auto; width: min(100%, 440px); flex: 0 0 auto; }
+.xmas-pipe-board { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 4px; padding: 7px; border: 1.5px solid var(--ink); border-radius: 9px; background: var(--paper-2); box-shadow: 3px 3px 0 var(--rule); }
+.xmas-pipe-in, .xmas-pipe-out { position: absolute; font-size: 12px; color: var(--red); font-weight: bold; }
+.xmas-pipe-in { left: 0; top: 9%; }.xmas-pipe-out { right: 0; bottom: 9%; }
+.xmas-pipe-tile { aspect-ratio: 1; min-width: 0; padding: 0; border: 1px solid var(--rule); border-radius: 6px; background: #eee9dd; cursor: pointer; }
+.xmas-pipe-tile svg { display: block; width: 100%; height: 100%; overflow: hidden; }
+.xmas-pipe-tile path { stroke: #8c8990; stroke-width: 13; fill: none; }
+.xmas-pipe-tile circle { fill: #8c8990; }
+.xmas-pipe-tile.connected { background: #fff6df; border-color: #ae783c; }.xmas-pipe-tile.connected path { stroke: #c8934b; }.xmas-pipe-tile.connected circle { fill: #c8934b; }
+.xmas-pipe-tile:focus-visible { outline: 2px solid var(--red); outline-offset: 1px; }
+.xmas-pipe-status { font-size: 13px; text-align: center; min-height: 2.5em; color: var(--pencil); }
+.xmas-pipe-box footer { display: flex; justify-content: space-between; gap: 8px; flex: 0 0 auto; }
+.xmas-knight-host { display: flex; align-items: center; justify-content: center; gap: 15px; min-height: 0; }
+.xmas-knight-host > img { height: min(23vh,180px); width: 90px; object-fit: contain; }
+.xmas-knight-host small { display: block; margin-top: 7px; color: var(--pencil); font-size: 12px; line-height: 1.6; }
+.xmas-knight-targets { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 9px; }
+.xmas-knight-targets article { min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 6px; border: 1px solid var(--rule); border-radius: 9px; background: var(--paper-2); text-align: center; }
+.xmas-knight-targets article > img { width: 100%; height: clamp(65px,12vh,115px); object-fit: contain; }
+.xmas-knight-targets article b { font-size: 14px; overflow-wrap: anywhere; }.xmas-knight-targets article span { font-size: 12px; color: var(--pencil); }
+.xmas-knight-targets article small { display: inline-flex; align-items: center; }.xmas-knight-targets .it-ic { width: 22px; height: 22px; }.xmas-knight-targets .btn { margin-top: auto; padding: 7px 14px; }
+.xmas-friends { display: flex; width: 100%; aspect-ratio: 2/1; align-items: stretch; }
+.xmas-friends > span { flex: 1; min-width: 0; background-repeat: no-repeat; background-size: 400% 100%; background-position: calc(var(--friend) * 33.333333%) bottom; }
+.xmas-story-cast.with-friends { padding-inline: 5%; gap: 12px; align-items: flex-end; }
+.xmas-story-cast.with-friends > .xmas-friends { width: 62%; max-height: 80%; flex: 0 1 auto; }
+.xmas-story-cast.with-friends > .xmas-story-art { width: 32%; }
+.xmas-friends.walking > span { animation: xmas-friend-enter 2.4s both; animation-delay: calc(var(--friend) * .5s); }
+@keyframes xmas-friend-enter { from { opacity: 0; transform: translate(-35px, -6px); } to { opacity: 1; transform: translate(0,0); } }
+.xmas-scene-friends { position: absolute; z-index: 95; width: 45%; left: 11%; bottom: 15%; pointer-events: none; }
+.xmas-wonder-return { position: absolute; z-index: 101; bottom: 12px; left: 14px; font-size: 12px; }
+@media (min-width: 641px) { .xmas-shop-grid { grid-template-columns: repeat(3,minmax(0,1fr)); } }
+@media (max-width: 640px) {
+  .xmas-shop-grid { gap: 6px; }
+  .xmas-good { gap: 3px; padding: 6px; }
+  .xmas-good-title { flex-wrap: nowrap; gap: 4px; font-size: 12px; line-height: 1.3; }
+  .xmas-good-title .it-ic { width: 23px; height: 23px; flex-basis: 23px; }
+  .xmas-good .xmas-price, .xmas-good > small { font-size: 11px; }.xmas-price .it-ic { width: 18px; height: 18px; flex-basis: 18px; }
+  .xmas-buy { gap: 4px; }.xmas-buy input { padding: 3px 4px; }.xmas-buy .btn { padding: 4px 6px; }
+  .xmas-pipe-box, .xmas-knight-box { padding: 13px; gap: 8px; }
+  .xmas-pipe-board-wrap { padding-inline: 33px; }.xmas-pipe-in, .xmas-pipe-out { font-size: 10px; }
+  .xmas-knight-targets { gap: 5px; }.xmas-knight-targets article { padding: 7px 4px; }.xmas-knight-targets article b { font-size: 12px; }.xmas-knight-targets .btn { padding: 6px 12px; }
+  .xmas-knight-host { gap: 8px; }.xmas-knight-host p { font-size: 13px; }
+}
+@media (max-height: 520px) and (min-width: 480px) {
+  .xmas-pipe-box { display: grid; grid-template-columns: minmax(200px,1fr) minmax(0,1fr); gap: 6px 14px; padding: 12px; }
+  .xmas-pipe-box > header { grid-column: 1/-1; }.xmas-pipe-box > header small { display: none; }
+  .xmas-pipe-board-wrap { grid-column: 1; grid-row: 2/5; width: min(100%,260px); padding-inline: 30px; }
+  .xmas-pipe-box > p, .xmas-pipe-box > footer { grid-column: 2; }
+  .xmas-pipe-box .xmas-pipe-status { min-height: 0; text-align: left; }
+  .xmas-knight-box { gap: 5px; padding: 10px; }.xmas-knight-host { display: none; }.xmas-knight-box h2 { font-size: 23px; }
+  .xmas-knight-targets article { padding: 5px; gap: 3px; }.xmas-knight-targets article > img { height: 50px; }.xmas-knight-targets .btn { padding: 5px 14px; }
+}
+@media (prefers-reduced-motion: reduce) { .xmas-friends.walking > span { animation: none; } }

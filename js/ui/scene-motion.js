@@ -12,7 +12,7 @@ var SCENE_MOTION = (function () {
     pp_fort: [[0,83],[100,83]], pp_core: [[0,83],[100,83]],
     wh_snow: [[0,61],[100,61]], wh_ice: [[0,73],[100,73]], wh_deep: [[0,76],[100,76]],
     hl_castle: [[0,76],[35,69],[65,69],[100,78]],
-    hl_cabin: [[0,76],[100,76]], hl_shop: [[0,77],[100,77]],
+    hl_cabin: [[0,76],[100,76]], hl_shop: [[0,77],[100,77]], hl_wonderland: [[0,72],[40,69],[75,67],[100,73]],
     tea_p: [[0,79],[100,79]]
   };
   var water = ['kb_lookup','kb_shoal','kb_floor','kb_abyss','kb_temple','kb_dusk','kb_wave'];

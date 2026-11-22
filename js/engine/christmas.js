@@ -8,16 +8,46 @@ var CHRISTMAS = (function () {
     { id: 'wild', kind: 'wildWin', n: 3, t: '击败3只野生精灵', bell: 1, candy: 15 }
   ];
   var SHOP = [
+    { id: 'fruit1', k: 'fruit1', coin: 'xmasCandy', price: 20 },
+    { id: 'fruit2', k: 'fruit2', coin: 'xmasCandy', price: 50 },
     { id: 'cap1', k: 'cap1', coin: 'xmasCandy', price: 5 },
     { id: 'cap2', k: 'cap2', coin: 'xmasCandy', price: 12 },
     { id: 'pot100', k: 'pot100', coin: 'xmasCandy', price: 6 },
     { id: 'pot200', k: 'pot200', coin: 'xmasCandy', price: 10 },
     { id: 'pp10', k: 'pp10', coin: 'xmasCandy', price: 8 },
     { id: 'pp20', k: 'pp20', coin: 'xmasCandy', price: 14 },
-    { id: 'fruit1', k: 'fruit1', coin: 'xmasBell', price: 2 },
     { id: 'formDev', k: 'formDev', coin: 'xmasBell', price: 6 }
   ];
   var ALL = { bell: 3, candy: 25 };
+  // 管口位：上1、右2、下4、左8，顺时针旋转；只验证相邻管口真正连通
+  var PIPES = [10,12,5,3,10,3,12,6,5,6,9,9,3,3,10,10];
+  var PIPE_START = [1,2,1,3,0,1,2,1,3,1,2,0,2,1,1,1];
+  var KNIGHT_LEVELS = [50,60,70], KNIGHT_CANDY = [5,8,12];
+  var KNIGHT_POOL = ['leaf','squid','shroom','wind','kaleo','faraday','firemouse','frost','gorgon','pede','siren','turkey','wild','leafcat','barlow','bali'];
+  function pipeMask(i, rot) { var m = PIPES[i]; for (var j = 0; j < rot; j++) m = ((m << 1) & 15) | (m >> 3); return m; }
+  function pipeReach(rot) {
+    if (!Array.isArray(rot) || rot.length !== 16 || !rot.every(function (n) { return Number.isInteger(n) && n >= 0 && n < 4; })) return [];
+    var masks = rot.map(function (n, i) { return pipeMask(i, n); }), seen = [], queue = masks[0] & 8 ? [0] : [];
+    while (queue.length) {
+      var i = queue.shift(); if (seen.indexOf(i) >= 0) continue; seen.push(i);
+      [[-4,1,4,i >= 4],[1,2,8,i % 4 < 3],[4,4,1,i < 12],[-1,8,2,i % 4 > 0]].forEach(function (d) { if (d[3] && (masks[i] & d[1]) && (masks[i+d[0]] & d[2]) && seen.indexOf(i+d[0]) < 0) queue.push(i+d[0]); });
+    }
+    return seen;
+  }
+  function pipeSolved(rot) { return pipeReach(rot).indexOf(15) >= 0 && !!(pipeMask(15, rot[15]) & 2); }
+  function wonderOpen(a) { return open(a) && !!story(a).wonderOpen; }
+  function knightOpen(a) { return wonderOpen(a) && !!story(a).knightIntro; }
+  function nextTarget(k, slot, rand) { return { id: ++k.seq, sid: KNIGHT_POOL[Math.floor(rand() * KNIGHT_POOL.length)], lv: KNIGHT_LEVELS[slot] }; }
+  function knightState(a, rand) {
+    var s = story(a), k = s.knight;
+    if (!k) { k = s.knight = { seq: 0, wins: 0, slots: [] }; KNIGHT_LEVELS.forEach(function (_, i) { k.slots.push(nextTarget(k, i, rand)); }); }
+    return k;
+  }
+  function knightWin(a, slot, id, rand) {
+    var k = story(a).knight, t = k && k.slots[slot];
+    if (!t || t.id !== id) return 0;
+    var n = KNIGHT_CANDY[slot]; ACC.addItems(a, { xmasCandy: n }); k.wins++; k.slots[slot] = nextTarget(k, slot, rand); return n;
+  }
   function open(a) { return PVE.helenaOpen(a); }
   function story(a) { return a.christmasStory || {}; }
   function sceneOpen(a, si) { return open(a) && (si === 0 || si === 1 && !!story(a).cabinOpen || si === 2 && !!story(a).shopOpen); }
@@ -39,6 +69,14 @@ var CHRISTMAS = (function () {
   }
   TX.add('christmas', function (a, args, env) {
     if (!open(a)) return { ok: false, err: '完成地球主线后开放圣诞活动' };
+    if (args.a === 'pipes') {
+      if (!story(a).shopIntro) return { ok: false, err: '先去见杂货铺的Threego' };
+      if (wonderOpen(a)) return { ok: true, already: true };
+      if (!pipeSolved(args.rot)) return { ok: false, err: '管道还没连通，再转一转试试' };
+      a.christmasStory.wonderOpen = true; return { ok: true };
+    }
+    if (args.a === 'knightIntro') { if (!wonderOpen(a)) return { ok: false, err: '先接通杂货铺角落的管道' }; a.christmasStory.knightIntro = true; return { ok: true }; }
+    if (args.a === 'knightVisit') { if (!knightOpen(a)) return { ok: false, err: '先前往圣诞仙境，看看屋外发生了什么' }; knightState(a, env.rand); return { ok: true }; }
     if (args.a === 'door') {
       var S = a.christmasStory || (a.christmasStory = {}); S.doorSeen = true;
       if (S.cabinOpen) return { ok: true, cabinOpen: true };
@@ -78,5 +116,27 @@ var CHRISTMAS = (function () {
     }
     return { ok: false, err: '没有这个圣诞活动操作' };
   });
-  return { TASKS: TASKS, SHOP: SHOP, ALL: ALL, read: read, hit: hit, story: story, sceneOpen: sceneOpen };
+  PVE.MODES.christmasKnight = {
+    start: function (a, args, env) {
+      if (!knightOpen(a)) return { err: '先解锁圣诞仙境并完成屋外的剧情' };
+      var k = story(a).knight, slot = args.slot, t = k && Number.isInteger(slot) && k.slots[slot];
+      if (!t || t.id !== args.id) return { err: '这只精灵已经离开，请重新查看召唤目标' };
+      var team = ACC.team(a); if (!team.length) return { err: '出战配队里还没有精灵' };
+      var f = ACC.form({ sid: t.sid, lv: t.lv });
+      return { p: team.map(function (m) { return ACC.battleMon(a, m); }),
+        a: [{ id: t.sid, lv: t.lv, moves: ACC.defaultMoves(t.sid, t.lv), nick: f.name, img: f.img }],
+        ctx: { slot: slot, id: t.id, team: team.map(function (m) { return m.u; }) },
+        opt: { foe: '讨伐鲁普雷希特骑士', diff: '召唤精灵 · LV' + t.lv, bgm: 'stage', back: '圣诞仙境' } };
+    },
+    end: function (a, c, B, env) {
+      var rep = { res: B.res, quit: B.quit, candy: 0 };
+      if (B.res !== 'win' || B.quit) return rep;
+      rep.candy = knightWin(a, c.slot, c.id, env.rand);
+      if (rep.candy) rep.xp = ACC.battleXp(a, c.team, B.seen, B.downs, env);
+      return rep;
+    }
+  };
+  return { TASKS: TASKS, SHOP: SHOP, ALL: ALL, read: read, hit: hit, story: story, sceneOpen: sceneOpen,
+    PIPES: PIPES, PIPE_START: PIPE_START, pipeMask: pipeMask, pipeReach: pipeReach, pipeSolved: pipeSolved,
+    wonderOpen: wonderOpen, knightOpen: knightOpen, knightState: knightState, knightWin: knightWin, KNIGHT_CANDY: KNIGHT_CANDY };
 })();
