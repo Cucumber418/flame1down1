@@ -804,6 +804,7 @@
     if (!r.ok) {
       busy = false;
       if (r.net) { addLog('网络不稳，这一步没有送到服务器，再点一次试试。', 'bad'); refreshCmd(); return; }
+      if (r.recover) { addLog(r.err || '请刷新后继续保存的战斗', 'bad'); refreshCmd(); return; }
       addLog((r.err || '这场对战作废了') + (r.gone ? '' : '（这场对战作废，不扣层数）'), 'bad');
       app.S.over = 'void'; afterTurn(); return;
     }

@@ -12,6 +12,9 @@
 .planet-map-tools > button:hover { background: #304c3d; }
 .planet-map-stage .wf-mon { width: clamp(44px, calc(var(--planet-scene-height) * .17), 100px); height: clamp(56px, calc(var(--planet-scene-height) * .24), 140px); }
 .planet-map-stage .wf-mon img { width: 100%; height: 100%; max-height: 100%; object-fit: contain; }
+.planet-map-stage .wf-scene[data-environment="ground"] > .wf-bg { object-position: center bottom; }
+.wf-mon[data-locomotion="air"] .wf-sh { opacity: .3; transform: scale(.65); }
+.wf-mon:is([data-locomotion="water"], [data-locomotion="space"]) .wf-sh { display: none; }
 .planet-map-stage .wf-node { max-width: 72px; font-size: 10px; }
 .planet-map-stage .wf-arrow { width: 32px; height: 46px; margin-top: -23px; font-size: 28px; }
 .planet-map-stage .wf-arrow:disabled { opacity: .3; cursor: default; }

@@ -1773,7 +1773,7 @@
   function renderChristmas() {
     var open = PVE.helenaOpen(acc);
     $('pg-christmas').innerHTML = '<div class="page-head"><h2 class="sec">圣诞</h2><span class="hint">一场意外带来的冬日旅程</span></div>' +
-      '<section class="xmas-home"><span class="tape l"></span><button type="button" class="xmas-planet" data-helena' + (open ? '' : ' disabled') + '><span class="xmas-planet-art"><img src="images/planets/helena.png" alt="戴着圣诞帽的海伦娜星"></span><span class="xmas-planet-info"><small>圣诞活动</small><b>海伦娜星</b><span>雪夜城堡、秘密小屋与杂货铺</span><em>' + (open ? '前往海伦娜星 ›' : '完成地球主线后解锁') + '</em></span></button></section>' +
+      '<section class="xmas-home"><span class="tape l"></span><button type="button" class="xmas-planet" data-helena' + (open ? '' : ' disabled') + '><span class="xmas-planet-art"><img src="images/planets/helena_v2.png" alt="戴着圣诞帽的海伦娜星"></span><span class="xmas-planet-info"><small>圣诞活动</small><b>海伦娜星</b><span>雪夜城堡、秘密小屋与杂货铺</span><em>' + (open ? '前往海伦娜星 ›' : '完成地球主线后解锁') + '</em></span></button></section>' +
       '<p class="xmas-coming hint">其他活动内容制作中</p>';
   }
   $('pg-christmas').addEventListener('click', function (e) {
@@ -1781,7 +1781,7 @@
     ex.planet = 'helena'; ex.view = 'sites'; go('explore');
   });
   var PLANETS = [
-    { id: 'helena', name: '海伦娜星', d: '被不明黑洞牵引而来的圣诞星球，城堡、小屋和杂货铺均可自由进入', sites: ['helenaArrival'], wild: true, ptype: '圣诞星球', color: ['#bcdce7', '#ba3545'], img: 'images/planets/helena.png', after: 'jiuquan' },
+    { id: 'helena', name: '海伦娜星', d: '被不明黑洞牵引而来的圣诞星球，城堡、小屋和杂货铺均可自由进入', sites: ['helenaArrival'], wild: true, ptype: '圣诞星球', color: ['#bcdce7', '#ba3545'], img: 'images/planets/helena_v2.png', after: 'jiuquan' },
     { id: 'earth', name: '地球', d: '我们出发的地方。', sites: ['school', 'river', 'jiuquan'] },
     { id: 'jingchu', name: '荆楚号', d: '环绕地球运行的星际探索舰，轮廓和湖北省一模一样。', sites: ['board', 'xiaogan', 'academy', 'storage'], ship: true, after: 'jiuquan' },
     { id: 'station', name: '空间站', d: '停泊在荆楚号后方的空间站，先驱之塔就建在这里。', sites: [], station: true, after: 'flora1' },
@@ -3473,7 +3473,7 @@
   function travelHTML(R, si) {
     var t = travelAt(Date.now()); if (!travelOpen() || !t.active || t.rid !== R.id || t.si !== si) return '';   // 切磋过也不会消失，停留满 20 分钟才走
     var f = form({ sid: TRAVEL.sid, lv: TRAVEL.lv }), met = travelDone(t.h);
-    return '<button type="button" class="wf-mon wf-travel' + (met ? ' met' : '') + '" data-travel="' + t.h + '" title="旅行精灵 · ' + esc(f.name) + ' LV' + TRAVEL.lv + '" aria-label="和旅行精灵' + esc(f.name) + '对战" style="left:' + t.spot.x + '%;top:' + t.spot.y + '%;z-index:' + t.spot.y + '"><i class="wf-sh" aria-hidden="true"></i><img src="' + f.img + '" alt=""><span class="wf-tag">' + (met ? '旅行精灵 · 已切磋' : '旅行精灵') + '</span></button>';
+    return '<button type="button" class="wf-mon wf-travel' + (met ? ' met' : '') + '" data-csid="' + TRAVEL.sid + '" data-cst="' + f.stage + '" data-travel="' + t.h + '" title="旅行精灵 · ' + esc(f.name) + ' LV' + TRAVEL.lv + '" aria-label="和旅行精灵' + esc(f.name) + '对战" style="left:' + t.spot.x + '%;top:' + t.spot.y + '%;z-index:' + t.spot.y + '"><i class="wf-sh" aria-hidden="true"></i><img src="' + f.img + '" alt=""><span class="wf-tag">' + (met ? '旅行精灵 · 已切磋' : '旅行精灵') + '</span></button>';
   }
   /* ---------- 坎伯兰星保卫战（2026-10-31）：每个整点在坎伯兰星随机几个场景出现奥多亚克（时间表在 js/engine/pve.js 的 kbwAt，全服一样） ---------- */
   var KBW = PVE.KBW;
@@ -3482,7 +3482,7 @@
     if (!kbwOpenC() || R.planet !== 'kamble') return '';
     return PVE.kbwAt(Date.now(), acc).filter(function (q) { return q.rid === R.id && q.si === si; }).map(function (q) {
       var met = PVE.kbwFought(acc, q.h, q.k);
-      return '<button type="button" class="wf-mon wf-odo' + (met ? ' met' : '') + '" data-kbw="' + q.k + '" title="' + esc(q.m.n) + ' LV' + q.m.lv + '" aria-label="迎战' + esc(q.m.n) + '" style="left:' + q.spot.x + '%;top:' + q.spot.y + '%;z-index:' + q.spot.y + '"' + (met ? ' disabled' : '') + '><i class="wf-sh" aria-hidden="true"></i><img src="' + SPRITES.odo + '" alt=""><span class="wf-tag">' + (met ? '已交手 · 整点后会有新的' : esc(q.m.n) + ' · LV' + q.m.lv) + '</span></button>';
+      return '<button type="button" class="wf-mon wf-odo' + (met ? ' met' : '') + '" data-csid="odo" data-cst="' + (SPMAP.odo.evo.length - 1) + '" data-kbw="' + q.k + '" title="' + esc(q.m.n) + ' LV' + q.m.lv + '" aria-label="迎战' + esc(q.m.n) + '" style="left:' + q.spot.x + '%;top:' + q.spot.y + '%;z-index:' + q.spot.y + '"' + (met ? ' disabled' : '') + '><i class="wf-sh" aria-hidden="true"></i><img src="' + SPRITES.odo + '" alt=""><span class="wf-tag">' + (met ? '已交手 · 整点后会有新的' : esc(q.m.n) + ' · LV' + q.m.lv) + '</span></button>';
     }).join('');
   }
   // 剧情要交的东西（剧本 pay.gather）：在对应区域的场景里出现采集点，点一下 +1（交易 story · gather）
@@ -3563,7 +3563,7 @@
     if (sceneCalm(R, si)) return '';
     var BK = Object.keys(BOSSES).filter(function (k) { return BOSSES[k].region === R.id; })[0]; if (!BK) return '';
     var B = BOSSES[BK], open = bossOpen(BK);
-    return '<button type="button" class="wf-mon wf-boss' + (open ? '' : ' locked') + '"' + (open ? ' data-boss="' + BK + '" data-from="field"' : ' disabled') + ' title="BOSS · ' + esc(B.name) + '" style="left:58%;top:78%;z-index:78"><i class="wf-sh" aria-hidden="true"></i><img src="' + SPRITES[B.sid] + '" alt="' + esc(B.name) + '">' +
+    return '<button type="button" class="wf-mon wf-boss' + (open ? '' : ' locked') + '" data-csid="' + B.sid + '" data-cst="' + (SPMAP[B.sid].evo.length - 1) + '"' + (open ? ' data-boss="' + BK + '" data-from="field"' : ' disabled') + ' title="BOSS · ' + esc(B.name) + '" style="left:58%;top:78%;z-index:78"><i class="wf-sh" aria-hidden="true"></i><img src="' + SPRITES[B.sid] + '" alt="' + esc(B.name) + '">' +
       '<span class="wf-tag">' + (open ? 'BOSS · ' + esc(B.name) + '（点击挑战）' : 'BOSS · ' + esc(B.name) + ' · ' + esc(B.lv[0].lockText)) + '</span></button>';
   }
   function engageTravel(h) {
@@ -3678,7 +3678,7 @@
   function fmNpcHTML(F, si) {
     var sc = F.scenes[si]; if (!sc || sc.bgKey !== FMNPC.bg || acc.fmNpc) return '';
     var f = form({ sid: 'firemouse', lv: FMNPC.lv });
-    return '<button type="button" class="wf-mon wf-travel fm-npc" data-fmnpc="1" title="瑟瑟发抖的火月鼠" style="left:' + FMNPC.x + '%;top:' + FMNPC.y + '%;z-index:' + FMNPC.y + '"><i class="wf-sh" aria-hidden="true"></i><img src="' + f.img + '" alt=""><span class="wf-tag">💬 瑟瑟发抖的火月鼠</span></button>';
+    return '<button type="button" class="wf-mon wf-travel fm-npc" data-csid="firemouse" data-cst="' + f.stage + '" data-fmnpc="1" title="瑟瑟发抖的火月鼠" style="left:' + FMNPC.x + '%;top:' + FMNPC.y + '%;z-index:' + FMNPC.y + '"><i class="wf-sh" aria-hidden="true"></i><img src="' + f.img + '" alt=""><span class="wf-tag">💬 瑟瑟发抖的火月鼠</span></button>';
   }
   function fmSay(lines, btns) { npcDlg({ name: '火月鼠', sub: '炙热核心', img: form({ sid: 'firemouse', lv: FMNPC.lv }).img, face: 'mon', lines: lines, btns: btns }); }
   function fmNpcTalk() {
@@ -3705,11 +3705,24 @@
     if (fieldTick) { clearInterval(fieldTick); fieldTick = null; }
     if (fieldRefresh) { clearInterval(fieldRefresh); fieldRefresh = null; }
   }
-  function stepFieldMon(m, dt) {
+  function fieldViewport(scene) {
+    var bg = scene && scene.querySelector('.wf-bg');
+    return bg ? { w: scene.clientWidth, h: scene.clientHeight, iw: bg.naturalWidth, ih: bg.naturalHeight, flip: bg.classList.contains('flip') } : null;
+  }
+  function placeFieldGuests(scene, sc, view) {
+    scene.querySelectorAll('.wf-mon:not([data-wfid])').forEach(function (el) {
+      var d = el.dataset; if (!d.csid) return;
+      if (!d.hx) { d.hx = parseFloat(el.style.left); d.hy = parseFloat(el.style.top); }
+      var p = SCENE_MOTION.position(d.csid, +d.cst || 0, sc.bgKey, +d.hx, +d.hy, view);
+      el.style.left = p.x + '%'; el.style.top = p.y + '%'; el.style.zIndex = Math.round(p.y); d.locomotion = p.kind;
+    });
+  }
+  function stepFieldMon(m, dt, view) {
     var prev = m.x;
     m.t += m.spd * dt;
     m.x = Math.max(10, Math.min(90, m.hx + Math.cos(m.t) * m.r));
-    m.y = Math.max(48, Math.min(88, m.hy + Math.sin(m.t * 0.85) * m.r * 0.5));
+    var p = SCENE_MOTION.position(m.sid, m.stage, m.bgKey, m.x, m.hy + Math.sin(m.t * 0.85) * m.r * 0.5, view);
+    m.x = p.x; m.y = p.y; m.locomotion = p.kind;
     if (m.x > prev + 0.02) m.face = 1; else if (m.x < prev - 0.02) m.face = -1;
   }
   function spawnFieldMon(R, slot, force) {
@@ -3732,6 +3745,7 @@
       name = '瘴气' + s.name;
     }
     var m = { id: 0, srvId: sp.id || null, sid: sp.sid, lv: sp.lv, rate: sp.rate, shiny: shiny, img: img, name: (shiny && !corrupt ? '异色' : '') + name, bait: !!sp.bait, corrupt: corrupt,
+      stage: corrupt ? SPMAP[sp.sid].evo.length - 1 : f.stage || 0, bgKey: slot.bgKey,
       hx: slot.hx, hy: slot.hy, r: slot.r, t: Math.random() * Math.PI * 2, spd: 0.55 + Math.random() * 0.5, x: slot.hx, y: slot.hy, face: 1 };
     stepFieldMon(m, 0);
     return m;
@@ -3791,7 +3805,7 @@
     planetMapEnter(R.planet, rid, scene, null); loadGate($('pg-explore'), '正在进入' + R.name + '～'); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8);
   }
   function fieldMonHTML(m, cls) {
-    return '<button type="button" class="wf-mon' + (m.face < 0 ? ' flip' : '') + (cls ? ' ' + cls : '') + '" data-wfid="' + m.id + '" data-csid="' + m.sid + '" data-cst="' + (m.corrupt ? 9 : form({ sid: m.sid, lv: m.lv }).stage || 0) + '" data-cctx="' + (m.corrupt ? 'mia' : 'wild') + '" title="' + esc(m.name) + ' LV' + m.lv + '" aria-label="和' + esc(m.name) + '对战" style="left:' + m.x.toFixed(2) + '%;top:' + m.y.toFixed(2) + '%;z-index:' + Math.round(m.y) + '"><i class="wf-sh" aria-hidden="true"></i><img src="' + m.img + '" alt=""></button>';
+    return '<button type="button" class="wf-mon' + (m.face < 0 ? ' flip' : '') + (cls ? ' ' + cls : '') + '" data-wfid="' + m.id + '" data-locomotion="' + m.locomotion + '" data-csid="' + m.sid + '" data-cst="' + (m.corrupt ? 9 : form({ sid: m.sid, lv: m.lv }).stage || 0) + '" data-cctx="' + (m.corrupt ? 'mia' : 'wild') + '" title="' + esc(m.name) + ' LV' + m.lv + '" aria-label="和' + esc(m.name) + '对战" style="left:' + m.x.toFixed(2) + '%;top:' + m.y.toFixed(2) + '%;z-index:' + Math.round(m.y) + '"><i class="wf-sh" aria-hidden="true"></i><img src="' + m.img + '" alt=""></button>';
   }
   function planetMapCan(R) {
     return !!R && (regionOpen(R) || (R.id === 'salt' && planetOpen(planetOf('flora')) && !prog('flora1').done));
@@ -3961,7 +3975,7 @@
     var nav = '<button type="button" class="wf-arrow l" data-wfnav="-1" aria-label="上一个小场景"' + (n > 1 ? '' : ' disabled') + '>‹</button><button type="button" class="wf-arrow r" data-wfnav="1" aria-label="下一个小场景"' + (n > 1 ? '' : ' disabled') + '>›</button><span class="wf-dots" aria-label="小场景 ' + (F.scene + 1) + ' / ' + n + '">' + F.scenes.map(function (x, i) { return '<i class="' + (i === F.scene ? 'on' : '') + '"></i>'; }).join('') + '</span>';
     var resources = open && !lab ? gatherNodesHTML(R.id, F.scene, n) + jadeHTML(R.id, F.scene) + riceBowlHTML(R, F.scene) + oreHTML(R, F, F.scene) + hornHTML(R, F, F.scene) + iceHTML(R, F, F.scene) + storyGatherHTML(R, F.scene) : '';
     var objects = open ? (resources ? '<div class="planet-map-resources" role="group" aria-label="场景物品">' + resources + '</div>' : '') + (lab ? '' : travelHTML(R, F.scene) + kbwHTML(R, F.scene) + fmNpcHTML(F, F.scene) + fieldBossHTML(R, F.scene)) + planetLabObjects(lab) : '<button type="button" class="planet-story-pin" data-map-panel="story"><span aria-hidden="true">📖</span><b>降临芙罗拉</b></button>';
-    planetMapRender('<div class="planet-map-page"><div class="planet-map-stage"><div class="wf-scene' + (sc.corrupt ? ' miasma-bg' : '') + '" id="wf-scene">' + bg + mons + objects + nav + '</div><header class="planet-map-heading"><button type="button" class="btn ghost" data-map-exit="1" aria-label="返回星图">‹</button><div><small>' + esc(P.name + ' · ' + R.name) + '</small><h2>' + esc(planetMapName(sc, R, F.scene)) + '</h2></div></header><nav class="planet-map-tools" aria-label="星球功能">' + [['story','📖','剧情'],['challenge','⚔','关卡'],['task','📜','星球任务'],['map','🗺','小地图']].map(function (t) { return '<button type="button" data-map-panel="' + t[0] + '" aria-haspopup="dialog"><span aria-hidden="true">' + t[1] + '</span><b>' + t[2] + '</b></button>'; }).join('') + '</nav></div></div>' + planetMapPanel(P));
+    planetMapRender('<div class="planet-map-page"><div class="planet-map-stage"><div class="wf-scene' + (sc.corrupt ? ' miasma-bg' : '') + '" id="wf-scene" data-environment="' + SCENE_MOTION.kind('', 0, sc.bgKey) + '">' + bg + mons + objects + nav + '</div><header class="planet-map-heading"><button type="button" class="btn ghost" data-map-exit="1" aria-label="返回星图">‹</button><div><small>' + esc(P.name + ' · ' + R.name) + '</small><h2>' + esc(planetMapName(sc, R, F.scene)) + '</h2></div></header><nav class="planet-map-tools" aria-label="星球功能">' + [['story','📖','剧情'],['challenge','⚔','关卡'],['task','📜','星球任务'],['map','🗺','小地图']].map(function (t) { return '<button type="button" data-map-panel="' + t[0] + '" aria-haspopup="dialog"><span aria-hidden="true">' + t[1] + '</span><b>' + t[2] + '</b></button>'; }).join('') + '</nav></div></div>' + planetMapPanel(P));
     if (open) startFieldMove(); else stopField();
   }
   function startFieldMove() {
@@ -3971,7 +3985,8 @@
       if (page !== 'explore' || ex.view !== 'field' || ex.fighting) { stopField(); return; }
       var scene = $('wf-scene'); if (!scene) { stopField(); return; }
       var F = fields[ex.region], R = regionById(ex.region); if (!F || !R) return;
-      var sc = F.scenes[F.scene], now = Date.now(), dt = Math.min(0.05, (now - last) / 1000); last = now;
+      var sc = F.scenes[F.scene], view = fieldViewport(scene), now = Date.now(), dt = Math.min(0.05, (now - last) / 1000); last = now;
+      placeFieldGuests(scene, sc, view);
       sc.slots.forEach(function (sl) {
         var m = sl.mon;
         if (!m) {   // 空位：时间到了就出现一只新的（淡入）
@@ -3981,11 +3996,12 @@
         var el = scene.querySelector('[data-wfid="' + m.id + '"]');
         if (now >= m.die && !m.out) { m.out = now; if (el) el.classList.add('wf-out'); }   // 待够了：淡出
         if (m.out && now - m.out >= FIELD_FADE) { if (el) el.remove(); sl.mon = null; sl.next = now + between(FIELD_GAP); return; }
-        stepFieldMon(m, dt);
+        stepFieldMon(m, dt, view);
         if (!el) return;
         el.style.left = m.x.toFixed(2) + '%';
         el.style.top = m.y.toFixed(2) + '%';
         el.style.zIndex = String(Math.round(m.y));
+        el.dataset.locomotion = m.locomotion;
         el.classList.toggle('flip', m.face < 0);
       });
     }, 40);
@@ -5830,11 +5846,69 @@
     if (typeof bg === 'string' && /[\/.]/.test(bg)) out.push(bg);
     return out;
   }
-  function pveRemote(kind, args, ui, done) {
+  var pveChecked = false, pveResumeBusy = false;
+  function pveResumeCheck() {
+    if (pveChecked || pveResumeBusy || !ready() || !srvMode() || ex.fighting || !$('battle').hidden || document.querySelector('.soc-dlg')) return;
+    pveResumeBusy = true;
+    CLOUD.pve({ op: 'status' }).then(function (r) {
+      pveResumeBusy = false;
+      if (!r || !r.ok) return;
+      pveChecked = true;
+      if (!r.pending) return;
+      var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'pve-resume';
+      d.innerHTML = '<div class="soc-box" role="dialog" aria-modal="true" aria-labelledby="pve-resume-title"><span class="tape l"></span><h2 id="pve-resume-title">还有一场未结束的战斗</h2><p>' + esc((r.opt && r.opt.foe) || 'PVE对战') + ' · 第' + (r.turn || 1) + '回合</p><p class="hint">体力、PP、状态与已用道具均已保存</p><p class="hint red" data-resume-error></p><div class="soc-foot"><button class="btn" data-pve-abandon>放弃战斗</button><button class="btn primary" data-pve-continue>继续战斗</button></div></div>';
+      document.body.appendChild(d);
+      d.addEventListener('click', function (e) {
+        var cont = e.target.closest('[data-pve-continue]'), abandon = e.target.closest('[data-pve-abandon]');
+        if ((!cont && !abandon) || pveResumeBusy) return;
+        pveResumeBusy = true;
+        CLOUD.pve({ op: 'resume' }).then(function (saved) {
+          if (!saved || !saved.ok) throw new Error(saved && saved.err || '暂时无法读取战斗');
+          if (!saved.pending) { d.remove(); return; }
+          if (abandon) return CLOUD.pve({ op: 'quit', seq: (saved.seq || 0) + 1 }).then(function (q) {
+            if (!q || !q.ok) throw new Error(q && q.err || '暂时无法放弃战斗');
+            if (q.end && q.end.acc) adoptAcc(q.end.acc); d.remove(); renderTop(); toast('已放弃保存的战斗');
+          });
+          var ui = saved.ui || {}, route = ui.route || {};
+          Object.keys(route).forEach(function (k) { if (['view','planet','region','site','i','mode','area','boss','bossFrom','twPick','room'].indexOf(k) >= 0) ex[k] = route[k]; });
+          ex.mode = route.mode || null; page = 'explore';
+          if (ex.mode === 'intro') ex.host = $('pg-explore');
+          d.remove();
+          pveRemote(saved.kind, {}, ui, function (end, res) {
+            ex.fighting = false; document.body.classList.remove('story-fight');
+            if (end && end.keys) Object.keys(end.keys).forEach(function (k) { localStorage.setItem(k, end.keys[k]); });
+            if (saved.kind === 'story' && ex.site && SCRIPT[ex.site]) {
+              var F = FIGHTS[(end && end.rep && end.rep.key) || ''];
+              if (res !== 'void' && (!F || !F.mustWin || res === 'win')) ex.i = (ex.i || 0) + 1;
+              ex.view = 'vn'; ex.host = $('pg-explore'); $('pg-arena').hidden = true; $('pg-explore').hidden = false; renderVN(); syncBattle();
+            } else {
+              ex.mode = null; if (!ex.view || ex.view === 'vn') ex.view = 'planets';
+              go('explore');
+              if (end) {
+                var rep = end.rep || {}, rewards = end.rewards || {}, msg = xpMsg(rep.xp).concat(firstMsg(rep.fr));
+                Object.keys(rewards.items || {}).forEach(function (k) { msg.push('获得' + itemName(k) + ' ×' + rewards.items[k] + '。'); });
+                if (rewards.energy) msg.push('获得能量 ×' + fmt(rewards.energy) + '。');
+                if (rewards.tokens) msg.push('获得竞技代币 ×' + rewards.tokens + '。');
+                if (msg.length) toast(msg.join(''));
+              }
+            }
+            save(); renderRes();
+          }, saved);
+        }).catch(function (err) { var box = d.querySelector('[data-resume-error]'); if (box) box.textContent = err.message || '网络不稳，请重试'; }).finally(function () { pveResumeBusy = false; });
+      });
+      d.querySelector('[data-pve-continue]').focus();
+    }).catch(function () { pveResumeBusy = false; });
+  }
+  setInterval(pveResumeCheck, 1500);
+  function pveRemote(kind, args, ui, done, resumeReply) {
     if (pveBusy) return; pveBusy = true;
     var L = LOADER.show(ui.loadText || '正在进入对战系统～'); L.to(0.7);   // 加载面板（js/ui/loader.js）：很快就进去时不会出现
-    CLOUD.pve({ op: 'start', kind: kind, args: args }).then(function (r) {
-      if (!r || !r.ok) { pveBusy = false; L.close(); if (r && r.err) toast(r.err); if (ui.fail) ui.fail(r); return; }
+    var presentation = {}, route = {};
+    ['bg','back','where','corrupt','cuts','stars','env'].forEach(function (k) { if (ui[k] != null && typeof ui[k] !== 'function') presentation[k] = ui[k]; });
+    ['view','planet','region','site','i','mode','area','boss','bossFrom','twPick','room'].forEach(function (k) { if (ex[k] != null) route[k] = ex[k]; });
+    presentation.route = route;
+    (resumeReply ? Promise.resolve(resumeReply) : CLOUD.pve({ op: 'start', kind: kind, args: args, ui: presentation })).then(function (r) {
+      if (!r || !r.ok) { pveBusy = false; L.close(); if (r && r.err) toast(r.err); if (ui.fail) ui.fail(r); if (r && r.pending) { pveChecked = false; pveResumeCheck(); } return; }
       if (r.acc) adoptAcc(r.acc);
       L.set(0.72).text(ui.loadText2 || '正在布置战场～');
       LOADER.images(battleImgs(r.S, ui.bg), function (n, t) { L.set(0.72 + 0.27 * n / t); }, function () { L.done(function () { pveBusy = false; go(r); }); });
@@ -7374,12 +7448,13 @@
   setInterval(function () {
     var figs = document.querySelectorAll('.home-room .hm-fig'); if (!figs.length) return;
     var now = performance.now() / 1000;
-    // 2026-11-01：地板摆件有碰撞体积（脚下一圈椭圆），精灵走到那里会被推开
-    var solids = Array.prototype.map.call(document.querySelectorAll('.home-room .bdeco:not(.wall)'), function (d) {
-      var w = parseFloat(d.style.width) || 6; return { x: parseFloat(d.style.left) || 0, y: (parseFloat(d.style.top) || 0) - w * 0.12, rx: w * 0.5, ry: w * 0.28 };
-    });
     Array.prototype.forEach.call(figs, function (f) {
-      var D = f.dataset;
+      var D = f.dataset, room = f.closest('.home-room'), roomKey = room.dataset.terrainRoom;
+      var flying = SCENE_MOTION.flies(D.csid, +D.cst || 0);
+      D.locomotion = flying ? 'air' : 'ground';
+      var solids = flying ? [] : Array.prototype.map.call(room.querySelectorAll('.bdeco:not(.wall)'), function (d) {
+        var w = parseFloat(d.style.width) || 6; return { x: parseFloat(d.style.left) || 0, y: (parseFloat(d.style.top) || 0) - w * 0.12, rx: w * 0.5, ry: w * 0.28 };
+      });
       if (!D.hx) { D.hx = parseFloat(f.style.left) || 50; D.hy = parseFloat(f.style.top) || 80; D.ph = Math.random() * 6.283; D.sp = 0.22 + Math.random() * 0.22; D.px = D.hx; }
       var t = now * +D.sp + +D.ph, x = Math.max(8, Math.min(92, +D.hx + Math.cos(t) * 9)), y = Math.max(45, Math.min(96, +D.hy + Math.sin(t * 0.85) * 4));
       var fw = parseFloat(f.style.getPropertyValue('--fw')) || 6;
@@ -7388,6 +7463,10 @@
         if (dd < 1) { if (dd < 0.001) { dx = 1; dy = 0; dd = 1; } x = c.x + dx / dd * rx; y = c.y + dy / dd * ry; }
       });
       x = Math.max(4, Math.min(96, x)); y = Math.max(40, Math.min(99, y));
+      if (!flying) {
+        if (roomKey) { var q = baseSnap(roomKey, 'floor', x, y); x = q[0]; y = q[1]; }
+        else { y = Math.max(SCENE_MOTION.floor('tea_p', x), y); }
+      }
       f.style.left = x.toFixed(2) + '%'; f.style.top = y.toFixed(2) + '%'; f.style.zIndex = Math.round(y);
       if (x > +D.px + 0.005) f.classList.remove('flip'); else if (x < +D.px - 0.005) f.classList.add('flip');
       D.px = x;
@@ -7606,7 +7685,7 @@
   }
   function baseRoomHTML(L, inner, edit) {
     L = L || { room: 'r1', deco: [] }; var R = BASE_UI[L.room] || BASE_UI.r1;
-    return '<div class="home-room base-room' + (edit ? ' editing' : '') + '" id="base-room"><img class="home-bg" src="' + R.img + '" alt="">' +
+    return '<div class="home-room base-room' + (edit ? ' editing' : '') + '" id="base-room" data-terrain-room="' + esc(L.room || 'r1') + '"><img class="home-bg" src="' + R.img + '" alt="">' +
       (L.deco || []).map(function (d, i) { return decoHTML(d, i, L.room, !!edit, edit ? edit.sel : -1); }).join('') + (edit ? baseZonesSVG(L.room) : '') + (inner || '') + '</div>';
   }
   function baseEditBar() {
@@ -8852,6 +8931,8 @@
       var f = form({ sid: raw.sid, lv: lv, shiny: shinyV(raw.shiny) });
       return { id: raw.sid, lv: lv, moves: mv, nick: f.name, img: f.img, shiny: shinyV(raw.shiny), ev: ev, iv: iv, nat: raw.nat && NATURES[raw.nat] ? raw.nat : null, emblem: raw.emblem && EMBLEMS[raw.sid] ? EMBLEMS[raw.sid].m : null };
     },
+    signin: function (ok, fail) { txRun('signin', {}, ok, fail); },
+    resumePending: function () { return srvMode() && (!pveChecked || pveResumeBusy); },
     inBattle: function () { return !$('battle').hidden; },
     // 联网切磋：像剧情对战一样切到对战画面，锁住其他大栏
     enterBattle: function () {
@@ -8877,6 +8958,7 @@
   }
   function sceneNowRaw() {
     var vnSite = ex.site && SITES[ex.site] && (ex.mode === 'intro' || (ex.mode === 'replay' && ex.view === 'vn')) ? SITES[ex.site].planet : null;
+    if (vnSite === 'helena' || (page === 'explore' && ((ex.view === 'sites' && ex.planet === 'helena') || (ex.view === 'field' && regionById(ex.region) && regionById(ex.region).planet === 'helena')))) return 'christmasEve';
     if (vnSite === 'earth') return 'earth';            // 地球上的剧情（含序章）
     if (!ready()) return 'ui';
     if (document.querySelector('.sum-anim')) return 'summon';   // 2026-11-01：召唤曲只在召唤动画里放，召唤页面用默认的曲子

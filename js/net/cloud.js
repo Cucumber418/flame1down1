@@ -78,7 +78,7 @@
     acctPut(lsGet(LAST), lsGet(TOK) && lsGet(OWNER) === lsGet(LAST) ? { tok: lsGet(TOK) } : {});
   }
   var $ = function (id) { return document.getElementById(id); };
-  var st = { user: null, token: null, remember: true, rev: 0, applying: false, pushing: false, changeNo: 0, timer: null, retry: 0, scripts: [], status: '', ver: null, txing: false, txq: false, updShown: false };
+  var st = { user: null, token: null, remember: true, rev: 0, applying: false, pushing: false, changeNo: 0, timer: null, retry: 0, scripts: [], status: '', ver: null, rules: null, txing: false, txq: false, updShown: false };
 
   function lsGet(k) { try { return LS.getItem(k); } catch (e) { return null; } }
   function lsSet(k, v) { try { LS.setItem(k, v); } catch (e) {} }
@@ -424,7 +424,7 @@
     (function next() {
       if (L) L.set((total - list.length) / total);
       if (!list.length) { if (L) L.done(); if (st.user) { setStatus(lsGet(DIRTY) === '1' ? 'wait' : 'ok'); setTimeout(syncProfile, 1500); } return; }
-      var s = document.createElement('script'); s.src = list.shift();
+      var s = document.createElement('script'); var src = list.shift(); s.src = st.ver ? src + (src.indexOf('?') >= 0 ? '&' : '?') + 'build=' + encodeURIComponent(st.ver) : src;
       s.onload = next;
       s.onerror = function () { if (L) L.close(); alert('加载 ' + s.src + ' 失败，请刷新页面重试'); };
       document.body.appendChild(s);
@@ -451,7 +451,7 @@
       else showLogin('连不上服务器，请检查网络后刷新页面。', start);
     });
   }
-  function start() { watchStorage(); watchVersion(); loadGame(); }
+  function start() { watchStorage(); checkVersion().then(function () { watchVersion(); loadGame(); }); }
 
   // 等本机还没上传的进度传完（最多等 5 秒）。发起切磋前用，保证服务器拿到的是最新的配队
   function flush() {
@@ -481,7 +481,7 @@
     function end(r) { st.txing = false; st.txq = false; return r; }
     return flush().then(idle).then(function () {
       st.txing = true;
-      return api('POST', '/api/tx', { op: op, args: args || {}, v: st.ver });
+      return api('POST', '/api/tx', { op: op, args: args || {}, v: st.ver, rules: st.rules });
     }).then(function (r) {
       if (r._code === 200 && r.ok) { st.rev = r.rev; lsSet(REV, String(r.rev)); return end(r); }
       if (r._code === 409 && r.update) { end(null); showUpdate(true); return { ok: false, err: '' }; }
@@ -499,13 +499,14 @@
     var pre = flush().then(idle);   // 每次都先把本机进度传上去（比如刚用掉的补药），服务器结算时用的是最新的存档
     return pre.then(function () {
       st.txing = true;
-      body.v = st.ver;
+      body.v = st.ver; body.rules = st.rules;
+      if (['act','repl','quit','core'].indexOf(body.op) >= 0 && st.bid) body.bid = st.bid;
       return api('POST', '/api/pve', body);
     }).then(function (r) {
-      if (r._code === 200 && r.ok) { var rv = (r.end && r.end.rev) || r.rev; if (rv) { st.rev = rv; lsSet(REV, String(rv)); } return end(r); }
+      if (r._code === 200 && r.ok) { if (r.bid) st.bid = r.bid; if (r.pending === false) st.bid = null; var rv = (r.end && r.end.rev) || r.rev; if (rv) { st.rev = rv; lsSet(REV, String(rv)); } return end(r); }
       if (r._code === 409 && r.update) { end(null); showUpdate(true); return { ok: false, err: '游戏已经更新了，刷新页面后再来挑战吧。' }; }
       if (r._code === 401) { setStatus('expired'); return end({ ok: false, err: '登录已失效，请先重新登录（设置 → 账号管理）。' }); }
-      return end({ ok: false, gone: r._code === 410, draft: !!r.draft, err: r.error || '服务器没有回应，请稍后再试。' });
+      return end({ ok: false, gone: r._code === 410, recover: !!r.retryResume || !!r.pending, pending: !!r.pending, draft: !!r.draft, err: r.error || '服务器没有回应，请稍后再试。' });
     }, function () { return end({ ok: false, net: true, err: '网络不稳，没连上服务器。' }); });
   }
   // 本机和服务器对不上时：取回服务器上的存档，用它重新加载
@@ -514,14 +515,16 @@
   }
   /* ---------- 版本检查：服务器上的游戏更新后，提示开着旧页面的人刷新 ---------- */
   function checkVersion() {
-    if (!st.user) return;
-    api('GET', '/api/version').then(function (r) {
+    if (!st.user) return Promise.resolve();
+    return api('GET', '/api/version').then(function (r) {
       if (!r || !r.v) return;
-      if (!st.ver) st.ver = r.v; else if (r.v !== st.ver) showUpdate(false);
+      if (!st.ver) { st.ver = r.v; st.rules = r.rules || null; } else if (r.v !== st.ver) showUpdate(false);
     }).catch(function () {});
   }
   function showUpdate(force) {
-    if ((st.updShown && !force) || document.getElementById('cloud-upd')) return;
+    if (st.updShown || document.getElementById('cloud-upd')) return;
+    if (window.HSACC && HSACC.inBattle && HSACC.inBattle()) { st.pendingUpdate = true; return; }
+    st.pendingUpdate = false;
     st.updShown = true;
     dialog('<span class="step">游戏更新</span><h2 id="cloud-upd">游戏已经更新了</h2><p>服务器上有新版本。刷新页面就能用上新版本，刷新前会先保存你的进度。' + (force ? '刚才的操作没有完成，也没有扣费，刷新后再试一次吧。' : '') + '</p>' +
       '<div class="ob-foot"><button class="btn" id="upd-later">等会儿再说</button><button class="btn primary" id="upd-now">现在刷新</button></div>',
@@ -531,8 +534,8 @@
       });
   }
   function watchVersion() {
-    checkVersion();
     setInterval(checkVersion, 3 * 60 * 1000);
+    setInterval(function () { if (st.pendingUpdate) showUpdate(false); }, 2000);
     document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') checkVersion(); });
   }
   window.CLOUD = { boot: boot, user: function () { return st.user; }, token: function () { return st.token; }, account: openAccount, api: api, flush: flush, tx: tx, pve: pve, resync: resync, claim: claim };

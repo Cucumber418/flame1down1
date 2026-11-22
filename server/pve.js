@@ -11,8 +11,7 @@
  *   act / repl / quit 都带 seq（这场对战里的第几次请求）：网络断了重发同一个 seq，服务器直接回上次的结果，不会多打一回合。
  *   服务器已经把奖励和塔的进度写进存档（rev 是存档的新版本号），浏览器照 end 更新本机存档（js/engine/pve.js 的 towerApply）。
  *
- * 对战状态只放在内存里：服务器重启（部署更新）后进行中的对战作废，不发奖励也不扣层数。每个账号同时只能有一场。
- * 例外：剧情对战会存到 DATA_DIR/pve-story.json，重启后还在，重新进入同一场剧情对战时接着打（见 persistStory）。
+ * 所有 PVE 对战逐步持久化到 DATA_DIR/pve-sessions.json，刷新或服务器重启后可继续或放弃，每个账号同时一场。
  * 战斗里用掉的道具：打完时存档里的数量不会超过「开打时的数量 − 用掉的」（浏览器自己也会扣，这样不会扣两次）。
  */
 'use strict';
@@ -25,33 +24,28 @@ var sessions = {};
  * 浏览器进入场景时来要一批（op: 'wild'），开战时按编号取走（取走就没了）。只放内存，30 分钟没打就作废 */
 var wildSp = {}, WILD_AGE = 30 * 60e3, WILD_MAX = 80;   // 账号名 -> { kind, S, team, f, F, items0, used, t, seq, last, done }
 var MAX_AGE = 3 * 3600e3;
-/* 剧情对战断点续打（2026-11-01）：进行中的剧情对战写进 DATA_DIR/pve-story.json，服务器重启（部署更新）后还在；
- * 卡住、刷新页面、断网后重新进入同一场剧情对战，接着上次的进度打（op: 'start' 时发现有同一场没打完的，就把它发回去） */
+/* 所有PVE逐回合保存；兼容读取旧版的剧情战斗文件 */
 var fs = require('fs'), path = require('path');
-var STORY_FILE = path.join(A.DATA_DIR, 'pve-story.json'), STORY_AGE = 24 * 3600e3, storyTimer = null;
-function storyLive(s) { return s && s.kind === 'story' && !s.done && !(s.S && s.S.over); }
-function persistStory(now) {
-  if (storyTimer && !now) return;
-  if (storyTimer) { clearTimeout(storyTimer); storyTimer = null; }
-  var run = function () {
-    storyTimer = null;
-    var E = X(), out = {};
-    Object.keys(sessions).forEach(function (k) { var s = sessions[k]; if (!storyLive(s)) return; try { out[k] = { kind: s.kind, S: JSON.parse(E.battleJSON(s.S, s.S)), ctx: s.ctx, items0: s.items0, used: s.used, t: s.t, seq: s.seq, last: s.last, opt: s.opt || null }; } catch (e) {} });
-    var tmp = STORY_FILE + '.tmp';
-    if (now) { try { fs.writeFileSync(tmp, JSON.stringify(out)); fs.renameSync(tmp, STORY_FILE); } catch (e) {} return; }
-    fs.writeFile(tmp, JSON.stringify(out), function (err) { if (!err) fs.rename(tmp, STORY_FILE, function () {}); });
-  };
-  if (now) run(); else storyTimer = setTimeout(run, 300);
+var PVE_FILE = path.join(A.DATA_DIR, 'pve-sessions.json'), DONE_AGE = 24 * 3600e3;
+function pveLive(s) { return s && !s.done && !(s.S && s.S.over); }
+function persistPve() {
+  var E = X(), out = {};
+  Object.keys(sessions).forEach(function (k) {
+    var s = sessions[k]; if (!s || (s.done && Date.now() - s.t > DONE_AGE)) return;
+    out[k] = { kind: s.kind, S: JSON.parse(E.battleJSON(s.S, s.S)), ctx: s.ctx, items0: s.items0, used: s.used, t: s.t, seq: s.seq, last: s.last, opt: s.opt || null, ui: s.ui || null, bid: s.bid, done: s.done, legacy: s.legacy, team: s.team, f: s.f, F: s.F };
+  });
+  try { fs.writeFileSync(PVE_FILE + '.tmp', JSON.stringify(out)); fs.renameSync(PVE_FILE + '.tmp', PVE_FILE); }
+  catch (e) { console.error('保存PVE战斗失败', e.message); }
 }
-['SIGTERM', 'SIGINT'].forEach(function (sg) { process.once(sg, function () { persistStory(true); process.exit(0); }); });   // 部署重启前把进行中的剧情对战写下来
-(function loadStory() {
+['SIGTERM', 'SIGINT'].forEach(function (sg) { process.once(sg, function () { persistPve(); process.exit(0); }); });
+(function loadPve() {
   try {
-    var L = JSON.parse(fs.readFileSync(STORY_FILE, 'utf8')), now = Date.now();
-    Object.keys(L).forEach(function (k) { var s = L[k]; if (!s || !s.S || now - s.t > STORY_AGE) return; s.done = false; s.last = s.last || null; s.used = s.used || {}; s.t = now; sessions[k] = s; });
+    var L = JSON.parse(fs.readFileSync(fs.existsSync(PVE_FILE) ? PVE_FILE : path.join(A.DATA_DIR, 'pve-story.json'), 'utf8')), now = Date.now();
+    Object.keys(L).forEach(function (k) { var s = L[k]; if (!s || !s.S || (s.done && now - s.t > DONE_AGE)) return; s.bid = s.bid || require('crypto').randomBytes(12).toString('hex'); s.last = s.last || null; s.used = s.used || {}; sessions[k] = s; });
   } catch (e) {}
 })();
 setInterval(function () {
-  var now = Date.now(); Object.keys(sessions).forEach(function (k) { if (now - sessions[k].t > (storyLive(sessions[k]) ? STORY_AGE : MAX_AGE)) delete sessions[k]; });
+  var now = Date.now(); Object.keys(sessions).forEach(function (k) { if (!pveLive(sessions[k]) && now - sessions[k].t > MAX_AGE) delete sessions[k]; });
   Object.keys(wildSp).forEach(function (k) { var L = wildSp[k].list; Object.keys(L).forEach(function (id) { if (now - L[id].t > WILD_AGE) delete L[id]; }); if (!Object.keys(L).length) delete wildSp[k]; });
 }, 5 * 60e3).unref();
 // 刷一批野生精灵：{ rid, si, bg, n, kind }
@@ -101,7 +95,7 @@ function finish(name, sess) {
   var E = X(), S = sess.S, u = A.loadUser(name), acc = u && accOf(u);
   sess.done = true;   // 留着这场对战一会儿：浏览器没收到结果、重发同一个请求时还能回给它
   if (!acc) return { res: S.over, err: '存档不见了' };
-  var now = Date.now();
+  var now = Date.now(), reward0 = { items: Object.assign({}, acc.items || {}), energy: acc.energy || 0, tokens: acc.tokens || 0 };
   var seen = S.sides[0].team.map(function (x) { return !!x.seen; });
   var downs = S.sides[1].team.filter(function (x) { return x.fainted; }).map(function (x) { return { id: x.id, lv: x.lv }; });
   var end;
@@ -126,6 +120,8 @@ function finish(name, sess) {
   u.save.rev = (u.save.rev || 0) + 1; u.save.savedAt = now;
   A.saveUser(u);
   end.rev = u.save.rev; end.seen = seen; end.downs = downs;
+  end.rewards = { items: {}, energy: Math.max(0, (acc.energy || 0) - reward0.energy), tokens: Math.max(0, (acc.tokens || 0) - reward0.tokens) };
+  Object.keys(acc.items || {}).forEach(function (k) { var n = acc.items[k] - (reward0.items[k] || 0); if (n > 0) end.rewards.items[k] = n; });
   if (!sess.legacy) end.acc = u.save.data['hs-account-v1'];
   if (end.rep && end.rep.keys) { end.keys = {}; end.rep.keys.forEach(function (k) { end.keys[k] = u.save.data[k]; }); }
   return end;
@@ -139,7 +135,7 @@ function saveAcc(u, acc) {
 }
 
 // 开一场其他模式的对战
-function startMode(E, res, name, kind, u, acc, args) {
+function startMode(E, res, name, kind, u, acc, args, ui) {
   delete args._helper; delete args._foes; delete args._owner; delete args._sp;
   if (kind === 'wild' && args.travel == null && args.odo == null && !args.ice) {   // 野外：按编号取出服务器刷出来的那只（旅行精灵、保卫战的奥多亚克按时间表算，不用编号）
     var W = wildSp[name], sp = W && W.list[args.id | 0];
@@ -172,8 +168,8 @@ function startMode(E, res, name, kind, u, acc, args) {
   if (st.preStrike) out.pre = E.resolveTurn(S, [{ kind: 'pass' }, E.aiChoose(S)]);   // 剧情：对方偷袭，开场先出一招
   if (st.dirty || st.keys) { out.rev = saveAcc(u, acc); out.acc = u.save.data['hs-account-v1']; }
   if (st.keys) { out.keys = {}; st.keys.forEach(function (k) { out.keys[k] = u.save.data[k]; }); }   // 服务器改过的其他存档项（段位、本局阵容）
-  sessions[name] = { kind: kind, S: S, ctx: st.ctx || {}, items0: items0, used: {}, t: now, seq: 0, last: null, done: false, opt: o };
-  if (kind === 'story') persistStory();
+  sessions[name] = { kind: kind, S: S, ctx: st.ctx || {}, items0: items0, used: {}, t: now, seq: 0, last: null, done: false, opt: o, ui: ui || null, bid: require('crypto').randomBytes(12).toString('hex') };
+  out.bid = sessions[name].bid; persistPve();
   return A.reply(res, 200, JSON.parse(E.battleJSON(S, out)));
 }
 
@@ -193,34 +189,44 @@ A.use(function (req, res, url) {
     }
     if (op === 'wild') { var uw = A.loadUser(name), aw = uw && accOf(uw); if (!aw) return A.reply(res, 409, { error: '存档还没同步到服务器' }); var rw = wildBatch(E, name, aw, body); return A.reply(res, rw.error ? 400 : 200, rw); }
     var V = require('./tx').VERSION;
-    if (op === 'start' && body.v && body.v !== V) return A.reply(res, 409, { error: '游戏已经更新了，请刷新页面后再挑战。', update: true, v: V });
+    if (op === 'start' && (body.rules ? body.rules !== require('./tx').RULES_VERSION : body.v && body.v !== V)) return A.reply(res, 409, { error: '游戏已经更新了，请刷新页面后再挑战。', update: true, v: V });
     try {
+      if (op === 'status' || op === 'resume') {
+        var pending = sessions[name];
+        if (!pveLive(pending)) return A.reply(res, 200, { ok: true, pending: false });
+        if (op === 'status') return A.reply(res, 200, { ok: true, pending: true, kind: pending.kind, turn: pending.S.turn, opt: pending.opt || {}, bid: pending.bid });
+        pending.t = Date.now(); persistPve();
+        return A.reply(res, 200, JSON.parse(E.battleJSON(pending.S, { ok: true, pending: true, resume: true, S: pending.S, seq: pending.seq, bid: pending.bid, kind: pending.kind, ui: pending.ui, opt: pending.opt || {} })));
+      }
       if (op === 'start') {
         var kind = String(body.kind || '');
         if (!E.PVE.MODES[kind]) return A.reply(res, 400, { error: '不支持的对战' });
         var u = A.loadUser(name), acc = u && accOf(u);
         if (!acc) return A.reply(res, 409, { error: '存档还没同步到服务器，请稍后再试' });
         var old = sessions[name], sk = body.args && typeof body.args === 'object' ? String(body.args.key || '') : '';
-        if (kind === 'story' && storyLive(old) && old.ctx && String(old.ctx.key) === sk && sk) {   // 剧情对战断点续打
+        if (kind === 'story' && pveLive(old) && old.ctx && String(old.ctx.key) === sk && sk) {   // 剧情对战断点续打
           old.t = Date.now();
-          return A.reply(res, 200, JSON.parse(E.battleJSON(old.S, { ok: true, S: old.S, opt: old.opt || {}, resume: true, seq: old.seq })));
+          return A.reply(res, 200, JSON.parse(E.battleJSON(old.S, { ok: true, S: old.S, opt: old.opt || {}, resume: true, seq: old.seq, bid: old.bid })));
         }
-        if (kind !== 'tower' || body.args) return startMode(E, res, name, kind, u, acc, body.args && typeof body.args === 'object' ? body.args : {});   // 新页面的先驱之塔带 args，走通用框架
+        if (pveLive(old)) return A.reply(res, 409, { error: '还有一场未结束的对战，请先选择继续或放弃', pending: true });
+        if (kind !== 'tower' || body.args) return startMode(E, res, name, kind, u, acc, body.args && typeof body.args === 'object' ? body.args : {}, body.ui && typeof body.ui === 'object' ? body.ui : null);   // 新页面的先驱之塔带 args，走通用框架
         var st = E.PVE.towerStart(acc, body.pick, Date.now(), Math.random);
         if (st.err) return A.reply(res, 400, { error: st.err });
         var S = E.newBattle(st.p, st.a);
         S.story = { foe: st.opt.foe, back: st.opt.back, diff: st.opt.diff }; S.noLimit = true; S.remote = true;
         var items0 = {}; E.ITEM_ORDER.forEach(function (k) { items0[k] = (acc.items && acc.items[k]) || 0; });
         S.items = JSON.parse(JSON.stringify(items0));
-        sessions[name] = { kind: 'tower', legacy: true, S: S, team: st.team, f: st.f, F: st.F, items0: items0, used: {}, t: Date.now(), seq: 0, last: null, done: false };
-        return A.reply(res, 200, JSON.parse(E.battleJSON(S, { ok: true, S: S, opt: st.opt })));
+        sessions[name] = { kind: 'tower', legacy: true, S: S, team: st.team, f: st.f, F: st.F, items0: items0, used: {}, t: Date.now(), seq: 0, last: null, done: false, opt: st.opt, ui: body.ui || null, bid: require('crypto').randomBytes(12).toString('hex') };
+        persistPve();
+        return A.reply(res, 200, JSON.parse(E.battleJSON(S, { ok: true, S: S, opt: st.opt, bid: sessions[name].bid })));
       }
       var sess = sessions[name];
       if (!sess) return A.reply(res, 410, { error: '这场对战已经失效了（服务器可能刚更新过）' });
+      if (body.bid && body.bid !== sess.bid) return A.reply(res, 409, { error: '当前战斗已改变，请刷新后继续保存的战斗' });
       var S2 = sess.S, evs, seq = body.seq | 0;
       if (seq && seq === sess.seq && sess.last) return A.reply(res, 200, sess.last);   // 重发的请求：回上次的结果
       if (sess.done || S2.over) return A.reply(res, 409, { error: '这场对战已经结束了' });
-      if (seq && seq !== sess.seq + 1) { delete sessions[name]; return A.reply(res, 410, { error: '对战进度对不上，这场对战作废了（不扣层数）' }); }
+      if (seq && seq !== sess.seq + 1) return A.reply(res, 409, { error: '对战进度不同步，请刷新后继续战斗', retryResume: true });
       sess.t = Date.now();
       if (op === 'act') {
         if (S2.needSwitch) return A.reply(res, 409, { error: '要先选下一只出战的精灵' });
@@ -242,18 +248,18 @@ A.use(function (req, res, url) {
         else { if (!ac.items || !(ac.items.g_core > 0)) return A.reply(res, 400, { error: '圣晶石不够了' }); ac.items.g_core--; S2.coreFree = 0; }
         evs = E.coreRevive(S2, [], freeC);
         var outC = { ok: true, evs: evs, S: S2, rev: saveAcc(uc, ac), acc: uc.save.data['hs-account-v1'] };
-        outC = JSON.parse(E.battleJSON(S2, outC)); sess.seq = seq || sess.seq + 1; sess.last = outC;
-        if (sess.kind === 'story') persistStory();
+        outC.bid = sess.bid; outC = JSON.parse(E.battleJSON(S2, outC)); sess.seq = seq || sess.seq + 1; sess.last = outC;
+        persistPve();
         return A.reply(res, 200, outC);
       } else if (op === 'quit') {
         if (S2.wild) { S2.over = 'flee'; evs = []; }   // 野外：逃跑
         else { S2.over = 'lose'; S2.quit = true; evs = []; }
       } else return A.reply(res, 400, { error: '不支持的操作' });
-      var out = { ok: true, evs: evs, S: S2 };
+      var out = { ok: true, evs: evs, S: S2, bid: sess.bid };
       if (S2.over) out.end = finish(name, sess);
       out = JSON.parse(E.battleJSON(S2, out));
       sess.seq = seq || sess.seq + 1; sess.last = out;
-      if (sess.kind === 'story') persistStory();
+      persistPve();
       return A.reply(res, 200, out);
     } catch (e) {
       console.error('单人对战出错', op, e && e.stack);

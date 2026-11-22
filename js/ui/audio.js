@@ -33,6 +33,7 @@
   var TRACKS = {
     normal: 'audio/bgm_normal.mp3', boss: 'audio/bgm_boss.mp3', boss2: 'audio/bgm_boss2.mp3', boss3: 'audio/bgm_boss3.mp3', tigerFinal: 'audio/bgm_tiger_final.mp3',
     stage: 'audio/bgm_stage.mp3', pvp: 'audio/bgm_pvp.mp3', faceEnemy: 'audio/bgm_face_enemy.mp3', disCommunication: 'audio/bgm_dis_communication.mp3',
+    christmasDay: 'audio/bgm_christmas_day.m4a', christmasEve: 'audio/bgm_christmas_eve.m4a',
     ui: 'audio/bgm_ui_hms.mp3', arena: 'audio/bgm_arena.mp3', earth: 'audio/bgm_earth.mp3',
     flora: 'audio/bgm_flora.mp3', floraGrass: 'audio/bgm_flora_grass.mp3', floraForest: 'audio/bgm_flora_forest.mp3', floraFallen: 'audio/bgm_flora_fallen.mp3',
     ngc2237: 'audio/bgm_ngc2237.mp3',
@@ -48,7 +49,7 @@
     pompeii: 'audio/bgm_pompeii.mp3', pompeiiField: 'audio/bgm_pompeii_field.mp3', warriorsCity: 'audio/bgm_warriors_city.mp3'   // 2026-11-03：庞贝星主界面、熔岩原、庞贝星标题画面
   };
   // 曲名（2026-11-03 统一）：所有地方显示的曲名都从这里取（音乐鉴赏、基地音乐、温泉音乐、设置），统一格式：英文单词首字母大写、用空格分开，数字单独一节，不用连字符和下划线
-  var NAMES = { ui: 'HMS JC', uiOld: 'Lobby', base: 'Base', summon: 'Summon', arena: 'Arena', earth: 'Earth', faceEnemy: 'Face The Enemy', faceEnemyScene: 'Face The Enemy',
+  var NAMES = { christmasDay: 'Christmas Day', christmasEve: 'Christmas Eve', ui: 'HMS JC', uiOld: 'Lobby', base: 'Base', summon: 'Summon', arena: 'Arena', earth: 'Earth', faceEnemy: 'Face The Enemy', faceEnemyScene: 'Face The Enemy',
     normal: 'Normal', stage: 'Stage', pvp: 'PVP', boss: 'Boss 1', boss2: 'Boss 2', boss3: 'Boss 3', tigerFinal: 'Northeast Past', ngc2237: 'NGC 2237',
     flora: 'Flora', floraGrass: 'Flora 1 Grassland', floraForest: 'Flora 2 Jungle', floraFallen: 'Flora 3 The Great Cover', floraLab: 'Flora Lab',
     grassTalk: 'Grass Talk', memory: 'Memory', saver: 'Saver', disCommunication: 'Dis Communication', disComScene: 'Dis Communication', beforeEnd: 'Before The End',
@@ -58,17 +59,17 @@
   function trackName(k) { return NAMES[k] || k; }
   window.HSTRACK = trackName;
   // silence：剧情里「音乐突然停止」，没有曲子
-  var SCENES = { base: 1, summon: 1, finalStar: 1, decision: 1, vitalVoyage: 1, kbDeep: 1, kbDeep2: 1, kbDeep3: 1, floraLab: 1, pompeiiCity: 1, pompeii: 1, pompeiiField: 1, warriorsCity: 1, mingTheme: 1, kb: 1, kbShallow: 1, kbSurface: 1, temple: 1, spa: 1, ui: 1, arena: 1, earth: 1, flora: 1, floraGrass: 1, floraForest: 1, floraFallen: 1, grassTalk: 1, memory: 1, saver: 1, disComScene: 1, faceEnemyScene: 1, silence: 1 };
+  var SCENES = { christmasDay: 1, christmasEve: 1, base: 1, summon: 1, finalStar: 1, decision: 1, vitalVoyage: 1, kbDeep: 1, kbDeep2: 1, kbDeep3: 1, floraLab: 1, pompeiiCity: 1, pompeii: 1, pompeiiField: 1, warriorsCity: 1, mingTheme: 1, kb: 1, kbShallow: 1, kbSurface: 1, temple: 1, spa: 1, ui: 1, arena: 1, earth: 1, flora: 1, floraGrass: 1, floraForest: 1, floraFallen: 1, grassTalk: 1, memory: 1, saver: 1, disComScene: 1, faceEnemyScene: 1, silence: 1 };
   var ONESHOT = { faceEnemy: 1 };
   var FRESH = { disComScene: 1 };   // 每次开始放都从头放，不记上次停下的位置（剧情里的 dis-communication）   // 不循环；播完触发 chainNext 指定的下一首
   var KEY = 'hs-sound-v1';
-  var cfg = { music: true, ui: true, vol: 60, uiOld: false };   // uiOld：主界面换回旧版音乐（2026-10-19 主界面默认换成 HMS_JC）
+  var cfg = { music: true, ui: true, vol: 60, uiOld: false, uiTrack: 'christmas' };   // uiOld：主界面换回旧版音乐（2026-10-19 主界面默认换成 HMS_JC）
   var UI_NEW = 'audio/bgm_ui_hms.mp3', UI_OLD = 'audio/bgm_ui.mp3';
   try {
     var sv = JSON.parse(localStorage.getItem(KEY) || 'null');
-    if (sv) { cfg.music = sv.music !== false; cfg.ui = sv.ui !== false; if (sv.vol >= 0 && sv.vol <= 100) cfg.vol = sv.vol; cfg.uiOld = !!sv.uiOld; }
+    if (sv) { cfg.music = sv.music !== false; cfg.ui = sv.ui !== false; if (sv.vol >= 0 && sv.vol <= 100) cfg.vol = sv.vol; cfg.uiOld = !!sv.uiOld; cfg.uiTrack = ['christmas','new','old'].indexOf(sv.uiTrack) >= 0 ? sv.uiTrack : 'christmas'; }
   } catch (e) {}
-  TRACKS.ui = cfg.uiOld ? UI_OLD : UI_NEW;
+  TRACKS.ui = cfg.uiTrack === 'christmas' ? TRACKS.christmasDay : cfg.uiTrack === 'old' ? UI_OLD : UI_NEW;
   function saveCfg() { try { localStorage.setItem(KEY, JSON.stringify(cfg)); } catch (e) {} }
 
   var el = new Audio(); el.loop = true; el.preload = 'none';
@@ -98,7 +99,7 @@
   function want() { var k = battle || scene; return k !== 'silence' && allowed(k) ? k : null; }
   function startTrack(k, fromStart) {
     cur = k;
-    try { if (window.HSHEARD) window.HSHEARD(k === 'ui' && cfg.uiOld ? 'uiOld' : k); } catch (e) {}   // 剧情回顾 · 音乐鉴赏：记下听过的曲子
+    try { if (window.HSHEARD) window.HSHEARD(k === 'ui' ? (cfg.uiTrack === 'christmas' ? 'christmasDay' : cfg.uiTrack === 'old' ? 'uiOld' : 'ui') : k); } catch (e) {}   // 剧情回顾 · 音乐鉴赏：记下听过的曲子
     el.loop = !ONESHOT[k];
     if (el.dataset.k !== k) { el.src = TRACKS[k] + V; el.dataset.k = k; }
     try { el.currentTime = fromStart ? 0 : (pos[k] || 0); } catch (e) {}
@@ -177,10 +178,10 @@
       '<label class="snd-row"><input type="checkbox" id="snd-music"' + (cfg.music ? ' checked' : '') + '> 战斗音乐</label>' +
       '<label class="snd-row"><input type="checkbox" id="snd-ui"' + (cfg.ui ? ' checked' : '') + '> 界面音乐</label>' +
       '<label class="snd-row snd-vol' + (any ? '' : ' off') + '">音量 <input type="range" id="snd-vol" min="0" max="100" step="5" value="' + cfg.vol + '"' + (any ? '' : ' disabled') + '><output id="snd-out">' + cfg.vol + '</output></label>' +
-      '<label class="snd-row">主界面 <select id="snd-uitrack"><option value="new"' + (cfg.uiOld ? '' : ' selected') + '>' + NAMES.ui + '</option><option value="old"' + (cfg.uiOld ? ' selected' : '') + '>' + NAMES.uiOld + '</option></select></label>' +
+      '<label class="snd-row">主界面 <select id="snd-uitrack"><option value="christmas"' + (cfg.uiTrack === 'christmas' ? ' selected' : '') + '>Christmas Day（圣诞活动）</option><option value="new"' + (cfg.uiTrack === 'new' ? ' selected' : '') + '>' + NAMES.ui + '</option><option value="old"' + (cfg.uiTrack === 'old' ? ' selected' : '') + '>' + NAMES.uiOld + '</option></select></label>' +
       '<b class="set-h">对战</b><label class="snd-row"><input type="checkbox" id="set-fx"' + (fxOn ? ' checked' : '') + '> 技能特效</label>' +
       '<label class="snd-row"><input type="checkbox" id="set-shake"' + (window.HSFX && !HSFX.shake() ? '' : ' checked') + '> 普通命中抖动</label>' +
-      '<b class="set-h">游戏</b>' +
+      '<b class="set-h">游戏</b><button type="button" class="btn" data-set-checkin="1">每日签到</button>' +
       (window.CLOUD && CLOUD.user && CLOUD.user() ? '<button type="button" class="btn" data-set-account="1">☁ 账号管理</button>' : '') +
       '<button type="button" class="btn" data-set-about="1">ⓘ 关于</button>';
   }
@@ -189,10 +190,11 @@
     btn.addEventListener('click', function (e) { e.stopPropagation(); menu.hidden = !menu.hidden; btn.setAttribute('aria-expanded', String(!menu.hidden)); if (!menu.hidden) drawMenu(); });
     menu.addEventListener('click', function (e) {
       e.stopPropagation();
-      var account = e.target.closest('[data-set-account]'), about = e.target.closest('[data-set-about]');
-      if (!account && !about) return;
+      var account = e.target.closest('[data-set-account]'), about = e.target.closest('[data-set-about]'), checkin = e.target.closest('[data-set-checkin]');
+      if (!account && !about && !checkin) return;
       menu.hidden = true; btn.setAttribute('aria-expanded', 'false'); btn.focus({ preventScroll: true });
       if (account && window.CLOUD && CLOUD.account) CLOUD.account();
+      if (checkin && window.HSCHECKIN) HSCHECKIN.open();
       if (about && window.HSBOARD) HSBOARD.about();
     });
     menu.addEventListener('input', function (e) {
@@ -200,7 +202,7 @@
     });
     menu.addEventListener('change', function (e) {
       if (e.target.id === 'snd-uitrack') {
-        cfg.uiOld = e.target.value === 'old'; saveCfg(); TRACKS.ui = cfg.uiOld ? UI_OLD : UI_NEW; delete pos.ui;
+        cfg.uiTrack = e.target.value; cfg.uiOld = cfg.uiTrack === 'old'; saveCfg(); TRACKS.ui = cfg.uiTrack === 'christmas' ? TRACKS.christmasDay : cfg.uiTrack === 'old' ? UI_OLD : UI_NEW; delete pos.ui;
         if (el.dataset.k === 'ui') { el.dataset.k = ''; if (cur === 'ui') sync(true, 300); }
         return;
       }

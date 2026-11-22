@@ -75,7 +75,8 @@ jobs:
         if: steps.cfg.outputs.ok == 'yes'
         run: |
           for i in 1 2 3; do
-            rsync -az --delete --exclude '.git' --exclude '.github' \
+            # 全部文件传完后再集中替换，避免大图上传期间新入口读到旧脚本
+            rsync -az --delay-updates --delete-delay --exclude '.git' --exclude '.github' \
               -e "ssh -i ~/.ssh/deploy -o StrictHostKeyChecking=accept-new -o ServerAliveInterval=15 -o ConnectTimeout=30" \
               --rsync-path="sudo rsync" ./ "ubuntu@$HOST:/opt/flame1down1/" && break
             echo "第 $i 次上传失败，10 秒后重试"; sleep 10

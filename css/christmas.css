@@ -1,26 +1,36 @@
-/* 圣诞活动入口沿用纸张、细描边与胶带的界面样式 */
+/* 圣诞活动页与日志、社交共用顶栏以下的剩余视口。 */
 #mainnav.mainnav { grid-template-columns: repeat(7, minmax(0, 1fr)); }
-.xmas-home { position: relative; padding: 18px; border: 1.5px solid var(--ink); border-radius: 14px; background: var(--paper); }
-.xmas-planet { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(0, 1.4fr); align-items: center; gap: 24px; width: 100%; padding: 20px; border: 1.5px solid var(--rule); border-radius: 12px; background: var(--paper-2); color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+body.christmas-page-active #pg-christmas { height: var(--scene-view-height); min-height: 0; display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
+#pg-christmas > .page-head { flex: 0 0 auto; gap: 4px 12px; margin: 0; }
+#pg-christmas > .page-head .sec { margin: 0; }
+.xmas-home { flex: 1 1 0; min-height: 0; position: relative; display: flex; padding: clamp(10px, 2vw, 20px); border: 1.5px solid var(--ink); border-radius: 14px; background: var(--paper); }
+.xmas-planet { flex: 1 1 0; min-width: 0; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); grid-template-rows: minmax(0, 1fr); align-items: stretch; gap: clamp(12px, 3vw, 32px); width: 100%; padding: clamp(12px, 2vw, 24px); border: 1.5px solid var(--rule); border-radius: 12px; background: var(--paper-2); color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
 .xmas-planet:hover:not(:disabled) { border-color: var(--red); box-shadow: 3px 3px 0 var(--red); }
 .xmas-planet:focus-visible { outline: 3px solid var(--red); outline-offset: 4px; }
 .xmas-planet:disabled { cursor: default; }
-.xmas-planet-art { display: grid; place-items: center; min-height: 230px; }
-.xmas-planet-art img { width: 100%; max-width: 290px; max-height: 290px; object-fit: contain; }
-.xmas-planet-info { display: grid; gap: 12px; }
+.xmas-planet-art { min-width: 0; min-height: 0; position: relative; display: block; }
+.xmas-planet-art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.xmas-planet-info { min-width: 0; min-height: 0; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 12px; overflow-y: auto; overflow-wrap: anywhere; }
 .xmas-planet-info small { color: var(--red); }
-.xmas-planet-info b { font-family: var(--f-title); font-size: 36px; }
-.xmas-planet-info em { width: fit-content; margin-top: 10px; padding-bottom: 4px; border-bottom: 1px dashed var(--red); color: var(--red); font-style: normal; }
-.xmas-coming { padding: 18px; text-align: center; }
+.xmas-planet-info b { flex: 0 0 auto; font-family: var(--f-hand); font-size: clamp(30px, 4.8vw, 56px); font-weight: 400; line-height: 1.15; }
+.xmas-planet-info em { flex: 0 0 auto; width: fit-content; max-width: 100%; margin-top: 6px; padding-bottom: 4px; border-bottom: 1px dashed var(--red); color: var(--red); font-style: normal; }
+.xmas-planet:disabled .xmas-planet-info em { color: var(--pencil); border-color: var(--rule); }
+.xmas-coming { flex: 0 0 auto; margin: 0; padding: 6px; text-align: center; }
 @media (max-width: 640px) {
   #mainnav { gap: 4px; }
   #mainnav .nav { padding: 8px 2px; font-size: 12px; gap: 0; }
   #mainnav .nav-icon, #mainnav .nav-label { display: none; }
   #mainnav .nav-short { display: inline; }
-  .xmas-home { padding: 12px; }
-  .xmas-planet { grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 16px; text-align: center; }
-  .xmas-planet-art { min-height: 160px; }
-  .xmas-planet-art img { max-width: 210px; max-height: 210px; }
-  .xmas-planet-info { justify-items: center; }
+  .xmas-planet { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; gap: 12px; text-align: center; }
+  .xmas-planet-info { align-items: center; gap: 8px; }
+  .xmas-planet-info b { font-size: 34px; }
+}
+@media (max-height: 520px) {
+  #pg-christmas > .page-head .hint { display: none; }
+  .xmas-home { padding: 8px; }
+  .xmas-planet { grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); grid-template-rows: minmax(0, 1fr); gap: 12px; padding: 8px; text-align: left; }
+  .xmas-planet-info { align-items: flex-start; gap: 5px; font-size: 12px; }
   .xmas-planet-info b { font-size: 30px; }
+  .xmas-planet-info em { margin-top: 2px; padding-bottom: 2px; }
+  .xmas-coming { padding: 2px; font-size: 12px; }
 }

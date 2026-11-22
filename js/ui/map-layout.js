@@ -2,16 +2,17 @@
 (function () {
   'use strict';
   var body = document.body, root = document.documentElement;
-  var page = document.getElementById('pg-explore'), inventory = document.getElementById('pg-items'), social = document.getElementById('pg-social'), log = document.getElementById('pg-log'), header = document.querySelector('.topbar');
+  var page = document.getElementById('pg-explore'), inventory = document.getElementById('pg-items'), social = document.getElementById('pg-social'), log = document.getElementById('pg-log'), christmas = document.getElementById('pg-christmas'), header = document.querySelector('.topbar');
   var frame = 0, was = false;
   function prop(key, value) { if (body.style.getPropertyValue(key) !== value) body.style.setProperty(key, value); }
   function sync() {
     frame = 0;
     var visitingEstate = !social.hidden && social.querySelector('.visit-farm-page, .visit-home-page');
     var star = page.querySelector('.star-map-page'), home = visitingEstate || page.querySelector('.home-page'), ship = page.querySelector('.ship-map-page'), planet = page.querySelector('.planet-map-page');
+    var activity = !!christmas && !christmas.hidden;
     var items = !inventory.hidden, journal = !log.hidden, socialMain = !social.hidden && !visitingEstate, exploring = !page.hidden;
-    var target = journal ? log : !social.hidden ? social : items ? inventory : page;
-    var on = !body.classList.contains('no-acc') && (journal || socialMain || items || !!visitingEstate || (exploring && !!(star || home || ship || planet))) && !body.classList.contains('battle-active');
+    var target = activity ? christmas : journal ? log : !social.hidden ? social : items ? inventory : page;
+    var on = !body.classList.contains('no-acc') && (activity || journal || socialMain || items || !!visitingEstate || (exploring && !!(star || home || ship || planet))) && !body.classList.contains('battle-active');
     flag('scene-page-active', on);
     flag('star-map-active', on && exploring && !!star);
     flag('home-page-active', on && (!!visitingEstate || exploring) && !!home);
@@ -19,6 +20,7 @@
     flag('storage-active', on && items);
     flag('planet-map-active', on && exploring && !!planet);
     flag('farm-page-active', on && (!!visitingEstate || exploring) && !!home && home.classList.contains('farm-page'));
+    flag('christmas-page-active', on && activity);
     flag('log-page-active', on && journal);
     flag('social-page-active', on && socialMain);
     if (!on || items || !home) flag('home-compact', false);
@@ -31,7 +33,7 @@
     prop('--scene-full-height', full + 'px');
     var height = estate ? full : Math.max(0, full - HSVIEW.top(target) - 10);
     prop('--scene-view-height', height + 'px');
-    if (journal || socialMain) { flag('home-compact', false); flag('ship-paired', false); return; }
+    if (activity || journal || socialMain) { flag('home-compact', false); flag('ship-paired', false); return; }
     if (items) {
       var grid = inventory.querySelector('.ib-grid');
       if (grid && window.HSACC) {
@@ -60,6 +62,7 @@
   observer.observe(page, { attributes: true, attributeFilter: ['hidden'], childList: true, subtree: true });
   observer.observe(inventory, { attributes: true, attributeFilter: ['hidden'], childList: true, subtree: true });
   observer.observe(social, { attributes: true, attributeFilter: ['hidden'], childList: true, subtree: true });
+  if (christmas) observer.observe(christmas, { attributes: true, attributeFilter: ['hidden'], childList: true, subtree: true });
   observer.observe(log, { attributes: true, attributeFilter: ['hidden'], childList: true, subtree: true });
   observer.observe(body, { attributes: true, attributeFilter: ['class', 'style'] });
   observer.observe(header, { childList: true, subtree: true });

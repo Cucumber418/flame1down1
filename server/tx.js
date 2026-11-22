@@ -31,14 +31,14 @@ function walk(dir, out) {
   });
   return out;
 }
-function computeVersion() {
+function computeVersion(rulesOnly) {
   var h = crypto.createHash('sha1');
-  [path.join(ROOT, 'index.html')].concat(walk(path.join(ROOT, 'css'), []), walk(path.join(ROOT, 'js'), [])).forEach(function (f) {
+  (rulesOnly ? walk(path.join(ROOT, 'js/data'), []).filter(function (f) { return ['assets.js','changelog.js','monchanges.js','chatter.js','avfocus.js','ship-map.js'].indexOf(path.basename(f)) < 0; }).concat(walk(path.join(ROOT, 'js/engine'), [])) : [path.join(ROOT, 'index.html')].concat(walk(path.join(ROOT, 'css'), []), walk(path.join(ROOT, 'js'), []))).forEach(function (f) {
     h.update(path.relative(ROOT, f)); h.update(fs.readFileSync(f));
   });
   return h.digest('hex').slice(0, 12);
 }
-var VERSION = computeVersion();
+var VERSION = computeVersion(), RULES_VERSION = computeVersion(true);
 
 /* ---------- 加载游戏规则 ---------- */
 // 加载失败（比如服务器上的 Node.js 太老、不认识某种新写法）时不让整个服务器挂掉：只是暂时不能兑换，原因记在 LOAD_ERR 里（/status 能看到）
@@ -72,14 +72,14 @@ function ledger(name, op, args, change) {
 
 /* ---------- 接口 ---------- */
 A.use(function (req, res, url) {
-  if (url === '/api/version' && req.method === 'GET') { A.reply(res, 200, { v: VERSION }); return true; }
+  if (url === '/api/version' && req.method === 'GET') { A.reply(res, 200, { v: VERSION, rules: RULES_VERSION }); return true; }
   if (url !== '/api/tx' || req.method !== 'POST') return false;
   A.readBody(req, function (err, body) {
     if (err || !body || typeof body !== 'object') return A.reply(res, 400, { error: '请求格式不对' });
     var who = A.whoIs(req), u = who && A.loadUser(who.user);
     if (!u) return A.reply(res, 401, { error: '登录已失效，请重新登录' });
     if (!TX) return A.reply(res, 503, { error: '服务器暂时不能处理兑换，请联系管理员。' });
-    if (body.v && body.v !== VERSION) return A.reply(res, 409, { error: '游戏已经更新了，请刷新页面后再操作。', update: true, v: VERSION });
+    if (body.rules ? body.rules !== RULES_VERSION : body.v && body.v !== VERSION) return A.reply(res, 409, { error: '游戏已经更新了，请刷新页面后再操作。', update: true, v: VERSION });
     var raw = u.save && u.save.data && u.save.data['hs-account-v1'];
     var acc = null; try { acc = JSON.parse(raw || 'null'); } catch (e) {}
     if (!acc || typeof acc !== 'object') return A.reply(res, 409, { error: '存档还没同步到服务器，请稍后再试。' });
@@ -101,4 +101,4 @@ A.use(function (req, res, url) {
 });
 
 var HOOKS = {};
-module.exports = { hook: function (k, fn) { HOOKS[k] = fn; }, VERSION: VERSION, TX: TX, engine: function () { return ENGINE; }, status: function () { return { v: VERSION, ok: !!TX, err: LOAD_ERR || undefined }; } };
+module.exports = { hook: function (k, fn) { HOOKS[k] = fn; }, VERSION: VERSION, RULES_VERSION: RULES_VERSION, TX: TX, engine: function () { return ENGINE; }, status: function () { return { v: VERSION, ok: !!TX, err: LOAD_ERR || undefined }; } };

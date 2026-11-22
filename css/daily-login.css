@@ -1,0 +1,13 @@
+.ci-box { width: min(480px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
+.ci-box h2 { margin: 4px 0; }
+.ci-box p { margin: 0; }
+.ci-calendar { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; min-height: 0; overflow-y: auto; }
+.ci-week { text-align: center; color: var(--pencil); font-size: 12px; padding: 2px 0; }
+.ci-day { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 48px; gap: 3px; border: 1px solid var(--rule); border-radius: 5px; background: var(--paper); }
+.ci-day b { font-size: 16px; font-weight: 500; }
+.ci-day small { min-height: 12px; font-size: 9px; color: var(--pencil); white-space: nowrap; }
+.ci-day.today { border: 2px solid var(--red); }
+.ci-day.signed { background: #e7eee0; }
+.ci-day.signed small { color: #47623b; }
+.ci-box .soc-foot { flex: 0 0 auto; }
+@media (max-height: 540px) { .ci-box { padding: 12px; gap: 6px; } .ci-day { min-height: 35px; gap: 0; } .ci-box h2 { font-size: 24px; } }
