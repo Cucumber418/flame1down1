@@ -32,7 +32,7 @@ var TX = (function () {
     TW_SHOP: [
       { k: 'floraJade', cost: 10 }, { k: 'kbDrop', cost: 10 }, { k: 'ppAsh', cost: 10 }, { k: 'ltOrb', cost: 10 }, { k: 'whFrost', cost: 10 }, { k: 'fruit2', cost: 60 }, { k: 'cap3', cost: 80 }, { k: 'evAny', cost: 150 }, { k: 'evReset', cost: 200 },
       { k: 'ivReroll', cost: 400 }, { k: 'natAny', cost: 2000 }, { k: 'e_pluto', cost: 3000, death: 1 }
-    ],
+    ], TOWER_MAX: 999,
     // 陆羽茶室大厅的茶室商店
     AUTO_PRICE: 1500, AUTO_MAX: 20, CAP_PRICE: [2000, 5000, 10000, 20000],
     // 温泉休息室
@@ -44,7 +44,7 @@ var TX = (function () {
     MM_COST: 10, MM_POOL_DAY: 100,
     // 基地（2026-10-31，取代茶室）：房型（r1 默认，其余 30000 能量买一次）和摆件（5000 能量一个，可以买无数个）；layer：floor 地板 / wall 墙壁
     BASE_ROOMS: { r1: { n: '星空甲板', price: 0 }, r2: { n: '海底穹顶', price: 30000 }, r3: { n: '沙海舰桥', price: 30000 }, r4: { n: '雪原树屋', price: 30000 } },
-    BASE_DECO: { d1: { n: 'Unicorn', price: 5000, layer: 'floor' }, d2: { n: 'OCT', price: 5000, layer: 'floor' }, d3: { n: 'Ace', price: 5000, layer: 'floor' }, d4: { n: 'May', price: 5000, layer: 'floor' },
+    BASE_DECO: { d12: { n: '圣诞树', price: 0, layer: 'floor', noShop: 1 }, d1: { n: 'Unicorn', price: 5000, layer: 'floor' }, d2: { n: 'OCT', price: 5000, layer: 'floor' }, d3: { n: 'Ace', price: 5000, layer: 'floor' }, d4: { n: 'May', price: 5000, layer: 'floor' },
       d5: { n: '叶粒种子发现纪念', price: 3000, layer: 'floor' }, d6: { n: '水臂乌贼发现纪念', price: 3000, layer: 'floor' }, d7: { n: '方头蘑菇发现纪念', price: 3000, layer: 'floor' },
       d8: { n: '精元转化仪', price: 10000, layer: 'floor' }, d9: { n: '明明画像', price: 5000, layer: 'wall' }, d10: { n: '留言板', price: 10000, layer: 'wall' },
       d11: { n: '第一届做题大王争霸赛冠军奖杯', price: 0, layer: 'wall', noShop: 1 } },   // d11：2026-11-02 冠军奖杯（邮件发给冠军，商城不卖）   // d8–d10：2026-11-01（精元转化仪点击打开孵化，留言板点击打开留言）   // d5–d7：2026-10-31 基地改版纪念
@@ -118,12 +118,12 @@ var TX = (function () {
     },
     // 先驱之塔代币商店：{ i } 第几件商品
     tower: function (acc, a, env) {
-      var x = D.TW_SHOP[a.i | 0], T = twRec(acc, env.now), I = items(acc);
-      if (!x || a.i !== (a.i | 0)) return no('没有这件商品');
-      if (num(T.tok) < x.cost || (x.death && (I.deathTok || 0) < x.death)) return no('代币不够。');
-      T.tok = num(T.tok) - x.cost; if (x.death) I.deathTok -= x.death;
-      var o = {}; o[x.k] = 1; give(acc, o);
-      return { ok: true, k: x.k };
+      var x = D.TW_SHOP[a.i | 0], T = twRec(acc, env.now), I = items(acc), n = cnt(a.n === undefined ? 1 : a.n, D.TOWER_MAX);
+      if (!x || !n || a.i !== (a.i | 0)) return no('没有这件商品');
+      if (num(T.tok) < x.cost * n || (x.death && (I.deathTok || 0) < x.death * n)) return no('代币不够。');
+      T.tok = num(T.tok) - x.cost * n; if (x.death) I.deathTok -= x.death * n;
+      var o = {}; o[x.k] = n; give(acc, o);
+      return { ok: true, k: x.k, n: n };
     },
     // 茶室商店：{ k: 'auto', n } 自律训练装置；{ k: 'cap' } 茶室精灵容量 +1
     tea: function (acc, a) {
@@ -136,10 +136,10 @@ var TX = (function () {
       }
       if (a.k === 'cap') {
         if (!acc.home) acc.home = { name: '陆羽茶室', mons: [] };
-        var c = Math.min(4, acc.home.cap || 0), p = D.CAP_PRICE[c];
-        if (!p) return no('已经扩到最大了');
+        var c = Math.min(4, acc.home.cap || 0), n = cnt(a.n === undefined ? 1 : a.n, 4-c), p = D.CAP_PRICE.slice(c,c+n).reduce(function (s,x) { return s+x; },0);
+        if (!n || !p) return no('已经扩到最大了');
         if (num(acc.energy) < p) return no('能量不足');
-        acc.energy = num(acc.energy) - p; acc.home.cap = c + 1;
+        acc.energy = num(acc.energy) - p; acc.home.cap = c + n;
         return { ok: true, k: 'cap', cost: p };
       }
       return no('没有这件商品');
@@ -184,15 +184,16 @@ var TX = (function () {
     spa: function (acc, a, env) {
       var S = spaRec(acc);
       if (a.k === 'juice') {
-        if (num(acc.energy) < D.SPA_JUICE.price) return no('能量不足');
-        acc.energy = num(acc.energy) - D.SPA_JUICE.price; S.juice = Math.max(env.now, S.juice || 0) + D.SPA_JUICE.min * 60000;
+        var n = cnt(a.n === undefined ? 1 : a.n, 99); if (!n) return no('数量不对');
+        if (num(acc.energy) < D.SPA_JUICE.price * n) return no('能量不足');
+        acc.energy = num(acc.energy) - D.SPA_JUICE.price * n; S.juice = Math.max(env.now, S.juice || 0) + D.SPA_JUICE.min * 60000 * n;
         return { ok: true, k: 'juice' };
       }
       if (a.k === 'slot') {
-        var p = spaSlotPrice(S.extra);
-        if (!p) return no('已经扩到最大了');
+        var e = S.extra || 0, n = cnt(a.n === undefined ? 1 : a.n,D.SPA_EXTRA_MAX-e), p = 0; for (var j=0;j<n;j++) p += spaSlotPrice(e+j);
+        if (!n || !p) return no('已经扩到最大了');
         if (num(acc.energy) < p) return no('能量不足');
-        acc.energy = num(acc.energy) - p; S.extra = (S.extra || 0) + 1;
+        acc.energy = num(acc.energy) - p; S.extra = (S.extra || 0) + n;
         return { ok: true, k: 'slot', cost: p };
       }
       if (a.k === 'bgm') {
@@ -207,7 +208,8 @@ var TX = (function () {
     // 三峡能源核心：把煤炭、铁矿换成能量（每天有上限）
     ore: function (acc, a, env) {
       var M0 = mineRec(acc, env.now), I = items(acc), left = D.MINE_CAP - (M0.ex || 0), got = 0, used = {};
-      ['m_fe', 'm_cu'].forEach(function (k) { var p = D.MINE_PRICE[k]; while ((I[k] || 0) > 0 && left >= p) { I[k]--; left -= p; got += p; used[k] = (used[k] || 0) + 1; } });
+      if (a.k !== undefined) { var p0 = D.MINE_PRICE[a.k], n0 = cnt(a.n, D.MINE_CAP); if (typeof p0 !== 'number' || !n0 || (I[a.k] || 0) < n0 || n0 * p0 > left) return no('矿石不足或已达今日上限'); I[a.k] -= n0; got = n0 * p0; used[a.k] = n0; left -= got; }
+      else ['m_fe', 'm_cu'].forEach(function (k) { var p = D.MINE_PRICE[k]; while ((I[k] || 0) > 0 && left >= p) { I[k]--; left -= p; got += p; used[k] = (used[k] || 0) + 1; } });
       if (!got) return no(left <= 0 ? '今天能换的能量已经到上限了，明天再来吧。' : '矿石不够换了。');
       M0.ex = (M0.ex || 0) + got; acc.energy = num(acc.energy) + got;
       return { ok: true, got: got, used: used, left: D.MINE_CAP - M0.ex };

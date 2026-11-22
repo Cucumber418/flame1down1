@@ -583,10 +583,12 @@ var GROW = (function () {
   TX.add('seedShop', function (a, args) {
     var F = farmRec(a), I = items(a);
     if (args.k === 'plot') {
-      var e = (F.extra | 0), price = PLOT_PRICE[e];
+      var e = (F.extra | 0), n = args.n === undefined ? 1 : int(args.n), price = 0;
+      if (!(n >= 1 && n <= FARM_EXTRA_MAX-e)) return no('田已经扩到最多了');
+      for (var j=0;j<n;j++) price += PLOT_PRICE[e+j];
       if (!(e < FARM_EXTRA_MAX) || !price) return no('田已经扩到最多了');
       if ((a.energy || 0) < price) return no('能量不足');
-      a.energy -= price; F.extra = e + 1; farmRec(a);
+      a.energy -= price; F.extra = e + n; farmRec(a);
       return { ok: true, k: 'plot', cost: price, n: farmN(a) };
     }
     var k = String(args.k || ''), n = int(args.n);

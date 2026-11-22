@@ -1,0 +1,15 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('fs'),vm=require('vm'),E=require('../server/tx').engine(),env={now:Date.parse('2026-11-22T04:00:00Z'),rand:()=>.5},copy=x=>JSON.parse(JSON.stringify(x));
+// The slider maximum must follow all currencies and cumulative expansion prices.
+const ctx=vm.createContext({window:{},document:{addEventListener(){},body:{}},MutationObserver:class{observe(){}}});vm.runInContext(fs.readFileSync(require.resolve('../js/ui/shop-ui.js'),'utf8'),ctx);const U=ctx.HSSHOP;
+assert.equal(U.max({limit:999,costs:[{have:6500,unit:3000},{have:2,unit:1}]}),2);assert.equal(U.max({limit:999,costs:[{have:9000,unit:3000},{have:1,unit:1}]}),1);
+assert.equal(U.max({limit:4,costs:[{have:8000,steps:[2000,5000,10000,20000]}]}),2);assert.equal(U.total({steps:[2000,5000,10000]},2),7000);assert.equal(U.max({limit:3,costs:[{have:999,unit:1}]}),3);assert.equal(U.max({limit:20,costs:[{have:1,unit:2}]}),0);
+function a(){return {energy:200000,items:{deathTok:2,m_cu:30,m_fe:20,xmasBell:4},tower:{tok:6500},home:{cap:0},farm:{extra:0,plots:[]},spa:{u:[],extra:0,got:{}},story:{school:{done:true},river:{done:true},jiuquan:{done:true}},christmasStory:{cabinOpen:true,cabinIntro:true}};}
+let x=a(),r=E.TX.run(x,'tower',{i:11,n:2},env);assert(r.ok);assert.equal(x.tower.tok,500);assert.equal(x.items.deathTok,0);assert.equal(x.items.e_pluto,2);
+for(const [op,args,field,want,spent] of [['tea',{k:'cap',n:3},'home',3,17000],['spa',{k:'slot',n:3},'spa',3,39000],['seedShop',{k:'plot',n:2},'farm',2,6000]]){x=a();r=E.TX.run(x,op,args,env);assert(r.ok);assert.equal(x[field][field==='home'?'cap':'extra'],want);assert.equal(x.energy,200000-spent);}
+x=a();r=E.TX.run(x,'spa',{k:'juice',n:4},env);assert(r.ok);assert.equal(x.energy,198000);assert.equal(x.spa.juice,env.now+4*30*60000);
+x=a();assert(E.TX.run(x,'ore',{k:'m_cu',n:20},env).ok);assert.equal(x.items.m_cu,10);assert.equal(x.energy,203000);const before=copy(x);assert(!E.TX.run(x,'ore',{k:'m_fe',n:1},env).ok);assert.deepEqual(copy(x),before);
+x=a();assert(E.TX.run(x,'christmas',{a:'giftBuy',id:'tree',n:3},env).ok);assert.equal(x.items.xmasBell,1);assert.equal(x.baseInv.deco.d12,3);assert(!E.TX.run(x,'baseBuy',{t:'deco',k:'d12',n:1},env).ok);assert(!E.TX.run(x,'christmas',{a:'giftBuy',id:'tree',n:2},env).ok);assert.equal(x.baseInv.deco.d12,3);
+for(const [op,args] of [['tower',{i:11,n:3}],['tea',{k:'cap',n:5}],['spa',{k:'slot',n:5}],['seedShop',{k:'plot',n:3}]]){x=a();assert(!E.TX.run(x,op,args,env).ok);assert.equal(x.energy,200000);assert.equal(x.tower.tok,6500);}
+for(const bad of [0,-1,1.5,'2',NaN,Infinity]){for(const [op,args] of [['tower',{i:0,n:bad}],['tea',{k:'cap',n:bad}],['spa',{k:'slot',n:bad}],['seedShop',{k:'plot',n:bad}],['christmas',{a:'giftBuy',id:'tree',n:bad}]]){x=a();assert(!E.TX.run(x,op,args,env).ok);assert.equal(x.energy,200000);assert.equal(x.items.xmasBell,4);}}
+console.log('PASS shop slider: multi-currency and stepped-price maxima; bulk tower/expansions/juice/ore; daily limits; Vanber furniture; insufficient resources and invalid quantities');

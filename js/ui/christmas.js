@@ -62,14 +62,15 @@ var HSCHRISTMAS = (function () {
       var cards = [
         ['helena', '海伦娜星', '雪夜城堡、秘密小屋与杂货铺', 'images/planets/helena_v2.png'],
         ['gifts', 'Vanber的圣诞礼物', '完成每日小任务，领取圣诞礼物', CHARS.vanber_christmas],
-        ['shop', 'Threego的苏格兰杂货铺', '用圣诞铃铛与拐杖糖兑换道具', CHARS.threego_christmas]
+        ['shop', 'Threego的苏格兰杂货铺', '用圣诞铃铛与拐杖糖兑换道具', CHARS.threego_christmas],
+        ['knight', '讨伐鲁普雷希特骑士', '挑战召唤精灵，赢取拐杖糖', CHARS.bttp_christmas]
       ];
-      el.innerHTML = header + wallet(a) + '<section class="xmas-cards">' + cards.map(function (c) { var allowed = open && (c[0] === 'helena' || CHRISTMAS.sceneOpen(a, c[0] === 'gifts' ? 1 : 2)); return '<button type="button" class="xmas-card" ' + (c[0] === 'helena' ? 'data-helena' : 'data-xmas-open="' + c[0] + '"') + (allowed ? '' : ' disabled') + '><span class="tape l"></span><img src="' + c[3] + '" alt=""><span><b>' + c[1] + '</b><small>' + c[2] + '</small><em>' + (allowed ? '前往 ›' : !open ? '完成地球主线后解锁' : c[0] === 'gifts' ? '先带上巴洛，敲开城堡大门' : '先完成Vanber的一项任务') + '</em></span></button>'; }).join('') + '</section><p class="xmas-coming hint">更多圣诞活动待补充</p>';
+      el.innerHTML = header + wallet(a) + '<section class="xmas-cards">' + cards.map(function (c) { var allowed = open && (c[0] === 'helena' || (c[0] === 'knight' ? CHRISTMAS.wonderOpen(a) : CHRISTMAS.sceneOpen(a, c[0] === 'gifts' ? 1 : 2))); return '<button type="button" class="xmas-card" ' + (c[0] === 'helena' ? 'data-helena' : c[0] === 'knight' ? 'data-xmas-raid' : 'data-xmas-open="' + c[0] + '"') + (allowed ? '' : ' disabled') + '><span class="tape l"></span><img src="' + c[3] + '" alt=""><span><b>' + c[1] + '</b><small>' + c[2] + '</small><em>' + (allowed ? '前往 ›' : !open ? '完成地球主线后解锁' : c[0] === 'knight' ? '先接通杂货铺角落的管道' : c[0] === 'gifts' ? '先带上巴洛，敲开城堡大门' : '先完成Vanber的一项任务') + '</em></span></button>'; }).join('') + '</section><p class="xmas-coming hint">更多圣诞活动待补充</p>';
       return;
     }
     if (panel === 'gifts') {
       var r = CHRISTMAS.read(a, Date.now()), all = CHRISTMAS.TASKS.every(function (t) { return (r.progress[t.id] || 0) >= t.n; });
-      el.innerHTML = header + wallet(a) + npc(panel) + '<div class="xmas-scroll xmas-task-list">' + CHRISTMAS.TASKS.map(function (t) {
+      el.innerHTML = header + wallet(a) + npc(panel) + '<div class="xmas-vanber-shop"><b>礼物兑换</b><article class="shop-it"><img src="images/base/christmas_tree.png" alt=""><b>圣诞树</b><button data-vb-buy="tree">查看</button></article></div><div class="xmas-scroll xmas-task-list">' + CHRISTMAS.TASKS.map(function (t) {
         var p = Math.min(t.n, r.progress[t.id] || 0), claimed = r.claimed[t.id];
         return '<article class="xmas-task"><div><b>' + t.t + '</b><small>' + p + ' / ' + t.n + '</small><progress value="' + p + '" max="' + t.n + '"></progress>' + reward(t.bell, t.candy) + '</div><button class="btn' + (p >= t.n && !claimed ? ' primary' : '') + '" data-xmas-claim="' + t.id + '"' + (claimed || p < t.n || busy ? ' disabled' : '') + '>' + (claimed ? '已领取' : p >= t.n ? '领取' : '未完成') + '</button></article>';
       }).join('') + '</div><div class="xmas-all"><span><b>全部完成大礼包</b>' + reward(CHRISTMAS.ALL.bell, CHRISTMAS.ALL.candy) + '</span><button class="btn primary" data-xmas-all' + (r.all || !all || busy ? ' disabled' : '') + '>' + (r.all ? '已领取' : '领取礼包') + '</button></div><p class="hint xmas-reset">每日零点（北京时间）刷新</p>';
@@ -213,6 +214,7 @@ var HSCHRISTMAS = (function () {
   }
   function redraw() { var el = document.getElementById('pg-christmas'); if (el && !el.hidden) HSACC.go('christmas'); }
   document.addEventListener('click', function (e) {
+    if (e.target.closest('[data-xmas-raid]')) { if(CHRISTMAS.knightOpen(HSACC.acc()))openKnight();else HSACC.goWonderland(); return; }
     if (e.target.closest('[data-xmas-pipes]')) { openPipes(); return; }
     if (e.target.closest('[data-xmas-knight]')) { openKnight(); return; }
     var door = e.target.closest('[data-xmas-door]');

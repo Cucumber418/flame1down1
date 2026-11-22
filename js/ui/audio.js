@@ -174,7 +174,7 @@
     if (!menu) return;
     var any = cfg.music || cfg.ui;
     var fxOn = window.HSFX ? HSFX.on() : true;
-    menu.innerHTML = '<b>声音</b>' +
+    menu.innerHTML = '<b>界面</b><label class="snd-row"><input type="checkbox" id="set-christmas-theme"' + (window.HSSEASON && HSSEASON.on() ? ' checked' : '') + '> 圣诞主题</label><b class="set-h">声音</b>' +
       '<label class="snd-row"><input type="checkbox" id="snd-music"' + (cfg.music ? ' checked' : '') + '> 战斗音乐</label>' +
       '<label class="snd-row"><input type="checkbox" id="snd-ui"' + (cfg.ui ? ' checked' : '') + '> 界面音乐</label>' +
       '<label class="snd-row snd-vol' + (any ? '' : ' off') + '">音量 <input type="range" id="snd-vol" min="0" max="100" step="5" value="' + cfg.vol + '"' + (any ? '' : ' disabled') + '><output id="snd-out">' + cfg.vol + '</output></label>' +
@@ -206,6 +206,7 @@
         if (el.dataset.k === 'ui') { el.dataset.k = ''; if (cur === 'ui') sync(true, 300); }
         return;
       }
+      if (e.target.id === 'set-christmas-theme') { if(window.HSSEASON)HSSEASON.set(e.target.checked); return; }
       if (e.target.id === 'set-fx') { if (window.HSFX) HSFX.set(e.target.checked); return; }
       if (e.target.id === 'set-shake') { if (window.HSFX) HSFX.setShake(e.target.checked); return; }
       if (e.target.id !== 'snd-music' && e.target.id !== 'snd-ui') return;

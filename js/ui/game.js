@@ -3338,10 +3338,7 @@
       [['离开', null], ['兑换能量', exchangeOre, !(cu || fe) || left <= 0], !drill() ? ['参加钻头考核', function () { startQuiz(false); }] : ['修复钻头', function () { startQuiz(true); }, drill().dur >= DRILL_MAX]]);
   }
   function exchangeOre() {
-    txRun('ore', {}, function (r) {   // 规则在 js/engine/tx.js
-      renderRes();
-      toast('交出了' + Object.keys(r.used).map(function (k) { return MATS[k].name + ' ×' + r.used[k]; }).join('、') + '，换到能量 ×' + fmt(r.got) + '。今天还能换 ' + fmt(r.left) + '。');
-    });
+    var old=$('ore-shop');if(old)old.remove();var d=document.createElement('div');d.className='soc-dlg';d.id='ore-shop';d.innerHTML='<section class="soc-box" role="dialog" aria-modal="true" aria-label="矿石换能量"><h2>矿石换能量</h2><p class="hint">今日还能兑换 '+fmt(Math.max(0,TX.D.MINE_CAP-mineRec().ex))+' 能量</p><div class="shop-grid">'+['m_cu','m_fe'].map(function(k){return '<article class="shop-it">'+H.itemIcon(k)+'<b>能量 ×'+TX.D.MINE_PRICE[k]+'</b><button data-orebuy="'+k+'">兑换</button></article>';}).join('')+'</div><div class="soc-foot"><button class="btn" data-oreclose>关闭</button></div></section>';document.body.appendChild(d);d.addEventListener('click',function(e){if(e.target.closest('[data-oreclose]')||e.target===d)d.remove();});
   }
   var REPAIR = { n: 5, pass: 3, hard: 1 };
   function startQuiz(rp) {   // rp：修复钻头（5 题对 3 题）；否则是领钻头的考核（10 题对 7 题）。抽题、判定都由服务器做（js/engine/world.js）
@@ -4073,7 +4070,7 @@
   function regionOpen(R) { if (R.planet === 'helena') return PVE.regionOpen(acc, R); if (R.record) return prog('flora7').done; return R.planet === 'flora' ? prog('flora1').done : planetOpen(planetOf(R.planet)); }
   function fightChristmasKnight(slot, id) {
     if (ex.fighting || pveBusy || !CHRISTMAS.knightOpen(acc)) return;
-    page = 'explore'; ex.planet = 'helena'; ex.region = 'hl_wonderland'; ex.view = 'field';
+    page = 'explore'; ex.planet = 'helena'; ex.region = 'hl_wonderland'; ex.view = 'field'; renderTop();
     var args = { slot: slot, id: id };
     function finish(rep, res) {
       bossBack('field', renderField); save(); renderRes();
@@ -6824,6 +6821,61 @@
       '<p class="hint">活动' + mmLeftText() + (open ? ' · 明明代币 ' + fmt(acc.items.mmTok || 0) : ' · 先完成古城防卫部的活动任务「明明教官的试炼」') + '</p>' +
       '<div class="soc-foot">' + (open ? '<button type="button" class="btn" data-mmlog="gacha">代币抽奖</button><button type="button" class="btn primary" data-mmlog="arena">传送到全息作战场地</button>' : '<button type="button" class="btn primary" data-mmlog="task">去古城防卫部</button>') + '</div></article>';
   }
+  // 所有商城使用同一份详情报价，确认前重新读取余额和限额
+  function shopOffer(kind, key, selection) {
+    if (!ready()) return null;
+    selection = selection || {};
+    var I = acc.items || {}, D = TX.D, offer = {limit:1,costs:[],choices:[]}, op, args = {}, k = key;
+    function pay(k, unit, have, label, steps) { offer.costs.push({key:k,unit:unit,have:Math.max(0,have || 0),label:label || itemName(k),steps:steps}); }
+    function energy(price, steps) { pay('energy',price,acc.energy,'能量',steps); }
+    function item(k) { var x = ITEMS[k] || USE_ITEMS[k] || MATS[k] || CROPS[k] || SHOP_X[k], info = itemInfo(k); offer.name = itemName(k); offer.icon = H.itemIcon(k); offer.desc = info ? info.use : x && x.d || ''; offer.owned = I[k] || 0; offer.give = {}; offer.give[k] = 1; }
+    function choice(id,label,list,value) { offer.choices.push({id:id,label:label,values:list,value:value}); }
+    if (kind === 'shop') { if (D.SHOP.indexOf(k)<0) return null; item(k); var x = goods(k); energy(x.price); offer.limit=D.SHOP_MAX; op='shop'; args.k=k; }
+    else if (kind === 'token') { var x=D.TOKEN_SHOP.find(function(x){return x.k===k;});if(!x)return null;item(k);pay('tokens',x.price,tokens(),'竞技代币');offer.limit=D.TOKEN_MAX;op='token';args.k=k; }
+    else if (kind === 'tower') { var x=D.TW_SHOP[+k];if(!x)return null;item(x.k);pay('twTok',x.cost,twRec().tok,'先驱代币');if(x.death)pay('deathTok',x.death,I.deathTok);offer.limit=D.TOWER_MAX;op='tower';args.i=+k; }
+    else if (kind === 'christmas') { var x=CHRISTMAS.SHOP.find(function(x){return x.id===k;});if(!x)return null;item(x.k);pay(x.coin,x.price,I[x.coin]);offer.limit=999;op='christmas';args={a:'buy',id:k}; }
+    else if (kind === 'vanber') { offer.name='圣诞树';offer.icon='<img src="images/base/christmas_tree.png" alt="">';offer.desc='圣诞节限定地板家具，兑换后在基地的编辑界面摆放';offer.owned=decoOwn('d12');offer.limit=999;pay('xmasBell',1,I.xmasBell);op='christmas';args={a:'giftBuy',id:'tree'}; }
+    else if (kind === 'seed') { op='seedShop';args.k=k;if(k==='plot'){var f=farm(),steps=GROW.PLOT_PRICE.slice(f.extra,GROW.FARM_EXTRA_MAX);offer.name='额外种植栏位';offer.icon=H.itemIcon('s_herb');offer.desc='增加一块种植田，价格随已购买栏位递增';offer.limit=steps.length;energy(0,steps);offer.owned=farmN();}else{if(GROW.SEED_SHOP.indexOf(k)<0)return null;item(k);offer.desc=SEEDS[k].d;offer.limit=GROW.SEED_SHOP_MAX;energy(GROW.SEED_PRICE);} }
+    else if (kind === 'forge') { var x=forgeOf(k);if(!x)return null;var out=Object.keys(x.out)[0];item(out);offer.name=forgeOutText(x,1);offer.give=x.out;offer.limit=FORGE_Q;Object.keys(x.need).forEach(function(m){pay(m,x.need[m],I[m]);});op='forge';args.id=k; }
+    else if (kind === 'gx') {
+      var from=GX_SRC.indexOf(selection.from)>=0?selection.from:gxState().from;
+      var to=GX_KEYS.indexOf(selection.to)>=0&&selection.to!==from?selection.to:GX_KEYS.filter(function(x){return x!==from;})[0];
+      item(to);offer.name='特产互换';offer.desc='每'+GX_IN+'个'+itemName(from)+'兑换'+gxOut(from)+'个'+itemName(to);offer.give[to]=gxOut(from);offer.limit=FORGE_Q;pay(from,GX_IN,I[from]);op='gx';args={from:from,to:to};
+      choice('from','拿出',GX_SRC.map(function(x){return {k:x,n:itemName(x)};}),from);choice('to','换成',GX_KEYS.filter(function(x){return x!==from;}).map(function(x){return {k:x,n:itemName(x)};}),to);
+    }
+    else if (kind === 'summon') {
+      var x=SUMMON.TOK_SHOP.find(function(x){return x.k===k;}),B=SUMMON.banner(Date.now());if(!x)return null;
+      var ins=B.ins.indexOf(selection.ins)>=0?selection.ins:B.ins.indexOf(ex.sumIns)>=0?ex.sumIns:B.ins[0], out=k==='core'?'g_core':k==='leaf'?B.leaf:ins;
+      item(out);offer.limit=Math.min(99,x.month?Math.max(0,x.month-SUMMON.boughtM(acc,k,Date.now())):99);pay('sumTok',x.price,I.sumTok);if(k==='leaf')offer.give[out]=100;
+      if(k==='ins'){offer.name='限定刻印 · '+SUMMON.INS[ins].name;offer.desc=SUMMON.insDesc(ins);choice('ins','选择刻印',B.ins.map(function(v){return {k:v,n:SUMMON.INS[v].name};}),ins);}
+      if(x.month)offer.note='本月剩余 '+offer.limit+' 次';op='sumShop';args={k:k,ins:ins};
+    }
+    else if (kind === 'base') { var q=k.split('|'),type=q[0],id=q[1];if(type==='room'){var x=D.BASE_ROOMS[id];if(!x)return null;offer.name=x.n;offer.icon='<img src="'+BASE_UI[id].img+'" alt="">';offer.desc='基地房型，购买后可在编辑基地中切换';offer.limit=roomOwned(id)?0:1;offer.reason=roomOwned(id)?'已拥有此房型':'';energy(x.price);}else{var x=D.BASE_DECO[id];if(!x||x.noShop)return null;offer.name=x.n;offer.icon='<img src="'+DECO_IMG[id]+'" alt="">';offer.desc=(x.layer==='wall'?'墙壁摆件':'地板摆件')+'，在编辑基地中摆放';offer.owned=decoOwn(id);offer.limit=20;energy(x.price);}op='baseBuy';args={t:type,k:id}; }
+    else if (kind === 'tea') { op='tea';args.k=k;if(k==='auto'){item('auto');offer.name=TEA_SHOP.auto.name;offer.desc=TEA_SHOP.auto.d;offer.limit=D.AUTO_MAX;energy(D.AUTO_PRICE);}else if(k==='cap'){var steps=D.CAP_PRICE.slice(Math.min(4,(acc.home&&acc.home.cap)||0));offer.name='基地精灵容量 +1';offer.icon=H.itemIcon('auto');offer.desc='增加可同时展示的精灵数量，价格逐次递增';offer.limit=steps.length;offer.owned=homeMax();energy(0,steps);}else return null; }
+    else if (kind === 'spa') { op='spa';args.k=k;offer.icon='<span class="shop-symbol">'+(k==='juice'?'🍊':'♨')+'</span>';if(k==='juice'){offer.name='经验翻倍橘子汁';offer.desc='每杯增加'+D.SPA_JUICE.min+'分钟温泉经验翻倍时长，可叠加';offer.limit=99;energy(D.SPA_JUICE.price);}else{var e=(acc.spa&&acc.spa.extra)||0,steps=[];for(var i=e;i<D.SPA_EXTRA_MAX;i++)steps.push(TX.spaSlotPrice(i));offer.name='泡温泉精灵栏位 +1';offer.desc='扩建温泉栏位，价格逐次递增';offer.limit=steps.length;energy(0,steps);} }
+    else if (kind === 'spaBgm') { var x=SPA_BGM.find(function(x){return x.k===k;});if(!x)return null;offer.name=HSTRACK(k);offer.icon='<span class="shop-symbol">♪</span>';offer.desc='解锁后可在温泉中播放';offer.limit=spaBgmOwn(k)?0:1;energy(x.price);op='spa';args={k:'bgm',m:k}; }
+    else if (kind === 'endless') { var R=EN.run(acc),P=R&&R.pend,x=P&&P.t==='shop'&&P.list[+k];if(!x)return null;var it=EN.IT[x.k];offer.name=x.k==='heal'?'补给':it.n;offer.icon=x.k==='heal'?'<span class="shop-symbol">❤</span>':H.itemIcon(x.k);offer.desc=x.k==='heal'?'全员恢复'+Math.round(x.n*100)+'%最大体力':it.d;offer.limit=x.sold||it&&it.kind==='abil'&&R.abil.indexOf(x.k)>=0?0:1;offer.reason=x.sold?'已售出':'';pay('enGem',x.price,R.gems,'无尽宝石');op='enBuy';args.i=+k; }
+    else if (kind === 'ore') { var p=D.MINE_PRICE[k];if(!p)return null;offer.name='能量 ×'+p;offer.icon=H.itemIcon(k);offer.desc='每块'+itemName(k)+'兑换'+p+'能量';offer.limit=Math.max(0,Math.floor((D.MINE_CAP-mineRec().ex)/p));offer.note='今日最多还能换 '+offer.limit+' 块矿石';pay(k,1,I[k]);op='ore';args.k=k; }
+    else return null;
+    offer.buy=function(n,ok,fail){txRun(op,Object.assign({},args,{n:n}),ok,fail);};
+    offer.after=function(){
+      renderRes();
+      if(kind==='vanber')goChristmas('gifts');
+      else if(kind==='christmas')goChristmas('shop');
+      else if(kind==='token'){var d=$('tkshop');if(d)d.querySelector('.tkshop').innerHTML=tokenShopHTML();}
+      else if(kind==='seed')seedShopRefresh();
+      else if(kind==='forge'||kind==='gx'){if(kind==='gx'){ex.gxFrom=args.from;ex.gxTo=args.to;}renderForge();}
+      else if(kind==='tower')renderExplore();
+      else if(kind==='summon'){if(args.ins)ex.sumIns=args.ins;renderSummon();}
+      else if(kind==='base')baseShopRefresh();
+      else if(kind==='tea')renderTeaShop();
+      else if(kind==='spa'||kind==='spaBgm'){renderSpa();if($('spa-room'))openSpaRoom();}
+      else if(kind==='endless')renderEndless();
+      else if(kind==='shop'){renderShop();renderRename();}
+      else if(kind==='ore')exchangeOre();
+    };
+    return offer;
+  }
   /* ---------- 商城：荆门 · 物资仓储 ---------- */
   var shopQty = {};
   // 不在战斗里用的商品
@@ -7014,7 +7066,7 @@
       '<article class="spa-good"><b>经验翻倍橘子汁</b><p>冰镇的橘子汁。喝下后 ' + SPA_JUICE.min + ' 分钟内，温泉经验翻倍（可以叠加时长）。</p>' + (juiceOn() ? '<p class="hint">生效中，还剩 ' + hms(acc.spa.juice - Date.now()) + '</p>' : '') +
         '<button type="button" class="btn primary" data-spabuy="juice"' + ((acc.energy || 0) >= SPA_JUICE.price ? '' : ' disabled') + '>' + fmt(SPA_JUICE.price) + ' 能量 · 来一杯</button></article>' +
       '<article class="spa-good"><b>泡温泉精灵栏位 +1</b><p>现在 ' + spaN() + ' 个栏位，最多 ' + (SPA_BASE + SPA_EXTRA_MAX) + ' 个。每次扩建的价格是上一次的 3 倍。</p>' +
-        (price ? '<button type="button" class="btn primary" data-spabuy="slot"' + ((acc.energy || 0) >= price ? '' : ' disabled') + '>' + fmt(price) + ' 能量 · 扩建</button>' : '<button type="button" class="btn" disabled>已经扩建到最多了</button>') + '</article>' +
+        (price ? '<button type="button" class="btn primary" data-spabuy="slot"' + ((acc.energy || 0) >= price ? '' : ' disabled') + '>' + fmt(price) + ' 能量 · 扩建</button>' : '<button type="button" class="btn" data-spabuy="slot" disabled>已经扩建到最多了</button>') + '</article>' +
       '<article class="spa-good"><b>温泉音乐</b><p>选一首在温泉里放的曲子。</p><div class="spa-bgms">' + SPA_BGM.map(function (x) {
         var own = spaBgmOwn(x.k), cur = spaBgm() === x.k;
         return own ? '<button type="button" class="btn' + (cur ? ' primary' : '') + '" data-spabgm="' + x.k + '">' + (cur ? '♪ ' : '') + HSTRACK(x.k) + (cur ? ' · 播放中' : '') + '</button>'
@@ -7691,10 +7743,10 @@
     r3: { img: 'images/base/room3.jpg', floor: [[[33,47],[67,47],[85,61],[88,70],[90,82],[91,100],[9,100],[10,82],[12,70],[15,61]]], wall: [[[17,8],[29,2],[25,20],[23,43],[17,43]],[[71,2],[83,8],[83,43],[77,43],[75,20]],[[4,36],[15,30],[15,58],[11,74],[5,70]],[[85,30],[96,36],[95,70],[89,74],[85,58]]], block: [[[45,47],[55,47],[55,56],[45,56]]], mons: [[22,88],[47,82],[74,72],[32,68],[62,64],[80,92],[18,74]] },
     r4: { img: 'images/base/room4.jpg', floor: [[[24,42],[31,34],[45,30],[58,29],[70,32],[80,39],[86,46],[90,56],[92,70],[90,82],[84,90],[72,94],[66,100],[22,100],[20,92],[13,76],[10,66],[16,60],[22,58],[26,52]]], wall: [[[22,8],[40,4],[60,0],[82,0],[86,12],[88,30],[85,40],[80,37],[70,30],[58,27],[45,28],[30,32],[24,37],[22,26]]], block: [], mons: [[26,90],[74,88],[80,66],[26,68],[62,40],[44,42],[20,78]] }
   };
-  var DECO_IMG = { d1: 'images/base/deco1.webp', d2: 'images/base/deco2.webp', d3: 'images/base/deco3.webp', d4: 'images/base/deco4.webp', d5: 'images/base/deco5.webp', d6: 'images/base/deco6.webp', d7: 'images/base/deco7.webp', d8: 'images/base/deco8.webp', d9: 'images/base/deco9.webp', d10: 'images/base/deco10.webp', d11: 'images/base/deco11.webp' };
+  var DECO_IMG = { d12: 'images/base/christmas_tree.png', d1: 'images/base/deco1.webp', d2: 'images/base/deco2.webp', d3: 'images/base/deco3.webp', d4: 'images/base/deco4.webp', d5: 'images/base/deco5.webp', d6: 'images/base/deco6.webp', d7: 'images/base/deco7.webp', d8: 'images/base/deco8.webp', d9: 'images/base/deco9.webp', d10: 'images/base/deco10.webp', d11: 'images/base/deco11.webp' };
   // 可以点的摆件（2026-11-01）：发现纪念弹出说明；精元转化仪打开孵化；留言板打开留言
   var DECO_ACT = { d1: 'char', d2: 'char', d3: 'char', d4: 'char', d5: '叶粒种子', d6: '水臂乌贼', d7: '方头蘑菇', d8: 'nursery', d9: 'mm', d10: 'msg', d11: 'cup' };
-  var DECO_SIZE = { d8: 1.75 };   // 精元转化仪画得大一些（2026-11-01）
+  var DECO_SIZE = { d8: 1.75, d12: 1.75 };   // 精元转化仪画得大一些（2026-11-01）
   // 明明画像的面板：大图 + 荣誉（2026-11-01）
   var MM_HONORS = ['军衔：少校', '湖北理科高考优胜者', '华中科技大学光学与电子信息学院优秀毕业生', '荆楚号古城防卫部总教官'];
   function mmPortraitBody() {
@@ -7880,7 +7932,7 @@
       '<h3 class="sec bs-h">房型</h3><div class="bs-rooms">' + Object.keys(TX.D.BASE_ROOMS).map(function (k) {
         var R = TX.D.BASE_ROOMS[k], own = roomOwned(k);
         return '<article class="bs-room"><span class="tape r"></span><img src="' + BASE_UI[k].img + '" alt=""><div class="bs-txt"><b>' + esc(R.n) + '</b>' +
-          (own ? '<span class="hint">' + (R.price ? '已拥有' : '默认房型') + '</span>' : '<button type="button" class="btn primary" data-bbuy="room|' + k + '"' + (acc.energy >= R.price ? '' : ' disabled') + '>' + (acc.energy >= R.price ? '购买 · ' + fmt(R.price) + ' 能量' : '能量不足（' + fmt(R.price) + '）') + '</button>') + '</div></article>';
+          (own ? '<button type="button" class="btn" data-bbuy="room|' + k + '" disabled>' + (R.price ? '已拥有' : '默认房型') + '</button>' : '<button type="button" class="btn primary" data-bbuy="room|' + k + '"' + (acc.energy >= R.price ? '' : ' disabled') + '>' + (acc.energy >= R.price ? '购买 · ' + fmt(R.price) + ' 能量' : '能量不足（' + fmt(R.price) + '）') + '</button>') + '</div></article>';
       }).join('') + '</div>' +
       '<h3 class="sec bs-h">摆件</h3><div class="shop-grid">' + Object.keys(TX.D.BASE_DECO).filter(function (k) { return !TX.D.BASE_DECO[k].noShop; }).map(function (k) {
         var X = TX.D.BASE_DECO[k], n = q(k), cost = X.price * n, ok = acc.energy >= cost;
@@ -7915,7 +7967,7 @@
         '<button type="button" class="btn primary" data-tsbuy="auto"' + (ok ? '' : ' disabled') + '>' + (ok ? '兑换 · ' + fmt(cost) : '能量不足') + '</button></div></article>' +
       '<article class="shop-it"><span class="tape r"></span><span class="it-ic ts-ic" aria-hidden="true">＋</span><div class="si-txt"><b>基地精灵容量 +1</b><p class="hint">基地里能同时展示的精灵多 1 只。基础 ' + HOME_BASE + ' 只，最多买 4 次，价格依次 ' + CAP_PRICE.map(fmt).join(' / ') + ' 能量。</p>' +
         '<p class="si-own">现在能展示 <b>' + homeMax() + '</b> 只 · 已购买 <b>' + nCap + '</b> / 4</p></div>' +
-        '<div class="si-buy">' + (capPrice ? '<span class="si-price">' + fmt(capPrice) + ' <small>能量</small></span><button type="button" class="btn primary" data-tsbuy="cap"' + (acc.energy >= capPrice ? '' : ' disabled') + '>' + (acc.energy >= capPrice ? '扩容' : '能量不足') + '</button>' : '<span class="hint">已经扩到最大（' + homeMax() + ' 只）了</span>') + '</div></article>' +
+        '<div class="si-buy">' + (capPrice ? '<span class="si-price">' + fmt(capPrice) + ' <small>能量</small></span><button type="button" class="btn primary" data-tsbuy="cap"' + (acc.energy >= capPrice ? '' : ' disabled') + '>' + (acc.energy >= capPrice ? '扩容' : '能量不足') + '</button>' : '<button type="button" class="btn" data-tsbuy="cap" disabled>已经扩到最大（' + homeMax() + ' 只）了</button>') + '</div></article>' +
       '</div>';
   }
   function teaShopBuy(k) {
@@ -8995,6 +9047,7 @@
       var f = form({ sid: raw.sid, lv: lv, shiny: shinyV(raw.shiny) });
       return { id: raw.sid, lv: lv, moves: mv, nick: f.name, img: f.img, shiny: shinyV(raw.shiny), ev: ev, iv: iv, nat: raw.nat && NATURES[raw.nat] ? raw.nat : null, emblem: raw.emblem && EMBLEMS[raw.sid] ? EMBLEMS[raw.sid].m : null };
     },
+    shopOffer: shopOffer,
     christmasTx: function (args, ok, fail) { txRun('christmas', args, ok, fail); },
     goChristmas: goChristmas,
     goHelena: function (scene) { if (!PVE.helenaOpen(acc)) return; ex.planet = 'helena'; page = 'explore'; planetMapEnter('helena', 'hl_castle', scene == null ? 0 : scene, null); renderTop(); },

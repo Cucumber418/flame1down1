@@ -90,6 +90,13 @@ var CHRISTMAS = (function () {
       a.christmasStory.shopOpen = true; return { ok: true };
     }
     if (args.a === 'shopIntro') { if (!sceneOpen(a, 2)) return { ok: false, err: '先完成Vanber的一项任务' }; a.christmasStory.shopIntro = true; return { ok: true }; }
+    if (args.a === 'giftBuy') {
+      if (!sceneOpen(a,1) || !story(a).cabinIntro) return {ok:false,err:'先去见Vanber'};
+      var n=args.n,I=a.items || {};if(args.id!=='tree'||!Number.isInteger(n)||n<1||n>999)return {ok:false,err:'兑换数量不对'};
+      if((I.xmasBell || 0)<n)return {ok:false,err:'圣诞铃铛不足'};
+      I.xmasBell-=n;a.items=I;var B=a.baseInv || (a.baseInv={});if(!B.deco)B.deco={};B.deco.d12=(B.deco.d12 || 0)+n;
+      return {ok:true,k:'d12',n:n};
+    }
     if (args.a === 'buy') {
       if (!sceneOpen(a, 2) || !story(a).shopIntro) return { ok: false, err: '先完成Vanber的一项任务，再去见杂货铺的主人' };
       var s = SHOP.filter(function (x) { return x.id === args.id; })[0], n = args.n;

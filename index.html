@@ -16,8 +16,10 @@
 <link rel="stylesheet" href="css/planet-map.css?v=20261122-1">
 <link rel="stylesheet" href="css/storage-layout.css?v=20261115-8">
 <link rel="stylesheet" href="css/estate-view.css?v=20261116-1">
+<link rel="stylesheet" href="css/shop-ui.css?v=20261122-1">
 <link rel="stylesheet" href="css/christmas.css?v=20261122-7">
 <link rel="stylesheet" href="css/daily-login.css?v=20261122-2">
+<link rel="stylesheet" href="css/season-theme.css?v=20261122-1">
 </head>
 <body>
 
@@ -200,6 +202,7 @@
 
 <!-- 脚本按顺序加载：数据 → 对战引擎 → 界面。顺序不能乱 -->
 <!-- cloud.js 先加载：用服务器打开时先登录、取回存档，再按下面的顺序加载游戏脚本（数据 → 引擎 → 界面，顺序不能调换） -->
+<script src="js/ui/season-theme.js?v=20261122-1"></script>
 <script src="js/ui/viewport.js?v=20261116-12"></script>
 <script src="js/ui/land.js?v=20261116-12"></script>
 <script src="js/ui/skill-inspect.js?v=20261118-1"></script>
@@ -215,7 +218,7 @@ CLOUD.boot([
   'js/data/creatures.js',
   'js/data/story.js',
   'js/data/mail.js',
-  'js/data/changelog.js?v=20261122-9',
+  'js/data/changelog.js?v=20261122-10',
   'js/data/monchanges.js',
   'js/data/wild.js',
   'js/data/chatter.js',
@@ -239,11 +242,12 @@ CLOUD.boot([
   'js/engine/award.js',
   'js/engine/summon.js',
   'js/engine/endless.js',
-  'js/ui/audio.js?v=20261122-2',
+  'js/ui/audio.js?v=20261122-3',
   'js/ui/battle-ui.js?v=20261122-1',
   'js/ui/scene-motion.js?v=20261122-2',
-  'js/ui/christmas.js?v=20261122-5',
-  'js/ui/game.js?v=20261122-7',
+  'js/ui/christmas.js?v=20261122-6',
+  'js/ui/game.js?v=20261122-8',
+  'js/ui/shop-ui.js?v=20261122-1',
   'js/ui/daily-login.js?v=20261122-2',
   'js/ui/social.js?v=20261116-13',
   'js/ui/board.js',
