@@ -38,11 +38,21 @@ var HSCHRISTMAS = (function () {
   function storyDialog(lines, action, after) {
     if (storyBusy || document.getElementById('xmas-story')) return;
     storyBusy = true;
-    var d = document.createElement('div'), at = 0; d.className = 'soc-dlg'; d.id = 'xmas-story'; document.body.appendChild(d);
+    var d = document.createElement('div'), at = 0, portrait = '', scene = action === 'shopIntro' ? 'hl_shop' : action === 'shopHint' ? 'hl_cabin' : 'hl_castle'; d.className = 'soc-dlg xmas-story-layer'; d.id = 'xmas-story'; document.body.appendChild(d);
     function draw() {
       var l = lines[at];
-      d.innerHTML = '<div class="soc-box xmas-story-box' + (l.img ? ' has-art' : '') + '" role="dialog" aria-modal="true" aria-label="圣诞活动剧情"><span class="tape l"></span>' + (l.img ? '<img class="xmas-story-art" src="' + CHARS[l.img] + '" alt="">' : '') + '<div class="xmas-story-text"><b>' + esc(l.n) + '</b><p>' + esc(l.t) + '</p><small class="hint" data-xmas-story-error></small></div><div class="soc-foot">' + (l.choices ? l.choices.map(function (q) { return '<button class="btn" data-xmas-next>' + q + '</button>'; }).join('') : '<button class="btn primary" data-xmas-next>' + (at < lines.length - 1 ? '继续' : '知道了') + '</button>') + '</div></div>';
-      d.querySelector('[data-xmas-next]').focus();
+      if (l.img) portrait = l.img;
+      if (action === 'cabinIntro' && portrait) scene = 'hl_cabin';
+      var color = l.n === 'Vanber' ? '#2a4ca0' : l.n === 'Threego' ? '#6f8f2a' : 'var(--ink)';
+      var place = scene === 'hl_shop' ? '杂货铺' : scene === 'hl_cabin' ? '秘密小屋' : '圣诞城堡';
+      d.innerHTML = '<section class="xmas-story-scene" role="dialog" aria-modal="true" aria-labelledby="xmas-story-name" aria-describedby="xmas-story-text">' +
+        '<img class="vn-bg xmas-story-bg" src="' + BG[scene] + '" alt=""><div class="xmas-story-shade" aria-hidden="true"></div>' +
+        '<header class="xmas-story-heading"><span>圣诞奇遇 · ' + place + '</span><small>' + (at + 1) + ' / ' + lines.length + '</small></header>' +
+        '<div class="xmas-story-cast" aria-hidden="true">' + (portrait ? '<img class="xmas-story-art' + (l.img ? ' speaking' : ' listening') + '" src="' + CHARS[portrait] + '" alt="">' : '') + '</div>' +
+        '<div class="vn-box xmas-story-box" style="--cc:' + color + '"><div class="vn-name" id="xmas-story-name">' + esc(l.n) + '</div>' +
+        '<p class="vn-text xmas-story-text" id="xmas-story-text">' + esc(l.t) + '</p><small class="hint red" data-xmas-story-error role="alert" hidden></small>' +
+        '<div class="xmas-story-actions">' + (l.choices ? l.choices.map(function (q) { return '<button class="vn-opt" data-xmas-next>' + esc(q) + '</button>'; }).join('') : '<button class="btn primary" data-xmas-next>' + (at < lines.length - 1 ? '继续 ›' : '知道了') + '</button>') + '</div></div></section>';
+      d.querySelector('[data-xmas-next]').focus({ preventScroll: true });
     }
     d.addEventListener('click', function (e) {
       var b = e.target.closest('[data-xmas-next]'); if (!b || b.disabled) return;
@@ -50,7 +60,7 @@ var HSCHRISTMAS = (function () {
       b.disabled = true;
       function done() { d.remove(); storyBusy = false; if (after) after(); }
       if (!action) { done(); return; }
-      HSACC.christmasTx({ a: action }, done, function (err) { b.disabled = false; d.querySelector('[data-xmas-story-error]').textContent = err || '网络不稳，请重试'; });
+      HSACC.christmasTx({ a: action }, done, function (err) { b.disabled = false; var error = d.querySelector('[data-xmas-story-error]'); error.hidden = false; error.textContent = err || '网络不稳，请重试'; });
     }); draw();
   }
   function cabinStory() {

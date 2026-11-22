@@ -84,15 +84,44 @@ body.christmas-page-active #pg-christmas { height: var(--scene-view-height); min
   .xmas-task { padding: 8px; }
   .xmas-all { padding: 5px 8px; }
 }
-.xmas-story-box { width: min(580px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; overflow-y: auto; }
-.xmas-story-art { justify-self: center; width: 130px; height: min(30dvh, 220px); object-fit: contain; }
-.xmas-story-text { min-width: 0; line-height: 1.8; }
-.xmas-story-text b { color: var(--red); }
-.xmas-story-text p { margin: 5px 0; }
-.xmas-story-box .soc-foot { flex-wrap: wrap; }
-@media (max-height: 520px) { .xmas-story-box { grid-template-columns: minmax(0, 1fr); padding: 14px; gap: 8px; } .xmas-story-art { width: 90px; height: 100px; grid-row: span 2; } .xmas-story-box .soc-foot { grid-column: 1 / -1; } .xmas-story-text p { font-size: 13px; } }
-
-@media (max-height: 520px) { .xmas-story-box.has-art { grid-template-columns: 90px minmax(0, 1fr); } }
+/* 圣诞对话沿用主线的场景、立绘、姓名牌与底部纸张对话框 */
+#xmas-story.xmas-story-layer { display: flex; justify-content: center; align-items: stretch; height: 100vh; height: 100dvh; padding: max(12px, env(safe-area-inset-top, 0px)) max(var(--page-gutter), env(safe-area-inset-right, 0px)) max(12px, env(safe-area-inset-bottom, 0px)) max(var(--page-gutter), env(safe-area-inset-left, 0px)); overflow: hidden; background: rgba(35, 34, 43, .65); }
+.xmas-story-scene { position: relative; isolation: isolate; width: min(calc(var(--page-width) - 2 * var(--page-gutter)), 100%); min-width: 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; border: 1.5px solid var(--ink); border-radius: 16px; background: #263138; box-shadow: 4px 4px 0 rgba(35, 34, 43, .35); }
+.xmas-story-scene > .xmas-story-bg { z-index: -2; object-position: center; }
+.xmas-story-shade { position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(16, 22, 28, .24), transparent 35%, rgba(16, 22, 28, .42)); pointer-events: none; }
+.xmas-story-heading { flex: 0 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 15px 20px; color: var(--paper); text-shadow: 0 1px 3px #23222b; background: linear-gradient(rgba(16, 22, 28, .5), transparent); }
+.xmas-story-heading > span { font-family: var(--f-hand); font-size: 25px; line-height: 1.2; }
+.xmas-story-heading small { font-size: 12px; font-variant-numeric: tabular-nums; }
+.xmas-story-cast { position: relative; flex: 1 1 0; min-height: 0; display: flex; justify-content: flex-end; align-items: flex-end; padding: 8px 10% 0; }
+.xmas-story-art { width: min(42%, 360px); height: 100%; min-height: 0; object-fit: contain; object-position: center bottom; filter: drop-shadow(0 6px 3px rgba(35, 34, 43, .25)); }
+.xmas-story-art.listening { opacity: .8; filter: saturate(.65) drop-shadow(0 6px 3px rgba(35, 34, 43, .25)); }
+.xmas-story-scene > .xmas-story-box { position: relative; left: auto; right: auto; bottom: auto; flex: 0 1 auto; min-height: 0; max-height: 48%; display: flex; flex-direction: column; gap: 10px; margin: 20px clamp(12px, 3vw, 28px) 22px; padding: 25px 22px 14px; background: rgba(251, 250, 243, .97); }
+.xmas-story-box .vn-name { top: -17px; font-size: 25px; }
+.xmas-story-box > .xmas-story-text { flex: 1 1 auto; min-height: 3.5em; overflow-y: auto; overscroll-behavior: contain; font-size: clamp(16px, 1.6vw, 19px); line-height: 1.75; overflow-wrap: anywhere; }
+.xmas-story-box > [data-xmas-story-error] { flex: 0 0 auto; }
+.xmas-story-actions { flex: 0 0 auto; display: flex; justify-content: flex-end; gap: 9px; flex-wrap: wrap; }
+.xmas-story-actions > .btn { min-width: 112px; padding: 8px 18px; }
+.xmas-story-actions > .vn-opt { flex: 1 1 180px; min-width: 0; font-size: 15px; padding: 9px 14px; }
+@media (max-width: 640px) {
+  #xmas-story.xmas-story-layer { padding-inline: max(8px, env(safe-area-inset-left, 0px)) max(8px, env(safe-area-inset-right, 0px)); }
+  .xmas-story-heading { padding: 13px 14px; }
+  .xmas-story-heading > span { font-size: 23px; }
+  .xmas-story-cast { justify-content: center; padding-inline: 12%; }
+  .xmas-story-art { width: 100%; }
+  .xmas-story-scene > .xmas-story-box { max-height: 55%; margin: 20px 12px 14px; padding: 23px 14px 12px; }
+  .xmas-story-box .vn-name { left: 12px; font-size: 23px; }
+}
+@media (max-height: 520px) {
+  #xmas-story.xmas-story-layer { padding-block: max(6px, env(safe-area-inset-top, 0px)) max(6px, env(safe-area-inset-bottom, 0px)); }
+  .xmas-story-heading { padding: 6px 12px; }
+  .xmas-story-heading > span { font-size: 20px; }
+  .xmas-story-cast { padding-top: 0; }
+  .xmas-story-art { width: min(40%, 180px); }
+  .xmas-story-scene > .xmas-story-box { max-height: 62%; gap: 6px; margin: 14px 12px 10px; padding: 19px 14px 9px; }
+  .xmas-story-box .vn-name { top: -14px; font-size: 21px; padding-block: 3px; }
+  .xmas-story-box > .xmas-story-text { min-height: 0; font-size: 14px; line-height: 1.6; }
+  .xmas-story-actions > .btn, .xmas-story-actions > .vn-opt { min-width: 0; font-size: 13px; padding: 6px 12px; }
+}
 @media (max-height: 420px) {
   body.christmas-page-active #pg-christmas { gap: 5px; }
   #pg-christmas .page-head .sec { font-size: 19px; }
