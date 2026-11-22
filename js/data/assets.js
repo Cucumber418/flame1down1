@@ -5,7 +5,7 @@
 
 // 精灵立绘（最终形态）  →  images/sprites/
 var SPRITES = {
-  "barlow": "images/sprites/barlow.svg",
+  "barlow": "images/sprites/barlow.png",
   "bali": "images/sprites/bali.png",
   "clementi": "images/sprites/clementi.png",
   "fate": "images/sprites/fate.png",
@@ -67,8 +67,8 @@ var LINEART = {
 
 // 进化前形态立绘（_s1 一阶，_s2 二阶）  →  images/pre_sprites/
 var PRE_SPRITES = {
-  "barlow_s1": "images/sprites/barlow.svg",
-  "barlow_s2": "images/sprites/barlow.svg",
+  "barlow_s1": "images/pre_sprites/barlow_s1.png",
+  "barlow_s2": "images/pre_sprites/barlow_s2.png",
   "clementi_s1": "images/pre_sprites/clementi_s1.png",
   "fate_s1": "images/pre_sprites/fate_s1.png",
   "fate_s2": "images/pre_sprites/fate_s2.png",
