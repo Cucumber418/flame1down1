@@ -17,9 +17,3 @@ body.christmas-theme .xmas-card:hover:not(:disabled) { border-color: #b73040; }
 .xmas-vanber-shop { flex: 0 0 auto; display: flex; align-items: center; gap: 12px; padding: 2px; }.xmas-vanber-shop > b { font-family: var(--f-hand); font-size: 23px; font-weight: 400; }.xmas-vanber-shop .shop-display-tile { width: 115px; }.xmas-vanber-shop .shop-product { min-height: 80px; padding: 6px; gap: 3px; }.xmas-vanber-shop .shop-product-icon { width: 50px; height: 45px; }
 @media(max-width:760px) { .xmas-cards { grid-template-columns: repeat(2,minmax(0,1fr)); grid-template-rows: auto; }.xmas-card { flex-direction: column; min-height: 150px; padding: 10px 7px; gap: 6px; }.xmas-card img { flex: 0 0 auto; width: 65px; height: 65px; }.xmas-card > span:last-child { flex: 0 0 auto; justify-items: center; text-align: center; gap: 4px; }.xmas-card b { font-size: 18px; }.xmas-card small { display: none; } }
 @media(max-height:520px) { .xmas-cards { grid-template-columns: repeat(4,minmax(0,1fr)); }.xmas-card { min-height: 125px; }.xmas-card img { width: 48px; height: 50px; }.xmas-card b { font-size: 17px; }.xmas-vanber-shop .shop-product { min-height: 50px; flex-direction: row; }.xmas-vanber-shop .shop-product-icon { width: 35px; height: 35px; } }
-/* 宽屏保留原绿色底，只点缀两小段红白彩带 */
-@media(min-width:1240px) {
-  body.christmas-theme::before, body.christmas-theme::after { content: ''; position: fixed; top: 38px; width: 7px; height: 140px; pointer-events: none; z-index: 0; border-radius: 2px; opacity: .75; background: repeating-linear-gradient(45deg,#b8424b 0 9px,#fff8eb 9px 18px); }
-  body.christmas-theme::before { left: calc((100vw - var(--page-width,1120px))/4 - 3.5px); transform: rotate(-16deg); }
-  body.christmas-theme::after { right: calc((100vw - var(--page-width,1120px))/4 - 3.5px); transform: rotate(16deg); }
-}
