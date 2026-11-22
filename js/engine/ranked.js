@@ -78,7 +78,7 @@ function randomLoadout(id) {
 }
 var ALL_TYPES = null;
 function loadoutScore(id, mv, mates) {
-  if (!ALL_TYPES) { var rt = {}; SP.forEach(function (x) { x.types.forEach(function (t) { rt[t] = 1; }); }); ALL_TYPES = Object.keys(TYPE_COLOR).filter(function (t) { return rt[t]; }); }   // 只算竞技名单里有的属性：新属性不影响平衡排位
+  if (!ALL_TYPES) { var rt = {}; RANK_ROSTER.forEach(function (x) { x.types.forEach(function (t) { rt[t] = 1; }); }); ALL_TYPES = Object.keys(TYPE_COLOR).filter(function (t) { return rt[t]; }); }   // 只算竞技名单里有的属性：新属性不影响平衡排位
   var s = SPMAP[id], sc = 0, cover = {}, util = 0, phys = s.base.atk >= s.base.spa;
   mv.forEach(function (n) {
     var m = M[n];
@@ -122,7 +122,7 @@ function teamPower(ids) { var s = 0; ids.forEach(function (id) { s += STRENGTH[i
 function predictWin(a, b) { return 1 / (1 + Math.exp(-(teamPower(a) - teamPower(b)))); }
 function allTeams() {
   if (ALL_TEAMS) return ALL_TEAMS;
-  var ids = SP.map(function (s) { return s.id; }).filter(function (id) { return STRENGTH[id] != null; }), out = [];
+  var ids = RANK_ROSTER.map(function (s) { return s.id; }), out = [];
   (function rec(st, cur) {
     if (cur.length === 5) { out.push({ ids: cur.slice(), p: teamPower(cur) }); return; }
     for (var i = st; i < ids.length; i++) { cur.push(ids[i]); rec(i + 1, cur); cur.pop(); }

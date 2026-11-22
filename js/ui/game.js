@@ -334,6 +334,7 @@
     setTimeout(navDots, 0);
   }
   function go(p) {
+    if (p === 'arena' && page !== 'arena' && window.HSARENA) HSARENA.home();
     if (p === 'christmas' && PVE.helenaOpen(acc) && !prog('helenaArrival').done && !(typeof SPA !== 'undefined' && SPA.on && ex.view === 'spa')) {
       stopTimers(); page = 'explore'; ex.planet = 'helena'; ex.view = 'vn';
       startVN0('helenaArrival', 'replay', $('pg-explore')); savePage(); renderTop(); HSCHRISTMAS.gate($('pg-explore'), '正在载入圣诞序章～', function () { startVN0('helenaArrival', 'replay', $('pg-explore')); }, vnAssets('helenaArrival')); HSVIEW.to(0, 0); return;
@@ -414,9 +415,10 @@
   [[25, '达人'], [50, '高手'], [75, '狂人'], [100, '神人']].forEach(function (L) {
     TITLES.push({ id: 'all' + L[0], grp: 'lv', n: '全科' + L[1], d: '有 5 只精灵达到 ' + L[0] + ' 级', ok: function () { return lvCount(L[0]) >= 5; } });
   });
-  // 排位赛季称号：本赛季（S1）达到某个段位就获得「S1 + 段位名」，例如「S1翡翠」（黑铁是起始段位，不发）
+  // 排位赛季称号：保留 S1 已有称号，本赛季按 S2 段位授予新称号（黑铁是起始段位，不发）
   for (var sr = 1; sr < RANKS.length; sr++) (function (r) {
-    TITLES.push({ id: 'S1-' + r, grp: 'season', n: 'S1' + RANKS[r], d: '排位赛季 S1 达到' + RANKS[r] + '段位', season: true, ok: function () { return rankBest() >= r; } });
+    TITLES.push({ id: 'S1-' + r, grp: 'season', n: 'S1' + RANKS[r], d: 'S1赛季限定称号', season: true, ok: function () { return false; } });
+    TITLES.push({ id: RANK_SEASON.id + '-' + r, grp: 'season', n: RANK_SEASON.id + RANKS[r], d: '排位赛季S2达到' + RANKS[r] + '段位', season: true, ok: function () { return rankBest() >= r; } });
   })(sr);
   /* 属性称号：按精灵种类数统计（同一条进化线算 1 种，双属性精灵两个属性都算）
    * 收藏家：拥有 N 种该属性的精灵；训练师：N 种 LV50 以上；专家：5 种 LV80 以上 */
@@ -905,6 +907,7 @@
   var GATHER_ORDER = ['g_sand', 'g_core', 'grail', 'relPt'];
   // 精灵素材：旅行精灵掉落的叶片，以及合成出来的精元（精元放进神农架 · 精灵保育仓孵化，见 NURSERY）
   var MATS = {
+    s2MonTicket: { name: 'S2精灵兑换券', d: 'S2赛季首次达到星耀段位获得，兑换精灵之后揭晓' },
     m_lcleaf: { name: '叶子喵的叶片', d: '旅行精灵叶子喵身上掉下来的叶片，还带着一点光。5 片可以在冶炼坊合成叶子喵的精元。' },
     e_odo: { name: '奥多的精元', d: '旧版BOSS奖励中从深海里带回的一团精元。放进神农架 · 精灵保育仓，孵化 8 小时后会诞生一只奥多。', hatch: { sid: 'odo', lv: 1, min: 480 } },
     e_leafcat: { name: '叶子喵的精元', d: '用 5 片叶子喵的叶片凝成的精元。放进神农架 · 精灵保育仓，孵化 8 小时后会诞生一只叶子小小喵。', hatch: { sid: 'leafcat', lv: 1, min: 480 } }
@@ -929,7 +932,7 @@
   INS_ITEMS.sumTok = { name: '召唤代币', d: '每次圣晶石召唤送 10 个，抽到当期 UP 再送 200 个。可以在召唤代币商店兑换圣晶石、UP 精灵的专属道具和限定刻印。' };
   MATS.xmasBell = { name: '圣诞铃铛', d: 'Vanber的圣诞任务奖励，较为稀少，可在Threego的苏格兰杂货铺兑换道具' };
   MATS.xmasCandy = { name: '拐杖糖', d: '完成Vanber的圣诞任务或讨伐鲁普雷希特骑士获得，可在Threego的苏格兰杂货铺兑换道具' };
-  var MAT_ORDER = SUM_ESS.concat(['xmasBell', 'xmasCandy', 'm_lcleaf', 'e_leafcat', 'e_pluto', 'e_odo', 'm_psac', 'm_hfhorn', 'm_horn', 'm_mcry', 'm_cu', 'm_fe', 'ctTicket', 'ctShare']);
+  var MAT_ORDER = SUM_ESS.concat(['xmasBell', 'xmasCandy', 'm_lcleaf', 'e_leafcat', 'e_pluto', 'e_odo', 'm_psac', 'm_hfhorn', 'm_horn', 'm_mcry', 'm_cu', 'm_fe', 's2MonTicket', 'ctTicket', 'ctShare']);
   // 太空种植园只种药草。min 是成熟分钟，yield 是收获数量。收获时退回种子。
   var SEEDS = GROW.SEEDS;   // 在 js/engine/grow.js
 
@@ -2118,8 +2121,8 @@
       html += '<div class="crumb"><button type="button" class="btn ghost" id="ex-back">‹ ' + (P.inStation ? '返回空间站' : SHIP_SIDE[P.id] ? '返回飞船终端' : '返回星图') + '</button><b>' + (P.inStation ? '空间站 · ' : MAYAR[P.id] ? '马亚尔星系 · ' : '') + P.name + '</b></div>';
       if (P.wild) { el.innerHTML = html + (P.id === 'flora' ? floraPage() : wildPage(P)); return; }
       if (P.tower) { el.innerHTML = html + towerPage(); return; }
-      if (P.station) { el.innerHTML = html + '<div class="planets">' + planetCard(planetOf('tower')) + (prog('flora7').done && mmLive() ? '<button type="button" class="planet' + (mmOpen() ? '' : ' locked') + '"' + (mmOpen() ? ' data-mmarena="1"' : ' disabled') + '><span class="tape l"></span><span class="mm-ic" aria-hidden="true">🛰</span><span class="pn">全息作战场地<span class="chip ptype">限时</span></span><span class="hint">明明教官安置的全息作战场地。活动「明明教官的试炼」期间开放。</span><span class="pc">' + (mmOpen() ? '明明代币 ' + fmt(acc.items.mmTok || 0) + ' · ' + mmLeftText() : '先完成活动任务「明明教官的试炼」') + '</span></button>' : '') + '</div>'; return; }
-      if (P.sarena) { el.innerHTML = html + sarenaPage(); return; }
+      if (P.station) { el.innerHTML = html + '<div class="planets">' + planetCard(planetOf('tower')) + '<button type="button" class="planet" data-endless="1"><span class="mm-ic">♾</span><span class="pn">无尽作战</span><span class="hint">挑战关卡、构筑阵容与无尽代币商店</span><span class="pc">已解锁难度 ' + EN.rec(acc).maxD + ' / ' + EN.D_MAX + '</span></button>' + (prog('flora7').done && mmLive() ? '<button type="button" class="planet' + (mmOpen() ? '' : ' locked') + '"' + (mmOpen() ? ' data-mmarena="1"' : ' disabled') + '><span class="tape l"></span><span class="mm-ic" aria-hidden="true">🛰</span><span class="pn">全息作战场地<span class="chip ptype">限时</span></span><span class="hint">明明教官安置的全息作战场地。活动「明明教官的试炼」期间开放。</span><span class="pc">' + (mmOpen() ? '明明代币 ' + fmt(acc.items.mmTok || 0) + ' · ' + mmLeftText() : '先完成活动任务「明明教官的试炼」') + '</span></button>' : '') + '</div>'; return; }
+      if (P.sarena) { goContest(); return; }
       html += '<div class="sites">' + P.sites.map(function (id) {
         var S = SITES[id], pr = prog(id), started = pr.at > 0 && !pr.done, open = unlocked(id);
         var rw = S.reward ? '<p class="hint">首次读完奖励：' + rwList(S.reward).filter(Boolean).join('、') + (UNLOCK[id] ? '，并开放' + UNLOCK[id] : '') + (pr.rewarded ? '（已领取）' : '') + '</p>' : '';
@@ -2204,13 +2207,11 @@
   // 舰体图右边（同一个黑框里）：空间站、太空竞技场、BOSS挑战、每周挑战（2026-10-31，从星际探索的星图页搬过来）
   function shipSide() {
     var item = function (attr, ic, t, sub, open) { return '<button type="button" class="sm-it mayar-tool' + (open ? '' : ' locked') + '" title="' + esc(t + (sub ? '：' + sub : '')) + '"' + (open ? ' ' + attr : ' disabled') + '><span class="sm-ic" aria-hidden="true">' + ic + '</span><span class="sm-t"><b>' + t + '</b></span></button>'; };
-    var st = planetOf('station'), sa = planetOf('sarena'), bk = Object.keys(BOSSES), nOpen = bk.filter(bossOpen).length, wk = weeklyOpen();
+    var st = planetOf('station'), bk = Object.keys(BOSSES), nOpen = bk.filter(bossOpen).length, wk = weeklyOpen();
     return '<div class="sm-side">' +
-      item('data-planet="station"', '<img src="images/planets/station.webp" alt="">', '空间站', planetOpen(st) ? '先驱之塔 · 全息作战场地' : '读完「降临芙罗拉」后开放', planetOpen(st)) +
-      item('data-goarena="1"', '⚔', '竞技对战', arenaOpen() ? '沙盒调试 · 平衡排位 · 精灵大乱斗' : '读完荆楚号 · 孝感大厅的支线后开放', arenaOpen()) +   // 2026-11-02：太空竞技场拆成两项
-      item('data-planet="sarena"', sarenaSvg(), '争霸赛', planetOpen(sa) ? esc(CONTEST.name) : '读完「降临芙罗拉」后开放', planetOpen(sa)) +
+      item('data-planet="station"', '<img src="images/planets/station.webp" alt="">', '空间站', planetOpen(st) ? '先驱之塔 · 无尽作战 · 全息作战场地' : '读完「降临芙罗拉」后开放', planetOpen(st)) +
+      item('data-goarena="1"', '⚔', '竞技对战', arenaOpen() ? '沙盒调试 · 平衡排位 · 精灵大乱斗 · 争霸赛' : '读完荆楚号 · 孝感大厅的支线后开放', arenaOpen()) +   // 2026-11-02：太空竞技场拆成两项
       item('data-summon="1"', '<img src="images/items/saint_quartz.webp" alt="">', '召唤', '圣晶石召唤 · 友情点召唤', true) +
-      item('data-endless="1"', '♾', '无尽作战', EN.rec(acc).run ? '作战进行中 · 难度 ' + EN.rec(acc).run.d : '已解锁难度 ' + EN.rec(acc).maxD + ' / ' + EN.D_MAX, true) +   // 2026-11-02
       item('data-bosshub="1"', '<img src="' + SPRITES[BOSSES[bk[0]].sid] + '" alt="">', 'BOSS挑战', '已开放 ' + nOpen + ' / ' + bk.length, true) +
       item('data-wkhub="1"', wk ? '<span class="sm-pm">' + permits() + '</span>' : '🔒', '每周挑战', wk ? '挑战许可 ' + permits() + ' / ' + PERMIT.max : '击败困难难度的泰戈尔或荒芜后开放', wk) +
       item('data-shipareas="1"', '🗺', '舰内区域', '', true) +
@@ -2390,6 +2391,15 @@
       D.standings.map(function (x, i) { return '<tr' + (x.user === D.me ? ' class="me"' : '') + '><td>' + (i + 1) + '</td><td>' + esc(ctName(x.user)) + '</td><td>' + x.w + '</td><td>' + x.l + '</td><td>' + x.buch + '</td><td>' + (x.gd > 0 ? '+' : '') + x.gd + '</td></tr>'; }).join('') + '</tbody></table><p class="hint">胜场相同时依次比对手分（遇到过的对手的胜场之和）、小分（赢的局数 − 输的局数）。</p>';
     return h;
   }
+  document.addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.ctsign) { contestSign(); return; }
+    if (b.dataset.ctdraw) { ctDrawShow(); return; }
+    if (b.dataset.ctrematch) { if (window.HSSOCIAL && window.HSSOCIAL.ctRematch) window.HSSOCIAL.ctRematch(b.dataset.ctrematch); return; }
+    if (b.dataset.ctfight) { if (window.HSSOCIAL && window.HSSOCIAL.ctAsk) { var M1 = CT.data && CT.data.myMatch; window.HSSOCIAL.ctAsk(b.dataset.ctfight, M1 ? M1.oppName : '', CONTEST.name + (M1 ? ' · ' + (M1.final ? '决赛' : '第 ' + M1.round + ' 轮') : '')); } return; }
+    if (b.dataset.ctwatch) { if (window.HSSOCIAL && window.HSSOCIAL.watch) window.HSSOCIAL.watch(b.dataset.ctwatch); return; }
+    if (b.dataset.ctrep) { if (window.HSSOCIAL && window.HSSOCIAL.replay) window.HSSOCIAL.replay(b.dataset.ctrep); return; }
+  });
+  function goContest() { go('arena'); if (window.HSARENA) HSARENA.open('contest'); }
   function sarenaPage() {
     if (!CT.busy && (!CT.data || Date.now() - CT.at > 15000)) contestLoad();
     clearInterval(ex.ctTick);
@@ -2446,7 +2456,7 @@
     document.body.appendChild(d);
     d.addEventListener('click', function (e) {
       if (e.target === d || e.target.closest('[data-ctx]')) { d.remove(); return; }
-      if (e.target.closest('[data-ctgo2]')) { d.remove(); ex.planet = 'sarena'; ex.view = 'sites'; go('explore'); }
+      if (e.target.closest('[data-ctgo2]')) { d.remove(); goContest(); }
     });
   }
   window.HSCT = {
@@ -2967,7 +2977,7 @@
       (on ? '<span class="en-ord">' + (enUi.line.indexOf(i) + 1) + '</span>' : '') + '</div>';
   }
   function renderEndless() {
-    var E = EN.rec(acc), R = E.run, html = '<div class="crumb"><button type="button" class="btn ghost" id="en-back">‹ 返回飞船终端</button><b>荆楚号 · 无尽作战</b></div>';
+    var E = EN.rec(acc), R = E.run, html = '<div class="crumb"><button type="button" class="btn ghost" id="en-back">‹ 返回空间站</button><b>空间站 · 无尽作战</b></div>';
     if (!R) html += enLobby(E); else html += enRun(R);
     if (enUi.pageHtml !== html || !$('pg-explore').querySelector('.crumb #en-back')) { var w0 = $('en-mapw'), sl = w0 ? w0.scrollLeft : null; $('pg-explore').innerHTML = html; enUi.pageHtml = html; enMapBind(sl); }   // 页面没变就不重画（免得闪）
     enModal(R);
@@ -3167,7 +3177,7 @@
     pveRemote('endless', { line: enUi.line.slice() }, { bg: BG.mayar || BG.bridge_p, back: '无尽作战' }, function (e, res) {
       var r = e && e.rep;
       ex.fighting = false; document.body.classList.remove('story-fight');
-      ex.view = 'endless'; ex.planet = 'jingchu';
+      ex.view = 'endless'; ex.planet = 'station';
       $('pg-arena').hidden = page !== 'arena'; $('pg-explore').hidden = page !== 'explore';
       renderTop(); syncBattle(); renderEndless(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8);
       if (r && r.res === 'win') toast('胜利！获得 ' + r.gems + ' 颗无尽宝石' + (r.lost && r.lost.length ? '，有 ' + r.lost.length + ' 只精灵倒下了（装备已回到背包）' : '') + '。');
@@ -3180,7 +3190,7 @@
     var b = e.target.closest('button, [data-enr], [data-engo]'); if (!b || b.disabled) return;
     if (b.dataset.engo != null && enUi.noClick && Date.now() - enUi.noClick < 300) return;   // 刚拖动完地图，不算点击
     var R = EN.run(acc), D = b.dataset;
-    if (b.id === 'en-back') { enModalOff(); enUi.panel = null; ex.view = 'sites'; ex.planet = 'jingchu'; renderExplore(); return; }
+    if (b.id === 'en-back') { enModalOff(); enUi.panel = null; ex.view = 'sites'; ex.planet = 'station'; renderExplore(); return; }
     if (D.end) { enUi.d = +D.end; renderEndless(); return; }
     if (D.enpk) { var u = +D.enpk; if (enUi.pick[u]) delete enUi.pick[u]; else if (Object.keys(enUi.pick).length < EN.ROSTER_MAX) enUi.pick[u] = 1; else toast('最多选 ' + EN.ROSTER_MAX + ' 只'); renderEndless(); return; }
     if (D.enauto) { enUi.pick = {}; acc.mons.slice().sort(function (a, b2) { return b2.lv - a.lv; }).slice(0, EN.ROSTER_MAX).forEach(function (m) { enUi.pick[m.u] = 1; }); renderEndless(); return; }
@@ -4952,16 +4962,15 @@
   });
 
   /* ---------- 排位赛季奖励：首次达到每个段位各奖励一次，达到铂金送 LV10 小月亮 ---------- */
-  var SEASON = 'S1';
+  var SEASON = RANK_SEASON.id;
   // 2026-10-11 起段位奖励翻倍（RANK_RW_OLD 是翻倍前的标准，用来给之前领过的玩家算补发差额）
   var RANK_RW_OLD = RW.RANK_RW_OLD;   // 数额在 js/engine/rewards.js
-  var RANK_GIFT = { 4: [{ sid: 'moon', lv: 10 }], 10: [{ sid: 'bone', lv: 10 }] };   // 铂金送小月亮，王者送凶骨（骨刃一阶）
   // 2026-10-11 起各段位额外送道具（之前已经领过的段位，差的道具用邮箱补发）
   // 段位不再发放加强装置和华为装置，这两种只能在冶炼坊合成。翡翠、钻石、星耀改为普通捕捉装置。
   var RANK_ITEMS = RW.RANK_ITEMS;
-  var RANK_RW = RANK_RW_OLD.map(function (R, r) { return R && { exp: R.exp * 2, energy: R.energy * 2, gift: RANK_GIFT[r], title: 'S1-' + r, items: RANK_ITEMS[r] }; });
+  var RANK_RW = RANK_RW_OLD.map(function (R, r) { return R && Object.assign(AWD.rankRwOf(r), { title: SEASON + '-' + r }); });
   function itemsText(o) { return o ? Object.keys(o).map(function (k) { return itemName(k) + ' ×' + o[k]; }).join('、') : ''; }
-  function rankBest() { try { var r = JSON.parse(localStorage.getItem('hs-rank-v1') || 'null'); return r ? Math.max(r.best || 0, r.r || 0) : 0; } catch (e) { return 0; } }
+  function rankBest() { try { var r = JSON.parse(localStorage.getItem('hs-rank-v1') || 'null'); return r && r.season === RANK_SEASON.id ? Math.max(r.best || 0, r.r || 0) : 0; } catch (e) { return 0; } }
   function rankRec() { return acc.rankRw && acc.rankRw.season === SEASON && acc.rankRw.got ? acc.rankRw : { season: SEASON, got: {} }; }   // 只读：记录由服务器写（js/engine/award.js）
   var rankRwBusy = false;
   function checkRankRewards() {   // 服务器按它记的最高段位结算（交易 rankRw，js/engine/award.js）
@@ -5601,14 +5610,14 @@
       return '<tr class="' + (got ? 'got' : r <= best ? 'ok' : '') + (R.gift ? ' big' : '') + '"><td>' + RANKS[r] + '</td><td>累积经验 ×' + fmt(R.exp) + '，能量 ×' + fmt(R.energy) + '，称号「' + titleName(R.title) + '」' + (R.items ? '，' + itemsText(R.items) : '') + (R.gift ? '，<b class="red">' + R.gift.map(function (g) { return form(g).name + ' LV' + g.lv; }).join('、') + '</b>' : '') + '</td><td>' + (got ? '已领取' : '未达成') + '</td></tr>';
     }).join('');
     return '<details class="rk-rw" open><summary><b>排位赛季 ' + SEASON + ' · 首次达到段位的奖励</b><span class="hint">已领取 ' + gotN + ' / ' + allN + '</span></summary>' +
-      '<p>本赛季最高段位：<b>' + rankFull(best, (function () { try { var r = fixRank(JSON.parse(localStorage.getItem('hs-rank-v1') || 'null')); return r && r.bestDv; } catch (e) { return 0; } })()) + '</b>。每个段位第一次达到时发放一次，并获得赛季称号（如「S1翡翠」）；<b>达到铂金送 LV10 的' + form({ sid: 'moon', lv: 10 }).name + '，达到王者送 LV10 的' + form({ sid: 'bone', lv: 10 }).name + '</b>。</p>' +
+      '<p>本赛季最高段位：<b>' + rankFull(best, (function () { try { var r = fixRank(JSON.parse(localStorage.getItem('hs-rank-v1') || 'null')); return r && r.bestDv; } catch (e) { return 0; } })()) + '</b>。每个段位第一次达到时发放一次，并获得赛季称号（如「S2翡翠」）；<b>首次达到星耀段位赠送1张S2精灵兑换券，兑换精灵之后揭晓，小月亮与凶骨暂时绝版</b>。</p>' +
       '<table class="rank-rw"><thead><tr><th>段位</th><th>奖励</th><th>状态</th></tr></thead><tbody>' + rows + '</tbody></table></details>';
   }
   $('pg-log').addEventListener('click', function (e) {
     var c = e.target.closest('[data-dclaim]'); if (c) { claimDaily(+c.dataset.dclaim, renderLog); return; }
     if (e.target.closest('[data-gocore]')) { ex.planet = 'jingchu'; go('explore'); teleport('宜昌'); return; }
     var ml = e.target.closest('[data-mmlog]'); if (ml) { var mk = ml.dataset.mmlog; if (mk === 'task') { ex.planet = 'jingchu'; go('explore'); teleport('襄阳'); return; } ex.mmFrom = page === 'holo' ? 'holo' : mk === 'gacha' ? 'log' : 'arena'; ex.view = mk === 'gacha' ? 'mmGacha' : 'mmArena'; go('explore'); renderExplore(); return; }
-    if (e.target.closest('[data-gosarena]')) { ex.planet = 'sarena'; ex.view = 'sites'; go('explore'); return; }
+    if (e.target.closest('[data-gosarena]')) { goContest(); return; }
     var hd = e.target.closest('[data-hornday]'); if (hd && !hd.disabled && ready() && !hornDayGot()) { txRun('hornDay', {}, function (r) { toast('领取了赫菲角片 ×' + r.n + '，已放入储存箱。'); renderLog(); }); return; }
     var ap = e.target.closest('[data-avpick]');
     if (ap && !ap.disabled && AV.data) {
@@ -5631,7 +5640,7 @@
       if (g.dataset.golog === 'boss-clementi') { if (!bossOpen('clementi')) return; ex.view = 'boss'; ex.boss = ex.bossK = 'clementi'; ex.bossD = 0; ex.planet = 'pompeii'; go('explore'); return; }
       if (g.dataset.golog === 'boss-list') { ex.view = 'bosshub'; go('explore'); return; }
       if (g.dataset.golog === 'myfarm') { HSACC.goFarm(); return; }
-      if (g.dataset.golog === 'endless') { ex.view = 'endless'; ex.planet = 'jingchu'; go('explore'); return; }
+      if (g.dataset.golog === 'endless') { ex.view = 'endless'; ex.planet = 'station'; go('explore'); return; }
       if (g.dataset.golog === 'summon') { ex.view = 'summon'; ex.planet = 'jingchu'; go('explore'); return; }
       if (g.dataset.golog === 'myhome') { ex.view = 'home'; ex.area = '天门'; ex.planet = 'jingchu'; go('explore'); renderExplore(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8); return; }
       if (g.dataset.golog === 'flora-catch') { ex.planet = 'flora'; ex.view = 'sites'; ex.fpart = 'catch'; go('explore'); renderExplore(); return; }
@@ -6415,8 +6424,8 @@
     leafcat: [{ text: '击败旅行精灵叶子喵有机会掉落叶片，完成世界任务「旅行猫」后才会出现', go: 'travel' }, { text: '5片叶子喵的叶片在黄石 · 冶炼坊合成精元，再到精灵保育仓孵化', go: 'forge|lcEssence' }],
     pluto: [{ text: '先驱之塔 · 代币商店：用先驱代币和死神代币兑换「帕努托尔的精元」，在精灵保育仓孵化', go: 'tower|shop' }],
     leiming: [{ text: '明明教官的试炼：明明代币抽奖第10、30、50、70……个奖池获得精元，在精灵保育仓孵化（10%是异色）', go: 'mmgacha' }],
-    moon: [{ text: '平衡排位首次达到铂金段位的奖励（LV10小月亮）', go: 'rank|4' }],
-    bone: [{ text: '平衡排位首次达到王者段位的奖励（LV10凶骨）', go: 'rank|10' }],
+    moon: [{ text: 'S1赛季限定奖励，目前暂时绝版' }],
+    bone: [{ text: 'S1赛季限定奖励，目前暂时绝版' }],
     aegis: [{ text: '支线「明明教官的礼物」（荆楚号 · 襄阳 · 古城防卫部），获得LV10董之马', go: 'quest|mingming' }],
     wild: [{ text: '世界任务「冰封深处的小精灵？」（白之星，读完第一章后开放），获得LV15亚哆', go: 'quest|iceYado' }, { text: '完成任务后，在永冻冰原化开封着亚哆的冰块并捕捉（LV20～25，每小时一次，配队需同时有草、火、水系精灵）', go: 'ice|wh_snow' }],
     firemouse: [{ text: '炙热核心里瑟瑟发抖的火月鼠：带3只火系精灵去和它说话，获得LV18火月鼠（每个账号一次）', go: 'fmgift|pp_city|pp_core' }],
@@ -6810,7 +6819,7 @@
   }
   $('pg-holo').addEventListener('click', function (e) {
     var ml = e.target.closest('[data-mmlog]'); if (ml) { var mk = ml.dataset.mmlog; if (mk === 'task') { ex.planet = 'jingchu'; go('explore'); teleport('襄阳'); return; } ex.mmFrom = 'holo'; ex.view = mk === 'gacha' ? 'mmGacha' : 'mmArena'; go('explore'); renderExplore(); return; }
-    if (e.target.closest('[data-gosarena]')) { ex.planet = 'sarena'; ex.view = 'sites'; go('explore'); return; }
+    if (e.target.closest('[data-gosarena]')) { goContest(); return; }
   });
   $('arena-back').addEventListener('click', function () { ex.planet = 'jingchu'; ex.view = 'sites'; go('explore'); });   // 2026-11-02：竞技对战在飞船终端里
   function mmLogHTML() {
@@ -7112,7 +7121,7 @@
     }).join('');
     var nT = TT.filter(has).length;
     $('pg-explore').innerHTML = '<div class="crumb"><button type="button" class="btn ghost" id="medal-back">‹ 返回学院部</button><b>黄冈 · 授勋馆</b><span class="hint">已获得 ' + got + ' / ' + all + '</span></div>' +
-      milHTML() + sec('剧情与探索', grp('story')) + sec('等级', grp('lv')) + sec('排位赛季 S1', grp('season'), '每达到一个新段位获得一个。') +
+      milHTML() + sec('剧情与探索', grp('story')) + sec('等级', grp('lv')) + sec('排位赛季', grp('season'), '本赛季每达到一个新段位获得一个S2称号，已有S1称号保留。') +
       '<section class="md-sec"><h3>属性称号 <small>' + nT + ' / ' + TT.length + '</small></h3><p class="hint">按精灵的种类数计算：同一条进化线的精灵算 1 种，有两个属性的精灵两个属性都算。</p>' + tabs + rows + '</section>';
   }
   function milHTML() {
@@ -8390,7 +8399,7 @@
     if (b.dataset.npctalk) { npcTalk(b.dataset.npctalk); return; }
     if (b.dataset.room) { ex.view = 'room'; ex.room = b.dataset.room; ex.area = '天门'; renderExplore(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8); mysteryRoll('荆楚号 · 陆羽茶室'); return; }
     if (b.dataset.home) { ex.view = 'home'; ex.area = '天门'; renderExplore(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8); mysteryRoll('荆楚号 · 陆羽茶室'); return; }
-    if (b.dataset.endless) { ex.view = 'endless'; ex.planet = 'jingchu'; renderExplore(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8); return; }
+    if (b.dataset.endless) { ex.view = 'endless'; ex.planet = 'station'; renderExplore(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8); return; }
     if (b.dataset.summon) { ex.view = 'summon'; ex.planet = 'jingchu'; renderExplore(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8); return; }
     if (b.dataset.bosshub) { ex.view = 'bosshub'; renderExplore(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8); return; }
     if (b.dataset.boss) { var BB = BOSSES[b.dataset.boss]; ex.bossFrom = b.dataset.from || null; ex.view = 'boss'; ex.boss = b.dataset.boss; renderExplore(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8); mysteryRoll(BB.dept ? '荆楚号 · ' + DEPTS[BB.dept][0] : bossWhere(BB)); return; }
@@ -8506,12 +8515,6 @@
     if (b.dataset.goshop) { ex.planet = 'jingchu'; ex.area = '荆门'; ex.view = 'shop'; ex.tp = true; renderExplore(); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8); return; }
     if (b.id === 'ex-area') { ex.view = 'area'; renderExplore(); return; }
     if (b.id === 'ex-ship') { ex.view = 'sites'; ex.planet = 'jingchu'; renderExplore(); return; }
-    if (b.dataset.ctsign) { contestSign(); return; }
-    if (b.dataset.ctdraw) { ctDrawShow(); return; }
-    if (b.dataset.ctrematch) { if (window.HSSOCIAL && window.HSSOCIAL.ctRematch) window.HSSOCIAL.ctRematch(b.dataset.ctrematch); return; }
-    if (b.dataset.ctfight) { if (window.HSSOCIAL && window.HSSOCIAL.ctAsk) { var M1 = CT.data && CT.data.myMatch; window.HSSOCIAL.ctAsk(b.dataset.ctfight, M1 ? M1.oppName : '', CONTEST.name + (M1 ? ' · ' + (M1.final ? '决赛' : '第 ' + M1.round + ' 轮') : '')); } return; }
-    if (b.dataset.ctwatch) { if (window.HSSOCIAL && window.HSSOCIAL.watch) window.HSSOCIAL.watch(b.dataset.ctwatch); return; }
-    if (b.dataset.ctrep) { if (window.HSSOCIAL && window.HSSOCIAL.replay) window.HSSOCIAL.replay(b.dataset.ctrep); return; }
     if (b.dataset.planet && !b.disabled) { ex.planet = b.dataset.planet; ex.view = 'sites'; renderExplore(); loadGate($('pg-explore'), '正在前往' + planetOf(b.dataset.planet).name + '～'); mysteryRoll(planetOf(b.dataset.planet).name); return; }
     if (b.id === 'ex-back') { var P_ = ex.view === 'sites' && planetOf(ex.planet); if (P_ && P_.inStation) { ex.planet = 'station'; renderExplore(); return; } if (ex.view === 'bosshub' || (P_ && SHIP_SIDE[P_.id])) { ex.view = 'sites'; ex.planet = 'jingchu'; renderExplore(); return; } ex.view = 'planets'; renderExplore(); return; }
     if (b.dataset.go && unlocked(b.dataset.go)) { PM.panel = null; ex.arc = false; startVN(b.dataset.go, 'replay', $('pg-explore'), b.dataset.from === '0'); HSVIEW.to(0, HSVIEW.top($('pg-explore')) - 8); }
@@ -8975,6 +8978,7 @@
 
   /* ---------- 给社交页（social.js）用的接口 ---------- */
   window.HSACC = {
+    contestHTML: sarenaPage, contestOpen: function () { return planetOpen(planetOf('sarena')); }, seasonNoticeAck: function (ok, fail) { txRun('rankSeasonNotice', {}, ok, fail); },
     acc: function () { return acc; }, ready: ready, save: save, toast: toast, go: go, page: function () { return page; }, renderRes: renderRes,
     farmOpen: farmOpen, farmVisitorRoom: farmVisitorRoom, farmRules: farmRulesHTML, itemName: itemName,
     goFarm: function () { if (!farmOpen()) { toast('读完「伟大的种植园」支线后开放。'); return; } ex.planet = 'jingchu'; ex.area = '恩施'; ex.view = 'farm'; ex.fpanel = null; go('explore'); },

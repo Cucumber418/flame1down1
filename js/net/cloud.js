@@ -10,7 +10,7 @@
 (function () {
   'use strict';
   // 要同步到服务器的本地存档键（游戏主存档、竞技段位、选将记录、沙盒设置、竞技对战里每只精灵的配招）
-  var KEYS = ['hs-account-v1', 'hs-rank-v1', 'hs-draft-v1', 'hs-train-v1', 'hs-loadout-v1'];
+  var KEYS = ['hs-account-v1', 'hs-rank-v1', 'hs-rank-history-v1', 'hs-draft-v1', 'hs-train-v1', 'hs-loadout-v1'];
   // 进账申报（2026-10-24）：game.js 的 earn() 记下的申报先放这里，随下一次存档上传一起发给服务器，服务器收下后删掉
   var CLAIMS = 'hs-claims-v1';
   var TOK = 'hs-cloud-token', OWNER = 'hs-cloud-owner', REV = 'hs-cloud-rev', DIRTY = 'hs-cloud-dirty', LEGACY = 'hs-legacy-backup', LAST = 'hs-cloud-lastuser';

@@ -34,7 +34,7 @@ var RW = (function () {
   // 从称号编号还原出算奖励需要的信息；不认识的编号返回 null
   function titleOf(id) {
     if (TITLE_IDS.indexOf(id) >= 0) return { id: id };
-    var m = /^S1-(\d+)$/.exec(id); if (m && +m[1] >= 1 && +m[1] < RANKS.length) return { id: id, season: true };
+    var m = /^S[12]-(\d+)$/.exec(id); if (m && +m[1] >= 1 && +m[1] < RANKS.length) return { id: id, season: true };
     m = /^ty([ctx])(\d+)-(.+)$/.exec(id);
     if (m && TYPE_COLOR[m[3]] && m[3] !== '无') { var need = +m[2], ok = { c: [3, 6, 10, 15], t: [1, 3, 5, 10], x: [5] }[m[1]]; if (ok.indexOf(need) >= 0) return { id: id, grp: 'type', tier: m[1], need: need }; }
     return null;
@@ -43,7 +43,7 @@ var RW = (function () {
   var RANK_RW_OLD = [null, { exp: 500, energy: 200 }, { exp: 1000, energy: 300 }, { exp: 1500, energy: 400 }, { exp: 2000, energy: 500 },
     { exp: 2500, energy: 600 }, { exp: 3000, energy: 700 }, { exp: 3500, energy: 800 }, { exp: 4000, energy: 900 }, { exp: 4500, energy: 1000 }, { exp: 5000, energy: 1200 }];
   var RANK_ITEMS = { 2: { cap1: 5 }, 3: { cap1: 5 }, 5: { cap1: 5 }, 6: { cap1: 5 }, 7: { cap1: 5, evAny: 1 }, 8: { evAny: 1 }, 9: { evAny: 2 }, 10: { evAny: 3 } };
-  var SEASON = 'S1';
+  var SEASON = RANK_SEASON.id;
   // 剧情对话里给的东西（剧本里写 give），编号是「剧情:编号」
   var SGIVE = {};
   if (typeof STORY_SCRIPT !== 'undefined') Object.keys(STORY_SCRIPT).forEach(function (site) { (STORY_SCRIPT[site] || []).forEach(function (st) { if (st && st.give && st.give.id) SGIVE[site + ':' + st.give.id] = st.give; }); });
@@ -63,7 +63,7 @@ var RW = (function () {
     if (src === 'jade') { var rid = p.length === 4 ? p[1] : p[0]; if (!(p.length === 2 || (p.length === 4 && dayOk(p[0]))) || !GEM_SPOT[rid]) return false; var j = {}; j[GEM_SPOT[rid]] = 3; return only({ items: j }); }   // 「日期:区域:场景」（旧页面是「区域:场景」）
     if (src === 'hornDay') return dayOk(id) || /^\d+$/.test(id) ? only({ items: { m_hfhorn: 15 } }) : false;
     if (src === 'mine') { if (p.length !== 3 || !/^\d+$/.test(p[0])) return false; return only({ items: { m_cu: 3, m_fe: 3 } }); }
-    if (src === 'rankRw') { var r = +p[1]; if (p[0] !== SEASON || !(r >= 1 && r < RANK_RW_OLD.length)) return false; var R = RANK_RW_OLD[r]; return only({ exp: R.exp * 2, energy: R.energy * 2, items: RANK_ITEMS[r] }); }
+    if (src === 'rankRw') { var r = +p[1]; if (p[0] !== SEASON || !(r >= 1 && r < RANK_RW_OLD.length)) return false; var R = RANK_RW_OLD[r], items = Object.assign({}, RANK_ITEMS[r] || {}); if (r === 7) items.s2MonTicket = 1; return only({ exp: R.exp * 2, energy: R.energy * 2, items: items }); }
     if (src === 'mail') { var M0 = (typeof MAILS !== 'undefined' ? MAILS : []).filter(function (x) { return x.id === id; })[0]; if (!M0) return null; var a = M0.att || {}; return only({ exp: a.exp, energy: a.energy, tokens: a.tokens, twTok: a.twTok, merit: a.merit, meritXp: a.merit, items: a.items }); }
     return null;
   }

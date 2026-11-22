@@ -5,8 +5,9 @@
 
 (function () {
   var $ = function (id) { return document.getElementById(id); };
+  var WIKI_SP = SP.concat(EXTRA_SP);
   var app = { loadout: {}, bag: ['dragon', 'leaf', 'squid', 'pluto', 'tagore'], sel: 'dragon', screen: 'builder', S: null, logHTML: '', fast: false, lastP: null, lastA: null };
-  SP.forEach(function (s) { app.loadout[s.id] = s.def.slice(); });
+  WIKI_SP.forEach(function (s) { app.loadout[s.id] = s.def.slice(); });
   // 竞技对战里给每只精灵选好的技能：记在存档里（跟着云存档同步），下次再用同一只精灵时沿用这套
   var LOADOUT_KEY = 'hs-loadout-v1';
   try {
@@ -22,27 +23,27 @@
   function saveLoadout() {
     // 只记和默认配招不一样的，存档小一点
     var o = {};
-    SP.forEach(function (s) { var lo = app.loadout[s.id]; if (lo && lo.join('|') !== s.def.join('|')) o[s.id] = lo.slice(); });
+    WIKI_SP.forEach(function (s) { var lo = app.loadout[s.id]; if (lo && lo.join('|') !== s.def.join('|')) o[s.id] = lo.slice(); });
     try { localStorage.setItem(LOADOUT_KEY, JSON.stringify(o)); } catch (e) {}
   }
   var busy = false, quitArmed = 0;
   app.mode = 'sandbox';
   app.rank = { r: 0, stars: 0, w: 0, l: 0, best: 0 };
   try { var savedR = JSON.parse(localStorage.getItem('hs-rank-v1') || 'null'); if (savedR && savedR.r != null) app.rank = savedR; } catch (e) {}
-  if (app.rank.r >= DIV_FROM && !app.rank.dv || app.rank.best >= DIV_FROM && !app.rank.bestDv && app.rank.best <= DIV_TO) { fixRank(app.rank); try { localStorage.setItem('hs-rank-v1', JSON.stringify(app.rank)); } catch (e) {} }   // 铂金到宗师分小段：旧存档补上小段
-  fixRank(app.rank);
+
+  app.rank = fixRank(RANK_SEASON.state(app.rank));
   try { var sm = localStorage.getItem('hs-mode'); if (sm === 'rank' || sm === 'brawl') app.mode = sm; } catch (e) {}
   // 平衡排位：每局系统给出两套强度相同的阵容，二选一
   app.draft = null;
-  try { var savedD = JSON.parse(localStorage.getItem('hs-draft-v1') || 'null'); if (savedD && savedD.opts) app.draft = savedD; } catch (e) {}
+  try { var savedD = JSON.parse(localStorage.getItem('hs-draft-v1') || 'null'); if (savedD && savedD.season === RANK_SEASON.id && savedD.opts) app.draft = savedD; } catch (e) {}
   function saveDraft() { try { localStorage.setItem('hs-draft-v1', JSON.stringify(app.draft)); } catch (e) {} }
   function ensureDraft() {
-    if (!app.draft || app.draft.used) {
+    if (!app.draft || app.draft.season !== RANK_SEASON.id || app.draft.used) {
       if (srvOn()) {   // 用服务器网址玩时：本局阵容由服务器抽（2026-10-25）
         if (!app.draft || !app.draft.loading) { app.draft = { opts: null, loading: true, pick: null, order: null }; fetchDraft(); }
         return app.draft;
       }
-      app.draft = { opts: drawDraft(), pick: null, order: null }; saveDraft();
+      app.draft = { season: RANK_SEASON.id, opts: drawDraft(), pick: null, order: null }; saveDraft();
     }
     return app.draft;
   }
@@ -64,6 +65,9 @@
   }
   function B() { if (app.mode !== 'rank') return app.bag; var d = ensureDraft(); return d.pick == null ? [] : d.order; }
   // 沙盒：对战 / 训练
+  app.source = 'wiki';
+  function ownSandbox() { return app.mode === 'sandbox' && app.source === 'backpack' && !training(); }
+  function ownTeam() { return window.HSACC && HSACC.ready() ? ACC.team(HSACC.acc()).slice(0, 5) : []; }
   app.sub = 'battle'; app.train = { lv: 100, def: 50 };
   try { var savedT = JSON.parse(localStorage.getItem('hs-train-v1') || 'null'); if (savedT) { app.sub = savedT.sub || 'battle'; app.train = savedT.train || app.train; } } catch (e) {}
   function saveTrain() { try { localStorage.setItem('hs-train-v1', JSON.stringify({ sub: app.sub, train: app.train })); } catch (e) {} }
@@ -75,8 +79,9 @@
     var h = ''; for (var i = 0; i < 3; i++) h += '<i class="' + (i < n ? 'on' : '') + '">★</i>'; return '<span class="stars">' + h + '</span>';
   }
   function rankBadge(r, dv) { return '<span class="rbadge" style="--rc:' + RANK_COLOR[r] + '">' + rankFull(r, dv) + '</span>'; }
-  var resetArmed = 0;
   function renderMode() {
+    try { app.rank = fixRank(RANK_SEASON.state(JSON.parse(localStorage.getItem('hs-rank-v1') || 'null'))); } catch (e) {}
+    var src = $('sandbox-source'); if (src) { src.hidden = app.mode !== 'sandbox' || training(); src.querySelectorAll('[data-sandbox-source]').forEach(function (b) { b.classList.toggle('on', b.dataset.sandboxSource === app.source); }); }
     $('mode-sandbox').classList.toggle('on', app.mode === 'sandbox'); $('mode-sandbox').setAttribute('aria-selected', app.mode === 'sandbox');
     $('mode-rank').classList.toggle('on', app.mode === 'rank'); $('mode-rank').setAttribute('aria-selected', app.mode === 'rank');
     // 精灵大乱斗：读完支线「精灵大乱斗」（孝感大厅 · Dr.黄）后才开放；面板由 social.js 绘制，其他配置区先收起来
@@ -86,7 +91,7 @@
     if (!bwOpen) $('brawl-sub').textContent = '未开放 · 持有 3 只精灵后，去孝感大厅找 Dr.黄';
     var bw = app.mode === 'brawl' && bwOpen;
     $('mode-brawl').classList.toggle('on', bw); $('mode-brawl').setAttribute('aria-selected', bw);
-    $('brawl').hidden = !bw; document.querySelector('#builder .bagbox').hidden = bw; document.querySelector('#builder .build').hidden = bw;
+    $('brawl').hidden = !bw; document.querySelector('#builder .bagbox').hidden = bw; document.querySelector('.build').hidden = bw || ownSandbox();
     if (bw) { $('rankcard').hidden = true; $('subbar').hidden = true; if (window.HSBRAWL) window.HSBRAWL.render(); return; }
     var rc = $('rankcard'); rc.hidden = app.mode !== 'rank';
     $('subbar').hidden = app.mode !== 'sandbox';
@@ -95,11 +100,11 @@
     $('sub-hint').textContent = app.sub === 'train' ? '对木桩练习出招，统计每个技能造成的伤害' : '与随机配置的电脑对战';
     if (app.mode === 'rank') {
       var R = app.rank, ladder = RANKS.map(function (n, i) { return '<li class="' + (i < R.r ? 'done' : i === R.r ? 'cur' : '') + '" style="--rc:' + RANK_COLOR[i] + '" title="' + n + '">' + n + '</li>'; }).join('');
-      rc.innerHTML = '<div class="rc-main">' + rankBadge(R.r, R.dv) + starsHTML(R.stars, R.r) +
+      rc.innerHTML = '<div class="rc-main">' + '<span class="chip">S2</span>' + rankBadge(R.r, R.dv) + starsHTML(R.stars, R.r) +
         '<div class="rc-txt"><b>当前段位：' + rankFull(R.r, R.dv) + '</b><span>对手特点：' + esc(rankDesc(R.r, R.stars, R.dv)) + '</span>' +
         '<span class="rc-rule">每局胜利获得 1 星，集满 3 星晋级；每局失败扣除 1 星，0 星时失败将降级。铂金到宗师每个段位分为 V、IV、III、II、I 五个小段，从 V 开始往上升，每个小段 3 星，小段越高电脑越强。' + (R.r === RANKS.length - 1 ? '王者段位不封顶，星数越高，电脑越强、越会玩，对手阵容也会比你稍强（最多算到 ' + KING_CAP + ' 星）。' : '双方阵容的综合实力相当。') + '对手精灵在出场后才会揭晓。每局最多 ' + MAX_TURNS + ' 回合，届时剩余精灵多的一方获胜，数量相同则为平局，星数不变。</span></div>' +
-        '<div class="rc-rec"><span>战绩：' + R.w + ' 胜 ' + R.l + ' 负</span><span>最高段位：' + rankFull(R.best || 0, R.bestDv) + ((R.best || 0) === RANKS.length - 1 ? ' ' + Math.max(R.kingBest || 0, R.r === RANKS.length - 1 ? R.stars : 0) + ' 星' : '') + '</span><button type="button" class="btn ghost" id="btn-reset">' + (Date.now() - resetArmed < 3000 ? '再点一次确认' : '重置段位') + '</button></div></div>' +
-        rankExpHTML() + '<ol class="ladder">' + ladder + '</ol>' + (window.HSACC && HSACC.tokenBarHTML ? HSACC.tokenBarHTML() : '') + (window.HSACC && HSACC.rankRwHTML ? HSACC.rankRwHTML() : '');
+        '<div class="rc-rec"><span>战绩：' + R.w + ' 胜 ' + R.l + ' 负</span><span>最高段位：' + rankFull(R.best || 0, R.bestDv) + ((R.best || 0) === RANKS.length - 1 ? ' ' + Math.max(R.kingBest || 0, R.r === RANKS.length - 1 ? R.stars : 0) + ' 星' : '') + '</span></div></div>' +
+        '<button type="button" class="btn ghost" data-arena-rules>赛季规则与奖励</button><button type="button" class="btn ghost" data-arena-token>代币商店</button>';
     }
   }
   // 平衡排位的经验：和精灵大乱斗一样写清楚规则，并显示今天的进度
@@ -130,13 +135,8 @@
     if (!(window.HSACC && window.HSACC.ready() && window.HSACC.brawlOpen())) { var t = '精灵大乱斗还没开放：持有 3 只精灵后，去星际探索 · 荆楚号 · 孝感大厅找 Dr.黄。'; if (window.HSACC) window.HSACC.toast(t); else flashMsg(t); return; }
     app.mode = 'brawl'; saveMode(); renderMode();
   });
-  $('mode-rank').addEventListener('click', function () { app.mode = 'rank'; saveMode(); if (ensureDraft().pick != null) app.sel = B()[0]; renderMode(); renderBuilder(); });
-  $('rankcard').addEventListener('click', function (e) {
-    if (e.target.id !== 'btn-reset') return;
-    if (Date.now() - resetArmed < 3000) { app.rank = { r: 0, stars: 0, w: 0, l: 0, best: 0 }; saveRank(); resetArmed = 0; }
-    else { resetArmed = Date.now(); setTimeout(renderMode, 3100); }
-    renderMode();
-  });
+  $('mode-rank').addEventListener('click', function () { app.mode = 'rank'; saveMode(); if (ensureDraft().pick != null) app.sel = B()[0]; else if (!RANK_ROSTER.some(function (s) { return s.id === app.sel; })) app.sel = RANK_ROSTER[0].id; renderMode(); renderBuilder(); });
+
 
   function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function tchip(t) { return '<span class="chip tchip" style="background:' + (TYPE_COLOR[t] || '#9a958a') + '">' + t + '</span>'; }
@@ -210,7 +210,7 @@
       natAny: ['pill', '#8e6fd6', '性'], natTagore: ['flask', '#8e6fd6', '性'], evReset: ['pill', '#9aa0a6', '退'], fruit1: ['fruit', '#e74c3c'], fruit2: ['fruit', '#f39c12', '✦'],
       g_sand: ['pile', '#f2d58a', '#fff6c8'], g_core: ['orb', '#ff8a3d', '✦'], s_herb: ['seed', '#8bc34a'], s_flower: ['seed', '#4a90e2'], s_rice: ['seed', '#e8d9a8'], s_exp: ['seed', '#c79545'], c_exp: ['fruit', '#9ebc54', '经'], c_herb: ['leaf', '#4caf50'], c_flower: ['flower', '#5aa2f0'], c_rice: ['grain', '#f5f0dc'],
       mmTok: ['coin', '#4a6a8a', '明'], mmEye: ['orb', '#f2c94c', '眼'], e_leiming: ['orb', '#e8b830', '精'], e_odo: ['orb', '#5a7aa8', '精'], odoFin: ['gem', '#6a86b8'], hrDisk: ['coin', '#7b5ac8', '✦'], exp: ['orb', '#3b8fd9', '经'], energy: ['orb', '#e0a020', '能'],
-      e_pluto: ['orb', '#5b4a8a', '精'], ctTicket: ['ticket', '#f2c94c', '券'], ctShare: ['ticket', '#b5452c', '享'], permit: ['ticket', '#c42f3a', '许'], auto: ['box', '#5b8fd0', '自']
+      e_pluto: ['orb', '#5b4a8a', '精'], s2MonTicket: ['ticket', '#76a5b8', 'S2'], ctTicket: ['ticket', '#f2c94c', '券'], ctShare: ['ticket', '#b5452c', '享'], permit: ['ticket', '#c42f3a', '许'], auto: ['box', '#5b8fd0', '自']
     }[k];
     if (G) return genIcon(G[0], G[1], G[2]);
     var C = { cap1: ['#7c97b8', '#e8eef6'], cap2: ['#c42f3a', '#f6e4e2'], cap3: ['#2b2a33', '#f3d36b'], pot1: ['#5aa469', '#e4f2e2'], pot2: ['#e08a2e', '#fbead4'], pot200: ['#2f8f86', '#d7f3ef'], pp5: ['#7fb6f2', '#e3effc'], pp10: ['#3f86dc', '#dbe8fa'], pp15: ['#2a4ca0', '#d6def5'] }[k] || ['#999', '#eee'];
@@ -355,6 +355,13 @@
       }).join('') + '</div>';
   }
   function renderBag() {
+    if (ownSandbox()) {
+      var team = ownTeam(); $('draft').hidden = true; $('trainset').hidden = true; $('bag').hidden = false; $('btn-random').hidden = true;
+      $('bag-title').textContent = '自己的出战背包'; $('bag-hint').textContent = '按当前配队顺序出战，沿用等级、形态、技能、性格、天赋和学习力，可在精灵背包中调整';
+      $('bag').innerHTML = team.map(function (m) { var f = ACC.form(m); return '<li><div class="slot filled"><img src="' + f.img + '" alt=""><span class="nm">' + esc(f.name) + '</span><small>LV' + m.lv + '</small></div></li>'; }).join('');
+      $('bag-msg').textContent = team.length ? '已选 ' + team.length + ' 只，对手等级按我方平均等级匹配' : '请先在精灵背包中配置出战精灵';
+      $('btn-start').disabled = !team.length; $('btn-start').textContent = '使用自己的背包出战'; return;
+    }
     var rank = app.mode === 'rank', d = rank ? ensureDraft() : null, drafting = rank && d.pick == null, tr = training();
     $('trainset').hidden = !tr;
     if (tr) {
@@ -397,7 +404,7 @@
   }
   function renderDex() {
     var quick = !training() && app.mode !== 'rank';
-    $('dex').innerHTML = SP.map(function (s) {
+    $('dex').innerHTML = (app.mode === 'rank' ? RANK_ROSTER : WIKI_SP).map(function (s) {
       var inb = B().indexOf(s.id) >= 0, q = '';
       if (quick && app.sel === s.id) q = inb ? '<button type="button" class="qx" data-rm="' + s.id + '">✕ 移出背包</button>' : B().length < 5 ? '<button type="button" class="qa" data-add="' + s.id + '">＋ 放进背包</button>' : '';
       return '<div class="cw">' + q + '<button type="button" class="card' + (app.sel === s.id ? ' sel' : '') + '" data-id="' + s.id + '">' +
@@ -592,7 +599,7 @@
     if (pk) { var d = ensureDraft(); if (!d.opts) return; d.pick = +pk.dataset.pick; d.order = d.opts[d.pick].slice(); saveDraft(); app.sel = d.order[0]; renderBuilder(); return; }
     var m = e.target.closest('[data-id]'); if (m) { app.sel = m.dataset.id; renderDex(); renderDetail(); }
   });
-  $('btn-random').addEventListener('click', function () { app.bag = shuffle(SP.map(function (s) { return s.id; })).slice(0, 5); app.sel = app.bag[0]; renderBuilder(); });
+  $('btn-random').addEventListener('click', function () { app.bag = shuffle(WIKI_SP.map(function (s) { return s.id; })).slice(0, 5); app.sel = app.bag[0]; renderBuilder(); });
   $('btn-start').addEventListener('click', function () { startBattle(); });
 
   /* ---------------- 对战界面 ---------------- */
@@ -683,10 +690,10 @@
   });
   // 服务器结算的竞技对战（平衡排位、沙盒对战）
   function startBattleRemote() {
-    var rank = app.mode === 'rank', ids = B(); if (!ids.length) return;
+    var rank = app.mode === 'rank', ids = ownSandbox() ? ownTeam().map(function (m) { return m.sid; }) : B(); if (!ids.length) return;
     if (rank && (!app.draft || app.draft.pick == null)) return;
     var mv = {}; ids.forEach(function (id) { mv[id] = app.loadout[id].slice(); });
-    var body = rank ? { op: 'start', kind: 'rank', args: { pick: app.draft.pick, order: ids, moves: mv } } : { op: 'start', kind: 'sandbox', args: { team: ids.map(function (id) { return { id: id, moves: mv[id] }; }) } };
+    var body = rank ? { op: 'start', kind: 'rank', args: { pick: app.draft.pick, order: ids, moves: mv } } : { op: 'start', kind: 'sandbox', args: { source: app.source, team: ids.map(function (id) { return { id: id, moves: mv[id] }; }) } };
     $('btn-start').disabled = true;
     var L = LOADER.show('正在进入对战系统～'); L.to(0.7);   // 加载面板（js/ui/loader.js）
     CLOUD.pve(body).then(function (r) {
@@ -722,9 +729,9 @@
     remote = null;
     if (srvOn()) return startBattleRemote();
     bgm('pvp');
-    var p = B().map(function (id) { return { id: id, moves: app.loadout[id].slice() }; });
+    var p = ownSandbox() ? ownTeam().map(function (m) { return ACC.battleMon(HSACC.acc(), m); }) : B().map(function (id) { return { id: id, moves: app.loadout[id].slice() }; });
     var rank = app.mode === 'rank';
-    var a = rank ? buildAITeam(app.rank.r, B(), app.rank.stars, app.rank.dv) : (function () { var ids = shuffle(SP.map(function (s) { return s.id; })).slice(0, 5); return ids.map(function (id) { return { id: id, moves: smartLoadout(id, 6, ids) }; }); })();
+    var a = rank ? buildAITeam(app.rank.r, B(), app.rank.stars, app.rank.dv) : (function () { var ids = shuffle(WIKI_SP.map(function (s) { return s.id; })).slice(0, 5); return ids.map(function (id) { return { id: id, lv: ownSandbox() ? Math.round(ownTeam().reduce(function (n, m) { return n + m.lv; }, 0) / ownTeam().length) : undefined, moves: smartLoadout(id, 6, ids) }; }); })();
     app.lastP = p;
     app.S = newBattle(p, a);
     if (rank) { app.S.mode = 'rank'; app.S.rankAt = app.rank.r; app.S.rankDv = app.rank.dv; app.S.ai = rankAI(app.rank.r, app.rank.stars, app.rank.dv); app.draft.used = true; saveDraft(); }
@@ -922,7 +929,7 @@
       addLog(note, 'bad'); showEnd();
     });
   }
-  window.HSBATTLE = { renderMode: function () { renderMode(); if (app.mode !== 'brawl') renderBuilder(); }, start: startStory, startPvp: startPvp, pvpApply: pvpApply, pvpAbort: pvpAbort, pvpActive: function () { return !!pvp; },
+  window.HSBATTLE = { setSource: function (s) { app.source = s === 'backpack' ? s : 'wiki'; renderMode(); renderBuilder(); }, rankRules: function () { return '<p>S2 赛季 · ' + RANK_ROSTER.length + ' 只已上色精灵参加排位</p><p>胜利获得1星，满3星晋级，失败扣1星，0星失败降级，黑铁保底。铂金至宗师含五个小段，每局最多' + MAX_TURNS + '回合</p><p>' + esc(rankDesc(app.rank.r, app.rank.stars, app.rank.dv)) + '</p>' + rankExpHTML() + (window.HSACC ? HSACC.rankRwHTML() : ''); }, renderMode: function () { renderMode(); if (app.mode !== 'brawl') renderBuilder(); }, start: startStory, startPvp: startPvp, pvpApply: pvpApply, pvpAbort: pvpAbort, pvpActive: function () { return !!pvp; },
     // 竞技对战里给每只精灵记住的配招（平衡模式切磋选技能时沿用，改了也会记回来）
     loadout: function (id) { return app.loadout[id] ? app.loadout[id].slice() : []; },
     // 观战转播：social.js 连上服务器后把发送函数交给这里

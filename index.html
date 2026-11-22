@@ -17,6 +17,7 @@
 <link rel="stylesheet" href="css/storage-layout.css?v=20261115-8">
 <link rel="stylesheet" href="css/estate-view.css?v=20261116-1">
 <link rel="stylesheet" href="css/shop-ui.css?v=20261122-2">
+<link rel="stylesheet" href="css/arena.css?v=20261122-1">
 <link rel="stylesheet" href="css/christmas.css?v=20261122-7">
 <link rel="stylesheet" href="css/daily-login.css?v=20261122-2">
 <link rel="stylesheet" href="css/season-theme.css?v=20261122-4">
@@ -75,6 +76,7 @@
       <button type="button" class="sub" id="sub-train" role="tab" aria-selected="false">训练</button>
       <span class="hint" id="sub-hint">与随机配置的电脑对战</span>
     </div>
+    <div id="sandbox-source" class="subbar" aria-label="沙盒精灵来源"><button type="button" class="sub on" data-sandbox-source="wiki">Wiki 全部精灵</button><button type="button" class="sub" data-sandbox-source="backpack">自己的背包</button></div>
     <div class="bagbox">
       <span class="tape l"></span><span class="tape r"></span>
       <div class="bag-head">
@@ -207,7 +209,7 @@
 <script src="js/ui/land.js?v=20261116-12"></script>
 <script src="js/ui/skill-inspect.js?v=20261118-1"></script>
 <script src="js/ui/loader.js"></script>
-<script src="js/net/cloud.js?v=20261122-1"></script>
+<script src="js/net/cloud.js?v=20261122-2"></script>
 <script>
 CLOUD.boot([
   'js/data/content-words.js',
@@ -225,6 +227,7 @@ CLOUD.boot([
   'js/data/avfocus.js',
   'js/data/xcq.js',
   'js/data/ship-map.js',
+  'js/data/rank-season.js',
   'js/engine/battle.js',
   'js/engine/ai.js',
   'js/engine/ranked.js',
@@ -243,19 +246,20 @@ CLOUD.boot([
   'js/engine/summon.js',
   'js/engine/endless.js',
   'js/ui/audio.js?v=20261122-3',
-  'js/ui/battle-ui.js?v=20261122-1',
+  'js/ui/battle-ui.js?v=20261122-2',
   'js/ui/scene-motion.js?v=20261122-2',
   'js/ui/christmas.js?v=20261122-7',
-  'js/ui/game.js?v=20261122-10',
-  'js/ui/shop-ui.js?v=20261122-2',
+  'js/ui/game.js?v=20261122-11',
+  'js/ui/shop-ui.js?v=20261122-3',
   'js/ui/daily-login.js?v=20261122-2',
+  'js/ui/arena.js?v=20261122-1',
   'js/ui/social.js?v=20261116-13',
   'js/ui/board.js',
   'js/ui/display.js',
   'js/ui/battle-layout.js?v=20261118-1',
   'js/ui/bag-layout.js?v=20261116-13',
   'js/ui/collection-layout.js?v=20261116-8',
-  'js/ui/map-layout.js?v=20261122-2',
+  'js/ui/map-layout.js?v=20261122-3',
   'js/ui/estate-view.js?v=20261116-1'
 ]);
 </script>

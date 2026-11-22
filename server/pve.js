@@ -183,8 +183,8 @@ A.use(function (req, res, url) {
     if (op === 'draft') {   // 平衡排位：本局的两套阵容由服务器抽（还没用掉就沿用）
       var ud = A.loadUser(name); if (!ud || !ud.save) return A.reply(res, 409, { error: '存档还没同步到服务器' });
       var dd = E.PVE.readKey(ud.save.data, 'hs-draft-v1'), outD = { ok: true };
-      if (!dd || !dd.opts || dd.used) { dd = E.PVE.newDraft(); ud.save.data['hs-draft-v1'] = JSON.stringify(dd); outD.rev = saveAcc(ud, accOf(ud) || JSON.parse(ud.save.data['hs-account-v1'] || '{}')); }
-      outD.keys = { 'hs-draft-v1': ud.save.data['hs-draft-v1'] };
+      if (!dd || dd.season !== E.RANK_SEASON.id || !dd.opts || dd.used) { dd = E.PVE.newDraft(); ud.save.data['hs-draft-v1'] = JSON.stringify(dd); outD.rev = saveAcc(ud, accOf(ud) || JSON.parse(ud.save.data['hs-account-v1'] || '{}')); }
+      outD.keys = { 'hs-draft-v1': ud.save.data['hs-draft-v1'], 'hs-rank-v1': ud.save.data['hs-rank-v1'] };
       return A.reply(res, 200, outD);
     }
     if (op === 'wild') { var uw = A.loadUser(name), aw = uw && accOf(uw); if (!aw) return A.reply(res, 409, { error: '存档还没同步到服务器' }); var rw = wildBatch(E, name, aw, body); return A.reply(res, rw.error ? 400 : 200, rw); }

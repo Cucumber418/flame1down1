@@ -24,7 +24,7 @@ var AWD = (function () {
     var I = items(a); for (var k in R.items || {}) if (R.items[k] > 0) I[k] = (I[k] || 0) + R.items[k];
     if (R.deco) { if (!a.baseInv || typeof a.baseInv !== 'object') a.baseInv = {}; if (!a.baseInv.deco) a.baseInv.deco = {}; for (var dk in R.deco) if (R.deco[dk] > 0) a.baseInv.deco[dk] = (a.baseInv.deco[dk] | 0) + R.deco[dk]; }   // 基地摆件（2026-11-02，冠军奖杯）
   }
-  function rankBest(data) { try { var R = JSON.parse((data && data['hs-rank-v1']) || 'null'); return R ? Math.max(R.best || 0, R.r || 0) : 0; } catch (e) { return 0; } }
+  function rankBest(data) { try { var R = JSON.parse((data && data['hs-rank-v1']) || 'null'); return R && R.season === RANK_SEASON.id ? Math.max(R.best || 0, R.r || 0) : 0; } catch (e) { return 0; } }
   function lvCount(a, lv) { return (a.mons || []).filter(function (m) { return m && m.lv >= lv; }).length; }
   function rareKinds(a) { var R = []; for (var k in WILD_POOLS) WILD_POOLS[k].forEach(function (w) { if (w.rare && w.sid !== a.starter && R.indexOf(w.sid) < 0) R.push(w.sid); }); var o = {}; (a.mons || []).forEach(function (m) { if (m && R.indexOf(m.sid) >= 0) o[m.sid] = 1; }); return Object.keys(o).length; }
   function typeKinds(a, t, lv) { var o = {}; (a.mons || []).forEach(function (m) { var s = m && SPMAP[m.sid]; if (s && s.types.indexOf(t) >= 0 && m.lv >= lv) o[m.sid] = 1; }); return Object.keys(o).length; }
@@ -55,7 +55,7 @@ var AWD = (function () {
   ];
   [25, 50, 75, 100].forEach(function (L) { TITLES.push({ id: 'one' + L, ok: function (a) { return lvCount(a, L) >= 1; } }); });
   [25, 50, 75, 100].forEach(function (L) { TITLES.push({ id: 'all' + L, ok: function (a) { return lvCount(a, L) >= 5; } }); });
-  for (var sr = 1; sr < RANKS.length; sr++) (function (r) { TITLES.push({ id: 'S1-' + r, season: true, ok: function (a, env) { return rankBest(env.data) >= r; } }); })(sr);
+  for (var sr = 1; sr < RANKS.length; sr++) (function (r) { TITLES.push({ id: RANK_SEASON.id + '-' + r, season: true, ok: function (a, env) { return rankBest(env.data) >= r; } }); })(sr);
   var TYPE_TIERS = [{ k: 'c', lv: 0, steps: [3, 6, 10, 15] }, { k: 't', lv: 50, steps: [1, 3, 5, 10] }, { k: 'x', lv: 80, steps: [5] }];
   Object.keys(TYPE_COLOR).filter(function (t) { return t !== '无'; }).forEach(function (t) {
     TYPE_TIERS.forEach(function (G) { G.steps.forEach(function (n) { TITLES.push({ id: 'ty' + G.k + n + '-' + t, grp: 'type', tier: G.k, need: n, ok: function (a) { return typeKinds(a, t, G.lv) >= n; } }); }); });
@@ -121,10 +121,11 @@ var AWD = (function () {
     return { ok: true, n: n, rw: x.rw };
   });
 
-  /* ---------- 排位赛季（S1）首次达到每个段位的奖励（a.rankRw = { season, got: { 段位: 时间 } }；送的精灵一起发） ---------- */
+  /* ---------- 排位赛季首次达到每个段位的奖励（a.rankRw = { season, got: { 段位: 时间 } }；送的精灵一起发） ---------- */
   var SEASON = RW.SEASON;
   function rankRec(a) { if (!a.rankRw || a.rankRw.season !== SEASON) a.rankRw = { season: SEASON, got: {}, x2: true, items: true, kingGift: true };   /* 新的记录按现在的标准发，不需要补 */ if (!a.rankRw.got) a.rankRw.got = {}; return a.rankRw; }
-  function rankRwOf(r) { var R = RW.RANK_RW_OLD[r]; return R && { exp: R.exp * 2, energy: R.energy * 2, items: RW.RANK_ITEMS[r] }; }
+  function rankRwOf(r) { var R = RW.RANK_RW_OLD[r], items = Object.assign({}, RW.RANK_ITEMS[r] || {}); if (r === 7) items.s2MonTicket = 1; return R && { exp: R.exp * 2, energy: R.energy * 2, items: items }; }
+  TX.add('rankSeasonNotice', function (a) { a.rankSeasonSeen = RANK_SEASON.id; return { ok: true }; });
   function rankPending(a, data) { var best = rankBest(data), got = (a.rankRw && a.rankRw.season === SEASON && a.rankRw.got) || {}, out = []; for (var r = 1; r <= best && r < RW.RANK_RW_OLD.length; r++) if (!got[r]) out.push(r); return out; }
   TX.add('rankRw', function (a, args, env) {
     var list = rankPending(a, env.data), rec = rankRec(a), out = [];
@@ -283,7 +284,7 @@ var AWD = (function () {
     }
     if (!rec.kingGift) {
       rec.kingGift = true;
-      if (rec.got[10]) send(a, { id: SEASON + '-king-gift', title: '王者段位奖励补发：凶骨', body: '{name}，你好！\n排位赛季 ' + SEASON + ' 的王者段位奖励新增了 LV10 的凶骨。你之前已经达到王者，现在补发给你，请领取附件。', att: { mons: [{ sid: 'bone', lv: 10 }] } }, now);
+      if (SEASON === 'S1' && rec.got[10]) send(a, { id: SEASON + '-king-gift', title: '王者段位奖励补发：凶骨', body: '{name}，你好！\n排位赛季 ' + SEASON + ' 的王者段位奖励新增了 LV10 的凶骨。你之前已经达到王者，现在补发给你，请领取附件。', att: { mons: [{ sid: 'bone', lv: 10 }] } }, now);
     }
     // 竞技代币上线（2026-10-14）：领过排位奖励的局每局补 20 代币；今天已经按 600 经验领过的局，补经验差额
     if (!a.tokenBack) {

@@ -87,7 +87,7 @@ function dayCheck(u, oldData, newData) {
   u.gain = g; return null;
 }
 function cheatLog(name, why) { try { fs.appendFileSync(path.join(DATA_DIR, 'cheat.log'), new Date().toISOString() + '\t' + name + '\t' + why + '\n'); } catch (e) {} }
-function loadUser(name) { return readJSON(userFile(name), null); }
+function loadUser(name) { var u = readJSON(userFile(name), null); if (u && u.save && require('../js/data/rank-season').migrate(u.save.data)) { u.save.rev = (u.save.rev || 0) + 1; u.save.savedAt = Date.now(); saveUser(u); } return u; }
 function saveUser(u) {
   var f = userFile(u.name);
   // 存档每次覆盖前留一份上一版，万一出问题还能找回
@@ -308,3 +308,6 @@ function allUsers() {
 
 module.exports = { handle: handle, use: function (fn) { extra.push(fn); }, whoIs: whoIs, whoToken: whoToken, loadUser: loadUser, saveUser: saveUser, allUsers: allUsers,
   reply: reply, readBody: readBody, userCount: userCount, walletStatus: claims.status, resetPassword: resetPassword, listUsers: listUsers, DATA_DIR: DATA_DIR, progScore: progScore, cheatCheck: cheatCheck, cheatStats: stats };
+
+// 所有账号进入 S2；保留已拥有的精灵、道具与旧赛季称号
+fs.readdirSync(USER_DIR).filter(function (f) { return /^[0-9a-f]+\.json$/.test(f); }).forEach(function (f) { var u = readJSON(path.join(USER_DIR, f), null); if (u && u.name) loadUser(u.name); });

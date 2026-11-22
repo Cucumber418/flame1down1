@@ -1,6 +1,6 @@
 /* ==========================================================
  * 精灵表
- * SP 是参加竞技对战的精灵；EXTRA_SP 是只在账号系统里出现的精灵
+ * SP / EXTRA_SP 保留原有分类；RANK_ROSTER 为当前排位名单，沙盒使用两者全集
  * ========================================================== */
 
 /* ---------- 精灵 ---------- unsure: 照片里看不清、暂定的种族值 */
@@ -148,7 +148,7 @@ var SP = [
     lore: '魔化的秘密力量能让她制造出幻境，置身者会产生回到4班的错觉。',
     moves: ['飞叶刀', '寄生之种', '幻术', '吸取', '木叶庇护', '盛放', '花粉', '幻境汲取', '生命折叠'],
     hidden: ['生命榨取', '万灵封印'], def: ['生命榨取', '幻境汲取', '寄生之种', '生命折叠'] },
-  // ↓ 竞技名单固定之后新加的精灵（不在 ARENA_ROSTER 里，会自动转到 EXTRA_SP，不进入平衡排位）
+  // ↓ 保留旧分类，当前排位是否可用由 S2_ROSTER 决定
   { id: 'turkey', name: '冲锋火鸡', types: ['火', '飞行'], base: { hp: 95, atk: 120, def: 70, spa: 65, spd: 65, spe: 102 },
     evo: [{ n: '米饭火鸡', lv: 1, no: '033', d: '总是背着一筐米饭，想必一定很喜欢吃米饭。' }, { n: '饭香火鸡', lv: 25, no: '034', d: '确实很喜欢吃米饭，经常趴在地上吃米饭。' }, { lv: 50, no: '035', d: '啊……火鸡冲锋！' }], evoLvSure: false,
     ability: { n: '饭香', d: '每回合结束时有20%概率吃1口米饭：随机回复1/5体力、提升1级物攻、提升1级速度三者之一（各1/3）' },
@@ -158,7 +158,7 @@ var SP = [
 ];
 // 训练木桩：不在图鉴里，不会攻击，体力无限
 var DUMMY = { id: 'dummy', name: '木桩', types: ['无'], type: '无', base: { hp: 100, atk: 0, def: 50, spa: 0, spd: 50, spe: 0 }, ability: { n: '无', d: '训练用木桩，不会攻击，体力无限' }, moves: [], hidden: [], def: [] };
-// 只在账号系统里出现的精灵（不进入竞技对战，也不参与强度测算）：占位精灵，以及竞技名单固定之后新加的所有精灵
+// 扩展精灵：当前排位是否可用由 S2_ROSTER 决定，沙盒开放全部
 var EXTRA_SP = [
   { id: 'barlow', name: '巴洛霍尔', types: ['普通'],
     base: { hp: 84, atk: 106, def: 85, spa: 80, spd: 80, spe: 89 },
@@ -230,11 +230,13 @@ var EXTRA_SP = [
     moves: ['火球', '加温', '旋转冲撞', '火焰漩涡', '火焰车', '净化之焰', '回转之焰', '烈焰冲锋', '凝神'],
     hidden: ['淬命之焰', '余烬涅槃'], def: ['火焰车', '回转之焰', '火焰漩涡', '凝神'] }
 ];
-// 竞技对战的精灵名单已经固定为下面这些。以后新加的精灵即使写进 SP，也会自动转到 EXTRA_SP：
-// 不会出现在竞技对战的配队、对手和图鉴里，只能在星际探索中遇到，在背包 / 黄冈秘鉴里查看。
+// 保留 S1 时期的 SP / EXTRA_SP 分类供旧功能使用；S2 排位使用下方独立名单
 var ARENA_ROSTER = ['dragon', 'leaf', 'gorgon', 'squid', 'wind', 'pluto', 'pede', 'tagore', 'hauris', 'faraday', 'moon', 'frost',
   'wild', 'hephaestus', 'leigong', 'inkarm', 'barren', 'mush', 'kaleo', 'siren', 'bone', 'aegis', 'shroom', 'phantom'];   // S1 第二期：叶子喵移出，方头蘑菇（涅槃蘑菇）加入
 (function () { var all = SP.concat(EXTRA_SP), keep = []; EXTRA_SP = []; all.forEach(function (s) { (ARENA_ROSTER.indexOf(s.id) >= 0 ? keep : EXTRA_SP).push(s); }); SP = keep; })();   // 名单里的进 SP（竞技对战），其余进 EXTRA_SP
+// S2：仅已完成上色的最终形态；Wiki / 沙盒仍保留全部精灵
+var S2_ROSTER = ['leaf','gorgon','squid','wind','pede','tagore','hauris','faraday','moon','wild','hephaestus','leigong','barren','mush','kaleo','siren','phantom','shroom','leafcat','turkey','barlow','bali','clementi','fate','odo','leiming','tiago','leibniz','firemouse'];
+var RANK_ROSTER = SP.concat(EXTRA_SP).filter(function (s) { return S2_ROSTER.indexOf(s.id) >= 0; });
 var SPMAP = {};
 EXTRA_SP.concat(SP).forEach(function (s) { if (!s.types) s.types = [s.type]; s.type = s.types[0]; SPMAP[s.id] = s; });
 SPMAP.dummy = DUMMY;

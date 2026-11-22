@@ -1042,8 +1042,8 @@ var PVE = (function () {
    * ========================================================== */
   var RANK_EXP = 1000, RANK_EXP_N = 10, RANK_TOKEN = 20;   // 平衡排位：每天前 10 局各给 1000 累积经验和 20 竞技代币（认输不算）
   function readKey(data, k) { try { return JSON.parse((data && data[k]) || 'null'); } catch (e) { return null; } }
-  function rankState(data) { var R = readKey(data, 'hs-rank-v1'); if (!R || R.r == null) R = { r: 0, stars: 0, w: 0, l: 0, best: 0 }; return fixRank(R); }
-  function newDraft() { return { opts: drawDraft(), pick: null, order: null }; }
+  function rankState(data) { var R = readKey(data, 'hs-rank-v1'); return fixRank(RANK_SEASON.state(R)); }
+  function newDraft() { return { season: RANK_SEASON.id, opts: drawDraft(), pick: null, order: null }; }
   // 打完一局：星数、小段、段位怎么变（和 battle-ui.js 以前的 applyRank 一样），返回显示用的变化
   function rankApply(R, result) {
     fixRank(R); var x = { from: R.r, fromDv: R.dv, fromStars: R.stars };
@@ -1076,17 +1076,18 @@ var PVE = (function () {
     // args = { order: 出场顺序（本局阵容的 5 只）, moves: { 精灵: [技能] } }
     start: function (a, args, env) {
       var data = env.data, d = readKey(data, 'hs-draft-v1');
-      if (!d || !d.opts || d.used) return { err: '本局阵容已经失效了，请重新选择阵容', draft: true };
+      if (!d || d.season !== RANK_SEASON.id || !d.opts || d.used) return { err: '本局阵容已经失效了，请重新选择阵容', draft: true };
       var pick = args.pick === 1 ? 1 : 0; if (d.pick === 0 || d.pick === 1) pick = d.pick;
       var team = d.opts[pick], ord = Array.isArray(args.order) ? args.order : [];
       if (!(ord.length === team.length && team.every(function (id) { return ord.indexOf(id) >= 0; }))) ord = team.slice();
       var p = ord.map(function (id) { return { id: id, moves: arenaMoves(id, args.moves && args.moves[id]) }; });
       var R = rankState(data), foes = buildAITeam(R.r, ord, R.stars, R.dv);
       d.used = true; d.pick = pick; d.order = ord; data['hs-draft-v1'] = JSON.stringify(d);
-      return { p: p, a: foes, ctx: { r: R.r }, noItems: true, noStory: true, keys: ['hs-draft-v1'],
+      return { p: p, a: foes, ctx: { r: R.r, season: RANK_SEASON.id }, noItems: true, noStory: true, keys: ['hs-draft-v1'],
         S: { mode: 'rank', rankAt: R.r, rankDv: R.dv, ai: rankAI(R.r, R.stars, R.dv), noLimit: false }, opt: {} };
     },
     end: function (a, c, B, env) {
+      if (c.season !== RANK_SEASON.id) { var unchanged = rankState(env.data); return { res: B.res, quit: B.quit, x: { from: unchanged.r, fromDv: unchanged.dv, fromStars: unchanged.stars, to: unchanged.r, toDv: unchanged.dv, toStars: unchanged.stars, msg: '旧赛季对战已结束，本场不计入 S2 段位' }, keys: ['hs-rank-v1'] }; }
       var data = env.data, R = rankState(data), x = rankApply(R, B.res), rep = { res: B.res, quit: B.quit, x: x };
       data['hs-rank-v1'] = JSON.stringify(R);
       if (!B.quit) {
@@ -1101,12 +1102,14 @@ var PVE = (function () {
   MODES.sandbox = {
     // args = { team: [{ id, moves }] }：沙盒随便选 5 只，对手随机；没有奖励（只算每日任务）
     start: function (a, args, env) {
-      var team = (Array.isArray(args.team) ? args.team : []).filter(function (t) { return t && SPMAP[t.id] && SP.some(function (x) { return x.id === t.id; }); }).slice(0, 5);
+      var own = args.source === 'backpack', owned = own ? ACC.team(a).slice(0, 5) : null;
+      if (own && !owned.length) return { err: '自己的背包里还没有出战精灵' };
+      var team = (Array.isArray(args.team) ? args.team : []).filter(function (t) { return t && SP.concat(EXTRA_SP).some(function (x) { return x.id === t.id; }); }).slice(0, 5);
       var seen = {}; team = team.filter(function (t) { if (seen[t.id]) return false; seen[t.id] = 1; return true; });
-      if (!team.length) return { err: '背包里还没有精灵' };
-      var p = team.map(function (t) { return { id: t.id, moves: arenaMoves(t.id, t.moves) }; });
-      var ids = shuffled(SP.map(function (s) { return s.id; })).slice(0, 5);
-      var foes = ids.map(function (id) { return { id: id, moves: smartLoadout(id, 6, ids) }; });
+      if (!own && !team.length) return { err: '背包里还没有精灵' };
+      var p = own ? owned.map(function (m) { return ACC.battleMon(a, m); }) : team.map(function (t) { return { id: t.id, moves: arenaMoves(t.id, t.moves) }; });
+      var ids = shuffled(SP.concat(EXTRA_SP).map(function (s) { return s.id; })).slice(0, 5);
+      var foes = ids.map(function (id) { var f = { id: id, moves: smartLoadout(id, 6, ids) }; if (own) f.lv = Math.round(owned.reduce(function (n, m) { return n + m.lv; }, 0) / owned.length); return f; });
       return { p: p, a: foes, ctx: {}, noItems: true, noStory: true, S: { noLimit: false }, opt: {} };
     },
     end: function (a, c, B, env) { return { res: B.res, quit: B.quit }; }

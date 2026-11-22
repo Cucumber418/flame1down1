@@ -410,7 +410,7 @@ var GROW = (function () {
   /* ---------- 送精灵：剧情、邮件、排位奖励、炙热核心的火月鼠 ----------
    * 每份只送一次，记在 a.giftGot。{ k: 'story' | 'mail' | 'rank' | 'fm', id } */
   var STORY_GIFT = { mingming: [{ sid: 'aegis', lv: 10 }] };
-  var RANK_GIFT = { 4: [{ sid: 'moon', lv: 10 }], 10: [{ sid: 'bone', lv: 10 }] };
+  var RANK_GIFT = {}; // S2 精灵奖励改为星耀段位的兑换券
   var FM = { need: 3, lv: 18 };
   function rankBest(data) { try { var R = JSON.parse((data && data['hs-rank-v1']) || 'null'); return R ? Math.max(R.best || 0, R.r || 0) : 0; } catch (e) { return 0; } }
   // 神秘精灵兑换券（第一届做题大王争霸赛）：1 张换一只 LV10 的尖盔虫 + 200 个花剑圆弧（2026-11-02）
@@ -440,7 +440,7 @@ var GROW = (function () {
       else if (/^ctshare-/.test(id)) { if (!(a.mail || []).some(function (y) { return y && y.id === id; })) return no('没有这封邮件'); list = [{ sid: 'tiago', lv: 10 }]; }   // 好友用「S1争霸赛精灵分享券」送来的尖盔虫（2026-11-02）
       else if (/-king-gift$/.test(id)) { if (rankBest(env.data) < 10) return no('还没达到王者段位'); list = RANK_GIFT[10]; }
     }
-    else if (k === 'rank') { var r = int(+id.split(':').pop()); if (!(rankBest(env.data) >= r)) return no('还没达到这个段位'); list = RANK_GIFT[r]; }
+    else if (k === 'rank') { if (id.split(':')[0] !== RANK_SEASON.id) return no('该赛季精灵奖励已结束'); var r = int(+id.split(':').pop()); if (!(rankBest(env.data) >= r)) return no('还没达到这个段位'); list = RANK_GIFT[r]; }
     else if (k === 'fm') {
       if (a.fmNpc) return no('火月鼠已经跟你走了');
       var fire = ACC.team(a).filter(function (m) { return SPMAP[m.sid] && SPMAP[m.sid].types.indexOf('火') >= 0; }).length;

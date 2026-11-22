@@ -9,11 +9,13 @@
     frame = 0;
     var visitingEstate = !social.hidden && social.querySelector('.visit-farm-page, .visit-home-page');
     var star = page.querySelector('.star-map-page'), home = visitingEstate || page.querySelector('.home-page'), ship = page.querySelector('.ship-map-page'), planet = page.querySelector('.planet-map-page'), forge = page.querySelector('.forge-page');
+    var arena = document.getElementById('pg-arena'), competitive = arena && !arena.hidden;
     var activity = !!christmas && !christmas.hidden;
     var items = !inventory.hidden, journal = !log.hidden, socialMain = !social.hidden && !visitingEstate, exploring = !page.hidden;
-    var target = activity ? christmas : journal ? log : !social.hidden ? social : items ? inventory : page;
-    var on = !body.classList.contains('no-acc') && (activity || journal || socialMain || items || !!visitingEstate || (exploring && !!(star || home || ship || planet || forge))) && !body.classList.contains('battle-active');
+    var target = competitive ? arena : activity ? christmas : journal ? log : !social.hidden ? social : items ? inventory : page;
+    var on = !body.classList.contains('no-acc') && (competitive || activity || journal || socialMain || items || !!visitingEstate || (exploring && !!(star || home || ship || planet || forge))) && !body.classList.contains('battle-active');
     flag('scene-page-active', on);
+    flag('arena-page-active', on && competitive);
     flag('star-map-active', on && exploring && !!star);
     flag('home-page-active', on && (!!visitingEstate || exploring) && !!home);
     flag('ship-page-active', on && exploring && !!ship);
@@ -34,7 +36,7 @@
     prop('--scene-full-height', full + 'px');
     var height = estate ? full : Math.max(0, full - HSVIEW.top(target) - 10);
     prop('--scene-view-height', height + 'px');
-    if (activity || journal || socialMain || exploring && !!forge) { flag('home-compact', false); flag('ship-paired', false); return; }
+    if (competitive || activity || journal || socialMain || exploring && !!forge) { flag('home-compact', false); flag('ship-paired', false); return; }
     if (items) {
       var grid = inventory.querySelector('.ib-grid');
       if (grid && window.HSACC) {
@@ -64,6 +66,7 @@
   observer.observe(inventory, { attributes: true, attributeFilter: ['hidden'], childList: true, subtree: true });
   observer.observe(social, { attributes: true, attributeFilter: ['hidden'], childList: true, subtree: true });
   if (christmas) observer.observe(christmas, { attributes: true, attributeFilter: ['hidden'], childList: true, subtree: true });
+  observer.observe(document.getElementById('pg-arena'), { attributes: true, attributeFilter: ['hidden'], childList: true, subtree: true });
   observer.observe(log, { attributes: true, attributeFilter: ['hidden'], childList: true, subtree: true });
   observer.observe(body, { attributes: true, attributeFilter: ['class', 'style'] });
   observer.observe(header, { childList: true, subtree: true });

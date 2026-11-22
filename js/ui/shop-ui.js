@@ -10,6 +10,7 @@ var HSSHOP = (function () {
   ];
   var selector = MAP.map(function (x) { return '[data-'+x[0]+']'; }).join(','), active = null;
   function esc(s) { return HSUI.esc(String(s == null ? '' : s)); }
+  function costIcon(k) { if (k === 'tokens') return '<span class="tk-coin shop-currency-icon" aria-hidden="true">代</span>'; return k === 'energy' || window.HSACC && HSACC.itemName(k) !== k ? HSUI.itemIcon(k) : ''; }
   function fmt(n) { return Math.floor(n).toLocaleString('en-US'); }
   function total(c,n) { return c.steps ? c.steps.slice(0,n).reduce(function(s,x){return s+x;},0) : c.unit*n; }
   function max(o) {
@@ -54,7 +55,7 @@ var HSSHOP = (function () {
       d.querySelector('[data-shop-count]').textContent=fmt(active.n);d.querySelector('[data-shop-max]').textContent='最多 '+fmt(available);
       d.querySelector('[data-shop-maximum]').disabled=available<1||active.busy;
       d.querySelector('[data-shop-minimum]').disabled=active.busy;
-      d.querySelector('[data-shop-costs]').innerHTML=(o?o.costs:[]).map(function(c){return '<li><span>'+esc(c.label)+'</span><b>'+fmt(total(c,active.n))+'</b><small>持有 '+fmt(c.have)+'</small></li>';}).join('');
+      d.querySelector('[data-shop-costs]').innerHTML=(o?o.costs:[]).map(function(c){return '<li><span>'+costIcon(c.key)+esc(c.label)+'</span><b>'+fmt(total(c,active.n))+'</b><small>持有 '+fmt(c.have)+'</small></li>';}).join('');
       d.querySelector('[data-shop-output]').textContent=o&&o.give?'获得 '+Object.keys(o.give).map(function(k){return HSACC.itemName(k)+' ×'+fmt(o.give[k]*active.n);}).join('、'):'';
       d.querySelector('[data-shop-error]').textContent=message || (available<1?(o&&o.reason || '资源不足或已达兑换上限'):'');
       d.querySelector('[data-shop-confirm]').disabled=available<1||active.busy;
