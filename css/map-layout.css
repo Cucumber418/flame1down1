@@ -169,3 +169,20 @@ body.ship-paired .ship-map-page .sm-wrap { right: 132px; }
 .visit-info-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 .visit-info-body .hboard { grid-template-columns: minmax(0, 1fr); margin: 0; }
 .visit-info-box > .soc-foot { flex: 0 0 auto; }
+
+/* 空间站：卡片依内容自然排布。内容不足一屏时留白，超出时可独立滚动，不再裁掉下半部分。 */
+body.scene-page-active #pg-explore:has(> .station-page) {
+  overflow-x:hidden;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+}
+.station-page { min-height:100%; padding-bottom:20px; }
+.station-page > .planets { grid-template-columns:repeat(3,minmax(0,1fr)); align-content:start; align-items:stretch; }
+.station-page .planet { min-width:0; height:auto; align-content:start; }
+@media (max-width:700px) {
+  .station-page > .planets { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media (max-width:450px) and (orientation:portrait) {
+  .station-page > .planets { grid-template-columns:minmax(0,1fr); }
+}
