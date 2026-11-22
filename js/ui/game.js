@@ -7753,8 +7753,8 @@
   };
   var DECO_IMG = { d12: 'images/base/christmas_tree.png', d1: 'images/base/deco1.webp', d2: 'images/base/deco2.webp', d3: 'images/base/deco3.webp', d4: 'images/base/deco4.webp', d5: 'images/base/deco5.webp', d6: 'images/base/deco6.webp', d7: 'images/base/deco7.webp', d8: 'images/base/deco8.webp', d9: 'images/base/deco9.webp', d10: 'images/base/deco10.webp', d11: 'images/base/deco11.webp' };
   // 可以点的摆件（2026-11-01）：发现纪念弹出说明；精元转化仪打开孵化；留言板打开留言
-  var DECO_ACT = { d1: 'char', d2: 'char', d3: 'char', d4: 'char', d5: '叶粒种子', d6: '水臂乌贼', d7: '方头蘑菇', d8: 'nursery', d9: 'mm', d10: 'msg', d11: 'cup' };
-  var DECO_SIZE = { d8: 1.75, d12: 1.75 };   // 精元转化仪画得大一些（2026-11-01）
+  var DECO_ACT = { d1: 'char', d2: 'char', d3: 'char', d4: 'char', d5: '叶粒种子', d6: '水臂乌贼', d7: '方头蘑菇', d8: 'nursery', d9: 'mm', d10: 'msg', d11: 'cup', d12: 'christmas' };
+  var DECO_SIZE = { d8: 1.75, d12: 2.25 };   // 圣诞树在基地中更醒目；精元转化仪也保持放大
   // 明明画像的面板：大图 + 荣誉（2026-11-01）
   var MM_HONORS = ['军衔：少校', '湖北理科高考优胜者', '华中科技大学光学与电子信息学院优秀毕业生', '荆楚号古城防卫部总教官'];
   function mmPortraitBody() {
@@ -7900,7 +7900,7 @@
     if (A === 'msg') { if (!mine) { toast('留言板在下面，给主人留句话吧。'); return; } if (!baseOnline()) { toast('留言板需要联网：用服务器网址打开游戏并登录后才能用。'); return; } ex.bpanel = 'msg'; renderHome(); return; }
     var old = $('deco-dlg'); if (old) old.remove();
     var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'deco-dlg';
-    d.innerHTML = '<div class="soc-box deco-box" role="dialog" aria-modal="true"><img src="' + DECO_IMG[k] + '" alt=""><h3>' + esc(TX.D.BASE_DECO[k].n) + '</h3><p>2019 年，在省实验中学 4 班发现了' + A + '。</p><div class="soc-foot"><button type="button" class="btn primary" data-decox="1">知道了</button></div></div>';
+    d.innerHTML = '<div class="soc-box deco-box" role="dialog" aria-modal="true"><img src="' + DECO_IMG[k] + '" alt=""><h3>' + esc(TX.D.BASE_DECO[k].n) + '</h3><p>' + (A === 'christmas' ? '以此纪念2026年底在海伦娜星，与朋友们的圣诞奇遇。' : '2019 年，在省实验中学 4 班发现了' + esc(A) + '。') + '</p><div class="soc-foot"><button type="button" class="btn primary" data-decox="1">知道了</button></div></div>';
     document.body.appendChild(d);
     d.addEventListener('click', function (ev) { if (ev.target === d || ev.target.closest('[data-decox]')) d.remove(); });
   });
