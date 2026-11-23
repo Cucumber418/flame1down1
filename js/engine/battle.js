@@ -215,7 +215,7 @@ function abilityLive(m, foe) {
   var ab = ability(m), t = m.fx.fieldT || 0, on, f = foe && !foe.fainted ? foe : null;
   var lowSelf = m.hp <= m.maxhp / 3;
   switch (ab) {
-    case '孤傲': var gh = m.fx.glenHits || { phys: 0, spec: 0 }; return '已累计受到 ' + (gh.phys + gh.spec) + '/3 次攻击（物攻' + gh.phys + '、特攻' + gh.spec + '），满3次提升较多类型对应的1级防御；连击技能按1次计算';
+    case '孤傲': var gh = m.fx.glenHits || { phys: 0, spec: 0 }; return '已累计受到 ' + (gh.phys + gh.spec) + '/3 次攻击（物攻' + gh.phys + '、特攻' + gh.spec + '），满3次提升较多类型对应的1级防御；连击技能每一击分别计算';
     case '无常': return (abilObj(m).d || '') + ' ' + (abilObj(m).extra || '');
     case '旅行': return '每次被替换上场时，提升1级速度（首发上场不触发）';
     case '脚伤': return '脚底被瘴气浸透，陷入永久的流血状态，无法被解除';
@@ -273,7 +273,7 @@ function chipsOf(m, foe, S) {
   }
   if (m.fx.stoneMark) c.push({ t: '破石印记', k: 'st', h: '破石印记', d: '受到破石之蹄时，其威力翻倍；不消耗印记，换下场后消失' });
   if (m.fx.fracture) c.push({ t: '碎震 ' + (3 - m.fx.fracture.elapsed), k: 'st', h: '碎震', d: '剩余' + (3 - m.fx.fracture.elapsed) + '回合，每回合末受到固定伤害' });
-  if (m.fx.highlandHits > 0) c.push({ t: '高地之王 ' + m.fx.highlandHits, k: 'fx', h: '高地之王', d: '下' + m.fx.highlandHits + '次受到的攻击伤害减免35%；连击技能按1次计算' });
+  if (m.fx.highlandHits > 0) c.push({ t: '高地之王 ' + m.fx.highlandHits, k: 'fx', h: '高地之王', d: '下' + m.fx.highlandHits + '次受到的攻击伤害减免35%；连击技能每一击分别计算' });
   if (m.fx.prideShield) c.push({ t: '孤王之傲 ' + m.fx.prideShield.hp, k: 'fx', h: '孤王之傲', d: '吸收接下来受到的' + m.fx.prideShield.hp + '点伤害' });
   if (m.fx.shield > 0) c.push({ t: '护盾 ' + m.fx.shield, k: 'fx', h: '护盾', d: '先吸收接下来受到的 ' + m.fx.shield + ' 点伤害' });
   if (m.fx.absDef) c.push({ t: '免疫下次攻击', k: 'fx', h: '免疫下次攻击', d: '闪避下一次受到的攻击' });
@@ -1132,9 +1132,10 @@ function applyBarlowMove(S, evs, i, mv) {
   if (mv.custom === 'barlowPurify') { var removed = clearUps(S, evs, 1 - i); if (removed) heal(S, evs, i, removed * 50); }
   if (m.fx.originHits > 0) { m.fx.originHits--; heal(S, evs, i, m.maxhp / 5); E(S, evs, 'stage', { side: i }); }
 }
-// 莫格伦：按整招记录攻击，连击与附加固伤共享一次减伤与计数。
+// 莫格伦：连击逐击记录；每一击及其附加固伤共享一次减伤与计数。
 function glenDefense(m) { return Math.floor(m.stats.def * stageMult(m.stages.def) * miaDef(m)) + Math.floor(m.stats.spd * stageMult(m.stages.spd) * miaDef(m)); }
 function glenAttackStart(S, i, mv) {
+  delete S.glenAttack;
   var j = 1 - i, m = act(S, j);
   if (m.fx.highlandHits > 0 || ability(m) === '孤傲') S.glenAttack = { from: i, side: j, slot: S.sides[j].active, cat: mv.cat, hit: false, scale: 1 };
 }
@@ -1148,7 +1149,8 @@ function glenAttackDamage(S, evs, j, amount, src) {
   return amount * a.scale;
 }
 function glenAttackEnd(S, evs) {
-  var a = S.glenAttack; if (!a || !a.hit || a.slot !== S.sides[a.side].active) return;
+  var a = S.glenAttack; if (!a || !a.hit || a.counted || a.slot !== S.sides[a.side].active) return;
+  a.counted = true;
   var m = act(S, a.side); if (m.fainted || m.hp <= 0 || ability(m) !== '孤傲') return;
   var tally = m.fx.glenHits || (m.fx.glenHits = { phys: 0, spec: 0 });
   tally[a.cat === '物攻' ? 'phys' : 'spec']++;
@@ -1268,6 +1270,7 @@ function useMoveCore0(S, evs, i, mv, slotIdx, extra, splitToken) {
   }
   glenAttackStart(S, i, mv);
   var total = 0, shownT = 0, lastEff = 1, n = 0, hits = 1, raw = 0, burnX = 0, pBoost = 1;
+  var glenFixedPerHit = !!S.glenAttack && !!mv.fixedHit;
   if (mv.custom === 'swiftPierce' && firstMover && foe.stages.def > 0 && !stageBlocked(S, evs)) { var dcl = foe.stages.def; foe.stages.def = 0; pBoost = 1 + 0.75 * dcl; E(S, evs, 'stage', { side: j }); log(S, evs, '迅捷刺击清空了' + nm(foe) + '的 ' + dcl + ' 级物防强化，这次伤害 +' + Math.round(75 * dcl) + '%', 'fxl'); }
   function dmgAdd(v) { total += v; shownT += S.lastShown != null ? S.lastShown : v; S.lastShown = null; }
   if (mv.fixedOnly) {
@@ -1283,6 +1286,7 @@ function useMoveCore0(S, evs, i, mv, slotIdx, extra, splitToken) {
       if (me.insFx && me.insFx.fire && RNG() < 0.15) { hits++; log(S, evs, nm(me) + '的刻印「不息之火」：连击数 +1', 'fxl'); }   // 2026-11-01
     }
     for (var h = 0; h < hits && foe.hp > 0; h++) {
+      glenAttackStart(S, i, mv);
       var res = calcDamage(me, foe, mv, firstMover, false);
       if (pBoost !== 1) res.dmg = Math.floor(res.dmg * pBoost);
       if (foe.boss && foe.boss.noNormal) { if (!h) { RV(foe, 'noNormal'); log(S, evs, nm(foe) + '免疫常规伤害！只有固定伤害和异常状态能伤到它', 'bad'); } res.dmg = 0; res.crit = false; }
@@ -1292,15 +1296,20 @@ function useMoveCore0(S, evs, i, mv, slotIdx, extra, splitToken) {
       if (res.petri) log(S, evs, '石化中被暴击，伤害翻倍！', 'crit');
       if (me.boss && me.boss.kill) res.dmg = Math.max(res.dmg, foe.hp * 20 + 99999);   // 剧情限定（2026-10-31 第十六段最后那只奥多亚克）：打中必定秒杀，不显示
       S.lastShown = null; dmgAdd(applyDamage(S, evs, j, res.dmg, i, { crit: res.crit, eff: res.eff, noFaint: true }));
+      if (glenFixedPerHit && foe.hp > 0 && !me.fainted) {
+        log(S, evs, '本次命中附加 ' + mv.fixedHit + ' 点固定伤害', 'fxl');
+        S.lastShown = null; dmgAdd(applyDamage(S, evs, j, mv.fixedHit, i, { noFaint: true }));
+      }
       if (me.boss && me.boss.kill && foe.hp > 0) foe.hp = 0;
       if (res.petri) petriBreak(S, evs, j);
       if (res.crit && foe.hp > 0 && !foe.fainted) changeStages(S, evs, j, mv.cat === '物攻' ? { def: -1 } : { spd: -1 }, i);   // 2026-10-20：暴击降低对应防御 1 级
+      glenAttackEnd(S, evs);
       if (me.fainted) break;
     }
     if (mv.mercy && foe.hp <= 0 && !foe.fainted) { foe.hp = 1; total = Math.max(0, total - 1); shownT = total; log(S, evs, nm(me) + '手下留情，' + nm(foe) + '还剩 1 点体力', 'fxl'); E(S, evs, 'stage', { side: j }); }   // 慈悲气波：不会把对方打倒
     if (lastEff > 1) { log(S, evs, '效果拔群！', 'good'); if (!S.se) S.se = [0, 0]; S.se[i]++; } else if (lastEff < 1) log(S, evs, '效果不太好……');   // S.se：双方打出效果拔群的次数（星球挑战的星级用）
     // 每次攻击附带的固定伤害（飞空连击、非凡连击）：按命中次数合起来结算一次，免得十几次连击动画太长
-    if (mv.fixedHit && n && foe.hp > 0 && !me.fainted) { log(S, evs, '每次攻击附带 ' + mv.fixedHit + ' 点固定伤害，共 ' + (mv.fixedHit * n) + ' 点', 'fxl'); S.lastShown = null; dmgAdd(applyDamage(S, evs, j, mv.fixedHit * n, i, { noFaint: true })); }
+    if (mv.fixedHit && !glenFixedPerHit && n && foe.hp > 0 && !me.fainted) { log(S, evs, '每次攻击附带 ' + mv.fixedHit + ' 点固定伤害，共 ' + (mv.fixedHit * n) + ' 点', 'fxl'); S.lastShown = null; dmgAdd(applyDamage(S, evs, j, mv.fixedHit * n, i, { noFaint: true })); }
   }
   log(S, evs, '对' + nm(foe) + '造成 ' + shownT + ' 点伤害', 'dmg');
   if (foe.hp <= 0 && !foe.fainted) faint(S, evs, j);
