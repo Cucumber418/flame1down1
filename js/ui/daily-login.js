@@ -40,6 +40,7 @@
     if (localStorage.getItem(key) === day) return;
     localStorage.setItem(key, day); open();
   }
+  document.getElementById('checkin-btn').addEventListener('click', open);
   window.HSCHECKIN = { open: open };
   setInterval(check, 2000);
 })();

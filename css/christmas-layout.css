@@ -1,0 +1,63 @@
+/* 活动玩法统一为左侧人物、右侧内容，保留各自分页和领取操作 */
+.xmas-npc-layout { flex:1 1 0; min-height:0; min-width:0; display:grid; grid-template-columns:minmax(0,31%) minmax(0,1fr); grid-template-rows:minmax(0,1fr); gap:16px; }
+.xmas-npc-side { min-width:0; min-height:0; display:flex; flex-direction:column; align-items:stretch; gap:10px; padding:8px; border:1px dashed var(--rule); border-radius:12px; background:var(--paper); }
+.xmas-npc-portrait { flex:1 1 0; min-height:0; min-width:0; padding:0; border:0; background:transparent; color:var(--ink); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; font:inherit; cursor:pointer; }
+.xmas-npc-portrait img { flex:1 1 0; min-height:0; width:100%; height:100%; object-fit:contain; }
+.xmas-npc-portrait b { font-family:var(--f-hand); font-size:26px; font-weight:400; } .xmas-npc-portrait small { font-size:12px; color:var(--pencil); }
+.xmas-npc-portrait:hover b { color:var(--red); } .xmas-npc-portrait:focus-visible { outline:2px solid var(--red); outline-offset:2px; border-radius:8px; }
+.xmas-npc-place { flex:0 0 auto; font-size:12px; padding:7px; }
+.xmas-play { min-width:0; min-height:0; display:flex; flex-direction:column; gap:8px; overflow:hidden; }
+.xmas-play > .hint { flex:0 0 auto; margin:0; font-size:12px; }
+.xmas-play .xmas-shop-grid.shop-display-grid { grid-template-columns:repeat(3,minmax(0,1fr))!important; grid-template-rows:repeat(2,minmax(0,1fr)); gap:8px!important; align-content:stretch; }
+.xmas-play .shop-product { min-height:0; padding:10px 6px; gap:6px; }
+.xmas-play .shop-product-icon { min-height:0; max-height:55%; width:60px; height:62px; }
+.xmas-play .xmas-pages, .xmas-play .xmas-all { flex:0 0 auto; }
+.xmas-rank-icon { flex:0 0 auto; width:88px; height:92px; display:grid; place-items:center; }
+.xmas-rank-icon .it-ic { width:100%; height:100%; }
+.xmas-cards { grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); }
+.xmas-source-arrow { display:inline-grid; place-items:center; flex:0 0 auto; width:24px; height:24px; padding:0; margin-left:3px; border:1px solid var(--rule); border-radius:6px; background:var(--paper); color:var(--red); font:inherit; font-size:19px; line-height:1; cursor:pointer; }
+.xmas-source-arrow:hover { border-color:var(--red); } .xmas-source-arrow:focus-visible { outline:2px solid var(--red); outline-offset:2px; }
+.xmas-sources-box { width:min(600px,calc(100vw - 24px)); max-height:calc(100dvh - 24px); padding:18px; display:flex; flex-direction:column; gap:12px; overflow:hidden; }
+.xmas-sources-box > header { display:flex; align-items:center; justify-content:space-between; gap:8px; flex:0 0 auto; }
+.xmas-sources-box h2 { font-size:22px; margin:0; }
+.xmas-source-list { min-height:0; overflow:auto; display:grid; gap:8px; }
+.xmas-source-list article { display:flex; gap:12px; align-items:center; justify-content:space-between; padding:12px; border:1px dashed var(--rule); border-radius:9px; background:var(--paper-2); }
+.xmas-source-list article > div { min-width:0; } .xmas-source-list b { font-size:14px; } .xmas-source-list p { font-size:12px; line-height:1.6; margin:5px 0 0; color:var(--pencil); }
+.xmas-source-list .xmas-source-arrow { width:32px; height:32px; }
+.soc-box.xmas-knight-box { width:min(1000px,calc(100vw - 24px)); max-width:1000px; height:min(680px,calc(100dvh - 24px)); max-height:calc(100dvh - 24px); overflow:hidden; }
+.xmas-knight-box > header, .xmas-knight-box > .xmas-wallet { flex:0 0 auto; }
+.xmas-knight-box .xmas-knight-targets { flex:1 1 0; min-height:0; }
+.xmas-knight-targets article { min-height:0; justify-content:center; }
+.xmas-knight-targets article > img { min-height:0; max-height:40%; }
+@media(max-width:760px) {
+ .xmas-cards { grid-template-columns:repeat(2,minmax(0,1fr)); }
+ .xmas-rank-icon { width:65px; height:65px; }
+ .xmas-npc-layout { grid-template-columns:minmax(0,30%) minmax(0,1fr); gap:8px; }
+ .xmas-npc-side { padding:5px; gap:7px; } .xmas-npc-portrait { gap:4px; } .xmas-npc-portrait b { font-size:19px; } .xmas-npc-portrait small { font-size:10px; }
+ .xmas-npc-place { font-size:10px; padding:5px 2px; white-space:normal; }
+ .xmas-play { gap:6px; }
+ .xmas-play .xmas-shop-grid.shop-display-grid { grid-template-columns:repeat(2,minmax(0,1fr))!important; grid-template-rows:repeat(3,minmax(0,1fr)); gap:6px!important; }
+ .xmas-play .shop-product { padding:5px 3px; gap:3px; } .xmas-play .shop-product b { font-size:11px; }
+ .xmas-play .shop-product-icon { width:42px; height:42px; }
+ .xmas-play .xmas-pages { gap:3px; font-size:11px; } .xmas-play .xmas-pages .btn { padding:5px 4px; font-size:11px; }
+ .xmas-play .xmas-task { padding:7px; gap:5px; flex-wrap:wrap; }
+ .xmas-play .xmas-task > div { min-width:0; flex:1 1 100%; } .xmas-play .xmas-task b { font-size:12px; } .xmas-play .xmas-task .btn { margin-left:auto; padding:4px 8px; font-size:11px; }
+ .xmas-play .xmas-rewards { font-size:11px; } .xmas-play .xmas-rewards .it-ic { width:19px; height:19px; }
+ .xmas-play .xmas-all { align-items:flex-start; flex-direction:column; gap:5px; padding:7px; font-size:12px; } .xmas-play .xmas-all .btn { align-self:flex-end; padding:4px 8px; font-size:11px; }
+ .xmas-play .xmas-reset { font-size:10px; }
+ .xmas-sources-box { padding:12px; gap:9px; } .xmas-sources-box h2 { font-size:18px; } .xmas-source-list article { padding:9px; gap:8px; }
+ .xmas-knight-box .xmas-knight-targets { grid-template-columns:minmax(0,1fr); grid-template-rows:repeat(3,minmax(0,1fr)); gap:6px; }
+ .xmas-knight-targets article { display:grid; grid-template-columns:42px minmax(0,1fr) auto; grid-template-rows:repeat(3,auto); align-content:center; align-items:center; gap:2px 4px; padding:6px; text-align:left; }
+ .xmas-knight-targets article > img { grid-column:1; grid-row:1/4; width:42px; height:58px; max-height:none; }
+ .xmas-knight-targets article b { grid-column:2; grid-row:1; font-size:11px; } .xmas-knight-targets article > span { grid-column:2; grid-row:2; font-size:10px; }
+ .xmas-knight-targets article > small { grid-column:2; grid-row:3; font-size:10px; } .xmas-knight-targets .it-ic { width:16px; height:16px; }
+ .xmas-knight-targets article > .btn { grid-column:3; grid-row:1/4; margin:0; padding:5px 4px; font-size:11px; }
+ .xmas-knight-box .xmas-play > .hint { font-size:10px; }
+}
+@media(max-height:520px) {
+ .xmas-rank-icon { width:48px; height:50px; }
+ .xmas-npc-side { gap:4px; } .xmas-npc-portrait b { font-size:17px; }
+ .xmas-play .xmas-task { padding:6px; } .xmas-play .xmas-task b { font-size:12px; }
+ .xmas-play .shop-product-icon { width:35px; height:35px; }
+ .xmas-play .xmas-pages .btn { padding:4px 7px; font-size:11px; }
+}

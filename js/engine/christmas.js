@@ -20,6 +20,13 @@ var CHRISTMAS = (function () {
     { id: 'pp20', k: 'pp20', coin: 'xmasCandy', price: 14 },
     { id: 'formDev', k: 'formDev', coin: 'xmasBell', price: 6 }
   ];
+  // 活动结束时关闭此开关，主题外观设置不影响活动奖励
+  var RANK_EVENT = { enabled: true, season: 'S2', win: 20, lose: 10, draw: 10 };
+  function rankCandy(a, season, result, quit) {
+    var n = !quit && RANK_EVENT.enabled && season === RANK_EVENT.season && ['win','lose','draw'].indexOf(result) >= 0 ? RANK_EVENT[result] || 0 : 0;
+    if (n) ACC.addItems(a, { xmasCandy: n });
+    return n;
+  }
   var ALL = { bell: 3, candy: 25 };
   // 管口位：上1、右2、下4、左8，顺时针旋转；只验证相邻管口真正连通
   var PIPES = [10,12,5,3,10,3,12,6,5,6,9,9,3,3,10,10];
@@ -145,7 +152,7 @@ var CHRISTMAS = (function () {
       return rep;
     }
   };
-  return { TASKS: TASKS, SHOP: SHOP, ALL: ALL, read: read, claimable: claimable, hit: hit, story: story, sceneOpen: sceneOpen,
+  return { TASKS: TASKS, SHOP: SHOP, ALL: ALL, RANK_EVENT: RANK_EVENT, rankCandy: rankCandy, read: read, claimable: claimable, hit: hit, story: story, sceneOpen: sceneOpen,
     PIPES: PIPES, PIPE_START: PIPE_START, pipeMask: pipeMask, pipeReach: pipeReach, pipeSolved: pipeSolved,
     wonderOpen: wonderOpen, knightOpen: knightOpen, knightState: knightState, knightWin: knightWin, KNIGHT_CANDY: KNIGHT_CANDY };
 })();

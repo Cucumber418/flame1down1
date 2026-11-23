@@ -51,10 +51,19 @@ var HSCHRISTMAS = (function () {
   }
   function esc(s) { return HSUI.esc(String(s)); }
   function icon(k) { return HSUI.itemIcon(k); }
-  function wallet(a) { var i = a.items || {}; return '<div class="xmas-wallet"><span>' + icon('xmasBell') + '圣诞铃铛 <b>' + (i.xmasBell || 0) + '</b></span><span>' + icon('xmasCandy') + '拐杖糖 <b>' + (i.xmasCandy || 0) + '</b></span></div>'; }
+  function wallet(a) { var i = a.items || {}; return '<div class="xmas-wallet">' + [['xmasBell','圣诞铃铛'],['xmasCandy','拐杖糖']].map(function (x) { return '<span>' + icon(x[0]) + x[1] + ' <b>' + (i[x[0]] || 0) + '</b><button type="button" class="xmas-source-arrow" data-xmas-source="' + x[0] + '" aria-label="查看' + x[1] + '获取方式">›</button></span>'; }).join('') + '</div>'; }
   function reward(bell, candy) { return '<span class="xmas-rewards">' + icon('xmasBell') + '×' + bell + '　' + icon('xmasCandy') + '×' + candy + '</span>'; }
   function title(panel) { return panel === 'gifts' ? 'Vanber的圣诞礼物' : panel === 'shop' ? 'Threego的苏格兰杂货铺' : '圣诞'; }
-  function npc(panel) { var v = panel === 'gifts'; return '<div class="xmas-host"><img src="' + CHARS[v ? 'vanber_christmas' : 'threego_christmas'] + '" alt="戴圣诞帽的' + (v ? 'Vanber' : 'Threego') + '"><p>' + (v ? '「帮我完成这些小任务，就送你圣诞礼物！」' : '「欢迎光临！带铃铛和拐杖糖来看看吧！」') + '</p><button class="btn ghost" data-xmas-scene="' + (v ? 1 : 2) + '">' + (v ? '前往秘密小屋' : '前往杂货铺') + '</button></div>'; }
+  function npc(panel) {
+    var who = panel === 'gifts' ? 'Vanber' : panel === 'shop' ? 'Threego' : 'bttp', key = panel === 'gifts' ? 'vanber_christmas' : panel === 'shop' ? 'threego_christmas' : 'bttp_christmas';
+    return '<aside class="xmas-npc-side"><button type="button" class="xmas-npc-portrait" data-xmas-talk="' + panel + '" aria-label="与' + who + '交谈"><img src="' + CHARS[key] + '" alt="' + who + '圣诞立绘"><b>' + who + '</b><small>点击交谈</small></button><button type="button" class="btn ghost xmas-npc-place" ' + (panel === 'knight' ? 'data-xmas-wonder-location' : 'data-xmas-scene="' + (panel === 'gifts' ? 1 : 2) + '"') + '>' + (panel === 'gifts' ? '前往秘密小屋' : panel === 'shop' ? '前往杂货铺' : '前往圣诞仙境') + '</button></aside>';
+  }
+  var talkAt = {};
+  function npcTalk(panel) {
+    var lines = panel === 'gifts' ? ['我还忙着准备礼物呢。先帮我完成小任务，礼物可不能白白拿走哦。','圣诞老人说话算话。今天的任务都做好了，别忘记把大礼包也领走。'] : panel === 'shop' ? ['拐杖糖带来了吗？我这里有海伦娜星的各种宝藏！','糖不是给我吃的，是要给那四个人吃。铃铛我也收，可别弄丢了。'] : ['我可是邪恶的鲁普雷希特骑士！想阻止我，就先打败我的召唤精灵。','击败一只又怎样？我的召唤可不会停下，再来一只！'];
+    var at = talkAt[panel] || 0; talkAt[panel] = at + 1;
+    storyDialog([{ n:panel === 'gifts' ? 'Vanber' : panel === 'shop' ? 'Threego' : 'bttp', img:panel === 'gifts' ? 'vanber_christmas' : panel === 'shop' ? 'threego_christmas' : 'bttp_christmas', t:lines[at % lines.length] }], null, null, panel === 'gifts' ? 'hl_cabin' : panel === 'shop' ? 'hl_shop' : 'hl_wonderland');
+  }
   function render(el, a, panel, open) {
     if (!open) panel = 'home';
     var header = '<div class="page-head"><h2 class="sec">' + title(panel) + '</h2>' + (panel === 'home' ? '<span class="hint">一场意外带来的冬日旅程</span>' : '<button class="btn ghost" data-xmas-open="home">‹ 圣诞活动</button>') + '</div>';
@@ -63,29 +72,30 @@ var HSCHRISTMAS = (function () {
         ['helena', '海伦娜星', '雪夜城堡、秘密小屋与杂货铺', 'images/planets/helena_v2.png'],
         ['gifts', 'Vanber的圣诞礼物', '完成每日小任务，领取圣诞礼物', CHARS.vanber_christmas],
         ['shop', 'Threego的苏格兰杂货铺', '用圣诞铃铛与拐杖糖兑换道具', CHARS.threego_christmas],
-        ['knight', '讨伐鲁普雷希特骑士', '挑战召唤精灵，赢取拐杖糖', CHARS.bttp_christmas]
+        ['knight', '讨伐鲁普雷希特骑士', '挑战召唤精灵，赢取拐杖糖', CHARS.bttp_christmas],
+        ['rank', '竞技排位S2新赛季', '胜利20拐杖糖，失败或平局10拐杖糖', null]
       ];
-      el.innerHTML = header + wallet(a) + '<section class="xmas-cards">' + cards.map(function (c) { var allowed = open && (c[0] === 'helena' || (c[0] === 'knight' ? CHRISTMAS.wonderOpen(a) : CHRISTMAS.sceneOpen(a, c[0] === 'gifts' ? 1 : 2))); return '<button type="button" class="xmas-card" ' + (c[0] === 'helena' ? 'data-helena' : c[0] === 'knight' ? 'data-xmas-raid' : 'data-xmas-open="' + c[0] + '"') + (allowed ? '' : ' disabled') + '>' + (c[0] === 'gifts' && CHRISTMAS.claimable(a,Date.now()) ? '<i class="red-dot" aria-label="圣诞任务奖励可领取"></i>' : '') + '<span class="tape l"></span><img src="' + c[3] + '" alt=""><span><b>' + c[1] + '</b><small>' + c[2] + '</small><em>' + (allowed ? '前往 ›' : !open ? '完成地球主线后解锁' : c[0] === 'knight' ? '先接通杂货铺角落的管道' : c[0] === 'gifts' ? '先带上巴洛，敲开城堡大门' : '先完成Vanber的一项任务') + '</em></span></button>'; }).join('') + '</section><p class="xmas-coming hint">更多圣诞活动待补充</p>';
+      el.innerHTML = header + wallet(a) + '<section class="xmas-cards">' + cards.map(function (c) { var allowed = c[0] === 'rank' ? HSACC.arenaOpen() : open && (c[0] === 'helena' || (c[0] === 'knight' ? CHRISTMAS.wonderOpen(a) : CHRISTMAS.sceneOpen(a, c[0] === 'gifts' ? 1 : 2))); return '<button type="button" class="xmas-card" ' + (c[0] === 'helena' ? 'data-helena' : c[0] === 'knight' ? 'data-xmas-raid' : c[0] === 'rank' ? 'data-xmas-rank' : 'data-xmas-open="' + c[0] + '"') + (allowed ? '' : ' disabled') + '>' + (c[0] === 'gifts' && CHRISTMAS.claimable(a,Date.now()) ? '<i class="red-dot" aria-label="圣诞任务奖励可领取"></i>' : '') + '<span class="tape l"></span>' + (c[0] === 'rank' ? '<span class="xmas-rank-icon">' + icon('s2MonTicket') + '</span>' : '<img src="' + c[3] + '" alt="">') + '<span><b>' + c[1] + '</b><small>' + c[2] + '</small><em>' + (allowed ? '前往 ›' : c[0] === 'rank' ? '完成孝感大厅支线后解锁' : !open ? '完成地球主线后解锁' : c[0] === 'knight' ? '先接通杂货铺角落的管道' : c[0] === 'gifts' ? '先带上巴洛，敲开城堡大门' : '先完成Vanber的一项任务') + '</em></span></button>'; }).join('') + '</section><p class="xmas-coming hint">更多圣诞活动待补充</p>';
       return;
     }
     if (panel === 'gifts') {
       var r = CHRISTMAS.read(a, Date.now()), all = CHRISTMAS.TASKS.every(function (t) { return (r.progress[t.id] || 0) >= t.n; });
-      el.innerHTML = header + wallet(a) + npc(panel) + '<div class="xmas-scroll xmas-task-list">' + CHRISTMAS.TASKS.map(function (t) {
+      el.innerHTML = header + wallet(a) + '<div class="xmas-npc-layout">' + npc(panel) + '<section class="xmas-play"><div class="xmas-scroll xmas-task-list">' + CHRISTMAS.TASKS.map(function (t) {
         var p = Math.min(t.n, r.progress[t.id] || 0), claimed = r.claimed[t.id];
         return '<article class="xmas-task"><div><b>' + t.t + '</b><small>' + p + ' / ' + t.n + '</small><progress value="' + p + '" max="' + t.n + '"></progress>' + reward(t.bell, t.candy) + '</div><button class="btn' + (p >= t.n && !claimed ? ' primary' : '') + '" data-xmas-claim="' + t.id + '"' + (claimed || p < t.n || busy ? ' disabled' : '') + '>' + (claimed ? '已领取' : p >= t.n ? '领取' : '未完成') + '</button></article>';
-      }).join('') + '</div><div class="xmas-all"><span><b>全部完成大礼包</b>' + reward(CHRISTMAS.ALL.bell, CHRISTMAS.ALL.candy) + '</span><button class="btn primary" data-xmas-all' + (r.all || !all || busy ? ' disabled' : '') + '>' + (r.all ? '已领取' : '领取礼包') + '</button></div><p class="hint xmas-reset">每日零点（北京时间）刷新</p>';
+      }).join('') + '</div><div class="xmas-all"><span><b>全部完成大礼包</b>' + reward(CHRISTMAS.ALL.bell, CHRISTMAS.ALL.candy) + '</span><button class="btn primary" data-xmas-all' + (r.all || !all || busy ? ' disabled' : '') + '>' + (r.all ? '已领取' : '领取礼包') + '</button></div><p class="hint xmas-reset">每日零点（北京时间）刷新</p></section></div>';
       return;
     }
     var pages = Math.ceil(CHRISTMAS.SHOP.length / SIZE); shopPage = Math.max(0, Math.min(shopPage, pages - 1));
-    el.innerHTML = header + wallet(a) + npc(panel) + '<div class="xmas-scroll xmas-shop-grid">' + CHRISTMAS.SHOP.slice(shopPage * SIZE, (shopPage + 1) * SIZE).map(function (s) {
+    el.innerHTML = header + wallet(a) + '<div class="xmas-npc-layout">' + npc(panel) + '<section class="xmas-play"><div class="xmas-scroll xmas-shop-grid">' + CHRISTMAS.SHOP.slice(shopPage * SIZE, (shopPage + 1) * SIZE).map(function (s) {
       var max = Math.min(999, Math.floor(((a.items || {})[s.coin] || 0) / s.price));
       return '<article class="xmas-good" data-xmas-good="' + s.id + '"><div class="xmas-good-title">' + (s.deco ? '<img class="it-ic" src="images/base/christmas_tree.png" alt="">' : icon(s.k)) + '<b>' + esc(s.deco ? TX.D.BASE_DECO[s.k].n : HSACC.itemName(s.k)) + '</b></div><span class="xmas-price">' + icon(s.coin) + s.price + ' / 个</span><small>持有 ' + ((a.items || {})[s.k] || 0) + '</small><div class="xmas-buy"><input type="number" inputmode="numeric" min="1" max="999" step="1" value="1" aria-label="' + esc(HSACC.itemName(s.k)) + '兑换数量"><button class="btn primary" data-xmas-buy="' + s.id + '"' + (max < 1 || busy ? ' disabled' : '') + '>兑换</button></div></article>';
-    }).join('') + '</div><div class="xmas-pages"><button class="btn" data-xmas-page="-1"' + (!shopPage || busy ? ' disabled' : '') + '>‹ 上一页</button><span>' + (shopPage + 1) + ' / ' + pages + '</span><button class="btn" data-xmas-page="1"' + (shopPage >= pages - 1 || busy ? ' disabled' : '') + '>下一页 ›</button></div>';
+    }).join('') + '</div><div class="xmas-pages"><button class="btn" data-xmas-page="-1"' + (!shopPage || busy ? ' disabled' : '') + '>‹ 上一页</button><span>' + (shopPage + 1) + ' / ' + pages + '</span><button class="btn" data-xmas-page="1"' + (shopPage >= pages - 1 || busy ? ' disabled' : '') + '>下一页 ›</button></div></section></div>';
   }
-  function storyDialog(lines, action, after) {
+  function storyDialog(lines, action, after, sceneKey) {
     if (storyBusy || document.getElementById('xmas-story')) return;
     storyBusy = true;
-    var d = document.createElement('div'), at = 0, portrait = '', friends = false, scene = action === 'knightIntro' ? 'hl_wonderland' : action === 'shopIntro' ? 'hl_shop' : action === 'shopHint' ? 'hl_cabin' : 'hl_castle'; d.className = 'soc-dlg xmas-story-layer xmas-loading'; d.id = 'xmas-story'; document.body.appendChild(d);
+    var d = document.createElement('div'), at = 0, portrait = '', friends = false, scene = sceneKey || (action === 'knightIntro' ? 'hl_wonderland' : action === 'shopIntro' ? 'hl_shop' : action === 'shopHint' ? 'hl_cabin' : 'hl_castle'); d.className = 'soc-dlg xmas-story-layer xmas-loading'; d.id = 'xmas-story'; document.body.appendChild(d);
     var assets = [BG[scene]]; if (action === 'cabinIntro') assets.push(BG.hl_cabin);
     lines.forEach(function (l) { if (l.img) assets.push(CHARS[l.img]); if (l.friends) ['oct','unicorn','may','ace'].forEach(function (k) { assets.push(CHARS['christmas_'+k]); }); });
     function draw() {
@@ -201,7 +211,7 @@ var HSCHRISTMAS = (function () {
     var L = LOADER.show('正在载入讨伐活动～', {delay:120}); L.to(.5);
     HSACC.christmasTx({a:'knightVisit'},function () {
       busy = false; var a = HSACC.acc(), k = CHRISTMAS.story(a).knight, d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'xmas-knight';
-      d.innerHTML = '<section class="soc-box xmas-knight-box" role="dialog" aria-modal="true" aria-labelledby="xmas-knight-title"><header><div><small class="hint">圣诞仙境 · 可重复挑战</small><h2 id="xmas-knight-title">讨伐鲁普雷希特骑士</h2></div><button class="btn ghost" data-knight-close aria-label="关闭讨伐活动">×</button></header>' + wallet(a) + '<div class="xmas-knight-host"><img src="' + CHARS.bttp_christmas + '" alt="戴恶魔角、手持黑暗树枝的bttp"><p>「击败我的召唤精灵？那就再来一只。」<small>每次挑战一只，击败后获得拐杖糖并补充新目标</small></p></div><div class="xmas-knight-targets">' + k.slots.map(function (t,i) { var f = ACC.form(t); return '<article><img src="' + f.img + '" alt=""><b>' + esc(f.name) + '</b><span>LV' + t.lv + '</span><small>' + icon('xmasCandy') + '×' + CHRISTMAS.KNIGHT_CANDY[i] + '</small><button class="btn primary" data-knight-fight="' + i + '" data-target-id="' + t.id + '">挑战</button></article>'; }).join('') + '</div><p class="hint">已击败 ' + k.wins + ' 只 · 无次数限制 · 失败可重试</p></section>';
+      d.innerHTML = '<section class="soc-box xmas-knight-box" role="dialog" aria-modal="true" aria-labelledby="xmas-knight-title"><header><div><small class="hint">圣诞仙境 · 可重复挑战</small><h2 id="xmas-knight-title">讨伐鲁普雷希特骑士</h2></div><button class="btn ghost" data-knight-close aria-label="关闭讨伐活动">×</button></header>' + wallet(a) + '<div class="xmas-npc-layout">' + npc('knight') + '<section class="xmas-play"><p class="hint">每次挑战一只，获胜后获得拐杖糖并刷新目标</p><div class="xmas-knight-targets">' + k.slots.map(function (t,i) { var f = ACC.form(t); return '<article><img src="' + f.img + '" alt=""><b>' + esc(f.name) + '</b><span>LV' + t.lv + '</span><small>' + icon('xmasCandy') + '×' + CHRISTMAS.KNIGHT_CANDY[i] + '</small><button class="btn primary" data-knight-fight="' + i + '" data-target-id="' + t.id + '">挑战</button></article>'; }).join('') + '</div><p class="hint">已击败 ' + k.wins + ' 只 · 无次数限制 · 失败可重试</p></section></div></section>';
       document.body.appendChild(d);
       d.addEventListener('click', function (e) { var b = e.target.closest('[data-knight-fight]'); if (e.target.closest('[data-knight-close]')) { d.remove(); return; } if (!b) return; var slot = +b.dataset.knightFight, id = +b.dataset.targetId; d.remove(); HSACC.fightChristmasKnight(slot,id); });
       d.addEventListener('keydown',function (e) { if (e.key==='Escape') d.remove(); }); gate(d,'正在载入讨伐活动～',function () { d.querySelector('[data-knight-fight]').focus({preventScroll:true}); },null,L);
@@ -212,8 +222,36 @@ var HSCHRISTMAS = (function () {
     if (bg !== 'hl_wonderland') return '';
     return '<button class="xmas-scene-npc xmas-knight-npc" data-xmas-knight style="left:71%;top:91%" aria-label="bttp · 讨伐鲁普雷希特骑士"><img src="' + CHARS.bttp_christmas + '" alt="鲁普雷希特骑士bttp"><span>bttp · 讨伐活动</span></button><div class="xmas-scene-friends">' + friendsHTML(false) + '</div><button class="btn xmas-wonder-return" data-xmas-scene="2">‹ 返回杂货铺</button>';
   }
+  function sourcePanel(k) {
+    if (k !== 'xmasBell' && k !== 'xmasCandy') return;
+    var old = document.getElementById('xmas-sources'); if (old) old.remove();
+    var bell = k === 'xmasBell', a = HSACC.acc(), title = bell ? '圣诞铃铛' : '拐杖糖';
+    var rows = [
+      { to:'tasks', title:'Vanber的圣诞礼物', text:'完成每日圣诞任务，领取' + title },
+      { to:'all', title:'全部完成大礼包', text:'完成全部圣诞任务后，额外领取' + title + ' ×' + (bell ? CHRISTMAS.ALL.bell : CHRISTMAS.ALL.candy) }
+    ];
+    if (!bell) {
+      rows.push({ to:'knight', title:'讨伐鲁普雷希特骑士', text:'击败50、60、70级召唤精灵，分别获得5、8、12个拐杖糖，可重复挑战' });
+      if (CHRISTMAS.RANK_EVENT.enabled) rows.push({ to:'rank', title:'竞技排位S2新赛季', text:'活动期间胜利获得20个，失败或平局获得10个，认输不发放' });
+    }
+    var d = document.createElement('div'), prev = document.activeElement; d.id='xmas-sources'; d.className='soc-dlg';
+    d.innerHTML='<section class="soc-box xmas-sources-box" role="dialog" aria-modal="true" aria-labelledby="xmas-sources-title"><header><h2 id="xmas-sources-title">'+title+' · 获取方式</h2><button type="button" class="btn ghost" data-source-close aria-label="关闭获取指引">×</button></header><div class="xmas-source-list">'+rows.map(function(r,i){return '<article><div><b>'+r.title+'</b><p>'+r.text+'</p></div><button type="button" class="xmas-source-arrow" data-source-go="'+i+'" aria-label="前往'+r.title+'">→</button></article>';}).join('')+'</div></section>';
+    function close(){d.remove();document.removeEventListener('keydown',key);if(prev&&prev.isConnected)prev.focus({preventScroll:true});}
+    function key(e){if(e.key==='Escape'){e.preventDefault();close();}if(e.key==='Tab'){var list=Array.from(d.querySelectorAll('button')),first=list[0],last=list[list.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}}
+    d.addEventListener('click',function(e){if(e.target===d||e.target.closest('[data-source-close]')){close();return;}var b=e.target.closest('[data-source-go]');if(!b)return;var row=rows[+b.dataset.sourceGo];if(!row)return;close();var knight=document.getElementById('xmas-knight');if(knight)knight.remove();
+      if(row.to==='rank'){if(!HSACC.goRank())HSACC.openQuests('side');return;}
+      if(!PVE.helenaOpen(a)){HSACC.openQuests('main');return;}
+      if(row.to==='knight'){if(CHRISTMAS.wonderOpen(a)){if(CHRISTMAS.knightOpen(a))openKnight();else HSACC.goWonderland();}else{HSACC.goHelena(CHRISTMAS.sceneOpen(a,2)?2:0);HSACC.toast('先解锁杂货铺，再接通角落的管道');}return;}
+      if(CHRISTMAS.sceneOpen(a,1))HSACC.goChristmas('gifts');else{HSACC.goHelena(0);HSACC.toast('先带上巴洛，去城堡大门敲门');}
+    });
+    document.body.appendChild(d);document.addEventListener('keydown',key);d.querySelector('[data-source-close]').focus({preventScroll:true});
+  }
   function redraw() { var el = document.getElementById('pg-christmas'); if (el && !el.hidden) HSACC.go('christmas'); }
   document.addEventListener('click', function (e) {
+    var talk = e.target.closest('[data-xmas-talk]'); if (talk) { npcTalk(talk.dataset.xmasTalk); return; }
+    if (e.target.closest('[data-xmas-wonder-location]')) { var k = document.getElementById('xmas-knight'); if (k) k.remove(); HSACC.goWonderland(); return; }
+    var source = e.target.closest('[data-xmas-source]'); if (source) { sourcePanel(source.dataset.xmasSource); return; }
+    if (e.target.closest('[data-xmas-rank]')) { HSACC.goRank(); return; }
     if (e.target.closest('[data-xmas-raid]')) { if(CHRISTMAS.knightOpen(HSACC.acc()))openKnight();else HSACC.goWonderland(); return; }
     if (e.target.closest('[data-xmas-pipes]')) { openPipes(); return; }
     if (e.target.closest('[data-xmas-knight]')) { openKnight(); return; }

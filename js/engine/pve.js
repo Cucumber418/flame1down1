@@ -1095,6 +1095,7 @@ var PVE = (function () {
         if (n < RANK_EXP_N) { a.rankExp = { d: d0, n: n + 1 }; a.exp = (a.exp || 0) + RANK_EXP; a.tokens = (a.tokens || 0) + RANK_TOKEN; rep.rexp = { exp: RANK_EXP, tok: RANK_TOKEN, n: n + 1, max: RANK_EXP_N }; }
         else rep.rexp = { full: true, max: RANK_EXP_N };
       }
+      rep.candy = CHRISTMAS.rankCandy(a, c.season, B.res, B.quit);
       rep.keys = ['hs-rank-v1'];
       return rep;
     }

@@ -5174,16 +5174,19 @@
     dailyHit('arena');
     if (d.rank) { dailyHit('rankPlay'); if (d.result === 'win') dailyHit('rankWin'); } else dailyHit('sandbox');
     if (d.srv) {   // 服务器结算的（2026-10-25）：奖励服务器已经发了，这里只写提示
-      var rx = d.srv.rexp; renderRes();
-      if (rx && !rx.full) return '平衡排位奖励：累积经验 +' + fmt(rx.exp) + '，竞技代币 +' + rx.tok + '（今天第 ' + rx.n + ' / ' + rx.max + ' 局）';
-      if (rx && rx.full) return '今天的 ' + rx.max + ' 局平衡排位奖励已经领完了';
-      return;
+      var rx = d.srv.rexp, messages = []; renderRes();
+      if (rx && !rx.full) messages.push('平衡排位奖励：累积经验 +' + fmt(rx.exp) + '，竞技代币 +' + rx.tok + '（今天第 ' + rx.n + ' / ' + rx.max + ' 局）');
+      if (rx && rx.full) messages.push('今天的 ' + rx.max + ' 局平衡排位经验与代币奖励已经领完了');
+      if (d.srv.candy) messages.push('圣诞活动：拐杖糖 +' + d.srv.candy);
+      return messages.join(' · ') || undefined;
     }
     // 平衡排位：每天前 10 局各给 1000 累积经验和 20 竞技代币（认输不算）
     if (d.rank && !d.quit) {
+      var candy = CHRISTMAS.rankCandy(acc, RANK_SEASON.id, d.result, d.quit), candyText = candy ? ' · 圣诞活动：拐杖糖 +' + candy : '';
       var n = rankToday();
-      if (n < RANK_EXP_N) { acc.rankExp = { d: bjDay(), n: n + 1 }; earn('rankExp', bjDay() + ':' + (n + 1), { exp: RANK_EXP, tokens: RANK_TOKEN }); save(); renderRes(); return '平衡排位奖励：累积经验 +' + fmt(RANK_EXP) + '，竞技代币 +' + RANK_TOKEN + '（今天第 ' + (n + 1) + ' / ' + RANK_EXP_N + ' 局）'; }
-      return '今天的 ' + RANK_EXP_N + ' 局平衡排位奖励已经领完了';
+      if (n < RANK_EXP_N) { acc.rankExp = { d: bjDay(), n: n + 1 }; earn('rankExp', bjDay() + ':' + (n + 1), { exp: RANK_EXP, tokens: RANK_TOKEN }); save(); renderRes(); return '平衡排位奖励：累积经验 +' + fmt(RANK_EXP) + '，竞技代币 +' + RANK_TOKEN + '（今天第 ' + (n + 1) + ' / ' + RANK_EXP_N + ' 局）' + candyText; }
+      if (candy) { save(); renderRes(); }
+      return '今天的 ' + RANK_EXP_N + ' 局平衡排位经验与代币奖励已经领完了' + candyText;
     }
   };
   // 2026-10-14 起每局 1000 经验（每天 10 局共 10000）并掉落 20 竞技代币；RANK_EXP_OLD 用来给当天已经打过的局补差额
@@ -9004,6 +9007,7 @@
   /* ---------- 给社交页（social.js）用的接口 ---------- */
   window.HSACC = {
     contestHTML: sarenaPage, contestOpen: function () { return planetOpen(planetOf('sarena')); }, seasonNoticeAck: function (ok, fail) { txRun('rankSeasonNotice', {}, ok, fail); },
+    arenaOpen: arenaOpen, goRank: function () { if (!arenaOpen()) { toast('完成荆楚号 · 孝感大厅支线后开放平衡排位'); return false; } go('arena'); if (window.HSARENA) HSARENA.open('rank'); else $('mode-rank').click(); return true; },
     acc: function () { return acc; }, ready: ready, save: save, toast: toast, go: go, page: function () { return page; }, renderRes: renderRes,
     farmOpen: farmOpen, farmVisitorRoom: farmVisitorRoom, farmRules: farmRulesHTML, itemName: itemName,
     goFarm: function () { if (!farmOpen()) { toast('读完「伟大的种植园」支线后开放。'); return; } ex.planet = 'jingchu'; ex.area = '恩施'; ex.view = 'farm'; ex.fpanel = null; go('explore'); },

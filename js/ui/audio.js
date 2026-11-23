@@ -181,7 +181,7 @@
       '<label class="snd-row">主界面 <select id="snd-uitrack"><option value="christmas"' + (cfg.uiTrack === 'christmas' ? ' selected' : '') + '>Christmas Day（圣诞活动）</option><option value="new"' + (cfg.uiTrack === 'new' ? ' selected' : '') + '>' + NAMES.ui + '</option><option value="old"' + (cfg.uiTrack === 'old' ? ' selected' : '') + '>' + NAMES.uiOld + '</option></select></label>' +
       '<b class="set-h">对战</b><label class="snd-row"><input type="checkbox" id="set-fx"' + (fxOn ? ' checked' : '') + '> 技能特效</label>' +
       '<label class="snd-row"><input type="checkbox" id="set-shake"' + (window.HSFX && !HSFX.shake() ? '' : ' checked') + '> 普通命中抖动</label>' +
-      '<b class="set-h">游戏</b><button type="button" class="btn" data-set-checkin="1">每日签到</button>' +
+      '<b class="set-h">游戏</b>' +
       (window.CLOUD && CLOUD.user && CLOUD.user() ? '<button type="button" class="btn" data-set-account="1">☁ 账号管理</button>' : '') +
       '<button type="button" class="btn" data-set-about="1">ⓘ 关于</button>';
   }
@@ -190,11 +190,10 @@
     btn.addEventListener('click', function (e) { e.stopPropagation(); menu.hidden = !menu.hidden; btn.setAttribute('aria-expanded', String(!menu.hidden)); if (!menu.hidden) drawMenu(); });
     menu.addEventListener('click', function (e) {
       e.stopPropagation();
-      var account = e.target.closest('[data-set-account]'), about = e.target.closest('[data-set-about]'), checkin = e.target.closest('[data-set-checkin]');
-      if (!account && !about && !checkin) return;
+      var account = e.target.closest('[data-set-account]'), about = e.target.closest('[data-set-about]');
+      if (!account && !about) return;
       menu.hidden = true; btn.setAttribute('aria-expanded', 'false'); btn.focus({ preventScroll: true });
       if (account && window.CLOUD && CLOUD.account) CLOUD.account();
-      if (checkin && window.HSCHECKIN) HSCHECKIN.open();
       if (about && window.HSBOARD) HSBOARD.about();
     });
     menu.addEventListener('input', function (e) {
