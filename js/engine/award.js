@@ -6,7 +6,7 @@
  *   promote   军衔晋升（migrate：旧军衔换算）
  *   chalStar  挑战路线累计星数奖励
  *   rankRw    排位赛季首次达到某段位的奖励
- *   mail      邮箱：sync 投递（全服邮件、登录奖励、离线经验、瘴气驱逐战里程碑、争霸赛名次、旧存档补发），get / all 领附件
+ *   mail      邮箱：sync 投递（全服邮件、离线经验、瘴气驱逐战里程碑、争霸赛名次、旧存档补发），get / all 领附件
  *   fix       旧存档的道具换算（采集物合并）
  * 只有服务器知道的事（全服击破数、争霸赛名次）用 env.fetch 去问（server/purgewar.js、server/contest.js 登记）。
  * ========================================================== */
@@ -153,7 +153,7 @@ var AWD = (function () {
   });
 
   /* ---------- 邮箱：a.mail（新的在前），a.mailSeen（投递过的编号，删掉了也不会重发） ---------- */
-  var MAIL_MAX = 100, OFFLINE_GAP = 20 * 60000, OFFLINE_RATE = 6, OFFLINE_MAX_MIN = 3 * 24 * 60, LOGIN_EXP = 3000;
+  var MAIL_MAX = 100, OFFLINE_GAP = 20 * 60000, OFFLINE_RATE = 6, OFFLINE_MAX_MIN = 3 * 24 * 60;
   var CONTEST = { id: 'quiz1', name: '第一届做题大王争霸赛' }, CT_RW = [{ exp: 300000, t: 1 }, { exp: 200000, t: 1 }, { exp: 150000, t: 1 }, { exp: 120000, t: 1 }], CT_RW0 = { exp: 80000, t: 1 };
   function hasAtt(x) { return !!(x && (x.exp || x.energy || x.merit || x.tokens || x.twTok || (x.items && Object.keys(x.items).length) || (x.mons && x.mons.length) || (x.deco && Object.keys(x.deco).length))); }
   function durText(min) { var h = Math.floor(min / 60), mm = min % 60; return (h ? h + ' 小时 ' : '') + mm + ' 分钟'; }
@@ -195,14 +195,7 @@ var AWD = (function () {
       send(a, { id: 'off-' + now.toString(36), once: true, title: '离线经验', body: '{name}，欢迎回来！\n你离开了 ' + (mins >= 1440 ? Math.floor(mins / 1440) + ' 天 ' : '') + durText(mins % 1440) + '。这段时间里，精灵们也在自己训练' + (mins > OFFLINE_MAX_MIN ? '（最多算 3 天）' : '') + '，一共攒下了 ' + fmt(xp) + ' 点，请领取附件。', att: { exp: xp } }, now);
     }
     a.lastActive = now;
-    // 每日登录：每天 3000 累积经验；没登录的日子下次一起补（从创建账号那天算起）
-    var td = ACC.dayNum(now), from = a.loginDay != null ? a.loginDay + 1 : ACC.dayNum(a.created || now);
-    if (from <= td) {
-      var miss = td - from;
-      if (miss > 0) send(a, { id: 'login-back-' + td, title: '每日登录奖励补发（' + miss + ' 天）', body: '{name}，你好！\n每天登录都能领取 ' + fmt(LOGIN_EXP) + ' 累积经验。之前没有领到的 ' + miss + ' 天，现在一起补发，请领取附件。', att: { exp: miss * LOGIN_EXP } }, now);
-      send(a, { id: 'login-' + td, title: '每日登录奖励', body: '{name}，今天也欢迎登船！\n每天登录都能领取累积经验 ×' + fmt(LOGIN_EXP) + '，请领取附件。', att: { exp: LOGIN_EXP } }, now);
-      a.loginDay = td;
-    }
+    // 每日登录奖励由签到日历发放，不再生成每日登录或漏登补发邮件
     // 2026-11-01：明明教官的试炼首次通过的圣晶石改成每关 3 个、最终试炼 10 个（原来都是 1 个），之前通过的补发差额
     if (!seen['mm-core'] && typeof PVE !== 'undefined' && PVE.MM_CORE) {
       var C0 = PVE.MM_CORE, clr = (a.mm && a.mm.clr) || {}, nl = 0, nf = 0;

@@ -20,7 +20,7 @@ E.QST.pveHits(a,'wild',{downs:3,res:'win'},now);E.QST.pveHits(a,'wild',{downs:1,
 assert(E.CHRISTMAS.TASKS.every(t=>(a.christmas.progress[t.id]||0)>=t.n));
 assert(E.TX.run(a,'christmas',{a:'all'},env).ok);assert(E.TX.run(a,'christmas',{a:'all'},env).already);
 for(const t of E.CHRISTMAS.TASKS)assert(E.TX.run(a,'christmas',{a:'claim',id:t.id},env).ok);
-assert.equal(a.items.xmasBell,7);assert.equal(a.items.xmasCandy,70);assert.equal(a.items.g_core,1);
+assert.equal(a.items.xmasBell,7);assert.equal(a.items.xmasCandy,70);assert.equal(a.items.g_core,2);
 assert(E.TX.run(a,'christmas',{a:'shopHint'},env).ok);assert(E.CHRISTMAS.sceneOpen(a,2));assert.equal(E.TX.run(a,'christmas',{a:'buy',id:'cap1',n:1},env).ok,false);assert(E.TX.run(a,'christmas',{a:'shopIntro'},env).ok);
 let r=E.TX.run(a,'christmas',{a:'buy',id:'cap1',n:4},env);assert(r.ok);assert.equal(a.items.cap1,4);assert.equal(a.items.xmasCandy,50);
 r=E.TX.run(a,'christmas',{a:'buy',id:'formDev',n:1},env);assert(r.ok);assert.equal(a.items.formDev,1);assert.equal(a.items.xmasBell,1);

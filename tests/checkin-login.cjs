@@ -7,8 +7,8 @@ function run(a,op,n){return E.TX.run(a,op,{}, {now:start+n*DAY});}
 let a=fixture();for(let n=0;n<10;n++){
  const r=run(a,'loginVisit',n);assert.equal(r.total,n+1);assert.equal(r.streak,n+1);assert.equal(r.bonus,(n+1)%5===0?8:0);
  assert.equal(run(a,'loginVisit',n).bonus,0);assert(run(a,'signin',n).ok);assert(run(a,'signin',n).already);
- assert.equal(a.items.g_core,(n+1)+8*Math.floor((n+1)/5));
-}assert.equal(a.exp,30000);assert.equal(a.checkin.totalLogin,10);assert.equal(a.checkin.streak,10);
+ assert.equal(a.items.g_core,2*(n+1)+8*Math.floor((n+1)/5));
+}assert.equal(a.exp,50000);assert.equal(a.checkin.totalLogin,10);assert.equal(a.checkin.streak,10);
 // Actual login counts without clicking sign-in; missed dates do not count as logins.
 a=fixture();for(let n=0;n<5;n++)run(a,'loginVisit',n*2);assert.equal(a.checkin.totalLogin,5);assert.equal(a.checkin.streak,1);assert.equal(a.items.g_core,3);assert.equal(a.exp,0);
 // A gap resets only the consecutive counter; five new consecutive days pay again.

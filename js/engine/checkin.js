@@ -35,8 +35,8 @@ TX.add('signin', function (a, args, env) {
   if (a.checkin.days.indexOf(day) >= 0) return { ok: true, already: true, day: day, login: login };
   a.checkin.days = a.checkin.days.filter(function (d) { return typeof d === 'string' && d.slice(0, 7) >= month; });
   a.checkin.days.push(day);
-  a.exp = (a.exp || 0) + 3000;
+  a.exp = (a.exp || 0) + 5000;
   if (!a.items) a.items = {};
-  a.items.g_core = (a.items.g_core || 0) + 1;
-  return { ok: true, day: day, exp: 3000, core: 1, login: login };
+  a.items.g_core = (a.items.g_core || 0) + 2;
+  return { ok: true, day: day, exp: 5000, core: 2, login: login };
 });

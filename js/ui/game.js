@@ -5013,12 +5013,12 @@
     while (L.length > MAIL_MAX) { var k = -1; for (var i = L.length - 1; i >= 0; i--) if (L[i].read && L[i].got) { k = i; break; } if (k < 0) break; L.splice(k, 1); }
     return true;
   }
-  /* ---------- 登录奖励（都通过邮箱发） ----------
+  /* ---------- 离线经验与签到记录 ----------
    * 离线经验：距离上次在线超过 20 分钟再打开游戏，每离线 1 分钟给 6 点累积经验（游戏开着时每 2 分钟记一次在线时间）
-   * 每日登录：每天（北京时间）3000 累积经验；没登录的日子，下次登录时一起补发（从创建账号那天算起） */
-  var OFFLINE_GAP = 20 * 60000, OFFLINE_RATE = 6, OFFLINE_MAX_MIN = 3 * 24 * 60, LOGIN_EXP = 3000, onlineSeen = false;   // 离线经验最多算 3 天
+   * 每日登录奖励已统一由签到日历发放，不再生成登录经验邮件 */
+  var OFFLINE_GAP = 20 * 60000, OFFLINE_RATE = 6, OFFLINE_MAX_MIN = 3 * 24 * 60, onlineSeen = false;   // 离线经验最多算 3 天
   function dayNum(t) { return Math.floor((t + 8 * 3600e3) / 86400000); }
-  function loginRewards() {   // 离线经验、每日登录奖励由服务器投递（deliverMail → 交易 mail sync）
+  function loginRewards() {   // 离线经验由服务器投递（deliverMail → 交易 mail sync），每日奖励通过签到领取
     if (!ready()) return;
     onlineSeen = true;
     deliverMail(true);
@@ -5144,7 +5144,7 @@
     D.list.forEach(function (t) { var d = DAILY[t.id], k = D.date + ':' + t.id; if (d && (!kind || d.kind === kind) && t.p >= d.n && !t.c && !dailyTold[k]) { dailyTold[k] = 1; out.push(d.t); } });
     if (out.length) setTimeout(function () { toast('每日任务完成：' + out.join('、') + '。到航行日志或任务面板领取奖励。'); }, 1200);
   }
-  function dailyClaimable() { var D = daily(); return D ? D.list.filter(function (t) { return !t.c && t.p >= DAILY[t.id].n; }).length : 0; }
+  function dailyClaimable() { var D = daily(); return D ? D.list.filter(function (t) { return !t.c && t.p >= DAILY[t.id].n; }).length + (!D.allClaimed && QST.dailyAllReady(acc, Date.now()) ? 1 : 0) : 0; }
   function claimDaily(i, after) {
     var D = daily(), t = D && D.list[i]; if (!t || t.c || t.p < DAILY[t.id].n) return;
     txRun('daily', { i: i }, function (r) {   // 服务器结算（js/engine/quest.js）
@@ -5152,6 +5152,17 @@
       toast('领取了每日任务奖励：累积经验 +' + fmt(r.exp) + '，能量 +' + fmt(r.energy) + '。');
     });
   }
+  var dailyAllBusy = false;
+  function claimDailyAll() {
+    var D = daily(); if (!D || D.allClaimed || dailyAllBusy || !QST.dailyAllReady(acc, Date.now())) return;
+    dailyAllBusy = true;
+    txRun('dailyAll', {}, function (r) {
+      dailyAllBusy = false; renderRes(); renderQBadge();
+      if ($('quest-dlg')) renderQuests(); if (page === 'log') renderLog();
+      toast(r.already ? '今天的额外奖励已经领取' : '领取了全部完成奖励：累积经验 +10,000，圣晶石 +2');
+    }, function (err) { dailyAllBusy = false; toast(err || '领取失败，请重试'); });
+  }
+  document.addEventListener('click', function (e) { var b = e.target.closest('[data-daily-all]'); if (b && !b.disabled) claimDailyAll(); });
   window.HSEV = function (type, d) {
     if (!ready()) return;
     if (type === 'hidden') {   // 战斗中领悟了隐藏技能
@@ -5180,7 +5191,8 @@
   function rankToday() { return acc && acc.rankExp && acc.rankExp.d === bjDay() ? acc.rankExp.n || 0 : 0; }
   function dailyHTML() {
     var D = daily(); if (!D) return '';
-    return '<ul class="daily">' + D.list.map(function (t, i) {
+    var complete = D.list.filter(function (t) { return DAILY[t.id] && t.p >= DAILY[t.id].n; }).length, all = QST.dailyAllReady(acc, Date.now());
+    return '<section class="daily-all' + (D.allClaimed ? ' claimed' : all ? ' ready' : '') + '"><div><b>每日任务全部完成奖励</b><p>累积经验 ×10,000　圣晶石 ×2</p><small>今日完成 ' + complete + ' / ' + D.list.length + ' 项</small></div><button type="button" class="btn' + (all && !D.allClaimed ? ' primary' : '') + '" data-daily-all' + (!all || D.allClaimed || dailyAllBusy ? ' disabled' : '') + '>' + (D.allClaimed ? '已领取' : all ? '领取额外奖励' : '全部完成后领取') + '</button></section><ul class="daily">' + D.list.map(function (t, i) {
       var d = DAILY[t.id], ok = t.p >= d.n, lock = d.arena && !arenaOpen();
       return '<li class="dl' + (t.c ? ' done' : ok ? ' ok' : '') + '">' + (d.brawl ? '<span class="chip dl-tag bw">大乱斗</span>' : d.arena ? '<span class="chip dl-tag">竞技</span>' : '<span class="chip dl-tag ex">探索</span>') +
         '<span class="dl-t"><b>' + esc(d.t) + '</b><small>奖励：累积经验 ×' + fmt(d.rw.exp) + '、能量 ×' + fmt(d.rw.energy) + (lock ? ' · 完成孝感大厅支线后才能进行竞技对战' : '') + '</small></span>' +
@@ -8198,7 +8210,7 @@
   function wq(id) { for (var i = 0; i < WQ.length; i++) if (WQ[i].id === id) return WQ[i]; return null; }
   var QLAB = { lock: '未解锁', todo: '可进行', doing: '进行中', claim: '可领取', done: '已完成' };
   function qList(tab) { return tab === 'main' ? MAIN_Q : tab === 'side' ? SIDE_Q : tab === 'event' ? EVENT_Q.filter(function (id) { return id !== 'mmTrial' || mmLive() || prog(id).done; }) : tab === 'daily' ? [] : WQ.map(function (w) { return w.id; }); }
-  function qTodo(tab) { if (tab === 'daily') { var D = daily(); return D ? D.list.filter(function (t) { return !t.c; }).length : 0; } return qList(tab).filter(function (id) { var st = qState(id); return st === 'todo' || st === 'doing' || st === 'claim'; }).length; }
+  function qTodo(tab) { if (tab === 'daily') { var D = daily(); return D ? D.list.filter(function (t) { return !t.c; }).length + (!D.allClaimed && QST.dailyAllReady(acc, Date.now()) ? 1 : 0) : 0; } return qList(tab).filter(function (id) { var st = qState(id); return st === 'todo' || st === 'doing' || st === 'claim'; }).length; }
 
   function qName(id) { var W = wq(id); return W ? W.n : SITES[id].chapter.split(' · ')[1]; }
   function qWhere(id) {
@@ -8340,8 +8352,8 @@
     });
     var D = daily(), dl = '';
     if (D) {
-      var c = D.list.filter(function (t) { return t.c; }).length, ok = D.list.filter(function (t) { return !t.c && t.p >= DAILY[t.id].n; }).length;
-      dl = '<li class="qp-row daily' + (ok ? ' claim' : '') + '" data-qpeek="daily"><span class="qp-k">每日</span><b>今天的每日任务</b><span class="qp-step">已领取 ' + c + ' 个' + (ok ? '，还有 ' + ok + ' 个可以领取' : '') + '</span>' +
+      var c = D.list.filter(function (t) { return t.c; }).length, ok = D.list.filter(function (t) { return !t.c && t.p >= DAILY[t.id].n; }).length, allBonus = !D.allClaimed && QST.dailyAllReady(acc, Date.now());
+      dl = '<li class="qp-row daily' + (ok || allBonus ? ' claim' : '') + '" data-qpeek="daily"><span class="qp-k">每日</span><b>今天的每日任务</b><span class="qp-step">已领取 ' + c + ' 个' + (ok ? '，还有 ' + ok + ' 个可以领取' : '') + (allBonus ? '，额外奖励可领取' : '') + '</span>' +
         '<span class="qp-bar"><i style="width:' + Math.round((c + ok) / D.list.length * 100) + '%"></i></span><em>' + (c + ok) + ' / ' + D.list.length + '</em></li>';
     }
     return '<p class="qp-h"><b>进行中的任务</b><span class="hint">点击打开任务面板</span></p>' +

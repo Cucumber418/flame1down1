@@ -14,7 +14,7 @@
     }
     var login = HSACC.acc().checkin || {}, progress = '<div class="ci-progress"><span>累计登录 <b>' + (login.totalLogin || 0) + '</b> 天 · 每5天额外3圣晶石</span><span>连续登录 <b>' + (login.streak || 0) + '</b> 天 · 每5天额外5圣晶石</span></div>';
     var doneToday = dates.indexOf(day) >= 0, d = document.createElement('div'); d.id = 'checkin-dlg'; d.className = 'soc-dlg';
-    d.innerHTML = '<div class="soc-box ci-box" role="dialog" aria-modal="true" aria-labelledby="ci-title"><span class="tape l"></span><div><span class="step">' + year + '年' + month + '月</span><h2 id="ci-title">每日签到</h2><p class="hint">每日领取3000累积经验与1枚圣晶石</p></div>' + progress + '<div class="ci-calendar">' + ['日','一','二','三','四','五','六'].map(function (w) { return '<span class="ci-week">' + w + '</span>'; }).join('') + cells + '</div><p class="hint" data-ci-msg>' + (login.bonusDay === day && login.lastBonus ? '今日登录额外奖励：圣晶石 ×' + login.lastBonus : '北京时间每日零点刷新，两项登录奖励可叠加') + '</p><div class="soc-foot"><button class="btn" data-ci-close>关闭</button><button class="btn primary" data-ci-sign' + (doneToday ? ' disabled' : '') + '>' + (doneToday ? '今日已签到' : '签到领取') + '</button></div></div>';
+    d.innerHTML = '<div class="soc-box ci-box" role="dialog" aria-modal="true" aria-labelledby="ci-title"><span class="tape l"></span><div><span class="step">' + year + '年' + month + '月</span><h2 id="ci-title">每日签到</h2><p class="hint">每日领取5000累积经验与2枚圣晶石</p></div>' + progress + '<div class="ci-calendar">' + ['日','一','二','三','四','五','六'].map(function (w) { return '<span class="ci-week">' + w + '</span>'; }).join('') + cells + '</div><p class="hint" data-ci-msg>' + (login.bonusDay === day && login.lastBonus ? '今日登录额外奖励：圣晶石 ×' + login.lastBonus : '北京时间每日零点刷新，两项登录奖励可叠加') + '</p><div class="soc-foot"><button class="btn" data-ci-close>关闭</button><button class="btn primary" data-ci-sign' + (doneToday ? ' disabled' : '') + '>' + (doneToday ? '今日已签到' : '签到领取') + '</button></div></div>';
     document.body.appendChild(d); prompted = day;
     d.addEventListener('click', function (e) {
       if (e.target === d || e.target.closest('[data-ci-close]')) { if (!busy) d.remove(); return; }
@@ -22,7 +22,7 @@
       busy = true; b.disabled = true;
       HSACC.signin(function (r) {
         busy = false; d.remove(); open();
-        var msg = document.querySelector('[data-ci-msg]'); if (msg) msg.textContent = r.already ? '今天已经领取过了' : '已获得3000累积经验与1枚圣晶石' + (HSACC.acc().checkin.lastBonus ? '，今日登录另获圣晶石 ×' + HSACC.acc().checkin.lastBonus : '');
+        var msg = document.querySelector('[data-ci-msg]'); if (msg) msg.textContent = r.already ? '今天已经领取过了' : '已获得5000累积经验与2枚圣晶石' + (HSACC.acc().checkin.lastBonus ? '，今日登录另获圣晶石 ×' + HSACC.acc().checkin.lastBonus : '');
         HSACC.renderRes();
       }, function (err) { busy = false; b.disabled = false; d.querySelector('[data-ci-msg]').textContent = err || '网络不稳，请重试'; });
     });

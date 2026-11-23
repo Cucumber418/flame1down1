@@ -74,6 +74,19 @@ var QST = (function () {
     else if (kind === 'sandbox') { h('arena'); h('sandbox'); }
     return out;
   }
+  function dailyAllReady(a, now) {
+    var D = daily(a, now), seen = {};
+    return D.list.length > 0 && D.list.length <= DAILY_N && D.list.every(function (t) { if (!DAILY[t.id] || seen[t.id] || !(t.p >= DAILY[t.id].n)) return false; seen[t.id] = true; return true; });
+  }
+  TX.add('dailyAll', function (a, args, env) {
+    var D = daily(a, env.now);
+    if (D.allClaimed) return { ok:true, already:true, day:D.date };
+    if (!dailyAllReady(a, env.now)) return no('先完成今天的全部每日任务');
+    D.allClaimed = true;
+    a.exp = (a.exp || 0) + RW.DAILY_ALL.exp;
+    var I = items(a); I.g_core = (I.g_core || 0) + RW.DAILY_ALL.items.g_core;
+    return { ok:true, day:D.date, exp:RW.DAILY_ALL.exp, core:RW.DAILY_ALL.items.g_core };
+  });
   TX.add('daily', function (a, args, env) {
     var D = daily(a, env.now), i = args.i, t = typeof i === 'number' ? D.list[i] : null;
     if (!t || !DAILY[t.id]) return no('没有这个任务');
@@ -118,6 +131,6 @@ var QST = (function () {
     return { ok: true, id: id, rw: R };
   });
 
-  return { DAILY: DAILY, DAILY_N: DAILY_N, daily: daily, dailyPick: dailyPick, hit: hit, pveHits: pveHits, seededRng: seededRng, WQ: WQ, qStat: qStat, qReady: qReady, litCount: litCount };
+  return { DAILY: DAILY, DAILY_N: DAILY_N, dailyAllReady: dailyAllReady, daily: daily, dailyPick: dailyPick, hit: hit, pveHits: pveHits, seededRng: seededRng, WQ: WQ, qStat: qStat, qReady: qReady, litCount: litCount };
 })();
 if (typeof module !== 'undefined') module.exports = QST;

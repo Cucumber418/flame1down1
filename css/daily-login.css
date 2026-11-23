@@ -14,3 +14,8 @@
 
 .ci-progress { display: grid; gap: 3px; font-size: 12px; color: var(--pencil); flex: 0 0 auto; }
 .ci-progress b { color: var(--red); }
+
+.daily-all { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin:0 0 12px; padding:12px; border:1px dashed var(--rule); border-radius:10px; background:var(--paper-2); }
+.daily-all b { font-size:15px; } .daily-all p { margin:5px 0; font-size:13px; } .daily-all small { color:var(--pencil); font-size:12px; }
+.daily-all .btn { flex:0 0 auto; font-size:12px; padding:7px 10px; }
+.daily-all.ready { border-color:var(--red); border-style:solid; } .daily-all.claimed { opacity:.65; }

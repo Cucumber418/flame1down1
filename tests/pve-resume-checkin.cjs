@@ -9,8 +9,8 @@ if(process.env.PVE_TEST_WORKER){
  for(const id of ['school','river','jiuquan'])a.story[id]={done:true,rewarded:true};const m=E.ACC.newMon(a,'barlow',100,{now:Date.now(),rand:()=>.5});m.moves=['纯净护盾','能量弹','践踏','遁走'];a.teams[0]=[m.u];
  // Beijing midnight, duplicate claim, month rollover: exactly one daily reward.
  let acc={exp:0,items:{}},t=Date.parse('2026-11-30T15:59:59Z');
- assert(E.TX.run(acc,'signin',{}, {now:t}).ok);assert.equal(acc.exp,3000);assert.equal(acc.items.g_core,1);assert(E.TX.run(acc,'signin',{}, {now:t}).already);assert.equal(acc.exp,3000);
- assert(E.TX.run(acc,'signin',{}, {now:t+1000}).ok);assert.equal(acc.exp,6000);assert.equal(acc.items.g_core,2);assert.deepEqual(JSON.parse(JSON.stringify(acc.checkin.days)),['2026-12-01']);
+ assert(E.TX.run(acc,'signin',{}, {now:t}).ok);assert.equal(acc.exp,5000);assert.equal(acc.items.g_core,2);assert(E.TX.run(acc,'signin',{}, {now:t}).already);assert.equal(acc.exp,5000);
+ assert(E.TX.run(acc,'signin',{}, {now:t+1000}).ok);assert.equal(acc.exp,10000);assert.equal(acc.items.g_core,4);assert.deepEqual(JSON.parse(JSON.stringify(acc.checkin.days)),['2026-12-01']);
  let worker,base,token;
  async function boot(){worker=cp.fork(__filename,[],{env:{...process.env,PVE_TEST_WORKER:'1'},stdio:['ignore','pipe','pipe','ipc']});const msg=await new Promise((r,j)=>{worker.once('message',r);worker.once('error',j);worker.once('exit',code=>j(new Error('worker exited '+code)));});base='http://127.0.0.1:'+msg.port;}
  async function stop(){const w=worker;if(!w)return;worker=null;await new Promise(r=>{w.once('exit',r);w.kill('SIGTERM');});}
@@ -18,8 +18,8 @@ if(process.env.PVE_TEST_WORKER){
  try{
  await boot();let r=await api('/api/register',{user:'resumetest',pass:'resume-test-password',data:{'hs-account-v1':JSON.stringify(a)}});token=r.token;assert(token);
  const version=await api('/api/version');assert(version.rules);assert.equal(version.rules,T.RULES_VERSION);
- let sign=await api('/api/tx',{op:'signin',rules:version.rules,v:'cosmetic-old-version'});assert(sign.ok);let user=await api('/api/me');let saved=JSON.parse(user.save.data['hs-account-v1']);assert.equal(saved.exp,3000);assert.equal(saved.items.g_core,1);
- assert((await api('/api/tx',{op:'signin',rules:version.rules})).ok);saved=JSON.parse((await api('/api/me')).save.data['hs-account-v1']);assert.equal(saved.exp,3000);assert.equal(saved.items.g_core,1);
+ let sign=await api('/api/tx',{op:'signin',rules:version.rules,v:'cosmetic-old-version'});assert(sign.ok);let user=await api('/api/me');let saved=JSON.parse(user.save.data['hs-account-v1']);assert.equal(saved.exp,5000);assert.equal(saved.items.g_core,2);
+ assert((await api('/api/tx',{op:'signin',rules:version.rules})).ok);saved=JSON.parse((await api('/api/me')).save.data['hs-account-v1']);assert.equal(saved.exp,5000);assert.equal(saved.items.g_core,2);
  const spawn=await api('/api/pve',{op:'wild',rid:'hl_castle',si:0,bg:'hl_castle',n:1});assert(spawn.list.length);
  const request={op:'start',kind:'wild',args:{id:spawn.list[0].id},ui:{bg:E.BG.hl_castle,back:'圣诞城堡',route:{view:'field',planet:'helena',region:'hl_castle'}},rules:version.rules,v:'cosmetic-old-version'};
  assert.equal((await api('/api/pve',{...request,rules:'old-battle-rules'})).status,409);
