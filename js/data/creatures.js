@@ -160,6 +160,13 @@ var SP = [
 var DUMMY = { id: 'dummy', name: '木桩', types: ['无'], type: '无', base: { hp: 100, atk: 0, def: 50, spa: 0, spd: 50, spe: 0 }, ability: { n: '无', d: '训练用木桩，不会攻击，体力无限' }, moves: [], hidden: [], def: [] };
 // 扩展精灵：当前排位是否可用由 S2_ROSTER 决定，沙盒开放全部
 var EXTRA_SP = [
+  { id: 'glen', name: '莫格伦', types: ['地面'],
+    base: { hp: 114, atk: 82, def: 100, spa: 74, spd: 103, spe: 70 },
+    evo: [{ n: '格伦', lv: 1 }, { lv: 30 }], evoLvSure: false,
+    ability: { n: '孤傲', d: '每受到3次攻击，提升1级对应防御：物理攻击较多时提升物防，特殊攻击较多时提升特防；连击技能按1次攻击计算' },
+    lore: '格伦 → 莫格伦，地面系精灵',
+    moves: ['扔石块', '飞沙', '旋转冲撞', '践踏', '投掷顽石', '破石之蹄', '踏雪无痕', '孤高之蹄', '孤王之傲'],
+    hidden: ['高地之王', '碎震裂踢'], def: ['破石之蹄', '孤高之蹄', '孤王之傲', '高地之王'] },
   { id: 'barlow', name: '巴洛霍尔', types: ['普通'],
     base: { hp: 84, atk: 106, def: 85, spa: 80, spd: 80, spe: 89 },
     evo: [{ n: '巴洛', lv: 1, no: '080', d: '喜欢在地上跳来跳去。' }, { n: '巴洛恒', lv: 25, no: '081', d: '长出了富有弹力的腿，更喜欢蹦跳了。' }, { lv: 50, no: '082', d: '一直如此蹦跳、奔跑，永不疲倦，永远欢快。' }], evoLvSure: false,

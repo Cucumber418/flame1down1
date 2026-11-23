@@ -215,6 +215,7 @@ function abilityLive(m, foe) {
   var ab = ability(m), t = m.fx.fieldT || 0, on, f = foe && !foe.fainted ? foe : null;
   var lowSelf = m.hp <= m.maxhp / 3;
   switch (ab) {
+    case '孤傲': var gh = m.fx.glenHits || { phys: 0, spec: 0 }; return '已累计受到 ' + (gh.phys + gh.spec) + '/3 次攻击（物攻' + gh.phys + '、特攻' + gh.spec + '），满3次提升较多类型对应的1级防御；连击技能按1次计算';
     case '无常': return (abilObj(m).d || '') + ' ' + (abilObj(m).extra || '');
     case '旅行': return '每次被替换上场时，提升1级速度（首发上场不触发）';
     case '脚伤': return '脚底被瘴气浸透，陷入永久的流血状态，无法被解除';
@@ -270,6 +271,10 @@ function chipsOf(m, foe, S) {
     var pz = s === '中毒' ? (m.fx.poison || 1) : 0;
     c.push({ t: s + (pz > 1 ? '×' + pz + ' · ' : ' ') + m.st[s], k: 'st', h: s + (pz ? ' · ' + pz + ' 层' : '') + ' · 剩 ' + m.st[s] + ' 回合', d: (ST_DESC[s] || '') + (pz ? '。当前每回合损失 ' + Math.max(1, Math.floor(m.maxhp * pz / 16)) + ' 点' : '') });
   }
+  if (m.fx.stoneMark) c.push({ t: '破石印记', k: 'st', h: '破石印记', d: '受到破石之蹄时，其威力翻倍；不消耗印记，换下场后消失' });
+  if (m.fx.fracture) c.push({ t: '碎震 ' + (3 - m.fx.fracture.elapsed), k: 'st', h: '碎震', d: '剩余' + (3 - m.fx.fracture.elapsed) + '回合，每回合末受到固定伤害' });
+  if (m.fx.highlandHits > 0) c.push({ t: '高地之王 ' + m.fx.highlandHits, k: 'fx', h: '高地之王', d: '下' + m.fx.highlandHits + '次受到的攻击伤害减免35%；连击技能按1次计算' });
+  if (m.fx.prideShield) c.push({ t: '孤王之傲 ' + m.fx.prideShield.hp, k: 'fx', h: '孤王之傲', d: '吸收接下来受到的' + m.fx.prideShield.hp + '点伤害' });
   if (m.fx.shield > 0) c.push({ t: '护盾 ' + m.fx.shield, k: 'fx', h: '护盾', d: '先吸收接下来受到的 ' + m.fx.shield + ' 点伤害' });
   if (m.fx.absDef) c.push({ t: '免疫下次攻击', k: 'fx', h: '免疫下次攻击', d: '闪避下一次受到的攻击' });
   if (m.fx.endure) c.push({ t: '不灭之躯', k: 'fx', h: '不灭之躯', d: '下一次受到致死攻击时残留1点体力' });
@@ -353,6 +358,7 @@ function statSheet(m, foe) {
   if (m.tm.vuln > 0) dmgIn *= 1.3;
   if (m.perm && m.perm.melt) dmgIn *= 1 + 0.2 * m.perm.melt;
   if (m.fx.leiyin) dmgIn *= 1.2;
+  if (m.fx.highlandHits > 0) dmgIn *= .65;
   if (m.tm.dr40 > 0) dmgIn *= 0.6;
   if (m.boss && m.boss.dr) dmgIn *= 1 - m.boss.dr;
   if (m.boss && m.boss.eternal) dmgIn *= 1.2;
@@ -428,6 +434,7 @@ function loseHp(S, evs, j, amt, why, exact, o) {
   if (t.boss && t.boss.stRes && why && dotKind(why) !== 'fixed') { amt = Math.max(1, amt * (1 - t.boss.stRes)); RV(t, 'stRes'); }
   if (t.boss && t.boss.eSt && why && dotKind(why) !== 'fixed') { amt = Math.max(1, amt * (1 - t.boss.eSt)); RV(t, 'eSt'); }   // 无尽作战「异常抗性」
   if (!exact && t.boss && t.boss.fixRes && dotKind(why) === 'fixed') { amt = Math.max(1, amt * (1 - t.boss.fixRes)); RV(t, 'fixRes'); }   // 玫瑰星云「稀薄粒子」：异常状态的持续伤害只有两成（2026-11-01）
+  if (o.direct && !o.cost && S.glenAttack) amt = glenAttackDamage(S, evs, j, amt, S.glenAttack.from);
   amt = Math.min(t.hp, Math.floor(amt)); t.hp -= amt;
   E(S, evs, 'hit', { side: j, amount: amt, kind: dotKind(why) });
   if (why) log(S, evs, why);
@@ -445,12 +452,18 @@ function applyDamage(S, evs, j, amount, src, o) {
     amount = bossDamage(S, evs, j, amount, { direct: src != null && src !== j && !o.indirect, percent: !!o.percent, status: !!o.status, cost: !!o.cost });
     if (amount <= 0) { S.lastShown = 0; return 0; }
   }
+  if (!o.indirect) amount = glenAttackDamage(S, evs, j, amount, src);
   if (t.cbl) amount = amount * (1 - 0.25 * t.cbl);   // Cumberland：受到的伤害减免 25%（增幅后 37.5%）
   if (t.insFx && t.insFx.ice && src != null && src !== j && amount > 0 && RNG() < 0.2) { amount = Math.max(0, amount - 20); log(S, evs, nm(t) + '的刻印「肃穆之冰」减免了 20 点伤害', 'fxl'); }   // 2026-11-01
   if (t.boss && t.boss.fixRes && o.eff === undefined && !o.crit && amount > 0) { amount *= 1 - t.boss.fixRes; RV(t, 'fixRes'); }   // 无尽作战「固伤减免」
   var amt = Math.floor(amount), excess = 0;
   if (t.tm.cap > 0 && amt > 250 && src != null) { excess = amt - 250; amt = 250; }
   var willEx = 0; if (t.boss && t.boss.odoWill && amt > 200 && src != null && src !== j) { willEx = amt - 200; amt = 200; RV(t, 'odoWill'); }   // 护阵意志：单次受伤不超过 200，超出的反弹
+  if (t.fx.prideShield && t.fx.prideShield.hp > 0) {
+    var prideAbs = Math.min(t.fx.prideShield.hp, amt); t.fx.prideShield.hp -= prideAbs; amt -= prideAbs;
+    if (prideAbs) log(S, evs, nm(t) + '的孤王之傲护盾吸收了 ' + prideAbs + ' 点伤害');
+    if (!t.fx.prideShield.hp) delete t.fx.prideShield;
+  }
   if (t.fx.shield > 0) {
     var ab = Math.min(t.fx.shield, amt); t.fx.shield -= ab; amt -= ab;
     if (ab) log(S, evs, nm(t) + '的护盾吸收了 ' + ab + ' 点伤害');
@@ -598,6 +611,7 @@ function movePower(me, foe, mv) {
     case 'punish': power += 20 * posSum(foe); break;
     case 'canyue': power = canyuePow(me.fx.canyueNow ? (me.flags.canyue || 1) - 1 : me.flags.canyue || 0); break;
     case 'starMagic': var sn = me.perm.star || 0; power = Math.min(STAR_MAX, 25 * (me.fx.starNow ? sn : sn + 1)); break;
+    case 'glenStone': if (foe.fx.stoneMark) power *= 2; break;
     case 'baliFantasy': power += 5 * missingPP(foe); break;
   }
   if (foe.fx && foe.fx.earMark) power *= 2;
@@ -667,6 +681,7 @@ function calcDamage(me, foe, mv, firstMover, est) {
   if (phys && foe.tm.halfPhys > 0) mod *= 0.5;
   if (!phys && foe.tm.halfSpec > 0) mod *= 0.5;
   if (foe.tm.dr40 > 0) mod *= 0.6;
+  if (est && foe.fx.highlandHits > 0) mod *= .65;
   if (foe.boss && foe.boss.dr) { mod *= 1 - foe.boss.dr; if (!est) RV(foe, 'dr'); }   // BOSS「星球聚能」
   // 玫瑰星云「疏散星团」（2026-11-01 改为BOSS特效，按体力管变化）：阿尔法 伤害 +50%；贝塔 受伤 -30%；欧米茄 先出手伤害 +50%、后出手受伤 -30%
   if (me.boss && me.boss.cl) { var clA = me.boss.bar || 0; if (clA === 0 || (clA === 2 && firstMover)) { mod *= 1.5; if (!est) RV(me, 'cl'); } }
@@ -1117,6 +1132,56 @@ function applyBarlowMove(S, evs, i, mv) {
   if (mv.custom === 'barlowPurify') { var removed = clearUps(S, evs, 1 - i); if (removed) heal(S, evs, i, removed * 50); }
   if (m.fx.originHits > 0) { m.fx.originHits--; heal(S, evs, i, m.maxhp / 5); E(S, evs, 'stage', { side: i }); }
 }
+// 莫格伦：按整招记录攻击，连击与附加固伤共享一次减伤与计数。
+function glenDefense(m) { return Math.floor(m.stats.def * stageMult(m.stages.def) * miaDef(m)) + Math.floor(m.stats.spd * stageMult(m.stages.spd) * miaDef(m)); }
+function glenAttackStart(S, i, mv) {
+  var j = 1 - i, m = act(S, j);
+  if (m.fx.highlandHits > 0 || ability(m) === '孤傲') S.glenAttack = { from: i, side: j, slot: S.sides[j].active, cat: mv.cat, hit: false, scale: 1 };
+}
+function glenAttackDamage(S, evs, j, amount, src) {
+  var a = S.glenAttack, m = act(S, j);
+  if (!a || a.side !== j || a.slot !== S.sides[j].active || a.from !== src || amount <= 0) return amount;
+  if (!a.hit) {
+    a.hit = true;
+    if (m.fx.highlandHits > 0) { m.fx.highlandHits--; a.scale = .65; log(S, evs, nm(m) + '的高地之王减免35%攻击伤害（剩' + m.fx.highlandHits + '次）', 'fxl'); E(S, evs, 'stage', { side: j }); }
+  }
+  return amount * a.scale;
+}
+function glenAttackEnd(S, evs) {
+  var a = S.glenAttack; if (!a || !a.hit || a.slot !== S.sides[a.side].active) return;
+  var m = act(S, a.side); if (m.fainted || m.hp <= 0 || ability(m) !== '孤傲') return;
+  var tally = m.fx.glenHits || (m.fx.glenHits = { phys: 0, spec: 0 });
+  tally[a.cat === '物攻' ? 'phys' : 'spec']++;
+  if (tally.phys + tally.spec >= 3) {
+    var stage = tally.phys > tally.spec ? { def: 1 } : { spd: 1 };
+    delete m.fx.glenHits; log(S, evs, nm(m) + '的「孤傲」发动了！', 'fxl'); changeStages(S, evs, a.side, stage);
+  }
+  E(S, evs, 'stage', { side: a.side });
+}
+function applyGlenMove(S, evs, i, mv) {
+  var me = act(S, i), j = 1 - i, foe = act(S, j);
+  if (mv.custom === 'glenHeal') heal(S, evs, i, glenDefense(me) * .1);
+  if (foe.fainted || foe.hp <= 0) return;
+  if (mv.custom === 'glenStone') { foe.fx.stoneMark = true; E(S, evs, 'stage', { side: j }); log(S, evs, nm(foe) + '被附加了破石印记', 'bad'); }
+  if (mv.custom === 'glenFracture') {
+    var damage = Math.floor(glenDefense(me) * .15), old = foe.fx.fracture;
+    foe.fx.fracture = { total: Math.max(damage, old ? old.total : 0), elapsed: 0 };
+    E(S, evs, 'stage', { side: j }); log(S, evs, nm(foe) + '陷入碎震，接下来3回合末持续受到固定伤害', 'bad');
+  }
+}
+function glenTick(S, evs) {
+  [0, 1].forEach(function (i) {
+    var m = act(S, i), f = m.fx.fracture; if (m.fainted || !f || S.over) return;
+    var damage = Math.floor(f.total * (f.elapsed + 1) / 3) - Math.floor(f.total * f.elapsed / 3); f.elapsed++;
+    if (f.elapsed >= 3) delete m.fx.fracture;
+    log(S, evs, nm(m) + '受到碎震的持续打击', 'fxl'); S.dotSrc = '碎震'; applyDamage(S, evs, i, damage, null, { indirect: true }); S.dotSrc = null;
+  });
+}
+function useMoveCore(S, evs, i, mv, slotIdx, extra, splitToken) {
+  var prev = S.glenAttack; delete S.glenAttack;
+  try { return useMoveCore0(S, evs, i, mv, slotIdx, extra, splitToken); }
+  finally { glenAttackEnd(S, evs); if (prev) S.glenAttack = prev; else delete S.glenAttack; }
+}
 function useMove(S, evs, i, mv, slotIdx, extra) {
   var me = act(S, i), split = !extra && me.fx.prismAttacks > 0 && liveMove(me, mv).cat !== '变化';
   if (!split) return useMoveCore(S, evs, i, mv, slotIdx, extra);
@@ -1124,7 +1189,7 @@ function useMove(S, evs, i, mv, slotIdx, extra) {
   useMoveCore(S, evs, i, half, slotIdx, false, token);
   if (token.armed && !S.over && !me.fainted && !act(S, 1 - i).fainted) useMoveCore(S, evs, i, half, -1, true);
 }
-function useMoveCore(S, evs, i, mv, slotIdx, extra, splitToken) {
+function useMoveCore0(S, evs, i, mv, slotIdx, extra, splitToken) {
   if (!extra) RV(act(S, i), 'mute');
   var me = act(S, i), j = 1 - i, foe = act(S, j);
   mv = liveMove(me, mv);
@@ -1201,6 +1266,7 @@ function useMoveCore(S, evs, i, mv, slotIdx, extra, splitToken) {
     });
     E(S, evs, 'stage', { side: j });
   }
+  glenAttackStart(S, i, mv);
   var total = 0, shownT = 0, lastEff = 1, n = 0, hits = 1, raw = 0, burnX = 0, pBoost = 1;
   if (mv.custom === 'swiftPierce' && firstMover && foe.stages.def > 0 && !stageBlocked(S, evs)) { var dcl = foe.stages.def; foe.stages.def = 0; pBoost = 1 + 0.75 * dcl; E(S, evs, 'stage', { side: j }); log(S, evs, '迅捷刺击清空了' + nm(foe) + '的 ' + dcl + ' 级物防强化，这次伤害 +' + Math.round(75 * dcl) + '%', 'fxl'); }
   function dmgAdd(v) { total += v; shownT += S.lastShown != null ? S.lastShown : v; S.lastShown = null; }
@@ -1299,6 +1365,7 @@ function useMoveCore(S, evs, i, mv, slotIdx, extra, splitToken) {
   applyClementMove(S, evs, i, mv);
   applyBaliMove(S, evs, i, mv);
   applyBarlowMove(S, evs, i, mv);
+  applyGlenMove(S, evs, i, mv);
   me.fx.hqRaw = raw;   // 这一招算出来的伤害（不按对方剩余体力截断），隐藏技能「淬命之焰」的领悟条件用
   if (foe.fainted) {
     if (i === 0) hqKO(S, evs, me, foe, mv);
@@ -1452,6 +1519,11 @@ function doStatus(S, evs, i, mv) {
   function foeTimer(key, n, text) { foe.tm[key] = n; E(S, evs, 'stage', { side: j }); log(S, evs, text, 'bad'); }
   function flag(text) { E(S, evs, 'stage', { side: i }); log(S, evs, text, 'fxl'); }
   switch (c) {
+    case 'glenPride':
+      var prideHP = Math.floor(glenDefense(me) * .1);
+      me.fx.prideShield = { hp: Math.max(prideHP, me.fx.prideShield ? me.fx.prideShield.hp : 0), until: S.turn + (S.turnActed[j] ? 1 : 0) };
+      flag(nm(me) + '获得了 ' + prideHP + ' 点孤王之傲护盾'); break;
+    case 'glenHighland': me.fx.highlandHits = 3; flag(nm(me) + '成为高地之王，下3次受到的攻击减伤35%'); break;
     case 'barlowShield': timer('pureShield', 4, nm(me) + '展开纯净护盾'); gainPureShield(S, evs, i); break;
     case 'barlowField': timer('pureField', 5, nm(me) + '展开纯净领域，双方能力等级无法变化'); break;
     case 'barlowOrigin': me.fx.originHits = 2; flag(nm(me) + '展露本源之姿，下2次攻击命中后恢复体力'); break;
@@ -1603,6 +1675,7 @@ function bombTick(S, evs) {
     log(S, evs, nm(b.mon) + '埋下的「' + b.mv.name + '」爆炸了！', 'use');
     E(S, evs, 'use', { side: b.from, move: b.mv.name, type: b.mv.type });
     if (hitBlocked(t, b.mv.type)) { log(S, evs, nm(t) + '毫发无伤！', 'bad'); return; }
+    glenAttackStart(S, b.from, b.mv);
     var res = calcDamage(b.mon, t, b.mv, false, false);
     if (res.crit) log(S, evs, '致命一击！', 'crit');
     if (res.petri) log(S, evs, '石化中被暴击，伤害翻倍！', 'crit');
@@ -1618,6 +1691,7 @@ function bombTick(S, evs) {
       faint(S, evs, j);
       if (b.from === 0 && b.mv.name === '爆燃炸弹') hqGet(S, evs, b.mon, '火灵炸弹');   // 隐藏技能：用爆燃炸弹的爆炸击败敌人
     }
+    glenAttackEnd(S, evs); delete S.glenAttack;
     checkOver(S, evs);
   });
   S.bombs = keep;
@@ -1996,6 +2070,7 @@ function endOfTurn(S, evs) {
   S.sides.forEach(function (sd) { sd.team.forEach(function (m) { if (m.fx) { m.fx.starNow = 0; m.fx.canyueNow = 0; } }); });
   bombTick(S, evs);
   if (S.over) return;
+  glenTick(S, evs);
   fateTick(S, evs);
   miasmaTick(S, evs);
   miasmaField(S, evs);
@@ -2050,6 +2125,7 @@ function endOfTurn(S, evs) {
   S.sides.forEach(function (sd) { sd.team.forEach(function (m) { delete m.fx.rainbowPP; }); });
   [0, 1].forEach(function (i) {
     var m = act(S, i); if (m.fainted) return;
+    if (m.fx.prideShield && m.fx.prideShield.until <= S.turn) { delete m.fx.prideShield; log(S, evs, nm(m) + '的孤王之傲护盾消失了'); }
     for (var s in m.st) { if (m.st[s] > 0 && --m.st[s] <= 0) { delete m.st[s]; if (s === '中毒') delete m.fx.poison; log(S, evs, nm(m) + '的「' + s + '」状态解除了'); } }
     for (var t in m.tm) {
       if (RHYTHMS[t]) continue;

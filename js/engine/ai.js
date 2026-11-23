@@ -47,6 +47,9 @@ function scoreMove(S, me, foe, mv) {
     if (mv.custom === 'vuln' && !foe.tm.vuln) s += 10;
     if (mv.custom === 'weak3' && !foe.tm.weak) s += 10;
     if (mv.custom === 'canyue') s += 6 * Math.min(4, me.flags.canyue || 0);
+    if (mv.custom === 'glenStone' && !foe.fx.stoneMark) s += 8;
+    if (mv.custom === 'glenHeal' && !me.tm.noHeal) s += Math.min(me.maxhp - me.hp, Math.floor(glenDefense(me) * .1)) / me.maxhp * 100;
+    if (mv.custom === 'glenFracture') s += Math.max(0, Math.floor(glenDefense(me) * .15) - (foe.fx.fracture ? foe.fx.fracture.total * (3 - foe.fx.fracture.elapsed) / 3 : 0)) / foe.maxhp * 90;
     if (mv.custom === 'barlowPurify' && !locked) s += Math.min(45, posSum(foe) * (hpR < 0.8 ? 12 : 6));
     if (mv.tgtStage && !locked) s += 4;
     if (mv.status && (!foe.st[mv.status.k] || mv.status.k === '中毒') && !(mv.status.k === '流血' && typesOf(foe).indexOf('机械') >= 0)) s += 18 * mv.status.chance;
@@ -65,6 +68,8 @@ function scoreMove(S, me, foe, mv) {
   var faster = speedOf(me) > speedOf(foe);
   var c = mv.custom;
   switch (c) {
+    case 'glenHighland': s += me.fx.highlandHits > 0 ? -25 : 25; break;
+    case 'glenPride': s += me.fx.prideShield ? -8 : Math.min(20, glenDefense(me) * .1 / me.maxhp * 100); break;
     case 'barlowShield': s += me.tm.pureShield ? -20 : 24; break;
     case 'barlowField': s += locked ? -20 : (foe.moves.some(function (sl) { var m = M[sl.n]; return sl.pp > 0 && m && (m.selfStage || m.tgtStage); }) ? 24 : 5); break;
     case 'barlowOrigin': s += me.fx.originHits ? -15 : 16; break;

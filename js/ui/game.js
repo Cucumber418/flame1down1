@@ -6471,6 +6471,7 @@
     phantom: [{ text: '圣晶石召唤：当期UP叶粒魔种的精元（每抽5%，第50抽必出），在精灵保育仓孵化', go: 'up|phantom' }],
     tagore: [{ text: '首次击败简单难度BOSS「泰戈尔」（荆楚号 · 襄阳 · 古城防卫部），获得LV10小胖虎', go: 'boss|tiger|0' }],
     barren: [{ text: '首次击败普通难度BOSS「荒芜」（芙罗拉星 · 盐碱地），获得LV10枯叶灵', go: 'boss|barren|1' }],
+    glen: [{ text: '获取方式待开放' }],
     clementi: [{ text: '首次击败普通难度BOSS「克莱门蒂」（庞贝星 · 饮火城），获得LV10克莱', go: 'boss|clementi|1' }],
     odo: [{ text: '首次击败普通难度BOSS「奥多亚克」（坎伯兰星 · 深海区），获得LV10奥多', go: 'boss|odo|1' }],
     leafcat: [{ text: '击败旅行精灵叶子喵有机会掉落叶片，完成世界任务「旅行猫」后才会出现', go: 'travel' }, { text: '5片叶子喵的叶片在黄石 · 冶炼坊合成精元，再到精灵保育仓孵化', go: 'forge|lcEssence' }],

@@ -9,6 +9,16 @@
    selfStage / tgtStage 能力等级（chance 概率）；status 异常状态；heal 回复比例
    custom 特殊效果，见 useMove / doStatus */
 var M = {
+  // —— 莫格伦（地面）
+  扔石块: { type: '地面', cat: '物攻', power: 50, d: '威力50' },
+  飞沙: { type: '地面', cat: '变化', tgtStage: { acc: -1 }, d: '降低对方1级命中' },
+  投掷顽石: { type: '地面', cat: '物攻', power: 30, hits: [2, 3], d: '威力30，连续攻击2–3次' },
+  破石之蹄: { type: '地面', cat: '物攻', power: 60, custom: 'glenStone', d: '威力60，命中后附加破石印记；对方有破石印记时威力翻倍，不消耗印记，对方换下场后印记消失' },
+  踏雪无痕: { type: '冰', cat: '变化', selfStage: { eva: 1 }, tgtStage: { spe: -1 }, d: '提升自身1级闪避，降低对方1级速度' },
+  孤高之蹄: { type: '地面', cat: '物攻', power: 80, custom: 'glenHeal', d: '威力80，恢复自身物防与特防值总和10%的体力' },
+  孤王之傲: { type: '地面', cat: '变化', selfStage: { atk: 1 }, custom: 'glenPride', pp: 10, d: '提升自身1级物攻，获得相当于自身物防与特防值总和10%的护盾，持续1回合' },
+  高地之王: { type: '地面', cat: '变化', custom: 'glenHighland', hidden: true, pp: 10, d: '下3次受到的攻击伤害减免35%' },
+  碎震裂踢: { type: '地面', cat: '物攻', power: 80, custom: 'glenFracture', hidden: true, pp: 10, d: '威力80，使对方陷入碎震，附加自身物防与特防值总和15%的固定伤害，分3回合在每回合末造成' },
   // —— 堤丰（龙）
   龙息: { type: '龙', cat: '特攻', power: 55, d: '威力55' },
   龙之爪牙: { type: '龙', cat: '物攻', power: 40, fixed: 40, d: '威力40，附加40点固定伤害' },
