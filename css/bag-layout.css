@@ -402,3 +402,39 @@ body.battle-touch .bag-skill { touch-action: manipulation; }
 .mon-rename-feather svg { width: 17px; height: 17px; flex-shrink: 0; }
 .mon-rename-feather:hover { background: #23222b0d; }
 .mon-rename-feather:focus-visible { outline: 2px solid currentColor; outline-offset: 1px; }
+
+
+/* 精灵道具按图标与名称陈列，具体选项在使用面板中展开。 */
+.md-item-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; }
+.md-item-tile { min-width: 0; min-height: 108px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 10px 6px; border: 1px solid var(--rule); border-radius: 9px; background: var(--paper-2); color: var(--ink); font: inherit; cursor: pointer; text-align: center; }
+.md-item-tile:hover { border-color: var(--red); background: var(--paper); }
+.md-item-tile:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+.md-item-tile b { font-size: 13px; line-height: 1.35; overflow-wrap: anywhere; }
+.md-item-tile small { font-size: 11px; color: var(--pencil); }
+.md-item-icon, .md-item-icon .it-ic { display: block; width: 40px; height: 40px; object-fit: contain; }
+.mon-item-use { display: flex; flex-direction: column; gap: 14px; }
+.mon-item-use > p { margin: 0; line-height: 1.65; }
+.mon-item-use-icon { align-self: center; }
+.mon-item-use-icon .it-ic { width: 64px; height: 64px; }
+.mon-item-target { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border: 1px dashed var(--rule); border-radius: 9px; background: var(--paper-2); }
+.mon-item-target img { width: 56px; height: 56px; object-fit: contain; }
+.mon-item-target span { display: grid; gap: 4px; }
+.mon-item-target small { color: var(--pencil); }
+.mon-item-use .md-it { display: flex; flex-direction: column; align-items: stretch; gap: 10px; }
+.mon-item-use .md-act { justify-content: flex-start; gap: 8px; }
+.mon-item-use .md-act select { max-width: 100%; min-height: 36px; }
+.mon-item-use .md-act .btn { min-height: 36px; padding: 7px 12px; }
+@media (max-width: 640px) {
+  .md-item-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+  .md-items { padding: 8px; }
+  .md-item-tile { min-height: 90px; padding: 7px 4px; }
+  .md-item-tile b { font-size: 11px; }
+  .md-item-icon, .md-item-icon .it-ic { width: 32px; height: 32px; }
+  .mon-item-use .md-act { flex-direction: column; align-items: stretch; }
+}
+@media (max-height: 480px) {
+  .mon-item-use { gap: 8px; }
+  .mon-item-use-icon .it-ic { width: 40px; height: 40px; }
+  .mon-item-target { padding: 5px 9px; }
+  .mon-item-target img { width: 40px; height: 40px; }
+}

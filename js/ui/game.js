@@ -840,9 +840,17 @@
       if (fi >= natS) delete m.fs; else if (Array.isArray(m.fu) && m.fu.indexOf(fi) >= 0) m.fs = fi; else return;
       save(); renderTop(); return;
     }
+    if (b.dataset.monitem) { ui.monItem = b.dataset.monitem; ui.monItemMsg = ''; ui.monItemChoice = null; ui.bagPanel = 'item'; renderBagPanel(); return; }
     if (b.dataset.muse) {
-      var ns = b.closest('.md-it') && b.closest('.md-it').querySelector('[data-mnat]');
-      applyMonItem(b.dataset.muse, m, ns && ns.value, function (r) { toast(r.msg); if (r.ok) renderTop(); }); return;
+      if (b.disabled || ui.monItemBusy) return;
+      var k = b.dataset.muse, ns = b.closest('.md-it') && b.closest('.md-it').querySelector('[data-mnat]'), choice = ns && ns.value;
+      ui.monItemBusy = true; renderBagPanel();
+      applyMonItem(k, m, choice, function (r) {
+        ui.monItemBusy = false;
+        if (ui.bagPanel === 'item' && ui.monItem === k) ui.monItemMsg = r.msg;
+        if (r.ok) { ui.monItemChoice = null; renderTop(); } else if (ui.bagPanel === 'item') renderBagPanel();
+        toast(r.msg);
+      }); return;
     }
     if (b.dataset.in != null) { var t = acc.teams[+b.dataset.in]; if (t.length < TEAM_SIZE && t.indexOf(m.u) < 0) t.push(m.u); }
     else if (b.dataset.out != null) { var t2 = acc.teams[+b.dataset.out]; t2.splice(t2.indexOf(m.u), 1); }
@@ -1083,22 +1091,25 @@
       txRun('ins', { u: m.u, i: i, k: k }, function () { renderTop(); toast(form(m).name + ' 装备了「' + SUMMON.INS[k].name + '」！'); });
     });
   }
+  function monItemUseHTML(k, m) {
+    var it = USE_ITEMS[k], act;
+    if (it.kind === 'jade') { var jl = jadeMoves(m), jok = jl.length && acc.items[k] >= it.cost; act = jl.length ? '<select data-mnat="1" aria-label="要领悟的隐藏技能">' + jl.map(function (n) { return '<option value="' + n + '">' + n + '</option>'; }).join('') + '</select><button type="button" class="btn" data-muse="' + k + '"' + (jok ? '' : ' disabled title="需要 ' + it.cost + ' 个"') + '>' + (jok ? '用 ' + it.cost + ' 个领悟' : '需要 ' + it.cost + ' 个') + '</button>' : '<button type="button" class="btn" disabled>隐藏技能已全部领悟</button>'; }
+    else if (it.kind === 'nameTag') act = '<button type="button" class="btn" data-muse="' + k + '"' + (m.renameUnlocked ? ' disabled' : '') + '>' + (m.renameUnlocked ? '已解锁免费改名' : '使用 · 永久解锁改名') + '</button>';
+    else if (it.kind === 'form') { var fo = formOpts(m); act = fo.length ? '<select data-mnat="1" aria-label="要解锁的形态">' + fo.map(function (x) { return '<option value="' + x.i + '">' + esc(x.n) + '</option>'; }).join('') + '</select><button type="button" class="btn" data-muse="' + k + '">解锁</button>' : '<button type="button" class="btn" disabled>没有可以解锁的形态</button>'; }
+    else if (it.kind === 'nat') act = '<select data-mnat="1" aria-label="新的性格">' + NAT_KEYS.filter(function (n) { return n !== m.nat; }).map(function (n) { return '<option value="' + n + '">' + n + '（' + natText(n) + '）</option>'; }).join('') + '</select><button type="button" class="btn" data-muse="' + k + '">改性格</button>';
+    else if (it.kind === 'iv' || it.kind === 'iv2') act = '<button type="button" class="btn" data-muse="' + k + '">使用 · 重组天赋</button>';
+    else if (it.kind === 'natRand') act = '<button type="button" class="btn" data-muse="' + k + '">使用 · 随机换性格</button>';
+    else if (it.kind === 'exp') act = '<button type="button" class="btn" data-muse="' + k + '"' + (atCap(m) ? ' disabled' : '') + '>' + (atCap(m) ? '已到等级上限' : '使用 · +' + fmt(m.lv * it.rate) + ' 经验') + '</button>';
+    else if (it.kind === 'evreset') act = '<button type="button" class="btn" data-muse="' + k + '"' + (evSum(m) ? '' : ' disabled') + '>' + (evSum(m) ? '使用 · 退回 ' + evSum(m) + ' 点' : '没有分配过学习力') + '</button>';
+    else { var room = evRoom(m); act = '<button type="button" class="btn" data-muse="' + k + '"' + (room ? '' : ' disabled title="学习力已经到上限了"') + '>' + (room ? '使用 · +' + Math.min(it.amt || 100, room) + ' 学习力' : '学习力已满') + '</button>'; }
+    return '<div class="md-it"><b>' + it.name + ' <span class="cnt">' + ('×' + (acc.items[k] || 0)) + '</span></b><span class="hint">' + esc(it.kind === 'nameTag' ? '永久解锁这个个体的无限次免费改名' : it.kind === 'jade' ? '每 ' + it.cost + ' 个领悟一个隐藏技能' : it.kind === 'form' ? '每个给这只精灵永久解锁一个形态' : it.kind === 'nat' ? '把性格改成你选的性格' : it.kind === 'natRand' ? '性格随机换成另一种' : it.kind === 'iv' ? '六项天赋全部重新随机' : it.kind === 'iv2' ? '六项天赋重新随机，每项掷两次取高' : it.kind === 'exp' ? '直接给这只精灵增加经验' : it.kind === 'evreset' ? '已分配的学习力全部退回' : '直接增加 ' + (it.amt || 100) + ' 点可分配学习力') + '</span><span class="md-act">' + act + '</span></div>';
+  }
   function monItemsHTML(m) {
     var ks = MON_ORDER.concat(['m_lcleaf']).filter(function (k) { return acc.items[k] > 0 && itemFits(k, m); });
     if (!ks.length) return '';
-    return '<div class="md-items"><h4>精灵道具 <span class="hint">直接用在' + esc(form(m).name) + '身上</span></h4>' + ks.map(function (k) {
-      var it = USE_ITEMS[k], act;
-      if (it.kind === 'jade') { var jl = jadeMoves(m), jok = jl.length && acc.items[k] >= it.cost; act = jl.length ? '<select data-mnat="1" aria-label="要领悟的隐藏技能">' + jl.map(function (n) { return '<option value="' + n + '">' + n + '</option>'; }).join('') + '</select><button type="button" class="btn" data-muse="' + k + '"' + (jok ? '' : ' disabled title="需要 ' + it.cost + ' 个"') + '>' + (jok ? '用 ' + it.cost + ' 个领悟' : '需要 ' + it.cost + ' 个') + '</button>' : '<button type="button" class="btn" disabled>隐藏技能已全部领悟</button>'; }
-      else if (it.kind === 'nameTag') act = '<button type="button" class="btn" data-muse="' + k + '"' + (m.renameUnlocked ? ' disabled' : '') + '>' + (m.renameUnlocked ? '已解锁免费改名' : '使用 · 永久解锁改名') + '</button>';
-      else if (it.kind === 'form') { var fo = formOpts(m); act = fo.length ? '<select data-mnat="1" aria-label="要解锁的形态">' + fo.map(function (x) { return '<option value="' + x.i + '">' + esc(x.n) + '</option>'; }).join('') + '</select><button type="button" class="btn" data-muse="' + k + '">解锁</button>' : '<button type="button" class="btn" disabled>没有可以解锁的形态</button>'; }
-      else if (it.kind === 'nat') act = '<select data-mnat="1" aria-label="新的性格">' + NAT_KEYS.filter(function (n) { return n !== m.nat; }).map(function (n) { return '<option value="' + n + '">' + n + '（' + natText(n) + '）</option>'; }).join('') + '</select><button type="button" class="btn" data-muse="' + k + '">改性格</button>';
-      else if (it.kind === 'iv' || it.kind === 'iv2') act = '<button type="button" class="btn" data-muse="' + k + '">使用 · 重组天赋</button>';
-      else if (it.kind === 'natRand') act = '<button type="button" class="btn" data-muse="' + k + '">使用 · 随机换性格</button>';
-      else if (it.kind === 'exp') act = '<button type="button" class="btn" data-muse="' + k + '"' + (atCap(m) ? ' disabled' : '') + '>' + (atCap(m) ? '已到等级上限' : '使用 · +' + fmt(m.lv * it.rate) + ' 经验') + '</button>';
-      else if (it.kind === 'evreset') act = '<button type="button" class="btn" data-muse="' + k + '"' + (evSum(m) ? '' : ' disabled') + '>' + (evSum(m) ? '使用 · 退回 ' + evSum(m) + ' 点' : '没有分配过学习力') + '</button>';
-      else { var room = evRoom(m); act = '<button type="button" class="btn" data-muse="' + k + '"' + (room ? '' : ' disabled title="学习力已经到上限了"') + '>' + (room ? '使用 · +' + Math.min(100, room) + ' 学习力' : '学习力已满') + '</button>'; }
-      return '<div class="md-it"><b>' + it.name + ' <span class="cnt">' + ('×' + acc.items[k]) + '</span></b><span class="hint">' + esc(it.kind === 'nameTag' ? '永久解锁这个个体的无限次免费改名' : it.kind === 'jade' ? '每 ' + it.cost + ' 个领悟一个隐藏技能' : it.kind === 'form' ? '每个给这只精灵永久解锁一个形态' : it.kind === 'nat' ? '把性格改成你选的性格' : it.kind === 'natRand' ? '性格随机换成另一种' : it.kind === 'iv' ? '六项天赋全部重新随机' : it.kind === 'iv2' ? '六项天赋重新随机，每项掷两次取高' : it.kind === 'exp' ? '直接给这只精灵增加经验' : it.kind === 'evreset' ? '已分配的学习力全部退回' : '直接增加 100 点可分配学习力') + '</span><span class="md-act">' + act + '</span></div>';
-    }).join('') + '</div>';
+    return '<div class="md-items"><h4>精灵道具 <span class="hint">点击道具查看详情并使用</span></h4><div class="md-item-grid">' + ks.map(function (k) {
+      return '<button type="button" class="md-item-tile" data-monitem="' + k + '" aria-haspopup="dialog"><span class="md-item-icon">' + H.itemIcon(k) + '</span><b>' + esc(USE_ITEMS[k].name) + '</b><small>×' + fmt(acc.items[k]) + '</small></button>';
+    }).join('') + '</div></div>';
   }
   function growText(min) { return min >= 60 && min % 60 === 0 ? (min / 60) + ' 小时' : min + ' 分钟'; }
   function itemName(k) { var it = INS_ITEMS[k] || ITEMS[k] || USE_ITEMS[k] || SHOP_X[k] || TEA_SHOP[k] || KEY_ITEMS[k] || GATHER_ITEMS[k] || SEEDS[k] || CROPS[k] || MATS[k]; return it ? it.name : k; }
@@ -1292,7 +1303,7 @@
     var kind = ui.bagPanel;
     ui.bagPanel = null;
     var d = $('bag-panel'); if (d) d.remove();
-    if (profileAvailable() && kind) { var selector = { teams: '[data-team-panel]', exp: '[data-exp-panel]', moves: '[data-move-panel]', pick: '[data-pickt]', skill: '[data-bag-skill="' + ui.skillIdx + '"]' }[kind], trigger = selector && profileHost().querySelector(selector); if (trigger) trigger.focus({ preventScroll: true }); }
+    if (profileAvailable() && kind) { var selector = { teams: '[data-team-panel]', exp: '[data-exp-panel]', moves: '[data-move-panel]', pick: '[data-pickt]', skill: '[data-bag-skill="' + ui.skillIdx + '"]', item: '[data-monitem="' + ui.monItem + '"]' }[kind], trigger = selector && profileHost().querySelector(selector); if (!trigger && kind === 'item') trigger = profileHost().querySelector('[data-monitem], [data-detail-tab="items"]'); if (trigger) trigger.focus({ preventScroll: true }); }
   }
   function renderBagPanel() {
     var kind = ui.bagPanel; if (!kind || !profileAvailable()) { closeBagPanel(); return; }
@@ -1313,6 +1324,9 @@
     } else if (kind === 'moves' && m) {
       title = '更换技能'; var source = document.createElement('div'); source.innerHTML = monDetail(m); var moves = source.querySelector('[data-mdfold="moves"] .mdf-body');
       content = '<p class="hint flash" role="status">选择已学习的技能，最多装备 4 个；更改会自动保存。</p>' + (moves ? moves.innerHTML : '');
+    } else if (kind === 'item' && m && USE_ITEMS[ui.monItem] && itemFits(ui.monItem, m)) {
+      var k = ui.monItem, it = USE_ITEMS[k]; title = it.name;
+      content = '<section class="mon-item-use"><div class="mon-item-use-icon">' + H.itemIcon(k) + '</div><p>' + esc(it.d || it.sd || '') + '</p><div class="mon-item-target"><img src="' + form(m).img + '" alt=""><span><small>使用对象</small><b>' + esc(form(m).name) + ' · LV' + m.lv + '</b></span></div>' + monItemUseHTML(k, m) + '<p class="hint' + (!(acc.items[k] > 0) ? ' red' : '') + '" role="status" aria-live="polite" data-mon-item-status>' + esc(ui.monItemBusy ? '正在使用道具……' : !(acc.items[k] > 0) ? '这个道具已用完。' : ui.monItemMsg || '') + '</p></section>';
     } else if (kind === 'skill' && m) {
       title = '技能效果'; var tmp = document.createElement('div'); tmp.innerHTML = bagMoveCard(m, m.moves[ui.skillIdx], ui.skillIdx); var detail = document.createElement('div'); HSSKILL.fill(tmp.firstElementChild, detail); content = detail.innerHTML;
     } else { closeBagPanel(); return; }
@@ -1325,15 +1339,20 @@
         if (b.dataset.teamChoice != null) { ui.teamChoice = +b.dataset.teamChoice; renderBagPanel(); return; }
         if (b.dataset.teamApply) { acc.active = ui.teamChoice; ui.sel = acc.teams[acc.active][0]; save(); closeBagPanel(); renderBag(); return; }
         if (b.dataset.expTarget) { ui.sel = +b.dataset.expTarget; renderProfile(); return; }
-        if (b.dataset.give || b.dataset.lvcap) { onDetailClick(e); return; }
+        if (b.dataset.give || b.dataset.lvcap || b.dataset.muse) { onDetailClick(e); return; }
         onBagClick(e);
       });
-      d.addEventListener('change', function (e) { if (e.target.matches('[data-amove]')) onDetailChange(e); });
+      d.addEventListener('change', function (e) { if (e.target.matches('[data-amove]')) onDetailChange(e); if (e.target.matches('[data-mnat]')) ui.monItemChoice = e.target.value; });
     }
     var y = d.querySelector('.bag-panel-body') ? d.querySelector('.bag-panel-body').scrollTop : 0;
     var focused = document.activeElement, inPanel = d.contains(focused), focusId = inPanel && focused.id;
     var focusData = inPanel && [].find.call(focused.attributes, function (attr) { return attr.name.indexOf('data-') === 0; });
     d.innerHTML = '<section class="soc-box bag-panel-box" role="dialog" aria-modal="true" aria-label="' + title + '"><header class="bag-panel-head"><h2>' + title + '</h2><button type="button" class="btn ghost" data-bag-close="1" aria-label="关闭">关闭</button></header><div class="bag-panel-body">' + content + '</div><footer class="soc-foot">' + footer + '</footer></section>';
+    if (kind === 'item') {
+      var select = d.querySelector('[data-mnat]');
+      if (select && ui.monItemChoice != null && [].some.call(select.options, function (o) { return o.value === ui.monItemChoice && !o.disabled; })) select.value = ui.monItemChoice;
+      if (ui.monItemBusy || !(acc.items[ui.monItem] > 0)) d.querySelectorAll('[data-muse], [data-mnat]').forEach(function (el) { el.disabled = true; });
+    }
     var restore = focusId ? [].find.call(d.querySelectorAll('[id]'), function (el) { return el.id === focusId; }) : focusData ? [].find.call(d.querySelectorAll('[' + focusData.name + ']'), function (el) { return el.getAttribute(focusData.name) === focusData.value; }) : null;
     if (restore && !restore.disabled) restore.focus({ preventScroll: true });
     else if (firstOpen || inPanel) d.querySelector('[data-bag-close]').focus({ preventScroll: true });
