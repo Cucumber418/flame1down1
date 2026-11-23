@@ -8,7 +8,7 @@ function estAttack(me, foe, mv) {
   if (mv.cat === '变化') return 0;
   if (mv.custom === 'clementFinale' && !hasStatus(foe)) return 0;
   if (mv.custom === 'poisonHeart' && !(foe.st['中毒'] > 0)) return 0;
-  if (mv.fixedOnly) return fixedAmount(me, foe, mv) * hitChance(me, foe, mv);
+  if (mv.fixedOnly) return fixedAmount(me, foe, mv, true) * hitChance(me, foe, mv);
   if (mv.custom === 'originBlade' && foe.stages.spe <= -6) return foe.hp + 1;
   var d = calcDamage(me, foe, mv, true, true).dmg;
   if (mv.hits) { var hn = mv.custom === 'fireHits' && foe.st['烧伤'] > 0 ? 9 : mv.custom === 'riceHits' ? Math.min(15, (mv.hits[0] + mv.hits[1]) / 2 + ((me.perm && me.perm.rice) || 0)) : (mv.hits[0] + mv.hits[1]) / 2; d = d * hn + (mv.fixedHit || 0) * hn; }

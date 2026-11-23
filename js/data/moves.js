@@ -155,7 +155,7 @@ var M = {
   朔月: { type: '光', cat: '变化', custom: 'stealDef', d: '吸取对方1级物防' },
   月银之刃: { type: '光', cat: '物攻', power: 90, custom: 'moonBlade', d: '威力90，造成伤害若低于180则提升1级物攻' },
   望月: { type: '光', cat: '变化', custom: 'stealAtk', d: '吸取对方1级物攻' },
-  迷之微笑: { type: '普通', cat: '特攻', power: 0, fixedOnly: 'smile', pp: 3, d: '造成自身等级×2.5的固定伤害（LV100 时为 250）' },
+  迷之微笑: { type: '普通', cat: '特攻', power: 0, fixedOnly: 'smile', pp: 3, d: '随机造成自身等级×1～2.5的固定伤害（LV100时为100～250）' },
   月神降临: { type: '光', cat: '变化', selfStage: { atk: 2, def: 1, spd: 1 }, pp: 10, d: '提升2级物攻、1级物防、特防' },
   残月之痕: { type: '光', cat: '物攻', power: 20, hidden: true, custom: 'canyue', pp: 15, d: '威力20，每使用一次，威力较上一次翻倍（20→40→80→160），最高160；换下场也会保留，已使用的次数显示在状态栏' },
   月之暗面: { type: '暗影', cat: '变化', hidden: true, custom: 'darkside', pp: 5, d: '将精灵属性、技能属性切换为暗影系，持续5回合；处于暗影系时，此技能变为「月之亮面」，可切换回光系' },
@@ -318,7 +318,7 @@ var M = {
   白雾: { type: '普通', cat: '变化', custom: 'mist', pp: 10, d: '5回合内免疫能力下降状态' },
   千叶斩: { type: '草', cat: '物攻', power: 85, custom: 'lowHpX2', d: '威力85，自身体力低于1/3时伤害提升100%' },
   草木皆兵: { type: '草', cat: '变化', tgtStage: { atk: -1, spa: -1, def: -1, spd: -1 }, pp: 10, d: '降低对方1级物攻、特攻、物防、特防' },
-  盛宴: { type: '普通', cat: '物攻', power: 10, fixedLv: 2, hidden: true, pp: 2, custom: 'feast', d: '威力10，附加等同于自身等级×2的固定伤害；用盛宴击败对方时，恢复本技能全部PP，并且体力上限+50、回复50点体力（可无限叠加）' },
+  盛宴: { type: '普通', cat: '物攻', power: 10, fixedLv: 1.5, hidden: true, pp: 2, custom: 'feast', d: '威力10，附加等同于自身等级×1.5的固定伤害；用盛宴击败对方时，恢复本技能全部PP，并且体力上限+50、回复50点体力（可无限叠加）' },
   丛林法则: { type: '草', cat: '变化', hidden: true, custom: 'jungle', pp: 10, d: '3回合内对（体力值与最大体力的比值）低于自己的敌人伤害提升70%' },
 
   // —— 塞壬（水）

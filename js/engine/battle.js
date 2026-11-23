@@ -706,9 +706,12 @@ function hitChance(me, foe, mv) {
   return Math.min(1, p);
 }
 // 攻击技能附加的固定伤害：fixed 是固定数值，fixedLv 是「自身等级 × 倍数」（如盛宴）
-function addFixed(me, mv) { return mv.fixedLv ? (me.lv || LV) * mv.fixedLv : mv.fixed || 0; }
-function fixedAmount(me, foe, mv) {
-  if (mv.fixedOnly === 'smile') return Math.floor((me.lv || LV) * 2.5);
+function addFixed(me, mv) { return mv.fixedLv ? Math.floor((me.lv || LV) * mv.fixedLv) : mv.fixed || 0; }
+function fixedAmount(me, foe, mv, est) {
+  if (mv.fixedOnly === 'smile') {
+    var low = me.lv || LV, high = Math.floor(low * 2.5);
+    return est ? (low + high) / 2 : rint(low, high);
+  }
   if (mv.fixedOnly === 'selfBlast') return Math.max(me.hp, Math.ceil(me.maxhp / 3));   // 等于当前体力，但不低于最大体力的 1/3
   return 0;
 }
