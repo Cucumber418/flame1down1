@@ -6291,7 +6291,7 @@
   var ARC_TABS = [['main', '主线任务'], ['side', '支线任务'], ['world', '世界任务'], ['event', '活动任务'], ['cg', '画廊'], ['music', '音乐鉴赏'], ['chars', '角色立绘']];
   // 2026-11-03：曲名统一从 audio.js 的 NAMES 取（HSTRACK），这里只写在哪里播放
   var MUSIC = [
-    ['ui', '主界面'], ['uiOld', '主界面（旧版）'], ['base', '基地'], ['summon', '荆楚号 · 召唤'], ['arena', '竞技对战'], ['earth', '地球的剧情'],
+    ['ui', '主界面'], ['uiOld', '主界面（旧版）'], ['christmasDay', '圣诞活动 · 主界面'], ['christmasEve', '海伦娜星 · 圣诞场景'], ['base', '基地'], ['summon', '荆楚号 · 召唤'], ['arena', '竞技对战'], ['earth', '地球的剧情'],
     ['faceEnemy', '剧情对战开场'], ['normal', '野外与剧情对战'], ['stage', '星球挑战'], ['pvp', '竞技对战与切磋'],
     ['boss', '简单难度BOSS战'], ['boss2', '普通难度BOSS战'], ['boss3', '困难难度BOSS战与每周挑战'], ['tigerFinal', '？'],
     ['flora', '芙罗拉星'], ['floraGrass', '芙罗拉星 · 草甸'], ['floraForest', '芙罗拉星 · 丛林'], ['floraFallen', '瘴气化之后的芙罗拉星'], ['floraLab', '盐碱地 · 地下实验室'],
