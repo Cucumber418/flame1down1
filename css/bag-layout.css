@@ -438,3 +438,7 @@ body.battle-touch .bag-skill { touch-action: manipulation; }
   .mon-item-target { padding: 5px 9px; }
   .mon-item-target img { width: 40px; height: 40px; }
 }
+
+.mon-item-batch { padding: 10px 12px; border: 1px solid var(--rule); border-radius: 9px; background: var(--paper-2); }
+.mon-item-batch .shop-quantity-head { margin: 0 0 8px; }
+.mon-item-batch p { margin: 5px 0 0; line-height: 1.5; }

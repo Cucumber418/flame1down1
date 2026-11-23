@@ -840,17 +840,18 @@
       if (fi >= natS) delete m.fs; else if (Array.isArray(m.fu) && m.fu.indexOf(fi) >= 0) m.fs = fi; else return;
       save(); renderTop(); return;
     }
-    if (b.dataset.monitem) { ui.monItem = b.dataset.monitem; ui.monItemMsg = ''; ui.monItemChoice = null; ui.bagPanel = 'item'; renderBagPanel(); return; }
+    if (b.dataset.monitem) { ui.monItem = b.dataset.monitem; ui.monItemMsg = ''; ui.monItemChoice = null; ui.monItemCount = 1; ui.bagPanel = 'item'; renderBagPanel(); return; }
     if (b.dataset.muse) {
       if (b.disabled || ui.monItemBusy) return;
-      var k = b.dataset.muse, ns = b.closest('.md-it') && b.closest('.md-it').querySelector('[data-mnat]'), choice = ns && ns.value;
+      var k = b.dataset.muse, ns = b.closest('.md-it') && b.closest('.md-it').querySelector('[data-mnat]'), choice = ns && ns.value, count = ui.monItemCount || 1;
+      if (count > GROW.monItemMax(acc, k, m)) { renderBagPanel(); toast('库存或可用次数已改变，请重新选择数量。'); return; }
       ui.monItemBusy = true; renderBagPanel();
       applyMonItem(k, m, choice, function (r) {
         ui.monItemBusy = false;
         if (ui.bagPanel === 'item' && ui.monItem === k) ui.monItemMsg = r.msg;
-        if (r.ok) { ui.monItemChoice = null; renderTop(); } else if (ui.bagPanel === 'item') renderBagPanel();
+        if (r.ok) { ui.monItemChoice = null; ui.monItemCount = 1; renderTop(); } else if (ui.bagPanel === 'item') renderBagPanel();
         toast(r.msg);
-      }); return;
+      }, count); return;
     }
     if (b.dataset.in != null) { var t = acc.teams[+b.dataset.in]; if (t.length < TEAM_SIZE && t.indexOf(m.u) < 0) t.push(m.u); }
     else if (b.dataset.out != null) { var t2 = acc.teams[+b.dataset.out]; t2.splice(t2.indexOf(m.u), 1); }
@@ -973,7 +974,8 @@
     pp20: ['用活力花卉炼成的 pp 药水，比 10PP 药水更浓。', '对战中为出战精灵的每个技能各恢复 20 点 PP（占用一回合）。', '黄石 · 冶炼坊用活力花卉 ×5 合成。'],
     pp15: ['用活力花卉炼成的蓝色药水。', '对战中为出战精灵的每个技能各恢复 15 点 PP（占用一回合）。', '已停止合成，手里有的照样能用。'],
     // 精灵培养
-    ivReroll: ['一管调配精灵天赋的合剂。', '用在任意一只精灵身上：六项天赋（0~31）全部重新随机，可能更高也可能更低。', '竞技代币商店（200 竞技代币）；先驱之塔的代币商店（400 先驱代币）。'],
+    ivReroll: ['一管调配精灵天赋的合剂。', '用在任意一只精灵身上：六项天赋（0~31）全部重新随机，可能更高也可能更低。', '竞技代币商店（200 竞技代币）；先驱之塔的代币商店（400 先驱代币）；Threego的苏格兰杂货铺（3个圣诞铃铛）。'],
+    natRand: ['随机重组精灵性格的合剂。', '用在任意一只精灵身上，随机换成另一种性格；连续使用保留最后一次结果。', '圣晶石召唤；Threego的苏格兰杂货铺（10个圣诞铃铛）。'],
     ivMoon: ['小月亮专用的天赋药剂。', '只能用在小月亮一系：六项天赋重新随机，每项掷两次取较高的一次。', '竞技代币商店（100 竞技代币）。'],
     ivBone: ['凶骨专用的天赋药剂。', '只能用在骨刃一系：六项天赋重新随机，每项掷两次取较高的一次。', '竞技代币商店（100 竞技代币）。'],
     natAny: ['一粒能改变精灵脾气的胶囊。', '用在任意一只精灵身上，把性格改成你指定的性格。', '先驱之塔的代币商店（2,000 先驱代币）。'],
@@ -1051,14 +1053,14 @@
   function itemFits(k, m) { return GROW.itemFits(k, m); }
   function jadeMoves(m) { return GROW.jadeMoves(m); }
   // 把精灵道具用在 m 身上；nat 是性格药剂要改成的性格。返回 { ok, msg }
-  function applyMonItem(k, m, nat, done) {   // 走交易（js/engine/grow.js 的 mitem）：服务器先算、本机重放；done({ ok, msg })
+  function applyMonItem(k, m, nat, done, count) {   // 走交易（js/engine/grow.js 的 mitem）：服务器先算、本机重放；done({ ok, msg })
     if (!m) { done({ ok: false, msg: '先选一只精灵。' }); return; }
     var it = USE_ITEMS[k];
     if (!it || !(acc.items[k] > 0)) { done({ ok: false, msg: '没有这个道具了。' }); return; }
-    txRun('mitem', { u: m.u, k: k, nat: nat == null ? null : String(nat) }, function (res) {
+    txRun('mitem', { u: m.u, k: k, nat: nat == null ? null : String(nat), n: count === undefined ? 1 : count }, function (res) {
       if (res.g && REW.collect) REW.gains.push({ u: res.g.u, lv0: res.g.lv0, exp0: res.g.exp0, amt: res.g.amt });
       if (res.g) renderTitle();
-      done({ ok: true, msg: res.g ? gainMsg(res.g) : res.msg });
+      done({ ok: true, msg: res.g ? (res.n > 1 ? '使用了' + it.name + ' ×' + res.cost + '。' : '') + gainMsg(res.g) : res.msg });
     }, function (err) { done({ ok: false, msg: err }); });
   }
   // 精灵资料里的「精灵道具」：只列出能用在这只精灵身上、手里有的
@@ -1103,6 +1105,23 @@
     else if (it.kind === 'evreset') act = '<button type="button" class="btn" data-muse="' + k + '"' + (evSum(m) ? '' : ' disabled') + '>' + (evSum(m) ? '使用 · 退回 ' + evSum(m) + ' 点' : '没有分配过学习力') + '</button>';
     else { var room = evRoom(m); act = '<button type="button" class="btn" data-muse="' + k + '"' + (room ? '' : ' disabled title="学习力已经到上限了"') + '>' + (room ? '使用 · +' + Math.min(it.amt || 100, room) + ' 学习力' : '学习力已满') + '</button>'; }
     return '<div class="md-it"><b>' + it.name + ' <span class="cnt">' + ('×' + (acc.items[k] || 0)) + '</span></b><span class="hint">' + esc(it.kind === 'nameTag' ? '永久解锁这个个体的无限次免费改名' : it.kind === 'jade' ? '每 ' + it.cost + ' 个领悟一个隐藏技能' : it.kind === 'form' ? '每个给这只精灵永久解锁一个形态' : it.kind === 'nat' ? '把性格改成你选的性格' : it.kind === 'natRand' ? '性格随机换成另一种' : it.kind === 'iv' ? '六项天赋全部重新随机' : it.kind === 'iv2' ? '六项天赋重新随机，每项掷两次取高' : it.kind === 'exp' ? '直接给这只精灵增加经验' : it.kind === 'evreset' ? '已分配的学习力全部退回' : '直接增加 ' + (it.amt || 100) + ' 点可分配学习力') + '</span><span class="md-act">' + act + '</span></div>';
+  }
+  function monItemBatchHTML() {
+    return '<div class="mon-item-batch"><div class="shop-quantity-head"><label for="mon-item-quantity">使用次数</label><output data-mon-item-count></output></div><input type="range" id="mon-item-quantity" data-mon-item-range min="1" max="1" value="1" step="1" aria-describedby="mon-item-consume mon-item-effect"><div class="shop-range-ends"><button type="button" data-mon-item-min>1 次</button><button type="button" data-mon-item-max></button></div><p id="mon-item-consume" class="hint" data-mon-item-consume></p><p id="mon-item-effect" class="hint" data-mon-item-effect></p></div>';
+  }
+  function updateMonItemBatch(d, m) {
+    var k = ui.monItem, it = USE_ITEMS[k], q = GROW.monItemPreview(acc, k, m, ui.monItemCount || 1), range = d.querySelector('[data-mon-item-range]');
+    ui.monItemCount = q.n || 1; range.max = Math.max(1, q.max); range.value = ui.monItemCount; range.disabled = q.max < 2 || !!ui.monItemBusy;
+    range.style.setProperty('--shop-fill', (q.max > 1 ? (ui.monItemCount - 1) / (q.max - 1) * 100 : 0) + '%'); range.setAttribute('aria-valuetext', (q.n || 0) + '次，最多' + q.max + '次');
+    d.querySelector('[data-mon-item-count]').textContent = (q.n || 0) + ' 次';
+    var max = d.querySelector('[data-mon-item-max]'); max.textContent = '最多 ' + q.max + ' 次'; max.disabled = !q.max || !!ui.monItemBusy;
+    d.querySelector('[data-mon-item-min]').disabled = !q.max || !!ui.monItemBusy;
+    d.querySelector('[data-mon-item-consume]').textContent = '本次消耗：' + it.name + ' ×' + q.cost;
+    var note = q.exp ? '共增加 ' + fmt(q.exp) + ' 经验，预计达到 LV' + q.lv : q.ev ? '共增加 ' + q.ev + ' 点可分配学习力' : it.kind === 'jade' ? '优先领悟所选技能，继续领悟其余未解锁技能；每次消耗 ' + it.cost + ' 个。' : it.kind === 'form' ? '优先解锁所选形态，再解锁其余可用形态。' : ['iv', 'iv2', 'natRand'].indexOf(it.kind) >= 0 ? '连续使用多次时，保留最后一次随机结果。' : '这个道具每次最多使用 1 个。';
+    d.querySelector('[data-mon-item-effect]').textContent = note;
+    var button = d.querySelector('[data-muse]');
+    if (button) { button.disabled = !q.max || !!ui.monItemBusy; if (q.max) button.textContent = ui.monItemBusy ? '正在使用……' : '确认使用 · ' + q.n + ' 次'; }
+    var select = d.querySelector('[data-mnat]'); if (select) select.disabled = !q.max || !!ui.monItemBusy;
   }
   function monItemsHTML(m) {
     var ks = MON_ORDER.concat(['m_lcleaf']).filter(function (k) { return acc.items[k] > 0 && itemFits(k, m); });
@@ -1326,7 +1345,7 @@
       content = '<p class="hint flash" role="status">选择已学习的技能，最多装备 4 个；更改会自动保存。</p>' + (moves ? moves.innerHTML : '');
     } else if (kind === 'item' && m && USE_ITEMS[ui.monItem] && itemFits(ui.monItem, m)) {
       var k = ui.monItem, it = USE_ITEMS[k]; title = it.name;
-      content = '<section class="mon-item-use"><div class="mon-item-use-icon">' + H.itemIcon(k) + '</div><p>' + esc(it.d || it.sd || '') + '</p><div class="mon-item-target"><img src="' + form(m).img + '" alt=""><span><small>使用对象</small><b>' + esc(form(m).name) + ' · LV' + m.lv + '</b></span></div>' + monItemUseHTML(k, m) + '<p class="hint' + (!(acc.items[k] > 0) ? ' red' : '') + '" role="status" aria-live="polite" data-mon-item-status>' + esc(ui.monItemBusy ? '正在使用道具……' : !(acc.items[k] > 0) ? '这个道具已用完。' : ui.monItemMsg || '') + '</p></section>';
+      content = '<section class="mon-item-use"><div class="mon-item-use-icon">' + H.itemIcon(k) + '</div><p>' + esc(it.d || it.sd || '') + '</p><div class="mon-item-target"><img src="' + form(m).img + '" alt=""><span><small>使用对象</small><b>' + esc(form(m).name) + ' · LV' + m.lv + '</b></span></div>' + monItemBatchHTML() + monItemUseHTML(k, m) + '<p class="hint' + (!(acc.items[k] > 0) ? ' red' : '') + '" role="status" aria-live="polite" data-mon-item-status>' + esc(ui.monItemBusy ? '正在使用道具……' : !(acc.items[k] > 0) ? '这个道具已用完。' : ui.monItemMsg || '') + '</p></section>';
     } else if (kind === 'skill' && m) {
       title = '技能效果'; var tmp = document.createElement('div'); tmp.innerHTML = bagMoveCard(m, m.moves[ui.skillIdx], ui.skillIdx); var detail = document.createElement('div'); HSSKILL.fill(tmp.firstElementChild, detail); content = detail.innerHTML;
     } else { closeBagPanel(); return; }
@@ -1336,12 +1355,14 @@
       d.addEventListener('click', function (e) {
         if (e.target === d || e.target.closest('[data-bag-close]')) { closeBagPanel(); return; }
         var b = e.target.closest('button'); if (!b || b.disabled) return;
+        if (b.hasAttribute('data-mon-item-min') || b.hasAttribute('data-mon-item-max')) { ui.monItemCount = b.hasAttribute('data-mon-item-max') ? GROW.monItemMax(acc, ui.monItem, mon(ui.sel)) : 1; updateMonItemBatch(d, mon(ui.sel)); return; }
         if (b.dataset.teamChoice != null) { ui.teamChoice = +b.dataset.teamChoice; renderBagPanel(); return; }
         if (b.dataset.teamApply) { acc.active = ui.teamChoice; ui.sel = acc.teams[acc.active][0]; save(); closeBagPanel(); renderBag(); return; }
         if (b.dataset.expTarget) { ui.sel = +b.dataset.expTarget; renderProfile(); return; }
         if (b.dataset.give || b.dataset.lvcap || b.dataset.muse) { onDetailClick(e); return; }
         onBagClick(e);
       });
+      d.addEventListener('input', function (e) { if (e.target.matches('[data-mon-item-range]') && !ui.monItemBusy) { ui.monItemCount = +e.target.value; updateMonItemBatch(d, mon(ui.sel)); } });
       d.addEventListener('change', function (e) { if (e.target.matches('[data-amove]')) onDetailChange(e); if (e.target.matches('[data-mnat]')) ui.monItemChoice = e.target.value; });
     }
     var y = d.querySelector('.bag-panel-body') ? d.querySelector('.bag-panel-body').scrollTop : 0;
@@ -1351,7 +1372,7 @@
     if (kind === 'item') {
       var select = d.querySelector('[data-mnat]');
       if (select && ui.monItemChoice != null && [].some.call(select.options, function (o) { return o.value === ui.monItemChoice && !o.disabled; })) select.value = ui.monItemChoice;
-      if (ui.monItemBusy || !(acc.items[ui.monItem] > 0)) d.querySelectorAll('[data-muse], [data-mnat]').forEach(function (el) { el.disabled = true; });
+      updateMonItemBatch(d, m);
     }
     var restore = focusId ? [].find.call(d.querySelectorAll('[id]'), function (el) { return el.id === focusId; }) : focusData ? [].find.call(d.querySelectorAll('[' + focusData.name + ']'), function (el) { return el.getAttribute(focusData.name) === focusData.value; }) : null;
     if (restore && !restore.disabled) restore.focus({ preventScroll: true });
@@ -5445,7 +5466,7 @@
     var B = SUMMON.banner(Date.now()), nm = SPMAP[B.up].evo[0].n;
     return '<article class="log-card wide sum-log"><span class="tape l"></span><span class="chip log-tag">新玩法</span><h3>圣晶石召唤</h3>' +
       '<div class="next-art"><img src="' + SPRITES[B.up] + '" alt=""></div>' +
-      '<p>荆楚号上开放了「召唤」！用圣晶石召唤，可以抽到当期 UP 精灵<b>' + esc(nm) + '</b>的精元（5%，第 50 次必出）、稀有精灵的精元、限定刻印、刻印激活晶片、性格重置胶囊等丰厚奖励。每次召唤送召唤代币，可以在代币商店兑换。</p>' +
+      '<p>荆楚号上开放了「召唤」！用圣晶石召唤，可以抽到当期 UP 精灵<b>' + esc(nm) + '</b>的精元（5%，第 50 次必出）、稀有精灵的精元、限定刻印、刻印激活晶片、性格重组合剂等丰厚奖励。每次召唤送召唤代币，可以在代币商店兑换。</p>' +
       '<p>还有<b>友情点召唤</b>：每天免费十连一次。给好友送经验、借好友的助战精灵都能得到友情点。</p>' +
       '<p>全新的<b>刻印</b>系统：每只精灵可以装 3 个刻印，只在 PVE 对战中生效。</p>' +
       (acc.gifts && acc.gifts.sum1 ? '<p class="log-st">已领取召唤上线纪念：圣晶石 ×30</p>' : '<div class="sum-gift">' + H.itemIcon('g_core') + '<span><b>召唤上线纪念</b>：圣晶石 ×30（每位船员一次）</span><button type="button" class="btn primary" data-gift="sum1">领取</button></div>') +

@@ -11,6 +11,8 @@ var CHRISTMAS = (function () {
     { id: 'tree', k: 'd12', deco: true, coin: 'xmasBell', price: 1 },
     { id: 'iceRoom', k: 'r6', room: true, coin: 'xmasBell', price: 5 },
     { id: 'barlowMemorial', k: 'd16', deco: true, coin: 'xmasBell', price: 1 },
+    { id: 'ivReroll', k: 'ivReroll', coin: 'xmasBell', price: 3 },
+    { id: 'natRand', k: 'natRand', coin: 'xmasBell', price: 10 },
     { id: 'fruit1', k: 'fruit1', coin: 'xmasCandy', price: 20 },
     { id: 'fruit2', k: 'fruit2', coin: 'xmasCandy', price: 50 },
     { id: 'crossEssence', k: 'crossEssence', coin: 'xmasCandy', price: 1 },

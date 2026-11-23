@@ -22,11 +22,11 @@
 .shop-choice select { flex: 1; min-width: 0; font: inherit; color: var(--ink); background: var(--paper-2); border: 1px solid var(--rule); border-radius: 5px; padding: 7px; }
 .shop-quantity-head { display: flex; align-items: center; justify-content: space-between; margin: 14px 0 9px; }
 .shop-quantity-head output { color: var(--red); font-size: 25px; font-weight: bold; font-variant-numeric: tabular-nums; }
-#shop-quantity { appearance: none; -webkit-appearance: none; display: block; width: 100%; height: 10px; margin: 16px 0; border: 1px solid var(--ink); border-radius: 5px; background: linear-gradient(to right,var(--red) var(--shop-fill,0%),var(--paper-2) var(--shop-fill,0%)); cursor: ew-resize; touch-action: pan-y; }
-#shop-quantity::-webkit-slider-thumb { appearance: none; -webkit-appearance: none; width: 28px; height: 28px; border: 2px solid var(--ink); border-radius: 8px; background: var(--paper); box-shadow: 2px 2px 0 var(--ink); cursor: grab; }
-#shop-quantity::-moz-range-thumb { width: 25px; height: 25px; border: 2px solid var(--ink); border-radius: 8px; background: var(--paper); box-shadow: 2px 2px 0 var(--ink); cursor: grab; }
-#shop-quantity:focus-visible { outline: 2px dashed var(--red); outline-offset: 8px; }
-#shop-quantity:disabled { opacity: .5; cursor: default; }
+:is(#shop-quantity, #mon-item-quantity) { appearance: none; -webkit-appearance: none; display: block; width: 100%; height: 10px; margin: 16px 0; border: 1px solid var(--ink); border-radius: 5px; background: linear-gradient(to right,var(--red) var(--shop-fill,0%),var(--paper-2) var(--shop-fill,0%)); cursor: ew-resize; touch-action: pan-y; }
+:is(#shop-quantity, #mon-item-quantity)::-webkit-slider-thumb { appearance: none; -webkit-appearance: none; width: 28px; height: 28px; border: 2px solid var(--ink); border-radius: 8px; background: var(--paper); box-shadow: 2px 2px 0 var(--ink); cursor: grab; }
+:is(#shop-quantity, #mon-item-quantity)::-moz-range-thumb { width: 25px; height: 25px; border: 2px solid var(--ink); border-radius: 8px; background: var(--paper); box-shadow: 2px 2px 0 var(--ink); cursor: grab; }
+:is(#shop-quantity, #mon-item-quantity):focus-visible { outline: 2px dashed var(--red); outline-offset: 8px; }
+:is(#shop-quantity, #mon-item-quantity):disabled { opacity: .5; cursor: default; }
 .shop-range-ends { display: flex; justify-content: space-between; gap: 10px; }
 .shop-range-ends button { font: inherit; font-size: 12px; border: 0; padding: 4px 0; background: none; color: var(--pencil); cursor: pointer; }
 .shop-costs { list-style: none; margin: 12px 0 0; padding: 10px; border: 1px dashed var(--rule); border-radius: 7px; background: var(--paper-2); }

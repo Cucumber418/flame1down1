@@ -19,4 +19,6 @@ assert(!E.TX.run(x,'baseBuy',{t:'deco',k:'d16',n:1},env).ok);assert(E.TX.run(x,'
 x=a();x.energy=2999;assert(!E.TX.run(x,'baseBuy',{t:'deco',k:'d13',n:1},env).ok);assert.equal(x.energy,2999);assert(!x.baseInv.deco.d13);
 x=a();x.christmasStory.shopIntro=false;const lockedBefore=copy(x);assert(!E.TX.run(x,'christmas',{a:'buy',id:'barlowMemorial',n:1},env).ok);assert.deepEqual(copy(x),lockedBefore);
 for(const bad of [0,-1,1.5,'2',1000]){x=a();const before=copy(x);assert(!E.TX.run(x,'christmas',{a:'buy',id:'barlowMemorial',n:bad},env).ok);assert.deepEqual(copy(x),before);}
+// Threego sells random talent and nature resets for Christmas bells.
+x=a();x.items.xmasBell=30;assert(E.TX.run(x,'christmas',{a:'buy',id:'ivReroll',n:2},env).ok);assert.equal(x.items.ivReroll,2);assert.equal(x.items.xmasBell,24);assert(E.TX.run(x,'christmas',{a:'buy',id:'natRand',n:2},env).ok);assert.equal(x.items.natRand,2);assert.equal(x.items.xmasBell,4);const resetBefore=copy(x);assert(!E.TX.run(x,'christmas',{a:'buy',id:'natRand',n:1},env).ok);assert.deepEqual(copy(x),resetBefore);assert.equal(E.GROW.USE_ITEMS.ivReroll.kind,'iv');assert.equal(E.GROW.USE_ITEMS.natRand.kind,'natRand');
 console.log('PASS shop slider: multi-currency and stepped-price maxima; bulk tower/expansions/juice/ore; daily limits; Threego furniture; insufficient resources and invalid quantities');

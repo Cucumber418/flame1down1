@@ -39,7 +39,7 @@ var GROW = (function () {
     formDev: { name: '形态切换装置', sid: null, kind: 'form', sd: '给一只精灵永久解锁一个可以切换的外观形态。', d: '黄石 · 冶炼坊用圣晶石和星砂合成的装置。用在一只精灵身上，给这只精灵永久解锁一个它已经长到过的更小形态的样子（比如让最终形态变回第一形态的样子）。解锁之后，在精灵资料的「外观形态」里，原本的形态和解锁过的形态之间随时免费切换。只改变外观，数值、技能都不变；每只精灵分开解锁。' },
     floraJade: { name: '芙罗拉玉', gem: '草', sd: '芙罗拉星的特产。可以让芙罗拉星的普通野生精灵领悟隐藏技能，也能提高草系精灵的等级上限。', sid: null, sids: ['mush', 'wind', 'kaleo'], kind: 'jade', cost: 100, d: '芙罗拉星深处凝成的绿色玉石。100 个可以让一只玛西露姆、六尾风王、卡莱奥丹一系（进化前的形态也可以）直接领悟一个还没领悟的隐藏技能，不用再满足战斗里的领悟条件。隐藏技能要到 LV' + HIDDEN_MIN_LV + ' 才能装备。瘴气驱逐战的全服奖励会发放；芙罗拉星的丛林、草甸里，每天也有机会捡到少量。', none: '你还没有玛西露姆、六尾风王或卡莱奥丹（进化前的形态也算）。去芙罗拉星的丛林、草甸捕捉吧。' }
   };
-  USE_ITEMS.natRand = { name: '性格重置胶囊', sid: null, kind: 'natRand', sd: '把一只精灵的性格随机换成另一种。', d: '把你的任意一只精灵的性格随机换成另一种性格（不会和原来的一样）。圣晶石召唤获得。' };   // 2026-11-01
+  USE_ITEMS.natRand = { name: '性格重组合剂', sid: null, kind: 'natRand', sd: '把一只精灵的性格随机换成另一种。', d: '把你的任意一只精灵的性格随机换成另一种性格（不会和原来的一样）。圣晶石召唤获得，也可在Threego的苏格兰杂货铺用10个圣诞铃铛兑换。' };   // 2026-11-01
   USE_ITEMS.fencArc = { name: '花剑圆弧', sid: null, sids: ['tiago'], kind: 'jade', cost: 100, sd: '蒂亚戈一系的专属道具。可以让尖盔虫、蒂亚戈领悟隐藏技能。', d: '剑尖划出的一道圆弧，凝成了实体。100 个可以让一只尖盔虫或蒂亚戈领悟一个还没领悟的隐藏技能。使用神秘精灵兑换券时一起获得。', none: '你还没有尖盔虫或蒂亚戈。用神秘精灵兑换券兑换吧。' };   // 2026-11-02
   USE_ITEMS.phLeaf = { name: '魔化之叶', sid: null, sids: ['phantom'], kind: 'jade', cost: 100, sd: '叶粒魔种一系的专属道具。可以让幻境叶果领悟隐藏技能，也能提高它的等级上限。', d: '叶粒魔种一系的专属道具。100 个可以让一只叶粒魔种一系领悟一个隐藏技能，也用来提高幻境叶果的等级上限。召唤代币商店兑换。' };
   USE_ITEMS.iceAncient = { name: '远古冰块', sid: null, sids: ['wild'], kind: 'jade', cost: 100, sd: '亚哆一系的专属道具。可以让亚哆领悟隐藏技能，也能提高亚哆的等级上限。', d: '从白之星冰层深处凿下来的冰块，冻着比冰更古老的东西。100 个可以让一只亚哆一系领悟一个隐藏技能；也用来提高亚哆一系的等级上限。击碎封着亚哆的冰块时获得 80～120 个，击败白之星的野生精灵有 10% 几率掉落 10～20 个。' };   // 2026-11-01
@@ -94,7 +94,7 @@ var GROW = (function () {
       I[k]--;
       return { ok: true, msg: '这只' + SPMAP[m.sid].name + '永久解锁了「' + formLabel(SPMAP[m.sid], v) + '」的样子，已经换上。以后在精灵资料的「外观形态」里随时免费切换。' };
     }
-    if (it.kind === 'natRand') {   // 性格重置胶囊：随机换成另一种性格
+    if (it.kind === 'natRand') {   // 性格重组合剂：随机换成另一种性格
       var old0 = m.nat, L0 = ACC.NAT_KEYS.filter(function (x) { return x !== m.nat; }); m.nat = L0[Math.floor(rand() * L0.length)]; I[k]--;
       return { ok: true, msg: name + ' 的性格从「' + old0 + '」变成了「' + m.nat + '」（' + natText(m.nat) + '）。' };
     }
@@ -128,6 +128,56 @@ var GROW = (function () {
     return { ok: true, msg: name + ' 获得了 ' + add + ' 点可分配学习力' + (add < amt ? '（已到 ' + EV_TOTAL + ' 上限）' : '') + '，在精灵资料的「学习力」一栏分配。' };
   }
 
+  // 批量使用按次数计；隐藏技能每次消耗 cost 个，其余每次消耗 1 个。
+  var MON_ITEM_BATCH_MAX = 999;
+  function expItemPreview(m, it, count) {
+    var exp = m.exp, lv = m.lv, cap = ACC.expAt(ACC.capLv(m)), n = 0;
+    while (n < count && exp < cap) { exp = Math.min(cap, exp + lv * it.rate); lv = ACC.lvOf(exp); n++; }
+    return { n: n, exp: exp - m.exp, lv: lv };
+  }
+  function monItemMax(a, k, m) {
+    var it = USE_ITEMS[k], stock = Math.max(0, Math.floor(((a.items || {})[k]) || 0));
+    if (!it || !itemFits(k, m) || !stock) return 0;
+    var max = Math.min(MON_ITEM_BATCH_MAX, Math.floor(stock / (it.kind === 'jade' ? it.cost : 1)));
+    if (it.kind === 'jade') return Math.min(max, jadeMoves(m).length);
+    if (it.kind === 'form') return Math.min(max, formOpts(m).length);
+    if (it.kind === 'exp') return expItemPreview(m, it, max).n;
+    if (it.kind === 'ev') return Math.min(max, Math.ceil(evRoom(m) / (it.amt || 100)));
+    if (it.kind === 'nameTag') return m.renameUnlocked ? 0 : Math.min(max, 1);
+    if (it.kind === 'evreset') return ACC.evSum(m) ? Math.min(max, 1) : 0;
+    if (it.kind === 'nat') return Math.min(max, 1);
+    return max;
+  }
+  function monItemPreview(a, k, m, count) {
+    var it = USE_ITEMS[k], max = monItemMax(a, k, m), n = max ? Math.max(1, Math.min(max, int(count) || 1)) : 0;
+    var out = { max: max, n: n, cost: n * (it && it.kind === 'jade' ? it.cost : 1), exp: 0, ev: 0, lv: m ? m.lv : 0 };
+    if (n && it.kind === 'exp') { var p = expItemPreview(m, it, n); out.exp = p.exp; out.lv = p.lv; }
+    if (n && it.kind === 'ev') out.ev = Math.min(evRoom(m), n * (it.amt || 100));
+    return out;
+  }
+  function useMonItems(a, args, env) {
+    var m = monOf(a, args); if (!m) return no('找不到这只精灵');
+    var k = String(args.k || ''), it = USE_ITEMS[k], n = args.n === undefined ? 1 : int(args.n), nat = args.nat == null ? null : String(args.nat);
+    if (!(n >= 1 && n <= MON_ITEM_BATCH_MAX)) return no('使用次数应为1–' + MON_ITEM_BATCH_MAX + '的整数');
+    if (n === 1) { var one = applyMonItem(a, k, m, nat, env.rand); if (one.ok) { one.n = 1; one.cost = it.kind === 'jade' ? it.cost : 1; } return one; }
+    if (n > monItemMax(a, k, m)) return no('库存不足或超过了这只精灵当前可使用的次数');
+    var result, gain = null, messages = [], evBefore = m.evFree || 0;
+    for (var i = 0; i < n; i++) {
+      result = applyMonItem(a, k, m, i ? null : nat, env.rand);
+      if (!result.ok) throw new Error('批量道具预检与结算不一致');
+      if (result.msg) messages.push(result.msg);
+      if (result.g) {
+        if (!gain) gain = result.g;
+        else { var g = result.g; gain.amt += g.amt; gain.lv1 = g.lv1; gain.st1 = g.st1; gain.name1 = g.name1; ['learned', 'equipped', 'hid'].forEach(function (field) { g[field].forEach(function (name) { if (gain[field].indexOf(name) < 0) gain[field].push(name); }); }); }
+      }
+    }
+    var cost = n * (it.kind === 'jade' ? it.cost : 1), msg = '使用了' + it.name + ' ×' + cost + '。';
+    if (it.kind === 'jade' || it.kind === 'form') msg += messages.join('\n');
+    else if (it.kind === 'ev') msg += ACC.form(m).name + ' 共获得了 ' + ((m.evFree || 0) - evBefore) + ' 点可分配学习力。';
+    else if (!gain) msg += '连续使用' + n + '次，保留最后一次结果。' + result.msg;
+    return { ok: true, n: n, cost: cost, msg: msg, g: gain || undefined };
+  }
+
   /* ---------- 交易：改精灵数值的操作 ---------- */
   // 从经验背包给精灵喂经验：{ u, amt }
   TX.add('feed', function (a, args, env) {
@@ -159,11 +209,8 @@ var GROW = (function () {
     I[nx.k] -= nx.jade; if (nx.grail) I.grail -= nx.grail; m.lvCap = nx.lv;
     return { ok: true, lv: nx.lv };
   });
-  // 用精灵道具：{ u, k, nat }
-  TX.add('mitem', function (a, args, env) {
-    var m = monOf(a, args); if (!m) return no('找不到这只精灵');
-    return applyMonItem(a, String(args.k || ''), m, args.nat == null ? null : String(args.nat), env.rand);
-  });
+  // 用精灵道具：{ u, k, nat, n }；旧客户端省略 n 时仍使用一次。
+  TX.add('mitem', useMonItems);
 
   /* ---------- 温泉：在温泉页面里「开始泡温泉」之后，浏览器每 20 秒报一次，服务器按经过的时间给精灵加经验 ----------
    * a.spa.run = { t0 开始时间, last 上次结算, c: { 编号: 不满 1 点的零头 } }。两次结算隔太久（超过 SPA_GAP：电脑睡眠、断网）这一段不算 */
@@ -625,6 +672,6 @@ var GROW = (function () {
   });
 
   return { homeSlots: homeSlots, MON_NAME_MAX: MON_NAME_MAX, REL_TIER: REL_TIER, REL_SHINY: REL_SHINY, REL_MAX: REL_MAX, relTier: relTier, relExp: relExp, relPt: relPt, relBlock: relBlock, starterU: starterU, FORGE: FORGE, FORGE_Q: FORGE_Q, GX_KEYS: GX_KEYS, GX_IN: GX_IN, GX_OUT: GX_OUT, GX_SRC: GX_SRC, gxOut: gxOut, farmOpen: farmOpen, farmNet: farmNet, FARM_STEAL_DAY: FARM_STEAL_DAY, farmStealLeft: farmStealLeft, farmStealView: farmStealView, farmStealFrom: farmStealFrom, FARM_N: FARM_N, FARM_EXTRA_MAX: FARM_EXTRA_MAX, PLOT_PRICE: PLOT_PRICE, SEED_PRICE: SEED_PRICE, SEED_SHOP: SEED_SHOP, SEED_SHOP_MAX: SEED_SHOP_MAX, farmN: farmN, SEEDS: SEEDS, HELP_RW: HELP_RW, BRAWL_WIN: BRAWL_WIN, BRAWL_LOSE: BRAWL_LOSE, BRAWL_CAP: BRAWL_CAP, SPA_GAP: SPA_GAP, spaMons: spaMons, HOME_CAP_H: HOME_CAP_H, STEAL_DAY: STEAL_DAY, homeNet: homeNet, stealLeft: stealLeft, stealView: stealView, stealFrom: stealFrom, AUTO_DAYS: AUTO_DAYS, DAY_MS: DAY_MS, HATCH: HATCH, STORY_GIFT: STORY_GIFT, RANK_GIFT: RANK_GIFT, USE_ITEMS: USE_ITEMS, CAP_STEPS: CAP_STEPS, GEM_OF: GEM_OF, CAP_SID: CAP_SID, capGem: capGem, capNext: capNext, formLabel: formLabel, natText: natText,
-    itemFits: itemFits, jadeMoves: jadeMoves, formOpts: formOpts, evRoom: evRoom, applyMonItem: applyMonItem };
+    MON_ITEM_BATCH_MAX: MON_ITEM_BATCH_MAX, monItemMax: monItemMax, monItemPreview: monItemPreview, itemFits: itemFits, jadeMoves: jadeMoves, formOpts: formOpts, evRoom: evRoom, applyMonItem: applyMonItem };
 })();
 if (typeof module !== 'undefined') module.exports = GROW;
