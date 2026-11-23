@@ -843,8 +843,8 @@
     if (b.dataset.monitem) { ui.monItem = b.dataset.monitem; ui.monItemMsg = ''; ui.monItemChoice = null; ui.monItemCount = 1; ui.bagPanel = 'item'; renderBagPanel(); return; }
     if (b.dataset.muse) {
       if (b.disabled || ui.monItemBusy) return;
-      var k = b.dataset.muse, ns = b.closest('.md-it') && b.closest('.md-it').querySelector('[data-mnat]'), choice = ns && ns.value, count = ui.monItemCount || 1;
-      if (count > GROW.monItemMax(acc, k, m)) { renderBagPanel(); toast('库存或可用次数已改变，请重新选择数量。'); return; }
+      var k = b.dataset.muse, ns = b.closest('.mon-item-dialog') && b.closest('.mon-item-dialog').querySelector('[data-mnat]'), choice = ns && ns.value, count = ui.monItemCount || 1;
+      if (count > GROW.monItemMax(acc, k, m)) { renderBagPanel(); toast('库存或可用数量已改变，请重新选择数量。'); return; }
       ui.monItemBusy = true; renderBagPanel();
       applyMonItem(k, m, choice, function (r) {
         ui.monItemBusy = false;
@@ -1094,33 +1094,28 @@
     });
   }
   function monItemUseHTML(k, m) {
-    var it = USE_ITEMS[k], act;
-    if (it.kind === 'jade') { var jl = jadeMoves(m), jok = jl.length && acc.items[k] >= it.cost; act = jl.length ? '<select data-mnat="1" aria-label="要领悟的隐藏技能">' + jl.map(function (n) { return '<option value="' + n + '">' + n + '</option>'; }).join('') + '</select><button type="button" class="btn" data-muse="' + k + '"' + (jok ? '' : ' disabled title="需要 ' + it.cost + ' 个"') + '>' + (jok ? '用 ' + it.cost + ' 个领悟' : '需要 ' + it.cost + ' 个') + '</button>' : '<button type="button" class="btn" disabled>隐藏技能已全部领悟</button>'; }
-    else if (it.kind === 'nameTag') act = '<button type="button" class="btn" data-muse="' + k + '"' + (m.renameUnlocked ? ' disabled' : '') + '>' + (m.renameUnlocked ? '已解锁免费改名' : '使用 · 永久解锁改名') + '</button>';
-    else if (it.kind === 'form') { var fo = formOpts(m); act = fo.length ? '<select data-mnat="1" aria-label="要解锁的形态">' + fo.map(function (x) { return '<option value="' + x.i + '">' + esc(x.n) + '</option>'; }).join('') + '</select><button type="button" class="btn" data-muse="' + k + '">解锁</button>' : '<button type="button" class="btn" disabled>没有可以解锁的形态</button>'; }
-    else if (it.kind === 'nat') act = '<select data-mnat="1" aria-label="新的性格">' + NAT_KEYS.filter(function (n) { return n !== m.nat; }).map(function (n) { return '<option value="' + n + '">' + n + '（' + natText(n) + '）</option>'; }).join('') + '</select><button type="button" class="btn" data-muse="' + k + '">改性格</button>';
-    else if (it.kind === 'iv' || it.kind === 'iv2') act = '<button type="button" class="btn" data-muse="' + k + '">使用 · 重组天赋</button>';
-    else if (it.kind === 'natRand') act = '<button type="button" class="btn" data-muse="' + k + '">使用 · 随机换性格</button>';
-    else if (it.kind === 'exp') act = '<button type="button" class="btn" data-muse="' + k + '"' + (atCap(m) ? ' disabled' : '') + '>' + (atCap(m) ? '已到等级上限' : '使用 · +' + fmt(m.lv * it.rate) + ' 经验') + '</button>';
-    else if (it.kind === 'evreset') act = '<button type="button" class="btn" data-muse="' + k + '"' + (evSum(m) ? '' : ' disabled') + '>' + (evSum(m) ? '使用 · 退回 ' + evSum(m) + ' 点' : '没有分配过学习力') + '</button>';
-    else { var room = evRoom(m); act = '<button type="button" class="btn" data-muse="' + k + '"' + (room ? '' : ' disabled title="学习力已经到上限了"') + '>' + (room ? '使用 · +' + Math.min(it.amt || 100, room) + ' 学习力' : '学习力已满') + '</button>'; }
-    return '<div class="md-it"><b>' + it.name + ' <span class="cnt">' + ('×' + (acc.items[k] || 0)) + '</span></b><span class="hint">' + esc(it.kind === 'nameTag' ? '永久解锁这个个体的无限次免费改名' : it.kind === 'jade' ? '每 ' + it.cost + ' 个领悟一个隐藏技能' : it.kind === 'form' ? '每个给这只精灵永久解锁一个形态' : it.kind === 'nat' ? '把性格改成你选的性格' : it.kind === 'natRand' ? '性格随机换成另一种' : it.kind === 'iv' ? '六项天赋全部重新随机' : it.kind === 'iv2' ? '六项天赋重新随机，每项掷两次取高' : it.kind === 'exp' ? '直接给这只精灵增加经验' : it.kind === 'evreset' ? '已分配的学习力全部退回' : '直接增加 ' + (it.amt || 100) + ' 点可分配学习力') + '</span><span class="md-act">' + act + '</span></div>';
+    var it = USE_ITEMS[k], label = '', options = [];
+    if (it.kind === 'jade') { label = '优先领悟'; options = jadeMoves(m).map(function (n) { return { v: n, n: n }; }); }
+    else if (it.kind === 'form') { label = '优先解锁'; options = formOpts(m).map(function (x) { return { v: x.i, n: x.n }; }); }
+    else if (it.kind === 'nat') { label = '新的性格'; options = NAT_KEYS.filter(function (n) { return n !== m.nat; }).map(function (n) { return { v: n, n: n + '（' + natText(n) + '）' }; }); }
+    return options.length ? '<label class="shop-choice">' + label + '<select data-mnat="1" aria-label="' + label + '">' + options.map(function (o) { return '<option value="' + esc(o.v) + '">' + esc(o.n) + '</option>'; }).join('') + '</select></label>' : '';
   }
   function monItemBatchHTML() {
-    return '<div class="mon-item-batch"><div class="shop-quantity-head"><label for="mon-item-quantity">使用次数</label><output data-mon-item-count></output></div><input type="range" id="mon-item-quantity" data-mon-item-range min="1" max="1" value="1" step="1" aria-describedby="mon-item-consume mon-item-effect"><div class="shop-range-ends"><button type="button" data-mon-item-min>1 次</button><button type="button" data-mon-item-max></button></div><p id="mon-item-consume" class="hint" data-mon-item-consume></p><p id="mon-item-effect" class="hint" data-mon-item-effect></p></div>';
+    return '<div class="shop-quantity-head"><label for="mon-item-quantity">使用数量</label><output data-mon-item-count></output></div><input type="range" id="mon-item-quantity" data-mon-item-range min="1" max="1" value="1" step="1" aria-describedby="mon-item-consume mon-item-effect"><div class="shop-range-ends"><button type="button" data-mon-item-min>1 个</button><button type="button" data-mon-item-max></button></div><ul class="shop-costs" id="mon-item-consume" data-mon-item-consume></ul><p id="mon-item-effect" class="shop-output" data-mon-item-effect></p>';
   }
   function updateMonItemBatch(d, m) {
-    var k = ui.monItem, it = USE_ITEMS[k], q = GROW.monItemPreview(acc, k, m, ui.monItemCount || 1), range = d.querySelector('[data-mon-item-range]');
-    ui.monItemCount = q.n || 1; range.max = Math.max(1, q.max); range.value = ui.monItemCount; range.disabled = q.max < 2 || !!ui.monItemBusy;
-    range.style.setProperty('--shop-fill', (q.max > 1 ? (ui.monItemCount - 1) / (q.max - 1) * 100 : 0) + '%'); range.setAttribute('aria-valuetext', (q.n || 0) + '次，最多' + q.max + '次');
-    d.querySelector('[data-mon-item-count]').textContent = (q.n || 0) + ' 次';
-    var max = d.querySelector('[data-mon-item-max]'); max.textContent = '最多 ' + q.max + ' 次'; max.disabled = !q.max || !!ui.monItemBusy;
-    d.querySelector('[data-mon-item-min]').disabled = !q.max || !!ui.monItemBusy;
-    d.querySelector('[data-mon-item-consume]').textContent = '本次消耗：' + it.name + ' ×' + q.cost;
-    var note = q.exp ? '共增加 ' + fmt(q.exp) + ' 经验，预计达到 LV' + q.lv : q.ev ? '共增加 ' + q.ev + ' 点可分配学习力' : it.kind === 'jade' ? '优先领悟所选技能，继续领悟其余未解锁技能；每次消耗 ' + it.cost + ' 个。' : it.kind === 'form' ? '优先解锁所选形态，再解锁其余可用形态。' : ['iv', 'iv2', 'natRand'].indexOf(it.kind) >= 0 ? '连续使用多次时，保留最后一次随机结果。' : '这个道具每次最多使用 1 个。';
+    var k = ui.monItem, it = USE_ITEMS[k], q = GROW.monItemPreview(acc, k, m, ui.monItemCount || 1), range = d.querySelector('[data-mon-item-range]'), unit = it.kind === 'jade' ? it.cost : 1;
+    ui.monItemCount = q.n || 1; range.min = unit; range.step = unit; range.max = Math.max(1, q.max) * unit; range.value = ui.monItemCount * unit; range.disabled = q.max < 2 || !!ui.monItemBusy;
+    range.style.setProperty('--shop-fill', (q.max > 1 ? (ui.monItemCount - 1) / (q.max - 1) * 100 : 0) + '%'); range.setAttribute('aria-valuetext', q.cost + '个，最多' + q.max * unit + '个');
+    d.querySelector('[data-mon-item-count]').textContent = fmt(q.cost) + ' 个';
+    var max = d.querySelector('[data-mon-item-max]'); max.textContent = '最多 ' + fmt(q.max * unit) + ' 个'; max.disabled = !q.max || !!ui.monItemBusy;
+    var min = d.querySelector('[data-mon-item-min]'); min.textContent = unit + ' 个'; min.disabled = !q.max || !!ui.monItemBusy;
+    d.querySelector('[data-mon-item-consume]').innerHTML = '<li><span>消耗' + esc(it.name) + '</span><b>' + fmt(q.cost) + ' 个</b><small>持有 ' + fmt(acc.items[k] || 0) + ' 个</small></li>';
+    var note = q.exp ? '增加 ' + fmt(q.exp) + ' 经验，预计达到 LV' + q.lv : q.ev ? '增加 ' + q.ev + ' 点可分配学习力' : it.kind === 'jade' ? '每 ' + unit + ' 个领悟一个隐藏技能，优先领悟所选技能。' : it.kind === 'form' ? '每个解锁一个形态，优先解锁所选形态。' : ['iv', 'iv2', 'natRand'].indexOf(it.kind) >= 0 ? '使用多个时，保留最后一个的随机结果。' : '最多使用 1 个。';
+    if (!q.max) note = !(acc.items[k] > 0) ? '这个道具已用完。' : it.kind === 'exp' ? '已到等级上限。' : it.kind === 'ev' ? '学习力已满。' : it.kind === 'jade' ? (jadeMoves(m).length ? '材料不足，需要 ' + unit + ' 个。' : '隐藏技能已全部领悟。') : it.kind === 'form' ? '没有可以解锁的形态。' : it.kind === 'nameTag' ? '已解锁免费改名。' : '没有已分配的学习力。';
     d.querySelector('[data-mon-item-effect]').textContent = note;
-    var button = d.querySelector('[data-muse]');
-    if (button) { button.disabled = !q.max || !!ui.monItemBusy; if (q.max) button.textContent = ui.monItemBusy ? '正在使用……' : '确认使用 · ' + q.n + ' 次'; }
+    d.querySelector('[data-muse]').disabled = !q.max || !!ui.monItemBusy;
+    d.querySelector('[data-muse]').textContent = ui.monItemBusy ? '正在使用……' : '确认使用';
     var select = d.querySelector('[data-mnat]'); if (select) select.disabled = !q.max || !!ui.monItemBusy;
   }
   function monItemsHTML(m) {
@@ -1345,7 +1340,8 @@
       content = '<p class="hint flash" role="status">选择已学习的技能，最多装备 4 个；更改会自动保存。</p>' + (moves ? moves.innerHTML : '');
     } else if (kind === 'item' && m && USE_ITEMS[ui.monItem] && itemFits(ui.monItem, m)) {
       var k = ui.monItem, it = USE_ITEMS[k]; title = it.name;
-      content = '<section class="mon-item-use"><div class="mon-item-use-icon">' + H.itemIcon(k) + '</div><p>' + esc(it.d || it.sd || '') + '</p><div class="mon-item-target"><img src="' + form(m).img + '" alt=""><span><small>使用对象</small><b>' + esc(form(m).name) + ' · LV' + m.lv + '</b></span></div>' + monItemBatchHTML() + monItemUseHTML(k, m) + '<p class="hint' + (!(acc.items[k] > 0) ? ' red' : '') + '" role="status" aria-live="polite" data-mon-item-status>' + esc(ui.monItemBusy ? '正在使用道具……' : !(acc.items[k] > 0) ? '这个道具已用完。' : ui.monItemMsg || '') + '</p></section>';
+      content = '<p class="shop-description">' + esc(it.sd || it.d || '') + '</p><div class="mon-item-target"><img src="' + form(m).img + '" alt=""><span><small>使用对象</small><b>' + esc(form(m).name) + ' · LV' + m.lv + '</b></span></div>' + monItemUseHTML(k, m) + monItemBatchHTML() + '<p class="hint" role="status" aria-live="polite" data-mon-item-status>' + esc(ui.monItemBusy ? '正在使用道具……' : ui.monItemMsg || '') + '</p>';
+      footer = '<button type="button" class="btn ghost" data-bag-close>取消</button><button type="button" class="btn primary" data-muse="' + k + '">确认使用</button>';
     } else if (kind === 'skill' && m) {
       title = '技能效果'; var tmp = document.createElement('div'); tmp.innerHTML = bagMoveCard(m, m.moves[ui.skillIdx], ui.skillIdx); var detail = document.createElement('div'); HSSKILL.fill(tmp.firstElementChild, detail); content = detail.innerHTML;
     } else { closeBagPanel(); return; }
@@ -1362,13 +1358,14 @@
         if (b.dataset.give || b.dataset.lvcap || b.dataset.muse) { onDetailClick(e); return; }
         onBagClick(e);
       });
-      d.addEventListener('input', function (e) { if (e.target.matches('[data-mon-item-range]') && !ui.monItemBusy) { ui.monItemCount = +e.target.value; updateMonItemBatch(d, mon(ui.sel)); } });
+      d.addEventListener('input', function (e) { if (e.target.matches('[data-mon-item-range]') && !ui.monItemBusy) { ui.monItemCount = +e.target.value / +e.target.step; updateMonItemBatch(d, mon(ui.sel)); } });
       d.addEventListener('change', function (e) { if (e.target.matches('[data-amove]')) onDetailChange(e); if (e.target.matches('[data-mnat]')) ui.monItemChoice = e.target.value; });
     }
     var y = d.querySelector('.bag-panel-body') ? d.querySelector('.bag-panel-body').scrollTop : 0;
     var focused = document.activeElement, inPanel = d.contains(focused), focusId = inPanel && focused.id;
     var focusData = inPanel && [].find.call(focused.attributes, function (attr) { return attr.name.indexOf('data-') === 0; });
-    d.innerHTML = '<section class="soc-box bag-panel-box" role="dialog" aria-modal="true" aria-label="' + title + '"><header class="bag-panel-head"><h2>' + title + '</h2><button type="button" class="btn ghost" data-bag-close="1" aria-label="关闭">关闭</button></header><div class="bag-panel-body">' + content + '</div><footer class="soc-foot">' + footer + '</footer></section>';
+    if (kind === 'item') d.innerHTML = '<section class="soc-box shop-detail-box mon-item-dialog" role="dialog" aria-modal="true" aria-labelledby="mon-item-title"><header><span class="shop-detail-icon">' + H.itemIcon(ui.monItem) + '</span><div><small>道具使用</small><h2 id="mon-item-title">' + esc(title) + '</h2></div><button type="button" class="btn ghost" data-bag-close aria-label="关闭道具详情">×</button></header><div class="bag-panel-body shop-detail-scroll">' + content + '</div><footer>' + footer + '</footer></section>';
+    else d.innerHTML = '<section class="soc-box bag-panel-box" role="dialog" aria-modal="true" aria-label="' + title + '"><header class="bag-panel-head"><h2>' + title + '</h2><button type="button" class="btn ghost" data-bag-close="1" aria-label="关闭">关闭</button></header><div class="bag-panel-body">' + content + '</div><footer class="soc-foot">' + footer + '</footer></section>';
     if (kind === 'item') {
       var select = d.querySelector('[data-mnat]');
       if (select && ui.monItemChoice != null && [].some.call(select.options, function (o) { return o.value === ui.monItemChoice && !o.disabled; })) select.value = ui.monItemChoice;

@@ -174,7 +174,7 @@ var GROW = (function () {
     var cost = n * (it.kind === 'jade' ? it.cost : 1), msg = '使用了' + it.name + ' ×' + cost + '。';
     if (it.kind === 'jade' || it.kind === 'form') msg += messages.join('\n');
     else if (it.kind === 'ev') msg += ACC.form(m).name + ' 共获得了 ' + ((m.evFree || 0) - evBefore) + ' 点可分配学习力。';
-    else if (!gain) msg += '连续使用' + n + '次，保留最后一次结果。' + result.msg;
+    else if (!gain) msg += '保留最后一个的随机结果。' + result.msg;
     return { ok: true, n: n, cost: cost, msg: msg, g: gain || undefined };
   }
 

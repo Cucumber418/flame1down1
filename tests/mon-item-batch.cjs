@@ -19,6 +19,6 @@ for(const k of ['nameTag','natAny']){a=fixture();reject(a,k,2,'固执');}
 a=fixture();a.mons[0].ev={atk:20};a.items.evReset=3;assert.equal(G.monItemMax(a,'evReset',a.mons[0]),1);reject(a,'evReset',2);assert(run(a,'evReset',1).ok);assert.equal(a.mons[0].evFree,20);
 a=fixture();assert(run(a,'nameTag',undefined).ok);assert.equal(a.items.nameTag,1);assert.equal(a.mons[0].renameUnlocked,true);
 // Random batches retain the last result and are deterministic under recorded replay.
-for(const k of ['ivReroll','natRand']){a=fixture();const replay=copy(a);const rand=T.recorder();r=T.run(a,'mitem',{u:1,k,n:5},{...env,rand});assert(r.ok);const replayRand=T.replay(rand.rolls);assert(T.run(replay,'mitem',{u:1,k,n:5},{...env,rand:replayRand}).ok);assert.deepEqual(copy(a),copy(replay));assert.equal(a.items[k],15);assert(r.msg.includes('保留最后一次结果'));}
+for(const k of ['ivReroll','natRand']){a=fixture();const replay=copy(a);const rand=T.recorder();r=T.run(a,'mitem',{u:1,k,n:5},{...env,rand});assert(r.ok);const replayRand=T.replay(rand.rolls);assert(T.run(replay,'mitem',{u:1,k,n:5},{...env,rand:replayRand}).ok);assert.deepEqual(copy(a),copy(replay));assert.equal(a.items[k],15);assert(r.msg.includes('保留最后一个的随机结果'));}
 a=fixture();a.items.fruit1=2;reject(a,'fruit1',3);reject(a,'tgPearl',2);
 console.log('PASS bulk monster items: atomic invalid/over-limit rejection, stock and caps, sequential fruit equivalence and previews, aggregate gains, hidden skill/form ordering, single-use effects, legacy callers and random replay');
