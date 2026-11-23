@@ -42,8 +42,10 @@ var TX = (function () {
     MINE_PRICE: { m_cu: 150, m_fe: 250 }, MINE_CAP: 3000, DRILL_MAX: 80,
     // 明明代币抽奖：10 个抽一次；每天最多解锁 100 个新奖池
     MM_COST: 10, MM_POOL_DAY: 100,
-    // 基地（2026-10-31，取代茶室）：房型（r1 默认，其余 30000 能量买一次）和摆件（5000 能量一个，可以买无数个）；layer：floor 地板 / wall 墙壁
-    BASE_ROOMS: { r1: { n: '星空甲板', price: 0 }, r2: { n: '海底穹顶', price: 30000 }, r3: { n: '沙海舰桥', price: 30000 }, r4: { n: '雪原树屋', price: 30000 } },
+    // 基地：r1 默认；能量房型限购一次；noShop 房型只能通过注明的渠道获得。layer：floor 地板 / wall 墙壁
+    BASE_ROOMS: { r1: { n: '星空甲板', price: 0 }, r2: { n: '海底穹顶', price: 30000 }, r3: { n: '沙海舰桥', price: 30000 }, r4: { n: '雪原树屋', price: 30000 },
+      r5: { n: '藤蔓树屋', price: 30000 }, r6: { n: '圣诞冰屋', price: 0, noShop: 1, source: '圣诞活动 · Threego杂货铺，5 个圣诞铃铛兑换' },
+      r7: { n: '星河观景舱', price: 30000 }, r8: { n: '极寒冰宫', price: 0, noShop: 1, source: '暂不可获得' }, r9: { n: '生态树舱', price: 0, noShop: 1, source: '暂不可获得' } },
     BASE_DECO: { d12: { n: '圣诞树', price: 0, layer: 'floor', noShop: 1 }, d1: { n: 'Unicorn', price: 5000, layer: 'floor' }, d2: { n: 'OCT', price: 5000, layer: 'floor' }, d3: { n: 'Ace', price: 5000, layer: 'floor' }, d4: { n: 'May', price: 5000, layer: 'floor' },
       d5: { n: '叶粒种子发现纪念', price: 3000, layer: 'floor' }, d6: { n: '水臂乌贼发现纪念', price: 3000, layer: 'floor' }, d7: { n: '方头蘑菇发现纪念', price: 3000, layer: 'floor' },
       d8: { n: '精元转化仪', price: 10000, layer: 'floor' }, d9: { n: '明明画像', price: 5000, layer: 'wall' }, d10: { n: '留言板', price: 10000, layer: 'wall' },
@@ -150,7 +152,7 @@ var TX = (function () {
       if (!acc.baseInv || typeof acc.baseInv !== 'object') acc.baseInv = {};
       var B = acc.baseInv; if (!B.rooms) B.rooms = {}; if (!B.deco) B.deco = {};
       if (a.t === 'room') {
-        var R = D.BASE_ROOMS[a.k]; if (!R || !R.price) return no('没有这个房型');
+        var R = D.BASE_ROOMS[a.k]; if (!R || !R.price || R.noShop) return no('没有这个房型');
         if (B.rooms[a.k]) return no('已经有这个房型了');
         if (num(acc.energy) < R.price) return no('能量不足');
         acc.energy = num(acc.energy) - R.price; B.rooms[a.k] = env.now;

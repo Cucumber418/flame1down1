@@ -9,6 +9,7 @@ var CHRISTMAS = (function () {
   ];
   var SHOP = [
     { id: 'tree', k: 'd12', deco: true, coin: 'xmasBell', price: 1 },
+    { id: 'iceRoom', k: 'r6', room: true, coin: 'xmasBell', price: 5 },
     { id: 'fruit1', k: 'fruit1', coin: 'xmasCandy', price: 20 },
     { id: 'fruit2', k: 'fruit2', coin: 'xmasCandy', price: 50 },
     { id: 'crossEssence', k: 'crossEssence', coin: 'xmasCandy', price: 1 },
@@ -108,10 +109,15 @@ var CHRISTMAS = (function () {
       if (!sceneOpen(a, 2) || !story(a).shopIntro) return { ok: false, err: '先完成Vanber的一项任务，再去见杂货铺的主人' };
       var s = SHOP.filter(function (x) { return x.id === args.id; })[0], n = args.n;
       if (!s || !Number.isInteger(n) || n < 1 || n > 999) return { ok: false, err: '兑换数量应为1–999的整数' };
+      if (s.room) {
+        if (n !== 1) return { ok: false, err: '房型只能兑换一个' };
+        if (a.baseInv && a.baseInv.rooms && a.baseInv.rooms[s.k]) return { ok: false, err: '已经有这个房型了' };
+      }
       var I = a.items || {}, cost = s.price * n;
       if (!Number.isSafeInteger(cost) || (I[s.coin] || 0) < cost) return { ok: false, err: '活动货币不足' };
       I[s.coin] -= cost; a.items = I;
-      if (s.deco) { var B=a.baseInv || (a.baseInv={});if(!B.deco)B.deco={};B.deco[s.k]=(B.deco[s.k] || 0)+n; }
+      if (s.room) { var B=a.baseInv || (a.baseInv={});if(!B.rooms)B.rooms={};B.rooms[s.k]=env.now; }
+      else if (s.deco) { var B=a.baseInv || (a.baseInv={});if(!B.deco)B.deco={};B.deco[s.k]=(B.deco[s.k] || 0)+n; }
       else I[s.k] = (I[s.k] || 0) + n;
       return { ok: true, k: s.k, n: n, cost: cost, coin: s.coin };
     }

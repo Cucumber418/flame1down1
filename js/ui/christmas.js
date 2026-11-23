@@ -88,8 +88,9 @@ var HSCHRISTMAS = (function () {
     }
     var pages = Math.ceil(CHRISTMAS.SHOP.length / SIZE); shopPage = Math.max(0, Math.min(shopPage, pages - 1));
     el.innerHTML = header + wallet(a) + '<div class="xmas-npc-layout">' + npc(panel) + '<section class="xmas-play"><div class="xmas-scroll xmas-shop-grid">' + CHRISTMAS.SHOP.slice(shopPage * SIZE, (shopPage + 1) * SIZE).map(function (s) {
-      var max = Math.min(999, Math.floor(((a.items || {})[s.coin] || 0) / s.price));
-      return '<article class="xmas-good" data-xmas-good="' + s.id + '"><div class="xmas-good-title">' + (s.deco ? '<img class="it-ic" src="images/base/christmas_tree.png" alt="">' : icon(s.k)) + '<b>' + esc(s.deco ? TX.D.BASE_DECO[s.k].n : HSACC.itemName(s.k)) + '</b></div><span class="xmas-price">' + icon(s.coin) + s.price + ' / 个</span><small>持有 ' + ((a.items || {})[s.k] || 0) + '</small><div class="xmas-buy"><input type="number" inputmode="numeric" min="1" max="999" step="1" value="1" aria-label="' + esc(HSACC.itemName(s.k)) + '兑换数量"><button class="btn primary" data-xmas-buy="' + s.id + '"' + (max < 1 || busy ? ' disabled' : '') + '>兑换</button></div></article>';
+      var offer = HSACC.shopOffer('christmas', s.id), owned = offer.owned || 0, limit = s.room ? 1 : 999;
+      var max = Math.min(offer.limit, Math.floor(((a.items || {})[s.coin] || 0) / s.price));
+      return '<article class="xmas-good" data-xmas-good="' + s.id + '"><div class="xmas-good-title">' + offer.icon + '<b>' + esc(offer.name) + '</b></div><span class="xmas-price">' + icon(s.coin) + s.price + ' / 个</span><small>' + (s.room ? owned ? '已拥有此房型' : '每个账号限兑一次' : '持有 ' + owned) + '</small><div class="xmas-buy"><input type="number" inputmode="numeric" min="1" max="' + limit + '" step="1" value="1" aria-label="' + esc(offer.name) + '兑换数量"><button class="btn primary" data-xmas-buy="' + s.id + '"' + (max < 1 || busy ? ' disabled' : '') + '>兑换</button></div></article>';
     }).join('') + '</div><div class="xmas-pages"><button class="btn" data-xmas-page="-1"' + (!shopPage || busy ? ' disabled' : '') + '>‹ 上一页</button><span>' + (shopPage + 1) + ' / ' + pages + '</span><button class="btn" data-xmas-page="1"' + (shopPage >= pages - 1 || busy ? ' disabled' : '') + '>下一页 ›</button></div></section></div>';
   }
   function storyDialog(lines, action, after, sceneKey) {
@@ -274,7 +275,7 @@ var HSCHRISTMAS = (function () {
     var args = claim ? { a: 'claim', id: claim.dataset.xmasClaim } : all ? { a: 'all' } : { a: 'buy', id: buy.dataset.xmasBuy, n: Number(buy.closest('[data-xmas-good]').querySelector('input').value) };
     busy = true; b.disabled = true;
     var L = LOADER.show(args.a === 'buy' ? '正在兑换圣诞道具～' : '正在领取圣诞礼物～', {delay:120}); L.to(.7);
-    HSACC.christmasTx(args, function (r) { L.done(function () { busy = false; HSACC.renderRes(); redraw(); HSACC.toast(r.already ? '已经领取过了' : args.a === 'buy' ? '已兑换' + HSACC.itemName(r.k) + ' ×' + r.n : '获得圣诞铃铛 ×' + r.bell + '、拐杖糖 ×' + r.candy); }); }, function (err) { L.close(); busy = false; redraw(); HSACC.toast(err || '暂时无法完成，请重试'); });
+    HSACC.christmasTx(args, function (r) { L.done(function () { busy = false; HSACC.renderRes(); redraw(); HSACC.toast(r.already ? '已经领取过了' : args.a === 'buy' ? '已兑换' + (TX.D.BASE_ROOMS[r.k] ? TX.D.BASE_ROOMS[r.k].n : TX.D.BASE_DECO[r.k] ? TX.D.BASE_DECO[r.k].n : HSACC.itemName(r.k)) + ' ×' + r.n : '获得圣诞铃铛 ×' + r.bell + '、拐杖糖 ×' + r.candy); }); }, function (err) { L.close(); busy = false; redraw(); HSACC.toast(err || '暂时无法完成，请重试'); });
   });
   return { render: render, gate: gate, images: images, maybeStory: maybeStory, sceneEntered: sceneEntered, sceneObjects: sceneObjects, openKnight: openKnight };
 })();

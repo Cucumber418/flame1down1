@@ -267,7 +267,7 @@
       return '<div class="hm-fig' + (d.mons.length > 3 ? ' many' : '') + '" data-csid="' + esc(m.sid) + '" data-cst="' + (v.stage || 0) + '" data-cctx="home" data-fi="' + i + '" style="left:' + p[0] + '%;top:' + p[1] + '%' + (A.baseFigW ? ';--fw:' + A.baseFigW(m.sid, v.stage, d.layout && d.layout.room, p[1]) : '') + '">' + stealBub(d, i, v) + '<button type="button" class="hm-poke" data-vmon="' + i + '" aria-label="' + esc(v.name) + '"><img src="' + v.img + '" alt=""></button><span class="hm-tip">' + esc(v.name) + ' · LV' + m.lv + '</span></div>';
     }).join('');
     var mine = (A.acc().teams[A.acc().active] || []).map(A.mon).filter(Boolean);
-    var room = d.layout && /^r[1-4]$/.test(d.layout.room) ? d.layout.room : 'r1';
+    var room = d.layout && Object.prototype.hasOwnProperty.call(TX.D.BASE_ROOMS, d.layout.room) ? d.layout.room : 'r1';
     return '<div class="home-page visit-home-page">' + back + '<b class="home-name">' + esc(d.homeName) + '</b></div>' +
       '<div class="base-stage" style="--home-backdrop:url(' + new URL('images/base/room' + room.slice(1) + '.jpg', document.baseURI).href + ')">' +
       A.baseRoom(d.layout, figs + (d.mons.length ? '' : '<p class="home-empty">主人还没有放精灵出来展示。</p>')) +
