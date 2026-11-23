@@ -11,6 +11,7 @@ var CHRISTMAS = (function () {
     { id: 'tree', k: 'd12', deco: true, coin: 'xmasBell', price: 1 },
     { id: 'fruit1', k: 'fruit1', coin: 'xmasCandy', price: 20 },
     { id: 'fruit2', k: 'fruit2', coin: 'xmasCandy', price: 50 },
+    { id: 'crossEssence', k: 'crossEssence', coin: 'xmasCandy', price: 1 },
     { id: 'cap1', k: 'cap1', coin: 'xmasCandy', price: 5 },
     { id: 'cap2', k: 'cap2', coin: 'xmasCandy', price: 12 },
     { id: 'pot100', k: 'pot100', coin: 'xmasCandy', price: 6 },
