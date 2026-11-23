@@ -985,7 +985,7 @@
     brTwig: ['从荒芜体内的古代除草程序里提取出的一小瓶药剂。', '每 100 个让荒芜一系领悟一个隐藏技能；到 LV70 后也用它解锁 LV75（500 个）、LV80（500 个）的等级上限。', '首次击败普通难度的荒芜得 40 个、困难难度得 80 个；荒芜每周挑战每次 15 / 30 / 50 个（简单 / 普通 / 困难）。'],
     xmasBell: ['Vanber准备的稀有圣诞铃铛', '在Threego的苏格兰杂货铺兑换道具', '圣诞活动 · Vanber的圣诞礼物'],
     xmasCandy: ['红白相间的圣诞拐杖糖', '在Threego的苏格兰杂货铺兑换道具', '圣诞活动 · Vanber的圣诞礼物；圣诞仙境 · 讨伐鲁普雷希特骑士'],
-    crossEssence: ['凝聚着海伦娜星能量的十字精粹', '每100个解锁巴洛或巴利一系的一个隐藏技能，LV75、LV80突破各需500个', '击败圣诞城堡的野生精灵，每只掉落1–6个；Threego杂货铺可用1个拐杖糖兑换1个'],
+    crossEssence: ['凝聚着海伦娜星能量的十字精粹', '每100个解锁巴洛或巴利一系的一个隐藏技能，LV75、LV80突破各需500个', '击败圣诞城堡的野生精灵，每只掉落1–6个；Threego的苏格兰杂货铺可用1个拐杖糖兑换1个'],
     fireNote: ['凝聚烈焰的音符', '每100个让克莱一系领悟一个隐藏技能，也用于突破等级上限', '首次击败普通难度的克莱门蒂获得40个；每周挑战每次15 / 30个（简单 / 普通）'],
     odoFin: ['从深海的奥多亚克身上脱落的古老鳍甲。', '每 100 个让奥多亚克一系领悟一个隐藏技能；到 LV70 后也用它解锁 LV75（500 个）、LV80（500 个）的等级上限。', '首次击败普通难度的奥多亚克得 40 个、困难难度得 80 个；奥多亚克每周挑战每次 15 / 30 / 50 个（简单 / 普通 / 困难）。'],
     hrDisk: ['盘面上的星点会自己转动的小星盘。', '每 100 个让幽灵鱼一系（幽灵鱼、哈蒙德、哈尔达蒙）领悟一个隐藏技能。', '击败野外随机出现的幽灵鱼，每只掉落 50–70 个。'],
@@ -6587,6 +6587,15 @@
     if (rest.length) html += '<h4 class="wk-sth">其他</h4><div class="wk-stg">' + rest.map(card).join('') + '</div>';
     return html;
   }
+  function wikiTypes() {
+    var all = Object.keys(TYPE_COLOR), type = all.indexOf(WK.type) >= 0 ? WK.type : all[0], defending = WK.typeSide === 'defend';
+    WK.type = type;
+    function group(strong) {
+      var rows = all.map(function (t) { return { t:t, n:defending ? eff(t,type) : eff(type,t) }; }).filter(function (x) { return strong ? x.n > 1 : x.n < 1; });
+      return '<section class="wk-type-result ' + (strong?'strong':'resist') + '"><h3>' + (defending ? strong?'被这些属性克制':'抵抗这些属性' : strong?'克制这些属性':'被这些属性抵抗') + '</h3><div class="wk-type-matches">' + (rows.length ? rows.map(function (x) { return '<span class="wk-type-match">' + H.tchip(x.t) + '<b>×' + x.n + '</b></span>'; }).join('') : '<span class="hint">暂无</span>') + '</div></section>';
+    }
+    return '<p class="wk-type-intro">选择属性，查看进攻或防守时的克制关系</p><div class="wk-type-picker" role="group" aria-label="选择属性">' + all.map(function (t) { return '<button type="button" class="wk-type-button' + (type===t?' on':'') + '" data-wktype="' + esc(t) + '" aria-pressed="' + (type===t) + '" style="--type-color:' + TYPE_COLOR[t] + '">' + esc(t) + '</button>'; }).join('') + '</div><div class="wk-type-view" role="group" aria-label="克制查询视角"><button type="button" class="btn' + (!defending?' primary':' ghost') + '" data-wktype-side="attack" aria-pressed="' + !defending + '">攻击方</button><button type="button" class="btn' + (defending?' primary':' ghost') + '" data-wktype-side="defend" aria-pressed="' + defending + '">防守方</button><span>' + H.tchip(type) + (defending?'作为防守方':'作为攻击方') + '</span></div><div class="wk-type-results" aria-live="polite">' + group(true) + group(false) + '</div><p class="wk-type-note">未列出的属性为正常伤害，双属性的倍率相乘</p>';
+  }
   function openWiki() {
     var old = $('wiki-dlg'); if (old) old.remove();
     var list = SP.concat(EXTRA_SP).filter(function (s) { return s && s.id && s.id !== 'dummy' && !s.placeholder && SPRITES[s.id]; }).sort(function (a, b) { var x = wikiNo(a), y = wikiNo(b); return (x === 9999) - (y === 9999) || y - x; });
@@ -6594,12 +6603,14 @@
     if (!WK.sel || !SPMAP[WK.sel]) WK.sel = list[0] && list[0].id;
     var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'wiki-dlg';
     d.innerHTML = '<div class="soc-box wiki-box" role="dialog" aria-modal="true" aria-label="Wiki"><span class="tape l"></span><span class="tape r"></span><div class="wk-top"><h2>Wiki</h2><div class="wk-parts" role="tablist"></div><button type="button" class="btn ghost" data-wkx="1">关闭</button></div>' +
-      '<div class="wk-st" hidden></div><div class="wk-filter"></div><div class="build wk-build"><div><p class="hint" id="wk-cnt"></p><div class="dex-grid" id="wk-grid"></div></div><article class="detail" id="wk-detail"></article></div></div>';
+      '<div class="wk-st" hidden></div><div class="wk-types" hidden></div><div class="wk-filter"></div><div class="build wk-build"><div><p class="hint" id="wk-cnt"></p><div class="dex-grid" id="wk-grid"></div></div><article class="detail" id="wk-detail"></article></div></div>';
     document.body.appendChild(d);
     var draw = function (scroll) {
-      var st = WK.part === 'st';
-      d.querySelector('.wk-parts').innerHTML = [['mon', '精灵资料'], ['st', '异常状态']].map(function (x) { var on = (WK.part || 'mon') === x[0]; return '<button type="button" role="tab" aria-selected="' + on + '" class="chip' + (on ? ' on' : '') + '" data-wkpart="' + x[0] + '">' + x[1] + '</button>'; }).join('');
-      d.querySelector('.wk-st').hidden = !st; d.querySelector('.wk-filter').hidden = st; d.querySelector('.wk-build').hidden = st;
+      var st = WK.part === 'st', typing = WK.part === 'type';
+      d.querySelector('.wiki-box').classList.toggle('wk-type-open', typing);
+      d.querySelector('.wk-parts').innerHTML = [['mon', '精灵资料'], ['st', '异常状态'], ['type', '属性克制']].map(function (x) { var on = (WK.part || 'mon') === x[0]; return '<button type="button" role="tab" aria-selected="' + on + '" class="chip' + (on ? ' on' : '') + '" data-wkpart="' + x[0] + '">' + x[1] + '</button>'; }).join('');
+      d.querySelector('.wk-st').hidden = !st; d.querySelector('.wk-types').hidden = !typing; d.querySelector('.wk-filter').hidden = st || typing; d.querySelector('.wk-build').hidden = st || typing;
+      if (typing) { d.querySelector('.wk-types').innerHTML = wikiTypes(); return; }
       if (st) { d.querySelector('.wk-st').innerHTML = wikiStatus(); return; }
       var L = WK.t ? list.filter(function (s) { return s.types.indexOf(WK.t) >= 0; }) : list;
       d.querySelector('.wk-filter').innerHTML = '<button type="button" class="chip' + (WK.t ? '' : ' on') + '" data-wkt="">全部</button>' + types.map(function (t) { return '<button type="button" class="chip' + (WK.t === t ? ' on' : '') + '" data-wkt="' + esc(t) + '">' + esc(t) + '</button>'; }).join('');
@@ -6618,7 +6629,9 @@
         if (!row || !wikiRouteOpen(row.go)) { draw(false); return; }
         d.remove(); wikiSourceGo(row.go); return;
       }
-      var pt = e.target.closest('[data-wkpart]'); if (pt) { WK.part = pt.dataset.wkpart; draw(false); return; }
+      var pt = e.target.closest('[data-wkpart]'); if (pt) { WK.part = pt.dataset.wkpart; if (WK.part === 'type') WK.typeSide = 'attack'; draw(false); return; }
+      var type = e.target.closest('[data-wktype]'); if (type) { WK.type = type.dataset.wktype; WK.typeSide = 'attack'; draw(false); return; }
+      var side = e.target.closest('[data-wktype-side]'); if (side) { WK.typeSide = side.dataset.wktypeSide === 'defend' ? 'defend' : 'attack'; draw(false); return; }
       var b = e.target.closest('[data-wkt]'); if (b) { WK.t = b.dataset.wkt || ''; draw(false); return; }
       var c = e.target.closest('[data-wks]'); if (c) { WK.sel = c.dataset.wks; WK.v = null; WK.of = ''; draw(true); return; }
       var of = e.target.closest('[data-wkof]'); if (of) { WK.of = of.dataset.wkof || ''; draw(false); return; }

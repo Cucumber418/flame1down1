@@ -1,0 +1,26 @@
+/* Wiki 的进攻 / 防守属性查询，使用现有纸张与属性色 */
+.wiki-box.wk-type-open { overflow:hidden; display:flex; flex-direction:column; }
+.wk-type-open .wk-top { flex:0 0 auto; }
+.wk-types { min-height:0; overflow:auto; overscroll-behavior:contain; padding-top:8px; }
+.wk-type-intro, .wk-type-note { margin:4px 0 10px; color:var(--pencil); font-size:12px; }
+.wk-type-picker { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:7px; }
+.wk-type-button { border:1px solid var(--ink); border-left:5px solid var(--type-color); border-radius:8px; padding:7px 8px; background:var(--paper-2); color:var(--ink); font:inherit; font-size:14px; cursor:pointer; }
+.wk-type-button.on { background:var(--type-color); color:#fff; border-color:var(--type-color); box-shadow:0 0 0 2px var(--paper),0 0 0 3px var(--ink); }
+.wk-type-view { display:flex; align-items:center; gap:8px; margin:15px 0 10px; flex-wrap:wrap; }
+.wk-type-view > span { margin-left:auto; font-size:12px; }
+.wk-type-results { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.wk-type-result { padding:12px; border:1px solid var(--rule); border-radius:10px; background:var(--paper-2); }
+.wk-type-result h3 { margin:0 0 10px; font-size:16px; } .wk-type-result.strong h3 { color:var(--red); } .wk-type-result.resist h3 { color:var(--blue); }
+.wk-type-matches { display:flex; flex-wrap:wrap; gap:8px; }
+.wk-type-match { display:inline-flex; align-items:center; gap:5px; white-space:nowrap; font-size:12px; }
+.wk-type-match .chip { font-size:12px; } .wk-type-match b { color:var(--pencil); font-size:11px; }
+.wk-type-note { margin:10px 0 0; }
+@media (max-width:640px) {
+ .wiki-box .wk-top { flex-wrap:wrap; gap:7px; } .wiki-box .wk-top h2 { font-size:20px; } .wiki-box .wk-top > button { margin-left:auto; padding:5px 9px; }
+ .wiki-box .wk-parts { order:3; flex-basis:100%; display:flex; gap:5px; } .wiki-box .wk-parts .chip { flex:1; text-align:center; font-size:12px; padding:5px 3px; }
+ .wk-type-picker { grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; } .wk-type-button { font-size:12px; padding:5px; }
+ .wk-type-view { margin:11px 0 9px; gap:6px; display:grid; grid-template-columns:1fr 1fr; } .wk-type-view .btn { padding:6px 9px; font-size:12px; }
+ .wk-type-view > span { grid-column:1/-1; margin:0; text-align:center; }
+ .wk-type-results { gap:7px; } .wk-type-result { padding:9px; } .wk-type-result h3 { font-size:13px; margin-bottom:8px; }
+ .wk-type-match { gap:4px; } .wk-type-match .chip { padding:2px 5px; } .wk-type-intro, .wk-type-note { font-size:11px; }
+}

@@ -167,7 +167,7 @@ body.battle-active #battle .sp-panel {
  * battle-touch 由输入方式识别，不依赖旋转横屏后 1180px 的逻辑宽度。 */
 body.battle-active.battle-touch #mgrid .mv .md,
 body.battle-active.battle-touch #mgrid .mv .mv-blocked,
-body.battle-active.battle-touch #mgrid .mv .t2 > :not(.tchip):not(.mv-kind):not(.mv-power) { display: none; }
+body.battle-active.battle-touch #mgrid .mv .t2 > :not(.tchip):not(.mv-kind):not(.mv-power):not(.eff2):not(.eff0) { display: none; }
 body.battle-active.battle-touch #mgrid .mv,
 body.battle-active.battle-touch #mgrid .mv * {
   -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
@@ -244,7 +244,7 @@ body.battle-active.battle-desktop #battle .mv .mn { font-size: 17px; line-height
 body.battle-active.battle-desktop #battle .mv .pp,
 body.battle-active.battle-desktop #battle .mv .t2 { font-size: 12px; }
 body.battle-active.battle-desktop #battle #mgrid .mv :is(.md, .mv-blocked),
-body.battle-active.battle-desktop #battle #mgrid .mv .t2 > :not(.tchip):not(.mv-kind):not(.mv-power) { display: none; }
+body.battle-active.battle-desktop #battle #mgrid .mv .t2 > :not(.tchip):not(.mv-kind):not(.mv-power):not(.eff2):not(.eff0) { display: none; }
 body.battle-active.battle-desktop #battle .tgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: minmax(65px, auto); }
 body.battle-active.battle-desktop #battle .logbox > #cmd-hint { flex: 0 0 auto; margin: 0 0 5px; max-height: 3.9em; overflow-y: auto; font-size: 11px; }
 body.battle-active.battle-desktop #battle .logbox > #cmd-hint.alert { color: var(--red); }
@@ -303,3 +303,6 @@ body.battle-active.battle-desktop :is(.toast, .display-status) { left: 50%; }
 body:not(.battle-desktop) .skill-bubble { display: none; }
 @keyframes skill-bubble-in { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .skill-bubble { animation: none; } }
+
+/* 克制提示在鼠标与触屏布局中均直接可见 */
+body.battle-active #battle #mgrid .mv :is(.eff2,.eff0) { display:inline-flex; align-items:center; white-space:nowrap; font-weight:700; line-height:1.3; }

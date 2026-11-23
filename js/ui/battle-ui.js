@@ -1028,6 +1028,13 @@
     if (!quitArmed || Date.now() - quitArmed >= 3000) $('btn-quit').textContent = quitLabel();
   }
   document.addEventListener('battlelayoutchange', refreshControls);
+  function moveMatchupHTML(me, m, foe) {
+    var type = mvType(me,m);
+    if (hitBlocked(foe,type) && (m.cat !== '变化' || targetsFoe(m))) return '<span class="eff0">无法命中</span>';
+    if (m.cat === '变化' || m.fixedOnly) return '';
+    var n = effT(type,typesOf(foe));
+    return n > 1 ? '<span class="eff2">克制 ×' + n + '</span>' : n < 1 ? '<span class="eff0">抵抗 ×' + n + '</span>' : '';
+  }
   function showTab(t) {
     tab = t; $('tab-moves').classList.toggle('on', t === 'moves'); $('tab-team').classList.toggle('on', t === 'team'); $('tab-items').classList.toggle('on', t === 'items');
     $('mgrid').hidden = t !== 'moves'; $('tgrid').hidden = t !== 'team'; $('igrid').hidden = t !== 'items';
@@ -1037,16 +1044,15 @@
     var me = act(S, PV), foe = act(S, 1 - PV), needMe = pvp ? !!(S.need && S.need[PV]) : S.needSwitch;
     var peerPick = pvp && S.need && S.need[1 - PV] && !needMe;   // 对方在选替补，我这边没事可做
     var lock = busy || !!S.over || !!(pvp && (pvp.waiting || peerPick));
-    var foeTypes = typesOf(foe);
     var usable = me.moves.some(function (m) { return m.pp > 0 && !moveBlocked(me, m); });
     var html = '';
-    if (!usable) html = '<button type="button" class="mv" data-mi="-1"' + (lock || needMe ? ' disabled' : '') + ' style="--tc:' + TYPE_COLOR['普通'] + '"><span class="t1"><span class="mn">挣扎</span><span class="pp">PP —</span></span><span class="t2">' + tchip('普通') + '<span class="mv-kind">物攻</span><span class="mv-power">威力 ' + STRUGGLE.power + '</span></span><span class="md">' + STRUGGLE.d + '</span></button>';
+    if (!usable) html = '<button type="button" class="mv" data-mi="-1"' + (lock || needMe ? ' disabled' : '') + ' style="--tc:' + TYPE_COLOR['普通'] + '"><span class="t1"><span class="mn">挣扎</span><span class="pp">PP —</span></span><span class="t2">' + tchip('普通') + '<span class="mv-kind">物攻</span><span class="mv-power">威力 ' + STRUGGLE.power + '</span>' + moveMatchupHTML(me, STRUGGLE, foe) + '</span><span class="md">' + STRUGGLE.d + '</span></button>';
     else me.moves.forEach(function (slot, i) {
-      var m = liveMove(me, M[slot.n]), mt = mvType(me, m), e = m.cat === '变化' ? 1 : effT(mt, foeTypes);
+      var m = liveMove(me, M[slot.n]), mt = mvType(me, m);
       html += '<button type="button" class="mv" data-mi="' + i + '"' + (lock || needMe || slot.pp <= 0 || moveBlocked(me, slot) ? ' disabled' : '') + ' style="--tc:' + TYPE_COLOR[mt] + '">' +
         '<span class="t1"><span class="mn">' + (i + 1) + '. ' + m.name + (moveBlocked(me, slot) ? '<span class="mv-blocked">（' + blockWhy(me, slot) + '）</span>' : '') + '</span><span class="pp">PP ' + slot.pp + '/' + slot.max + '</span></span>' +
         '<span class="t2">' + tchip(mt) + '<span class="mv-kind">' + m.cat + '</span><span class="mv-power">威力 ' + (m.power || '—') + '</span><span class="mv-extra">' + (m.pri ? ' · 先制+' + m.pri : '') + '</span>' +
-        (hitBlocked(foe, mt) && (m.cat !== '变化' || targetsFoe(m)) ? '<span class="eff0">无法命中</span>' : e > 1 ? '<span class="eff2">克制 ×' + e + '</span>' : e < 1 ? '<span class="eff0">被抵抗 ×' + e + '</span>' : '') + '</span>' +
+        moveMatchupHTML(me, m, foe) + '</span>' +
         '<span class="md">' + esc(m.d) + '</span></button>';
     });
     $('mgrid').innerHTML = html;
