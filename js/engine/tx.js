@@ -48,6 +48,10 @@ var TX = (function () {
       r7: { n: '星河观景舱', price: 30000 }, r8: { n: '极寒冰宫', price: 0, noShop: 1, source: '暂不可获得' }, r9: { n: '生态树舱', price: 0, noShop: 1, source: '暂不可获得' } },
     BASE_DECO: { d12: { n: '圣诞树', price: 0, layer: 'floor', noShop: 1 }, d1: { n: 'Unicorn', price: 5000, layer: 'floor' }, d2: { n: 'OCT', price: 5000, layer: 'floor' }, d3: { n: 'Ace', price: 5000, layer: 'floor' }, d4: { n: 'May', price: 5000, layer: 'floor' },
       d5: { n: '叶粒种子发现纪念', price: 3000, layer: 'floor' }, d6: { n: '水臂乌贼发现纪念', price: 3000, layer: 'floor' }, d7: { n: '方头蘑菇发现纪念', price: 3000, layer: 'floor' },
+      d13: { n: '卡罗发现纪念', price: 3000, layer: 'floor', desc: '2019 年，在芙罗拉星发现了卡罗。' },
+      d14: { n: '托斯发现纪念', price: 3000, layer: 'floor', desc: '2019 年，在坎伯兰星发现了托斯。' },
+      d15: { n: '米饭火鸡发现纪念', price: 3000, layer: 'floor', desc: '2026 年，在庞贝星发现了米饭火鸡。' },
+      d16: { n: '巴洛发现纪念', price: 0, layer: 'floor', noShop: 1, desc: '2026 年，在海伦娜星发现了巴洛。' },
       d8: { n: '精元转化仪', price: 10000, layer: 'floor' }, d9: { n: '明明画像', price: 5000, layer: 'wall' }, d10: { n: '留言板', price: 10000, layer: 'wall' },
       d11: { n: '第一届做题大王争霸赛冠军奖杯', price: 0, layer: 'wall', noShop: 1 } },   // d11：2026-11-02 冠军奖杯（邮件发给冠军，商城不卖）   // d8–d10：2026-11-01（精元转化仪点击打开孵化，留言板点击打开留言）   // d5–d7：2026-10-31 基地改版纪念
     BASE_DECO_MAX: 40,   // 基地里最多同时摆 40 个
