@@ -404,7 +404,8 @@
   }
   function activityRow(e) {
     var p = (st.players || []).find(function (p) { return p.user === e.user; }), icon = '✓', text = '';
-    if (e.mon && SPMAP[e.mon.sid]) { var v = A.view(e.mon); icon = '<img src="' + v.img + '" alt="">'; text = e.kind === 'level' ? '的' + v.name + '达到了 LV' + e.level : '获得了' + (e.mon.shiny ? '异色' : '') + v.name + ' · LV' + e.mon.lv; }
+    if (e.kind === 'rank' && RANKS[e.rank]) { icon = '<span style="color:' + RANK_COLOR[e.rank] + '">↑</span>'; text = '在 ' + e.season + ' 赛季晋升至' + RANKS[e.rank]; }
+    else if (e.mon && SPMAP[e.mon.sid]) { var v = A.view(e.mon); icon = '<img src="' + v.img + '" alt="">'; text = e.kind === 'level' ? '的' + v.name + '达到了 LV' + e.level : '获得了' + (e.mon.shiny ? '异色' : '') + v.name + ' · LV' + e.mon.lv; }
     else text = '完成了「' + (A.socialTaskName ? A.socialTaskName(e.kind, e.task) : '任务') + '」';
     return '<article class="social-event"><span class="social-event-icon">' + icon + '</span><div><p><button type="button" data-card="' + esc(e.user) + '">' + esc(p && p.name || e.name) + '</button>' + esc(text) + '</p><small>' + ago(e.at) + '</small></div></article>';
   }

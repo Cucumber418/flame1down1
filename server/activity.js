@@ -3,10 +3,11 @@
 var fs=require('fs'),path=require('path'),crypto=require('crypto');
 var KEEP=500;
 function acc(u){try{var a=JSON.parse(u&&u.save&&u.save.data&&u.save.data['hs-account-v1']||'null');return a&&a.introDone&&Array.isArray(a.mons)?a:null;}catch(e){return null;}}
+function rank(u){try{var r=JSON.parse(u&&u.save&&u.save.data&&u.save.data['hs-rank-v1']||'null');if(!r||!Number.isInteger(r.r)||r.r<0||r.r>10)return null;var season=r.season||'S1';return /^S[1-9]\d*$/.test(season)?{season:season,r:r.r,best:Math.max(r.r,Math.min(10,r.best|0))}:null;}catch(e){return null;}}
 function key(m){return m&&typeof m.sid==='string'&&Number.isSafeInteger(m.u)&&m.u>0?m.u+':'+m.sid:null;}
 function prepare(previous,u,now){
   var a=acc(u),before=acc(previous);if(!a)return [];
-  var old=previous&&previous.activityState, state={mons:Object.assign({},old&&old.mons),tasks:Object.assign({},old&&old.tasks),daily:Object.assign({},old&&old.daily)},out=[];
+  var old=previous&&previous.activityState, state={mons:Object.assign({},old&&old.mons),tasks:Object.assign({},old&&old.tasks),daily:Object.assign({},old&&old.daily),ranks:Object.assign({},old&&old.ranks)},out=[];
   function baseline(b){
     if(!b)return;
     b.mons.forEach(function(m){var k=key(m);if(k)state.mons[k]=Math.max(state.mons[k]||0,Math.min(100,m.lv|0));});
@@ -16,6 +17,10 @@ function prepare(previous,u,now){
   }
   baseline(before||a); // 上线前与导入存档的已有进度不补发历史动态。
   function add(kind,data){out.push(Object.assign({id:crypto.randomBytes(12).toString('hex'),at:now,user:u.name,name:String(a.name||u.name).slice(0,20),kind:kind},data));}
+  // 按赛季记录已达到的大段位；首次部署、导入和降段后重新升回均不补发。
+  var priorRank=rank(previous), currentRank=rank(u), rankBase=priorRank||currentRank;
+  if(rankBase)state.ranks[rankBase.season]=Math.max(state.ranks[rankBase.season]||0,rankBase.best);
+  if(currentRank){var wasRank=state.ranks[currentRank.season]||0;if(currentRank.r>wasRank)add('rank',{season:currentRank.season,rank:currentRank.r});state.ranks[currentRank.season]=Math.max(wasRank,currentRank.best);}
   a.mons.forEach(function(m){
     var k=key(m);if(!k)return;var lv=Math.max(1,Math.min(100,m.lv|0)),was=state.mons[k]||0;
     var mon={sid:m.sid,lv:lv,shiny:m.shiny===2?2:!!m.shiny};

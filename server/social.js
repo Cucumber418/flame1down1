@@ -805,7 +805,7 @@ A.use(function (req, res, url) {
   if (url === '/api/activity' && req.method === 'GET') {
     var query = new URL(req.url, 'http://localhost').searchParams, limit = int(query.get('limit') || 30, 1, 50);
     var result = require('./activity').page(A.DATA_DIR, query.get('before') || '', limit), E = require('./tx').engine();
-    result.items = result.items.filter(function (e) { return e.mon ? E && E.SPMAP[e.mon.sid] : e.kind === 'story' ? E && E.STY.SITES[e.task] : e.kind === 'quest' ? E && E.QST.WQ.some(function (q) { return q.id === e.task; }) : e.kind === 'daily' && E && E.QST.DAILY[e.task]; });
+    result.items = result.items.filter(function (e) { return e.kind === 'rank' ? Number.isInteger(e.rank) && e.rank > 0 && E && e.rank < E.RANKS.length && /^S[1-9]\d*$/.test(e.season) : e.mon ? E && E.SPMAP[e.mon.sid] : e.kind === 'story' ? E && E.STY.SITES[e.task] : e.kind === 'quest' ? E && E.QST.WQ.some(function (q) { return q.id === e.task; }) : e.kind === 'daily' && E && E.QST.DAILY[e.task]; });
     A.reply(res, 200, result); return true;
   }
   if (url === '/api/players' && req.method === 'GET') {
