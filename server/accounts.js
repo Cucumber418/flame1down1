@@ -89,10 +89,12 @@ function dayCheck(u, oldData, newData) {
 function cheatLog(name, why) { try { fs.appendFileSync(path.join(DATA_DIR, 'cheat.log'), new Date().toISOString() + '\t' + name + '\t' + why + '\n'); } catch (e) {} }
 function loadUser(name) { var u = readJSON(userFile(name), null); if (u && u.save && require('../js/data/rank-season').migrate(u.save.data)) { u.save.rev = (u.save.rev || 0) + 1; u.save.savedAt = Date.now(); saveUser(u); } return u; }
 function saveUser(u) {
-  var f = userFile(u.name);
+  var f = userFile(u.name), events = [];
+  try { events = require('./activity').prepare(readJSON(f, null), u, Date.now()); } catch (err) { console.error('动态生成失败', err.message); }
   // 存档每次覆盖前留一份上一版，万一出问题还能找回
   if (fs.existsSync(f)) { try { fs.copyFileSync(f, f + '.prev'); } catch (e) {} }
   writeJSON(f, u);
+  try { require('./activity').publish(DATA_DIR, events); } catch (err) { console.error('动态写入失败', err.message); }
 }
 
 /* ---------- 登录凭证 ---------- */

@@ -21,7 +21,9 @@
   var online = !!(C && C.user && C.user());   // 用服务器打开并登录了才有社交功能
   var hb = { owner: null, data: null, err: '', at: 0, draft: '', newN: 0, peeked: false }, pokeAt = {};   // 基地信息栏与留言板（见下面「基地信息栏」一节）
   var fl = { data: null, err: '', at: 0, newN: 0, loading: false };
-  var st = { prep: null, bw: { picks: null, wait: null, inv: null }, view: null, tab: 'players', players: null, me: null, err: '', ws: null, wsOk: false, retry: 0, pend: null, inc: null, match: null, edit: null };
+  var st = { prep: null, bw: { picks: null, wait: null, inv: null }, view: null, tab: 'feed', players: null, me: null, err: '', ws: null, wsOk: false, retry: 0, pend: null, inc: null, match: null, edit: null };
+
+  var activity = { items: null, next: null, busy: false, err: '' }, peopleScope = 'friends', peopleQuery = '';
 
   /* ---------- 小工具 ---------- */
   function api(method, url, body) { return C.api(method, url, body); }
@@ -61,7 +63,7 @@
   var loading = false;
   function load() {
     if (!online || loading) return;
-    loading = true;
+    loading = true; loadActivity(false);
     api('GET', '/api/fp-state').then(function (r) { if (r && r.ok) { st.fpSent = Array.isArray(r.sent) ? r.sent : []; st.fpOk = true; } }).catch(function () {});   // 2026-11-01：今天给好友送过经验没有
     api('GET', '/api/players').then(function (r) {
       loading = false;
@@ -135,13 +137,26 @@
   function progHTML(p) {
     if (!p) return '';
     var F = p.flora || {}, T = p.tower || {};
-    return '<details class="pc-prog"><summary>挑战进度</summary><ul>' +
-      '<li><b>芙罗拉星 · 挑战</b><span>' + (F.max ? '最远第 ' + F.max + ' / ' + (F.levels || 50) + ' 关 · ★ ' + F.stars + ' / ' + (F.total || 150) : '还没有开始') + '</span></li>' +
-      '<li><b>先驱之塔</b><span>' + (T.best || T.clears ? '最高第 ' + T.best + ' / ' + (T.top || 60) + ' 层 · 通关 ' + T.clears + ' 次 · 当前第 ' + T.cur + ' 层' : '还没有开始') + '</span></li>' +
-      '</ul></details>';
+    return '<section class="pc-progress"><h4>挑战进度</h4><div><b>芙罗拉星</b><span>' + (F.max ? F.max + '/' + (F.levels || 50) + '关 · ★' + F.stars + '/' + (F.total || 150) : '尚未开始') + '</span><b>先驱之塔</b><span>' + (T.best || T.clears ? '最高' + T.best + '/' + (T.top || 60) + '层 · 通关' + T.clears + '次 · 当前' + T.cur + '层' : '尚未开始') + '</span></div></section>';
   }
+  var cardCache = Object.create(null), cardFitFrame = 0, cardObserver = window.ResizeObserver ? new ResizeObserver(queueCardFit) : null;
+  function queueCardFit() { if (!cardFitFrame) cardFitFrame = requestAnimationFrame(fitCards); }
+  function fitCards() {
+    cardFitFrame = 0;
+    document.querySelectorAll('.pc-fit').forEach(function (slot) {
+      var card = slot.querySelector('.pc-complete'); if (!card || !slot.clientHeight) return;
+      card.style.width = ''; card.style.transform = '';
+      if (card.scrollHeight <= slot.clientHeight) return;
+      var lo = .25, hi = 1;
+      for (var i = 0; i < 9; i++) { var scale = (lo + hi) / 2; card.style.width = (100 / scale) + '%'; if (card.scrollHeight * scale > slot.clientHeight - 1) hi = scale; else lo = scale; }
+      card.style.width = (100 / lo) + '%'; card.style.transform = 'scale(' + lo + ')';
+    });
+  }
+  function watchCardSizes() { if (cardObserver) { cardObserver.disconnect(); document.querySelectorAll('.pc-fit').forEach(function (slot) { cardObserver.observe(slot); }); } queueCardFit(); }
+  window.addEventListener('resize', queueCardFit);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(queueCardFit);
   function cardHTML(c, opt) {
-    opt = opt || {};
+    opt = opt || {}; cardCache[c.user] = c;
     if (c.noChar) return '<div class="pcard"><p class="hint">@' + esc(c.user) + ' 还没有创建游戏角色。</p></div>';
     var R = c.rankInfo || { r: 0, best: 0, w: 0, l: 0 };
     var slots = '';
@@ -154,21 +169,30 @@
         (m.moves && m.moves.length ? '<span class="pc-mv">' + m.moves.map(function (n) { return esc(n); }).join('、') + '</span>' : '') + '</li>';
     }
     var look = typeof CHARS !== 'undefined' && CHARS['p' + (c.gender === 'f' ? 'f' : 'm')];
-    return '<div class="pcard' + (look ? ' has-look' : '') + '">' + (look ? '<figure class="pc-look"><img src="' + look + '" alt="' + esc(c.name) + '的形象"></figure>' : '') +
-      '<div class="pc-top"><span class="pav big' + (c.avatar ? ' img' : '') + '">' + A.avatarInner(c.avatar, c.name) + '</span><div class="pc-who">' +
-      '<span class="pc-title">' + esc(c.title ? A.titleName(c.title) || '做题家' : '做题家') + '</span><h3>' + esc(c.name) + '</h3>' +
-      '<span class="pc-user">@' + esc(c.user) + (opt.preview ? '' : ' · ' + statusOf(c)) + '</span></div></div>' +
-      '<p class="pc-stats"><span>军衔 <b>' + esc(MIL_NAMES[Math.max(0, Math.min(MIL_NAMES.length - 1, c.mil | 0))]) + '</b></span><span>精灵 <b>' + (c.monsN || 0) + '</b> 只</span><span>收集 <b>' + (c.speciesN || 0) + '</b> 种</span>' +
-      '<span>最高段位 <b>' + (rankLabel(R.best, R.best === RANKS.length - 1 ? R.kingBest || 0 : null, R.bestDv) || '—') + '</b>' + (R.r === RANKS.length - 1 && (R.stars || 0) !== (R.kingBest || 0) ? '（当前 ' + R.stars + ' 星）' : '') + '</span><span>竞技 <b>' + R.w + '</b> 胜 <b>' + R.l + '</b> 负</span>' +
-      (c.created ? '<span>' + new Date(c.created).toLocaleDateString('zh-CN') + ' 登船</span>' : '') + '</p>' +
-      '<blockquote class="pc-motto' + (c.motto ? '' : ' empty') + '">' + (c.motto ? esc(c.motto) : '这位船员还没有写个人宣言。') + '</blockquote>' +
-      progHTML(c.prog) +
-      '<h4 class="pc-h">展示精灵</h4><ol class="pc-show">' + slots + '</ol>' +
-      (function (hs) { hs = hs.filter(function (h) { return h && SPMAP[h.sid]; }); return hs.length ? '<h4 class="pc-h">助战精灵 <span class="hint">好友可以在星球挑战里借用</span></h4>' + hs.map(function (h) { var v = A.view({ sid: h.sid, lv: h.lv, shiny: h.shiny, fs: h.fs });
-        return '<div class="pc-helper"><img src="' + v.img + '" alt=""><b>' + esc(v.name) + (h.shiny ? '<span class="shiny-tag">异色</span>' : '') + '</b><span class="pc-lv">LV' + h.lv + (h.nat ? ' · ' + esc(h.nat) : '') + '</span><span class="tc">' + tchips(SPMAP[h.sid].types) + '</span></div>'; }).join('') : ''; })(c.helpers || (c.helper ? [c.helper] : [])) + '</div>';
+    var helpers = (c.helpers || (c.helper ? [c.helper] : [])).filter(function (h) { return h && SPMAP[h.sid]; });
+    return '<div class="pcard pc-complete"><section class="pc-identity"><div class="pc-top"><span class="pav big' + (c.avatar ? ' img' : '') + '">' + A.avatarInner(c.avatar, c.name) + '</span><div class="pc-who"><span class="pc-title">' + esc(c.title ? A.titleName(c.title) || '做题家' : '做题家') + '</span><h3>' + esc(c.name) + '</h3><span class="pc-user">@' + esc(c.user) + (opt.preview ? '' : ' · ' + statusOf(c)) + '</span></div>' + (look ? '<figure class="pc-look"><img src="' + look + '" alt="' + esc(c.name) + '的形象"></figure>' : '') + '</div>' +
+      '<div class="pc-stats"><span>军衔 <b>' + esc(MIL_NAMES[Math.max(0, Math.min(MIL_NAMES.length - 1, c.mil | 0))]) + '</b></span><span>精灵 <b>' + (c.monsN || 0) + '</b> 只</span><span>收集 <b>' + (c.speciesN || 0) + '</b> 种</span><span>最高段位 <b>' + (rankLabel(R.best, R.best === RANKS.length - 1 ? R.kingBest || 0 : null, R.bestDv) || '—') + '</b></span><span>竞技 <b>' + R.w + '</b> 胜 <b>' + R.l + '</b> 负' + (R.r === RANKS.length - 1 ? ' · 当前' + R.stars + '星' : '') + '</span>' + (c.created ? '<span>' + new Date(c.created).toLocaleDateString('zh-CN') + ' 登船</span>' : '') + '</div>' +
+      '<blockquote class="pc-motto' + (c.motto ? '' : ' empty') + '">' + (c.motto ? esc(c.motto) : '这位船员还没有写个人宣言。') + '</blockquote></section><div class="pc-collection"><section class="pc-display"><h4 class="pc-h">展示精灵</h4><ol class="pc-show">' + slots + '</ol></section>' +
+      '<nav class="pc-section-buttons" aria-label="更多名片信息"><button type="button" class="btn" data-card-section="progress" data-card-user="' + esc(c.user) + '">挑战进度 ›</button><button type="button" class="btn" data-card-section="helpers" data-card-user="' + esc(c.user) + '">助战精灵 ' + helpers.length + ' ›</button></nav></div></div>';
+
   }
+
+  function openCardSection(user, kind, trigger) {
+    var c = cardCache[user]; if (!c) return;
+    var title = kind === 'helpers' ? '助战精灵' : '挑战进度', body;
+    if (kind === 'helpers') {
+      var helpers = (c.helpers || (c.helper ? [c.helper] : [])).filter(function (h) { return h && SPMAP[h.sid]; });
+      body = '<p class="hint">好友可以在星球挑战中借用，不影响原主使用。</p><div class="pc-detail-helpers">' + (helpers.length ? helpers.map(function (h) { var v = A.view(h); return '<article><img src="' + v.img + '" alt=""><div><h3>' + esc(v.name) + (h.shiny ? ' · 异色' : '') + '</h3><p>LV' + h.lv + (h.nat ? ' · ' + esc(h.nat) : '') + '</p><p>' + tchips(SPMAP[h.sid].types) + '</p>' + (h.moves && h.moves.length ? '<p>' + h.moves.map(esc).join('、') + '</p>' : '') + '</div></article>'; }).join('') : '<p class="hint">尚未设置助战精灵</p>') + '</div>';
+    } else body = progHTML(c.prog) || '<p class="hint">还没有挑战记录</p>';
+    var d = dialog('pc-detail-panel', '<header><h2>' + title + '</h2><button type="button" class="btn ghost" data-card-detail-close>关闭</button></header><div class="pc-detail-content">' + body + '</div>', function (el, close) {
+      el.addEventListener('click', function (e) { if (e.target.closest('[data-card-detail-close]')) { close(); if (trigger && trigger.isConnected) trigger.focus(); } });
+      el.addEventListener('keydown', function (e) { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(); if (trigger && trigger.isConnected) trigger.focus(); } });
+    });
+    d.el.querySelector('[data-card-detail-close]').focus();
+  }
+  document.addEventListener('click', function (e) { var b = e.target.closest('[data-card-section]'); if (b) openCardSection(b.dataset.cardUser, b.dataset.cardSection, b); });
   function openCard(user) {
-    var d = dialog('card', '<div class="pc-body"><p class="hint">读取名片中……</p></div>', function (el, close) {
+    var d = dialog('card', '<div class="pc-body pc-fit"><p class="hint">读取名片中……</p></div>', function (el, close) {
       el.addEventListener('click', function (e) {
         if (e.target.closest('[data-x]')) return close();
         var f = e.target.closest('[data-friend]'); if (f) { toggleFriend(f.dataset.friend).then(function () { close(); openCard(user); }); return; }
@@ -182,11 +206,11 @@
       var body = d.el.querySelector('.pc-body'); if (!body) return;
       if (c._code !== 200) { body.innerHTML = '<p class="hint">' + esc(c.error || '读取失败') + '</p>'; return; }
       var canFight = !c.me && !c.noChar && c.online && !c.busy;
-      body.innerHTML = cardHTML(c) + '<div class="soc-foot"><button type="button" class="btn ghost" data-x="1">关闭</button>' +
+      body.innerHTML = cardHTML(c); var actions = document.createElement('div'); actions.className = 'soc-foot pc-actions'; actions.innerHTML = '<button type="button" class="btn ghost" data-x="1">关闭</button>' +
         (c.me ? '' : '<button type="button" class="btn ghost" data-home="' + esc(c.user) + '"' + (c.homeOpen ? '' : ' disabled') + '>拜访基地</button>' +
           '<button type="button" class="btn" data-friend="' + esc(c.user) + '">' + (c.friend ? '取消好友' : '＋ 加好友') + '</button>' +
           (c.friend && !c.noChar ? '<button type="button" class="btn dm-btn" data-dm="' + esc(c.user) + '">💬 私信</button>' : '') +
-          (canWatch(c) ? watchBtn(c) : '<button type="button" class="btn primary" data-fight="' + esc(c.user) + '"' + (canFight ? '' : ' disabled') + '>切磋</button>')) + '</div>';
+          (canWatch(c) ? watchBtn(c) : '<button type="button" class="btn primary" data-fight="' + esc(c.user) + '"' + (canFight ? '' : ' disabled') + '>切磋</button>')); body.parentNode.appendChild(actions); watchCardSizes(); actions.querySelector('[data-x]').focus({ preventScroll: true });
     }).catch(function () { var body = d.el.querySelector('.pc-body'); if (body) body.innerHTML = '<p class="hint">连不上服务器</p>'; });
   }
   function toggleFriend(user) {
@@ -339,35 +363,46 @@
   }
   function mineHTML() {
     if (!st.edit) startEdit();
-    var ed = st.edit, mons = A.acc().mons.slice().sort(function (a, b) { return b.lv - a.lv || a.u - b.u; });
-    return '<div class="mine">' +
-      '<section class="mine-prev"><h3 class="shop-h">名片预览</h3>' + cardHTML(myCard(), { preview: true }) + '</section>' +
-      '<section class="mine-edit"><h3 class="shop-h">编辑名片</h3>' +
-      '<label class="me-lab" for="me-motto">个人宣言 <span class="hint" id="me-cnt">' + Array.from(ed.motto).length + ' / ' + MOTTO_MAX + '</span></label>' +
-      '<textarea id="me-motto" rows="4" maxlength="' + MOTTO_MAX + '" placeholder="写点什么给其他船员看，比如你的目标、最喜欢的精灵……">' + esc(ed.motto) + '</textarea>' +
-      '<p class="me-lab">展示精灵 <span class="hint">已选 ' + ed.show.length + ' / ' + SHOW_MAX + '，按点选顺序排列</span></p>' +
-      '<div class="me-pick">' + mons.map(function (m) {
-        var k = ed.show.indexOf(m.u), v = A.view(m), full = k < 0 && ed.show.length >= SHOW_MAX;
-        return '<button type="button" class="me-mon' + (k >= 0 ? ' on' : '') + '" data-pick="' + m.u + '"' + (full ? ' disabled' : '') + ' aria-pressed="' + (k >= 0) + '">' +
-          (k >= 0 ? '<span class="me-no">' + (k + 1) + '</span>' : '') + '<img src="' + v.img + '" alt=""><b>' + esc(v.name) + '</b><small>LV' + m.lv + '</small></button>';
-      }).join('') + '</div>' +
-      '<p class="me-lab">助战精灵 <span class="hint">最多选 ' + HELP_MAX + ' 只（已选 ' + ed.helpers.length + ' / ' + HELP_MAX + '），好友在星球挑战里可以借用（借出去不影响你自己使用）；再点一下取消</span></p>' +
-      '<div class="me-pick">' + mons.map(function (m) {
-        var on = ed.helpers.indexOf(m.u) >= 0, v = A.view(m), full = !on && ed.helpers.length >= HELP_MAX;
-        return '<button type="button" class="me-mon' + (on ? ' on' : '') + '" data-helper="' + m.u + '"' + (full ? ' disabled' : '') + ' aria-pressed="' + on + '">' + (on ? '<span class="me-no">助</span>' : '') + '<img src="' + v.img + '" alt=""><b>' + esc(v.name) + '</b><small>LV' + m.lv + '</small></button>';
-      }).join('') + '</div>' +
-      '<div class="soc-foot"><span class="hint" id="me-msg">' + (ed.dirty ? '有修改还没保存' : '') + '</span><button type="button" class="btn ghost" id="me-reset"' + (ed.dirty ? '' : ' disabled') + '>撤销修改</button><button type="button" class="btn primary" id="me-save"' + (ed.dirty ? '' : ' disabled') + '>保存名片</button></div>' +
-      '</section></div>';
+    return '<section class="social-mycard"><header><h3>我的名片</h3><button type="button" class="btn" data-edit-card>编辑名片</button></header>' + '<div class="pc-fit">' + cardHTML(myCard(), { preview: true }) + '</div></section>';
+  }
+  function editorHTML() {
+    var ed = st.edit, helper = st.editMode === 'helper', mons = A.acc().mons.slice().sort(function (a, b) { return b.lv - a.lv || a.u - b.u; }), selected = helper ? ed.helpers : ed.show, max = helper ? HELP_MAX : SHOW_MAX;
+    return '<div class="soc-dlg" id="social-edit-dlg"><section class="soc-box social-editor" role="dialog" aria-modal="true" aria-label="编辑名片"><header><h2>编辑名片</h2><button type="button" class="btn ghost" data-edit-close>取消</button></header><label class="me-lab" for="me-motto">个人宣言 <span class="hint" id="me-cnt">' + Array.from(ed.motto).length + '/' + MOTTO_MAX + '</span></label><textarea id="me-motto" rows="2" maxlength="' + MOTTO_MAX + '">' + esc(ed.motto) + '</textarea><div class="social-editor-tabs"><button type="button" class="btn' + (!helper ? ' primary' : '') + '" data-edit-mode="show">展示精灵 ' + ed.show.length + '/' + SHOW_MAX + '</button><button type="button" class="btn' + (helper ? ' primary' : '') + '" data-edit-mode="helper">助战精灵 ' + ed.helpers.length + '/' + HELP_MAX + '</button><span class="hint">点选或取消，按选择顺序排列</span></div><div class="me-pick">' + mons.map(function (m) {
+      var k = selected.indexOf(m.u), v = A.view(m), full = k < 0 && selected.length >= max;
+      return '<button type="button" class="me-mon' + (k >= 0 ? ' on' : '') + '" ' + (helper ? 'data-helper' : 'data-pick') + '="' + m.u + '"' + (full ? ' disabled' : '') + ' aria-pressed="' + (k >= 0) + '">' + (k >= 0 ? '<span class="me-no">' + (k + 1) + '</span>' : '') + '<img src="' + v.img + '" alt=""><b>' + esc(v.name) + '</b><small>LV' + m.lv + '</small></button>';
+    }).join('') + '</div><footer class="soc-foot"><span class="hint" id="me-msg">' + (ed.dirty ? '有修改还没保存' : '') + '</span><button type="button" class="btn ghost" id="me-reset"' + (ed.dirty ? '' : ' disabled') + '>撤销修改</button><button type="button" class="btn primary" id="me-save"' + (ed.dirty ? '' : ' disabled') + '>保存名片</button></footer></section></div>';
   }
   function saveCard() {
     var contentErr = CONTENT.error(st.edit.motto, '名片签名');
     if (contentErr) { var msg = $('me-msg'); if (msg) msg.textContent = contentErr; A.toast(contentErr); return; }
     var acc = A.acc();
     acc.card = { show: st.edit.show.slice(0, SHOW_MAX), motto: Array.from(st.edit.motto).slice(0, MOTTO_MAX).join(''), helper: st.edit.helpers.length ? st.edit.helpers[0] : null, helpers: st.edit.helpers.slice(0, HELP_MAX) };
-    st.edit.dirty = false; A.save(); render();
+    st.edit.dirty = false; st.editOpen = false; A.save(); render();
     A.toast('名片已保存。同步到服务器后，其他船员就能看到。');
   }
 
+  function loadActivity(more) {
+    if (!online || activity.busy || more && !activity.next) return;
+    activity.busy = true; activity.err = '';
+    api('GET', '/api/activity?limit=30' + (more ? '&before=' + encodeURIComponent(activity.next) : '')).then(function (r) {
+      if (r._code !== 200) throw new Error(r.error || '动态读取失败');
+      var items = more ? (activity.items || []).concat(r.items || []) : r.items || [], seen = {};
+      activity.items = items.filter(function (e) { if (seen[e.id]) return false; seen[e.id] = true; return true; }); activity.next = r.next;
+    }).catch(function (e) { activity.err = e.message || '连不上服务器'; }).then(function () { activity.busy = false; if (A.page() === 'social' && st.tab === 'feed') render(); });
+  }
+  function activityRow(e) {
+    var p = (st.players || []).find(function (p) { return p.user === e.user; }), icon = '✓', text = '';
+    if (e.mon && SPMAP[e.mon.sid]) { var v = A.view(e.mon); icon = '<img src="' + v.img + '" alt="">'; text = e.kind === 'level' ? '的' + v.name + '达到了 LV' + e.level : '获得了' + (e.mon.shiny ? '异色' : '') + v.name + ' · LV' + e.mon.lv; }
+    else text = '完成了「' + (A.socialTaskName ? A.socialTaskName(e.kind, e.task) : '任务') + '」';
+    return '<article class="social-event"><span class="social-event-icon">' + icon + '</span><div><p><button type="button" data-card="' + esc(e.user) + '">' + esc(p && p.name || e.name) + '</button>' + esc(text) + '</p><small>' + (p && p.friend ? '好友 · ' : '') + ago(e.at) + '</small></div></article>';
+  }
+  function peopleHTML() {
+    var P = st.players || [], list = P.filter(function (p) { return (peopleScope === 'all' || p.friend) && (!peopleQuery || (p.name + ' ' + p.user).toLowerCase().indexOf(peopleQuery.toLowerCase()) >= 0); });
+    return '<section class="social-column social-people"><header><h3>好友 <small>' + P.filter(function (p) { return p.friend; }).length + '</small></h3><button type="button" class="btn ghost" data-people-scope>' + (peopleScope === 'all' ? '返回好友' : '添加好友') + '</button></header><label class="social-search">' + (peopleScope === 'all' ? '全部玩家' : '好友') + '<input id="social-search" type="search" placeholder="搜索名字或账号" value="' + esc(peopleQuery) + '" autocomplete="off"></label><div class="social-pane-scroll" data-social-scroll="people" tabindex="0" aria-label="好友列表">' + (st.players ? list.length ? '<div class="plist">' + list.map(playerRow).join('') + '</div>' : '<p class="hint">' + (peopleQuery ? '没有找到这位船员' : peopleScope === 'all' ? '还没有其他船员' : '还没有好友，点击「添加好友」认识其他船员') + '</p>' : '<p class="hint">' + esc(st.err || '正在读取好友……') + '</p>') + '</div></section>';
+  }
+  function dashboardHTML() {
+    return '<div class="social-dashboard"><section class="social-column social-activity"><header><div><h3>好友动态</h3><small>全服可见 · 船员们的新进展</small></div><button type="button" class="btn ghost" data-activity-refresh' + (activity.busy ? ' disabled' : '') + '>刷新</button></header><div class="social-pane-scroll" data-social-scroll="activity" tabindex="0" aria-label="全服动态">' + (activity.items || []).map(activityRow).join('') + (activity.err ? '<p class="hint red">' + esc(activity.err) + '</p>' : '') + (!activity.items || !activity.items.length ? '<p class="hint social-feed-empty">' + (activity.busy ? '正在读取动态……' : '新的精灵、任务与成长故事会出现在这里') + '</p>' : '') + (activity.next ? '<button type="button" class="btn social-more" data-activity-more' + (activity.busy ? ' disabled' : '') + '>' + (activity.busy ? '正在读取……' : '更早的动态') + '</button>' : '') + '</div></section>' + peopleHTML() + '</div>';
+  }
   /* ---------- 页面 ---------- */
   function render() {
     var pg = $('pg-social'); if (!pg || A.page() !== 'social' || !A.ready()) return;
@@ -377,31 +412,39 @@
     }
     var P = st.players || [], friends = P.filter(function (p) { return p.friend; }), on = P.filter(function (p) { return p.online; }).length;
     var focus = document.activeElement && document.activeElement.id === 'me-motto' ? $('me-motto').selectionStart : null;
-    var oldContent = pg.querySelector('.social-page-content'), oldScroll = oldContent ? oldContent.scrollTop : 0;
+    var oldContent = pg.querySelector('.social-page-content'), oldScroll = oldContent ? oldContent.scrollTop : 0, scrolls = {};
+    pg.querySelectorAll('[data-social-scroll]').forEach(function (el) { scrolls[el.dataset.socialScroll] = el.scrollTop; });
+    var pickFocus = document.activeElement && document.activeElement.matches('[data-pick],[data-helper]') ? { key: document.activeElement.hasAttribute('data-pick') ? 'data-pick' : 'data-helper', value: document.activeElement.getAttribute(document.activeElement.hasAttribute('data-pick') ? 'data-pick' : 'data-helper') } : null;
+    var searchFocus = document.activeElement && document.activeElement.id === 'social-search', searchPos = searchFocus ? $('social-search').selectionStart : 0, pickScroll = pg.querySelector('.me-pick') ? pg.querySelector('.me-pick').scrollTop : 0;
     if (st.view) { pg.innerHTML = st.view.kind === 'farm' ? farmHTML() : homeHTML(); return; }
     var body;
     if (st.tab === 'mine') body = mineHTML();
     else if (st.tab === 'dm') body = dmListHTML();
-    else if (!st.players) body = '<p class="hint soc-load">' + (st.err ? esc(st.err) + ' · <button type="button" class="btn ghost" data-reload="1">重试</button>' : '读取船员名单中……') + '</p>';
-    else {
-      var list = st.tab === 'friends' ? friends : P;
-      body = list.length ? '<div class="plist">' + list.map(playerRow).join('') + '</div>' :
-        '<div class="soc-empty"><p>' + (st.tab === 'friends' ? '还没有好友。去「玩家」里找到想关注的人，点「加好友」。' : '还没有其他船员。') + '</p></div>';
-    }
+    else body = dashboardHTML();
     pg.innerHTML = '<div class="subbar soc-tabs" role="tablist">' +
-      '<button type="button" class="sub' + (st.tab === 'players' ? ' on' : '') + '" data-tab="players" role="tab" aria-selected="' + (st.tab === 'players') + '">玩家 ' + (st.players ? P.length : '') + '</button>' +
-      '<button type="button" class="sub' + (st.tab === 'friends' ? ' on' : '') + '" data-tab="friends" role="tab" aria-selected="' + (st.tab === 'friends') + '">好友 ' + (st.players ? friends.length : '') + '</button>' +
+      '<button type="button" class="sub' + (st.tab === 'feed' ? ' on' : '') + '" data-tab="feed" role="tab" aria-selected="' + (st.tab === 'feed') + '">好友动态与好友</button>' +
       '<button type="button" class="sub' + (st.tab === 'dm' ? ' on' : '') + '" data-tab="dm" role="tab" aria-selected="' + (st.tab === 'dm') + '">私信' + (st.dmUnread ? '<i class="q-badge">' + st.dmUnread + '</i>' : '') + '</button>' +
       '<button type="button" class="sub' + (st.tab === 'mine' ? ' on' : '') + '" data-tab="mine" role="tab" aria-selected="' + (st.tab === 'mine') + '">我的名片</button>' +
       '<button type="button" class="sub sub-go" data-myhome="1" title="' + (A.homeOpen() ? '直接去我的基地' : '读完「陆羽茶室」支线后开放') + '">我的基地' + (hb.newN ? '<i class="q-badge" title="基地里有新动态或新留言">' + hb.newN + '</i>' : '') + ' ›</button>' +
       '<span class="soc-on">' + (st.wsOk ? '<span class="dot on"></span>' + on + ' 人在线' : '<span class="dot"></span>正在连接服务器……') + '</span></div>' +
-      '<div class="social-page-content" tabindex="0" aria-label="社交内容">' + body + '</div>';
+      '<div class="social-page-content social-main-' + st.tab + '" aria-label="社交内容">' + body + '</div>' + (st.editOpen ? editorHTML() : '');
     pg.querySelector('.social-page-content').scrollTop = oldScroll;
+    pg.querySelectorAll('[data-social-scroll]').forEach(function (el) { el.scrollTop = scrolls[el.dataset.socialScroll] || 0; });
+    if (pg.querySelector('.me-pick')) pg.querySelector('.me-pick').scrollTop = pickScroll;
+    if (searchFocus && $('social-search')) { $('social-search').focus(); $('social-search').setSelectionRange(searchPos, searchPos); }
+    watchCardSizes();
+    if (pickFocus) { var picked = pg.querySelector('[' + pickFocus.key + '="' + pickFocus.value + '"]'); if (picked && !picked.disabled) picked.focus({ preventScroll: true }); }
     if (focus != null && $('me-motto')) { var ta = $('me-motto'); ta.focus(); ta.setSelectionRange(focus, focus); }
   }
   if ($('pg-social')) {
     $('pg-social').addEventListener('click', function (e) {
       var t;
+      if ((t = e.target.closest('[data-edit-card]'))) { startEdit(); st.editOpen = true; st.editMode = 'show'; render(); $('me-motto').focus({ preventScroll: true }); return; }
+      if (e.target.id === 'social-edit-dlg' || (t = e.target.closest('[data-edit-close]'))) { st.editOpen = false; startEdit(); render(); return; }
+      if ((t = e.target.closest('[data-edit-mode]'))) { st.editMode = t.dataset.editMode; render(); return; }
+      if ((t = e.target.closest('[data-activity-more]'))) { loadActivity(true); return; }
+      if ((t = e.target.closest('[data-activity-refresh]'))) { loadActivity(false); return; }
+      if ((t = e.target.closest('[data-people-scope]'))) { peopleScope = peopleScope === 'all' ? 'friends' : 'all'; peopleQuery = ''; render(); return; }
       if ((t = e.target.closest('[data-tab]'))) { if (st.tab !== t.dataset.tab) { var content = $('pg-social').querySelector('.social-page-content'); if (content) content.scrollTop = 0; } st.tab = t.dataset.tab; if (st.tab === 'mine' && !st.edit) startEdit(); render(); if (st.tab === 'dm') dmLoadList(); else if (st.tab !== 'mine') load(); return; }
       if ((t = e.target.closest('[data-myhome]'))) { A.goHome(); return; }
       if ((t = e.target.closest('[data-reload]'))) { load(); return; }
@@ -451,15 +494,27 @@
       if (e.target.id === 'me-reset') { startEdit(); render(); return; }
     });
     $('pg-social').addEventListener('input', function (e) {
+      if (e.target.id === 'social-search') { peopleQuery = e.target.value; render(); return; }
       if (e.target.id !== 'me-motto') return;
       st.edit.motto = Array.from(e.target.value).slice(0, MOTTO_MAX).join(''); st.edit.dirty = true;
       $('me-cnt').textContent = Array.from(st.edit.motto).length + ' / ' + MOTTO_MAX;
       $('me-save').disabled = false; $('me-reset').disabled = false; $('me-msg').textContent = '有修改还没保存';
-      var pm = document.querySelector('.mine-prev .pc-motto');
+      var pm = document.querySelector('.social-mycard .pc-motto');
       if (pm) { pm.textContent = st.edit.motto || '这位船员还没有写个人宣言。'; pm.classList.toggle('empty', !st.edit.motto); }
     });
   }
 
+  document.addEventListener('keydown', function (e) {
+    var editor = $('social-edit-dlg'), cards = document.querySelectorAll('.soc-dlg > .soc-box.card'), card = cards[cards.length - 1], details = document.querySelectorAll('.soc-dlg > .pc-detail-panel'), detail = details[details.length - 1], modal = detail || editor || card;
+    if (!modal) return;
+    if (e.key === 'Escape') { if (detail) { detail.querySelector('[data-card-detail-close]').click(); } else if (editor) { st.editOpen = false; startEdit(); render(); } else { card.closest('.soc-dlg').remove(); } e.preventDefault(); return; }
+    if (e.key !== 'Tab') return;
+    var nodes = [].filter.call(modal.querySelectorAll('button,input,textarea,select'), function (el) { return !el.disabled && el.getClientRects().length; });
+    if (!nodes.length) return;
+    var first = nodes[0], last = nodes[nodes.length - 1];
+    if (e.shiftKey && (document.activeElement === first || !modal.contains(document.activeElement))) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && (document.activeElement === last || !modal.contains(document.activeElement))) { e.preventDefault(); first.focus(); }
+  });
   /* ---------- 和服务器的实时连接（在线状态、切磋） ---------- */
   function send(obj) {
     if (obj.type === 'danmaku') { var contentErr = CONTENT.error(obj.text, '弹幕') || CONTENT.error(obj.e, '弹幕'); if (contentErr) { A.toast(contentErr); return false; } }

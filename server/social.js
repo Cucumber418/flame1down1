@@ -5,6 +5,7 @@
  * 所以玩家在游戏里改了名片，存档同步到服务器后别人就能看到。
  *
  * HTTP 接口（需要登录）：
+ *   GET  /api/activity           全服进度动态（只读，支持游标分页）
  *   GET  /api/players            所有玩家的简要信息 + 在线状态 + 是否好友
  *   GET  /api/card?user=账号名    某个玩家的完整名片
  *   POST /api/friends { user, on }   加好友 / 删好友（单向，像「关注」）
@@ -788,10 +789,16 @@ function onClose(ws) {
 
 /* ---------- HTTP 接口 ---------- */
 A.use(function (req, res, url) {
-  if (url !== '/api/players' && url !== '/api/card' && url !== '/api/friends' && url !== '/api/home' && url !== '/api/helpers') return false;
+  if (url !== '/api/activity' && url !== '/api/players' && url !== '/api/card' && url !== '/api/friends' && url !== '/api/home' && url !== '/api/helpers') return false;
   var who = A.whoIs(req), me = who && A.loadUser(who.user);
   if (!me) { A.reply(res, 401, { error: '登录已失效，请重新登录' }); return true; }
 
+  if (url === '/api/activity' && req.method === 'GET') {
+    var query = new URL(req.url, 'http://localhost').searchParams, limit = int(query.get('limit') || 30, 1, 50);
+    var result = require('./activity').page(A.DATA_DIR, query.get('before') || '', limit), E = require('./tx').engine();
+    result.items = result.items.filter(function (e) { return e.mon ? E && E.SPMAP[e.mon.sid] : e.kind === 'story' ? E && E.STY.SITES[e.task] : e.kind === 'quest' ? E && E.QST.WQ.some(function (q) { return q.id === e.task; }) : e.kind === 'daily' && E && E.QST.DAILY[e.task]; });
+    A.reply(res, 200, result); return true;
+  }
   if (url === '/api/players' && req.method === 'GET') {
     var list = A.allUsers().map(function (u) { return summary(u, me); }).filter(function (p) { return p.me || !p.noChar; });   // 2026-10-27：还没创建角色的不进玩家列表
     list.sort(function (a, b) { return (b.me - a.me) || (b.online - a.online) || (b.friend - a.friend) || ((b.lastSeen || 0) - (a.lastSeen || 0)); });

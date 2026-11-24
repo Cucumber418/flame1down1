@@ -9050,6 +9050,7 @@
 
   /* ---------- 给社交页（social.js）用的接口 ---------- */
   window.HSACC = {
+    socialTaskName: function (kind, id) { var t = kind === 'story' ? SITES[id] : kind === 'quest' ? WQ.find(function (q) { return q.id === id; }) : QST.DAILY[id]; return t ? t.chapter || t.t || t.name || t.n || id : '任务'; },
     contestHTML: sarenaPage, contestOpen: function () { return planetOpen(planetOf('sarena')); }, seasonNoticeAck: function (ok, fail) { txRun('rankSeasonNotice', {}, ok, fail); },
     arenaOpen: arenaOpen, goRank: function () { if (!arenaOpen()) { toast('完成荆楚号 · 孝感大厅支线后开放平衡排位'); return false; } go('arena'); if (window.HSARENA) HSARENA.open('rank'); else $('mode-rank').click(); return true; },
     acc: function () { return acc; }, ready: ready, save: save, toast: toast, go: go, page: function () { return page; }, renderRes: renderRes,

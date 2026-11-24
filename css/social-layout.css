@@ -1,0 +1,102 @@
+/* 社交页固定一屏；动态和好友各自在栏内滚动。 */
+body.social-page-active .social-page-content { overflow: hidden; padding: 2px 4px 5px 1px; display: flex; flex-direction: column; }
+.social-dashboard { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 12px; }
+.social-column { min-width: 0; min-height: 0; display: flex; flex-direction: column; border: 1.5px solid var(--ink); border-radius: 12px; background: var(--paper-2); overflow: hidden; }
+.social-column > header, .social-mycard > header, .social-editor > header { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex: 0 0 auto; padding: 12px; border-bottom: 1px solid var(--rule); }
+.social-column h3, .social-mycard h3 { margin: 0; font-family: var(--f-hand); font-size: 26px; font-weight: 400; }
+.social-column header small { font-size: 11px; color: var(--pencil); }
+.social-pane-scroll { flex: 1 1 0; min-height: 0; min-width: 0; padding: 10px; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
+.social-pane-scroll:focus-visible { outline: 2px dashed var(--red); outline-offset: -3px; }
+.social-event { display: flex; gap: 10px; padding: 14px 2px; border-bottom: 1px dashed var(--rule); }
+.social-event:first-child { padding-top: 3px; }
+.social-event-icon { width: 42px; height: 42px; display: grid; place-items: center; flex: 0 0 auto; background: var(--paper); border: 1px solid var(--rule); border-radius: 10px; color: var(--red); font-size: 23px; }
+.social-event-icon img { width: 100%; height: 100%; object-fit: contain; }
+.social-event > div { min-width: 0; }.social-event p { margin: 0 0 5px; line-height: 1.7; font-size: 14px; overflow-wrap: anywhere; }
+.social-event button { font: inherit; font-weight: bold; color: var(--red); border: 0; padding: 0; margin-right: 4px; background: none; cursor: pointer; }
+.social-event small { font-size: 11px; color: var(--pencil); }.social-more { display: block; margin: 12px auto 3px; }
+.social-search { display: flex; align-items: center; gap: 8px; padding: 8px 10px; font-size: 12px; border-bottom: 1px solid var(--rule); }
+.social-search input { min-width: 0; flex: 1; padding: 7px 9px; border: 1px solid var(--rule); border-radius: 7px; font: inherit; background: var(--paper); color: var(--ink); }
+.social-people .prow { grid-template-columns: minmax(0, 1fr); gap: 6px; padding: 9px; }
+.social-people .pr-main { grid-template-columns: auto minmax(0, 1fr); gap: 8px; }
+.social-people .pr-show { display: none; }.social-people .pr-acts { padding-left: 0; justify-content: flex-start; gap: 5px; }
+.social-people .pr-acts .btn { font-size: 11px; padding: 5px 8px; }.social-people .pr-l1 b { font-size: 23px; }
+.social-people .pr-l2 { font-size: 11px; }.social-people .pr-l1 .chip { font-size: 10px; }
+body.social-page-active .social-main-dm { overflow-y: auto; }
+.social-mycard { height: 100%; min-height: 0; display: flex; flex-direction: column; background: var(--paper-2); border: 1.5px solid var(--ink); border-radius: 12px; padding: 0 14px 12px; overflow: hidden; }
+.social-mycard > header { padding: 10px 0; margin-bottom: 12px; }
+/* 名片仅一个面板，全部内容直接展开；操作固定在底部。 */
+.soc-dlg > .soc-box.card { width: min(1180px, 100%); max-width: 1180px; height: min(640px, var(--dialog-height)); max-height: var(--dialog-height); display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 12px; overflow: hidden; padding: 18px; }
+.card .pc-body { min-height: 0; overflow: hidden; }.card .pc-actions { margin: 0; padding-top: 8px; border-top: 1px solid var(--rule); flex-wrap: nowrap; }
+.pc-complete { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.65fr); gap: 18px; min-width: 0; }
+.pc-complete > *, .pc-collection > * { min-width: 0; }
+.pc-identity { display: flex; flex-direction: column; gap: 14px; padding-right: 16px; border-right: 1px dashed var(--rule); }
+.pc-complete .pc-top { display: grid; grid-template-columns: 48px minmax(0, 1fr) 56px; gap: 10px; }
+.pc-complete .pav.big { width: 48px; height: 48px; font-size: 28px; }.pc-complete .pc-who h3 { font-size: 30px; }
+.pc-complete .pc-look { position: static; width: 56px; height: 76px; margin: 0; box-shadow: none; }
+.pc-complete .pc-user { font-size: 11px; }.pc-complete .pc-title { font-size: 11px; }
+.pc-complete .pc-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; font-size: 12px; line-height: 1.5; }
+.pc-complete .pc-stats > span { overflow-wrap: anywhere; }.pc-complete .pc-motto { margin: 0; padding: 9px 10px; font-size: 13px; line-height: 1.6; white-space: normal; }
+.pc-collection { display: grid; gap: 14px; align-content: start; }
+.pc-display, .pc-assists { display: grid; gap: 7px; }.pc-complete .pc-show { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.pc-complete .pc-mon { padding: 7px 4px; gap: 4px; }.pc-complete .pc-mon img { height: 65px; }.pc-complete .pc-mon b { font-size: 17px; }
+.pc-complete .pc-mon.empty { min-height: 100px; }.pc-complete .pc-mv { font-size: 11px; line-height: 1.4; overflow-wrap: anywhere; }
+.pc-h small { font-size: 10px; font-weight: normal; color: var(--pencil); }.pc-helpers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.pc-complete .pc-helper { display: flex; align-items: center; gap: 6px; padding: 6px; margin: 0; min-width: 0; border: 1px dashed var(--rule); border-radius: 7px; background: var(--paper); }
+.pc-complete .pc-helper img { width: 38px; height: 38px; object-fit: contain; }.pc-helper > div { min-width: 0; display: grid; gap: 2px; }.pc-helper b { font-size: 12px; overflow-wrap: anywhere; }.pc-helper span { font-size: 10px; color: var(--pencil); }
+.pc-progress { border-top: 1px dashed var(--rule); padding-top: 9px; }.pc-progress h4 { margin: 0 0 6px; font-size: 13px; }.pc-progress > div { display: grid; grid-template-columns: auto 1fr; gap: 5px 10px; font-size: 12px; }.pc-progress span { color: var(--pencil); }
+/* 编辑单独打开，数量不受精灵库存限制；只让选择区滚动。 */
+.soc-dlg > .social-editor { height: min(650px, var(--dialog-height)); max-height: var(--dialog-height); max-width: 850px; display: flex; flex-direction: column; min-height: 0; overflow: hidden; padding: 14px; gap: 9px; }
+.social-editor > header { padding: 0 0 8px; }.social-editor h2 { font-size: 26px; }.social-editor #me-motto { flex: 0 0 65px; height: 65px; min-height: 0; resize: none; font-size: 13px; padding: 7px; }
+.social-editor .me-pick { flex: 1 1 0; min-height: 0; max-height: none; grid-template-columns: repeat(auto-fill, minmax(85px, 1fr)); align-content: start; padding: 8px; gap: 10px; overscroll-behavior: contain; touch-action: pan-y; }
+.social-editor-tabs { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; flex: 0 0 auto; }.social-editor .soc-foot { flex: 0 0 auto; padding-top: 7px; border-top: 1px solid var(--rule); }
+@media (max-width: 600px) and (min-height: 521px) {
+ .social-dashboard { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+ .soc-dlg > .soc-box.card { height: min(760px, var(--dialog-height)); padding: 12px; gap: 8px; }
+ .pc-complete { grid-template-columns: 1fr; gap: 10px; }.pc-identity { padding-right: 0; border-right: 0; gap: 7px; }
+ .pc-complete .pc-top { grid-template-columns: 38px 1fr 36px; gap: 8px; }.pc-complete .pav.big { width: 38px; height: 38px; }.pc-complete .pc-look { width: 36px; height: 48px; }.pc-complete .pc-who h3 { font-size: 25px; }
+ .pc-complete .pc-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; font-size: 10px; }.pc-complete .pc-motto { font-size: 11px; padding: 5px 8px; line-height: 1.4; }
+ .pc-collection { gap: 9px; }.pc-complete .pc-mon { padding: 4px 2px; gap: 2px; }.pc-complete .pc-mon img { height: 40px; }.pc-complete .pc-mon b { font-size: 13px; }.pc-complete .pc-mv { font-size: 9px; }.pc-complete .pc-lv { font-size: 9px; }.pc-complete .pc-mon .tc .chip { font-size: 8px; padding: 1px 2px; }
+ .pc-complete .pc-helper { gap: 3px; padding: 3px; }.pc-complete .pc-helper img { width: 23px; height: 23px; }.pc-helper b { font-size: 10px; }.pc-helper span { font-size: 9px; }.pc-progress > div { font-size: 10px; }
+ .card .pc-actions { gap: 5px; justify-content: space-between; }.card .pc-actions .btn { font-size: 10px; padding: 6px; }
+}
+@media (max-height: 520px) {
+ .social-dashboard { gap: 8px; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+ .social-column > header { padding: 7px 9px; }.social-column h3 { font-size: 22px; }.social-column header .btn { font-size: 11px; padding: 5px 7px; }
+ .social-pane-scroll { padding: 7px; }.social-event { padding-block: 9px; gap: 6px; }.social-event-icon { width: 30px; height: 30px; }.social-event p { font-size: 12px; }.social-search { padding-block: 5px; }
+ .soc-tabs { gap: 4px; }.soc-tabs .sub { padding: 5px 8px; font-size: 12px; }.soc-on { font-size: 10px; }
+ .soc-dlg > .soc-box.card { padding: 10px 12px; gap: 6px; }.card .pc-actions { padding-top: 5px; gap: 6px; }.card .pc-actions .btn { padding: 5px 9px; font-size: 11px; }
+ .pc-complete { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 10px; }.pc-identity { padding-right: 9px; gap: 7px; }
+ .pc-complete .pc-top { grid-template-columns: 28px minmax(0, 1fr) 28px; gap: 5px; }.pc-complete .pav.big { width: 28px; height: 28px; font-size: 20px; }.pc-complete .pc-look { width: 28px; height: 38px; }.pc-complete .pc-who h3 { font-size: 20px; }.pc-complete .pc-title, .pc-complete .pc-user { font-size: 9px; }
+ .pc-complete .pc-stats { gap: 3px 5px; font-size: 10px; line-height: 1.3; }.pc-complete .pc-motto { font-size: 10px; line-height: 1.25; padding: 4px 6px; border-left-width: 2px; }
+ .pc-collection { gap: 6px; }.pc-display, .pc-assists { gap: 4px; }.pc-complete .pc-h, .pc-progress h4 { font-size: 11px; }.pc-complete .pc-show { gap: 4px; }.pc-complete .pc-mon { padding: 3px 2px; gap: 2px; }.pc-complete .pc-mon img { height: 30px; }.pc-complete .pc-mon b { font-size: 13px; }.pc-complete .pc-lv { font-size: 9px; }.pc-complete .pc-mv { font-size: 9px; line-height: 1.2; }.pc-complete .pc-mon .tc .chip { font-size: 8px; padding: 1px 2px; }.pc-complete .pc-mon.empty { min-height: 65px; }
+ .pc-complete .pc-helper { padding: 2px 3px; gap: 3px; }.pc-complete .pc-helper img { width: 22px; height: 25px; }.pc-helper b { font-size: 10px; }.pc-helper span { font-size: 9px; }.pc-progress { padding-top: 5px; }.pc-progress h4 { margin-bottom: 3px; }.pc-progress > div { gap: 3px 7px; font-size: 10px; }
+ .social-mycard { padding: 0 9px 6px; }.social-mycard > header { padding: 5px 0; margin-bottom: 6px; }.social-mycard h3 { font-size: 22px; }
+ .social-editor #me-motto { flex-basis: 45px; height: 45px; }.social-editor { gap: 5px !important; padding: 9px !important; }.social-editor-tabs .hint { display: none; }
+}
+/* 长宣言与完整技能在矮屏上整体适配，保持名片本身无需滚动。 */
+.soc-dlg > .soc-box.card { align-items: stretch; text-align: left; cursor: default; transform: none; }
+.pc-fit { flex: 1 1 0; min-height: 0; min-width: 0; width: 100%; overflow: clip; }
+.pc-fit .pc-complete { transform-origin: top left; }
+.pc-complete .pc-helper { line-height: 1.2; }
+@media (max-height: 520px) {
+ .pc-complete { grid-template-columns: minmax(0, 1.15fr) minmax(0, 2fr); }
+ .pc-collection { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); align-content: start; }
+ .pc-display { grid-column: 1 / -1; }
+ .pc-complete .pc-helpers { grid-template-columns: 1fr; gap: 2px; }
+ .pc-complete .pc-helper { padding: 2px; gap: 4px; border: 0; background: transparent; }
+ .pc-helper > div { display: flex; flex-wrap: wrap; align-items: baseline; gap: 1px 4px; }
+ .pc-complete .pc-helper img { width: 17px; height: 17px; }
+ .pc-progress { border-top: 0; padding-top: 0; }
+ .pc-progress > div { grid-template-columns: 1fr; }
+ .pc-complete .pc-motto { line-height: 1.2; }
+}
+.pc-section-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.pc-section-buttons .btn { font-size: 12px; }
+.soc-dlg > .pc-detail-panel { width: min(720px, 100%); max-width: 720px; max-height: var(--dialog-height); min-height: 0; display: flex; flex-direction: column; overflow: hidden; padding: 16px; }
+.pc-detail-panel > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex: 0 0 auto; }.pc-detail-panel h2 { font-size: 28px; }
+.pc-detail-content { min-height: 0; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; }
+.pc-detail-helpers { display: grid; gap: 10px; margin-top: 12px; }
+.pc-detail-helpers article { display: flex; align-items: center; gap: 14px; padding: 10px; border: 1px solid var(--rule); border-radius: 10px; background: var(--paper); }
+.pc-detail-helpers img { width: 70px; height: 70px; object-fit: contain; }.pc-detail-helpers h3 { margin: 0 0 5px; font-size: 22px; font-family: var(--f-hand); font-weight: 400; }
+.pc-detail-content .pc-progress { border-top: 0; padding-top: 0; }.pc-detail-content .pc-progress h4 { display: none; }.pc-detail-content .pc-progress > div { font-size: 15px; gap: 12px; }
+@media (max-height: 520px) { .pc-section-buttons .btn { padding: 5px 8px; font-size: 11px; }.pc-section-buttons { grid-column: 1 / -1; }.pc-detail-panel h2 { font-size: 24px; }.pc-detail-helpers img { height: 45px; width: 45px; } }
