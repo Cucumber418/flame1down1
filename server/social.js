@@ -93,6 +93,14 @@ function monOut(m, acc) {
   };
 }
 function monByU(acc, u) { for (var i = 0; i < acc.mons.length; i++) if (acc.mons[i] && acc.mons[i].u === u) return acc.mons[i]; return null; }
+function profileMon(m, acc) {
+  var out = monOut(m, acc), E = require('./tx').engine();
+  out.evFree = int(m.evFree, 0, 750); out.lvCap = int(Math.max(m.lv, m.lvCap || 60), 1, 100);
+  out.ins = [0, 1, 2].map(function (i) { var k = Array.isArray(m.ins) && m.ins[i]; return typeof k === 'string' && E.SUMMON.INS[k] ? k : null; });
+  out.insX = !!m.insX; out.got = int(m.got, 0, 9e15);
+  if (m.renameUnlocked && typeof m.nickname === 'string') { out.renameUnlocked = true; out.nickname = str(m.nickname, 20); }
+  return out;
+}
 function activeTeam(acc) {
   var t = Array.isArray(acc.teams) ? acc.teams[acc.active | 0] : null;
   var list = (Array.isArray(t) ? t : []).map(function (u) { return monByU(acc, u); }).filter(Boolean);
@@ -182,7 +190,8 @@ function card(u, me) {
   acc.mons.forEach(function (m) { if (m && m.sid) species[m.sid] = 1; });
   o.created = acc.created || u.created; o.speciesN = Object.keys(species).length;
   o.motto = acc.card ? str(acc.card.motto, 200) : '';
-  o.show = showMons(acc).map(function (m) { return monOut(m, acc); });
+  o.show = showMons(acc).map(function (m) { return profileMon(m, acc); });
+  o.badges = require('../js/data/rank-season').shownBadges(u.save.data, acc.card && acc.card.badges);
   o.helpers = helpersOf(acc).map(function (m) { return monOut(m, acc); }); o.helper = o.helpers[0] || null;
   o.rankInfo = rankOut(parseSave(u).rank);
   try { o.prog = require('./chalboard').progOf(acc); } catch (e) {}   // 挑战进度（名片里二级点开）

@@ -1066,11 +1066,12 @@
   // 精灵资料里的「精灵道具」：只列出能用在这只精灵身上、手里有的
   /* ---------- 刻印（2026-11-01）：规则在 js/engine/summon.js ---------- */
   function insIc(k) { return H.itemIcon(k); }
-  function insHTML(m) {
+  function insHTML(m, readOnly) {
     var R = Array.isArray(m.ins) ? m.ins : [];
     return '<div class="ins-box"><div class="ins-head"><h4>刻印</h4><span class="hint">只在 PVE 对战中生效 · 装备后和这只精灵绑定，不能取下</span></div><div class="ins-slots">' + [0, 1, 2].map(function (i) {
       var k = R[i], I = k && SUMMON.INS[k], op = SUMMON.slotOpen(m, i);
-      if (!op) return '<div class="ins-slot lock"><b>槽位 ' + (i + 1) + '</b><span>🔒 ' + SUMMON.slotLock(m, i) + '</span>' + (i === 2 ? '<button type="button" class="btn" data-insx="1"' + ((acc.items.insChip || 0) > 0 ? '' : ' disabled title="还没有刻印激活晶片"') + '>开启（刻印激活晶片 ' + (acc.items.insChip || 0) + '）</button>' : '') + '</div>';
+      if (!op) return '<div class="ins-slot lock"><b>槽位 ' + (i + 1) + '</b><span>🔒 ' + SUMMON.slotLock(m, i) + '</span>' + (!readOnly && i === 2 ? '<button type="button" class="btn" data-insx="1"' + ((acc.items.insChip || 0) > 0 ? '' : ' disabled title="还没有刻印激活晶片"') + '>开启（刻印激活晶片 ' + (acc.items.insChip || 0) + '）</button>' : '') + '</div>';
+      if (readOnly) return '<div class="ins-slot' + (I ? ' on' + (I.lim ? ' lim' : '') : ' empty') + '">' + (I ? '<span class="ins-ic">' + insIc(k) + '</span><span class="ins-t"><b>' + esc(I.name) + '</b><small>' + esc(SUMMON.insDesc(k)) + '</small></span>' : '<b>槽位 ' + (i + 1) + '</b><span>未装备刻印</span>') + '</div>';
       if (I) return '<button type="button" class="ins-slot on' + (I.lim ? ' lim' : '') + '" data-insslot="' + i + '"><span class="ins-ic">' + insIc(k) + '</span><span class="ins-t"><b>' + esc(I.name) + '</b><small>' + esc(SUMMON.insDesc(k)) + '</small></span><span class="ins-chg">更换</span></button>';
       return '<button type="button" class="ins-slot empty" data-insslot="' + i + '"><b>槽位 ' + (i + 1) + '</b><span>＋ 装备刻印</span></button>';
     }).join('') + '</div></div>';
@@ -1258,20 +1259,35 @@
   }
 
   /* ---------- 精灵背包 ---------- */
-  function bagMoveCard(m, name, i) {
-    var odoF = m.sid === 'odo' && ui.odoF && ui.odoF.u === m.u ? ui.odoF.f : '';
+  function bagMoveCard(m, name, i, readOnly) {
+    var odoF = !readOnly && m.sid === 'odo' && ui.odoF && ui.odoF.u === m.u ? ui.odoF.f : '';
     var mv = M[odoMoveAs(name, odoF)] || M[name];
     if (!mv) return '<div class="bag-skill empty-note">未装备技能</div>';
-    return '<button type="button" class="bag-skill" style="--skill-color:' + TYPE_COLOR[mv.type] + '" data-bag-skill="' + i + '" aria-keyshortcuts="Alt+ArrowLeft Alt+ArrowRight Alt+ArrowUp Alt+ArrowDown" aria-label="' + esc(mv.name) + '，轻触查看技能信息，长按拖动排序，Alt加方向键调整顺序">' +
+    return '<' + (readOnly ? 'article' : 'button type="button"') + ' class="bag-skill" style="--skill-color:' + TYPE_COLOR[mv.type] + '"' + (readOnly ? '' : ' data-bag-skill="' + i + '" aria-keyshortcuts="Alt+ArrowLeft Alt+ArrowRight Alt+ArrowUp Alt+ArrowDown" aria-label="' + esc(mv.name) + '，轻触查看技能信息，长按拖动排序，Alt加方向键调整顺序"') + '>' +
       '<span class="mn">' + esc(mv.name) + '</span><span class="pp">PP ' + mv.pp + '</span><span class="t2">' + tchip(mv.type) + '<span class="mv-kind">' + mv.cat + '</span><span class="mv-power">威力 ' + (mv.power || '—') + '</span></span>' +
-      '<span class="md">' + esc(mv.d) + (mv.pri ? ' · 先制 +' + mv.pri : '') + '</span></button>';
+      '<span class="md">' + esc(mv.d) + (mv.pri ? ' · 先制 +' + mv.pri : '') + '</span></' + (readOnly ? 'article' : 'button') + '>';
   }
-  function bagStats(m) {
+  function bagStats(m, readOnly) {
     var iv = ivOf(m), free = m.evFree || 0, sum = evSum(m), s = SPMAP[m.sid];
     return '<div class="bag-stat-summary"><span><b>性格 · ' + esc(m.nat) + '</b> · ' + esc(natText(m.nat)) + '</span><span>学习力：可分配 <b>' + free + '</b> · 已分配 ' + sum + '/' + EV_TOTAL + '</span></div><div class="bag-stat-grid">' + STAT_KEYS.map(function (k) {
       var ev = m.ev[k] || 0, room = Math.min(free, EV_MAX - ev, EV_TOTAL - sum), nm = natureMult(m.nat, k);
-      return '<article class="bag-stat-card"><header><span>' + BASE_NAME[k] + '</span><strong class="' + (nm > 1 ? 'blue' : nm < 1 ? 'red' : '') + '">' + stat(m, k) + (nm > 1 ? '↑' : nm < 1 ? '↓' : '') + '</strong><small class="bag-stat-meta">种族 ' + s.base[k] + ' · 天赋 ' + (iv ? iv[k] : '？') + '</small></header><div class="bag-stat-ev"><span>学习力 ' + ev + '</span><button type="button" data-ev="' + k + '" data-d="1" aria-label="' + BASE_NAME[k] + '学习力加1"' + (room > 0 ? '' : ' disabled') + '>+1</button><button type="button" data-ev="' + k + '" data-d="10" aria-label="' + BASE_NAME[k] + '学习力加10"' + (room > 0 ? '' : ' disabled') + '>+10</button></div></article>';
+      return '<article class="bag-stat-card"><header><span>' + BASE_NAME[k] + '</span><strong class="' + (nm > 1 ? 'blue' : nm < 1 ? 'red' : '') + '">' + stat(m, k) + (nm > 1 ? '↑' : nm < 1 ? '↓' : '') + '</strong><small class="bag-stat-meta">种族 ' + s.base[k] + ' · 天赋 ' + (iv ? iv[k] : '？') + '</small></header><div class="bag-stat-ev"><span>学习力 ' + ev + '</span>' + (readOnly ? '' : '<button type="button" data-ev="' + k + '" data-d="1" aria-label="' + BASE_NAME[k] + '学习力加1"' + (room > 0 ? '' : ' disabled') + '>+1</button><button type="button" data-ev="' + k + '" data-d="10" aria-label="' + BASE_NAME[k] + '学习力加10"' + (room > 0 ? '' : ' disabled') + '>+10</button>') + '</div></article>';
     }).join('') + '</div>';
+  }
+  function publicMonProfile(m, tab) {
+    var s = m && SPMAP[m.sid]; if (!s) return '<p class="hint">没有这只精灵的资料。</p>';
+    var f = form(m), tabs = [['base', '基础信息'], ['stats', '能力'], ['moves', '技能'], ['ins', '刻印']], body = '';
+    if (tab === 'stats') body = bagStats(m, true);
+    else if (tab === 'ins') body = insHTML(m, true);
+    else if (tab === 'moves') {
+      var cards = ''; for (var i = 0; i < 4; i++) cards += i < m.moves.length ? bagMoveCard(m, m.moves[i], i, true) : '<div class="bag-skill empty-note">未装备技能</div>';
+      var ability = s.ability || {};
+      body = '<section class="bag-current-skills"><div class="bag-ability"><p><b>特性 · ' + esc(ability.n || '暂无') + '</b> ' + esc(ability.d || '') + '</p>' + (ability.extra ? '<p>' + esc(ability.extra) + '</p>' : '') + (m.emblem && EMBLEMS[m.sid] ? '<p><b>纹章 · ' + esc(EMBLEMS[m.sid].m) + '</b> ' + esc(EMBLEMS[m.sid].d) + '</p>' : '') + '</div><div class="bag-skill-grid">' + cards + '</div></section>';
+    } else {
+      tab = 'base';
+      body = '<section class="bag-basic"><div class="d-head"><div class="d-art"><img src="' + f.img + '" alt="' + esc(f.name) + '"></div><div><h3>' + (f.no ? '<span class="dexno">No.' + esc(f.no) + '</span>' : '') + esc(f.name) + (m.shiny ? '<span class="shiny-tag">异色</span>' : '') + '</h3><p><span class="lvbig">LV' + m.lv + '</span> ' + tchips(s.types) + '</p><p class="hint">' + esc(stageLabel(s, f.stage)) + ' · 等级上限 LV' + (m.lvCap || Math.max(60, m.lv)) + '</p>' + (m.nickname ? '<p class="hint">种族：' + esc(f.speciesName) + '</p>' : '') + (m.got ? '<p class="hint">获得于 ' + new Date(m.got).toLocaleDateString('zh-CN') + '</p>' : '') + '</div></div>' + evoLine(m) + '<p class="bag-mon-lore">' + esc(f.d || s.lore || '暂无介绍。') + '</p></section>';
+    }
+    return '<header class="bag-detail-head"><h2 class="sec">精灵资料 <small>只读</small></h2><button type="button" class="btn ghost" data-card-detail-close>关闭</button></header><nav class="bag-detail-tabs" role="tablist" aria-label="精灵资料">' + tabs.map(function (t) { return '<button type="button" role="tab" data-public-mon-tab="' + t[0] + '" aria-selected="' + (tab === t[0]) + '" class="' + (tab === t[0] ? 'on' : '') + '">' + t[1] + '</button>'; }).join('') + '</nav><div class="bag-detail-body">' + body + '</div>';
   }
   function profileAvailable() { return page === 'bag' || (page === 'store' && ui.storePanel === 'detail'); }
   function profileHost() { return page === 'store' ? $('store-detail') : $('pg-bag'); }
@@ -9050,6 +9066,7 @@
 
   /* ---------- 给社交页（social.js）用的接口 ---------- */
   window.HSACC = {
+    publicMonProfile: publicMonProfile,
     socialTaskName: function (kind, id) { var t = kind === 'story' ? SITES[id] : kind === 'quest' ? WQ.find(function (q) { return q.id === id; }) : QST.DAILY[id]; return t ? t.chapter || t.t || t.name || t.n || id : '任务'; },
     contestHTML: sarenaPage, contestOpen: function () { return planetOpen(planetOf('sarena')); }, seasonNoticeAck: function (ok, fail) { txRun('rankSeasonNotice', {}, ok, fail); },
     arenaOpen: arenaOpen, goRank: function () { if (!arenaOpen()) { toast('完成荆楚号 · 孝感大厅支线后开放平衡排位'); return false; } go('arena'); if (window.HSARENA) HSARENA.open('rank'); else $('mode-rank').click(); return true; },

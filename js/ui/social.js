@@ -154,6 +154,30 @@
   function watchCardSizes() { if (cardObserver) { cardObserver.disconnect(); document.querySelectorAll('.pc-fit').forEach(function (slot) { cardObserver.observe(slot); }); } queueCardFit(); }
   window.addEventListener('resize', queueCardFit);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(queueCardFit);
+  function badgeName(b) { return b.id + (RANKS[b.best] || '黑铁') + '徽章'; }
+  function badgeIcon(b) {
+    return '<span class="pc-badge-icon" style="--badge-color:' + RANK_COLOR[b.best] + '" aria-hidden="true"><svg viewBox="0 0 48 54"><path d="M9 2h30v27L24 47 9 29Z"/><path d="m24 10 3.5 7 8 1.2-5.8 5.6 1.4 8-7.1-3.8-7.1 3.8 1.4-8-5.8-5.6 8-1.2Z"/></svg><small>' + esc(b.id) + '</small></span>';
+  }
+  function myBadgeChoices() { return RANK_SEASON.badges({ 'hs-rank-history-v1': localStorage.getItem('hs-rank-history-v1') }); }
+  function openBadge(user, id, trigger) {
+    var c = cardCache[user], b = c && (c.badges || []).find(function (b) { return b.id === id; }); if (!b) return;
+    var html = '<header><h2>' + esc(badgeName(b)) + '</h2><button type="button" class="btn ghost" data-card-detail-close>关闭</button></header><div class="pc-detail-content pc-season-detail">' + badgeIcon(b) + '<dl><dt>赛季最高段位</dt><dd>' + esc(rankLabel(b.best, b.best === RANKS.length - 1 ? b.kingBest : null, b.bestDv)) + '</dd><dt>胜场</dt><dd>' + b.w + '</dd><dt>负场</dt><dd>' + b.l + '</dd><dt>总场次</dt><dd>' + (b.w + b.l) + '</dd></dl></div>';
+    var d = dialog('pc-detail-panel', html, function (el, close) { el.addEventListener('click', function (e) { if (e.target.closest('[data-card-detail-close]')) { close(); if (trigger && trigger.isConnected) trigger.focus(); } }); });
+    d.el.querySelector('[data-card-detail-close]').focus();
+  }
+  function openShowMon(user, index, trigger) {
+    var c = cardCache[user], m = c && c.show && c.show[index]; if (!m || !SPMAP[m.sid]) return;
+    var d = dialog('pc-detail-panel social-mon-box', '<article class="bag-detail" id="card-mon-detail">' + A.publicMonProfile(m, 'base') + '</article>', function (el, close) {
+      el.classList.add('store-profile-dialog', 'social-mon-dialog');
+      el.addEventListener('click', function (e) {
+        if (e.target.closest('[data-card-detail-close]')) { close(); if (trigger && trigger.isConnected) trigger.focus(); return; }
+        var tab = e.target.closest('[data-public-mon-tab]'); if (!tab) return;
+        el.querySelector('.bag-detail').innerHTML = A.publicMonProfile(m, tab.dataset.publicMonTab);
+        el.querySelector('[data-public-mon-tab="' + tab.dataset.publicMonTab + '"]').focus({ preventScroll: true });
+      });
+    });
+    d.el.querySelector('[data-card-detail-close]').focus();
+  }
   function cardHTML(c, opt) {
     opt = opt || {}; cardCache[c.user] = c;
     if (c.noChar) return '<div class="pcard"><p class="hint">@' + esc(c.user) + ' 还没有创建游戏角色。</p></div>';
@@ -162,15 +186,16 @@
     for (var i = 0; i < SHOW_MAX; i++) {
       var m = c.show[i], s = m && SPMAP[m.sid];
       if (!s) { slots += '<li class="pc-mon empty"><span>空位</span></li>'; continue; }
-      var v = A.view({ sid: m.sid, lv: m.lv, shiny: m.shiny, fs: m.fs });
-      slots += '<li class="pc-mon"><img src="' + v.img + '" alt="' + esc(v.name) + '"><b>' + esc(v.name) + (m.shiny ? '<span class="shiny-tag">异色</span>' : '') + '</b><span class="pc-lv">LV' + m.lv + (m.nat ? ' · ' + esc(m.nat) : '') + '</span>' +
+      var v = A.view(m);
+      slots += '<li class="pc-mon-slot"><button type="button" class="pc-mon" data-card-mon="' + i + '" data-card-user="' + esc(c.user) + '" aria-label="查看' + esc(v.name) + '的资料"><img src="' + v.img + '" alt="' + esc(v.name) + '"><b>' + esc(v.name) + (m.shiny ? '<span class="shiny-tag">异色</span>' : '') + '</b><span class="pc-lv">LV' + m.lv + (m.nat ? ' · ' + esc(m.nat) : '') + '</span>' +
         '<span class="tc">' + tchips(s.types) + '</span>' +
-        (m.moves && m.moves.length ? '<span class="pc-mv">' + m.moves.map(function (n) { return esc(n); }).join('、') + '</span>' : '') + '</li>';
+        (m.moves && m.moves.length ? '<span class="pc-mv">' + m.moves.map(function (n) { return esc(n); }).join('、') + '</span>' : '') + '</button></li>';
     }
     var look = typeof CHARS !== 'undefined' && CHARS['p' + (c.gender === 'f' ? 'f' : 'm')];
     var helpers = (c.helpers || (c.helper ? [c.helper] : [])).filter(function (h) { return h && SPMAP[h.sid]; });
     return '<div class="pcard pc-complete"><section class="pc-identity"><div class="pc-top"><span class="pav big' + (c.avatar ? ' img' : '') + '">' + A.avatarInner(c.avatar, c.name) + '</span><div class="pc-who"><span class="pc-title">' + esc(c.title ? A.titleName(c.title) || '做题家' : '做题家') + '</span><h3>' + esc(c.name) + '</h3><span class="pc-user">@' + esc(c.user) + (opt.preview ? '' : ' · ' + statusOf(c)) + '</span></div>' + (look ? '<figure class="pc-look"><img src="' + look + '" alt="' + esc(c.name) + '的形象"></figure>' : '') + '</div>' +
       '<div class="pc-stats"><span>军衔 <b>' + esc(MIL_NAMES[Math.max(0, Math.min(MIL_NAMES.length - 1, c.mil | 0))]) + '</b></span><span>精灵 <b>' + (c.monsN || 0) + '</b> 只</span><span>收集 <b>' + (c.speciesN || 0) + '</b> 种</span><span>最高段位 <b>' + (rankLabel(R.best, R.best === RANKS.length - 1 ? R.kingBest || 0 : null, R.bestDv) || '—') + '</b></span><span>竞技 <b>' + R.w + '</b> 胜 <b>' + R.l + '</b> 负' + (R.r === RANKS.length - 1 ? ' · 当前' + R.stars + '星' : '') + '</span>' + (c.created ? '<span>' + new Date(c.created).toLocaleDateString('zh-CN') + ' 登船</span>' : '') + '</div>' +
+      '<section class="pc-badge-display"><h4 class="pc-h">展示徽章</h4><div class="pc-badges">' + ((c.badges || []).length ? c.badges.map(function (b) { return '<button type="button" class="pc-badge" data-card-badge="' + esc(b.id) + '" data-card-user="' + esc(c.user) + '">' + badgeIcon(b) + '<span>' + esc(badgeName(b)) + '</span></button>'; }).join('') : '<span class="hint">暂无展示徽章</span>') + '</div></section>' +
       '<blockquote class="pc-motto' + (c.motto ? '' : ' empty') + '">' + (c.motto ? esc(c.motto) : '这位船员还没有写个人宣言。') + '</blockquote></section><div class="pc-collection"><section class="pc-display"><h4 class="pc-h">展示精灵</h4><ol class="pc-show">' + slots + '</ol></section>' +
       '<nav class="pc-section-buttons" aria-label="更多名片信息"><button type="button" class="btn" data-card-section="progress" data-card-user="' + esc(c.user) + '">挑战进度 ›</button><button type="button" class="btn" data-card-section="helpers" data-card-user="' + esc(c.user) + '">助战精灵 ' + helpers.length + ' ›</button></nav></div></div>';
 
@@ -189,7 +214,7 @@
     });
     d.el.querySelector('[data-card-detail-close]').focus();
   }
-  document.addEventListener('click', function (e) { var b = e.target.closest('[data-card-section]'); if (b) openCardSection(b.dataset.cardUser, b.dataset.cardSection, b); });
+  document.addEventListener('click', function (e) { var b = e.target.closest('[data-card-section]'); if (b) { openCardSection(b.dataset.cardUser, b.dataset.cardSection, b); return; } b = e.target.closest('[data-card-mon]'); if (b) { openShowMon(b.dataset.cardUser, +b.dataset.cardMon, b); return; } b = e.target.closest('[data-card-badge]'); if (b) openBadge(b.dataset.cardUser, b.dataset.cardBadge, b); });
   function openCard(user) {
     var d = dialog('card', '<div class="pc-body pc-fit"><p class="hint">读取名片中……</p></div>', function (el, close) {
       el.addEventListener('click', function (e) {
@@ -340,30 +365,30 @@
     var R = rk ? { r: rk.r || 0, dv: rk.dv, bestDv: rk.bestDv, best: Math.max(rk.best || 0, rk.r || 0), w: rk.w || 0, l: rk.l || 0, stars: rk.stars || 0, kingBest: Math.max(rk.kingBest || 0, rk.r === RANKS.length - 1 ? rk.stars || 0 : 0) } : { r: 0, best: 0, w: 0, l: 0 };
     var ed = st.edit;
     return { user: st.me || (C.user && C.user()), name: acc.name, avatar: A.avatarSpec(), gender: A.gender ? A.gender() : 'm', title: acc.title && (acc.titles || []).indexOf(acc.title) >= 0 ? acc.title : null, monsN: acc.mons.length, speciesN: Object.keys(species).length,
-      created: acc.created, motto: ed.motto, rankInfo: R, prog: progOf(acc), mil: A.milRank ? A.milRank() : acc.milRank | 0,
-      show: ed.show.map(function (u) { var m = A.mon(u); return m && { sid: m.sid, lv: m.lv, nat: m.nat, moves: m.moves, shiny: m.shiny === 2 ? 2 : !!m.shiny, fs: m.fs }; }).filter(Boolean),
+      created: acc.created, motto: ed.motto, rankInfo: R, badges: myBadgeChoices().filter(function (b) { return ed.badges.indexOf(b.id) >= 0; }), prog: progOf(acc), mil: A.milRank ? A.milRank() : acc.milRank | 0,
+      show: ed.show.map(function (u) { var m = A.mon(u); return m && Object.assign({}, m, { emblem: !!(acc.emblems && acc.emblems[m.sid]) }); }).filter(Boolean),
       helpers: ed.helpers.map(function (u) { var m = A.mon(u); return m && { sid: m.sid, lv: m.lv, nat: m.nat, shiny: m.shiny === 2 ? 2 : !!m.shiny, fs: m.fs }; }).filter(Boolean) };
   }
   function startEdit() {
     var cd = A.acc().card || {};
-    st.edit = { show: (cd.show || []).filter(function (u) { return A.mon(u); }).slice(0, SHOW_MAX), motto: typeof cd.motto === 'string' ? cd.motto.slice(0, MOTTO_MAX) : '', helpers: (Array.isArray(cd.helpers) ? cd.helpers : cd.helper != null ? [cd.helper] : []).filter(function (u) { return A.mon(u); }).slice(0, HELP_MAX), dirty: false };
+    st.edit = { badges: myBadgeChoices().filter(function (b) { return !Array.isArray(cd.badges) || cd.badges.indexOf(b.id) >= 0; }).map(function (b) { return b.id; }), show: (cd.show || []).filter(function (u) { return A.mon(u); }).slice(0, SHOW_MAX), motto: typeof cd.motto === 'string' ? cd.motto.slice(0, MOTTO_MAX) : '', helpers: (Array.isArray(cd.helpers) ? cd.helpers : cd.helper != null ? [cd.helper] : []).filter(function (u) { return A.mon(u); }).slice(0, HELP_MAX), dirty: false };
   }
   function mineHTML() {
     if (!st.edit) startEdit();
     return '<section class="social-mycard"><header><h3>我的名片</h3><button type="button" class="btn" data-edit-card>编辑名片</button></header>' + '<div class="pc-fit">' + cardHTML(myCard(), { preview: true }) + '</div></section>';
   }
   function editorHTML() {
-    var ed = st.edit, helper = st.editMode === 'helper', mons = A.acc().mons.slice().sort(function (a, b) { return b.lv - a.lv || a.u - b.u; }), selected = helper ? ed.helpers : ed.show, max = helper ? HELP_MAX : SHOW_MAX;
-    return '<div class="soc-dlg" id="social-edit-dlg"><section class="soc-box social-editor" role="dialog" aria-modal="true" aria-label="编辑名片"><header><h2>编辑名片</h2><button type="button" class="btn ghost" data-edit-close>取消</button></header><label class="me-lab" for="me-motto">个人宣言 <span class="hint" id="me-cnt">' + Array.from(ed.motto).length + '/' + MOTTO_MAX + '</span></label><textarea id="me-motto" rows="2" maxlength="' + MOTTO_MAX + '">' + esc(ed.motto) + '</textarea><div class="social-editor-tabs"><button type="button" class="btn' + (!helper ? ' primary' : '') + '" data-edit-mode="show">展示精灵 ' + ed.show.length + '/' + SHOW_MAX + '</button><button type="button" class="btn' + (helper ? ' primary' : '') + '" data-edit-mode="helper">助战精灵 ' + ed.helpers.length + '/' + HELP_MAX + '</button><span class="hint">点选或取消，按选择顺序排列</span></div><div class="me-pick">' + mons.map(function (m) {
+    var ed = st.edit, badge = st.editMode === 'badge', helper = st.editMode === 'helper', mons = A.acc().mons.slice().sort(function (a, b) { return b.lv - a.lv || a.u - b.u; }), selected = helper ? ed.helpers : ed.show, max = helper ? HELP_MAX : SHOW_MAX;
+    return '<div class="soc-dlg" id="social-edit-dlg"><section class="soc-box social-editor" role="dialog" aria-modal="true" aria-label="编辑名片"><header><h2>编辑名片</h2><button type="button" class="btn ghost" data-edit-close>取消</button></header><label class="me-lab" for="me-motto">个人宣言 <span class="hint" id="me-cnt">' + Array.from(ed.motto).length + '/' + MOTTO_MAX + '</span></label><textarea id="me-motto" rows="2" maxlength="' + MOTTO_MAX + '">' + esc(ed.motto) + '</textarea><div class="social-editor-tabs"><button type="button" class="btn' + (!helper && !badge ? ' primary' : '') + '" data-edit-mode="show">展示精灵 ' + ed.show.length + '/' + SHOW_MAX + '</button><button type="button" class="btn' + (helper ? ' primary' : '') + '" data-edit-mode="helper">助战精灵 ' + ed.helpers.length + '/' + HELP_MAX + '</button><button type="button" class="btn' + (badge ? ' primary' : '') + '" data-edit-mode="badge">展示徽章 ' + ed.badges.length + '</button><span class="hint">点选或取消，按选择顺序排列</span></div><div class="me-pick' + (badge ? ' me-badge-pick' : '') + '">' + (badge ? myBadgeChoices().map(function (b) { var on = ed.badges.indexOf(b.id) >= 0; return '<button type="button" class="me-mon me-badge' + (on ? ' on' : '') + '" data-badge-pick="' + esc(b.id) + '" aria-pressed="' + on + '">' + badgeIcon(b) + '<b>' + esc(badgeName(b)) + '</b></button>'; }).join('') || '<p class="hint">还没有已结束赛季的记录，赛季结束后会获得对应的段位徽章。</p>' : mons.map(function (m) {
       var k = selected.indexOf(m.u), v = A.view(m), full = k < 0 && selected.length >= max;
       return '<button type="button" class="me-mon' + (k >= 0 ? ' on' : '') + '" ' + (helper ? 'data-helper' : 'data-pick') + '="' + m.u + '"' + (full ? ' disabled' : '') + ' aria-pressed="' + (k >= 0) + '">' + (k >= 0 ? '<span class="me-no">' + (k + 1) + '</span>' : '') + '<img src="' + v.img + '" alt=""><b>' + esc(v.name) + '</b><small>LV' + m.lv + '</small></button>';
-    }).join('') + '</div><footer class="soc-foot"><span class="hint" id="me-msg">' + (ed.dirty ? '有修改还没保存' : '') + '</span><button type="button" class="btn ghost" id="me-reset"' + (ed.dirty ? '' : ' disabled') + '>撤销修改</button><button type="button" class="btn primary" id="me-save"' + (ed.dirty ? '' : ' disabled') + '>保存名片</button></footer></section></div>';
+    }).join('')) + '</div><footer class="soc-foot"><span class="hint" id="me-msg">' + (ed.dirty ? '有修改还没保存' : '') + '</span><button type="button" class="btn ghost" id="me-reset"' + (ed.dirty ? '' : ' disabled') + '>撤销修改</button><button type="button" class="btn primary" id="me-save"' + (ed.dirty ? '' : ' disabled') + '>保存名片</button></footer></section></div>';
   }
   function saveCard() {
     var contentErr = CONTENT.error(st.edit.motto, '名片签名');
     if (contentErr) { var msg = $('me-msg'); if (msg) msg.textContent = contentErr; A.toast(contentErr); return; }
     var acc = A.acc();
-    acc.card = { show: st.edit.show.slice(0, SHOW_MAX), motto: Array.from(st.edit.motto).slice(0, MOTTO_MAX).join(''), helper: st.edit.helpers.length ? st.edit.helpers[0] : null, helpers: st.edit.helpers.slice(0, HELP_MAX) };
+    acc.card = { badges: st.edit.badges.slice(), show: st.edit.show.slice(0, SHOW_MAX), motto: Array.from(st.edit.motto).slice(0, MOTTO_MAX).join(''), helper: st.edit.helpers.length ? st.edit.helpers[0] : null, helpers: st.edit.helpers.slice(0, HELP_MAX) };
     st.edit.dirty = false; st.editOpen = false; A.save(); render();
     A.toast('名片已保存。同步到服务器后，其他船员就能看到。');
   }
@@ -401,7 +426,7 @@
     var focus = document.activeElement && document.activeElement.id === 'me-motto' ? $('me-motto').selectionStart : null;
     var oldContent = pg.querySelector('.social-page-content'), oldScroll = oldContent ? oldContent.scrollTop : 0, scrolls = {};
     pg.querySelectorAll('[data-social-scroll]').forEach(function (el) { scrolls[el.dataset.socialScroll] = el.scrollTop; });
-    var pickFocus = document.activeElement && document.activeElement.matches('[data-pick],[data-helper]') ? { key: document.activeElement.hasAttribute('data-pick') ? 'data-pick' : 'data-helper', value: document.activeElement.getAttribute(document.activeElement.hasAttribute('data-pick') ? 'data-pick' : 'data-helper') } : null;
+    var pickFocus = document.activeElement && document.activeElement.matches('[data-pick],[data-helper],[data-badge-pick]') ? { key: document.activeElement.hasAttribute('data-badge-pick') ? 'data-badge-pick' : document.activeElement.hasAttribute('data-pick') ? 'data-pick' : 'data-helper', value: document.activeElement.getAttribute(document.activeElement.hasAttribute('data-badge-pick') ? 'data-badge-pick' : document.activeElement.hasAttribute('data-pick') ? 'data-pick' : 'data-helper') } : null;
     var searchFocus = document.activeElement && document.activeElement.id === 'social-search', searchPos = searchFocus ? $('social-search').selectionStart : 0, pickScroll = pg.querySelector('.me-pick') ? pg.querySelector('.me-pick').scrollTop : 0;
     if (st.view) { pg.innerHTML = st.view.kind === 'farm' ? farmHTML() : homeHTML(); return; }
     var body;
@@ -470,6 +495,7 @@
       if ((t = e.target.closest('[data-watch]'))) { watchStart(t.dataset.watch); return; }
       if ((t = e.target.closest('[data-dm]'))) { dmOpen(t.dataset.dm); return; }
       if ((t = e.target.closest('[data-card]'))) { openCard(t.dataset.card); return; }
+      if ((t = e.target.closest('[data-badge-pick]'))) { var bi = st.edit.badges.indexOf(t.dataset.badgePick); if (bi >= 0) st.edit.badges.splice(bi, 1); else st.edit.badges.push(t.dataset.badgePick); st.edit.dirty = true; render(); return; }
       if ((t = e.target.closest('[data-pick]'))) {
         var u = +t.dataset.pick, ed = st.edit, k = ed.show.indexOf(u);
         if (k >= 0) ed.show.splice(k, 1); else if (ed.show.length < SHOW_MAX) ed.show.push(u);

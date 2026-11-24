@@ -133,3 +133,37 @@ body.social-page-active .social-main-dm { overflow-y: auto; }
  .social-event p { font-size: 12px; }
  .social-event-icon { width: 30px; height: 30px; }
 }
+
+/* 名片徽章与展示精灵的只读资料。 */
+.pc-mon-slot { min-width: 0; list-style: none; }
+.pc-mon-slot > .pc-mon { width: 100%; height: 100%; cursor: pointer; }
+.pc-mon-slot > .pc-mon:hover { border-color: var(--red); }
+.pc-badge-display { display: grid; gap: 6px; }
+.pc-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+.pc-badges > .hint { font-size: 11px; }
+.pc-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 7px; border: 1px solid var(--rule); border-radius: 9px; background: var(--paper); cursor: pointer; font-size: 12px; text-align: left; }
+.pc-badge:hover { border-color: var(--ink); }
+.pc-badge-icon { position: relative; flex: 0 0 auto; width: 32px; height: 36px; display: inline-grid; place-items: center; color: var(--badge-color); }
+.pc-badge-icon svg { width: 100%; height: 100%; filter: drop-shadow(1px 1px 0 var(--rule)); }
+.pc-badge-icon path:first-child { fill: var(--badge-color); stroke: var(--ink); stroke-width: 1.5; }
+.pc-badge-icon path:last-child { fill: #fff4c9; stroke: #fff; stroke-width: 1; }
+.pc-badge-icon small { position: absolute; bottom: 0; background: linear-gradient(#fff8de, #d9c788, #fff4c9); border: 1px solid var(--badge-color); border-radius: 3px; padding: 0 3px; font: bold 9px/1.2 var(--f-body); color: var(--ink); }
+.pc-season-detail { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 20px; align-items: center; padding-top: 16px; }
+.pc-season-detail .pc-badge-icon { width: 90px; height: 100px; }.pc-season-detail .pc-badge-icon small { font-size: 15px; }
+.pc-season-detail dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; font-size: 13px; }
+.pc-season-detail dt { color: var(--pencil); }.pc-season-detail dd { margin: 0; font-weight: bold; overflow-wrap: anywhere; }
+.social-editor .me-badge-pick { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+.me-badge .pc-badge-icon { width: 55px; height: 62px; }.me-badge b { font-family: var(--f-body); font-size: 12px; }
+.soc-dlg > .social-mon-box { width: min(850px, 100%); max-width: 850px; height: min(680px, var(--dialog-height)); padding: 0; }
+.social-mon-box > .bag-detail { flex: 1 1 0; height: 100%; min-height: 0; }
+#card-mon-detail .bag-detail-tabs { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+#card-mon-detail .bag-detail-head h2 small { font-family: var(--f-body); font-size: 11px; color: var(--pencil); }
+#card-mon-detail .bag-current-skills { height: auto; }
+#card-mon-detail .bag-ability { max-height: none; overflow: visible; }
+#card-mon-detail .bag-skill-grid { flex: 0 0 auto; grid-template-rows: auto; }
+#card-mon-detail .bag-skill { cursor: default; }
+#card-mon-detail .bag-skill .md { overflow: visible; font-size: 12px; }
+@media (max-height: 520px) {
+ .pc-identity { gap: 5px; }.pc-badge-display { gap: 3px; }
+ .pc-badge { font-size: 10px; padding: 2px 5px; }.pc-badge-icon { width: 24px; height: 28px; }
+}
