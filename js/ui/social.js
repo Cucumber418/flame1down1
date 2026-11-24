@@ -384,8 +384,8 @@
     return '<article class="social-event"><span class="social-event-icon">' + icon + '</span><div><p><button type="button" data-card="' + esc(e.user) + '">' + esc(p && p.name || e.name) + '</button>' + esc(text) + '</p><small>' + ago(e.at) + '</small></div></article>';
   }
   function peopleHTML() {
-    var P = st.players || [], list = P.filter(function (p) { return !p.me && (!peopleQuery || (p.name + ' ' + p.user).toLowerCase().indexOf(peopleQuery.toLowerCase()) >= 0); });
-    return '<section class="social-column social-people"><header><h3>好友 <small>' + P.filter(function (p) { return !p.me; }).length + '</small></h3><label class="social-search"><input id="social-search" type="search" aria-label="搜索好友" placeholder="搜索名字或账号" value="' + esc(peopleQuery) + '" autocomplete="off"></label></header><div class="social-pane-scroll" data-social-scroll="people" tabindex="0" aria-label="好友列表">' + (st.players ? list.length ? '<div class="plist">' + list.map(playerRow).join('') + '</div>' : '<p class="hint">' + (peopleQuery ? '没有找到这位船员' : '还没有其他船员') + '</p>' : '<p class="hint">' + esc(st.err || '正在读取好友……') + '</p>') + '</div></section>';
+    var P = st.players || [], on = P.filter(function (p) { return p.online; }).length, list = P.filter(function (p) { return !p.me && (!peopleQuery || (p.name + ' ' + p.user).toLowerCase().indexOf(peopleQuery.toLowerCase()) >= 0); });
+    return '<section class="social-column social-people"><header><h3>好友<small>' + P.filter(function (p) { return !p.me; }).length + '</small><span class="social-online"' + (st.wsOk ? '' : ' title="正在连接服务器……"') + '>在线<b>' + (st.wsOk && st.players ? on : '—') + '</b></span></h3><label class="social-search"><input id="social-search" type="search" aria-label="搜索好友" placeholder="搜索名字或账号" value="' + esc(peopleQuery) + '" autocomplete="off"></label></header><div class="social-pane-scroll" data-social-scroll="people" tabindex="0" aria-label="好友列表">' + (st.players ? list.length ? '<div class="plist">' + list.map(playerRow).join('') + '</div>' : '<p class="hint">' + (peopleQuery ? '没有找到这位船员' : '还没有其他船员') + '</p>' : '<p class="hint">' + esc(st.err || '正在读取好友……') + '</p>') + '</div></section>';
   }
 
   function activityHTML() {
@@ -398,7 +398,6 @@
       pg.innerHTML = '<div class="social-page-content" tabindex="0" aria-label="社交内容"><div class="soc-empty"><span class="tape l"></span><p>社交功能需要联网：用服务器网址打开游戏并登录账号后，就能看到其他好友并切磋。</p><p class="hint">现在是双击 index.html 打开的本地版，存档只在这台电脑上。</p></div></div>';
       return;
     }
-    var P = st.players || [], on = P.filter(function (p) { return p.online; }).length;
     var focus = document.activeElement && document.activeElement.id === 'me-motto' ? $('me-motto').selectionStart : null;
     var oldContent = pg.querySelector('.social-page-content'), oldScroll = oldContent ? oldContent.scrollTop : 0, scrolls = {};
     pg.querySelectorAll('[data-social-scroll]').forEach(function (el) { scrolls[el.dataset.socialScroll] = el.scrollTop; });
@@ -415,8 +414,7 @@
       '<button type="button" class="sub' + (st.tab === 'feed' ? ' on' : '') + '" data-tab="feed" role="tab" aria-selected="' + (st.tab === 'feed') + '">好友动态</button>' +
       '<button type="button" class="sub' + (st.tab === 'dm' ? ' on' : '') + '" data-tab="dm" role="tab" aria-selected="' + (st.tab === 'dm') + '">私信' + (st.dmUnread ? '<i class="q-badge">' + st.dmUnread + '</i>' : '') + '</button>' +
       '<button type="button" class="sub' + (st.tab === 'mine' ? ' on' : '') + '" data-tab="mine" role="tab" aria-selected="' + (st.tab === 'mine') + '">我的名片</button>' +
-      '<button type="button" class="sub sub-go" data-myhome="1" title="' + (A.homeOpen() ? '直接去我的基地' : '读完「陆羽茶室」支线后开放') + '">我的基地' + (hb.newN ? '<i class="q-badge" title="基地里有新动态或新留言">' + hb.newN + '</i>' : '') + ' ›</button>' +
-      '<span class="soc-on">' + (st.wsOk ? '<span class="dot on"></span>' + on + ' 人在线' : '<span class="dot"></span>正在连接服务器……') + '</span></div>' +
+      '<button type="button" class="sub sub-go" data-myhome="1" title="' + (A.homeOpen() ? '直接去我的基地' : '读完「陆羽茶室」支线后开放') + '">我的基地' + (hb.newN ? '<i class="q-badge" title="基地里有新动态或新留言">' + hb.newN + '</i>' : '') + ' ›</button></div>' +
       '<div class="social-page-content social-main-' + st.tab + '" aria-label="社交内容">' + body + '</div>' + (st.editOpen ? editorHTML() : '');
     pg.querySelector('.social-page-content').scrollTop = oldScroll;
     pg.querySelectorAll('[data-social-scroll]').forEach(function (el) { el.scrollTop = scrolls[el.dataset.socialScroll] || 0; });

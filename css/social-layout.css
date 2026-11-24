@@ -105,6 +105,8 @@ body.social-page-active .social-main-dm { overflow-y: auto; }
 .social-column > header { padding: 8px 10px; }
 .social-column h3, .social-mycard h3 { font-family: var(--f-body); font-size: 14px; font-weight: bold; line-height: 1.2; }
 .social-column > header h3 { white-space: nowrap; }
+.social-online { margin-left: 10px; font-size: 11px; font-weight: normal; color: var(--pencil); }
+.social-online b { color: var(--hp-ok); font-variant-numeric: tabular-nums; }
 .social-column > header .btn { padding: 5px 9px; font-size: 12px; }
 .social-column > header .social-search { padding: 0; border: 0; width: min(260px, 65%); }
 .social-search input { width: 100%; padding: 5px 9px; }
