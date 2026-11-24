@@ -5,7 +5,7 @@
 
 // 精灵立绘（最终形态）  →  images/sprites/
 var SPRITES = {
-  "glen": "images/sprites/glen-pending.svg",
+  "glen": "images/sprites/glen.png",
   "barlow": "images/sprites/barlow.png",
   "bali": "images/sprites/bali.png",
   "clementi": "images/sprites/clementi.png",

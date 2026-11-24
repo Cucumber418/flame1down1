@@ -12,6 +12,7 @@ from PIL import Image
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OVERRIDE = {   # '图片路径': [l, t, s]（头不在最上面的）
+    'images/sprites/glen.png': [0.55, 0.14, 0.38],
     'images/sprites/moon_v2.webp': [0.6, 0.12, 0.38], 'images/sprites/moon_full.webp': [0.6, 0.12, 0.38], 'images/sprites/moon_dark.webp': [0.6, 0.12, 0.38],
     'images/sprites/shroom.webp': [0.42, 0.06, 0.38],
     'images/sprites/tagore_v2.webp': [0.35, 0.0, 0.36], 'images/sprites/tagore_awake_v2.webp': [0.35, 0.0, 0.36],
