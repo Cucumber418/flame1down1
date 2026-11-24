@@ -1,8 +1,8 @@
 /* ==========================================================
- * 社交：玩家 / 好友 / 我的名片，以及联网切磋
+ * 社交：好友 / 好友动态 / 我的名片，以及联网切磋
  *
- * - 玩家：所有注册过的账号，显示在线状态，可以看名片、加好友、发起切磋
- * - 好友：自己加过的人（单向，像「关注」）
+ * - 好友：全服所有其他账号，显示在线状态，可以看名片、私信、切磋
+ * - 好友动态：全服船员获得精灵、完成任务与成长的进展
  * - 我的名片：最多 5 只展示精灵 + 200 字个人宣言，存在游戏存档里，跟着云存档同步
  *
  * 联网切磋：
@@ -21,9 +21,9 @@
   var online = !!(C && C.user && C.user());   // 用服务器打开并登录了才有社交功能
   var hb = { owner: null, data: null, err: '', at: 0, draft: '', newN: 0, peeked: false }, pokeAt = {};   // 基地信息栏与留言板（见下面「基地信息栏」一节）
   var fl = { data: null, err: '', at: 0, newN: 0, loading: false };
-  var st = { prep: null, bw: { picks: null, wait: null, inv: null }, view: null, tab: 'feed', players: null, me: null, err: '', ws: null, wsOk: false, retry: 0, pend: null, inc: null, match: null, edit: null };
+  var st = { prep: null, bw: { picks: null, wait: null, inv: null }, view: null, tab: 'friends', players: null, me: null, err: '', ws: null, wsOk: false, retry: 0, pend: null, inc: null, match: null, edit: null };
 
-  var activity = { items: null, next: null, busy: false, err: '' }, peopleScope = 'friends', peopleQuery = '';
+  var activity = { items: null, next: null, busy: false, err: '' }, peopleQuery = '';
 
   /* ---------- 小工具 ---------- */
   function api(method, url, body) { return C.api(method, url, body); }
@@ -80,8 +80,8 @@
     var farm = kind === 'farm', label = farm ? '种植园' : '基地', field = farm ? 'farmOpen' : 'homeOpen';
     if (!online) return '<p class="hint">连上服务器后才能看到好友的' + label + '。</p>';
     if (!st.players) return '<p class="hint">' + (st.err ? esc(st.err) : '正在读取好友名单……') + '</p>' + (st.err ? '<button type="button" class="btn" data-fbretry="1">重试</button>' : '');
-    var F = st.players.filter(function (p) { return p.friend && !p.me && !p.noChar; }).sort(function (a, b) { return (b[field] ? 1 : 0) - (a[field] ? 1 : 0) || (b.online ? 1 : 0) - (a.online ? 1 : 0); });
-    if (!F.length) return '<p class="hint">还没有好友。去「社交」页加几个好友，就能在这里直接拜访他们的' + label + '。</p>';
+    var F = st.players.filter(function (p) { return !p.me && !p.noChar; }).sort(function (a, b) { return (b[field] ? 1 : 0) - (a[field] ? 1 : 0) || (b.online ? 1 : 0) - (a.online ? 1 : 0); });
+    if (!F.length) return '<p class="hint">还没有其他船员，可以稍后再来拜访他们的' + label + '。</p>';
     return '<div class="fb-grid">' + F.map(function (p) {
       return '<button type="button" class="fb-it' + (p.online ? ' live' : '') + '" ' + (farm ? 'data-ffvisit' : 'data-fbvisit') + '="' + esc(p.user) + '"' + (p[field] ? '' : ' disabled title="对方还没有开放' + label + '"') + '>' +
         '<span class="pav' + (p.avatar ? ' img' : '') + '">' + A.avatarInner(p.avatar, p.name || p.user) + '</span>' +
@@ -104,7 +104,7 @@
       if (t.dataset.ffvisit) openFarm(t.dataset.ffvisit, from); else openHome(t.dataset.fbvisit, from);
     }
   });
-  // 能不能观战：对方正在对战，并且是自己的好友（或者对方发了全服观战邀请）
+  // 所有服内船员互为好友，在线对战时可以观战
   function canWatch(p) { return !p.me && p.online && p.busy && !!p.battle && (p.friend || p.watchOpen); }
   function watchBtn(p) { return canWatch(p) ? '<button type="button" class="btn watch" data-watch="' + esc(p.user) + '">👁 观战</button>' : ''; }
   function playerRow(p) {
@@ -112,16 +112,15 @@
     return '<article class="prow' + (p.me ? ' me' : '') + (p.online ? ' live' : '') + '" data-user="' + esc(p.user) + '">' +
       '<button type="button" class="pr-main" data-card="' + esc(p.user) + '" aria-label="查看' + esc(name) + '的名片">' +
       '<span class="pav' + (p.avatar ? ' img' : '') + '">' + A.avatarInner(p.avatar, p.name || p.user) + '</span>' +
-      '<span class="pr-txt"><span class="pr-l1"><b>' + esc(name) + '</b>' + (p.title && A.titleName(p.title) ? '<span class="chip ttl">' + esc(A.titleName(p.title)) + '</span>' : '') + rankChip(p.rank, p.rankStars, p.rankDv) + (p.fan && !p.me ? '<span class="chip fan" title="对方也把你加为好友了">互相关注</span>' : '') + '</span>' +
+      '<span class="pr-txt"><span class="pr-l1"><b>' + esc(name) + '</b>' + (p.title && A.titleName(p.title) ? '<span class="chip ttl">' + esc(A.titleName(p.title)) + '</span>' : '') + rankChip(p.rank, p.rankStars, p.rankDv) + '</span>' +
       '<span class="pr-l2">@' + esc(p.user) + ' · ' + statusOf(p) + '</span></span>' +
       '<span class="pr-show">' + (p.show || []).map(monThumb).join('') + '</span></button>' +
       '<span class="pr-acts">' +
       (p.me ? '<button type="button" class="btn" data-tab="mine">编辑名片</button>' :
         '<button type="button" class="btn ghost" data-home="' + esc(p.user) + '"' + (p.homeOpen ? '' : ' disabled title="对方还没有开放基地"') + '>基地' + (p.homeN ? ' · ' + p.homeN : '') + '</button>' +
-        '<button type="button" class="btn' + (p.friend ? ' on' : '') + '" data-friend="' + esc(p.user) + '" aria-pressed="' + !!p.friend + '">' + (p.friend ? '★ 好友' : '＋ 加好友') + '</button>' +
-        (p.friend && !p.noChar ? '<button type="button" class="btn dm-btn" data-dm="' + esc(p.user) + '">💬 私信' + (dmUnreadOf(p.user) ? '<i class="q-badge">' + dmUnreadOf(p.user) + '</i>' : '') + '</button>' : '') +
-        (p.friend && !p.noChar && st.fpOk ? '<button type="button" class="btn fp-gift" data-fpgift="' + esc(p.user) + '"' + ((st.fpSent || []).indexOf(p.user) >= 0 ? ' disabled title="今天已经送过 Ta 了"' : ' title="送 Ta 10000 经验和 200 友情点，你也得 200 友情点（每位好友每天一次；你每天从送礼最多拿 2000 友情点）"') + '>🎁 ' + ((st.fpSent || []).indexOf(p.user) >= 0 ? '已送' : '送经验') + '</button>' : '') +
-        (canWatch(p) ? watchBtn(p) : '<button type="button" class="btn primary" data-fight="' + esc(p.user) + '"' + (canFight ? '' : ' disabled title="' + (p.noChar ? '对方还没有创建角色' : p.busy ? '对方正在对战中' + (p.friend ? '' : '，加为好友后可以观战') : '对方不在线') + '"') + '>切磋</button>')) +
+        (!p.noChar ? '<button type="button" class="btn dm-btn" data-dm="' + esc(p.user) + '">💬 私信' + (dmUnreadOf(p.user) ? '<i class="q-badge">' + dmUnreadOf(p.user) + '</i>' : '') + '</button>' : '') +
+        (!p.noChar && st.fpOk ? '<button type="button" class="btn fp-gift" data-fpgift="' + esc(p.user) + '"' + ((st.fpSent || []).indexOf(p.user) >= 0 ? ' disabled title="今天已经送过 Ta 了"' : ' title="送 Ta 10000 经验和 200 友情点，你也得 200 友情点（每位好友每天一次；你每天从送礼最多拿 2000 友情点）"') + '>🎁 ' + ((st.fpSent || []).indexOf(p.user) >= 0 ? '已送' : '送经验') + '</button>' : '') +
+        (canWatch(p) ? watchBtn(p) : '<button type="button" class="btn primary" data-fight="' + esc(p.user) + '"' + (canFight ? '' : ' disabled title="' + (p.noChar ? '对方还没有创建角色' : p.busy ? '对方正在对战中' : '对方不在线') + '"') + '>切磋</button>')) +
       '</span></article>';
   }
 
@@ -195,7 +194,6 @@
     var d = dialog('card', '<div class="pc-body pc-fit"><p class="hint">读取名片中……</p></div>', function (el, close) {
       el.addEventListener('click', function (e) {
         if (e.target.closest('[data-x]')) return close();
-        var f = e.target.closest('[data-friend]'); if (f) { toggleFriend(f.dataset.friend).then(function () { close(); openCard(user); }); return; }
         var g = e.target.closest('[data-fight]'); if (g && !g.disabled) { close(); askFight(g.dataset.fight); return; }
         var h = e.target.closest('[data-home]'); if (h && !h.disabled) { close(); openHome(h.dataset.home); return; }
         var w = e.target.closest('[data-watch]'); if (w) { close(); watchStart(w.dataset.watch); return; }
@@ -208,21 +206,10 @@
       var canFight = !c.me && !c.noChar && c.online && !c.busy;
       body.innerHTML = cardHTML(c); var actions = document.createElement('div'); actions.className = 'soc-foot pc-actions'; actions.innerHTML = '<button type="button" class="btn ghost" data-x="1">关闭</button>' +
         (c.me ? '' : '<button type="button" class="btn ghost" data-home="' + esc(c.user) + '"' + (c.homeOpen ? '' : ' disabled') + '>拜访基地</button>' +
-          '<button type="button" class="btn" data-friend="' + esc(c.user) + '">' + (c.friend ? '取消好友' : '＋ 加好友') + '</button>' +
-          (c.friend && !c.noChar ? '<button type="button" class="btn dm-btn" data-dm="' + esc(c.user) + '">💬 私信</button>' : '') +
+          (!c.noChar ? '<button type="button" class="btn dm-btn" data-dm="' + esc(c.user) + '">💬 私信</button>' : '') +
           (canWatch(c) ? watchBtn(c) : '<button type="button" class="btn primary" data-fight="' + esc(c.user) + '"' + (canFight ? '' : ' disabled') + '>切磋</button>')); body.parentNode.appendChild(actions); watchCardSizes(); actions.querySelector('[data-x]').focus({ preventScroll: true });
     }).catch(function () { var body = d.el.querySelector('.pc-body'); if (body) body.innerHTML = '<p class="hint">连不上服务器</p>'; });
   }
-  function toggleFriend(user) {
-    var p = (st.players || []).filter(function (x) { return x.user === user; })[0], on = !(p && p.friend);
-    return api('POST', '/api/friends', { user: user, on: on }).then(function (r) {
-      if (r._code !== 200) { A.toast(r.error || '操作失败'); return; }
-      if (p) p.friend = on;
-      A.toast(on ? '已把 @' + user + ' 加为好友。' : '已取消好友 @' + user + '。');
-      render();
-    }).catch(function () { A.toast('连不上服务器'); });
-  }
-
   /* ---------- 拜访基地 ---------- */
   function openHome(user, from) {
     openPlace(user, from, 'home');
@@ -296,7 +283,7 @@
       '<div class="base-stage" style="--home-backdrop:url(' + new URL('images/base/room' + room.slice(1) + '.jpg', document.baseURI).href + ')">' +
       A.baseRoom(d.layout, figs + (d.mons.length ? '' : '<p class="home-empty">主人还没有放精灵出来展示。</p>')) +
       '<div class="base-side"><div class="bs-list"><button type="button" class="bs-it" data-vhomepanel="msg" title="留言板"><span class="bs-ic" aria-hidden="true">💬</span><span class="bs-t"><b>留言板</b></span></button><button type="button" class="bs-it" data-vhomepanel="info" title="基地信息"><span class="bs-ic" aria-hidden="true">ⓘ</span><span class="bs-t"><b>基地信息</b></span></button></div></div>' +
-      '<button type="button" class="scene-go" data-visitfarm="' + esc(d.user) + '"' + ((d.friend || d.me) && d.farmOpen ? '' : ' disabled title="对方种植园尚未开放，或尚未加为好友"') + '><span class="sg-ic" aria-hidden="true">🌱</span>前往种植园</button>' +
+      '<button type="button" class="scene-go" data-visitfarm="' + esc(d.user) + '"' + ((d.friend || d.me) && d.farmOpen ? '' : ' disabled title="对方种植园尚未开放"') + '><span class="sg-ic" aria-hidden="true">🌱</span>前往种植园</button>' +
       (!d.me ? '<button type="button" class="scene-go visit-challenge-btn" data-teafight="1" title="' + (d.mons.length ? mine.length ? '用出战配队挑战好友展示中的精灵' : '请先配置出战精灵' : '对方没有展示精灵') + '"' + (d.mons.length && mine.length ? '' : ' disabled') + '><span class="sg-ic" aria-hidden="true">⚔</span>挑战好友</button>' : '') +
       '<button type="button" class="scene-go home-friends-btn" data-vfriends="home" aria-haspopup="dialog"><span class="sg-ic" aria-hidden="true">👥</span>好友基地</button></div></div>';
   }
@@ -394,23 +381,24 @@
     var p = (st.players || []).find(function (p) { return p.user === e.user; }), icon = '✓', text = '';
     if (e.mon && SPMAP[e.mon.sid]) { var v = A.view(e.mon); icon = '<img src="' + v.img + '" alt="">'; text = e.kind === 'level' ? '的' + v.name + '达到了 LV' + e.level : '获得了' + (e.mon.shiny ? '异色' : '') + v.name + ' · LV' + e.mon.lv; }
     else text = '完成了「' + (A.socialTaskName ? A.socialTaskName(e.kind, e.task) : '任务') + '」';
-    return '<article class="social-event"><span class="social-event-icon">' + icon + '</span><div><p><button type="button" data-card="' + esc(e.user) + '">' + esc(p && p.name || e.name) + '</button>' + esc(text) + '</p><small>' + (p && p.friend ? '好友 · ' : '') + ago(e.at) + '</small></div></article>';
+    return '<article class="social-event"><span class="social-event-icon">' + icon + '</span><div><p><button type="button" data-card="' + esc(e.user) + '">' + esc(p && p.name || e.name) + '</button>' + esc(text) + '</p><small>' + ago(e.at) + '</small></div></article>';
   }
   function peopleHTML() {
-    var P = st.players || [], list = P.filter(function (p) { return (peopleScope === 'all' || p.friend) && (!peopleQuery || (p.name + ' ' + p.user).toLowerCase().indexOf(peopleQuery.toLowerCase()) >= 0); });
-    return '<section class="social-column social-people"><header><h3>好友 <small>' + P.filter(function (p) { return p.friend; }).length + '</small></h3><button type="button" class="btn ghost" data-people-scope>' + (peopleScope === 'all' ? '返回好友' : '添加好友') + '</button></header><label class="social-search">' + (peopleScope === 'all' ? '全部玩家' : '好友') + '<input id="social-search" type="search" placeholder="搜索名字或账号" value="' + esc(peopleQuery) + '" autocomplete="off"></label><div class="social-pane-scroll" data-social-scroll="people" tabindex="0" aria-label="好友列表">' + (st.players ? list.length ? '<div class="plist">' + list.map(playerRow).join('') + '</div>' : '<p class="hint">' + (peopleQuery ? '没有找到这位船员' : peopleScope === 'all' ? '还没有其他船员' : '还没有好友，点击「添加好友」认识其他船员') + '</p>' : '<p class="hint">' + esc(st.err || '正在读取好友……') + '</p>') + '</div></section>';
+    var P = st.players || [], list = P.filter(function (p) { return !p.me && (!peopleQuery || (p.name + ' ' + p.user).toLowerCase().indexOf(peopleQuery.toLowerCase()) >= 0); });
+    return '<section class="social-column social-people"><header><h3>好友 <small>' + P.filter(function (p) { return !p.me; }).length + '</small></h3><label class="social-search"><input id="social-search" type="search" aria-label="搜索好友" placeholder="搜索名字或账号" value="' + esc(peopleQuery) + '" autocomplete="off"></label></header><div class="social-pane-scroll" data-social-scroll="people" tabindex="0" aria-label="好友列表">' + (st.players ? list.length ? '<div class="plist">' + list.map(playerRow).join('') + '</div>' : '<p class="hint">' + (peopleQuery ? '没有找到这位船员' : '还没有其他船员') + '</p>' : '<p class="hint">' + esc(st.err || '正在读取好友……') + '</p>') + '</div></section>';
   }
-  function dashboardHTML() {
-    return '<div class="social-dashboard"><section class="social-column social-activity"><header><div><h3>好友动态</h3><small>全服可见 · 船员们的新进展</small></div><button type="button" class="btn ghost" data-activity-refresh' + (activity.busy ? ' disabled' : '') + '>刷新</button></header><div class="social-pane-scroll" data-social-scroll="activity" tabindex="0" aria-label="全服动态">' + (activity.items || []).map(activityRow).join('') + (activity.err ? '<p class="hint red">' + esc(activity.err) + '</p>' : '') + (!activity.items || !activity.items.length ? '<p class="hint social-feed-empty">' + (activity.busy ? '正在读取动态……' : '新的精灵、任务与成长故事会出现在这里') + '</p>' : '') + (activity.next ? '<button type="button" class="btn social-more" data-activity-more' + (activity.busy ? ' disabled' : '') + '>' + (activity.busy ? '正在读取……' : '更早的动态') + '</button>' : '') + '</div></section>' + peopleHTML() + '</div>';
+
+  function activityHTML() {
+    return '<section class="social-column social-activity"><header><div><h3>好友动态</h3><small>全服可见 · 船员们的新进展</small></div><button type="button" class="btn ghost" data-activity-refresh' + (activity.busy ? ' disabled' : '') + '>刷新</button></header><div class="social-pane-scroll" data-social-scroll="activity" tabindex="0" aria-label="全服动态">' + (activity.items || []).map(activityRow).join('') + (activity.err ? '<p class="hint red">' + esc(activity.err) + '</p>' : '') + (!activity.items || !activity.items.length ? '<p class="hint social-feed-empty">' + (activity.busy ? '正在读取动态……' : '新的精灵、任务与成长故事会出现在这里') + '</p>' : '') + (activity.next ? '<button type="button" class="btn social-more" data-activity-more' + (activity.busy ? ' disabled' : '') + '>' + (activity.busy ? '正在读取……' : '更早的动态') + '</button>' : '') + '</div></section>';
   }
   /* ---------- 页面 ---------- */
   function render() {
     var pg = $('pg-social'); if (!pg || A.page() !== 'social' || !A.ready()) return;
     if (!online) {
-      pg.innerHTML = '<div class="social-page-content" tabindex="0" aria-label="社交内容"><div class="soc-empty"><span class="tape l"></span><p>社交功能需要联网：用服务器网址打开游戏并登录账号后，就能看到其他船员、加好友和切磋。</p><p class="hint">现在是双击 index.html 打开的本地版，存档只在这台电脑上。</p></div></div>';
+      pg.innerHTML = '<div class="social-page-content" tabindex="0" aria-label="社交内容"><div class="soc-empty"><span class="tape l"></span><p>社交功能需要联网：用服务器网址打开游戏并登录账号后，就能看到其他好友并切磋。</p><p class="hint">现在是双击 index.html 打开的本地版，存档只在这台电脑上。</p></div></div>';
       return;
     }
-    var P = st.players || [], friends = P.filter(function (p) { return p.friend; }), on = P.filter(function (p) { return p.online; }).length;
+    var P = st.players || [], on = P.filter(function (p) { return p.online; }).length;
     var focus = document.activeElement && document.activeElement.id === 'me-motto' ? $('me-motto').selectionStart : null;
     var oldContent = pg.querySelector('.social-page-content'), oldScroll = oldContent ? oldContent.scrollTop : 0, scrolls = {};
     pg.querySelectorAll('[data-social-scroll]').forEach(function (el) { scrolls[el.dataset.socialScroll] = el.scrollTop; });
@@ -420,9 +408,11 @@
     var body;
     if (st.tab === 'mine') body = mineHTML();
     else if (st.tab === 'dm') body = dmListHTML();
-    else body = dashboardHTML();
+    else if (st.tab === 'friends') body = peopleHTML();
+    else body = activityHTML();
     pg.innerHTML = '<div class="subbar soc-tabs" role="tablist">' +
-      '<button type="button" class="sub' + (st.tab === 'feed' ? ' on' : '') + '" data-tab="feed" role="tab" aria-selected="' + (st.tab === 'feed') + '">好友动态与好友</button>' +
+      '<button type="button" class="sub' + (st.tab === 'friends' ? ' on' : '') + '" data-tab="friends" role="tab" aria-selected="' + (st.tab === 'friends') + '">好友</button>' +
+      '<button type="button" class="sub' + (st.tab === 'feed' ? ' on' : '') + '" data-tab="feed" role="tab" aria-selected="' + (st.tab === 'feed') + '">好友动态</button>' +
       '<button type="button" class="sub' + (st.tab === 'dm' ? ' on' : '') + '" data-tab="dm" role="tab" aria-selected="' + (st.tab === 'dm') + '">私信' + (st.dmUnread ? '<i class="q-badge">' + st.dmUnread + '</i>' : '') + '</button>' +
       '<button type="button" class="sub' + (st.tab === 'mine' ? ' on' : '') + '" data-tab="mine" role="tab" aria-selected="' + (st.tab === 'mine') + '">我的名片</button>' +
       '<button type="button" class="sub sub-go" data-myhome="1" title="' + (A.homeOpen() ? '直接去我的基地' : '读完「陆羽茶室」支线后开放') + '">我的基地' + (hb.newN ? '<i class="q-badge" title="基地里有新动态或新留言">' + hb.newN + '</i>' : '') + ' ›</button>' +
@@ -444,7 +434,6 @@
       if ((t = e.target.closest('[data-edit-mode]'))) { st.editMode = t.dataset.editMode; render(); return; }
       if ((t = e.target.closest('[data-activity-more]'))) { loadActivity(true); return; }
       if ((t = e.target.closest('[data-activity-refresh]'))) { loadActivity(false); return; }
-      if ((t = e.target.closest('[data-people-scope]'))) { peopleScope = peopleScope === 'all' ? 'friends' : 'all'; peopleQuery = ''; render(); return; }
       if ((t = e.target.closest('[data-tab]'))) { if (st.tab !== t.dataset.tab) { var content = $('pg-social').querySelector('.social-page-content'); if (content) content.scrollTop = 0; } st.tab = t.dataset.tab; if (st.tab === 'mine' && !st.edit) startEdit(); render(); if (st.tab === 'dm') dmLoadList(); else if (st.tab !== 'mine') load(); return; }
       if ((t = e.target.closest('[data-myhome]'))) { A.goHome(); return; }
       if ((t = e.target.closest('[data-reload]'))) { load(); return; }
@@ -471,7 +460,6 @@
         if (foe.length) A.teaFight({ owner: d.name, user: d.user, foe: foe, onDone: function (res, quit) { hbEvent(d.user, { kind: 'fight', r: quit ? 'quit' : res }); hb.at = 0; render(); } });
         return;
       }
-      if ((t = e.target.closest('[data-friend]'))) { toggleFriend(t.dataset.friend); return; }
       if ((t = e.target.closest('[data-fpgift]'))) {   // 2026-11-01：给好友送经验（每天一次，双方各 200 友情点）
         if (t.disabled) return; var gu = t.dataset.fpgift; t.disabled = true;
         api('POST', '/api/fp-gift', { user: gu }).then(function (r) {
@@ -1430,7 +1418,7 @@
   function dmListHTML() {
     var L = st.dmList;
     if (!L) return '<p class="hint soc-load">读取私信中……</p>';
-    if (!L.length) return '<div class="soc-empty"><p>还没有私信。在「好友」里点对方的「💬 私信」就能开始聊天（要先把对方加为好友）。</p></div>';
+    if (!L.length) return '<div class="soc-empty"><p>还没有私信。在「好友」里点对方的「💬 私信」就能开始聊天。</p></div>';
     return '<div class="plist dm-list">' + L.map(function (c) {
       return '<button type="button" class="dm-row' + (c.unread ? ' unread' : '') + '" data-dm="' + esc(c.peer) + '"><span class="pav' + (c.avatar ? ' img' : '') + '">' + A.avatarInner(c.avatar, c.name) + '</span>' +
         '<span class="dm-r-txt"><b>' + esc(c.name) + '</b><small>' + (c.lastFrom === c.peer ? '' : '我：') + (emoteMsg(c.last) ? '[表情] ' + esc(emoteMsg(c.last).n) : esc(c.last.slice(0, 60))) + '</small></span><span class="dm-r-side"><small>' + dmTime(c.lastT) + '</small>' + (c.unread ? '<i class="q-badge">' + c.unread + '</i>' : '') + '</span></button>';
@@ -1461,7 +1449,7 @@
       st.dm.msgs = r.msgs; st.dm.me = r.me; st.dm.name = r.name; st.dm.canSend = r.canSend;
       $('dm-name').textContent = r.name; $('dm-st').innerHTML = '@' + esc(user) + ' · ' + (r.online ? '<span class="dot on"></span>在线' : '离线');
       var av = $('dm-av'); av.innerHTML = A.avatarInner(r.avatar, r.name); av.classList.toggle('img', !!r.avatar);
-      if (!r.canSend) { ta.disabled = true; ta.placeholder = '先把对方加为好友，才能发私信'; }
+      if (!r.canSend) { ta.disabled = true; ta.placeholder = '暂时无法给这位船员发私信'; }
       dmDraw(); ta.focus();
       (st.dmList || []).forEach(function (c) { if (c.peer === user) { st.dmUnread -= c.unread; c.unread = 0; } });
       if (A.page() === 'social') render();

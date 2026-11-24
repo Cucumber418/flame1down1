@@ -50,7 +50,7 @@ A.use(function (req, res, url) {
     if (err) return A.reply(res, 400, { error: '请求格式不对' });
     var o = A.loadUser(String(body.owner || ''));
     if (!o || o.name === me.name) return A.reply(res, 200, { ok: false });
-    if (!(Array.isArray(me.friends) && me.friends.indexOf(o.name) >= 0)) return A.reply(res, 200, { ok: false });
+    if (!(A.areFriends(me, o))) return A.reply(res, 200, { ok: false });
     var d = load(), t = today(), key = t + '|' + me.name + '|' + o.name;
     Object.keys(d.day).forEach(function (k) { if (k.slice(0, 10) !== t) delete d.day[k]; });   // 只留当天的计数
     if ((d.day[key] || 0) >= DAY_CAP) return A.reply(res, 200, { ok: false, cap: true });

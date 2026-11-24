@@ -22,7 +22,7 @@ T.hook('farmSteal', function (u, arg) {
   if (!E || !E.GROW) return { err: '服务器暂时不能处理，请稍后重试' };
   if (!owner || owner === u.name) return { err: '不能偷自己种植园的作物' };
   var ou = A.loadUser(owner);
-  if (!ou || !(Array.isArray(u.friends) && u.friends.indexOf(ou.name) >= 0)) return { err: '只能去好友的种植园偷菜' };
+  if (!ou || !(A.areFriends(u, ou))) return { err: '只能去好友的种植园偷菜' };
   var oa = acc(ou);
   if (!oa || !oa.introDone) return { err: '对方还没有创建角色' };
   var r = E.GROW.farmStealFrom(oa, i, u.name, Math.min(E.GROW.FARM_STEAL_DAY, Math.max(0, Math.floor(+arg.cap || 0))), Date.now());
@@ -49,8 +49,8 @@ A.use(function (req, res, url) {
     var logs = list.slice(-60).reverse().map(function (e) { return Object.assign({}, e, { name: social().gameName(e.user), avatar: social().avatarOf(e.user) }); });
     data.seen[me.name] = Date.now(); store(data); A.reply(res, 200, { logs: logs, seen: seen }); return true;
   }
-  var friend = !mine && Array.isArray(me.friends) && me.friends.indexOf(owner.name) >= 0;
-  if (!mine && !friend) { A.reply(res, 403, { error: '加为好友后才能拜访种植园' }); return true; }
+  var friend = A.areFriends(me, owner);
+  if (!mine && !friend) { A.reply(res, 403, { error: '不能拜访这个种植园' }); return true; }
   var E = T.engine(), oa = acc(owner), ma = acc(me);
   if (!E || !E.GROW) { A.reply(res, 503, { error: '种植园暂时不可用' }); return true; }
   if (!oa || !oa.introDone) { A.reply(res, 200, { user: owner.name, noChar: true }); return true; }

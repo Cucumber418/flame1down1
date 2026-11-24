@@ -1,6 +1,5 @@
-/* 社交页固定一屏；动态和好友各自在栏内滚动。 */
+/* 好友和好友动态独立分页，各自在页面内滚动。 */
 body.social-page-active .social-page-content { overflow: hidden; padding: 2px 4px 5px 1px; display: flex; flex-direction: column; }
-.social-dashboard { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 12px; }
 .social-column { min-width: 0; min-height: 0; display: flex; flex-direction: column; border: 1.5px solid var(--ink); border-radius: 12px; background: var(--paper-2); overflow: hidden; }
 .social-column > header, .social-mycard > header, .social-editor > header { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex: 0 0 auto; padding: 12px; border-bottom: 1px solid var(--rule); }
 .social-column h3, .social-mycard h3 { margin: 0; font-family: var(--f-hand); font-size: 26px; font-weight: 400; }
@@ -50,7 +49,6 @@ body.social-page-active .social-main-dm { overflow-y: auto; }
 .social-editor .me-pick { flex: 1 1 0; min-height: 0; max-height: none; grid-template-columns: repeat(auto-fill, minmax(85px, 1fr)); align-content: start; padding: 8px; gap: 10px; overscroll-behavior: contain; touch-action: pan-y; }
 .social-editor-tabs { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; flex: 0 0 auto; }.social-editor .soc-foot { flex: 0 0 auto; padding-top: 7px; border-top: 1px solid var(--rule); }
 @media (max-width: 600px) and (min-height: 521px) {
- .social-dashboard { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
  .soc-dlg > .soc-box.card { height: min(760px, var(--dialog-height)); padding: 12px; gap: 8px; }
  .pc-complete { grid-template-columns: 1fr; gap: 10px; }.pc-identity { padding-right: 0; border-right: 0; gap: 7px; }
  .pc-complete .pc-top { grid-template-columns: 38px 1fr 36px; gap: 8px; }.pc-complete .pav.big { width: 38px; height: 38px; }.pc-complete .pc-look { width: 36px; height: 48px; }.pc-complete .pc-who h3 { font-size: 25px; }
@@ -60,7 +58,6 @@ body.social-page-active .social-main-dm { overflow-y: auto; }
  .card .pc-actions { gap: 5px; justify-content: space-between; }.card .pc-actions .btn { font-size: 10px; padding: 6px; }
 }
 @media (max-height: 520px) {
- .social-dashboard { gap: 8px; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
  .social-column > header { padding: 7px 9px; }.social-column h3 { font-size: 22px; }.social-column header .btn { font-size: 11px; padding: 5px 7px; }
  .social-pane-scroll { padding: 7px; }.social-event { padding-block: 9px; gap: 6px; }.social-event-icon { width: 30px; height: 30px; }.social-event p { font-size: 12px; }.social-search { padding-block: 5px; }
  .soc-tabs { gap: 4px; }.soc-tabs .sub { padding: 5px 8px; font-size: 12px; }.soc-on { font-size: 10px; }
@@ -100,3 +97,37 @@ body.social-page-active .social-main-dm { overflow-y: auto; }
 .pc-detail-helpers img { width: 70px; height: 70px; object-fit: contain; }.pc-detail-helpers h3 { margin: 0 0 5px; font-size: 22px; font-family: var(--f-hand); font-weight: 400; }
 .pc-detail-content .pc-progress { border-top: 0; padding-top: 0; }.pc-detail-content .pc-progress h4 { display: none; }.pc-detail-content .pc-progress > div { font-size: 15px; gap: 12px; }
 @media (max-height: 520px) { .pc-section-buttons .btn { padding: 5px 8px; font-size: 11px; }.pc-section-buttons { grid-column: 1 / -1; }.pc-detail-panel h2 { font-size: 24px; }.pc-detail-helpers img { height: 45px; width: 45px; } }
+
+/* 与精灵一览统一字号、卡片边框和格子间距。 */
+.social-page-content > .social-column { flex: 1 1 0; }
+.soc-tabs { gap: 6px; }
+.soc-tabs .sub { padding: 5px 18px; font-size: 13px; }
+.social-column > header { padding: 8px 10px; }
+.social-column h3, .social-mycard h3 { font-family: var(--f-body); font-size: 14px; font-weight: bold; line-height: 1.2; }
+.social-column > header h3 { white-space: nowrap; }
+.social-column > header .btn { padding: 5px 9px; font-size: 12px; }
+.social-column > header .social-search { padding: 0; border: 0; width: min(260px, 65%); }
+.social-search input { width: 100%; padding: 5px 9px; }
+.social-pane-scroll { padding: 8px; }
+.social-people .plist { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 8px; align-content: start; }
+.social-people .prow { padding: 6px; border: 1.5px solid var(--ink); border-radius: 12px; background: var(--paper); box-shadow: none; }
+.social-people .pr-l1 b { font-family: var(--f-body); font-size: 14px; line-height: 1.2; }
+.social-people .pr-l1 .chip { padding: 2px 4px; font-size: 10px; }
+.social-people .pr-l2 { line-height: 1.4; overflow-wrap: anywhere; }
+.social-event, .social-event:first-child { padding: 8px; border: 1.5px solid var(--ink); border-radius: 12px; background: var(--paper); margin-bottom: 8px; }
+.social-event p { font-size: 14px; line-height: 1.5; }
+.social-event-icon { width: 42px; height: 42px; }
+.pc-complete .pc-who h3 { font-family: var(--f-body); font-size: 18px; font-weight: bold; }
+.pc-complete .pc-mon b, .pc-detail-helpers h3 { font-family: var(--f-body); font-size: 14px; font-weight: bold; line-height: 1.2; }
+.pc-detail-content .pc-progress > div { font-size: 12px; }
+@media (max-width: 640px) {
+ .soc-tabs .sub { padding: 4px 13px; font-size: 12px; }
+ .social-people .plist { grid-template-columns: minmax(0, 1fr); }
+ .social-people .pr-l1 b, .social-event p, .pc-complete .pc-mon b { font-size: 12px; }
+}
+@media (max-height: 520px) {
+ .soc-tabs .sub { padding: 4px 13px; font-size: 12px; }
+ .social-column > header { padding: 6px 8px; }
+ .social-event p { font-size: 12px; }
+ .social-event-icon { width: 30px; height: 30px; }
+}

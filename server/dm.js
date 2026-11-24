@@ -4,7 +4,7 @@
  * 存在 DATA_DIR/dm.json：{ convs: { 'a|b': [{ f: 发送者, t: 时间, x: 文字 }] }, reads: { 账号: { 对方: 读到的时间 } } }
  * 每段对话最多保留 500 条。对方在线时通过 WebSocket 立刻推送（{ type:'dm', from, fromName, text, t }）。
  *
- * 能给谁发：自己加了好友的人；或者对方先给你发过私信（可以直接回复）。
+ * 能给谁发：全服其他船员互为好友，可以直接私信。
  *
  * HTTP 接口（需要登录）：
  *   GET  /api/dm-list            我的所有对话：对方、最后一条、未读条数
@@ -60,9 +60,8 @@ A.use(function (req, res, url) {
     if (!d2.reads[me.name]) d2.reads[me.name] = {};
     var lastT = L2.length ? L2[L2.length - 1].t : 0;
     if (lastT && d2.reads[me.name][pu.name] !== lastT) { d2.reads[me.name][pu.name] = lastT; store(d2); }
-    var friends = Array.isArray(me.friends) ? me.friends : [];
     A.reply(res, 200, { me: me.name, peer: pu.name, name: soc().gameName(pu.name), avatar: soc().avatarOf(pu.name), online: soc().isOnline(pu.name),
-      canSend: friends.indexOf(pu.name) >= 0 || L2.some(function (m) { return m.f === pu.name; }), msgs: L2.slice(-200) });
+      canSend: A.areFriends(me, pu), msgs: L2.slice(-200) });
     return true;
   }
   if (url === '/api/dm' && req.method === 'POST') {
@@ -77,8 +76,7 @@ A.use(function (req, res, url) {
       var now = Date.now();
       if (last[me.name] && now - last[me.name] < GAP_MS) return A.reply(res, 429, { error: '发得太快了' });
       var d = load(), k = key(me.name, to.name), L = d.convs[k] || (d.convs[k] = []);
-      var friends = Array.isArray(A.loadUser(me.name).friends) ? A.loadUser(me.name).friends : [];
-      if (friends.indexOf(to.name) < 0 && !L.some(function (m) { return m.f === to.name; })) return A.reply(res, 403, { error: '先把对方加为好友，才能发私信' });
+      if (!A.areFriends(me, to)) return A.reply(res, 403, { error: '不能给这位船员发私信' });
       var msg = { f: me.name, t: now, x: text };
       L.push(msg); if (L.length > KEEP) d.convs[k] = L.slice(-KEEP);
       if (!d.reads[me.name]) d.reads[me.name] = {};

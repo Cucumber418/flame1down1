@@ -308,7 +308,10 @@ function allUsers() {
     .map(function (f) { return readJSON(path.join(USER_DIR, f), null); }).filter(Boolean);
 }
 
-module.exports = { handle: handle, use: function (fn) { extra.push(fn); }, whoIs: whoIs, whoToken: whoToken, loadUser: loadUser, saveUser: saveUser, allUsers: allUsers,
+// 服内所有已注册船员互为好友；旧关注名单仅保留作存档兼容。
+function areFriends(a, b) { if (typeof a === 'string') a = loadUser(a); if (typeof b === 'string') b = loadUser(b); return !!(a && b && a.name && b.name && a.name !== b.name); }
+
+module.exports = { areFriends: areFriends, handle: handle, use: function (fn) { extra.push(fn); }, whoIs: whoIs, whoToken: whoToken, loadUser: loadUser, saveUser: saveUser, allUsers: allUsers,
   reply: reply, readBody: readBody, userCount: userCount, walletStatus: claims.status, resetPassword: resetPassword, listUsers: listUsers, DATA_DIR: DATA_DIR, progScore: progScore, cheatCheck: cheatCheck, cheatStats: stats };
 
 // 所有账号进入 S2；保留已拥有的精灵、道具与旧赛季称号

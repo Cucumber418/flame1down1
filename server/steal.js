@@ -16,7 +16,7 @@ T.hook('steal', function (u, arg) {
   arg = arg && typeof arg === 'object' ? arg : {};
   var owner = String(arg.owner || ''), mu = +arg.u, cap = Math.max(0, Math.floor(+arg.cap || 0));
   if (!owner || owner === u.name) return { err: '不能偷自己基地里的经验' };
-  if (!(Array.isArray(u.friends) && u.friends.indexOf(owner) >= 0)) return { err: '只能去好友的基地偷经验，先把对方加为好友吧' };
+  if (!(A.areFriends(u, owner))) return { err: '找不到这位好友' };
   var o = A.loadUser(owner), oa = null;
   try { oa = JSON.parse((o && o.save && o.save.data && o.save.data['hs-account-v1']) || 'null'); } catch (e) {}
   if (!oa || !(oa.story && oa.story.tea && oa.story.tea.done)) return { err: '对方的基地还没开放' };

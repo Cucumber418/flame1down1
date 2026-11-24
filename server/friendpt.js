@@ -52,7 +52,7 @@ require('./tx').hook('fp', function (u) { return take(u.name); });
 require('./tx').hook('ctShare', function (u, to) {
   var o = A.loadUser(String(to || ''));
   if (!o || o.name === u.name) return { ok: false, err: '找不到这位船员' };
-  if (!(Array.isArray(u.friends) && u.friends.indexOf(o.name) >= 0)) return { ok: false, err: '只能分享给好友' };
+  if (!(A.areFriends(u, o))) return { ok: false, err: '只能分享给好友' };
   var d = load(); if (!d.share[o.name]) d.share[o.name] = [];
   if (d.share[o.name].length >= 50) return { ok: false, err: 'Ta 还有很多分享没收，稍后再试' };
   d.share[o.name].push({ id: u.name + '-' + Date.now().toString(36), from: u.name, name: dispName(u), t: Date.now() }); store(d);
@@ -73,7 +73,7 @@ A.use(function (req, res, url) {
     if (err || !body) return A.reply(res, 400, { error: '请求格式不对' });
     var o = A.loadUser(String(body.user || ''));
     if (!o || o.name === me.name) return A.reply(res, 400, { error: '找不到这位船员' });
-    if (!(Array.isArray(me.friends) && me.friends.indexOf(o.name) >= 0)) return A.reply(res, 400, { error: '只能给好友送经验' });
+    if (!(A.areFriends(me, o))) return A.reply(res, 400, { error: '只能给好友送经验' });
     var d = load(); prune(d); var k = today() + '|' + me.name + '|' + o.name, gk = today() + '|' + me.name;
     if (d.sent[k]) return A.reply(res, 400, { error: '今天已经给 Ta 送过了，明天再来吧' });
     d.sent[k] = 1;

@@ -8,7 +8,7 @@
  *   GET  /api/activity           全服进度动态（只读，支持游标分页）
  *   GET  /api/players            所有玩家的简要信息 + 在线状态 + 是否好友
  *   GET  /api/card?user=账号名    某个玩家的完整名片
- *   POST /api/friends { user, on }   加好友 / 删好友（单向，像「关注」）
+ *   POST /api/friends { user, on }   旧客户端兼容接口（全服船员互为好友）
  *   GET  /api/home?user=账号名    拜访某人的茶室：茶室名字、展示中的精灵（用于观看和挑战）；同时记进主人的茶室动态（见 homelog.js）
  *   GET  /api/helpers            好友名片里的助战精灵（星球挑战里可以借用）
  *
@@ -51,7 +51,7 @@
  *   ← { type:'cast-viewers', n, names }                       有几个人在看你
  *   → { type:'cast-invite' }                                  两名玩家对战时，任一方都可以向全服在线玩家发观战邀请
  *   ← { type:'watch-invite', user, name, peerName, label }    收到全服观战邀请
- *   → { type:'watch-start', user } / { type:'watch-stop' }    开始 / 停止观战。只能看自己加了好友的人，或者发过全服邀请的对战
+ *   → { type:'watch-start', user } / { type:'watch-stop' }    开始 / 停止观战。全服其他船员互为好友，可以观看正在转播的对战
  *   ← { type:'watch', op:'full' | 'f' | 'end', ... }          观战画面；op=err 表示看不了（msg 写原因）
  *   presence 和玩家列表里的 battle 是对战标签（例如「野外 · 雷暴陨石群」），watchOpen 表示发过全服邀请、谁都能看
  */
@@ -161,8 +161,8 @@ function rankOut(r) {
 function summary(u, me) {
   var p = parseSave(u), acc = p.acc, on = isOnline(u.name);
   var cw = on && castOf(u.name);
-  var o = { user: u.name, online: on, busy: on && isBusy(u.name), battle: on ? battleOf(u.name) : null, watchOpen: !!(cw && cw.cast.open), friend: !!(me && me.friends && me.friends.indexOf(u.name) >= 0),
-    fan: !!(me && u.friends && u.friends.indexOf(me.name) >= 0), me: !!(me && me.name === u.name), lastSeen: lastSeen[u.name] || (u.save && u.save.savedAt) || u.created };
+  var o = { user: u.name, online: on, busy: on && isBusy(u.name), battle: on ? battleOf(u.name) : null, watchOpen: !!(cw && cw.cast.open), friend: A.areFriends(me, u),
+    fan: false, me: !!(me && me.name === u.name), lastSeen: lastSeen[u.name] || (u.save && u.save.savedAt) || u.created };
   if (!acc || !acc.introDone) { o.noChar = true; return o; }
   o.name = str(acc.name, 20); o.title = str(acc.title, 20) || null; o.avatar = avatarOf(acc); o.gender = acc.gender === 'f' ? 'f' : 'm';   // 主角形象（名片上显示）
   o.monsN = acc.mons.length; o.teamN = activeTeam(acc).length;
@@ -546,7 +546,7 @@ function sendFull(v, w) {
 function canWatch(ws, name) {
   var me = A.loadUser(ws.user), w = castOf(name);
   if (!w) return { err: '对方现在没有在对战' };
-  if (!(w.cast.open || (me && Array.isArray(me.friends) && me.friends.indexOf(name) >= 0))) return { err: '只能观战自己的好友（或者发出了全服观战邀请的对战）' };
+  if (!(w.cast.open || A.areFriends(me, name))) return { err: '只能观战自己的好友（或者发出了全服观战邀请的对战）' };
   return { w: w };
 }
 
@@ -806,11 +806,11 @@ A.use(function (req, res, url) {
     A.reply(res, 200, { me: me.name, players: list });
     return true;
   }
-  // 星球挑战：我加了好友的人里，名片上放了助战精灵的
+  // 星球挑战：全服其他船员名片上设置的助战精灵
   if (url === '/api/helpers' && req.method === 'GET') {
     var hl = [];
-    (Array.isArray(me.friends) ? me.friends : []).forEach(function (n) {
-      var fu = A.loadUser(n), fa = fu && parseSave(fu).acc;
+    A.allUsers().filter(function (u) { return A.areFriends(me, u); }).forEach(function (fu) {
+      var fa = parseSave(fu).acc;
       if (fa && fa.introDone) helpersOf(fa).forEach(function (hm) { hl.push({ user: fu.name, name: str(fa.name, 20), u: hm.u, mon: monOut(hm, fa) }); });
     });
     A.reply(res, 200, { helpers: hl });
@@ -830,7 +830,7 @@ A.use(function (req, res, url) {
     var hm = homeOf(ha);
     if (hm.open && hu.name !== me.name) require('./homelog').visit(hu.name, me.name);   // 记进主人的茶室动态
     // 2026-11-03：好友来访时，每只精灵现在能偷多少经验（规则在 js/engine/grow.js，偷走由交易 homeSteal 结算）
-    var steal = null, stealLeft = 0, isFriend = hu.name !== me.name && Array.isArray(me.friends) && me.friends.indexOf(hu.name) >= 0, E = require('./tx').engine();
+    var steal = null, stealLeft = 0, isFriend = A.areFriends(me, hu), E = require('./tx').engine();
     if (isFriend && E && E.GROW) {
       var ma = parseSave(me).acc, now = Date.now(); stealLeft = E.GROW.stealLeft(ma, now);
       steal = hm.raw.map(function (r) { var v = E.GROW.stealView(r.x, r.m, me.name, stealLeft, now); return { u: r.m.u, n: v.n, why: v.why || null }; });
@@ -845,12 +845,7 @@ A.use(function (req, res, url) {
       var t = A.loadUser(String(body.user || ''));
       if (!t) return A.reply(res, 404, { error: '没有这个玩家' });
       if (t.name === me.name) return A.reply(res, 400, { error: '不能加自己为好友' });
-      var f = Array.isArray(me.friends) ? me.friends : [];
-      f = f.filter(function (x) { return x !== t.name; });
-      if (body.on) f.push(t.name);
-      me.friends = f.slice(-200);
-      A.saveUser(me);
-      A.reply(res, 200, { friends: me.friends });
+      A.reply(res, 200, { friends: A.allUsers().filter(function (u) { return A.areFriends(me, u); }).map(function (u) { return u.name; }) });
     });
     return true;
   }
@@ -858,9 +853,9 @@ A.use(function (req, res, url) {
   return true;
 });
 
-// 星球挑战借好友的助战精灵（server/pve.js 用）：me 加了 owner 好友、owner 名片上放了编号 unit 的精灵时，返回 { owner, mon }
+// 星球挑战借好友的助战精灵（server/pve.js 用）：owner 名片上放了编号 unit 的精灵时，返回 { owner, mon }
 function friendHelper(me, owner, unit) {
-  if (!me || !Array.isArray(me.friends) || me.friends.indexOf(owner) < 0) return null;
+  if (!A.areFriends(me, owner)) return null;
   var fu = A.loadUser(owner), fa = fu && parseSave(fu).acc; if (!fa || !fa.introDone) return null;
   var hm = helpersOf(fa).filter(function (m) { return m.u === unit; })[0];
   return hm ? { owner: str(fa.name, 20) || fu.name, mon: monOut(hm, fa) } : null;
