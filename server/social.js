@@ -216,6 +216,23 @@ function presence(name) {
   allSockets.forEach(function (w) { if (w.user) out(w, msg); });
 }
 
+/* ---------- 服务器生成的全服小喇叭 ---------- */
+var loginAnnounced = Object.create(null), LOGIN_ANNOUNCE_GAP = 60000;
+function announce(event) { allSockets.forEach(function (w) { if (w.user) out(w, { type: 'global-announcement', event: event }); }); }
+function announceOnline(name) {
+  var u = A.loadUser(name), a = u && parseSave(u).acc, now = Date.now();
+  if (!a || !a.introDone || loginAnnounced[name] && now - loginAnnounced[name] < LOGIN_ANNOUNCE_GAP) return;
+  loginAnnounced[name] = now;
+  announce({ id: newId(), at: now, kind: 'online', user: name, name: str(a.name, 20) || name });
+}
+require('./activity').onPublish(function (events) {
+  var E = require('./tx').engine(), activity = require('./activity');
+  events.forEach(function (e) {
+    if (e.kind === 'mon') { var rarity = activity.monClass(E, e.mon, e.gift); if (rarity) announce(Object.assign({}, e, { rarity: rarity })); }
+    else if (e.kind === 'boss' && e.first) { var info = activity.bossMeta(E, e.boss); if (info && !info.weekly) announce(Object.assign({}, e, { bossInfo: info })); }
+  });
+});
+
 /* ---------- 精灵大乱斗 ---------- */
 var brawls = {};      // id -> { id, ws, user, sids, timer, invited: [账号名] }
 // 检查选的 3 只都在这个人的出战配队里，返回它们的种类
@@ -569,7 +586,7 @@ function onMessage(ws, msg) {
       var first = !isOnline(who.user);
       (online[who.user] = online[who.user] || []).push(ws);
       out(ws, { type: 'authed', user: who.user });
-      if (first) presence(who.user);
+      if (first) { presence(who.user); announceOnline(who.user); }
       return true;
     }
     case 'challenge': {
@@ -805,7 +822,8 @@ A.use(function (req, res, url) {
   if (url === '/api/activity' && req.method === 'GET') {
     var query = new URL(req.url, 'http://localhost').searchParams, limit = int(query.get('limit') || 30, 1, 50);
     var result = require('./activity').page(A.DATA_DIR, query.get('before') || '', limit), E = require('./tx').engine();
-    result.items = result.items.filter(function (e) { return e.kind === 'rank' ? Number.isInteger(e.rank) && e.rank > 0 && E && e.rank < E.RANKS.length && /^S[1-9]\d*$/.test(e.season) : e.mon ? E && E.SPMAP[e.mon.sid] : e.kind === 'story' ? E && E.STY.SITES[e.task] : e.kind === 'quest' ? E && E.QST.WQ.some(function (q) { return q.id === e.task; }) : e.kind === 'daily' && E && E.QST.DAILY[e.task]; });
+    result.items = result.items.filter(function (e) { return e.kind === 'boss' ? !!require('./activity').bossMeta(E, e.boss) : e.kind === 'rank' ? Number.isInteger(e.rank) && e.rank > 0 && E && e.rank < E.RANKS.length && /^S[1-9]\d*$/.test(e.season) : e.mon ? E && E.SPMAP[e.mon.sid] : e.kind === 'story' ? E && E.STY.SITES[e.task] : e.kind === 'quest' ? E && E.QST.WQ.some(function (q) { return q.id === e.task; }) : e.kind === 'daily' && E && E.QST.DAILY[e.task]; });
+    result.items = result.items.map(function (e) { if (e.kind === 'mon') return Object.assign({}, e, { rarity: require('./activity').monClass(E, e.mon, e.gift) }); if (e.kind === 'boss') return Object.assign({}, e, { bossInfo: require('./activity').bossMeta(E, e.boss) }); return e; });
     A.reply(res, 200, result); return true;
   }
   if (url === '/api/players' && req.method === 'GET') {

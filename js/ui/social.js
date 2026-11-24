@@ -404,8 +404,9 @@
   }
   function activityRow(e) {
     var p = (st.players || []).find(function (p) { return p.user === e.user; }), icon = '✓', text = '';
-    if (e.kind === 'rank' && RANKS[e.rank]) { icon = '<span style="color:' + RANK_COLOR[e.rank] + '">↑</span>'; text = '在 ' + e.season + ' 赛季晋升至' + RANKS[e.rank]; }
-    else if (e.mon && SPMAP[e.mon.sid]) { var v = A.view(e.mon); icon = '<img src="' + v.img + '" alt="">'; text = e.kind === 'level' ? '的' + v.name + '达到了 LV' + e.level : '获得了' + (e.mon.shiny ? '异色' : '') + v.name + ' · LV' + e.mon.lv; }
+    if (e.kind === 'boss' && e.bossInfo) { icon = '⚔'; text = (e.first && !e.bossInfo.weekly ? '首次' : '') + '战胜了 BOSS「' + e.bossInfo.name + '」 · ' + e.bossInfo.diff; }
+    else if (e.kind === 'rank' && RANKS[e.rank]) { icon = '<span style="color:' + RANK_COLOR[e.rank] + '">↑</span>'; text = '在 ' + e.season + ' 赛季晋升至' + RANKS[e.rank]; }
+    else if (e.mon && SPMAP[e.mon.sid]) { var v = A.view(e.mon); icon = '<img src="' + v.img + '" alt="">'; text = e.kind === 'level' ? '的' + v.name + '达到了 LV' + e.level : '获得了' + (e.rarity === 'rare' ? '稀有精灵' : e.rarity === 'special' ? '特殊精灵' : '') + (e.mon.shiny ? '异色' : '') + v.name + ' · LV' + e.mon.lv; }
     else text = '完成了「' + (A.socialTaskName ? A.socialTaskName(e.kind, e.task) : '任务') + '」';
     return '<article class="social-event"><span class="social-event-icon">' + icon + '</span><div><p><button type="button" data-card="' + esc(e.user) + '">' + esc(p && p.name || e.name) + '</button>' + esc(text) + '</p><small>' + ago(e.at) + '</small></div></article>';
   }
@@ -558,6 +559,7 @@
 
   function onMsg(m) {
     switch (m.type) {
+      case 'global-announcement': if (window.HSBROADCAST) HSBROADCAST.push(m.event); break;
       case 'authed': st.wsOk = true; st.retry = 0; load(); render(); renderBrawl(); if (HB.castResync) HB.castResync(); dmLoadList(true); if (!hb.peeked) { hb.peeked = true; hbPeek(); farmPeek(); } break;
       case 'cast-viewers': if (HB.castViewers) HB.castViewers(m.n, m.names); break;
       case 'cast-invited': if (HB.castInvited) HB.castInvited(m.ok, m.ok ? '已向 ' + m.n + ' 位在线船员发出观战邀请，现在所有人都可以观战这场对战' : m.msg); break;

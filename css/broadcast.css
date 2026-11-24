@@ -1,0 +1,7 @@
+.global-broadcast { position: fixed; z-index: 1400; top: max(50px, calc(env(safe-area-inset-top, 0px) + 10px)); left: 50%; transform: translateX(-50%); width: min(1000px, calc(100% - 24px)); display: flex; align-items: center; gap: 8px; padding: 5px 8px; border: 1px solid #c6a463; border-radius: 8px; background: rgba(30, 32, 40, .92); color: #fff3c8; box-shadow: 0 2px 8px rgba(0, 0, 0, .18); font: 13px/1.5 var(--f-body); pointer-events: none; overflow: hidden; }
+.broadcast-label { flex: 0 0 auto; font-size: 11px; color: #f6d68a; }
+.broadcast-clip { flex: 1 1 0; min-width: 0; overflow: hidden; white-space: nowrap; }
+.broadcast-message { display: inline-block; white-space: nowrap; will-change: transform; }
+.broadcast-close { pointer-events: auto; flex: 0 0 auto; border: 0; padding: 0 4px; background: transparent; color: #f6d68a; font: inherit; cursor: pointer; }
+.broadcast-static .broadcast-clip, .broadcast-static .broadcast-message { white-space: normal; overflow-wrap: anywhere; }
+@media (max-width: 640px), (max-height: 520px) { .global-broadcast { font-size: 12px; width: calc(100% - 16px); padding: 4px 6px; gap: 6px; } }
