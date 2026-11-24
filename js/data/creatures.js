@@ -242,7 +242,7 @@ var ARENA_ROSTER = ['dragon', 'leaf', 'gorgon', 'squid', 'wind', 'pluto', 'pede'
   'wild', 'hephaestus', 'leigong', 'inkarm', 'barren', 'mush', 'kaleo', 'siren', 'bone', 'aegis', 'shroom', 'phantom'];   // S1 第二期：叶子喵移出，方头蘑菇（涅槃蘑菇）加入
 (function () { var all = SP.concat(EXTRA_SP), keep = []; EXTRA_SP = []; all.forEach(function (s) { (ARENA_ROSTER.indexOf(s.id) >= 0 ? keep : EXTRA_SP).push(s); }); SP = keep; })();   // 名单里的进 SP（竞技对战），其余进 EXTRA_SP
 // S2：仅已完成上色的最终形态；Wiki / 沙盒仍保留全部精灵
-var S2_ROSTER = ['leaf','gorgon','squid','wind','pede','tagore','hauris','faraday','moon','wild','hephaestus','leigong','barren','mush','kaleo','siren','phantom','shroom','leafcat','turkey','barlow','bali','clementi','fate','odo','leiming','tiago','leibniz','firemouse'];
+var S2_ROSTER = ['leaf','gorgon','squid','wind','pede','tagore','hauris','faraday','moon','wild','hephaestus','leigong','barren','mush','kaleo','siren','phantom','shroom','leafcat','turkey','barlow','bali','clementi','fate','odo','leiming','tiago','leibniz','firemouse','glen'];
 var RANK_ROSTER = SP.concat(EXTRA_SP).filter(function (s) { return S2_ROSTER.indexOf(s.id) >= 0; });
 var SPMAP = {};
 EXTRA_SP.concat(SP).forEach(function (s) { if (!s.types) s.types = [s.type]; s.type = s.types[0]; SPMAP[s.id] = s; });

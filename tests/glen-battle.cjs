@@ -8,7 +8,7 @@ assert.deepEqual(Array.from(C.SPMAP.glen.evo,e=>e.no),['083','084']);assert.equa
 for(const [lv,n]of [[1,'格伦'],[29,'格伦'],[30,'莫格伦'],[100,'莫格伦']]){const f=C.ACC.form({sid:'glen',lv});assert.equal(f.name,n);assert(fs.existsSync(path.join(__dirname,'..',f.img)));}
 for(const n of [...C.SPMAP.glen.moves,...C.SPMAP.glen.hidden]){assert(C.M[n]&&!C.M[n].d.includes('。'));assert(C.M[n].pp>0);}
 for(const n of C.SPMAP.glen.hidden){assert(!C.ACC.avail('glen',49,[]).includes(n));assert(C.ACC.avail('glen',50,[]).includes(n));}
-assert.equal(C.M['旋转冲撞'].power,65);assert.equal(C.M['践踏'].power,10);assert(!C.RANK_ROSTER.some(m=>m.id==='glen'));
+assert.equal(C.M['旋转冲撞'].power,65);assert.equal(C.M['践踏'].power,10);assert(C.RANK_ROSTER.some(m=>m.id==='glen'));
 // Stone mark affects only the named move, stays when the user leaves, and clears with its target.
 let S=battle();assert.equal(C.movePower(mon(S),mon(S,1),C.M['破石之蹄']),60);hit(S,'破石之蹄');assert(mon(S,1).fx.stoneMark);assert.equal(C.movePower(mon(S),mon(S,1),C.M['破石之蹄']),120);hit(S,'破石之蹄');assert(mon(S,1).fx.stoneMark);assert.equal(C.movePower(mon(S),mon(S,1),C.M['扔石块']),50);C.doSwitch(S,[],0,1,false);assert(mon(S,1).fx.stoneMark);C.doSwitch(S,[],1,1,false);C.doSwitch(S,[],1,0,false);assert(!mon(S,1).fx.stoneMark);
 S=battle();mon(S,1).fx.absDef=1;hit(S,'破石之蹄');assert(!mon(S,1).fx.stoneMark);S=battle();mon(S).stages.acc=-6;C.RNG=()=>.99;hit(S,'破石之蹄');assert(!mon(S,1).fx.stoneMark);

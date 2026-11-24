@@ -68,7 +68,7 @@ var LINEART = {
 
 // 进化前形态立绘（_s1 一阶，_s2 二阶）  →  images/pre_sprites/
 var PRE_SPRITES = {
-  "glen_s1": "images/sprites/glen-pending.svg",
+  "glen_s1": "images/pre_sprites/glen_s1.png",
   "barlow_s1": "images/pre_sprites/barlow_s1.png",
   "barlow_s2": "images/pre_sprites/barlow_s2.png",
   "clementi_s1": "images/pre_sprites/clementi_s1.png",
