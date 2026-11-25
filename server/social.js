@@ -229,6 +229,7 @@ require('./activity').onPublish(function (events) {
   var E = require('./tx').engine(), activity = require('./activity');
   events.forEach(function (e) {
     if (e.kind === 'mon') { var rarity = activity.monClass(E, e.mon, e.gift); if (rarity) announce(Object.assign({}, e, { rarity: rarity })); }
+    else if (e.kind === 'defeat' || e.kind === 'battle' && e.result === 'lose') announce(e);
     else if (e.kind === 'boss') { var info = activity.bossMeta(E, e.boss); if (info) announce(Object.assign({}, e, { bossInfo: info })); }
   });
 });
@@ -280,7 +281,7 @@ function endMatch(id, leaver, reason) {
   var m = matches[id]; if (!m) return;
   delete matches[id];
   if (m.prep) clearTimeout(m.prep.timer);
-  if (leaver && m.srv) pvp.leave(m, leaver.user);   // 大乱斗中途有人离开：记下结果（没离开的一方能领奖励）
+  if (leaver && m.srv) pvp.leave(m, leaver.user);   // 对战中途离开也记结果与播报；大乱斗未离开的一方可领奖励
   pvp.stop(m);
   if (m.ct) setTimeout(function () { ctAfter(m, leaver, reason); }, 0);
   m.socks.forEach(function (w) {
@@ -822,7 +823,7 @@ A.use(function (req, res, url) {
   if (url === '/api/activity' && req.method === 'GET') {
     var query = new URL(req.url, 'http://localhost').searchParams, limit = int(query.get('limit') || 30, 1, 50);
     var result = require('./activity').page(A.DATA_DIR, query.get('before') || '', limit), E = require('./tx').engine();
-    result.items = result.items.filter(function (e) { return e.kind === 'boss' ? !!require('./activity').bossMeta(E, e.boss) : e.kind === 'rank' ? Number.isInteger(e.rank) && e.rank > 0 && E && e.rank < E.RANKS.length && /^S[1-9]\d*$/.test(e.season) : e.mon ? E && E.SPMAP[e.mon.sid] : e.kind === 'story' ? E && E.STY.SITES[e.task] : e.kind === 'quest' ? E && E.QST.WQ.some(function (q) { return q.id === e.task; }) : false; });
+    result.items = result.items.filter(function (e) { return e.kind === 'battle' ? ['lose','draw'].indexOf(e.result) >= 0 && typeof e.opponent === 'string' && typeof e.opponentUser === 'string' && typeof e.mode === 'string' : e.kind === 'boss' ? !!require('./activity').bossMeta(E, e.boss) : e.kind === 'rank' ? Number.isInteger(e.rank) && e.rank > 0 && E && e.rank < E.RANKS.length && /^S[1-9]\d*$/.test(e.season) : e.mon ? E && E.SPMAP[e.mon.sid] : e.kind === 'story' ? E && E.STY.SITES[e.task] : e.kind === 'quest' ? E && E.QST.WQ.some(function (q) { return q.id === e.task; }) : false; });
     result.items = result.items.map(function (e) { if (e.kind === 'mon') return Object.assign({}, e, { rarity: require('./activity').monClass(E, e.mon, e.gift) }); if (e.kind === 'boss') return Object.assign({}, e, { bossInfo: require('./activity').bossMeta(E, e.boss) }); return e; });
     A.reply(res, 200, result); return true;
   }

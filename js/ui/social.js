@@ -404,7 +404,8 @@
   }
   function activityRow(e) {
     var p = (st.players || []).find(function (p) { return p.user === e.user; }), icon = '✓', text = '';
-    if (e.kind === 'boss' && e.bossInfo) { icon = '⚔'; text = (e.first && !e.bossInfo.weekly ? '首次' : '') + '战胜了 BOSS「' + e.bossInfo.name + '」 · ' + e.bossInfo.diff; }
+    if (e.kind === 'battle') { icon = '⚔'; text = '在' + e.mode + '中' + (e.result === 'draw' ? '与「' + e.opponent + '」打成平局' : '被「' + e.opponent + '」击败了' + (e.quit ? '（主动退出或认输）' : '')); }
+    else if (e.kind === 'boss' && e.bossInfo) { icon = '⚔'; text = (e.first && !e.bossInfo.weekly ? '首次' : '') + '战胜了 BOSS「' + e.bossInfo.name + '」 · ' + e.bossInfo.diff; }
     else if (e.kind === 'rank' && RANKS[e.rank]) { icon = '<span style="color:' + RANK_COLOR[e.rank] + '">↑</span>'; text = '在 ' + e.season + ' 赛季晋升至' + RANKS[e.rank]; }
     else if (e.mon && SPMAP[e.mon.sid]) { var v = A.view(e.mon); icon = '<img src="' + v.img + '" alt="">'; text = e.kind === 'level' ? '的' + v.name + '达到了 LV' + e.level : '获得了' + (e.rarity === 'rare' ? '稀有精灵' : e.rarity === 'special' ? '特殊精灵' : '') + (e.mon.shiny ? '异色' : '') + v.name + ' · LV' + e.mon.lv; }
     else text = '完成了「' + (A.socialTaskName ? A.socialTaskName(e.kind, e.task) : '任务') + '」';
@@ -416,7 +417,7 @@
   }
 
   function activityHTML() {
-    return '<section class="social-column social-activity"><header><div><h3>好友动态</h3><small>全服可见 · 船员们的新进展</small></div><button type="button" class="btn ghost" data-activity-refresh' + (activity.busy ? ' disabled' : '') + '>刷新</button></header><div class="social-pane-scroll" data-social-scroll="activity" tabindex="0" aria-label="全服动态">' + (activity.items || []).map(activityRow).join('') + (activity.err ? '<p class="hint red">' + esc(activity.err) + '</p>' : '') + (!activity.items || !activity.items.length ? '<p class="hint social-feed-empty">' + (activity.busy ? '正在读取动态……' : '新的精灵、任务与成长故事会出现在这里') + '</p>' : '') + (activity.next ? '<button type="button" class="btn social-more" data-activity-more' + (activity.busy ? ' disabled' : '') + '>' + (activity.busy ? '正在读取……' : '更早的动态') + '</button>' : '') + '</div></section>';
+    return '<section class="social-column social-activity"><header><div><h3>好友动态</h3><small>全服可见 · 船员们的新进展</small></div><button type="button" class="btn ghost" data-activity-refresh' + (activity.busy ? ' disabled' : '') + '>刷新</button></header><div class="social-pane-scroll" data-social-scroll="activity" tabindex="0" aria-label="全服动态">' + (activity.items || []).map(activityRow).join('') + (activity.err ? '<p class="hint red">' + esc(activity.err) + '</p>' : '') + (!activity.items || !activity.items.length ? '<p class="hint social-feed-empty">' + (activity.busy ? '正在读取动态……' : '新的精灵、任务、对战与成长故事会出现在这里') + '</p>' : '') + (activity.next ? '<button type="button" class="btn social-more" data-activity-more' + (activity.busy ? ' disabled' : '') + '>' + (activity.busy ? '正在读取……' : '更早的动态') + '</button>' : '') + '</div></section>';
   }
   /* ---------- 页面 ---------- */
   function render() {

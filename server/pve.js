@@ -119,6 +119,7 @@ function finish(name, sess) {
   u.save.data['hs-account-v1'] = JSON.stringify(acc);
   u.save.rev = (u.save.rev || 0) + 1; u.save.savedAt = now;
   A.saveUser(u);
+  require('./battle-announcements').pve(u, sess, now);
   end.rev = u.save.rev; end.seen = seen; end.downs = downs;
   end.rewards = { items: {}, energy: Math.max(0, (acc.energy || 0) - reward0.energy), tokens: Math.max(0, (acc.tokens || 0) - reward0.tokens) };
   Object.keys(acc.items || {}).forEach(function (k) { var n = acc.items[k] - (reward0.items[k] || 0); if (n > 0) end.rewards.items[k] = n; });

@@ -36,7 +36,8 @@ function prepare(previous,u,now){
   u.activityState=state;return out;
 }
 function read(dir){try{var x=JSON.parse(fs.readFileSync(path.join(dir,'activity.json'),'utf8'));return Array.isArray(x)?x:[];}catch(e){return [];}}
-function publish(dir,events){if(!events.length)return;var rows=events.slice().reverse().concat(read(dir)).slice(0,KEEP),f=path.join(dir,'activity.json');fs.writeFileSync(f+'.tmp',JSON.stringify(rows));fs.renameSync(f+'.tmp',f);listeners.forEach(function(fn){try{fn(events);}catch(e){console.error('全服播报失败',e.message);}});}
+function publish(dir,events){if(!events.length)return;var rows=events.slice().reverse().concat(read(dir)).slice(0,KEEP),f=path.join(dir,'activity.json');fs.writeFileSync(f+'.tmp',JSON.stringify(rows));fs.renameSync(f+'.tmp',f);notify(events);}
+function notify(events){listeners.forEach(function(fn){try{fn(events);}catch(e){console.error('全服播报失败',e.message);}});}
 function page(dir,before,limit){var rows=read(dir),start=before?rows.findIndex(function(e){return e.id===before;})+1:0;if(before&&!start)return{items:[],next:null};var visible=rows.slice(start).filter(function(e){return e.kind!=='daily';}),items=visible.slice(0,limit);return{items:items,next:visible.length>items.length&&items.length?items[items.length-1].id:null};}
 function monClass(E,m,gift){if(!E||!m||!E.SPMAP[m.sid])return null;var tier=E.GROW.relTier(m.sid);return m.shiny||gift&&m.sid==='firemouse'?'special':tier===1?'rare':tier===2||tier<0?'special':null;}
 function bossMeta(E,key){
@@ -45,4 +46,4 @@ function bossMeta(E,key){
   if(parts.length===2&&/^w[01]?$/.test(parts[1])){var W=E.PVE.WEEKLIES.find(function(w){return w.boss===parts[0]&&E.PVE.wkKey(w)===parts[1];});return W?{name:B.name,diff:B.lv[W.d].diff+' · 每周挑战',weekly:true}:null;}
   return Number.isInteger(d)&&d>=0&&B.lv[d]?{name:B.name,diff:B.lv[d].diff,weekly:false}:null;
 }
-module.exports={monClass:monClass,bossMeta:bossMeta,onPublish:function(fn){listeners.push(fn);},prepare:prepare,publish:publish,page:page,KEEP:KEEP};
+module.exports={notify:notify,monClass:monClass,bossMeta:bossMeta,onPublish:function(fn){listeners.push(fn);},prepare:prepare,publish:publish,page:page,KEEP:KEEP};

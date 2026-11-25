@@ -6,6 +6,7 @@
   function label(e) {
     var name = String(e.name || e.user || '').slice(0, 20);
     if (!name) return '';
+    if ((e.kind === 'defeat' || e.kind === 'battle' && e.result === 'lose') && typeof e.opponent === 'string' && e.opponent) return '玩家「' + name + '」被「' + e.opponent.slice(0, 60) + '」击败了！';
     if (e.kind === 'online') return '船员「' + name + '」上线了！';
     if (e.kind === 'mon' && e.mon && SPMAP[e.mon.sid] && (e.rarity === 'rare' || e.rarity === 'special')) {
       var v = HSACC.view(e.mon);

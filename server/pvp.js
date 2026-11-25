@@ -120,6 +120,7 @@ function quit(m, i) {
 function finish(m) {
   var r = m.S.over;
   m.result = r === 'win' ? 0 : r === 'lose' ? 1 : -1;   // 赢的一方；-1 是平局
+  require('./battle-announcements').pvp(m);
   if (m.ct) m.ct.res = m.result >= 0 ? m.result : null;   // 平局不计，重打这一局
   if (m.S.pvp && m.S.pvp.brawl) [0, 1].forEach(function (i) { brawlNote(m.users[i], m.id, m.result < 0 ? 'draw' : m.result === i ? 'win' : 'lose', m.quitSide === i); });
 }
@@ -133,9 +134,14 @@ function brawlNote(user, id, r, none) {
 }
 // 中途有人离开：没离开的一方算赢，离开的一方没有奖励
 function leave(m, leaverName) {
-  if (!m.S || !m.S.pvp || !m.S.pvp.brawl || m.phase === 'over') return;
+  if (!m.S || !m.S.pvp || m.phase === 'over') return;
+  var i = m.users.indexOf(leaverName); if (i < 0) return;
+  // 仅为播报提供退出结果；比赛系列的判负仍由 social.js 原有规则处理。
+  var ended = Object.assign({}, m, { S: Object.assign({}, m.S, { over: i === 0 ? 'lose' : 'win' }), quitSide: i });
+  require('./battle-announcements').pvp(ended); m.socialDone = ended.socialDone;
+  if (!m.S.pvp.brawl) return;
   m.phase = 'over';
-  [0, 1].forEach(function (i) { var me = m.users[i] === leaverName; brawlNote(m.users[i], m.id, me ? 'lose' : 'win', me); });
+  [0, 1].forEach(function (side) { var me = side === i; brawlNote(m.users[side], m.id, me ? 'lose' : 'win', me); });
 }
 require('./tx').hook('brawl', function (u, id) {
   var L = brawlRes[u.name] || [], i = -1;

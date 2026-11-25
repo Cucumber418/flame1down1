@@ -1,0 +1,36 @@
+'use strict';
+const fs=require('fs'),os=require('os'),path=require('path'),http=require('http'),assert=require('node:assert/strict');
+process.env.DATA_DIR=fs.mkdtempSync(path.join(os.tmpdir(),'flame-battle-news-'));
+const A=require('../server/accounts'),T=require('../server/tx'),social=require('../server/social'),pvp=require('../server/pvp');require('../server/pve');const E=T.engine(),sockets=[],matches=[];
+const server=http.createServer((q,r)=>{if(!A.handle(q,r)){r.statusCode=404;r.end();}});
+function fixture(name){const a={v:1,name,introDone:true,next:1,mons:[],teams:[[]],active:0,story:{},items:{},exp:0,energy:0,christmasStory:{cabinOpen:true,cabinIntro:true,shopOpen:true,shopIntro:true,wonderOpen:true,knightIntro:true,knight:{wins:1},highland:{talks:{oct:true,unicorn:true,may:true,ace:true},intro:true}}};for(const k of ['school','river','jiuquan'])a.story[k]={done:true,rewarded:true};const m=E.ACC.newMon(a,'glen',1,{now:Date.now(),rand:()=>.5});m.moves=['扔石块'];a.teams[0]=[m.u];return a;}
+const announcements=w=>w.messages.filter(e=>e.type==='global-announcement').map(e=>e.event),clear=()=>sockets.forEach(w=>w.messages=[]);
+(async()=>{await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port,tokens={};
+async function api(url,who,body){const r=await fetch(base+url,{method:body?'POST':'GET',headers:{'Content-Type':'application/json',...(who?{Authorization:'Bearer '+tokens[who]}:{})},body:body?JSON.stringify(body):undefined});return {status:r.status,...await r.json()};}
+for(const [user,name] of [['hero','挑战者'],['watcher','围观船员'],['offline','离线船员']]){const r=await api('/api/register',null,{user,pass:'battle-news-password',data:{'hs-account-v1':JSON.stringify(fixture(name))}});assert(r.token);tokens[user]=r.token;}
+function socket(who){const w={readyState:1,pv:2,messages:[],send(v){this.messages.push(JSON.parse(v));}};sockets.push(w);social.onOpen(w);if(who)social.onMessage(w,{type:'auth',token:tokens[who],pv:2});return w;}
+const hero=socket('hero'),watcher=socket('watcher'),anon=socket();clear();
+const req=(op,extra={})=>api('/api/pve','hero',{op,...extra,rules:T.RULES_VERSION});
+let r=await req('start',{kind:'highland',args:{}});assert(r.ok);let bid=r.bid,seq=0,last;
+for(let i=0;i<20&&!r.end;i++){last={bid,seq:++seq,a:{kind:'move',i:0}};r=await req('act',last);assert(r.ok);}
+assert(r.end);assert.equal(r.end.res,'lose');let news=announcements(watcher);assert.equal(news.length,1);assert.equal(news[0].kind,'defeat');assert.equal(news[0].name,'挑战者');assert(news[0].opponent.includes('莫格伦'));assert.equal(news[0].quit,false);assert.equal(announcements(anon).length,0);assert.equal((await api('/api/activity','offline')).items.length,0);
+assert.deepEqual(await req('act',last),r);assert.equal(announcements(watcher).length,1);clear();
+// Surrender counts too; replay and ordinary save uploads do not create a second broadcast.
+r=await req('start',{kind:'highland',args:{}});assert(r.ok);bid=r.bid;r=await req('quit',{bid,seq:1});assert(r.end);assert.equal(announcements(watcher).length,1);assert(announcements(watcher)[0].quit);const firstId=announcements(watcher)[0].id;
+assert.deepEqual(await req('quit',{bid,seq:1}),r);A.saveUser(A.loadUser('hero'));assert.equal(announcements(watcher).length,1);clear();
+// Wild retreat has a real monster name, is broadcast, and remains outside the persistent friend feed.
+r=await req('wild',{rid:'hl_castle',si:0,bg:'hl_castle',n:1});assert(r.list.length);r=await req('start',{kind:'wild',args:{id:r.list[0].id}});assert(r.ok);const foe=E.nm(r.S.sides[1].team[0]).replace(/^【|】$/g,'');bid=r.bid;r=await req('quit',{bid,seq:1});assert.equal(r.end.res,'flee');assert.equal(announcements(watcher)[0].opponent,foe);assert(announcements(watcher)[0].quit);assert.notEqual(announcements(watcher)[0].id,firstId);assert.equal((await api('/api/activity','offline')).items.length,0);clear();
+function match(id,teams,options={mode:1}){const m={id,users:['hero','watcher'],names:['挑战者','围观船员'],socks:[hero,watcher]};assert(pvp.start(m,teams,'spec',options));matches.push(m);return m;}
+function feed(){return api('/api/activity','offline').then(r=>r.items.filter(e=>e.kind==='battle'));}
+const strong={sid:'glen',lv:100,moves:['扔石块']},weak={sid:'wind',lv:1,moves:['飞撞']},same={sid:'glen',lv:60,moves:['扔石块']};
+let m=match('knockout',[[strong],[weak]]);pvp.onMsg(m,0,{k:'act',a:{kind:'move',i:0}});pvp.onMsg(m,1,{k:'act',a:{kind:'move',i:0}});assert(pvp.over(m));assert.equal(m.result,0);news=announcements(watcher);assert.equal(news.length,1);assert.equal(news[0].kind,'battle');assert.equal(news[0].user,'watcher');assert.equal(news[0].opponent,'挑战者');assert.equal(news[0].opponentUser,'hero');assert.equal(news[0].quit,false);let rows=await feed();assert.equal(rows.length,1);assert.equal(rows[0].id,news[0].id);assert.equal(rows[0].mode,'好友切磋');pvp.onMsg(m,0,{k:'act',a:{kind:'move',i:0}});assert.equal((await feed()).length,1);assert.equal(announcements(watcher).length,1);clear();
+m=match('surrender',[[same],[same]],{mode:5,bal:true});pvp.onMsg(m,0,{k:'quit'});assert.equal(announcements(watcher)[0].user,'hero');assert.equal(announcements(watcher)[0].opponent,'围观船员');assert(announcements(watcher)[0].quit);assert.equal((await feed()).length,2);clear();
+m=match('leave',[[same],[same]]);pvp.leave(m,'hero');assert.equal(m.S.over,null);assert.equal(announcements(watcher)[0].user,'hero');assert.equal((await feed()).length,3);pvp.leave(m,'hero');assert.equal((await feed()).length,3);assert.equal(announcements(watcher).length,1);pvp.stop(m);clear();
+m=match('brawl-leave',[[same],[same]],{mode:3,brawl:true});pvp.leave(m,'watcher');assert.equal(m.phase,'over');assert.equal(announcements(watcher)[0].user,'watcher');assert.equal((await feed()).length,4);clear();
+// Draws appear in the feed without inventing a defeated player; voids cannot publish a result.
+m=match('draw',[[same],[same]]);m.S.turn=E.MAX_TURNS;pvp.onMsg(m,0,{k:'act',a:{kind:'move',i:0}});pvp.onMsg(m,1,{k:'act',a:{kind:'move',i:0}});assert.equal(m.S.over,'draw');rows=await feed();assert.equal(rows.length,5);assert.equal(rows[0].result,'draw');assert.equal(announcements(watcher).length,0);
+const helper=require('../server/battle-announcements');helper.pve(A.loadUser('hero'),{S:{over:'void'},bid:'void'});helper.pve(A.loadUser('hero'),{S:{over:'win'},bid:'win'});assert.equal(announcements(watcher).length,0);
+social.onMessage(hero,{type:'global-announcement',event:{kind:'defeat',opponent:'forged'}});assert.equal(announcements(watcher).length,0);assert.equal(announcements(anon).length,0);
+const late=socket('offline');assert(announcements(late).every(e=>e.kind==='online'));assert.equal((await feed()).length,5);
+console.log('PASS battle announcements: real PvE defeat/surrender/wild retreat, named opponents, idempotent requests, no fake/offline/anonymous replay; PvP KO/surrender/leave/brawl/draw with one persistent public feed row per match, preserved forfeit rules and no duplicate broadcasts');
+})().catch(e=>{console.error(e);process.exitCode=1;}).finally(()=>{matches.forEach(m=>pvp.stop(m));sockets.forEach(w=>social.onClose(w));server.close();server.closeAllConnections();fs.rmSync(process.env.DATA_DIR,{recursive:true,force:true});});
