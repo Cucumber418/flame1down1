@@ -44,10 +44,29 @@ S=battle();mon(S).hp=1;status(S,'高地之王');const koEvents=[];C.useMove(S,ko
 S=battle();for(const n of ['扔石块','原力光线','能量弹'])hit(S,n,1);assert.equal(mon(S).stages.def,1);assert.equal(mon(S).stages.spd,0);assert(!mon(S).fx.glenHits);for(const n of ['原力光线','扔石块','原力光线'])hit(S,n,1);assert.equal(mon(S).stages.spd,1);
 S=battle();hit(S,'扔石块',1);C.doSwitch(S,[],0,1,false);C.doSwitch(S,[],0,0,false);assert(!mon(S).fx.glenHits);
 S=battle();status(S,'纯净领域');for(let i=0;i<3;i++)hit(S,'扔石块',1);assert.equal(mon(S).stages.def,0);assert(!mon(S).fx.glenHits);
-// Fracture stores its full snapshot on the victim, distributes integer remainder exactly and refreshes the larger value.
+// Fracture keeps its damage on the victim and redistributes only the remaining pool plus each new contribution.
 S=battle();expected=Math.floor(C.glenDefense(mon(S))*.15);hit(S,'碎震裂踢');assert.equal(mon(S,1).fx.fracture.total,expected);let before=mon(S,1).hp;for(let i=0;i<3;i++)end(S);assert.equal(before-mon(S,1).hp,expected);assert(!mon(S,1).fx.fracture);
 S=battle();mon(S).stats.def=203;mon(S).stats.spd=204;hit(S,'碎震裂踢');assert.equal(mon(S,1).fx.fracture.total,61);let deltas=[];for(let i=0;i<3;i++){before=mon(S,1).hp;end(S);deltas.push(before-mon(S,1).hp);}assert.deepEqual(deltas,[20,20,21]);
-S=battle();hit(S,'碎震裂踢');expected=mon(S,1).fx.fracture.total;end(S);mon(S).stats.def=1;mon(S).stats.spd=1;hit(S,'碎震裂踢');assert.equal(mon(S,1).fx.fracture.total,expected);assert.equal(mon(S,1).fx.fracture.elapsed,0);mon(S).stats.def=1000;hit(S,'碎震裂踢');assert.equal(mon(S,1).fx.fracture.total,150);
+const fractureChip=S=>C.snap(S).sides[1].chips.find(c=>c.h==='碎震');
+S=battle();mon(S).stats.def=203;mon(S).stats.spd=204;hit(S,'碎震裂踢');
+assert.equal(fractureChip(S).t,'碎震 20.33');assert(fractureChip(S).d.includes('剩余伤害池61点'));
+hit(S,'碎震裂踢');assert.equal(mon(S,1).fx.fracture.total,122);assert.equal(fractureChip(S).t,'碎震 40.67');
+before=mon(S,1).hp;for(let i=0;i<3;i++)end(S);assert.equal(before-mon(S,1).hp,122);assert(!mon(S,1).fx.fracture);
+// One elapsed tick leaves 41 of 61; a weaker new hit adds 15, rather than restoring or replacing damage.
+S=battle();mon(S).stats.def=203;mon(S).stats.spd=204;hit(S,'碎震裂踢');end(S);
+assert.equal(C.glenFracturePool(mon(S,1).fx.fracture),41);assert.equal(fractureChip(S).t,'碎震 20.33');assert(fractureChip(S).d.includes('剩余2回合'));
+mon(S).stats.def=50;mon(S).stats.spd=50;hit(S,'碎震裂踢');
+assert.deepEqual(copy(mon(S,1).fx.fracture),{total:56,elapsed:0});assert.equal(fractureChip(S).t,'碎震 18.67');
+// After two more ticks, carry exactly 19 forward; the stronger contribution starts a fresh three-turn schedule.
+end(S);end(S);assert.equal(C.glenFracturePool(mon(S,1).fx.fracture),19);
+mon(S).stats.def=203;mon(S).stats.spd=204;hit(S,'碎震裂踢');
+assert.deepEqual(copy(mon(S,1).fx.fracture),{total:80,elapsed:0});assert.equal(fractureChip(S).t,'碎震 26.67');
+const resumed=copy(S);deltas=[];for(let i=0;i<3;i++){before=mon(S,1).hp;end(S);deltas.push(before-mon(S,1).hp);end(resumed);}
+assert.deepEqual(deltas,[26,27,27]);assert.deepEqual(copy(S),resumed);assert(!mon(S,1).fx.fracture);
+// Even a zero new contribution refreshes only what remains, including legacy serialized state.
+S=battle();mon(S,1).fx.fracture={total:61,elapsed:2};mon(S).stats.def=1;mon(S).stats.spd=1;hit(S,'碎震裂踢');
+assert.deepEqual(copy(mon(S,1).fx.fracture),{total:21,elapsed:0});assert.equal(fractureChip(S).t,'碎震 7');
+before=mon(S,1).hp;for(let i=0;i<3;i++)end(S);assert.equal(before-mon(S,1).hp,21);assert(!fractureChip(S));
 S=battle();hit(S,'碎震裂踢');expected=mon(S,1).fx.fracture.total;C.doSwitch(S,[],0,1,false);before=mon(S,1).hp;end(S);assert.equal(before-mon(S,1).hp,Math.floor(expected/3));S.sides[0].team[0].fainted=true;before=mon(S,1).hp;end(S);assert(mon(S,1).hp<before);C.doSwitch(S,[],1,1,false);C.doSwitch(S,[],1,0,false);assert(!mon(S,1).fx.fracture);
 S=battle('glen');status(S,'高地之王',1);hit(S,'碎震裂踢');assert.equal(mon(S,1).fx.highlandHits,2);before=mon(S,1).hp;end(S);assert(mon(S,1).hp<before);assert.equal(mon(S,1).fx.highlandHits,2);assert.deepEqual(copy(mon(S,1).fx.glenHits),{phys:1,spec:0});
 S=battle();mon(S,1).fx.absDef=1;hit(S,'碎震裂踢');assert(!mon(S,1).fx.fracture);

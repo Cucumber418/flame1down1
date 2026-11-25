@@ -272,7 +272,10 @@ function chipsOf(m, foe, S) {
     c.push({ t: s + (pz > 1 ? '×' + pz + ' · ' : ' ') + m.st[s], k: 'st', h: s + (pz ? ' · ' + pz + ' 层' : '') + ' · 剩 ' + m.st[s] + ' 回合', d: (ST_DESC[s] || '') + (pz ? '。当前每回合损失 ' + Math.max(1, Math.floor(m.maxhp * pz / 16)) + ' 点' : '') });
   }
   if (m.fx.stoneMark) c.push({ t: '破石印记', k: 'st', h: '破石印记', d: '受到破石之蹄时，其威力翻倍；不消耗印记，换下场后消失' });
-  if (m.fx.fracture) c.push({ t: '碎震 ' + (3 - m.fx.fracture.elapsed), k: 'st', h: '碎震', d: '剩余' + (3 - m.fx.fracture.elapsed) + '回合，每回合末受到固定伤害' });
+  if (m.fx.fracture) {
+    var fracture = m.fx.fracture, average = Math.round(fracture.total / 3 * 100) / 100;
+    c.push({ t: '碎震 ' + average, k: 'st', h: '碎震', d: '每回合末均摊' + average + '点固定伤害，剩余' + (3 - fracture.elapsed) + '回合；剩余伤害池' + glenFracturePool(fracture) + '点，整数结算余数在后续回合补齐' });
+  }
   if (m.fx.highlandHits > 0) c.push({ t: '高地之王 ' + m.fx.highlandHits, k: 'fx', h: '高地之王', d: '下' + m.fx.highlandHits + '次受到的攻击伤害减免35%；连击技能每一击分别计算' });
   if (m.fx.prideShield) c.push({ t: '孤王之傲 ' + m.fx.prideShield.hp, k: 'fx', h: '孤王之傲', d: '吸收接下来受到的' + m.fx.prideShield.hp + '点伤害' });
   if (m.fx.shield > 0) c.push({ t: '护盾 ' + m.fx.shield, k: 'fx', h: '护盾', d: '先吸收接下来受到的 ' + m.fx.shield + ' 点伤害' });
@@ -1163,6 +1166,8 @@ function glenAttackEnd(S, evs) {
   }
   E(S, evs, 'stage', { side: a.side });
 }
+// total is the refreshed three-turn budget; subtract only damage already settled.
+function glenFracturePool(f) { return f ? f.total - Math.floor(f.total * f.elapsed / 3) : 0; }
 function applyGlenMove(S, evs, i, mv) {
   var me = act(S, i), j = 1 - i, foe = act(S, j);
   if (mv.custom === 'glenHeal') heal(S, evs, i, glenDefense(me) * .1);
@@ -1170,7 +1175,7 @@ function applyGlenMove(S, evs, i, mv) {
   if (mv.custom === 'glenStone') { foe.fx.stoneMark = true; E(S, evs, 'stage', { side: j }); log(S, evs, nm(foe) + '被附加了破石印记', 'bad'); }
   if (mv.custom === 'glenFracture') {
     var damage = Math.floor(glenDefense(me) * .15), old = foe.fx.fracture;
-    foe.fx.fracture = { total: Math.max(damage, old ? old.total : 0), elapsed: 0 };
+    foe.fx.fracture = { total: glenFracturePool(old) + damage, elapsed: 0 };
     E(S, evs, 'stage', { side: j }); log(S, evs, nm(foe) + '陷入碎震，接下来3回合末持续受到固定伤害', 'bad');
   }
 }
