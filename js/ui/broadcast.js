@@ -11,7 +11,7 @@
       var v = HSACC.view(e.mon);
       return '恭喜「' + name + '」获得' + (e.rarity === 'rare' ? '稀有精灵' : '特殊精灵') + '「' + (e.mon.shiny ? '异色·' : '') + v.name + '」！';
     }
-    if (e.kind === 'boss' && e.first && e.bossInfo && !e.bossInfo.weekly) return '恭喜「' + name + '」首次战胜 BOSS「' + String(e.bossInfo.name).slice(0, 30) + '」·' + String(e.bossInfo.diff).slice(0, 20) + '难度！';
+    if (e.kind === 'boss' && e.bossInfo) return '恭喜「' + name + '」' + (e.first && !e.bossInfo.weekly ? '首次战胜' : '战胜') + ' BOSS「' + String(e.bossInfo.name).slice(0, 30) + '」·' + String(e.bossInfo.diff).slice(0, 20) + (e.bossInfo.weekly ? '' : '难度') + '！';
     return '';
   }
   function finish(view) {

@@ -7,14 +7,13 @@ function rank(u){try{var r=JSON.parse(u&&u.save&&u.save.data&&u.save.data['hs-ra
 function key(m){return m&&typeof m.sid==='string'&&Number.isSafeInteger(m.u)&&m.u>0?m.u+':'+m.sid:null;}
 function prepare(previous,u,now){
   var a=acc(u),before=acc(previous);if(!a)return [];
-  var old=previous&&previous.activityState, state={mons:Object.assign({},old&&old.mons),tasks:Object.assign({},old&&old.tasks),daily:Object.assign({},old&&old.daily),ranks:Object.assign({},old&&old.ranks),bosses:Object.assign({},old&&old.bosses)},out=[];
+  var old=previous&&previous.activityState, state={mons:Object.assign({},old&&old.mons),tasks:Object.assign({},old&&old.tasks),ranks:Object.assign({},old&&old.ranks),bosses:Object.assign({},old&&old.bosses)},out=[];
   function baseline(b){
     if(!b)return;
     Object.keys(b.bosses||{}).forEach(function(k){state.bosses[k]=Math.max(state.bosses[k]||0,Math.max(0,Math.min(1e9,b.bosses[k]&&b.bosses[k].wins|0)));});
     b.mons.forEach(function(m){var k=key(m);if(k)state.mons[k]=Math.max(state.mons[k]||0,Math.min(100,m.lv|0));});
     Object.keys(b.story||{}).forEach(function(k){if(b.story[k]&&b.story[k].done)state.tasks['story:'+k]=1;});
     Object.keys(b.quests||{}).forEach(function(k){if(b.quests[k])state.tasks['quest:'+k]=1;});
-    if(b.daily&&/^\d{4}-\d{2}-\d{2}$/.test(b.daily.date))(b.daily.list||[]).forEach(function(t){if(t&&t.c)state.daily[b.daily.date+':'+t.id]=1;});
   }
   baseline(before||a); // 上线前与导入存档的已有进度不补发历史动态。
   function add(kind,data){out.push(Object.assign({id:crypto.randomBytes(12).toString('hex'),at:now,user:u.name,name:String(a.name||u.name).slice(0,20),kind:kind},data));}
@@ -34,14 +33,11 @@ function prepare(previous,u,now){
     var done=kind==='story'?a.story[k]&&a.story[k].done:a.quests[k],id=kind+':'+k;
     if(done&&!state.tasks[id]){add(kind,{task:k});state.tasks[id]=1;}
   });});
-  if(a.daily&&/^\d{4}-\d{2}-\d{2}$/.test(a.daily.date))(a.daily.list||[]).forEach(function(t){var id=a.daily.date+':'+(t&&t.id);if(t&&t.c&&!state.daily[id]){add('daily',{task:t.id});state.daily[id]=1;}});
-  var days=Object.keys(state.daily).map(function(k){return k.slice(0,10);}).sort(),oldest=days[Math.max(0,days.length-70)]||'';
-  Object.keys(state.daily).forEach(function(k){if(k.slice(0,10)<oldest)delete state.daily[k];});
   u.activityState=state;return out;
 }
 function read(dir){try{var x=JSON.parse(fs.readFileSync(path.join(dir,'activity.json'),'utf8'));return Array.isArray(x)?x:[];}catch(e){return [];}}
 function publish(dir,events){if(!events.length)return;var rows=events.slice().reverse().concat(read(dir)).slice(0,KEEP),f=path.join(dir,'activity.json');fs.writeFileSync(f+'.tmp',JSON.stringify(rows));fs.renameSync(f+'.tmp',f);listeners.forEach(function(fn){try{fn(events);}catch(e){console.error('全服播报失败',e.message);}});}
-function page(dir,before,limit){var rows=read(dir),start=before?rows.findIndex(function(e){return e.id===before;})+1:0;if(before&&!start)return{items:[],next:null};var items=rows.slice(start,start+limit);return{items:items,next:start+items.length<rows.length&&items.length?items[items.length-1].id:null};}
+function page(dir,before,limit){var rows=read(dir),start=before?rows.findIndex(function(e){return e.id===before;})+1:0;if(before&&!start)return{items:[],next:null};var visible=rows.slice(start).filter(function(e){return e.kind!=='daily';}),items=visible.slice(0,limit);return{items:items,next:visible.length>items.length&&items.length?items[items.length-1].id:null};}
 function monClass(E,m,gift){if(!E||!m||!E.SPMAP[m.sid])return null;var tier=E.GROW.relTier(m.sid);return m.shiny||gift&&m.sid==='firemouse'?'special':tier===1?'rare':tier===2||tier<0?'special':null;}
 function bossMeta(E,key){
   if(!E||typeof key!=='string')return null;var parts=key.split(':'),B=E.PVE.BOSSES[parts[0]],d=parts.length===1?0:+parts[1];
