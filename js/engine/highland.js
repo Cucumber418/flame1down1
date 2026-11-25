@@ -13,17 +13,17 @@ var HIGHLAND = (function () {
   function rec(a) { return a.christmasStory.highland || (a.christmasStory.highland = { talks: {} }); }
   function day(a, now) { var d = read(a).day, date = ACC.dayStr(now); return d && d.date === date ? d : { date: date, used: 0, damage: 0 }; }
   function rewards(damage) {
-    if (!(damage > 0)) return { highlandPt: 0, exp: 0, xmasCandy: 0 };
-    return { highlandPt: 70 + Math.min(10, Math.floor(damage / 2000)), exp: 20000 + Math.min(180000, damage * 5), xmasCandy: 10 + Math.min(90, Math.floor(damage / 500)) };
+    damage = Math.max(0, Math.floor(damage || 0));
+    return { highlandPt: Math.max(10, Math.min(100, Math.floor(damage / 100))), exp: damage > 0 ? 20000 + Math.min(180000, damage * 5) : 0, xmasCandy: damage > 0 ? 10 + Math.min(90, Math.floor(damage / 500)) : 0 };
   }
   TX.add('highland', function (a, args) {
     if (!ready(a)) return { ok: false, err: '先在圣诞仙境击败一次鲁普雷希特骑士的召唤精灵' };
     if (args.a === 'talk') {
       if (FRIENDS.indexOf(args.id) < 0) return { ok: false, err: '没有这位伙伴' };
-      var r = rec(a); if (!r.talks) r.talks = {}; r.talks[args.id] = true;
+      var r = rec(a); if (!r.talks) r.talks = {}; FRIENDS.forEach(function (id) { r.talks[id] = true; });
       return { ok: true, unlocked: open(a) };
     }
-    if (!open(a)) return { ok: false, err: '先点击圣诞仙境中的四位伙伴，听听他们的建议' };
+    if (!open(a)) return { ok: false, err: '先点击圣诞仙境中的任意一位伙伴，听完四人的建议' };
     if (args.a === 'intro') { rec(a).intro = true; return { ok: true }; }
     if (args.a === 'buy') {
       if (!read(a).intro) return { ok: false, err: '先与格伦高地的莫格伦交谈' };

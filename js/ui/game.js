@@ -3905,7 +3905,7 @@
     if (!R || R.planet !== pid || !planetMapCan(R)) R = regionsOf(pid).filter(planetMapCan)[0];
     if (!R) { ex.view = 'planets'; renderExplore(); return; }
     if (R.id === 'hl_castle' && index != null && !CHRISTMAS.sceneOpen(acc, +index)) { toast(+index === 1 ? '先带上巴洛，去城堡大门敲门' : '先完成Vanber的一项任务'); index = 0; }
-    if (R.id === 'hl_wonderland' && index != null && +index > 0 && !HIGHLAND.open(acc)) { toast('击败一次bttp后，与四位伙伴交谈再前往高地'); index = 0; }
+    if (R.id === 'hl_wonderland' && index != null && +index > 0 && !HIGHLAND.open(acc)) { toast('击败一次bttp后，点击任意伙伴听完四人对话再前往高地'); index = 0; }
     ex.planet = pid; ex.region = R.id; ex.view = 'field';
     var F = planetMapField(R);
     if (index != null) F.scene = Math.max(0, Math.min(F.scenes.length - 1, Math.floor(+index) || 0));
@@ -3955,7 +3955,7 @@
       var open = planetMapCan(R);
       return '<section class="planet-mini-region"><h3>' + esc(R.name) + (open ? '' : ' <small>未开放</small>') + '</h3><div class="planet-mini-grid">' + planetMapScenes(R).map(function (sc, i) {
         var on = ex.region === R.id && F.scene === i, sceneOpen = open && (R.id !== 'hl_castle' || CHRISTMAS.sceneOpen(acc, i)) && (R.id !== 'hl_wonderland' || i === 0 || HIGHLAND.open(acc));
-        return '<button type="button" class="planet-mini-scene' + (on ? ' on' : '') + '" data-map-rid="' + R.id + '" data-map-scene="' + i + '" aria-pressed="' + on + '"' + (sceneOpen ? '' : ' disabled title="' + (R.planet === 'helena' ? R.id === 'hl_wonderland' ? i > 0 ? '击败bttp后与四位伙伴交谈' : '接通杂货铺角落的管道后开放' : i === 1 ? '带上巴洛，尝试敲开城堡大门' : '完成Vanber的一项任务后开放' : '读完降临芙罗拉后开放') + '"') + '><span class="planet-mini-image">' + (sc.bg ? '<img src="' + sc.bg + '" alt="">' : '') + '</span><b>' + esc(planetMapName(sc, R, i)) + '</b><small>' + (on ? '当前位置' : sceneOpen ? '点击传送' : R.planet === 'helena' ? R.id === 'hl_wonderland' ? i > 0 ? '先与四位伙伴交谈' : '先接通杂货铺的管道' : i === 1 ? '先敲开城堡大门' : '先完成Vanber的一项任务' : '未开放') + '</small></button>';
+        return '<button type="button" class="planet-mini-scene' + (on ? ' on' : '') + '" data-map-rid="' + R.id + '" data-map-scene="' + i + '" aria-pressed="' + on + '"' + (sceneOpen ? '' : ' disabled title="' + (R.planet === 'helena' ? R.id === 'hl_wonderland' ? i > 0 ? '击败bttp后点击任意伙伴，听完四人对话' : '接通杂货铺角落的管道后开放' : i === 1 ? '带上巴洛，尝试敲开城堡大门' : '完成Vanber的一项任务后开放' : '读完降临芙罗拉后开放') + '"') + '><span class="planet-mini-image">' + (sc.bg ? '<img src="' + sc.bg + '" alt="">' : '') + '</span><b>' + esc(planetMapName(sc, R, i)) + '</b><small>' + (on ? '当前位置' : sceneOpen ? '点击传送' : R.planet === 'helena' ? R.id === 'hl_wonderland' ? i > 0 ? '先点击任意伙伴听完四人对话' : '先接通杂货铺的管道' : i === 1 ? '先敲开城堡大门' : '先完成Vanber的一项任务' : '未开放') + '</small></button>';
       }).join('') + '</div></section>';
     }).join('') || '<p>暂时没有可以前往的区域。</p>';
   }
@@ -4102,7 +4102,7 @@
     var R = regionById(ex.region), F = R && planetMapField(R); if (!F || ex.fighting) return;
     var n = F.scenes.length, next = (F.scene + d + n) % n;
     if (R.id === 'hl_castle' && !CHRISTMAS.sceneOpen(acc, next)) { toast(next === 1 ? '先带上巴洛，去城堡大门敲门' : '先完成Vanber的一项任务'); return; }
-    if (R.id === 'hl_wonderland' && next > 0 && !HIGHLAND.open(acc)) { toast('击败一次bttp后，点击四位伙伴交谈'); return; }
+    if (R.id === 'hl_wonderland' && next > 0 && !HIGHLAND.open(acc)) { toast('击败一次bttp后，点击任意一位伙伴听完四人对话'); return; }
     F.scene = next;
     renderField(); setTimeout(bgmScene, 0);
     setTimeout(cumberCheck, 400);
@@ -4144,7 +4144,7 @@
     var args = { slot: slot, id: id };
     function finish(rep, res) {
       bossBack('field', renderField); save(); renderRes();
-      if (rep) { var msg = xpMsg(rep.xp); if (rep.candy) msg.unshift('获得拐杖糖 ×' + rep.candy + '，新的召唤精灵已出现。'); if (rep.candy && !HIGHLAND.open(acc)) msg.push('点击屋前的OCT、Unicorn、May和Ace，听听他们的建议。'); if (msg.length) toast(msg.join('')); }
+      if (rep) { var msg = xpMsg(rep.xp); if (rep.candy) msg.unshift('获得拐杖糖 ×' + rep.candy + '，新的召唤精灵已出现。'); if (rep.candy && !HIGHLAND.open(acc)) msg.push('点击屋前任意一位伙伴，听听OCT、Unicorn、May和Ace一起给出的建议。'); if (msg.length) toast(msg.join('')); }
       if (res === 'void') toast('这场对战作废了，可以重新挑战');
     }
     if (srvMode()) { pveRemote('christmasKnight', args, { bg: BG.hl_wonderland, back: '圣诞仙境' }, function (e,res) { finish(e && e.rep,res); }); return; }
@@ -9177,7 +9177,7 @@
     goWonderland: function () { if (!CHRISTMAS.wonderOpen(acc)) { toast('先接通杂货铺角落的管道'); return; } page = 'explore'; planetMapEnter('helena', 'hl_wonderland', 0, null); renderTop(); },
     fightChristmasKnight: fightChristmasKnight,
     highlandTx: function (args, ok, fail) { txRun('highland', args, ok, fail); },
-    goHighland: function () { if (!HIGHLAND.open(acc)) { toast('击败一次bttp后，先与四位伙伴交谈'); return; } page = 'explore'; planetMapEnter('helena', 'hl_wonderland', 1, null); renderTop(); },
+    goHighland: function () { if (!HIGHLAND.open(acc)) { toast('击败一次bttp后，先点击任意伙伴听完四人对话'); return; } page = 'explore'; planetMapEnter('helena', 'hl_wonderland', 1, null); renderTop(); },
     fightHighland: fightHighland,
     loginVisit: function (ok, fail) { txRun('loginVisit', {}, ok, fail); },
     signin: function (ok, fail) { txRun('signin', {}, ok, fail); },

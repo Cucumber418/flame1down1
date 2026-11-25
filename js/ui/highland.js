@@ -3,26 +3,26 @@ var HSHIGHLAND = (function () {
   'use strict';
   var refreshActive = null;
   var names = { oct: 'OCT', unicorn: 'Unicorn', may: 'May', ace: 'Ace' };
-  var lines = {
-    oct: ['只赢一场还不够！那个鲁普雷希特骑士，居然还能继续召唤。硬拼下去可不是办法。', '听说高地上有位从不低头的王。去找传说中的“高地之王”吧，有他帮忙，一定能打败bttp！'],
-    unicorn: ['你刚才好厉害！不过，他怎么又叫来一只……我们的糖不会也被抢走吧？', '我相信传说是真的！越过雪地，去格伦高地找“高地之王”。要是你们一起回来，一定特别威风！'],
-    may: ['先歇一歇吧。鲁普雷希特骑士比看上去难对付，召唤不停，我们迟早会被耗尽体力。', '格伦高地的莫格伦被称为“高地之王”。他只认可有实力的人。去向他证明自己，请他帮我们打败bttp吧。'],
-    ace: ['赢了这一场，不等于赢过骑士。别被他的召唤拖住。', '去格伦高地，找“高地之王”。他不会轻易答应你——拿出实力，让他认可。然后一起回来击败bttp。']
-  };
+  var council = [
+    { n: 'OCT', img: 'christmas_oct', t: '只赢一场还不够！那个鲁普雷希特骑士居然还能继续召唤。照这样打下去可没完没了，得找个能镇住他的帮手！' },
+    { n: 'Unicorn', img: 'christmas_unicorn', t: '我听说过！越过这片雪地，格伦高地上住着传说中的“高地之王”！如果能请他和你一起回来，一定特别威风，bttp也没那么可怕了！' },
+    { n: 'May', img: 'christmas_may', t: '先别急着高兴。传说中的王叫莫格伦，他很强，也不会轻易相信别人。想请他帮我们打败鲁普雷希特骑士，要先向他证明你的实力。' },
+    { n: 'Ace', img: 'christmas_ace', t: '那就去格伦高地。别耗在骑士的召唤里。拿出实力，赢得高地之王的认可，再一起回来打败bttp。' }
+  ];
   function esc(s) { return HSUI.esc(String(s)); }
   function icon(k) { return HSUI.itemIcon(k); }
   function num(n) { return Number(n || 0).toLocaleString('zh-CN'); }
   function dialog(ls, action, after, scene) { HSCHRISTMAS.dialog(ls, action, after, scene); }
   function friendTalk(id) {
-    if (!HIGHLAND.ready(HSACC.acc()) || !lines[id] || HSACC.inBattle()) return;
-    dialog(lines[id].map(function (t) { return { n: names[id], img: 'christmas_' + id, t: t }; }), { op: 'highland', args: { a: 'talk', id: id } }, function () {
+    if (!HIGHLAND.ready(HSACC.acc()) || HIGHLAND.FRIENDS.indexOf(id) < 0 || HSACC.inBattle()) return;
+    dialog(council, { op: 'highland', args: { a: 'talk', id: id } }, function () {
       HSACC.goWonderland();
-      HSACC.toast(HIGHLAND.open(HSACC.acc()) ? '四位伙伴都提到了高地之王。通往格伦高地的路已开放！' : '再听听其他伙伴的建议。');
+      HSACC.toast('听完四位伙伴的建议，通往格伦高地的路已开放！');
     }, 'hl_wonderland');
   }
   function friends() {
-    var r = HIGHLAND.read(HSACC.acc()), talks = r.talks || {};
-    return '<div class="xmas-friends xmas-friends-talk" aria-label="点击四位伙伴交谈">' + HIGHLAND.FRIENDS.map(function (k) { return '<button type="button" data-highland-friend="' + k + '" aria-label="与' + names[k] + '交谈" style="--friend:' + HIGHLAND.FRIENDS.indexOf(k) + '"><img src="' + CHARS['christmas_' + k] + '" alt="' + names[k] + '"><span>' + names[k] + (talks[k] ? ' ✓' : ' · 交谈') + '</span></button>'; }).join('') + '</div>';
+    var done = HIGHLAND.open(HSACC.acc());
+    return '<div class="xmas-friends xmas-friends-talk" aria-label="点击任意一位伙伴，与四人交谈">' + HIGHLAND.FRIENDS.map(function (k) { return '<button type="button" data-highland-friend="' + k + '" aria-label="与' + names[k] + '交谈" style="--friend:' + HIGHLAND.FRIENDS.indexOf(k) + '"><img src="' + CHARS['christmas_' + k] + '" alt="' + names[k] + '"><span>' + names[k] + (done ? ' ✓' : ' · 交谈') + '</span></button>'; }).join('') + '</div>';
   }
   function intro(after) {
     dialog([
@@ -34,7 +34,7 @@ var HSHIGHLAND = (function () {
   function wallet(a) { return '<div class="xmas-wallet">' + [['highlandPt','高地的认可'],['xmasBell','圣诞铃铛'],['xmasCandy','拐杖糖']].map(function (v) { return '<span>' + icon(v[0]) + v[1] + ' <b>' + num((a.items || {})[v[0]]) + '</b></span>'; }).join('') + '</div>'; }
   function open() {
     if (HSACC.inBattle() || document.getElementById('xmas-highland')) return;
-    if (!HIGHLAND.open(HSACC.acc())) { HSACC.toast('先击败一次bttp，再点击四位伙伴交谈'); return; }
+    if (!HIGHLAND.open(HSACC.acc())) { HSACC.toast('先击败一次bttp，再点击任意一位伙伴听完四人对话'); return; }
     if (!HIGHLAND.read(HSACC.acc()).intro) { intro(open); return; }
     var d = document.createElement('div'), tab = 'fight', scope = 'total', page = 0, ticket = 0, buying = false, prev = document.activeElement;
     d.id = 'xmas-highland'; d.className = 'soc-dlg'; document.body.appendChild(d);
@@ -42,7 +42,7 @@ var HSHIGHLAND = (function () {
     function draw() {
       ticket++;
       var a = HSACC.acc(), r = HIGHLAND.read(a), today = HIGHLAND.day(a, Date.now());
-      d.innerHTML = '<section class="soc-box xmas-knight-box xmas-highland-box" role="dialog" aria-modal="true" aria-labelledby="highland-title"><header><div><small class="hint">圣诞仙境 · 格伦高地</small><h2 id="highland-title">高地之王</h2></div><button type="button" class="btn ghost" data-highland-close aria-label="关闭高地活动">×</button></header>' + wallet(a) + '<div class="xmas-npc-layout"><aside class="xmas-npc-side"><button type="button" class="xmas-npc-portrait" data-highland-talk aria-label="与莫格伦交谈"><img src="' + SPRITES.glen + '" alt="莫格伦"><b>莫格伦 · LV50</b><small>点击交谈</small></button><button type="button" class="btn ghost xmas-npc-place" data-highland-location>前往格伦高地</button></aside><section class="xmas-play"><nav class="xmas-highland-tabs" aria-label="高地活动">' + [['fight','挑战'],['shop','兑换'],['rank','伤害排行']].map(function (x) { return '<button type="button" class="btn' + (tab === x[0] ? ' primary' : '') + '" data-highland-tab="' + x[0] + '" aria-pressed="' + (tab === x[0]) + '">' + x[1] + '</button>'; }).join('') + '</nav><div class="xmas-scroll xmas-highland-content">' + (tab === 'fight' ? '<div class="xmas-highland-stats"><span>今日剩余<b>' + (HIGHLAND.RULES.daily - today.used) + ' / 5</b></span><span>累计伤害<b>' + num(r.total) + '</b></span><span>单次最高<b>' + num(r.best) + '</b></span></div><article class="xmas-highland-rules"><b>用实力赢得高地的认可</b><p>每场100万体力，最多20回合；免疫所有百分比伤害与异常状态。</p><p>坚持到试炼结束或提前击败莫格伦，按实际伤害结算。逃跑或战败不扣次数、不结算伤害与奖励。</p><p>造成伤害并完成挑战可获得70–80个高地的认可、2万–20万经验和10–100个拐杖糖，伤害越高奖励越多。</p><small class="hint">每日零点（北京时间）刷新次数 · 约3天可攒够精元所需认可</small></article>' + (r.last ? '<p class="hint">上次挑战：' + num(r.last.damage) + '伤害</p>' : '') : tab === 'shop' ? '<div class="xmas-shop-grid xmas-highland-shop">' + HIGHLAND.SHOP.map(function (s) {
+      d.innerHTML = '<section class="soc-box xmas-knight-box xmas-highland-box" role="dialog" aria-modal="true" aria-labelledby="highland-title"><header><div><small class="hint">圣诞仙境 · 格伦高地</small><h2 id="highland-title">高地之王</h2></div><button type="button" class="btn ghost" data-highland-close aria-label="关闭高地活动">×</button></header>' + wallet(a) + '<div class="xmas-npc-layout"><aside class="xmas-npc-side"><button type="button" class="xmas-npc-portrait" data-highland-talk aria-label="与莫格伦交谈"><img src="' + SPRITES.glen + '" alt="莫格伦"><b>莫格伦 · LV50</b><small>点击交谈</small></button><button type="button" class="btn ghost xmas-npc-place" data-highland-location>前往格伦高地</button></aside><section class="xmas-play"><nav class="xmas-highland-tabs" aria-label="高地活动">' + [['fight','挑战'],['shop','兑换'],['rank','伤害排行']].map(function (x) { return '<button type="button" class="btn' + (tab === x[0] ? ' primary' : '') + '" data-highland-tab="' + x[0] + '" aria-pressed="' + (tab === x[0]) + '">' + x[1] + '</button>'; }).join('') + '</nav><div class="xmas-scroll xmas-highland-content">' + (tab === 'fight' ? '<div class="xmas-highland-stats"><span>今日剩余<b>' + (HIGHLAND.RULES.daily - today.used) + ' / 5</b></span><span>累计伤害<b>' + num(r.total) + '</b></span><span>单次最高<b>' + num(r.best) + '</b></span></div><article class="xmas-highland-rules"><b>用实力赢得高地的认可</b><p>每场100万体力，最多20回合；免疫所有百分比伤害与异常状态。</p><p>坚持到试炼结束或提前击败莫格伦，按实际伤害结算。逃跑或战败不扣次数、不结算伤害与奖励。</p><p>完成挑战按伤害获得10–100个高地的认可；造成伤害还可获得2万–20万经验和10–100个拐杖糖，伤害越高奖励越多。</p><small class="hint">每日零点（北京时间）刷新次数 · 认可保底10个，每100点伤害获得1个，最多100个</small></article>' + (r.last ? '<p class="hint">上次挑战：' + num(r.last.damage) + '伤害</p>' : '') : tab === 'shop' ? '<div class="xmas-shop-grid xmas-highland-shop">' + HIGHLAND.SHOP.map(function (s) {
         var keys = Object.keys(s.costs), max = Math.min.apply(Math, keys.map(function (k) { return Math.floor(((a.items || {})[k] || 0) / s.costs[k]); }));
         return '<article class="xmas-good" data-highland-good="' + s.id + '"><div class="xmas-good-title">' + icon(s.k) + '<b>' + esc(HSACC.itemName(s.k)) + '</b></div><small>' + (s.k === 'e_glen' ? '孵化8小时后诞生LV1格伦' : '格伦一系专用，每项天赋随机两次取高') + '</small><div class="xmas-highland-cost">' + keys.map(function (k) { return '<span class="xmas-price">' + icon(k) + s.costs[k] + (k === 'highlandPt' ? ' 高地的认可' : ' 圣诞铃铛') + '</span>'; }).join('') + '</div><small>持有 ' + num((a.items || {})[s.k]) + '</small><div class="xmas-buy"><input type="number" inputmode="numeric" min="1" max="999" step="1" value="1" aria-label="' + esc(HSACC.itemName(s.k)) + '兑换数量"><button type="button" class="btn primary" data-highland-buy="' + s.id + '"' + (max < 1 || buying ? ' disabled' : '') + '>兑换</button></div></article>';
       }).join('') + '</div>' : '<div data-highland-board role="status">正在读取全服伤害记录…</div>') + '</div>' + (tab === 'fight' ? '<button type="button" class="btn primary xmas-highland-fight" data-highland-fight' + (today.used >= HIGHLAND.RULES.daily ? ' disabled' : '') + '>' + (today.used >= 5 ? '今日挑战已完成' : '挑战高地之王') + '</button>' : '') + '</section></div></section>';

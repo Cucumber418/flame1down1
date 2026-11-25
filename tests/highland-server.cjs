@@ -10,7 +10,7 @@ async function api(route,body,method){const r=await fetch(base+route,{method:met
 const req=(op,args={})=>api('/api/pve',{op,...args,rules:T.RULES_VERSION}),saved=()=>api('/api/me').then(r=>({me:r,a:JSON.parse(r.save.data['hs-account-v1'])}));
 (async()=>{await launch();assert.equal((await api('/api/highland')).status,401);let r=await api('/api/register',{user:'highlandtest',pass:'highland-test-password',data:{'hs-account-v1':JSON.stringify(fixture())}});token=r.token;assert(token);
 assert.equal((await req('start',{kind:'highland',args:{}})).status,400);
-for(const id of H.FRIENDS)assert((await api('/api/tx',{op:'highland',args:{a:'talk',id},rules:T.RULES_VERSION})).ok);
+assert((await api('/api/tx',{op:'highland',args:{a:'talk',id:'unicorn'},rules:T.RULES_VERSION})).ok);assert.deepEqual((await saved()).a.christmasStory.highland.talks,{oct:true,unicorn:true,may:true,ace:true});
 assert((await api('/api/tx',{op:'highland',args:{a:'intro'},rules:T.RULES_VERSION})).ok);
 for(const id of ['talent','essence'])assert((await api('/api/tx',{op:'highland',args:{a:'buy',id,n:1},rules:T.RULES_VERSION})).ok);let acc=(await saved()).a;assert.equal(acc.items.e_glen,1);assert.equal(acc.items.ivGlen,1);assert.equal(acc.items.highlandPt,0);assert.equal(acc.items.xmasBell,0);
 r=await req('start',{kind:'highland',args:{hp:1,lv:1,damage:1e9,turns:1},ui:{bg:E.BG.hl_highland,back:'格伦高地',route:{view:'field',planet:'helena',region:'hl_wonderland',scene:1}}});assert(r.ok);assert.equal(r.S.sides[1].team[0].lv,50);assert.equal(r.S.sides[1].team[0].maxhp,1000000);assert.equal(r.S.worldBoss.limit,20);let bid=r.bid;
@@ -27,7 +27,7 @@ for(let run=0;run<5;run++){
  assert(r.end,'trial must stop by round20');assert.equal(r.end.res,'win');assert(r.end.rep.counted);assert.equal(r.end.rep.used,run+1);assert.equal(r.S.turn,21);assert(r.end.rep.damage>0);total+=r.end.rep.damage;
  const repeated=await req(last.op,{...last,bid,seq});assert.deepEqual(repeated,r);assert.equal((await saved()).a.christmasStory.highland.runs,run+1);
 }
-assert.equal((await req('start',{kind:'highland',args:{}})).status,400);acc=(await saved()).a;assert.equal(acc.christmasStory.highland.total,total);assert(acc.items.highlandPt>=350);
+assert.equal((await req('start',{kind:'highland',args:{}})).status,400);acc=(await saved()).a;assert.equal(acc.christmasStory.highland.total,total);assert(acc.items.highlandPt>=50&&acc.items.highlandPt<=500);
 for(const scope of ['total','today']){const b=await api('/api/highland?scope='+scope);assert(b.ok);assert.equal(b.me.damage,total);assert.equal(b.me.runs,5);assert.equal(b.total,total);assert.equal(b.rows.length,1);}
 assert.equal((await api('/api/highland?page=-1')).status,400);
 // Client-uploaded rank, daily allowance and currency tampering are restored by existing server-owned-field checks.
