@@ -420,6 +420,7 @@ function dotKind(why) { for (var i = 0; i < DOT_KINDS.length; i++) if (why && wh
 function bossDamage(S, evs, j, amt, o) {
   var m = act(S, j), b = m.boss;
   if (!b || o.cost || amt <= 0) return amt;
+  if (b.noPercent && o.percent) { RV(m, 'noPercent'); log(S, evs, nm(m) + '免疫百分比伤害', 'fxl'); return 0; }
   if (b.tuning && (!!o.direct === (S.turn % 2 === 1))) {
     RV(m, 'tuning');
     log(S, evs, nm(m) + '的「调弦」免疫了' + (o.direct ? '直接' : '间接') + '伤害', 'fxl');
@@ -439,6 +440,7 @@ function loseHp(S, evs, j, amt, why, exact, o) {
   if (!exact && t.boss && t.boss.fixRes && dotKind(why) === 'fixed') { amt = Math.max(1, amt * (1 - t.boss.fixRes)); RV(t, 'fixRes'); }   // 玫瑰星云「稀薄粒子」：异常状态的持续伤害只有两成（2026-11-01）
   if (o.direct && !o.cost && S.glenAttack) amt = glenAttackDamage(S, evs, j, amt, S.glenAttack.from);
   amt = Math.min(t.hp, Math.floor(amt)); t.hp -= amt;
+  if (S.worldBoss && j === 1 && !o.cost) S.worldBoss.damage += Math.max(0, amt);
   E(S, evs, 'hit', { side: j, amount: amt, kind: dotKind(why) });
   if (why) log(S, evs, why);
   if (t.boss && t.boss.rebirth && !t.boss.reborn && t.hp < 2500) { rebirthBarren(S, evs, j, t); return amt; }
@@ -479,6 +481,7 @@ function applyDamage(S, evs, j, amount, src, o) {
   if (j === 1 && src === 0 && !S.pvp) { var cs = CS(S); if (o.crit) cs.crit++; if (amount > cs.maxHit) cs.maxHit = Math.floor(amount); if (t.hp >= t.maxhp && amount >= t.maxhp) cs.oneShot++; }
   var shown = amt;   // 2026-10-19：伤害溢出时界面和日志仍显示完整伤害（实际扣血不超过剩余体力）
   amt = Math.min(t.hp, amt); t.hp -= amt; S.lastShown = shown;
+  if (S.worldBoss && j === 1 && !o.cost && src !== j) S.worldBoss.damage += Math.max(0, amt);
   if (amt > 0 && t.st['睡眠'] > 0 && src != null) { delete t.st['睡眠']; log(S, evs, nm(t) + '被打醒了'); }
   E(S, evs, 'hit', { side: j, amount: shown, crit: o.crit, eff: o.eff, kind: o.eff === undefined && !o.crit ? 'fixed' : undefined });
   if (t.insFx && t.insFx.water && src != null && src !== j && amt > 0 && !t.fainted && t.hp > 0 && !act(S, src).fainted && RNG() < 0.2) { var wk = RNG() < 0.5 ? { atk: -1 } : { spa: -1 }; log(S, evs, nm(t) + '的刻印「幽静之水」发动了', 'fxl'); changeStages(S, evs, src, wk, j); }   // 2026-11-01
@@ -767,6 +770,10 @@ function resolveTurn(S, acts) {
   if (!S.over && S.en) { enEndTurn(S, evs); checkOver(S, evs); }
   if (!S.over) nebCumber(S, evs);
   checkOver(S, evs);
+  if (!S.over && S.worldBoss && S.turn >= S.worldBoss.limit) {
+    S.worldBoss.finished = true; S.over = 'win';
+    log(S, evs, '高地之王的' + S.worldBoss.limit + '回合试炼结束，共造成' + S.worldBoss.damage + '点伤害', 'turn'); E(S, evs, 'over', { result: 'win' });
+  }
   if (!S.over && !S.training && !S.noLimit && S.turn >= MAX_TURNS) timeUp(S, evs);   // noLimit：PVE 不限回合（2026-10-24），竞技对战仍是 60 回合
   if (!S.over) {
     if (S.pvp) { S.need = [act(S, 0).fainted, act(S, 1).fainted]; S.needSwitch = false; }   // 联网切磋：双方各自选替补
@@ -1314,7 +1321,7 @@ function useMoveCore0(S, evs, i, mv, slotIdx, extra, splitToken) {
       glenAttackEnd(S, evs);
       if (me.fainted) break;
     }
-    if (mv.mercy && foe.hp <= 0 && !foe.fainted) { foe.hp = 1; total = Math.max(0, total - 1); shownT = total; log(S, evs, nm(me) + '手下留情，' + nm(foe) + '还剩 1 点体力', 'fxl'); E(S, evs, 'stage', { side: j }); }   // 慈悲气波：不会把对方打倒
+    if (mv.mercy && foe.hp <= 0 && !foe.fainted) { foe.hp = 1; if (S.worldBoss && j === 1) S.worldBoss.damage = Math.max(0, S.worldBoss.damage - 1); total = Math.max(0, total - 1); shownT = total; log(S, evs, nm(me) + '手下留情，' + nm(foe) + '还剩 1 点体力', 'fxl'); E(S, evs, 'stage', { side: j }); }   // 慈悲气波：不会把对方打倒
     if (lastEff > 1) { log(S, evs, '效果拔群！', 'good'); if (!S.se) S.se = [0, 0]; S.se[i]++; } else if (lastEff < 1) log(S, evs, '效果不太好……');   // S.se：双方打出效果拔群的次数（星球挑战的星级用）
     // 每次攻击附带的固定伤害（飞空连击、非凡连击）：按命中次数合起来结算一次，免得十几次连击动画太长
     if (mv.fixedHit && !glenFixedPerHit && n && foe.hp > 0 && !me.fainted) { log(S, evs, '每次攻击附带 ' + mv.fixedHit + ' 点固定伤害，共 ' + (mv.fixedHit * n) + ' 点', 'fxl'); S.lastShown = null; dmgAdd(applyDamage(S, evs, j, mv.fixedHit * n, i, { noFaint: true })); }
@@ -1814,6 +1821,7 @@ function hqKO(S, evs, me, foe, mv) {
  * 写在 js/ui/game.js 的 BOSSES 里，开战时随精灵传进来 */
 var CL_NAME = ['疏散星团-阿尔法', '疏散星团-贝塔', '疏散星团-欧米茄'], CL_DESC = ['造成的伤害提升 50%', '受到的伤害减免 30%', '先出手时造成的伤害提升 50%；后出手时受到的伤害减免 30%'];
 var BOSS_FX = [
+  { k: 'noPercent', t: '免疫百分比伤害', h: '免疫百分比伤害', d: function () { return '免疫按体力比例造成的伤害；常规攻击与定值伤害仍可生效'; } },
   { k: 'tuning', t: '调弦', h: '调弦', d: function () { return '奇数回合免疫直接伤害，偶数回合只受到直接伤害'; } },
   { k: 'chord', t: '和弦', h: '和弦', d: function (m) { return '受到的异常状态伤害与百分比伤害降低' + Math.round(m.boss.chord * 100) + '%，每回合因异常状态无法行动时，有50%概率恢复本次行动'; } },
   { k: 'noStatus', t: '免疫异常', h: '免疫异常状态', d: function () { return '不会陷入任何异常状态（睡眠、麻痹、中毒、寄生等）'; } },

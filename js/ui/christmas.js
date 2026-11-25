@@ -73,9 +73,10 @@ var HSCHRISTMAS = (function () {
         ['gifts', 'Vanber的圣诞礼物', '完成每日小任务，领取圣诞礼物', CHARS.vanber_christmas],
         ['shop', 'Threego的苏格兰杂货铺', '用圣诞铃铛与拐杖糖兑换道具', CHARS.threego_christmas],
         ['knight', '讨伐鲁普雷希特骑士', '挑战召唤精灵，赢取拐杖糖', CHARS.bttp_christmas],
+        ['highland', '高地之王', '挑战莫格伦，用高地的认可兑换格伦精元', SPRITES.glen],
         ['rank', '竞技排位S2新赛季', '胜利20拐杖糖，失败或平局10拐杖糖', null]
       ];
-      el.innerHTML = header + wallet(a) + '<section class="xmas-cards">' + cards.map(function (c) { var allowed = c[0] === 'rank' ? HSACC.arenaOpen() : open && (c[0] === 'helena' || (c[0] === 'knight' ? CHRISTMAS.wonderOpen(a) : CHRISTMAS.sceneOpen(a, c[0] === 'gifts' ? 1 : 2))); return '<button type="button" class="xmas-card" ' + (c[0] === 'helena' ? 'data-helena' : c[0] === 'knight' ? 'data-xmas-raid' : c[0] === 'rank' ? 'data-xmas-rank' : 'data-xmas-open="' + c[0] + '"') + (allowed ? '' : ' disabled') + '>' + (c[0] === 'gifts' && CHRISTMAS.claimable(a,Date.now()) ? '<i class="red-dot" aria-label="圣诞任务奖励可领取"></i>' : '') + '<span class="tape l"></span>' + (c[0] === 'rank' ? '<span class="xmas-rank-icon">' + icon('s2MonTicket') + '</span>' : '<img src="' + c[3] + '" alt="">') + '<span><b>' + c[1] + '</b><small>' + c[2] + '</small><em>' + (allowed ? '前往 ›' : c[0] === 'rank' ? '完成孝感大厅支线后解锁' : !open ? '完成地球主线后解锁' : c[0] === 'knight' ? '先接通杂货铺角落的管道' : c[0] === 'gifts' ? '先带上巴洛，敲开城堡大门' : '先完成Vanber的一项任务') + '</em></span></button>'; }).join('') + '</section><p class="xmas-coming hint">更多圣诞活动待补充</p>';
+      el.innerHTML = header + wallet(a) + '<section class="xmas-cards">' + cards.map(function (c) { var allowed = c[0] === 'highland' ? HIGHLAND.open(a) : c[0] === 'rank' ? HSACC.arenaOpen() : open && (c[0] === 'helena' || (c[0] === 'knight' ? CHRISTMAS.wonderOpen(a) : CHRISTMAS.sceneOpen(a, c[0] === 'gifts' ? 1 : 2))); return '<button type="button" class="xmas-card" ' + (c[0] === 'helena' ? 'data-helena' : c[0] === 'highland' ? 'data-xmas-highland' : c[0] === 'knight' ? 'data-xmas-raid' : c[0] === 'rank' ? 'data-xmas-rank' : 'data-xmas-open="' + c[0] + '"') + (allowed ? '' : ' disabled') + '>' + (c[0] === 'gifts' && CHRISTMAS.claimable(a,Date.now()) ? '<i class="red-dot" aria-label="圣诞任务奖励可领取"></i>' : '') + '<span class="tape l"></span>' + (c[0] === 'rank' ? '<span class="xmas-rank-icon">' + icon('s2MonTicket') + '</span>' : '<img src="' + c[3] + '" alt="">') + '<span><b>' + c[1] + '</b><small>' + c[2] + '</small><em>' + (allowed ? '前往 ›' : c[0] === 'rank' ? '完成孝感大厅支线后解锁' : c[0] === 'highland' ? '击败bttp后与四位伙伴交谈' : !open ? '完成地球主线后解锁' : c[0] === 'knight' ? '先接通杂货铺角落的管道' : c[0] === 'gifts' ? '先带上巴洛，敲开城堡大门' : '先完成Vanber的一项任务') + '</em></span></button>'; }).join('') + '</section><p class="xmas-coming hint">更多圣诞活动待补充</p>';
       return;
     }
     if (panel === 'gifts') {
@@ -98,18 +99,18 @@ var HSCHRISTMAS = (function () {
     storyBusy = true;
     var d = document.createElement('div'), at = 0, portrait = '', friends = false, scene = sceneKey || (action === 'knightIntro' ? 'hl_wonderland' : action === 'shopIntro' ? 'hl_shop' : action === 'shopHint' ? 'hl_cabin' : 'hl_castle'); d.className = 'soc-dlg xmas-story-layer xmas-loading'; d.id = 'xmas-story'; document.body.appendChild(d);
     var assets = [BG[scene]]; if (action === 'cabinIntro') assets.push(BG.hl_cabin);
-    lines.forEach(function (l) { if (l.img) assets.push(CHARS[l.img]); if (l.friends) ['oct','unicorn','may','ace'].forEach(function (k) { assets.push(CHARS['christmas_'+k]); }); });
+    lines.forEach(function (l) { if (l.img) assets.push(CHARS[l.img] || SPRITES[l.img]); if (l.friends) ['oct','unicorn','may','ace'].forEach(function (k) { assets.push(CHARS['christmas_'+k]); }); });
     function draw() {
       var l = lines[at];
       if (l.img) portrait = l.img;
       if (l.friends) friends = true;
       if (action === 'cabinIntro' && portrait) scene = 'hl_cabin';
       var color = l.n === 'Vanber' ? '#2a4ca0' : l.n === 'Threego' ? '#6f8f2a' : 'var(--ink)';
-      var place = scene === 'hl_wonderland' ? '圣诞仙境' : scene === 'hl_shop' ? '杂货铺' : scene === 'hl_cabin' ? '秘密小屋' : '圣诞城堡';
+      var place = scene === 'hl_highland' ? '格伦高地' : scene === 'hl_wonderland' ? '圣诞仙境' : scene === 'hl_shop' ? '杂货铺' : scene === 'hl_cabin' ? '秘密小屋' : '圣诞城堡';
       d.innerHTML = '<section class="xmas-story-scene" role="dialog" aria-modal="true" aria-labelledby="xmas-story-name" aria-describedby="xmas-story-text">' +
         '<img class="vn-bg xmas-story-bg" src="' + BG[scene] + '" alt=""><div class="xmas-story-shade" aria-hidden="true"></div>' +
         '<header class="xmas-story-heading"><span>圣诞奇遇 · ' + place + '</span><small>' + (at + 1) + ' / ' + lines.length + '</small></header>' +
-        '<div class="xmas-story-cast' + (friends ? ' with-friends' : '') + '" aria-hidden="true">' + (friends ? friendsHTML(!!l.friends) : '') + (portrait ? '<img class="xmas-story-art' + (l.img ? ' speaking' : ' listening') + '" src="' + CHARS[portrait] + '" alt="">' : '') + '</div>' +
+        '<div class="xmas-story-cast' + (friends ? ' with-friends' : '') + '" aria-hidden="true">' + (friends ? friendsHTML(!!l.friends) : '') + (portrait ? '<img class="xmas-story-art' + (l.img ? ' speaking' : ' listening') + '" src="' + (CHARS[portrait] || SPRITES[portrait]) + '" alt="">' : '') + '</div>' +
         '<div class="vn-box xmas-story-box" style="--cc:' + color + '"><div class="vn-name" id="xmas-story-name">' + esc(l.n) + '</div>' +
         '<p class="vn-text xmas-story-text" id="xmas-story-text">' + esc(l.t) + '</p><small class="hint red" data-xmas-story-error role="alert" hidden></small>' +
         '<div class="xmas-story-actions">' + (l.choices ? l.choices.map(function (q) { return '<button class="vn-opt" data-xmas-next>' + esc(q) + '</button>'; }).join('') : '<button class="btn primary" data-xmas-next>' + (at < lines.length - 1 ? '继续 ›' : '知道了') + '</button>') + '</div></div></section>';
@@ -122,7 +123,8 @@ var HSCHRISTMAS = (function () {
       function done() { d.remove(); storyBusy = false; if (after) after(); }
       if (!action) { done(); return; }
       var L = LOADER.show('正在继续圣诞旅程～', {delay:120}); L.to(.8);
-      HSACC.christmasTx({ a: action }, function () { L.done(done); }, function (err) { L.close(); b.disabled = false; var error = d.querySelector('[data-xmas-story-error]'); error.hidden = false; error.textContent = err || '网络不稳，请重试'; });
+      var send = typeof action === 'object' && action.op === 'highland' ? HSACC.highlandTx : HSACC.christmasTx;
+      send(typeof action === 'object' ? action.args : { a: action }, function () { L.done(done); }, function (err) { L.close(); b.disabled = false; var error = d.querySelector('[data-xmas-story-error]'); error.hidden = false; error.textContent = err || '网络不稳，请重试'; });
     }); draw(); gate(d,'正在载入圣诞剧情～',function () { d.querySelector('[data-xmas-next]').focus({preventScroll:true}); },assets);
   }
   function cabinStory() {
@@ -220,8 +222,9 @@ var HSCHRISTMAS = (function () {
   }
   function sceneObjects(bg) {
     if (bg === 'hl_shop') return '<button class="xmas-secret-corner" data-xmas-pipes aria-label="查看杂货铺角落的管道"><span aria-hidden="true">✦</span><b>' + (CHRISTMAS.wonderOpen(HSACC.acc()) ? '通往圣诞仙境' : '神秘角落') + '</b></button>';
+    if (bg === 'hl_highland') return '<button class="xmas-scene-npc xmas-highland-npc" data-xmas-highland style="left:60%;top:88%" aria-label="莫格伦 · 高地之王"><img src="' + SPRITES.glen + '" alt="莫格伦"><span>莫格伦 · LV50 · 世界BOSS</span></button><button class="btn xmas-wonder-return" data-highland-return>‹ 返回圣诞仙境</button>';
     if (bg !== 'hl_wonderland') return '';
-    return '<button class="xmas-scene-npc xmas-knight-npc" data-xmas-knight style="left:71%;top:91%" aria-label="bttp · 讨伐鲁普雷希特骑士"><img src="' + CHARS.bttp_christmas + '" alt="鲁普雷希特骑士bttp"><span>bttp · 讨伐活动</span></button><div class="xmas-scene-friends">' + friendsHTML(false) + '</div><button class="btn xmas-wonder-return" data-xmas-scene="2">‹ 返回杂货铺</button>';
+    return '<button class="xmas-scene-npc xmas-knight-npc" data-xmas-knight style="left:71%;top:91%" aria-label="bttp · 讨伐鲁普雷希特骑士"><img src="' + CHARS.bttp_christmas + '" alt="鲁普雷希特骑士bttp"><span>bttp · 讨伐活动</span></button><div class="xmas-scene-friends">' + (HIGHLAND.ready(HSACC.acc()) ? HSHIGHLAND.friends() : friendsHTML(false)) + '</div>' + (HIGHLAND.ready(HSACC.acc()) && !HIGHLAND.open(HSACC.acc()) ? '<p class="xmas-friend-hint">点击四位伙伴，寻找打败骑士的方法（' + HIGHLAND.FRIENDS.filter(function (k) { return (HIGHLAND.read(HSACC.acc()).talks || {})[k]; }).length + '/4）</p>' : '') + '<button type="button" class="btn xmas-highland-enter" data-highland-enter' + (HIGHLAND.open(HSACC.acc()) ? '' : ' disabled') + '>格伦高地 ›</button><button class="btn xmas-wonder-return" data-xmas-scene="2">‹ 返回杂货铺</button>';
   }
   function sourcePanel(k) {
     if (k !== 'xmasBell' && k !== 'xmasCandy') return;
@@ -232,6 +235,7 @@ var HSCHRISTMAS = (function () {
       { to:'all', title:'全部完成大礼包', text:'完成全部圣诞任务后，额外领取' + title + ' ×' + (bell ? CHRISTMAS.ALL.bell : CHRISTMAS.ALL.candy) }
     ];
     if (!bell) {
+      rows.push({ to:'highland', title:'格伦高地 · 高地之王', text:'每天可完成5次试炼，按伤害获得拐杖糖、高地的认可与经验' });
       rows.push({ to:'knight', title:'讨伐鲁普雷希特骑士', text:'击败50、60、70级召唤精灵，分别获得5、8、12个拐杖糖，可重复挑战' });
       if (CHRISTMAS.RANK_EVENT.enabled) rows.push({ to:'rank', title:'竞技排位S2新赛季', text:'活动期间胜利获得20个，失败或平局获得10个，认输不发放' });
     }
@@ -240,6 +244,7 @@ var HSCHRISTMAS = (function () {
     function close(){d.remove();document.removeEventListener('keydown',key);if(prev&&prev.isConnected)prev.focus({preventScroll:true});}
     function key(e){if(e.key==='Escape'){e.preventDefault();close();}if(e.key==='Tab'){var list=Array.from(d.querySelectorAll('button')),first=list[0],last=list[list.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}}
     d.addEventListener('click',function(e){if(e.target===d||e.target.closest('[data-source-close]')){close();return;}var b=e.target.closest('[data-source-go]');if(!b)return;var row=rows[+b.dataset.sourceGo];if(!row)return;close();var knight=document.getElementById('xmas-knight');if(knight)knight.remove();
+      if(row.to==='highland'){if(HIGHLAND.open(a))HSHIGHLAND.open();else{HSACC.goWonderland();HSACC.toast('先击败一次bttp，再点击四位伙伴交谈');}return;}
       if(row.to==='rank'){if(!HSACC.goRank())HSACC.openQuests('side');return;}
       if(!PVE.helenaOpen(a)){HSACC.openQuests('main');return;}
       if(row.to==='knight'){if(CHRISTMAS.wonderOpen(a)){if(CHRISTMAS.knightOpen(a))openKnight();else HSACC.goWonderland();}else{HSACC.goHelena(CHRISTMAS.sceneOpen(a,2)?2:0);HSACC.toast('先解锁杂货铺，再接通角落的管道');}return;}
@@ -277,5 +282,5 @@ var HSCHRISTMAS = (function () {
     var L = LOADER.show(args.a === 'buy' ? '正在兑换圣诞道具～' : '正在领取圣诞礼物～', {delay:120}); L.to(.7);
     HSACC.christmasTx(args, function (r) { L.done(function () { busy = false; HSACC.renderRes(); redraw(); HSACC.toast(r.already ? '已经领取过了' : args.a === 'buy' ? '已兑换' + (TX.D.BASE_ROOMS[r.k] ? TX.D.BASE_ROOMS[r.k].n : TX.D.BASE_DECO[r.k] ? TX.D.BASE_DECO[r.k].n : HSACC.itemName(r.k)) + ' ×' + r.n : '获得圣诞铃铛 ×' + r.bell + '、拐杖糖 ×' + r.candy); }); }, function (err) { L.close(); busy = false; redraw(); HSACC.toast(err || '暂时无法完成，请重试'); });
   });
-  return { render: render, gate: gate, images: images, maybeStory: maybeStory, sceneEntered: sceneEntered, sceneObjects: sceneObjects, openKnight: openKnight };
+  return { dialog: storyDialog, openHighland: function () { HSHIGHLAND.open(); }, highlandResult: function (rep) { HSHIGHLAND.result(rep); }, render: render, gate: gate, images: images, maybeStory: maybeStory, sceneEntered: sceneEntered, sceneObjects: sceneObjects, openKnight: openKnight };
 })();

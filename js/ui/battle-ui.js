@@ -206,7 +206,7 @@
       e_phantom: ['orb', '#8f4fd0', '精'], e_kaleo: ['orb', '#5d8a3c', '精'], e_leaf: ['orb', '#4caf50', '精'], e_squid: ['orb', '#3b8fd9', '精'], e_shroom: ['orb', '#e8603c', '精'], e_turkey: ['orb', '#d9773a', '精'], e_siren: ['orb', '#4aa8c8', '精'], e_hauris: ['orb', '#7b5ac8', '精'],
       floraJade: ['gem', '#4caf50'], kbDrop: ['drop', '#3b8fd9'], ppAsh: ['pile', '#7a5d4a', '#ff8a3d'], ltOrb: ['orb', '#f2c94c', '⚡'], whFrost: ['gem', '#9fe3f5'], earthShard: ['orb', '#3aa7a0', '🌏'],
       moonStone: ['moon', '#9b87e6'], boneDust: ['pile', '#d9d4c7', '#fff'], tgPearl: ['orb', '#f0a43a'], brTwig: ['twig', '#8b6b3f'], deathTok: ['coin', '#2b2a33', '死'],
-      ivMoon: ['flask', '#e86fb2', '天'], ivBone: ['flask', '#b07ad9', '天'], ivReroll: ['flask', '#e86fb2', '重'], evAny: ['flask', '#d9534f', '学'], evTagore: ['flask', '#e08a2e', '学'],
+      ivGlen: ['flask', '#986d3c', '天'], highlandPt: ['gem', '#986d3c', '认'], e_glen: ['orb', '#986d3c', '精'], ivMoon: ['flask', '#e86fb2', '天'], ivBone: ['flask', '#b07ad9', '天'], ivReroll: ['flask', '#e86fb2', '重'], evAny: ['flask', '#d9534f', '学'], evTagore: ['flask', '#e08a2e', '学'],
       natAny: ['pill', '#8e6fd6', '性'], natTagore: ['flask', '#8e6fd6', '性'], evReset: ['pill', '#9aa0a6', '退'], fruit1: ['fruit', '#e74c3c'], fruit2: ['fruit', '#f39c12', '✦'],
       g_sand: ['pile', '#f2d58a', '#fff6c8'], g_core: ['orb', '#ff8a3d', '✦'], s_herb: ['seed', '#8bc34a'], s_flower: ['seed', '#4a90e2'], s_rice: ['seed', '#e8d9a8'], s_exp: ['seed', '#c79545'], c_exp: ['fruit', '#9ebc54', '经'], c_herb: ['leaf', '#4caf50'], c_flower: ['flower', '#5aa2f0'], c_rice: ['grain', '#f5f0dc'],
       mmTok: ['coin', '#4a6a8a', '明'], mmEye: ['orb', '#f2c94c', '眼'], e_leiming: ['orb', '#e8b830', '精'], e_odo: ['orb', '#5a7aa8', '精'], odoFin: ['gem', '#6a86b8'], hrDisk: ['coin', '#7b5ac8', '✦'], exp: ['orb', '#3b8fd9', '经'], energy: ['orb', '#e0a020', '能'],
@@ -885,9 +885,9 @@
   function renderSnap(sn, instant) {
     sn = flipSnap(sn);
     if (CAST.on) { CAST.snap = castSnap(sn); castQueue(); }
-    var trn = app.S && app.S.training, nol = trn || (app.S && app.S.noLimit);
-    $('turnNo').textContent = nol ? sn.turn : Math.min(sn.turn, MAX_TURNS);
-    var left = nol ? 999 : MAX_TURNS - sn.turn; $('turnMax').textContent = trn ? '训练 · 不限回合' : nol ? '不限回合' : left <= 0 ? '最后一回合' : '上限 ' + MAX_TURNS; $('turnMax').className = 'tmax' + (!trn && left <= 10 ? ' warn' : '');
+    var trn = app.S && app.S.training, world = app.S && app.S.worldBoss, limit = world ? world.limit : MAX_TURNS, nol = !world && (trn || (app.S && app.S.noLimit));
+    $('turnNo').textContent = nol ? sn.turn : Math.min(sn.turn, limit);
+    var left = nol ? 999 : limit - sn.turn; $('turnMax').textContent = trn ? '训练 · 不限回合' : nol ? '不限回合' : left <= 0 ? '最后一回合' : '上限 ' + limit; $('turnMax').className = 'tmax' + (!trn && left <= 10 ? ' warn' : '');
     // 多管体力（第十九段的玫瑰星云）：每管颜色不同，血条底色是下一管的颜色
     function mbCls(sd) { var b = sd.bars; return 'hpbar' + (b ? ' mb mb' + b[0] + (b[0] < b[1] - 1 ? ' mbn' : '') : ''); }
     function mbFill(sd) { return sd.bars ? ' nb' + sd.bars[0] : ''; }
@@ -1016,7 +1016,7 @@
   var tab = 'moves';
   function quitLabel() {
     var S = app.S;
-    return S && S.training ? '结束训练' : document.body.classList.contains('battle-desktop') || S && S.wild ? '逃跑' : '认输';
+    return S && S.worldBoss ? '退出挑战' : S && S.training ? '结束训练' : document.body.classList.contains('battle-desktop') || S && S.wild ? '逃跑' : '认输';
   }
   function refreshControls() {
     var S = app.S; if (!S) return;
@@ -1174,10 +1174,11 @@
       $('endcard').hidden = false; refreshCmd(); return;
     }
     $('btn-back').textContent = S.wild ? '返回' + S.wild.back : S.story ? (S.story.back ? '返回' + S.story.back : '继续剧情') : '回到背包'; $('btn-again').hidden = !!S.story;
-    $('end-title').textContent = r === 'caught' ? '捕捉成功！' : r === 'flee' ? '顺利逃走了' : r === 'spared' ? '手下留情' : r === 'win' ? '胜利！' : r === 'lose' ? '失败了' : '平局';
+    $('end-title').textContent = S.worldBoss ? r === 'win' ? '高地试炼完成' : '挑战未完成' : r === 'caught' ? '捕捉成功！' : r === 'flee' ? '顺利逃走了' : r === 'spared' ? '手下留情' : r === 'win' ? '胜利！' : r === 'lose' ? '失败了' : '平局';
     var left = aliveIdx(S, 0).length;
     var wf = S.wild && act(S, 1);
     $('end-sub').textContent = S.wild ? (r === 'caught' ? '【' + (wf.nick || SPMAP[wf.id].name) + '】LV' + wf.lv + ' 已收入精灵仓库' : r === 'flee' ? '你带着精灵们离开了。' : r === 'spared' ? '野生的' + (wf.nick || SPMAP[wf.id].name) + '只剩最后一口气，逃走了' : r === 'win' ? '野生的' + (wf.nick || SPMAP[wf.id].name) + '倒下了，没能捕捉到它' : '你的精灵们都倒下了，先回去休整吧') + ' · 共 ' + (S.turn - 1) + ' 回合' : (S.story ? '与 ' + S.story.foe + ' 的对战 · 共 ' + (S.turn - 1) + ' 回合' : S.timeUp ? '达到 ' + MAX_TURNS + ' 回合上限，按剩余精灵数判定 · 你剩 ' + left + ' 只，对手剩 ' + aliveIdx(S, 1).length + ' 只' : '共 ' + (S.turn - 1) + ' 回合 · 你的背包还剩 ' + left + ' 只精灵能战斗');
+    if (S.worldBoss) $('end-sub').textContent = r === 'win' ? '本次造成 ' + S.worldBoss.damage + ' 点伤害 · 返回高地后查看奖励' : '本次不扣挑战次数，不结算伤害与奖励';
     // 账号精灵在这场战斗中领悟的隐藏技能
     var eh = $('end-hid'), got = []; eh.hidden = true; eh.innerHTML = '';
     if (S.story) S.sides[0].team.forEach(function (x) { (x.hqGot || []).forEach(function (n) { got.push({ u: x.u, mv: n, who: x.nick || SPMAP[x.id].name }); }); });

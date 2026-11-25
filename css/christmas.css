@@ -197,3 +197,37 @@ body.christmas-page-active #pg-christmas { height: var(--scene-view-height); min
   .xmas-knight-targets article { padding: 5px; gap: 3px; }.xmas-knight-targets article > img { height: 50px; }.xmas-knight-targets .btn { padding: 5px 14px; }
 }
 @media (prefers-reduced-motion: reduce) { .xmas-friends.walking > span { animation: none; } }
+/* 格伦高地复用圣诞活动的纸张、格子与字号。 */
+.xmas-friends-talk { pointer-events: auto; }
+.xmas-friends-talk > button { flex: 1; min-width: 0; border: 0; padding: 0; background: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; color: var(--ink); font: inherit; }
+.xmas-friends-talk > button > img { width: 100%; height: 100%; min-height: 0; object-fit: contain; object-position: bottom; }
+.xmas-friends-talk > button > span { flex: 0 0 auto; font-size: 11px; padding: 3px 5px; border: 1px solid var(--rule); border-radius: 4px; background: var(--paper); white-space: nowrap; }
+.xmas-friends-talk > button:hover, .xmas-friends-talk > button:focus-visible { filter: drop-shadow(0 0 5px #ffdc8c); }
+.xmas-friend-hint { position: absolute; z-index: 102; left: 10%; bottom: 7%; margin: 0; padding: 5px 8px; border-radius: 5px; background: var(--paper); color: var(--red); font-size: 12px; max-width: 70%; }
+.xmas-highland-enter { position: absolute; z-index: 102; bottom: 12px; right: 14px; font-size: 12px; }
+.xmas-highland-npc { width: clamp(160px,38%,360px); height: 66%; }
+.xmas-highland-box { width: min(840px,calc(100vw - 24px)); height: min(640px,calc(100dvh - 24px)); overflow: hidden; }
+.xmas-highland-box .xmas-npc-layout { flex: 1 1 0; min-height: 0; }
+.xmas-highland-tabs { flex: 0 0 auto; display: flex; gap: 7px; }
+.xmas-highland-tabs .btn { font-size: 13px; flex: 1; padding: 7px; }
+.xmas-highland-content { display: flex; flex-direction: column; gap: 12px; overflow-x: hidden; }
+.xmas-highland-stats { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 7px; }
+.xmas-highland-stats > span { min-width: 0; display: grid; gap: 5px; padding: 10px 6px; border: 1px solid var(--rule); background: var(--paper); border-radius: 8px; font-size: 12px; text-align: center; }
+.xmas-highland-stats b { font-size: 17px; overflow-wrap: anywhere; }
+.xmas-highland-rules { padding: 12px; border: 1px solid var(--rule); border-radius: 8px; background: var(--paper); font-size: 13px; line-height: 1.65; }
+.xmas-highland-rules p { margin: 8px 0; }.xmas-highland-rules small { font-size: 11px; }
+.xmas-highland-shop { grid-template-columns: repeat(2,minmax(0,1fr)); }.xmas-highland-cost { display: grid; gap: 4px; font-size: 12px; }
+.xmas-highland-fight { flex: 0 0 auto; }
+.xmas-highland-board-tools { display: flex; flex-wrap: wrap; gap: 6px; }.xmas-highland-board-tools .btn { font-size: 12px; padding: 5px 8px; }
+.xmas-highland-me { padding: 8px; background: var(--paper-2); border: 1px dashed var(--red); border-radius: 6px; font-size: 12px; }
+.xmas-highland-ranking table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 12px; }
+.xmas-highland-ranking th, .xmas-highland-ranking td { padding: 8px 4px; border-bottom: 1px solid var(--rule); text-align: left; overflow-wrap: anywhere; }
+.xmas-highland-ranking th:first-child { width: 13%; }.xmas-highland-ranking th:nth-child(3) { width: 28%; }.xmas-highland-ranking th:last-child { width: 13%; }
+.xmas-highland-ranking .is-me { color: var(--red); background: var(--paper-2); }
+.xmas-highland-result { width: min(480px,calc(100vw - 24px)); }.xmas-highland-result > p { font-size: 14px; }
+.xmas-highland-prizes { line-height: 2.2; font-size: 14px; padding: 12px; background: var(--paper-2); border-radius: 8px; }.xmas-highland-prizes .it-ic { width: 24px; height: 24px; vertical-align: middle; }
+@media (max-width:640px) { .xmas-highland-box { padding: 12px; }.xmas-highland-box .xmas-wallet { gap: 6px; font-size: 11px; }.xmas-highland-shop { grid-template-columns: minmax(0,1fr); }.xmas-highland-stats b { font-size: 14px; }.xmas-friends-talk > button > span { font-size: 9px; padding: 2px; }.xmas-friend-hint { font-size: 10px; }.xmas-highland-npc span { font-size: 11px; } }
+@media (max-height:520px) and (orientation:landscape) { .xmas-highland-box { padding: 10px; gap: 5px; }.xmas-highland-box .xmas-wallet { font-size: 11px; }.xmas-highland-content { gap: 6px; }.xmas-highland-stats > span { padding: 6px; }.xmas-highland-rules { padding: 8px; font-size: 12px; }.xmas-highland-rules p { margin: 4px 0; }.xmas-highland-shop .xmas-good { padding: 8px; gap: 5px; }.xmas-highland-box .xmas-npc-portrait { min-height: 0; }.xmas-highland-box .xmas-npc-place { font-size: 11px; } }
+.xmas-play .xmas-highland-shop.shop-display-grid { grid-template-columns: repeat(2,minmax(0,1fr))!important; grid-template-rows: auto; }
+.xmas-highland-shop .shop-product { min-height: 160px; }
+@media (max-height:520px) { .xmas-highland-shop .shop-product { min-height: 120px; } }

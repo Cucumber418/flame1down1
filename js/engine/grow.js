@@ -9,6 +9,7 @@ var GROW = (function () {
   var EV_TOTAL0 = EV_TOTAL;
   var USE_ITEMS = {
     nameTag: { name: '命名牌', sid: null, kind: 'nameTag', sd: '给一只精灵永久解锁无限次免费改名。', d: '对一只精灵使用后消耗 1 张命名牌，永久解锁这个个体的改名功能。之后在基础信息中点击名字旁的小羽毛，可以无限次免费改名。冶炼坊用 5 个圣晶石合成，或在商城用 20000 能量购买。' },
+    ivGlen: { name: '格伦专属天赋重置合剂', sid: 'glen', kind: 'iv2', d: '用于格伦或莫格伦，将六项天赋全部重新随机，每项掷两次取较高值。在格伦高地用200个高地的认可兑换。', none: '先在格伦高地兑换并孵化格伦的精元。' },
     ivReroll: { name: '天赋重组合剂', sid: null, kind: 'iv', d: '把你的任意一只精灵的六项天赋（0~31）全部重新随机。新的天赋可能更高，也可能更低。' },
     natTagore: { name: '泰戈尔性格药剂', sid: 'tagore', kind: 'nat', d: '把你的一只泰戈尔（小胖虎、胖虎也可以）的性格改成你指定的性格。' },
     ev50: { name: '50学习力合剂', sid: null, kind: 'ev', amt: 50, d: '为你的任意一只精灵直接增加 50 点学习力。加进「可分配学习力」，再在精灵资料里自己分配；学习力总量最多 ' + EV_TOTAL0 + '。' },   // 2026-10-27：通用学习力合剂拆成 50、100 两种
@@ -428,7 +429,7 @@ var GROW = (function () {
 
   /* ---------- 精灵保育仓：精元放进孵化槽，过一段时间孵化出精灵 ---------- */
   var NURSERY_N = 3;
-  var HATCH = { e_odo: { sid: 'odo', lv: 1, min: 480 }, e_leafcat: { sid: 'leafcat', lv: 1, min: 480 }, e_pluto: { sid: 'pluto', lv: 1, min: 720 }, e_leiming: { sid: 'leiming', lv: 1, min: 480, shiny: 0.1 } };   // shiny：孵出异色的概率
+  var HATCH = { e_glen: { sid: 'glen', lv: 1, min: 480 }, e_odo: { sid: 'odo', lv: 1, min: 480 }, e_leafcat: { sid: 'leafcat', lv: 1, min: 480 }, e_pluto: { sid: 'pluto', lv: 1, min: 720 }, e_leiming: { sid: 'leiming', lv: 1, min: 480, shiny: 0.1 } };   // shiny：孵出异色的概率
   // 2026-11-01 圣晶石召唤：当期 UP 精灵的精元（sum: 'up'，算珍贵）和稀有精灵的精元（sum: 'rare'，不改变这些精灵的稀有度）。召唤池按这份名单，新出的稀有精灵不会自动加进来
   HATCH.e_phantom = { sid: 'phantom', lv: 1, min: 480, sum: 'up' };
   ['kaleo', 'leaf', 'squid', 'shroom', 'turkey', 'siren', 'hauris'].forEach(function (s) { HATCH['e_' + s] = { sid: s, lv: 1, min: 480, sum: 'rare' }; });

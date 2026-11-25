@@ -135,6 +135,7 @@ var PRE_SPRITES = {
 
 // 剧情、探索、对战背景  →  images/backgrounds/
 var BG = {
+  "hl_highland": "images/backgrounds/hl_highland.jpg",
   "hl_wonderland": "images/backgrounds/hl_wonderland.png",
   "hl_castle": "images/backgrounds/hl_castle_v2.png",
   "hl_cabin": "images/backgrounds/hl_cabin_v2.png",

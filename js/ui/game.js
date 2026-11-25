@@ -898,7 +898,7 @@
    * 一般道具：捕捉装置、补药（对战中用）、改名卡、自律训练装置、挑战许可
    * 储存箱（主菜单，黄冈秘鉴和社交中间）列出所有道具 */
   var USE_ITEMS = GROW.USE_ITEMS;   // 精灵道具的数据和用法在 js/engine/grow.js（服务器和浏览器共用，2026-10-25）
-  var MON_ORDER = ['crossEssence', 'nameTag', 'formDev', 'earthShard', 'floraJade', 'kbDrop', 'ppAsh', 'ltOrb', 'whFrost', 'moonStone', 'boneDust', 'tgPearl', 'brTwig', 'odoFin', 'fireNote', 'hrDisk', 'phLeaf', 'fencArc', 'deathTok', 'ivMoon', 'ivBone', 'ivReroll', 'ev50', 'evAny', 'evTagore', 'natAny', 'natRand', 'natTagore', 'evReset', 'fruit1', 'fruit2'], GEN_ORDER = ['trans', 'helmet', 'dive', 'auto', 'rename', 'cap1', 'cap2', 'cap3', 'pot1', 'pot2', 'pot200'];
+  var MON_ORDER = ['crossEssence', 'nameTag', 'formDev', 'earthShard', 'floraJade', 'kbDrop', 'ppAsh', 'ltOrb', 'whFrost', 'moonStone', 'boneDust', 'tgPearl', 'brTwig', 'odoFin', 'fireNote', 'hrDisk', 'phLeaf', 'fencArc', 'deathTok', 'ivMoon', 'ivBone', 'ivGlen', 'ivReroll', 'ev50', 'evAny', 'evTagore', 'natAny', 'natRand', 'natTagore', 'evReset', 'fruit1', 'fruit2'], GEN_ORDER = ['trans', 'helmet', 'dive', 'auto', 'rename', 'cap1', 'cap2', 'cap3', 'pot1', 'pot2', 'pot200'];
   // 剧情道具：主线里拿到的，不能使用也不会消耗
   var KEY_ITEMS = {
     trans: { name: '精灵翻译器', d: '汉街总部国际A座的情报显示，这个翻译器能凭一己之力考到雅思 6.5 分。这样一来，翻译精灵的语言也一定能行吧……', img: 'translator' },
@@ -921,6 +921,8 @@
     e_odo: { name: '奥多的精元', d: '旧版BOSS奖励中从深海里带回的一团精元。放进神农架 · 精灵保育仓，孵化 8 小时后会诞生一只奥多。', hatch: { sid: 'odo', lv: 1, min: 480 } },
     e_leafcat: { name: '叶子喵的精元', d: '用 5 片叶子喵的叶片凝成的精元。放进神农架 · 精灵保育仓，孵化 8 小时后会诞生一只叶子小小喵。', hatch: { sid: 'leafcat', lv: 1, min: 480 } }
   };
+  MATS.e_glen = { name: '格伦的精元', d: '在格伦高地用10个圣诞铃铛与1000个高地的认可兑换。放进神农架 · 精灵保育仓，孵化8小时后诞生LV1格伦。', hatch: { sid: 'glen', lv: 1, min: 480 } };
+  MATS.highlandPt = { name: '高地的认可', d: '完成格伦高地世界BOSS的20回合试炼获得，可在莫格伦处兑换格伦的精元和专属天赋重置合剂。' };
   MATS.e_pluto = { name: '帕努托尔的精元', d: '在先驱之塔的代币商店兑换的精元。放进神农架 · 精灵保育仓，孵化 12 小时后会诞生一只帕努。', hatch: { sid: 'pluto', lv: 1, min: 720 } };
   MATS.m_psac = { name: '蘑菇毒囊', d: '玛西一族身上的毒囊，鼓鼓的，别捏破。1 个加 5 个药草，可以在黄石 · 冶炼坊合成「解毒药剂」。' };   // 2026-10-27
   MATS.m_hfhorn = { name: '赫菲角片', d: '赫菲一系身上掉下来的角片，还带着一点余温。60 片可以在黄石 · 冶炼坊合成「奇声号角」。' };
@@ -940,8 +942,8 @@
   INS_ITEMS.fPt = { name: '友情点', d: '友情点召唤用的点数。社交里每天可以给每位好友各送一次经验（双方各 200 点，自己每天从送礼最多拿 2000 点）；借用好友的助战精灵，双方各 100 点（每天最多 1000 点）。' };
   INS_ITEMS.sumTok = { name: '召唤代币', d: '每次圣晶石召唤送 10 个，抽到当期 UP 再送 200 个。可以在召唤代币商店兑换圣晶石、UP 精灵的专属道具和限定刻印。' };
   MATS.xmasBell = { name: '圣诞铃铛', d: 'Vanber的圣诞任务奖励，较为稀少，可在Threego的苏格兰杂货铺兑换道具' };
-  MATS.xmasCandy = { name: '拐杖糖', d: '完成Vanber的圣诞任务或讨伐鲁普雷希特骑士获得，可在Threego的苏格兰杂货铺兑换道具' };
-  var MAT_ORDER = SUM_ESS.concat(['xmasBell', 'xmasCandy', 'm_lcleaf', 'e_leafcat', 'e_pluto', 'e_odo', 'm_psac', 'm_hfhorn', 'm_horn', 'm_mcry', 'm_cu', 'm_fe', 's2MonTicket', 'ctTicket', 'ctShare']);
+  MATS.xmasCandy = { name: '拐杖糖', d: '完成Vanber的圣诞任务、讨伐鲁普雷希特骑士或完成格伦高地试炼获得，可在Threego的苏格兰杂货铺兑换道具' };
+  var MAT_ORDER = SUM_ESS.concat(['xmasBell', 'xmasCandy', 'highlandPt', 'e_glen', 'm_lcleaf', 'e_leafcat', 'e_pluto', 'e_odo', 'm_psac', 'm_hfhorn', 'm_horn', 'm_mcry', 'm_cu', 'm_fe', 's2MonTicket', 'ctTicket', 'ctShare']);
   // 太空种植园只种药草。min 是成熟分钟，yield 是收获数量。收获时退回种子。
   var SEEDS = GROW.SEEDS;   // 在 js/engine/grow.js
 
@@ -993,8 +995,11 @@
     boneDust: ['泛着幽光的骨粉，摸上去凉凉的。', '每 100 个让骨刃一系领悟一个隐藏技能；到 LV70 后也用它解锁更高的等级上限。', '竞技代币商店（2 竞技代币）。'],
     tgPearl: ['泰戈尔一声虎啸凝成的珠子。', '每 100 个让泰戈尔一系领悟一个隐藏技能；到 LV70 后也用它解锁 LV75（500 个）、LV80（500 个）的等级上限。', '首次击败困难难度的泰戈尔得 80 个；泰戈尔每周挑战每次 15 / 30 / 50 个（简单 / 普通 / 困难）。'],
     brTwig: ['从荒芜体内的古代除草程序里提取出的一小瓶药剂。', '每 100 个让荒芜一系领悟一个隐藏技能；到 LV70 后也用它解锁 LV75（500 个）、LV80（500 个）的等级上限。', '首次击败普通难度的荒芜得 40 个、困难难度得 80 个；荒芜每周挑战每次 15 / 30 / 50 个（简单 / 普通 / 困难）。'],
+    highlandPt: ['高地之王对实力的认可', '在莫格伦处兑换格伦的精元与专属天赋重置合剂', '格伦高地 · 完成世界BOSS试炼'],
+    e_glen: ['格伦的精元', '放进神农架 · 精灵保育仓，8小时后孵化出LV1格伦', '格伦高地 · 莫格伦兑换（10铃铛和1000认可）'],
+    ivGlen: ['格伦一系专用的天赋合剂', '每项天赋随机两次，取较高值', '格伦高地 · 莫格伦兑换（200认可）'],
     xmasBell: ['Vanber准备的稀有圣诞铃铛', '在Threego的苏格兰杂货铺兑换道具', '圣诞活动 · Vanber的圣诞礼物'],
-    xmasCandy: ['红白相间的圣诞拐杖糖', '在Threego的苏格兰杂货铺兑换道具', '圣诞活动 · Vanber的圣诞礼物；圣诞仙境 · 讨伐鲁普雷希特骑士'],
+    xmasCandy: ['红白相间的圣诞拐杖糖', '在Threego的苏格兰杂货铺兑换道具', '圣诞活动 · Vanber的圣诞礼物；圣诞仙境 · 讨伐鲁普雷希特骑士；格伦高地 · 高地之王试炼'],
     crossEssence: ['凝聚着海伦娜星能量的十字精粹', '每100个解锁巴洛或巴利一系的一个隐藏技能，LV75、LV80突破各需500个', '击败圣诞城堡的野生精灵，每只掉落1–6个；Threego的苏格兰杂货铺可用1个拐杖糖兑换1个'],
     fireNote: ['凝聚烈焰的音符', '每100个让克莱一系领悟一个隐藏技能，也用于突破等级上限', '首次击败普通难度的克莱门蒂获得40个；每周挑战每次15 / 30个（简单 / 普通）'],
     odoFin: ['从深海的奥多亚克身上脱落的古老鳍甲。', '每 100 个让奥多亚克一系领悟一个隐藏技能；到 LV70 后也用它解锁 LV75（500 个）、LV80（500 个）的等级上限。', '首次击败普通难度的奥多亚克得 40 个、困难难度得 80 个；奥多亚克每周挑战每次 15 / 30 / 50 个（简单 / 普通 / 困难）。'],
@@ -1132,7 +1137,7 @@
   /* 储存箱分类（2026-10-19 整理）：精灵培养 / 战斗道具 / 材料 / 其他，每类下面再分小组；每个道具都带图标 */
   function ibGroups(wk) {
     var byKind = function (kinds) { return MON_ORDER.filter(function (k) { return USE_ITEMS[k] && kinds.indexOf(USE_ITEMS[k].kind) >= 0; }); };
-    var listed = ['m_lcleaf', 'e_leafcat', 'e_pluto', 'e_odo'].concat(SUM_ESS);
+    var listed = ['e_glen', 'm_lcleaf', 'e_leafcat', 'e_pluto', 'e_odo'].concat(SUM_ESS);
     var evt = MAT_ORDER.filter(function (k) { return listed.indexOf(k) < 0; });
     return [
       { id: 'mon', n: '精灵培养', subs: [['特产 · 隐藏技能与等级上限', byKind(['jade'])], ['性格 · 天赋 · 学习力', byKind(['nat', 'natRand', 'iv', 'iv2', 'ev', 'evreset'])], ['经验', byKind(['exp'])], ['形态与命名', byKind(['form', 'nameTag'])]] },
@@ -1936,7 +1941,7 @@
   Object.assign(BG_NAME, { lt_field: '雷暴星尘', lt_jupiter: '巨星之下' });
   Object.assign(BG_NAME, { kb_shore: '黄昏礁滩', kb_dusk: '暮色海面', kb_wave: '巨浪', black: '', kb_dock: '水星码头', kb_isle: '冥岛', kb_lookup: '仰望水面', kb_shoal: '群灵深海', kb_temple: '古代神殿', kb_floor: '幽深地', kb_abyss: '深渊潜底' });
   Object.assign(BG_NAME, { fl_path: '林间小路', fl_lake: '草甸湖畔', fl_beech: '山毛榉林', fl_maple: '丛林边缘', fl_meadow: '草甸', fl_sun: '丛林深处', fl_salt: '盐碱地', fl_village: '叶之村落', fl_horizon: '草甸尽头', fl_jungle_corrupt: '瘴气丛林' });
-  Object.assign(BG_NAME, { hl_castle: '圣诞城堡', hl_cabin: '秘密小屋', hl_shop: '杂货铺', hl_wonderland: '圣诞仙境' });
+  Object.assign(BG_NAME, { hl_castle: '圣诞城堡', hl_cabin: '秘密小屋', hl_shop: '杂货铺', hl_wonderland: '圣诞仙境', hl_highland: '格伦高地' });
   Object.keys(BG_NAME).forEach(function (k) { if (BG[k + '_mia']) BG_NAME[k + '_mia'] = BG_NAME[k]; });
   // 角色（立绘为占位）
   var CAST = {
@@ -3900,11 +3905,12 @@
     if (!R || R.planet !== pid || !planetMapCan(R)) R = regionsOf(pid).filter(planetMapCan)[0];
     if (!R) { ex.view = 'planets'; renderExplore(); return; }
     if (R.id === 'hl_castle' && index != null && !CHRISTMAS.sceneOpen(acc, +index)) { toast(+index === 1 ? '先带上巴洛，去城堡大门敲门' : '先完成Vanber的一项任务'); index = 0; }
+    if (R.id === 'hl_wonderland' && index != null && +index > 0 && !HIGHLAND.open(acc)) { toast('击败一次bttp后，与四位伙伴交谈再前往高地'); index = 0; }
     ex.planet = pid; ex.region = R.id; ex.view = 'field';
     var F = planetMapField(R);
     if (index != null) F.scene = Math.max(0, Math.min(F.scenes.length - 1, Math.floor(+index) || 0));
     else if (!last) F.scene = 0;
-    if (R.id === 'hl_castle' && !CHRISTMAS.sceneOpen(acc, F.scene)) F.scene = 0;
+    if (R.id === 'hl_castle' && !CHRISTMAS.sceneOpen(acc, F.scene) || R.id === 'hl_wonderland' && F.scene > 0 && !HIGHLAND.open(acc)) F.scene = 0;
     PM.panel = panel || null; PM.helpers = false; PM.challenge = null; PM.story = null;
     renderField(); setTimeout(bgmScene, 0); setTimeout(cumberCheck, 400);
   }
@@ -3948,8 +3954,8 @@
     return regionsOf(P.id).filter(function (R) { return !R.record || regionOpen(R); }).map(function (R) {
       var open = planetMapCan(R);
       return '<section class="planet-mini-region"><h3>' + esc(R.name) + (open ? '' : ' <small>未开放</small>') + '</h3><div class="planet-mini-grid">' + planetMapScenes(R).map(function (sc, i) {
-        var on = ex.region === R.id && F.scene === i, sceneOpen = open && (R.id !== 'hl_castle' || CHRISTMAS.sceneOpen(acc, i));
-        return '<button type="button" class="planet-mini-scene' + (on ? ' on' : '') + '" data-map-rid="' + R.id + '" data-map-scene="' + i + '" aria-pressed="' + on + '"' + (sceneOpen ? '' : ' disabled title="' + (R.planet === 'helena' ? R.id === 'hl_wonderland' ? '接通杂货铺角落的管道后开放' : i === 1 ? '带上巴洛，尝试敲开城堡大门' : '完成Vanber的一项任务后开放' : '读完降临芙罗拉后开放') + '"') + '><span class="planet-mini-image">' + (sc.bg ? '<img src="' + sc.bg + '" alt="">' : '') + '</span><b>' + esc(planetMapName(sc, R, i)) + '</b><small>' + (on ? '当前位置' : sceneOpen ? '点击传送' : R.planet === 'helena' ? R.id === 'hl_wonderland' ? '先接通杂货铺的管道' : i === 1 ? '先敲开城堡大门' : '先完成Vanber的一项任务' : '未开放') + '</small></button>';
+        var on = ex.region === R.id && F.scene === i, sceneOpen = open && (R.id !== 'hl_castle' || CHRISTMAS.sceneOpen(acc, i)) && (R.id !== 'hl_wonderland' || i === 0 || HIGHLAND.open(acc));
+        return '<button type="button" class="planet-mini-scene' + (on ? ' on' : '') + '" data-map-rid="' + R.id + '" data-map-scene="' + i + '" aria-pressed="' + on + '"' + (sceneOpen ? '' : ' disabled title="' + (R.planet === 'helena' ? R.id === 'hl_wonderland' ? i > 0 ? '击败bttp后与四位伙伴交谈' : '接通杂货铺角落的管道后开放' : i === 1 ? '带上巴洛，尝试敲开城堡大门' : '完成Vanber的一项任务后开放' : '读完降临芙罗拉后开放') + '"') + '><span class="planet-mini-image">' + (sc.bg ? '<img src="' + sc.bg + '" alt="">' : '') + '</span><b>' + esc(planetMapName(sc, R, i)) + '</b><small>' + (on ? '当前位置' : sceneOpen ? '点击传送' : R.planet === 'helena' ? R.id === 'hl_wonderland' ? i > 0 ? '先与四位伙伴交谈' : '先接通杂货铺的管道' : i === 1 ? '先敲开城堡大门' : '先完成Vanber的一项任务' : '未开放') + '</small></button>';
       }).join('') + '</div></section>';
     }).join('') || '<p>暂时没有可以前往的区域。</p>';
   }
@@ -4049,7 +4055,7 @@
     if (ex.region === 'hl_cabin' || ex.region === 'hl_shop') { var oldScene = ex.region === 'hl_cabin' ? 1 : 2; ex.region = 'hl_castle'; fieldState(ex.region).scene = oldScene; }
     var R = regionById(ex.region);
     if (!R || !planetMapCan(R)) { ex.view = 'sites'; renderExplore(); return; }
-    var F = planetMapField(R); if (R.id === 'hl_castle' && !CHRISTMAS.sceneOpen(acc, F.scene)) F.scene = 0;
+    var F = planetMapField(R); if (R.id === 'hl_castle' && !CHRISTMAS.sceneOpen(acc, F.scene) || R.id === 'hl_wonderland' && F.scene > 0 && !HIGHLAND.open(acc)) F.scene = 0;
     var open = regionOpen(R), P = planetOf(R.planet), sc = F.scenes[F.scene], n = F.scenes.length, lab = sc.bgKey === 'fl_lab';
     ex.planet = R.planet; PM.last[P.id] = { rid: R.id, scene: F.scene };
     if (open) catchUp(R, F, sc, Date.now());
@@ -4096,6 +4102,7 @@
     var R = regionById(ex.region), F = R && planetMapField(R); if (!F || ex.fighting) return;
     var n = F.scenes.length, next = (F.scene + d + n) % n;
     if (R.id === 'hl_castle' && !CHRISTMAS.sceneOpen(acc, next)) { toast(next === 1 ? '先带上巴洛，去城堡大门敲门' : '先完成Vanber的一项任务'); return; }
+    if (R.id === 'hl_wonderland' && next > 0 && !HIGHLAND.open(acc)) { toast('击败一次bttp后，点击四位伙伴交谈'); return; }
     F.scene = next;
     renderField(); setTimeout(bgmScene, 0);
     setTimeout(cumberCheck, 400);
@@ -4137,7 +4144,7 @@
     var args = { slot: slot, id: id };
     function finish(rep, res) {
       bossBack('field', renderField); save(); renderRes();
-      if (rep) { var msg = xpMsg(rep.xp); if (rep.candy) msg.unshift('获得拐杖糖 ×' + rep.candy + '，新的召唤精灵已出现。'); if (msg.length) toast(msg.join('')); }
+      if (rep) { var msg = xpMsg(rep.xp); if (rep.candy) msg.unshift('获得拐杖糖 ×' + rep.candy + '，新的召唤精灵已出现。'); if (rep.candy && !HIGHLAND.open(acc)) msg.push('点击屋前的OCT、Unicorn、May和Ace，听听他们的建议。'); if (msg.length) toast(msg.join('')); }
       if (res === 'void') toast('这场对战作废了，可以重新挑战');
     }
     if (srvMode()) { pveRemote('christmasKnight', args, { bg: BG.hl_wonderland, back: '圣诞仙境' }, function (e,res) { finish(e && e.rep,res); }); return; }
@@ -4147,6 +4154,22 @@
     HSBATTLE.start({p:st.p,a:st.a,foe:st.opt.foe,diff:st.opt.diff,bgm:st.opt.bgm,bg:BG.hl_wonderland,back:'圣诞仙境',items:invCopy(),onItem:useInv,onEnd:function (res,seen,downs,quit) {
       finish(mode.end(acc,st.ctx,{res:res,seen:seen,downs:downs,quit:quit},{now:Date.now(),rand:Math.random}),res);
     }});
+  }
+  function fightHighland() {
+    if (ex.fighting || pveBusy || !HIGHLAND.open(acc)) return;
+    HSACC.goHighland();
+    function finish(rep) {
+      bossBack('field', renderField); save(); renderRes();
+      HSCHRISTMAS.highlandResult(rep);
+    }
+    if (srvMode()) { pveRemote('highland', {}, { bg: BG.hl_highland, back: '格伦高地' }, function (e) { finish(e && e.rep); }); return; }
+    var mode = PVE.MODES.highland, st = mode.start(acc, {}, { now: Date.now(), rand: Math.random });
+    if (st.err) { toast(st.err); return; }
+    var S = newBattle(st.p, st.a); Object.keys(st.S).forEach(function (k) { S[k] = st.S[k]; }); S.noLimit = true; S.items = invCopy(); S.story = { foe: st.opt.foe, diff: st.opt.diff, back: '格伦高地' };
+    stopTimers(); ex.fighting = true; document.body.classList.add('story-fight'); syncBattle(); $('pg-explore').hidden = true; $('pg-arena').hidden = false;
+    HSBATTLE.start({ S: S, p: st.p, a: st.a, foe: st.opt.foe, bg: BG.hl_highland, bgm: st.opt.bgm, back: '格伦高地', onItem: useInv, onEnd: function (res, seen, downs, quit, endS) {
+      finish(mode.end(acc, st.ctx, { res: res, quit: quit, S: endS || S }, { now: Date.now() }));
+    } });
   }
   // 服务器结算的野外对战。args：{ id } 服务器刷出来的那只 / { travel } 旅行精灵；o：显示用的资料
   function startWildRemote(args, o) {
@@ -6012,7 +6035,8 @@
             } else {
               ex.mode = null; if (!ex.view || ex.view === 'vn') ex.view = 'planets';
               go('explore');
-              if (end) {
+              if (saved.kind === 'highland') HSCHRISTMAS.highlandResult(end && end.rep);
+              if (end && saved.kind !== 'highland') {
                 var rep = end.rep || {}, rewards = end.rewards || {}, msg = xpMsg(rep.xp).concat(firstMsg(rep.fr));
                 Object.keys(rewards.items || {}).forEach(function (k) { msg.push('获得' + itemName(k) + ' ×' + rewards.items[k] + '。'); });
                 if (rewards.energy) msg.push('获得能量 ×' + fmt(rewards.energy) + '。');
@@ -6041,7 +6065,7 @@
       if (r.acc) adoptAcc(r.acc);
       L.set(0.72).text(ui.loadText2 || '正在布置战场～');
       var finishLoad = function () { L.done(function () { pveBusy = false; go(r); }); };
-      if (kind === 'christmasKnight' || ['hl_castle','hl_cabin','hl_shop','hl_wonderland'].some(function (k) { return BG[k] === ui.bg; })) HSCHRISTMAS.images(battleImgs(r.S, ui.bg), function (n,t) { L.set(.72 + .27*n/t); }).then(finishLoad, function () { L.close(); pveBusy = false; toast('战斗图片未加载完成，请继续保存的战斗重试'); pveChecked = false; pveResumeCheck(); });
+      if (kind === 'christmasKnight' || ['hl_castle','hl_cabin','hl_shop','hl_wonderland','hl_highland'].some(function (k) { return BG[k] === ui.bg; })) HSCHRISTMAS.images(battleImgs(r.S, ui.bg), function (n,t) { L.set(.72 + .27*n/t); }).then(finishLoad, function () { L.close(); pveBusy = false; toast('战斗图片未加载完成，请继续保存的战斗重试'); pveChecked = false; pveResumeCheck(); });
       else LOADER.images(battleImgs(r.S, ui.bg), function (n, t) { L.set(0.72 + 0.27 * n / t); }, function () { L.done(function () { pveBusy = false; go(r); }); });
     }, function () { pveBusy = false; L.close(); });
     function go(r) {
@@ -6487,7 +6511,7 @@
     phantom: [{ text: '圣晶石召唤：当期UP叶粒魔种的精元（每抽5%，第50抽必出），在精灵保育仓孵化', go: 'up|phantom' }],
     tagore: [{ text: '首次击败简单难度BOSS「泰戈尔」（荆楚号 · 襄阳 · 古城防卫部），获得LV10小胖虎', go: 'boss|tiger|0' }],
     barren: [{ text: '首次击败普通难度BOSS「荒芜」（芙罗拉星 · 盐碱地），获得LV10枯叶灵', go: 'boss|barren|1' }],
-    glen: [{ text: '获取方式待开放' }],
+    glen: [{ text: '格伦高地 · 莫格伦处，用10个圣诞铃铛和1000个高地的认可兑换格伦的精元，再到精灵保育仓孵化', go: 'highland' }],
     clementi: [{ text: '首次击败普通难度BOSS「克莱门蒂」（庞贝星 · 饮火城），获得LV10克莱', go: 'boss|clementi|1' }],
     odo: [{ text: '首次击败普通难度BOSS「奥多亚克」（坎伯兰星 · 深海区），获得LV10奥多', go: 'boss|odo|1' }],
     leafcat: [{ text: '击败旅行精灵叶子喵有机会掉落叶片，完成世界任务「旅行猫」后才会出现', go: 'travel' }, { text: '5片叶子喵的叶片在黄石 · 冶炼坊合成精元，再到精灵保育仓孵化', go: 'forge|lcEssence' }],
@@ -6527,6 +6551,7 @@
       if (kind === 'fmgift') return !acc.fmNpc && fmFireN() >= FMNPC.need;
       return true;
     }
+    if (kind === 'highland') return HIGHLAND.open(acc);
     if (kind === 'knight') return CHRISTMAS.knightOpen(acc);
     if (kind === 'christmas') return PVE.helenaOpen(acc) && (id === 'gifts' ? CHRISTMAS.sceneOpen(acc,1) : CHRISTMAS.sceneOpen(acc,2));
     if (kind === 'boss') return levelOpen(id, +q[2]) && !bossWon(id, +q[2]);
@@ -6552,7 +6577,8 @@
     var inf = itemInfo(k), text = inf && inf.get || '';
     return text.split(/[；;]/).reduce(function (out, t) {
       t = t.trim(); var route = '', found, host = Object.keys(BOSSES).filter(function (id) { return capGem({ sid: BOSSES[id].sid }) === k; })[0];
-      if (/讨伐鲁普雷希特骑士/.test(t)) route = 'knight';
+      if (/格伦高地/.test(t)) route = 'highland';
+      else if (/讨伐鲁普雷希特骑士/.test(t)) route = 'knight';
       else if (/Vanber的圣诞礼物/.test(t)) route = 'christmas|gifts';
       else if (/Threego的苏格兰杂货铺/.test(t)) route = 'christmas|shop';
       else if (k === 'crossEssence') route = 'field|hl_castle';
@@ -6579,6 +6605,7 @@
   function wikiSourceGo(route) {
     if (!wikiRouteOpen(route)) return false;
     var q = route.split('|'), kind = q[0], id = q[1];
+    if (kind === 'highland') { HSACC.goHighland(); HSCHRISTMAS.openHighland(); return true; }
     if (kind === 'knight') { HSACC.goWonderland(); HSCHRISTMAS.openKnight(); return true; }
     if (kind === 'christmas') { goChristmas(id); return true; }
     if (kind === 'quest') {
@@ -6924,6 +6951,7 @@
     if (kind === 'shop') { if (D.SHOP.indexOf(k)<0) return null; item(k); var x = goods(k); energy(x.price); offer.limit=D.SHOP_MAX; op='shop'; args.k=k; }
     else if (kind === 'token') { var x=D.TOKEN_SHOP.find(function(x){return x.k===k;});if(!x)return null;item(k);pay('tokens',x.price,tokens(),'竞技代币');offer.limit=D.TOKEN_MAX;op='token';args.k=k; }
     else if (kind === 'tower') { var x=D.TW_SHOP[+k];if(!x)return null;item(x.k);pay('twTok',x.cost,twRec().tok,'先驱代币');if(x.death)pay('deathTok',x.death,I.deathTok);offer.limit=D.TOWER_MAX;op='tower';args.i=+k; }
+    else if (kind === 'highland') { var x=HIGHLAND.SHOP.find(function(x){return x.id===k;});if(!x)return null;item(x.k);Object.keys(x.costs).forEach(function(c){pay(c,x.costs[c],I[c]);});offer.limit=HIGHLAND.open(acc)?999:0;op='highland';args={a:'buy',id:k}; }
     else if (kind === 'christmas') { var x=CHRISTMAS.SHOP.find(function(x){return x.id===k;});if(!x)return null;if(x.room){offer.name=D.BASE_ROOMS[x.k].n;offer.icon='<img src="'+BASE_UI[x.k].img+'" alt="">';offer.desc='圣诞活动限定基地房型，兑换后可在编辑基地中切换';offer.owned=roomOwned(x.k)?1:0;offer.reason=roomOwned(x.k)?'已拥有此房型':'';}else if(x.deco){offer.name=TX.D.BASE_DECO[x.k].n;offer.icon='<img src="'+DECO_IMG[x.k]+'" alt="">';offer.desc=(TX.D.BASE_DECO[x.k].desc || '圣诞节限定地板家具。')+'兑换后可在基地编辑中摆放。';offer.owned=decoOwn(x.k);}else item(x.k);pay(x.coin,x.price,I[x.coin]);offer.limit=x.room?(roomOwned(x.k)?0:1):999;op='christmas';args={a:'buy',id:k}; }
     else if (kind === 'seed') { op='seedShop';args.k=k;if(k==='plot'){var f=farm(),steps=GROW.PLOT_PRICE.slice(f.extra,GROW.FARM_EXTRA_MAX);offer.name='额外种植栏位';offer.icon=H.itemIcon('s_herb');offer.desc='增加一块种植田，价格随已购买栏位递增';offer.limit=steps.length;energy(0,steps);offer.owned=farmN();}else{if(GROW.SEED_SHOP.indexOf(k)<0)return null;item(k);offer.desc=SEEDS[k].d;offer.limit=GROW.SEED_SHOP_MAX;energy(GROW.SEED_PRICE);} }
     else if (kind === 'forge') { var x=forgeOf(k);if(!x)return null;var out=Object.keys(x.out)[0];item(out);offer.name=forgeOutText(x,1);offer.give=x.out;offer.limit=FORGE_Q;Object.keys(x.need).forEach(function(m){pay(m,x.need[m],I[m]);});op='forge';args.id=k; }
@@ -6950,7 +6978,8 @@
     offer.buy=function(n,ok,fail){txRun(op,Object.assign({},args,{n:n}),ok,fail);};
     offer.after=function(){
       renderRes();
-      if(kind==='christmas')goChristmas('shop');
+      if(kind==='highland')HSHIGHLAND.refresh();
+      else if(kind==='christmas')goChristmas('shop');
       else if(kind==='token'){var d=$('tkshop');if(d)d.querySelector('.tkshop').innerHTML=tokenShopHTML();}
       else if(kind==='seed')seedShopRefresh();
       else if(kind==='forge'||kind==='gx'){if(kind==='gx'){ex.gxFrom=args.from;ex.gxTo=args.to;}renderForge();}
@@ -9147,6 +9176,9 @@
     goHelena: function (scene) { if (!PVE.helenaOpen(acc)) return; ex.planet = 'helena'; page = 'explore'; planetMapEnter('helena', 'hl_castle', scene == null ? 0 : scene, null); renderTop(); },
     goWonderland: function () { if (!CHRISTMAS.wonderOpen(acc)) { toast('先接通杂货铺角落的管道'); return; } page = 'explore'; planetMapEnter('helena', 'hl_wonderland', 0, null); renderTop(); },
     fightChristmasKnight: fightChristmasKnight,
+    highlandTx: function (args, ok, fail) { txRun('highland', args, ok, fail); },
+    goHighland: function () { if (!HIGHLAND.open(acc)) { toast('击败一次bttp后，先与四位伙伴交谈'); return; } page = 'explore'; planetMapEnter('helena', 'hl_wonderland', 1, null); renderTop(); },
+    fightHighland: fightHighland,
     loginVisit: function (ok, fail) { txRun('loginVisit', {}, ok, fail); },
     signin: function (ok, fail) { txRun('signin', {}, ok, fail); },
     resumePending: function () { return srvMode() && (!pveChecked || pveResumeBusy); },
