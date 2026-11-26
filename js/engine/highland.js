@@ -14,7 +14,7 @@ var HIGHLAND = (function () {
   function day(a, now) { var d = read(a).day, date = ACC.dayStr(now); return d && d.date === date ? d : { date: date, used: 0, damage: 0 }; }
   function rewards(damage) {
     damage = Math.max(0, Math.floor(damage || 0));
-    return { highlandPt: Math.max(10, Math.min(100, Math.floor(damage / 100))), exp: damage > 0 ? 20000 + Math.min(180000, damage * 5) : 0, xmasCandy: damage > 0 ? 10 + Math.min(90, Math.floor(damage / 500)) : 0 };
+    return { highlandPt: Math.max(40, Math.min(100, Math.floor(damage / 100))), exp: damage > 0 ? 20000 + Math.min(180000, damage * 5) : 0, xmasCandy: damage > 0 ? 10 + Math.min(90, Math.floor(damage / 500)) : 0 };
   }
   TX.add('highland', function (a, args) {
     if (!ready(a)) return { ok: false, err: '先在圣诞仙境击败一次鲁普雷希特骑士的召唤精灵' };

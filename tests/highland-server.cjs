@@ -27,7 +27,7 @@ for(let run=0;run<5;run++){
  assert(r.end,'trial must stop by round20');assert.equal(r.end.res,'win');assert(r.end.rep.counted);assert.equal(r.end.rep.used,run+1);assert.equal(r.S.turn,21);assert(r.end.rep.damage>0);total+=r.end.rep.damage;
  const repeated=await req(last.op,{...last,bid,seq});assert.deepEqual(repeated,r);assert.equal((await saved()).a.christmasStory.highland.runs,run+1);
 }
-assert.equal((await req('start',{kind:'highland',args:{}})).status,400);acc=(await saved()).a;assert.equal(acc.christmasStory.highland.total,total);assert(acc.items.highlandPt>=50&&acc.items.highlandPt<=500);
+assert.equal((await req('start',{kind:'highland',args:{}})).status,400);acc=(await saved()).a;assert.equal(acc.christmasStory.highland.total,total);assert(acc.items.highlandPt>=200&&acc.items.highlandPt<=500);
 for(const scope of ['total','today']){const b=await api('/api/highland?scope='+scope);assert(b.ok);assert.equal(b.me.damage,total);assert.equal(b.me.runs,5);assert.equal(b.total,total);assert.equal(b.rows.length,1);}
 assert.equal((await api('/api/highland?page=-1')).status,400);
 // Client-uploaded rank, daily allowance and currency tampering are restored by existing server-owned-field checks.
