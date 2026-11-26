@@ -71,7 +71,9 @@
       st.err = ''; st.players = r.players; st.me = r.me; st.loadedAt = Date.now(); render(); renderBrawl(); fbDraw();
     }).catch(function () { loading = false; st.err = '连不上服务器'; render(); fbDraw(); });
   }
-  setInterval(function () { if (A.page() === 'social' && !A.inBattle() && document.visibilityState === 'visible') load(); }, 30000);
+  function refreshVisibleRoster() { if (A.page() === 'social' && !A.inBattle() && document.visibilityState === 'visible') load(); }
+  setInterval(refreshVisibleRoster, 30000);
+  document.addEventListener('visibilitychange', refreshVisibleRoster);
   // 竞技对战的大乱斗面板开着时，20 秒刷新一次谁能匹配（别人刚读完支线、刚上线都要能看到）
   setInterval(function () { var el = $('brawl'); if (el && !el.hidden && A.page() === 'arena' && !A.inBattle() && document.visibilityState === 'visible') load(); }, 20000);
 
@@ -412,8 +414,9 @@
     return '<article class="social-event"><span class="social-event-icon">' + icon + '</span><div><p><button type="button" data-card="' + esc(e.user) + '">' + esc(p && p.name || e.name) + '</button>' + esc(text) + '</p><small>' + ago(e.at) + '</small></div></article>';
   }
   function peopleHTML() {
-    var P = st.players || [], on = P.filter(function (p) { return p.online; }).length, list = P.filter(function (p) { return !p.me && (!peopleQuery || (p.name + ' ' + p.user).toLowerCase().indexOf(peopleQuery.toLowerCase()) >= 0); });
-    return '<section class="social-column social-people"><header><h3>好友<small>' + P.filter(function (p) { return !p.me; }).length + '</small><span class="social-online"' + (st.wsOk ? '' : ' title="正在连接服务器……"') + '>在线<b>' + (st.wsOk && st.players ? on : '—') + '</b></span></h3><label class="social-search"><input id="social-search" type="search" aria-label="搜索好友" placeholder="搜索名字或账号" value="' + esc(peopleQuery) + '" autocomplete="off"></label></header><div class="social-pane-scroll" data-social-scroll="people" tabindex="0" aria-label="好友列表">' + (st.players ? list.length ? '<div class="plist">' + list.map(playerRow).join('') + '</div>' : '<p class="hint">' + (peopleQuery ? '没有找到这位船员' : '还没有其他船员') + '</p>' : '<p class="hint">' + esc(st.err || '正在读取好友……') + '</p>') + '</div></section>';
+    var P = st.players || [], on = P.filter(function (p) { return p.online; }).length, friends = P.filter(function (p) { return !p.me && !p.noChar; });
+    var list = friends.filter(function (p) { return !peopleQuery || (p.name + ' ' + p.user).toLowerCase().indexOf(peopleQuery.toLowerCase()) >= 0; });
+    return '<section class="social-column social-people"><header><h3>好友<small>' + friends.length + '</small><span class="social-online"' + (st.wsOk ? '' : ' title="正在连接服务器……"') + '>在线<b>' + (st.wsOk && st.players ? on : '—') + '</b></span></h3><label class="social-search"><input id="social-search" type="search" aria-label="搜索好友" placeholder="搜索名字或账号" value="' + esc(peopleQuery) + '" autocomplete="off"></label></header><div class="social-pane-scroll" data-social-scroll="people" tabindex="0" aria-label="好友列表">' + (st.players ? list.length ? '<div class="plist">' + list.map(playerRow).join('') + '</div>' : '<p class="hint">' + (peopleQuery ? '没有找到这位船员' : '还没有其他船员') + '</p>' : '<p class="hint">' + esc(st.err || '正在读取好友……') + '</p>') + '</div></section>';
   }
 
   function activityHTML() {
@@ -1711,7 +1714,7 @@
   document.addEventListener('click', function (e) { if (e.target.closest('[data-farmlogrefresh]')) { fl.err = ''; farmLogLoad(true); } });
 
   window.HSBRAWL = { render: renderBrawl };
-  window.HSSOCIAL = { render: function () { if (!st.players) load(); render(); },
+  window.HSSOCIAL = { render: function () { load(); render(); },
     // 正在拜访的基地的主人选的基地音乐（game.js 选界面音乐时用）
     visitBgm: function () { var d = st.view && st.view.data; return d && d.open && !d.noChar ? d.bgm || 'base' : null; },
     // 基地信息栏与留言板（game.js 的「我的基地」页面调用，不传参数就是自己的基地）
