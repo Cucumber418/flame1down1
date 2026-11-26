@@ -27,4 +27,5 @@ var CHART = {
   地面: { 火: 2, 电: 2, 机械: 2, 草: 0.5, 飞行: 0 }
 };
 function eff(a, d) { var v = CHART[a] && CHART[a][d]; return v == null ? 1 : v; }
-function effT(a, ds) { var r = 1; for (var k = 0; k < ds.length; k++) r *= eff(a, ds[k]); return r; }
+// 双属性分别查询单属性倍率后取平均；单属性与空属性列表保持原有默认值。
+function effT(a, ds) { if (!ds.length) return 1; var r = 0; for (var k = 0; k < ds.length; k++) r += eff(a, ds[k]); return r / ds.length; }

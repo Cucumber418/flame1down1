@@ -294,12 +294,12 @@
   // 技能属性标签：显示这个属性打别人时克制谁、被谁抵抗
   function atkTip(t) {
     var all = Object.keys(TYPE_COLOR), up = [], dn = [];
-    all.forEach(function (d) { var e = eff(t, d); if (e > 1) up.push(d); else if (e < 1) dn.push(d); });
-    function list(a, x) { return a.length ? a.map(function (d) { return tchip(d) + '<span class="tx ' + (x > 1 ? 'hi' : 'lo') + '">×' + x + '</span>'; }).join('') : '<span class="tn">无</span>'; }
+    all.forEach(function (d) { var e = eff(t, d); if (e > 1) up.push([d, e]); else if (e < 1) dn.push([d, e]); });
+    function list(a) { return a.length ? a.map(function (d) { return tchip(d[0]) + '<span class="tx ' + (d[1] > 1 ? 'hi' : 'lo') + '">×' + d[1] + '</span>'; }).join('') : '<span class="tn">无</span>'; }
     return '<span class="tt" tabindex="0">' + tchip(t) + '<span class="tip tip-type" role="tooltip"><b>' + t + '系技能</b>' +
-      '<span class="trow"><span class="tl">克制（伤害翻倍）</span><span class="tv">' + list(up, 2) + '</span></span>' +
-      '<span class="trow"><span class="tl">被抵抗（伤害减半）</span><span class="tv">' + list(dn, 0.5) + '</span></span>' +
-      '<span class="tsep">打双属性精灵时，两个倍率相乘</span></span></span>';
+      '<span class="trow"><span class="tl">克制（伤害翻倍）</span><span class="tv">' + list(up) + '</span></span>' +
+      '<span class="trow"><span class="tl">被抵抗或无效</span><span class="tv">' + list(dn) + '</span></span>' +
+      '<span class="tsep">打双属性精灵时，两个倍率取平均（如火打草/超能为×1.5）</span></span></span>';
   }
   function mult(x) { return '×' + (Math.round(x * 100) / 100); }
   // 战斗中属性标签的悬停提示：进攻克制、防守弱点/抗性、对当前对手的倍率
