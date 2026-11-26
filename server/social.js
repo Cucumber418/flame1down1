@@ -169,6 +169,9 @@ function rankOut(r) {
 function lastOnlineAt(u, acc) {
   var day = acc && acc.checkin && acc.checkin.lastLogin;
   var legacyLogin = typeof day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(day) ? Date.parse(day + 'T23:59:59.999+08:00') : 0;
+  // 旧版本已有精确在线记录，直接回溯；后台发奖或迁移的存档时间不重算离线天数。
+  var active = +(acc && acc.lastActive) || 0;
+  if (Number.isFinite(active) && active > 0 && (!legacyLogin || active > legacyLogin - 864e5)) legacyLogin = active;
   return Math.max(lastSeen[u.name] || 0, u.lastOnline || legacyLogin || (u.save && u.save.savedAt) || u.created || 0);
 }
 function summary(u, me) {

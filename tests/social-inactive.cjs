@@ -12,6 +12,17 @@ for(const name of ['viewer','recent','stale','older','legacy','returner']){const
 edit('viewer',u=>u.lastOnline=now-limit*2);edit('recent',u=>u.lastOnline=now-limit+1);edit('stale',u=>u.lastOnline=now-limit);edit('older',u=>u.lastOnline=now-limit-1);edit('returner',u=>u.lastOnline=now-limit*2);
 edit('legacy',u=>{delete u.lastOnline;const a=JSON.parse(u.save.data['hs-account-v1']);a.checkin={lastLogin:E.ACC.dayStr(now-16*864e5)};u.save.data['hs-account-v1']=JSON.stringify(a);u.save.savedAt=now;});
 let r=await api('/api/players','viewer');assert.deepEqual(r.players.map(p=>p.user).sort(),['recent','viewer']);for(const p of r.players){assert(!('lastOnline'in p));assert(!('lastSeen'in p));assert(!('hidden'in p));}
+// Existing accounts are evaluated from historical activity immediately, without a new 14-day grace period.
+edit('legacy',u=>{delete u.lastOnline;const a=JSON.parse(u.save.data['hs-account-v1']);delete a.checkin;a.lastActive=now-limit;u.save.data['hs-account-v1']=JSON.stringify(a);u.save.savedAt=now;});
+assert(!(await api('/api/players','viewer')).players.some(p=>p.user==='legacy'));
+edit('legacy',u=>{const a=JSON.parse(u.save.data['hs-account-v1']);a.checkin={lastLogin:E.ACC.dayStr(a.lastActive)};u.save.data['hs-account-v1']=JSON.stringify(a);});
+assert(!(await api('/api/players','viewer')).players.some(p=>p.user==='legacy')); // Precise timestamp takes precedence over rounding the same login day to midnight.
+edit('legacy',u=>{const a=JSON.parse(u.save.data['hs-account-v1']);a.lastActive=now-limit+1;u.save.data['hs-account-v1']=JSON.stringify(a);});
+assert((await api('/api/players','viewer')).players.some(p=>p.user==='legacy'));
+edit('legacy',u=>{const a=JSON.parse(u.save.data['hs-account-v1']);a.lastActive=now-864e5;a.checkin.lastLogin=E.ACC.dayStr(now-limit*2);u.save.data['hs-account-v1']=JSON.stringify(a);});
+assert((await api('/api/players','viewer')).players.some(p=>p.user==='legacy')); // A later exact activity record supersedes an older login calendar.
+edit('legacy',u=>{const a=JSON.parse(u.save.data['hs-account-v1']);a.lastActive=now-limit*2;a.checkin.lastLogin=E.ACC.dayStr(now-864e5);u.save.data['hs-account-v1']=JSON.stringify(a);});
+assert((await api('/api/players','viewer')).players.some(p=>p.user==='legacy')); // A later login day supersedes a stale exact activity record.
 // Server-only rewards/save timestamps do not make inactive players look recently online.
 edit('stale',u=>{const a=JSON.parse(u.save.data['hs-account-v1']);a.items.xmasCandy=3;u.save.data['hs-account-v1']=JSON.stringify(a);u.save.savedAt=now;});assert(!(await api('/api/players','viewer')).players.some(p=>p.user==='stale'));
 assert((await api('/api/card?user=stale','viewer')).friend);assert(A.areFriends('viewer','stale'));
@@ -25,5 +36,5 @@ social.onClose(w);sockets.pop();assert.equal(A.loadUser('stale').lastOnline,now)
 // Legacy users can be restored by a known recent login day even if their save was last written earlier.
 edit('legacy',u=>{delete u.lastOnline;u.save.savedAt=now-limit*2;const a=JSON.parse(u.save.data['hs-account-v1']);a.checkin.lastLogin=E.ACC.dayStr(now-864e5);u.save.data['hs-account-v1']=JSON.stringify(a);});assert((await api('/api/players','viewer')).players.some(p=>p.user==='legacy'));
 assert.equal((await api('/api/players')).status,401);assert(!fs.readFileSync(path.join(__dirname,'../js/data/changelog.js'),'utf8').includes('两周未上线'));
-console.log('PASS inactive player list: exact 14-day boundary, self/online exceptions, metadata separate from auto-save/rewards, legacy real-login fallback, login/token reconnect restoration, durable disconnect/heartbeat timestamps, unchanged save revision/friendship/profile access and no public timestamps');
+console.log('PASS inactive player list: retrospective legacy activity and login dates without grace period, exact 14-day boundary, self/online exceptions, metadata separate from auto-save/rewards, login/token reconnect restoration, durable disconnect/heartbeat timestamps, unchanged save revision/friendship/profile access and no public timestamps');
 })().catch(e=>{console.error(e);process.exitCode=1;}).finally(()=>{sockets.forEach(w=>social.onClose(w));Date.now=realNow;server.close();server.closeAllConnections();fs.rmSync(process.env.DATA_DIR,{recursive:true,force:true});});
