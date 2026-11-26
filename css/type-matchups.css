@@ -1,7 +1,12 @@
-/* Wiki 的进攻 / 防守属性查询，使用现有纸张与属性色 */
-.wiki-box.wk-type-open { overflow:hidden; display:flex; flex-direction:column; }
-.wk-type-open .wk-top { flex:0 0 auto; }
-.wk-types { min-height:0; overflow:auto; overscroll-behavior:contain; padding-top:8px; }
+/* Wiki 共用固定外框，分类标签沿用背包的纸张与选中样式。 */
+#wiki-dlg > .wiki-box { height:min(900px, var(--dialog-height)); overflow:hidden; display:flex; flex-direction:column; }
+.wiki-box .wk-top, .wiki-box .wk-parts { flex:0 0 auto; }
+.wiki-box .wk-parts { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:5px; margin:0; }
+.wiki-box .wk-parts button { min-width:0; padding:6px 5px; border:1.5px solid var(--rule); border-radius:8px; background:var(--paper); color:var(--ink); font:inherit; font-size:13px; line-height:1.2; cursor:pointer; }
+.wiki-box .wk-parts button.on { border-color:var(--ink); background:var(--ink); color:#fff; }
+.wiki-box .wk-parts button:focus-visible { outline:2px solid var(--blue); outline-offset:2px; }
+.wk-content { flex:1 1 0; min-height:0; min-width:0; overflow:auto; overscroll-behavior:contain; scrollbar-gutter:stable; scrollbar-width:thin; }
+.wk-types { padding-top:8px; }
 .wk-type-intro, .wk-type-note { margin:4px 0 10px; color:var(--pencil); font-size:12px; }
 .wk-type-picker { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:7px; }
 .wk-type-button { border:1px solid var(--ink); border-left:5px solid var(--type-color); border-radius:8px; padding:7px 8px; background:var(--paper-2); color:var(--ink); font:inherit; font-size:14px; cursor:pointer; }
@@ -17,7 +22,7 @@
 .wk-type-note { margin:10px 0 0; }
 @media (max-width:640px) {
  .wiki-box .wk-top { flex-wrap:wrap; gap:7px; } .wiki-box .wk-top h2 { font-size:20px; } .wiki-box .wk-top > button { margin-left:auto; padding:5px 9px; }
- .wiki-box .wk-parts { order:3; flex-basis:100%; display:flex; gap:5px; } .wiki-box .wk-parts .chip { flex:1; text-align:center; font-size:12px; padding:5px 3px; }
+ .wiki-box .wk-parts button { font-size:12px; padding:6px 3px; }
  .wk-type-picker { grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; } .wk-type-button { font-size:12px; padding:5px; }
  .wk-type-view { margin:11px 0 9px; gap:6px; display:grid; grid-template-columns:1fr 1fr; } .wk-type-view .btn { padding:6px 9px; font-size:12px; }
  .wk-type-view > span { grid-column:1/-1; margin:0; text-align:center; }

@@ -6698,13 +6698,14 @@
     var types = []; list.forEach(function (s) { s.types.forEach(function (t) { if (types.indexOf(t) < 0) types.push(t); }); });
     if (!WK.sel || !SPMAP[WK.sel]) WK.sel = list[0] && list[0].id;
     var d = document.createElement('div'); d.className = 'soc-dlg'; d.id = 'wiki-dlg';
-    d.innerHTML = '<div class="soc-box wiki-box" role="dialog" aria-modal="true" aria-label="Wiki"><span class="tape l"></span><span class="tape r"></span><div class="wk-top"><h2>Wiki</h2><div class="wk-parts" role="tablist"></div><button type="button" class="btn ghost" data-wkx="1">关闭</button></div>' +
-      '<div class="wk-st" hidden></div><div class="wk-types" hidden></div><div class="wk-filter"></div><div class="build wk-build"><div><p class="hint" id="wk-cnt"></p><div class="dex-grid" id="wk-grid"></div></div><article class="detail" id="wk-detail"></article></div></div>';
+    d.innerHTML = '<div class="soc-box wiki-box" role="dialog" aria-modal="true" aria-label="Wiki"><span class="tape l"></span><span class="tape r"></span><div class="wk-top"><h2>Wiki</h2><button type="button" class="btn ghost" data-wkx="1">关闭</button></div><div class="wk-parts" role="tablist" aria-label="Wiki分类">' +
+      [['mon', '精灵资料'], ['st', '异常状态'], ['type', '属性克制']].map(function (x) { return '<button type="button" role="tab" data-wkpart="' + x[0] + '">' + x[1] + '</button>'; }).join('') + '</div><div class="wk-content">' +
+      '<div class="wk-st" hidden></div><div class="wk-types" hidden></div><div class="wk-filter"></div><div class="build wk-build"><div><p class="hint" id="wk-cnt"></p><div class="dex-grid" id="wk-grid"></div></div><article class="detail" id="wk-detail"></article></div></div></div>';
     document.body.appendChild(d);
+    var content = d.querySelector('.wk-content'), scrolls = {};
     var draw = function (scroll) {
       var st = WK.part === 'st', typing = WK.part === 'type';
-      d.querySelector('.wiki-box').classList.toggle('wk-type-open', typing);
-      d.querySelector('.wk-parts').innerHTML = [['mon', '精灵资料'], ['st', '异常状态'], ['type', '属性克制']].map(function (x) { var on = (WK.part || 'mon') === x[0]; return '<button type="button" role="tab" aria-selected="' + on + '" class="chip' + (on ? ' on' : '') + '" data-wkpart="' + x[0] + '">' + x[1] + '</button>'; }).join('');
+      d.querySelectorAll('[data-wkpart]').forEach(function (b) { var on = (WK.part || 'mon') === b.dataset.wkpart; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); b.tabIndex = on ? 0 : -1; });
       d.querySelector('.wk-st').hidden = !st; d.querySelector('.wk-types').hidden = !typing; d.querySelector('.wk-filter').hidden = st || typing; d.querySelector('.wk-build').hidden = st || typing;
       if (typing) { d.querySelector('.wk-types').innerHTML = wikiTypes(); return; }
       if (st) { d.querySelector('.wk-st').innerHTML = wikiStatus(); return; }
@@ -6714,9 +6715,24 @@
       d.querySelector('#wk-grid').innerHTML = wikiGrid(L);
       var det = d.querySelector('#wk-detail'), sp = SPMAP[WK.sel];
       try { det.innerHTML = wikiDetail(sp); } catch (err) { det.innerHTML = '<p class="hint">这一条资料读取出错：' + esc(err && err.message || String(err)) + '</p>'; }
-      if (scroll) { var bx = d.querySelector('.wiki-box'); if (window.innerWidth < 900) det.scrollIntoView({ block: 'start', behavior: 'smooth' }); else if (bx) bx.scrollTo({ top: det.offsetTop - 10, behavior: 'smooth' }); }
+      if (scroll) { content.scrollTo({ top: content.scrollTop + det.getBoundingClientRect().top - content.getBoundingClientRect().top - 10, behavior: 'smooth' }); }
+    };
+    var selectPart = function (part) {
+      scrolls[WK.part || 'mon'] = content.scrollTop;
+      WK.part = part; if (part === 'type') WK.typeSide = 'attack';
+      draw(false); content.scrollTop = scrolls[part] || 0;
     };
     draw(false);
+    d.querySelector('.wk-parts').addEventListener('keydown', function (e) {
+      var b = e.target.closest('[data-wkpart]'); if (!b) return;
+      var tabs = Array.prototype.slice.call(this.querySelectorAll('[data-wkpart]')), i = tabs.indexOf(b);
+      if (e.key === 'ArrowRight') i = (i + 1) % tabs.length;
+      else if (e.key === 'ArrowLeft') i = (i + tabs.length - 1) % tabs.length;
+      else if (e.key === 'Home') i = 0;
+      else if (e.key === 'End') i = tabs.length - 1;
+      else return;
+      e.preventDefault(); selectPart(tabs[i].dataset.wkpart); tabs[i].focus();
+    });
     d.addEventListener('click', function (e) {
       if (e.target === d || e.target.closest('[data-wkx]')) { d.remove(); return; }
       var source = e.target.closest('[data-wkgo]');
@@ -6725,7 +6741,7 @@
         if (!row || !wikiRouteOpen(row.go)) { draw(false); return; }
         d.remove(); wikiSourceGo(row.go); return;
       }
-      var pt = e.target.closest('[data-wkpart]'); if (pt) { WK.part = pt.dataset.wkpart; if (WK.part === 'type') WK.typeSide = 'attack'; draw(false); return; }
+      var pt = e.target.closest('[data-wkpart]'); if (pt) { selectPart(pt.dataset.wkpart); return; }
       var type = e.target.closest('[data-wktype]'); if (type) { WK.type = type.dataset.wktype; WK.typeSide = 'attack'; draw(false); return; }
       var side = e.target.closest('[data-wktype-side]'); if (side) { WK.typeSide = side.dataset.wktypeSide === 'defend' ? 'defend' : 'attack'; draw(false); return; }
       var b = e.target.closest('[data-wkt]'); if (b) { WK.t = b.dataset.wkt || ''; draw(false); return; }
