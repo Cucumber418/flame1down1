@@ -577,7 +577,7 @@
       case 'auth-fail': st.wsOk = false; break;
       case 'presence':
         (st.players || []).forEach(function (p) { if (p.user === m.user) { p.online = m.online; p.busy = m.busy; p.battle = m.battle || null; p.watchOpen = !!m.watchOpen; if (!m.online) p.lastSeen = Date.now(); } });
-        if (st.players && m.online && Date.now() - (st.loadedAt || 0) > 10000 && !(st.players || []).some(function (p) { return p.user === m.user; })) load();   // 列表里没有的（新玩家；没建角色的不在列表里）
+        if (st.players && m.online && !(st.players || []).some(function (p) { return p.user === m.user; })) load();   // 列表里没有的（新玩家；没建角色的不在列表里）
         if (st.tab !== 'mine') render();
         renderBrawl();
         break;

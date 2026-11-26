@@ -97,6 +97,15 @@ function saveUser(u) {
   try { require('./activity').publish(DATA_DIR, events); } catch (err) { console.error('动态写入失败', err.message); }
 }
 
+// 真实上线记录放在账号元数据中，和服务器发奖、迁移时更新的云存档时间分开。
+function touchOnline(name, force) {
+  try {
+    var u = readJSON(userFile(name), null), now = Date.now(); if (!u) return;
+    if (!force && u.lastOnline && now - u.lastOnline < 5 * 60e3) return;
+    u.lastOnline = now; saveUser(u);
+  } catch (e) { console.error('记录在线时间失败', e.message); }
+}
+
 /* ---------- 登录凭证 ---------- */
 var sessions = readJSON(SESS_FILE, {});   // sha256(token) -> { user, exp }
 function sha(s) { return crypto.createHash('sha256').update(s).digest('hex'); }
@@ -108,7 +117,7 @@ function saveSessions() {
 function newSession(name) {
   var token = crypto.randomBytes(32).toString('hex');
   sessions[sha(token)] = { user: name, exp: Date.now() + SESSION_DAYS * 864e5 };
-  saveSessions();
+  saveSessions(); touchOnline(name, true);
   return token;
 }
 function whoIs(req) {
@@ -311,7 +320,7 @@ function allUsers() {
 // 服内所有已注册船员互为好友；旧关注名单仅保留作存档兼容。
 function areFriends(a, b) { if (typeof a === 'string') a = loadUser(a); if (typeof b === 'string') b = loadUser(b); return !!(a && b && a.name && b.name && a.name !== b.name); }
 
-module.exports = { areFriends: areFriends, handle: handle, use: function (fn) { extra.push(fn); }, whoIs: whoIs, whoToken: whoToken, loadUser: loadUser, saveUser: saveUser, allUsers: allUsers,
+module.exports = { touchOnline: touchOnline, areFriends: areFriends, handle: handle, use: function (fn) { extra.push(fn); }, whoIs: whoIs, whoToken: whoToken, loadUser: loadUser, saveUser: saveUser, allUsers: allUsers,
   reply: reply, readBody: readBody, userCount: userCount, walletStatus: claims.status, resetPassword: resetPassword, listUsers: listUsers, DATA_DIR: DATA_DIR, progScore: progScore, cheatCheck: cheatCheck, cheatStats: stats };
 
 // 所有账号进入 S2；保留已拥有的精灵、道具与旧赛季称号

@@ -5,7 +5,7 @@
 
 /* ---------- 电脑 AI ---------- */
 function estAttack(me, foe, mv) {
-  if (mv.cat === '变化') return 0;
+  if (mv.cat === '变化' || effT(mvType(me, mv), typesOf(foe)) === 0) return 0;
   if (mv.custom === 'clementFinale' && !hasStatus(foe)) return 0;
   if (mv.custom === 'poisonHeart' && !(foe.st['中毒'] > 0)) return 0;
   if (mv.fixedOnly) return fixedAmount(me, foe, mv, true) * hitChance(me, foe, mv);
@@ -27,6 +27,7 @@ var CUSTOM_SCORE = { nextCrit: 18, voidPhys: 22, induct: 16, stealDef: 22, steal
 function scoreMove(S, me, foe, mv) {
   var hpR = me.hp / me.maxhp, s = 0, locked = pureFieldActive(S);
   if (mv.cat !== '变化') {
+    if (effT(mvType(me, mv), typesOf(foe)) === 0) return -1000;
     var d = estAttack(me, foe, mv);
     if (mv.fixedOnly === 'selfBlast') return d >= foe.hp && hpR < 0.5 ? 210 : (hpR < 0.25 ? d / foe.maxhp * 100 : -50);
     if (d >= foe.hp) return 200 + mv.pri * 60 + hitChance(me, foe, mv) * 20;

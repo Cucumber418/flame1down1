@@ -166,11 +166,16 @@ function rankOut(r) {
     kingBest: Math.max(int(r.kingBest, 0, 1e6), cur === KING_R ? stars : 0) };   // 王者达到过的最高星数
 }
 
+function lastOnlineAt(u, acc) {
+  var day = acc && acc.checkin && acc.checkin.lastLogin;
+  var legacyLogin = typeof day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(day) ? Date.parse(day + 'T23:59:59.999+08:00') : 0;
+  return Math.max(lastSeen[u.name] || 0, u.lastOnline || legacyLogin || (u.save && u.save.savedAt) || u.created || 0);
+}
 function summary(u, me) {
   var p = parseSave(u), acc = p.acc, on = isOnline(u.name);
   var cw = on && castOf(u.name);
   var o = { user: u.name, online: on, busy: on && isBusy(u.name), battle: on ? battleOf(u.name) : null, watchOpen: !!(cw && cw.cast.open), friend: A.areFriends(me, u),
-    fan: false, me: !!(me && me.name === u.name), lastSeen: lastSeen[u.name] || (u.save && u.save.savedAt) || u.created };
+    fan: false, me: !!(me && me.name === u.name), lastSeen: lastOnlineAt(u, acc) };
   if (!acc || !acc.introDone) { o.noChar = true; return o; }
   o.name = str(acc.name, 20); o.title = str(acc.title, 20) || null; o.avatar = avatarOf(acc); o.gender = acc.gender === 'f' ? 'f' : 'm';   // 主角形象（名片上显示）
   o.monsN = acc.mons.length; o.teamN = activeTeam(acc).length;
@@ -585,7 +590,7 @@ function onMessage(ws, msg) {
       if (ws.user === who.user) return true;
       ws.user = who.user; ws.pv = msg.pv | 0;   // pv ≥ 2：支持服务器裁判
       var first = !isOnline(who.user);
-      (online[who.user] = online[who.user] || []).push(ws);
+      (online[who.user] = online[who.user] || []).push(ws); A.touchOnline(who.user, true);
       out(ws, { type: 'authed', user: who.user });
       if (first) { presence(who.user); announceOnline(who.user); }
       return true;
@@ -810,7 +815,7 @@ function onClose(ws) {
   if (ws.cast) castEnd(ws, '转播中断', '对方离开了游戏');
   if (ws.user && online[ws.user]) {
     online[ws.user] = online[ws.user].filter(function (w) { return w !== ws; });
-    if (!online[ws.user].length) { delete online[ws.user]; lastSeen[ws.user] = Date.now(); presence(ws.user); }
+    if (!online[ws.user].length) { delete online[ws.user]; lastSeen[ws.user] = Date.now(); A.touchOnline(ws.user, true); presence(ws.user); }
   }
 }
 
@@ -828,7 +833,8 @@ A.use(function (req, res, url) {
     A.reply(res, 200, result); return true;
   }
   if (url === '/api/players' && req.method === 'GET') {
-    var list = A.allUsers().map(function (u) { return summary(u, me); }).filter(function (p) { return p.me || !p.noChar; });   // 2026-10-27：还没创建角色的不进玩家列表
+    var now = Date.now(), inactiveLimit = 14 * 864e5;
+    var list = A.allUsers().map(function (u) { return summary(u, me); }).filter(function (p) { return p.me || !p.noChar && (p.online || now - p.lastSeen < inactiveLimit); });   // 2026-10-27：还没创建角色的不进玩家列表
     list.sort(function (a, b) { return (b.me - a.me) || (b.online - a.online) || (b.friend - a.friend) || ((b.lastSeen || 0) - (a.lastSeen || 0)); });
     list.forEach(function (p) { delete p.lastSeen; });   // 2026-10-26：不再对外显示上次在线时间（只用来排序）
     A.reply(res, 200, { me: me.name, players: list });

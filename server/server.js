@@ -221,7 +221,7 @@ wss.on('connection', function (ws) {
   ws.id = nextId++;
   ws.alive = true;
   ws.room = null; ws.seat = null; ws.name = '';
-  ws.on('pong', function () { ws.alive = true; });
+  ws.on('pong', function () { ws.alive = true; if (ws.user) accounts.touchOnline(ws.user); });
   out(ws, { type: 'hello', id: ws.id });
   social.onOpen(ws);
 

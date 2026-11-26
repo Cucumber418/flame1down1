@@ -1031,8 +1031,10 @@
   function moveMatchupHTML(me, m, foe) {
     var type = mvType(me,m);
     if (hitBlocked(foe,type) && (m.cat !== '变化' || targetsFoe(m))) return '<span class="eff0">无法命中</span>';
-    if (m.cat === '变化' || m.fixedOnly) return '';
+    if (m.cat === '变化') return '';
     var n = effT(type,typesOf(foe));
+    if (n === 0) return '<span class="eff0">无效 ×0</span>';
+    if (m.fixedOnly) return '';
     return n > 1 ? '<span class="eff2">克制 ×' + n + '</span>' : n < 1 ? '<span class="eff0">抵抗 ×' + n + '</span>' : '';
   }
   function showTab(t) {

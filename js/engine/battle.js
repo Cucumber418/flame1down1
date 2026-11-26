@@ -631,6 +631,7 @@ function calcDamage(me, foe, mv, firstMover, est) {
   var D = foe.stats[phys ? 'def' : 'spd'] * stageMult(dS) * miaDef(foe);
   var base = Math.floor(Math.floor(Math.floor(2 * (me.lv || LV) / 5 + 2) * power * A / D) / 50) + 2;
   var mod = 1, e = effT(t, typesOf(foe)), crit = false;
+  if (e === 0) return { dmg: 0, crit: false, eff: 0, petri: false };
   if (typesOf(me).indexOf(t) >= 0) mod *= STAB;
   mod *= e;
   var ab = ability(me), fab = ability(foe);
@@ -1253,6 +1254,7 @@ function useMoveCore0(S, evs, i, mv, slotIdx, extra, splitToken) {
   if (foe.boss && foe.boss.broken) { log(S, evs, nm(foe) + '的这管体力已经被击破，攻击没有效果', 'fxl'); me.fx.boostNext = 0; return; }
   if (splitToken) { splitToken.armed = true; me.fx.prismAttacks--; E(S, evs, 'stage', { side: i }); }
   if (hitBlocked(foe, mt)) { log(S, evs, nm(foe) + '毫发无伤！只有' + foe.onlyHit.join('、') + '系技能才能命中它', 'bad'); me.fx.boostNext = 0; return; }
+  if (effT(mt, typesOf(foe)) === 0) { log(S, evs, nm(foe) + '的属性免疫了' + mt + '系攻击，技能没有效果！', 'fxl'); me.fx.boostNext = 0; return; }
   if (foe.boss && ((foe.boss.noPhys && mv.cat === '物攻') || (foe.boss.noSpec && mv.cat === '特攻'))) { RV(foe, mv.cat === '物攻' ? 'noPhys' : 'noSpec'); log(S, evs, nm(foe) + '免疫' + (mv.cat === '物攻' ? '物理' : '特殊') + '攻击，毫发无伤！', 'bad'); me.fx.boostNext = 0; return; }   // 无尽作战
   if (i === 1 && S.en && S.en.ghostT === S.turn && !act(S, 0).fainted) { log(S, evs, '幽灵形态：' + nm(foe) + '化作虚影，闪开了攻击！', 'fxl'); me.fx.boostNext = 0; return; }
   if (mv.custom === 'clementFinale' && !hasStatus(foe)) { E(S, evs, 'miss', { side: j }); log(S, evs, '对方没有异常状态，音焚烬灭未能命中'); me.fx.boostNext = 0; return; }
