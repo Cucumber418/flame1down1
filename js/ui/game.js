@@ -5521,8 +5521,40 @@
       '<p>好友可以来拜访你的基地，在「社交」里点「基地」就能去看看大家布置得怎么样。</p>' + gift +
       (op ? '<button type="button" class="btn primary" data-golog="myhome">前往我的基地</button>' : '<p class="hint">读完荆楚号 · 天门支线「陆羽茶室」后开放基地。</p>') + '</article>';
   }
-  function logTopics() { return typeof LOG_TOPICS !== 'undefined' ? LOG_TOPICS : []; }
+  function logTopics() {
+    return (typeof LOG_TOPICS !== 'undefined' ? LOG_TOPICS : []).map(function (c, i) { return { c: c, i: i }; }).sort(function (a, b) {
+      var x = a.c.showcase, y = b.c.showcase;
+      if (!!x !== !!y) return x ? -1 : 1;
+      if (x && y) return String(y.released).localeCompare(String(x.released)) || (y.sequence || 0) - (x.sequence || 0) || a.i - b.i;
+      return a.i - b.i;
+    }).map(function (x) { return x.c; });
+  }
+  function promoLogHTML(c) {
+    var p = c.showcase, s = SPMAP[c.sid], last = s.evo[s.evo.length - 1], open = p.route === 'boss-clementi' ? bossOpen('clementi') : wikiRouteOpen(p.route);
+    var skills = (p.skills || s.def || s.moves).map(function (name) { var m = M[name]; if (!m) return ''; return '<li><div><b>' + esc(name) + '</b><small>' + esc(m.type) + ' · ' + esc(m.cat) + (m.hidden ? ' · 隐藏' : '') + '</small></div><p>' + esc(m.d || '') + '</p></li>'; }).join('');
+    return '<article class="log-card wide log-promo" data-promo="' + esc(c.sid) + '" style="--promo-accent:' + esc(p.accent) + ';--promo-wash:' + esc(p.wash) + '">' +
+      '<header class="log-promo-header"><span>新精灵档案</span><span>' + tchips(s.types) + '<b>No.' + esc(last.no || '') + '</b></span></header>' +
+      '<div class="log-promo-stage"><button type="button" class="log-standee" data-promo-art="' + esc(c.sid) + '" aria-expanded="false" aria-controls="promo-skills-' + esc(c.sid) + '" aria-label="查看' + esc(s.name) + '的核心技能"><span class="log-standee-halo" aria-hidden="true"></span><img src="' + SPRITES[c.sid] + '" alt="' + esc(s.name) + '完整立绘"><span class="log-standee-hint">悬停或点击立绘 · 核心技能</span></button>' +
+      '<div class="log-promo-heading"><small>' + esc(p.epithet) + '</small><h3>' + esc(s.name) + '</h3><p>' + esc(c.title) + '</p><span class="log-promo-role">' + esc(p.role) + '</span></div>' +
+      '<div class="log-promo-story"><p class="log-promo-intro">' + esc(p.intro) + '</p><div class="log-promo-ability"><small>特性 / ' + esc(s.ability.n) + '</small><p>' + esc(s.ability.d) + '</p></div><p class="log-promo-play">' + esc(p.play) + '</p></div>' +
+      '<section class="log-promo-skills" id="promo-skills-' + esc(c.sid) + '"><h4>核心技能</h4><ul>' + skills + '</ul></section></div>' +
+      '<footer class="log-promo-source"><div><small>获得方式 · ' + esc(p.place) + '</small><p>' + esc(p.source) + '</p>' + (!open ? '<p class="log-promo-lock">' + esc(p.requirement) + '</p>' : '') + '</div><button type="button" class="log-promo-go" ' + (p.route === 'boss-clementi' ? 'data-golog="boss-clementi"' : 'data-logroute="' + esc(p.route) + '"') + ' aria-label="' + esc(p.action) + '" title="' + esc(open ? p.action : p.requirement) + '"' + (open ? '' : ' disabled') + '><span>' + esc(open ? p.action : '待解锁') + '</span><b aria-hidden="true">↗</b></button></footer>' +
+      '<details class="log-promo-notes"><summary>查看精灵与挑战详情</summary><ul>' + c.items.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul></details></article>';
+  }
+  function wireLogPromos(host) {
+    host.querySelectorAll('[data-promo-art]').forEach(function (b) {
+      var stage = b.closest('.log-promo-stage'), pinned = false, hover = false;
+      function reveal(on) { stage.classList.toggle('skills-open', on); b.setAttribute('aria-expanded', on); }
+      b.addEventListener('mouseenter', function () { if (window.matchMedia('(hover: hover)').matches) { hover = true; reveal(true); } });
+      b.addEventListener('mouseleave', function () { hover = false; reveal(pinned || document.activeElement === b); });
+      b.addEventListener('focus', function () { reveal(true); });
+      b.addEventListener('blur', function () { reveal(pinned || hover); });
+      b.addEventListener('click', function () { pinned = !pinned; reveal(pinned || hover); });
+      b.addEventListener('keydown', function (e) { if (e.key === 'Escape') { pinned = false; reveal(false); } });
+    });
+  }
   function topicLogHTML(c) {
+    if (c.showcase && SPMAP[c.sid]) return promoLogHTML(c);
     var art = c.sid ? '<img src="' + SPRITES[c.sid] + '" alt="' + esc(c.title) + '">' : c.icon ? H.itemIcon(c.icon) + (c.icon === 'fruit1' ? H.itemIcon('fruit2') : '') : '';
     var open = c.go !== 'boss-clementi' || bossOpen('clementi');
     if (c.go === 'myfarm') open = farmOpen();
@@ -5538,7 +5570,7 @@
     return '<article class="log-card wide log-recent"><span class="tape l"></span><span class="chip log-tag">近期重点</span><h3>本期更新</h3><p class="hint">新精灵、培养方式与玩法更新，点击查看</p>' +
       '<div class="log-highlights">' + cards.map(function (c) { return '<button type="button" class="log-highlight" data-logsel="' + esc(c.key) + '"><small>' + esc(c.tag) + '</small><b>' + esc(c.title) + '</b><span>' + esc(c.text) + '</span><em>查看详情 ›</em></button>'; }).join('') + '</div></article>';
   }
-  var LOG_GROUPS = ['近期重点', '待领取', '精灵与挑战', '培养与基地', '活动与任务', '公告与交流'];
+  var LOG_GROUPS = ['船员交流', '近期重点', '待领取', '精灵与挑战', '培养与基地', '活动与任务', '公告与交流'];
   function logGroupOf(t) {
     var ty = t.split('-')[0];
     if (ty === '限时领取') return '待领取';
@@ -5555,7 +5587,7 @@
     add('近期重点-本期更新', recentLogHTML(), '近期重点');
     logTopics().forEach(function (c) { add(c.key, topicLogHTML(c), c.group); });
     add('版本更新-基地全面翻新！', baseLogHTML());
-    add('船员交流-QQ群', '<article class="log-card wide qq-card"><span class="tape l"></span><span class="tape r"></span><div class="qq-txt"><span class="chip log-tag">船员交流</span><h3>QQ 群：<b class="qq-no">' + QQ_GROUP + '</b></h3><p class="hint">攻略、组队切磋、bug 反馈、新精灵立绘抢先看，都在群里。</p></div><button type="button" class="btn primary" data-copyqq="1">复制群号</button></article>');
+    add('船员交流-QQ群', '<article class="log-card wide qq-card"><span class="tape l"></span><span class="tape r"></span><div class="qq-txt"><span class="chip log-tag">船员交流</span><h3>QQ 群：<b class="qq-no">' + QQ_GROUP + '</b></h3><p class="hint">攻略、组队切磋、bug 反馈、新精灵立绘抢先看，都在群里。</p></div><button type="button" class="btn primary" data-copyqq="1">复制群号</button></article>', '船员交流');
     add('新玩法-圣晶石召唤', summonLogHTML());
     add('获取精灵-陨石带的飞翼莱克', leibnizLogHTML());
     add('限时活动-明明教官的试炼', mmLogHTML());
@@ -5590,16 +5622,18 @@
   function renderLog() {
     var host = $('pg-log'), oldNav = host.querySelector('.log-nav'), oldView = host.querySelector('.log-view'), oldTab = host.querySelector('.log-nv.on');
     var navScroll = oldNav ? oldNav.scrollTop : 0, viewScroll = oldView ? oldView.scrollTop : 0;
-    var E = logEntries(), sel = E.filter(function (x) { return x.t === ui.logSel; })[0] ? ui.logSel : '近期重点-本期更新';
+    var E = logEntries(), sel = E.filter(function (x) { return x.t === ui.logSel; })[0] ? ui.logSel : E[0].t;
     ui.logSel = sel; LOG_KEYS = E.map(function (x) { return logKeyOf(x.t); });
     logMarkRead(sel);
     var group = '';
     $('pg-log').innerHTML = '<div class="log-split"><nav class="log-nav" role="tablist" aria-label="航行日志">' + E.map(function (x) { var p = x.t.split('-'), ty = p.length > 1 ? p.shift() : '', nm = p.join('-'), on = x.t === sel, heading = group === x.group ? '' : '<div class="log-group" role="presentation">' + esc(x.group) + '</div>'; group = x.group; return heading + '<button type="button" role="tab" class="log-nv' + (on ? ' on' : '') + '" aria-selected="' + on + '" data-logsel="' + esc(x.t) + '">' + (ty ? '<small>' + esc(ty) + '</small>' : '') + '<b>' + esc(nm) + '</b>' + (!logRead()[logKeyOf(x.t)] && x.t !== sel ? '<i class="red-dot" aria-label="未读"></i>' : '') + '</button>'; }).join('') + '</nav>' +
       '<div class="log-view" tabindex="0" role="region" aria-label="日志内容">' + E.map(function (x) { return '<section class="log-sec" data-logsec="' + esc(x.t) + '"' + (x.t === sel ? '' : ' hidden') + '>' + x.h + '</section>'; }).join('') + '</div></div>';
+    wireLogPromos(host);
     host.querySelector('.log-nav').scrollTop = oldTab && oldTab.dataset.logsel === sel ? navScroll : 0;
     if (oldTab && oldTab.dataset.logsel === sel) host.querySelector('.log-view').scrollTop = viewScroll;
   }
   $('pg-log').addEventListener('click', function (e) {
+    var route = e.target.closest('[data-logroute]'); if (route) { wikiSourceGo(route.dataset.logroute); return; }
     var b = e.target.closest('[data-logsel]');
     if (b) { ui.logSel = b.dataset.logsel; logMarkRead(ui.logSel); [].forEach.call(document.querySelectorAll('#pg-log .log-nv'), function (x) { var on = x.dataset.logsel === ui.logSel; x.classList.toggle('on', on); x.setAttribute('aria-selected', on); if (on) { var rd = x.querySelector('.red-dot'); if (rd) rd.remove(); } }); [].forEach.call(document.querySelectorAll('#pg-log .log-sec'), function (x) { x.hidden = x.dataset.logsec !== ui.logSel; }); var v = document.querySelector('#pg-log .log-view'); if (v) v.scrollTop = 0; return; }
     var w = e.target.closest('[data-logwar]'); if (w) { ui.logWar = w.dataset.logwar; renderLog(); return; }
@@ -6605,7 +6639,7 @@
   function wikiSourceGo(route) {
     if (!wikiRouteOpen(route)) return false;
     var q = route.split('|'), kind = q[0], id = q[1];
-    if (kind === 'highland') { HSACC.goHighland(); HSCHRISTMAS.openHighland(); return true; }
+    if (kind === 'highland') { HSACC.goHighland(); HSCHRISTMAS.openHighland('shop'); return true; }
     if (kind === 'knight') { HSACC.goWonderland(); HSCHRISTMAS.openKnight(); return true; }
     if (kind === 'christmas') { goChristmas(id); return true; }
     if (kind === 'quest') {

@@ -282,5 +282,5 @@ var HSCHRISTMAS = (function () {
     var L = LOADER.show(args.a === 'buy' ? '正在兑换圣诞道具～' : '正在领取圣诞礼物～', {delay:120}); L.to(.7);
     HSACC.christmasTx(args, function (r) { L.done(function () { busy = false; HSACC.renderRes(); redraw(); HSACC.toast(r.already ? '已经领取过了' : args.a === 'buy' ? '已兑换' + (TX.D.BASE_ROOMS[r.k] ? TX.D.BASE_ROOMS[r.k].n : TX.D.BASE_DECO[r.k] ? TX.D.BASE_DECO[r.k].n : HSACC.itemName(r.k)) + ' ×' + r.n : '获得圣诞铃铛 ×' + r.bell + '、拐杖糖 ×' + r.candy); }); }, function (err) { L.close(); busy = false; redraw(); HSACC.toast(err || '暂时无法完成，请重试'); });
   });
-  return { dialog: storyDialog, openHighland: function () { HSHIGHLAND.open(); }, highlandResult: function (rep) { HSHIGHLAND.result(rep); }, render: render, gate: gate, images: images, maybeStory: maybeStory, sceneEntered: sceneEntered, sceneObjects: sceneObjects, openKnight: openKnight };
+  return { dialog: storyDialog, openHighland: function (tab) { HSHIGHLAND.open(tab); }, highlandResult: function (rep) { HSHIGHLAND.result(rep); }, render: render, gate: gate, images: images, maybeStory: maybeStory, sceneEntered: sceneEntered, sceneObjects: sceneObjects, openKnight: openKnight };
 })();

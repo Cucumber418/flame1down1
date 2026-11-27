@@ -1,0 +1,78 @@
+/* 新精灵宣传立牌：同一份配置用于目录、玩法介绍、核心技能和获取入口。 */
+.log-view .log-card.log-promo {
+  container: log-promo / inline-size;
+  display: block; padding: 20px; overflow: hidden;
+  background: linear-gradient(135deg, var(--paper) 35%, var(--promo-wash));
+  border-color: var(--promo-accent); box-shadow: 3px 3px 0 var(--promo-accent);
+}
+.log-promo-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-bottom: 12px; border-bottom: 1px solid var(--rule); }
+.log-promo-header > span:first-child { font-size: 11px; font-weight: 700; letter-spacing: .2em; color: var(--promo-accent); }
+.log-promo-header > span:last-child { display: flex; align-items: center; gap: 8px; }
+.log-promo-header .chip { font-size: 11px; }
+.log-promo-header b { color: var(--pencil); font-size: 11px; font-weight: 400; font-variant-numeric: tabular-nums; }
+.log-promo-stage { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto minmax(250px, 1fr); gap: 20px 12px; min-height: 400px; padding-block: 24px 16px; }
+.log-promo-heading { grid-column: 1; grid-row: 1; position: relative; z-index: 1; }
+.log-promo-heading > small { display: block; color: var(--promo-accent); font-size: 13px; letter-spacing: .1em; }
+.log-promo .log-promo-heading h3 { margin: 9px 0 7px; font-family: var(--f-body); font-size: clamp(28px, 4cqw, 44px); font-weight: 800; line-height: 1.12; letter-spacing: .03em; }
+.log-promo-heading > p { font-size: 12px; color: var(--pencil); }
+.log-promo-role { display: inline-block; margin-top: 14px; padding: 5px 9px; border: 1px solid var(--promo-accent); border-radius: 4px; color: var(--promo-accent); font-size: 11px; font-weight: 700; }
+.log-standee { grid-column: 2; grid-row: 1 / 3; align-self: start; position: sticky; top: 8px; isolation: isolate; min-width: 0; height: clamp(180px, calc(var(--game-view-height) - 200px), 390px); padding: 0; border: 0; border-radius: 16px; background: transparent; color: var(--promo-accent); cursor: pointer; font: inherit; }
+.log-standee::after { content: ''; position: absolute; left: 10%; right: 10%; bottom: 35px; height: 20px; border-radius: 50%; background: var(--promo-accent); opacity: .13; filter: blur(5px); z-index: -1; }
+.log-standee-halo { position: absolute; inset: 13% 1% 16%; border: 1px solid var(--promo-accent); border-radius: 50% 50% 10px 10px; opacity: .22; background: linear-gradient(180deg, transparent, var(--promo-wash)); z-index: -1; }
+.log-standee-halo::after { content: ''; position: absolute; inset: 9px; border: 1px dashed var(--promo-accent); border-radius: inherit; }
+.log-standee img { position: absolute; top: 1%; left: 0; width: 100%; height: 88%; object-fit: contain; transform-origin: 50% 90%; filter: drop-shadow(0 12px 7px rgba(40, 30, 25, .16)); transition: transform .3s ease, filter .3s ease; }
+.log-standee-hint { position: absolute; bottom: 4px; left: 0; width: 100%; font-size: 10px; line-height: 1.4; text-align: center; opacity: .8; }
+.log-standee:focus-visible { outline: 2px solid var(--promo-accent); outline-offset: 3px; }
+.log-promo-story, .log-promo-skills { grid-column: 1; grid-row: 2; align-self: start; transition: opacity .2s ease; }
+.log-promo-intro { font-size: 14px; line-height: 1.8; }
+.log-promo-ability { margin-top: 16px; padding: 12px; border-left: 3px solid var(--promo-accent); border-radius: 0 7px 7px 0; background: var(--paper); }
+.log-promo-ability small { display: block; margin-bottom: 5px; color: var(--promo-accent); font-size: 12px; font-weight: 700; }
+.log-promo-ability p, .log-promo-play { font-size: 12px; line-height: 1.7; }
+.log-promo .log-promo-play { margin-top: 14px; color: var(--pencil); }
+.log-promo-skills { visibility: hidden; opacity: 0; pointer-events: none; }
+.log-promo-skills h4 { margin: 0 0 10px; color: var(--promo-accent); font-size: 13px; }
+.log-promo-skills ul { display: grid; gap: 9px; padding: 0; margin: 0; list-style: none; }
+.log-promo-skills li { padding: 9px 10px; border: 1px solid var(--rule); border-radius: 7px; background: var(--paper); }
+.log-promo-skills li > div { display: flex; align-items: baseline; flex-wrap: wrap; gap: 3px 7px; }
+.log-promo-skills b { font-size: 13px; }
+.log-promo-skills small { font-size: 10px; color: var(--promo-accent); }
+.log-promo-skills p { margin-top: 4px; font-size: 11px; line-height: 1.6; }
+.log-promo-stage.skills-open .log-standee img { transform: scale(1.07); filter: drop-shadow(0 15px 9px rgba(40, 30, 25, .22)); }
+.log-promo-stage.skills-open .log-promo-story { visibility: hidden; opacity: 0; pointer-events: none; }
+.log-promo-stage.skills-open .log-promo-skills { visibility: visible; opacity: 1; pointer-events: auto; }
+.log-promo-source { display: flex; align-items: center; gap: 15px; padding: 14px 0; border-block: 1px solid var(--rule); }
+.log-promo-source > div { min-width: 0; flex: 1; }
+.log-promo-source small { display: block; margin-bottom: 6px; color: var(--promo-accent); font-size: 12px; font-weight: 700; }
+.log-promo-source p { font-size: 12px; line-height: 1.7; }
+.log-promo-source .log-promo-lock { margin-top: 5px; font-size: 11px; color: var(--pencil); }
+.log-promo-go { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 0 0 auto; padding: 3px; border: 0; background: transparent; font: inherit; color: var(--promo-accent); cursor: pointer; }
+.log-promo-go > span { font-size: 10px; }
+.log-promo-go b { display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid var(--promo-accent); border-radius: 50%; color: var(--paper); background: var(--promo-accent); font-size: 25px; transition: transform .2s ease; }
+.log-promo-go:not(:disabled):hover b { transform: translate(2px, -2px); }
+.log-promo-go:disabled { opacity: .55; cursor: default; }
+.log-promo-go:focus-visible { outline: 2px solid var(--promo-accent); outline-offset: 3px; border-radius: 5px; }
+.log-promo-notes { margin-top: 12px; font-size: 12px; line-height: 1.8; }
+.log-promo-notes summary { color: var(--promo-accent); cursor: pointer; }
+.log-promo-notes ul { padding-left: 18px; margin-bottom: 0; }
+.log-promo-notes li + li { margin-top: 8px; }
+@container log-promo (max-width: 540px) {
+  .log-promo-stage { gap: 15px 10px; padding-top: 18px; }
+  .log-promo .log-promo-heading h3 { font-size: 28px; }
+  .log-promo-heading > small { font-size: 11px; }
+  .log-promo-intro { font-size: 12px; }
+  .log-promo-ability { padding: 9px; }
+  .log-promo-go > span { max-width: 7em; text-align: center; }
+}
+@container log-promo (max-width: 340px) {
+  .log-promo-stage { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 270px auto; gap: 12px; }
+  .log-promo-heading, .log-promo-story, .log-promo-skills { grid-column: 1; }
+  .log-promo-heading { grid-row: 1; }
+  .log-standee { grid-column: 1; grid-row: 2; position: relative; top: auto; height: 100%; }
+  .log-promo-story, .log-promo-skills { grid-row: 3; }
+  .log-promo-source { align-items: start; gap: 8px; }
+  .log-promo-header { gap: 6px; }
+  .log-promo-header > span:first-child { font-size: 10px; letter-spacing: .05em; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .log-standee img, .log-promo-story, .log-promo-skills, .log-promo-go b { transition: none; }
+}

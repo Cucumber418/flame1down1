@@ -32,11 +32,11 @@ var HSHIGHLAND = (function () {
     ], { op: 'highland', args: { a: 'intro' } }, after, 'hl_highland');
   }
   function wallet(a) { return '<div class="xmas-wallet">' + [['highlandPt','高地的认可'],['xmasBell','圣诞铃铛'],['xmasCandy','拐杖糖']].map(function (v) { return '<span>' + icon(v[0]) + v[1] + ' <b>' + num((a.items || {})[v[0]]) + '</b></span>'; }).join('') + '</div>'; }
-  function open() {
+  function open(initialTab) {
     if (HSACC.inBattle() || document.getElementById('xmas-highland')) return;
     if (!HIGHLAND.open(HSACC.acc())) { HSACC.toast('先击败一次bttp，再点击任意一位伙伴听完四人对话'); return; }
-    if (!HIGHLAND.read(HSACC.acc()).intro) { intro(open); return; }
-    var d = document.createElement('div'), tab = 'fight', scope = 'total', page = 0, ticket = 0, buying = false, prev = document.activeElement;
+    if (!HIGHLAND.read(HSACC.acc()).intro) { intro(function () { open(initialTab); }); return; }
+    var d = document.createElement('div'), tab = ['fight', 'shop', 'rank'].indexOf(initialTab) >= 0 ? initialTab : 'fight', scope = 'total', page = 0, ticket = 0, buying = false, prev = document.activeElement;
     d.id = 'xmas-highland'; d.className = 'soc-dlg'; document.body.appendChild(d);
     function close() { ticket++; refreshActive = null; d.remove(); if (prev && prev.isConnected) prev.focus({preventScroll:true}); }
     function draw() {
