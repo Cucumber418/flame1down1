@@ -19,7 +19,7 @@ body.bag-active .sheet { height: var(--bag-full-height, var(--game-view-height))
   min-height: 0; display: flex; flex-direction: column; gap: 8px; overflow: hidden;
 }
 #pg-bag > .mons-tabs, #pg-bag > .mtabs { flex: 0 0 auto; margin: 0; gap: 6px; }
-#pg-bag > .mons-tabs .tab, #pg-bag > .mtabs .tab { padding: 5px 18px; font-size: calc(13px * var(--bag-type-scale)); }
+#pg-bag > .mtabs .tab { padding: 5px 18px; font-size: calc(13px * var(--bag-type-scale)); }
 #pg-bag .bag-workspace {
   flex: 1 1 0; min-height: 0; min-width: 0;
   display: grid; grid-template-columns: minmax(240px, 28%) minmax(0, 1fr); grid-template-areas: "team detail"; direction: ltr; gap: 12px;
@@ -116,7 +116,6 @@ body.battle-touch #pg-bag .bag-workspace { grid-template-columns: minmax(0, 32%)
   .mainnav .nav { min-height: 30px; font-size: 13px; padding: 4px 3px; gap: 3px; }
   .mainnav .nav-icon { font-size: 14px; }
   #pg-bag { gap: 6px; }
-  #pg-bag > .mons-tabs .tab, #pg-bag > .mtabs .tab { padding: 4px 13px; }
   #pg-bag .bag-workspace { grid-template-columns: minmax(0, 32%) minmax(0, 1fr); gap: 8px; }
   #pg-bag .current-team { padding: 6px; gap: 6px; border-radius: 10px; }
   #pg-bag .current-team .team-head { gap: 3px; }
@@ -178,9 +177,7 @@ body.bag-short #pg-bag .current-team .slot .nm { font-size: calc(16px * var(--ba
   :is(#pg-bag, .store-profile-dialog) .bag-detail-body .stats.evstats .evc b small { font-size: 8px; margin-left: 2px; }
   :is(#pg-bag, .store-profile-dialog) .bag-detail-body .stats.evstats .evc button { min-height: 22px; padding: 3px; font-size: 10px; }
 }
-  /* 手机横屏的高度优先留给五只精灵与资料，顶栏工具只在一行内横向滚动。 */
-  body.bag-active.bag-short.bag-wide .acct { flex-wrap: nowrap; overflow-x: auto; overflow-y: visible; gap: 5px; scrollbar-width: none; }
-  body.bag-active.bag-short.bag-wide .acct::-webkit-scrollbar { display: none; }
+  /* 手机横屏压缩背包内容；顶栏和分页按钮沿用其他页面的统一尺寸。 */
   body.bag-active.bag-short.bag-wide .who-menu,
   body.bag-active.bag-short.bag-wide .snd-menu,
   body.bag-active.bag-short.bag-wide .qtop-pop,
@@ -190,7 +187,6 @@ body.bag-short #pg-bag .current-team .slot .nm { font-size: calc(16px * var(--ba
     max-height: calc(var(--bag-full-height, var(--game-view-height)) - 24px); overflow: auto; overscroll-behavior: contain;
   }
   body.bag-active.bag-short.bag-wide #pg-bag { gap: 5px; }
-  body.bag-active.bag-short.bag-wide #pg-bag > .mons-tabs .tab { padding: 3px 14px; font-size: calc(11px * var(--bag-type-scale)); }
   body.bag-active.bag-short.bag-wide #pg-bag .bag-workspace { gap: 8px; }
   body.bag-active.bag-short.bag-wide #pg-bag .current-team .team-head h3 { font-size: calc(17px * var(--bag-type-scale)); }
   body.bag-active.bag-short.bag-wide #pg-bag .current-team .team-head .cnt { font-size: calc(10px * var(--bag-type-scale)); }

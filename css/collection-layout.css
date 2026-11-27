@@ -2,7 +2,7 @@ body.collection-active { overflow: hidden; }
 body.collection-active .sheet { height: var(--collection-full-height, 100dvh); min-height: 0; overflow: hidden; padding-block: 8px; }
 .collection-page { height: var(--collection-view-height); min-height: 0; display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
 .collection-page > .mons-tabs { flex: 0 0 auto; margin: 0; gap: 6px; }
-.collection-page > .mons-tabs .tab { padding: 5px 18px; font-size: 13px; }
+#pg-bag > .mons-tabs .tab, .collection-page > .mons-tabs .tab { padding: 5px 18px; font-size: 13px; }
 .collection-toolbar { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; font-size: 12px; }
 .collection-toolbar .btn { padding: 5px 9px; font-size: 12px; white-space: nowrap; }
 .collection-toolbar .hint { min-width: 0; font-size: 11px; text-align: right; }
@@ -46,7 +46,7 @@ body.collection-active .sheet { height: var(--collection-full-height, 100dvh); m
 .collection-dialog-body .d-art img { width: 100%; max-height: 100%; }
 @media (max-width: 640px) {
   .collection-page { gap: 6px; }
-  .collection-page > .mons-tabs .tab { padding: 4px 13px; font-size: 12px; }
+  #pg-bag > .mons-tabs .tab, .collection-page > .mons-tabs .tab { padding: 4px 13px; font-size: 12px; }
   .collection-grid > .card { padding: 5px; }
   .collection-grid > .card .nm { font-size: 12px; }
   .collection-page .rel-act { display: grid; grid-template-columns: minmax(0, 1fr) auto; }

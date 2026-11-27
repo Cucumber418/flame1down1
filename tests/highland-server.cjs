@@ -24,7 +24,7 @@ for(let run=0;run<5;run++){
   const me=r.S.sides[0].team[r.S.sides[0].active];last=r.S.needSwitch?{op:'repl',k:r.S.sides[0].team.findIndex(m=>!m.fainted)}:{op:'act',a:me.hp<me.maxhp*.75?{kind:'item',key:'pot200'}:{kind:'move',i:me.moves[1].pp>0?1:0}};
   r=await req(last.op,{...last,bid,seq:++seq});assert(r.ok,JSON.stringify(r));
  }
- assert(r.end,'trial must stop by round20');assert.equal(r.end.res,'win');assert(r.end.rep.counted);assert.equal(r.end.rep.used,run+1);assert.equal(r.S.turn,21);assert(r.end.rep.damage>0);total+=r.end.rep.damage;
+ assert(r.end,'trial must stop by round20');assert.equal(r.end.res,'win');assert(r.end.rep.counted);assert.equal(r.end.rep.used,run+1);assert.equal(r.S.turn,21);assert(r.end.rep.damage>0);assert.equal(r.end.rep.reward.highlandPt,40+Math.min(60,Math.floor(r.end.rep.damage/100)));total+=r.end.rep.damage;
  const repeated=await req(last.op,{...last,bid,seq});assert.deepEqual(repeated,r);assert.equal((await saved()).a.christmasStory.highland.runs,run+1);
 }
 assert.equal((await req('start',{kind:'highland',args:{}})).status,400);acc=(await saved()).a;assert.equal(acc.christmasStory.highland.total,total);assert(acc.items.highlandPt>=200&&acc.items.highlandPt<=500);
