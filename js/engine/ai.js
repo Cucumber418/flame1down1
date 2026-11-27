@@ -8,13 +8,14 @@ function estAttack(me, foe, mv) {
   if (mv.cat === '变化' || effT(mvType(me, mv), typesOf(foe)) === 0) return 0;
   if (mv.custom === 'clementFinale' && !hasStatus(foe)) return 0;
   if (mv.custom === 'poisonHeart' && !(foe.st['中毒'] > 0)) return 0;
-  if (mv.fixedOnly) return fixedAmount(me, foe, mv, true) * hitChance(me, foe, mv);
+  var highlandScale = foe.tm.highland > 0 ? .85 : 1;
+  if (mv.fixedOnly) return fixedAmount(me, foe, mv, true) * highlandScale * hitChance(me, foe, mv);
   if (mv.custom === 'originBlade' && foe.stages.spe <= -6) return foe.hp + 1;
   var d = calcDamage(me, foe, mv, true, true).dmg;
-  if (mv.hits) { var hn = mv.custom === 'fireHits' && foe.st['烧伤'] > 0 ? 9 : mv.custom === 'riceHits' ? Math.min(15, (mv.hits[0] + mv.hits[1]) / 2 + ((me.perm && me.perm.rice) || 0)) : (mv.hits[0] + mv.hits[1]) / 2; d = d * hn + (mv.fixedHit || 0) * hn; }
-  if (mv.custom === 'annihilate') d += foe.hp * Math.min(0.6, 0.05 + 0.1 * negCount(foe));
+  if (mv.hits) { var hn = mv.custom === 'fireHits' && foe.st['烧伤'] > 0 ? 9 : mv.custom === 'riceHits' ? Math.min(15, (mv.hits[0] + mv.hits[1]) / 2 + ((me.perm && me.perm.rice) || 0)) : (mv.hits[0] + mv.hits[1]) / 2; d = d * hn + (mv.fixedHit || 0) * hn * highlandScale; }
+  if (mv.custom === 'annihilate') d += foe.hp * Math.min(0.6, 0.05 + 0.1 * negCount(foe)) * highlandScale;
   if (mv.mercy) d = Math.min(d, Math.max(0, foe.hp - 1));   // 慈悲气波打不倒对方
-  return (d + addFixed(me, mv)) * hitChance(me, foe, mv);
+  return (d + addFixed(me, mv) * highlandScale) * hitChance(me, foe, mv);
 }
 function bestEst(me, foe) {
   var b = 0;
@@ -60,7 +61,7 @@ function scoreMove(S, me, foe, mv) {
   if (mv.selfStage && !locked) for (var k in mv.selfStage) if (me.stages[k] < 4 && !me.tm.noBoost && !me.tm.seal) s += (hpR > 0.5 ? 16 : 4) * mv.selfStage[k];
   if (mv.selfStage && me.tm.seal > 0) s -= 40;
   if (mv.selfStageOne && !locked && !me.tm.noBoost && !me.tm.seal) s += hpR > 0.5 ? 8 : 2;
-  if (mv.tgtStage && !locked) for (var k2 in mv.tgtStage) if (foe.stages[k2] > -4 && !foe.tm.mist) s += 9 * Math.abs(mv.tgtStage[k2]);
+  if (mv.tgtStage && !locked) for (var k2 in mv.tgtStage) if (foe.stages[k2] > -4 && !foe.tm.mist && !foe.tm.highland) s += 9 * Math.abs(mv.tgtStage[k2]);
   var stImmune = mv.status && ((mv.status.k === '寄生' && typesOf(foe).indexOf('草') >= 0) || (mv.status.k === '流血' && typesOf(foe).indexOf('机械') >= 0));
   if (mv.status && !stImmune && (!foe.st[mv.status.k] || mv.status.k === '中毒' || (mv.status.refresh && foe.st[mv.status.k] <= 2)) && !foe.tm.immune && !foe.tm.reflect) s += 38 * mv.status.chance;
   if (stImmune && !mv.tgtStage) s -= 40;
@@ -69,7 +70,7 @@ function scoreMove(S, me, foe, mv) {
   var faster = speedOf(me) > speedOf(foe);
   var c = mv.custom;
   switch (c) {
-    case 'glenHighland': s += me.fx.highlandHits > 0 ? -25 : 25; break;
+    case 'glenHighland': s += me.tm.highland > 0 ? -25 : 25; break;
     case 'glenPride': s += me.fx.prideShield ? -8 : Math.min(20, glenDefense(me) * .1 / me.maxhp * 100); break;
     case 'barlowShield': s += me.tm.pureShield ? -20 : 24; break;
     case 'barlowField': s += locked ? -20 : (foe.moves.some(function (sl) { var m = M[sl.n]; return sl.pp > 0 && m && (m.selfStage || m.tgtStage); }) ? 24 : 5); break;

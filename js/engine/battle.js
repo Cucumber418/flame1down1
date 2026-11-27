@@ -7,7 +7,7 @@ var STG = ['atk', 'def', 'spa', 'spd', 'spe', 'acc', 'eva'];
 var STG_NAME = { atk: '物攻', def: '物防', spa: '特攻', spd: '特防', spe: '速度', acc: '命中', eva: '闪避' };
 var BASE_NAME = { hp: '体力', atk: '物攻', def: '物防', spa: '特攻', spd: '特防', spe: '速度' };
 var RHYTHMS = { rhythmLight: { name: '耀音律', status: '失明' }, rhythmBurn: { name: '灼音律', status: '烧伤' }, rhythmConfuse: { name: '惑音律', status: '混乱' } };
-var TM_NAME = { rhythmLight: '耀音律', rhythmBurn: '灼音律', rhythmConfuse: '惑音律', odoAtk: '全弹搭载', odoDef: '强效外壳', brandCd: '烙印冷却', etchCd: '蚀迹冷却', lmE: '雷明·电', lmL: '雷明·光', tcloud: '闪电云', cap: '逆鳞', genggu: '恒压', green: '绿色幻境', immune: '免疫异常', reflect: '风王结界', dodge: '光滑皮肤',
+var TM_NAME = { highland: '高地之王', rhythmLight: '耀音律', rhythmBurn: '灼音律', rhythmConfuse: '惑音律', odoAtk: '全弹搭载', odoDef: '强效外壳', brandCd: '烙印冷却', etchCd: '蚀迹冷却', lmE: '雷明·电', lmL: '雷明·光', tcloud: '闪电云', cap: '逆鳞', genggu: '恒压', green: '绿色幻境', immune: '免疫异常', reflect: '风王结界', dodge: '光滑皮肤',
   noSwitch: '无法切换', prio: '先制+1', rain: '祈雨', tri: '三相归元', soul: '收魂',
   voidPhys: '虚空化', induct: '电磁感应', vortex: '闪电漩涡', fenglei: '风雷滚滚', counter: '反击风暴', parryBan: '被招架', noStat: '禁用变化', enCrit: '引爆', darkside: '月之暗面', hail: '冰雹', noBoost: '禁止强化',
   seal: '万灵封印', liuhuo: '流火', calm: '静谧水域', halfPhys: '物伤减半', halfSpec: '特伤减半', pureShield: '纯净护盾', pureField: '纯净领域', tide: '黑雾潮汐', vuln: '易伤', weak: '伤害-30%',
@@ -170,7 +170,7 @@ var ST_DESC = {
   流血: '每回合结束损失60点体力（机械系免疫）', 中毒: '每回合结束损失1/16最大体力×层数；可无限叠加，叠加时回合数取较长的一方', 烧伤: '每回合结束损失1/8最大体力（火系精灵免疫）',
   失明: '攻击时有50%概率落空', 冻伤: '每回合结束损失1/8最大体力（冰系精灵免疫）', 混乱: '攻击时有40%概率攻击自己'
 };
-var TM_DESC = { rhythmLight: '每回合初有60%概率使对方失明1回合', rhythmBurn: '每回合初有60%概率使对方烧伤1回合', rhythmConfuse: '每回合初有60%概率使对方混乱1回合',
+var TM_DESC = { highland: '受到的伤害减免15%，自身能力等级无法被降低', rhythmLight: '每回合初有60%概率使对方失明1回合', rhythmBurn: '每回合初有60%概率使对方烧伤1回合', rhythmConfuse: '每回合初有60%概率使对方混乱1回合',
   odoAtk: '全弹搭载：造成的伤害提升25%', odoDef: '强效外壳：受到的伤害减少20%',
   brandCd: '闪电烙印麻痹过后的冷却：这段时间里叠不上闪电烙印',
   etchCd: '光辉蚀迹失明期间的冷却：这段时间里叠不上蚀迹', lmE: '特性「雷明」：每回合结束对对方造成25点固定伤害', lmL: '特性「雷明」：每回合结束恢复20体力', tcloud: '闪电云：每回合结束对对方造成100点固定伤害',
@@ -276,7 +276,6 @@ function chipsOf(m, foe, S) {
     var fracture = m.fx.fracture, average = Math.round(fracture.total / 3 * 100) / 100;
     c.push({ t: '碎震 ' + average, k: 'st', h: '碎震', d: '每回合末均摊' + average + '点固定伤害，剩余' + (3 - fracture.elapsed) + '回合；剩余伤害池' + glenFracturePool(fracture) + '点，整数结算余数在后续回合补齐' });
   }
-  if (m.fx.highlandHits > 0) c.push({ t: '高地之王 ' + m.fx.highlandHits, k: 'fx', h: '高地之王', d: '下' + m.fx.highlandHits + '次受到的攻击伤害减免35%；连击技能每一击分别计算' });
   if (m.fx.prideShield) c.push({ t: '孤王之傲 ' + m.fx.prideShield.hp, k: 'fx', h: '孤王之傲', d: '吸收接下来受到的' + m.fx.prideShield.hp + '点伤害' });
   if (m.fx.shield > 0) c.push({ t: '护盾 ' + m.fx.shield, k: 'fx', h: '护盾', d: '先吸收接下来受到的 ' + m.fx.shield + ' 点伤害' });
   if (m.fx.absDef) c.push({ t: '免疫下次攻击', k: 'fx', h: '免疫下次攻击', d: '闪避下一次受到的攻击' });
@@ -361,7 +360,7 @@ function statSheet(m, foe) {
   if (m.tm.vuln > 0) dmgIn *= 1.3;
   if (m.perm && m.perm.melt) dmgIn *= 1 + 0.2 * m.perm.melt;
   if (m.fx.leiyin) dmgIn *= 1.2;
-  if (m.fx.highlandHits > 0) dmgIn *= .65;
+  if (m.tm.highland > 0) dmgIn *= .85;
   if (m.tm.dr40 > 0) dmgIn *= 0.6;
   if (m.boss && m.boss.dr) dmgIn *= 1 - m.boss.dr;
   if (m.boss && m.boss.eternal) dmgIn *= 1.2;
@@ -434,6 +433,7 @@ function loseHp(S, evs, j, amt, why, exact, o) {
   o = o || {};
   amt = bossDamage(S, evs, j, amt, { direct: !!o.direct, percent: !!o.percent, cost: !!o.cost, status: dotKind(why) !== 'fixed' || !!(why && why.indexOf('陷入混乱') >= 0) });
   if (amt <= 0) return 0;
+  if (t.tm.highland > 0 && !o.cost) amt *= .85;
   if (t.id === 'dummy' && !t.breakable) { amt = Math.floor(amt); recordDummy(S, amt, why ? (S.curMove && why.indexOf('混沌水域') < 0 && why.indexOf('额外吸取') < 0 ? S.curMove : dotLabel(why)) : null); E(S, evs, 'hit', { side: j, amount: amt }); if (why) log(S, evs, why + '（' + amt + '）'); return amt; }
   if (t.boss && t.boss.stRes && why && dotKind(why) !== 'fixed') { amt = Math.max(1, amt * (1 - t.boss.stRes)); RV(t, 'stRes'); }
   if (t.boss && t.boss.eSt && why && dotKind(why) !== 'fixed') { amt = Math.max(1, amt * (1 - t.boss.eSt)); RV(t, 'eSt'); }   // 无尽作战「异常抗性」
@@ -458,6 +458,7 @@ function applyDamage(S, evs, j, amount, src, o) {
     if (amount <= 0) { S.lastShown = 0; return 0; }
   }
   if (!o.indirect) amount = glenAttackDamage(S, evs, j, amount, src);
+  if (t.tm.highland > 0 && !o.cost) amount *= .85;
   if (t.cbl) amount = amount * (1 - 0.25 * t.cbl);   // Cumberland：受到的伤害减免 25%（增幅后 37.5%）
   if (t.insFx && t.insFx.ice && src != null && src !== j && amount > 0 && RNG() < 0.2) { amount = Math.max(0, amount - 20); log(S, evs, nm(t) + '的刻印「肃穆之冰」减免了 20 点伤害', 'fxl'); }   // 2026-11-01
   if (t.boss && t.boss.fixRes && o.eff === undefined && !o.crit && amount > 0) { amount *= 1 - t.boss.fixRes; RV(t, 'fixRes'); }   // 无尽作战「固伤减免」
@@ -536,6 +537,7 @@ function changeStages(S, evs, i, obj, src) {
     var v = obj[k];
     if (v > 0 && (m.tm.noBoost > 0 || m.tm.seal > 0)) { tried = true; continue; }
     if (v < 0 && m.boss && m.boss.immortal) { RV(m, 'immortal'); parts.push(STG_NAME[k] + '被「不朽」免疫'); continue; }
+    if (v < 0 && m.tm.highland > 0) { parts.push(STG_NAME[k] + '被高地之王保护'); continue; }
     if (v < 0 && m.tm.mist > 0) { parts.push(STG_NAME[k] + '被白雾保护'); continue; }
     var old = m.stages[k], nv = Math.max(-6, Math.min(6, old + v));
     m.stages[k] = nv;
@@ -688,7 +690,7 @@ function calcDamage(me, foe, mv, firstMover, est) {
   if (phys && foe.tm.halfPhys > 0) mod *= 0.5;
   if (!phys && foe.tm.halfSpec > 0) mod *= 0.5;
   if (foe.tm.dr40 > 0) mod *= 0.6;
-  if (est && foe.fx.highlandHits > 0) mod *= .65;
+  if (est && foe.tm.highland > 0) mod *= .85;
   if (foe.boss && foe.boss.dr) { mod *= 1 - foe.boss.dr; if (!est) RV(foe, 'dr'); }   // BOSS「星球聚能」
   // 玫瑰星云「疏散星团」（2026-11-01 改为BOSS特效，按体力管变化）：阿尔法 伤害 +50%；贝塔 受伤 -30%；欧米茄 先出手伤害 +50%、后出手受伤 -30%
   if (me.boss && me.boss.cl) { var clA = me.boss.bar || 0; if (clA === 0 || (clA === 2 && firstMover)) { mod *= 1.5; if (!est) RV(me, 'cl'); } }
@@ -1146,21 +1148,18 @@ function applyBarlowMove(S, evs, i, mv) {
   if (mv.custom === 'barlowPurify') { var removed = clearUps(S, evs, 1 - i); if (removed) heal(S, evs, i, removed * 50); }
   if (m.fx.originHits > 0) { m.fx.originHits--; heal(S, evs, i, m.maxhp / 5); E(S, evs, 'stage', { side: i }); }
 }
-// 莫格伦：连击逐击记录；每一击及其附加固伤共享一次减伤与计数。
+// 莫格伦：连击逐击记录；同一击的附加固伤不会重复计入孤傲。
 function glenDefense(m) { return Math.floor(m.stats.def * stageMult(m.stages.def) * miaDef(m)) + Math.floor(m.stats.spd * stageMult(m.stages.spd) * miaDef(m)); }
 function glenAttackStart(S, i, mv) {
   delete S.glenAttack;
   var j = 1 - i, m = act(S, j);
-  if (m.fx.highlandHits > 0 || ability(m) === '孤傲') S.glenAttack = { from: i, side: j, slot: S.sides[j].active, cat: mv.cat, hit: false, scale: 1 };
+  if (ability(m) === '孤傲') S.glenAttack = { from: i, side: j, slot: S.sides[j].active, cat: mv.cat, hit: false };
 }
 function glenAttackDamage(S, evs, j, amount, src) {
-  var a = S.glenAttack, m = act(S, j);
+  var a = S.glenAttack;
   if (!a || a.side !== j || a.slot !== S.sides[j].active || a.from !== src || amount <= 0) return amount;
-  if (!a.hit) {
-    a.hit = true;
-    if (m.fx.highlandHits > 0) { m.fx.highlandHits--; a.scale = .65; log(S, evs, nm(m) + '的高地之王减免35%攻击伤害（剩' + m.fx.highlandHits + '次）', 'fxl'); E(S, evs, 'stage', { side: j }); }
-  }
-  return amount * a.scale;
+  a.hit = true;
+  return amount;
 }
 function glenAttackEnd(S, evs) {
   var a = S.glenAttack; if (!a || !a.hit || a.counted || a.slot !== S.sides[a.side].active) return;
@@ -1549,7 +1548,7 @@ function doStatus(S, evs, i, mv) {
       var prideHP = Math.floor(glenDefense(me) * .1);
       me.fx.prideShield = { hp: Math.max(prideHP, me.fx.prideShield ? me.fx.prideShield.hp : 0), until: S.turn + (S.turnActed[j] ? 1 : 0) };
       flag(nm(me) + '获得了 ' + prideHP + ' 点孤王之傲护盾'); break;
-    case 'glenHighland': me.fx.highlandHits = 3; flag(nm(me) + '成为高地之王，下3次受到的攻击减伤35%'); break;
+    case 'glenHighland': delete me.fx.highlandHits; timer('highland', 5, nm(me) + '成为高地之王：5回合内受到的伤害减免15%，自身能力等级无法被降低'); break;
     case 'barlowShield': timer('pureShield', 4, nm(me) + '展开纯净护盾'); gainPureShield(S, evs, i); break;
     case 'barlowField': timer('pureField', 5, nm(me) + '展开纯净领域，双方能力等级无法变化'); break;
     case 'barlowOrigin': me.fx.originHits = 2; flag(nm(me) + '展露本源之姿，下2次攻击命中后恢复体力'); break;

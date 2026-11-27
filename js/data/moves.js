@@ -17,7 +17,7 @@ var M = {
   踏雪无痕: { type: '冰', cat: '变化', selfStage: { eva: 1 }, tgtStage: { spe: -1 }, d: '提升自身1级闪避，降低对方1级速度' },
   孤高之蹄: { type: '地面', cat: '物攻', power: 80, custom: 'glenHeal', d: '威力80，恢复自身物防与特防值总和10%的体力' },
   孤王之傲: { type: '地面', cat: '变化', selfStage: { atk: 1 }, custom: 'glenPride', pp: 10, d: '提升自身1级物攻，获得相当于自身物防与特防值总和10%的护盾，持续1回合' },
-  高地之王: { type: '地面', cat: '变化', custom: 'glenHighland', hidden: true, pp: 10, d: '下3次受到的攻击伤害减免35%' },
+  高地之王: { type: '地面', cat: '变化', custom: 'glenHighland', hidden: true, pp: 10, d: '5回合内自身受到的伤害减免15%，自身能力等级无法被降低' },
   碎震裂踢: { type: '地面', cat: '物攻', power: 80, custom: 'glenFracture', hidden: true, pp: 10, d: '威力80，使对方陷入碎震，附加自身物防与特防值总和15%的固定伤害，分3回合在每回合末造成' },
   // —— 堤丰（龙）
   龙息: { type: '龙', cat: '特攻', power: 55, d: '威力55' },
