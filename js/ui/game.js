@@ -403,6 +403,7 @@
   ];
   function spaMinTotal() { return Math.floor(((acc.spa && acc.spa.ms) || 0) / 60000); }   // 泡温泉累计时长（2026-10-20 起记录）
   // 等级成就：有 1 只 / 5 只精灵达到 25、50、75、100 级
+  AWD.MILESTONE_TITLES.forEach(function (T) { TITLES.push({ id: T.id, n: T.n, d: T.d, ok: function () { return T.ok(acc); } }); });
   TITLES.forEach(function (T) { T.grp = 'story'; });
   // 做题大王争霸赛（2026-10-19）：比赛结束时按名次发（acc.ctPlace[赛事] = 名次，0 是冠军）
   [['s1king', 'S1做题大王', '获得第一届做题大王争霸赛冠军', function (k) { return k === 0; }], ['s1prince', 'S1做题小王', '获得第一届做题大王争霸赛亚军', function (k) { return k === 1; }], ['s1zone', 'S1做题区', '参加第一届做题大王争霸赛', function (k) { return k >= 0; }]].forEach(function (x) {
@@ -479,6 +480,7 @@
     titleBusy = true;
     txRun('title', {}, function (r) {
       titleBusy = false; renderRes(); renderTitle();
+      if (page === 'explore' && ex.view === 'medal') renderMedal();
       var names = (r.got || []).map(titleName).filter(Boolean), sum = r.sum || { exp: 0, energy: 0, merit: 0 }, any = (r.paid || []).length;
       if (names.length) { var tmsg = '获得称号「' + names.join('」「') + '」！' + (any ? '奖励：' + rwText(sum) + '。' : '') + '点右上角的名字即可佩戴。'; toast(tmsg); }
       else if (any) setTimeout(function () { toast('称号奖励到账：' + rwText(sum) + '。'); }, 600);
@@ -7333,6 +7335,7 @@
       var m = mon(res.u);
       nurseryRefresh(); renderRes && renderRes();
       if (m) hatchReveal(m, res);
+      checkTitles();
     });
   }
   // 孵化完成的展示面板（2026-11-02）

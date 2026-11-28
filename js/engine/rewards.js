@@ -15,11 +15,12 @@ var RW = (function () {
   var GATHER = {"forest": {"item": "g_sand", "n": 12}, "grass": {"item": "g_sand", "n": 12}, "kb_surf": {"item": "g_sand", "n": 12}, "kb_sea": {"item": "g_sand", "n": 12}, "kb_deep": {"item": "g_sand", "n": 12}, "pp_lava": {"item": "g_sand", "n": 12}, "pp_city": {"item": "g_sand", "n": 12}, "lt_belt": {"item": "g_sand", "n": 12}, "wh_snow": {"item": "g_sand", "n": 12}};   // 野外采集点（每个点每天 1 次）；丛林、草甸第一次采集还送药草种子 ×4
   var GEM_SPOT = { forest: 'floraJade', grass: 'floraJade', kb_surf: 'kbDrop', kb_sea: 'kbDrop', kb_deep: 'kbDrop', pp_lava: 'ppAsh', pp_city: 'ppAsh', lt_belt: 'ltOrb', wh_snow: 'whFrost' };   // 野外场景里每天刷新的特产（1~3 个）
   // 称号奖励：[累积经验, 能量, 功勋点]
-  var TITLE_IDS = ['trainee', 'senior', 'elite', 'master', 'scholar', 'collector', 'rare5', 'rare15', 'purifier', 'force', 'guardian', 'odoClean', 'reaper', 'xcking', 'spa120', 'spa600', 'spa3000',
+  var TITLE_IDS = ['trainee', 'senior', 'elite', 'master', 'scholar', 'collector', 'rare5', 'rare15', 'purifier', 'force', 'guardian', 'odoClean', 'clementiSinger', 'highlandKing', 'mingHeir', 'leafcatOwner', 'reaper', 'xcking', 'spa120', 'spa600', 'spa3000',
     'one25', 'one50', 'one75', 'one100', 'all25', 'all50', 'all75', 'all100', 's1king', 's1prince', 's1zone'];   // 最后几个是做题大王争霸赛的名次称号
   var TITLE_RW = {
     trainee: [1000, 200, 10], senior: [3000, 500, 30], elite: [8000, 1000, 60], master: [15000, 2000, 100], scholar: [30000, 5000, 200],
     collector: [2000, 300, 20], rare5: [8000, 1000, 60], rare15: [30000, 5000, 200], purifier: [5000, 800, 50], force: [10000, 1500, 80], guardian: [10000, 1500, 80], odoClean: [10000, 1500, 80],
+    clementiSinger: [10000, 1500, 80], highlandKing: [1000, 200, 10], mingHeir: [1000, 200, 10], leafcatOwner: [1000, 200, 10],
     one25: [1000, 200, 10], one50: [3000, 400, 20], one75: [6000, 800, 40], one100: [10000, 1500, 80],
     all25: [3000, 400, 20], all50: [8000, 1000, 50], all75: [15000, 2000, 100], all100: [30000, 4000, 200]
   };

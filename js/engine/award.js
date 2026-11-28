@@ -29,6 +29,14 @@ var AWD = (function () {
   function rareKinds(a) { var R = []; for (var k in WILD_POOLS) WILD_POOLS[k].forEach(function (w) { if (w.rare && w.sid !== a.starter && R.indexOf(w.sid) < 0) R.push(w.sid); }); var o = {}; (a.mons || []).forEach(function (m) { if (m && R.indexOf(m.sid) >= 0) o[m.sid] = 1; }); return Object.keys(o).length; }
   function typeKinds(a, t, lv) { var o = {}; (a.mons || []).forEach(function (m) { var s = m && SPMAP[m.sid]; if (s && s.types.indexOf(t) >= 0 && m.lv >= lv) o[m.sid] = 1; }); return Object.keys(o).length; }
   function spaMin(a) { return Math.floor(((a.spa && a.spa.ms) || 0) / 60000); }
+  function hasSpecies(a, sid) { return (a.mons || []).some(function (m) { return m && m.sid === sid; }); }
+  // 成就的名称、授勋馆说明和补发条件共用，进化后的同一系精灵也算获得。
+  var MILESTONE_TITLES = [
+    { id: 'clementiSinger', n: '热门歌手', d: '击败困难难度的BOSS「克莱门蒂」', ok: function (a) { return PVE.bossWon(a, 'clementi', 2); } },
+    { id: 'highlandKing', n: '高地之王', d: '获得格伦（已进化为莫格伦也计入）', ok: function (a) { return hasSpecies(a, 'glen'); } },
+    { id: 'mingHeir', n: '明明继承人', d: '获得雷明灯（进化后的同系精灵也计入）', ok: function (a) { return hasSpecies(a, 'leiming'); } },
+    { id: 'leafcatOwner', n: '叶子猫', d: '获得叶子喵（进化后的同系精灵也计入）', ok: function (a) { return hasSpecies(a, 'leafcat'); } }
+  ];
 
   /* ---------- 称号（和 game.js 的 TITLES 一一对应；显示用的名字、说明在 game.js） ---------- */
   var TITLES = [
@@ -53,6 +61,7 @@ var AWD = (function () {
     { id: 's1prince', ok: function (a) { var k = a.ctPlace && a.ctPlace.quiz1; return k === 1; } },
     { id: 's1zone', ok: function (a) { var k = a.ctPlace && a.ctPlace.quiz1; return k != null; } }
   ];
+  TITLES = TITLES.concat(MILESTONE_TITLES);
   [25, 50, 75, 100].forEach(function (L) { TITLES.push({ id: 'one' + L, ok: function (a) { return lvCount(a, L) >= 1; } }); });
   [25, 50, 75, 100].forEach(function (L) { TITLES.push({ id: 'all' + L, ok: function (a) { return lvCount(a, L) >= 5; } }); });
   for (var sr = 1; sr < RANKS.length; sr++) (function (r) { TITLES.push({ id: RANK_SEASON.id + '-' + r, season: true, ok: function (a, env) { return rankBest(env.data) >= r; } }); })(sr);
@@ -356,7 +365,7 @@ var AWD = (function () {
     return no('不支持的操作');
   });
 
-  return { TITLES: TITLES, titleCheck: titleCheck, RANKS_MIL: RANKS_MIL, MIL_COST: MIL_COST, milMigrate: milMigrate, CHAL_STAR: CHAL_STAR, CHAL_STAR_KB: CHAL_STAR_KB, rankRec: rankRec, rankPending: rankPending, rankRwOf: rankRwOf, rankBest: rankBest,
+  return { TITLES: TITLES, MILESTONE_TITLES: MILESTONE_TITLES, titleCheck: titleCheck, RANKS_MIL: RANKS_MIL, MIL_COST: MIL_COST, milMigrate: milMigrate, CHAL_STAR: CHAL_STAR, CHAL_STAR_KB: CHAL_STAR_KB, rankRec: rankRec, rankPending: rankPending, rankRwOf: rankRwOf, rankBest: rankBest,
     hasAtt: hasAtt, send: send, sync: sync, MAIL_MAX: MAIL_MAX, pwMilestones: pwMilestones, pwReward: pwReward, kbwMilestones: kbwMilestones, kbwReward: kbwReward, CONTEST: CONTEST, CT_RW: CT_RW, CT_RW0: CT_RW0 };
 })();
 if (typeof module !== 'undefined') module.exports = AWD;
