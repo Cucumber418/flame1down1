@@ -17,5 +17,5 @@ const E=T.engine(),server=http.createServer((q,s)=>{if(!A.handle(q,s)){s.statusC
  const action={op:'act',seq:1,a:{kind:'move',i:0}};r=await api(action);assert.equal(r.status,200);assert.equal(r.S.sides[1].team[0].hp,3000);assert.deepEqual(await api(action),r);
  r=await api({op:'quit',seq:2});assert.equal(r.status,200);assert(r.end);assert.equal(JSON.parse(A.loadUser('bosstest').save.data['hs-account-v1']).items.fireNote||0,0);
  assert.equal((await api({op:'start',kind:'boss',args:{k:'clementi',d:2}})).status,400);
- console.log('PASS clementi API: authentication, difficulty gating, authoritative boss generation, odd-turn damage immunity, idempotent turns, quit without rewards and no hard difficulty');
+ console.log('PASS clementi API: authentication, difficulty gating, authoritative boss generation, odd-turn damage immunity, idempotent turns, quit without rewards and hard difficulty locked until normal clear');
 })().catch(e=>{console.error(e);process.exitCode=1;}).finally(()=>{server.close();server.closeAllConnections();fs.rmSync(dir,{recursive:true,force:true});});

@@ -294,7 +294,7 @@ function chipsOf(m, foe, S) {
   if (m.cbl) c.push({ t: 'Cumberland', k: 'fx on', h: 'Cumberland' + (m.cbl > 1 ? ' · 增幅' : ''), d: cblText(m.cbl) });   // 第十九段：Cumber 给的加成
   if (m.onlyHit) c.push({ t: '元素亲和', k: 'fx', h: 'BOSS · 元素亲和', d: '只有' + m.onlyHit.join('、') + '系技能才能命中它，其他属性的技能都会被挡下' });
   if (m.boss) BOSS_FX.forEach(function (f) {
-    if (!m.boss[f.k]) return;
+    if (!m.boss[f.k] || f.k === 'tuning' && m.boss.tuningMaster || f.k === 'chord' && m.boss.concerto) return;
     if ((f.hide && f.hide(m)) || !fxKnown(m, f.k)) { c.push({ t: '？？？', k: 'fx', h: '？？？ · 尚未揭晓', d: '它好像还藏着什么本事……' }); return; }   // 隐藏特效：第一次发动前只显示问号
     var fn = f.nm ? f.nm(m) : null; c.push({ t: fn || f.t, k: 'fx', h: fn || f.h, d: f.d(m) });
   });
@@ -309,6 +309,7 @@ function chipsOf(m, foe, S) {
   if (miaN(m)) c.push({ t: '瘴气 ×' + miaN(m), k: 'st', h: '瘴气 · ' + miaN(m) + ' 层', d: '物攻、特攻 +' + (miaN(m) * 5) + '%，物防、特防 −' + Math.min(90, miaN(m) * 5) + '%（每层 ±5%，防御最低降到 10%）。持续到战斗结束，换下场也不会消失；在瘴气环境中每回合结束时再获得 1 层。' });
   if (m.perm && m.perm.wither) c.push({ t: '凋零之蚀' + (witherN(m) > 1 ? ' ×' + witherN(m) : ''), k: 'st', h: '凋零之蚀 · ' + witherN(m) + ' 层', d: '每回合结束损失 ' + witherN(m) + '/' + WITHER_DIV + ' 最大体力（每层 1/' + WITHER_DIV + '，最多 ' + WITHER_MAX + ' 层），持续到战斗结束。当前每回合损失 ' + witherDot(m) + ' 点' });
   if (m.fx.charge) c.push({ t: '爆燃蓄力 ×' + m.fx.charge, k: 'fx', h: '爆燃蓄力 · ' + m.fx.charge + ' / 3', d: '下一次攻击伤害提升 ' + m.fx.charge * 10 + '%，攻击时全部消耗。下场时清空。' });
+  if (m.fx.concertoNext > 0) c.push({ t: '协奏 +' + Math.round(m.fx.concertoNext * 100) + '%', k: 'fx', h: '协奏和弦', d: '下一次攻击伤害提升' + Math.round(m.fx.concertoNext * 100) + '%；使用变化技能不会消耗' });
   if (m.fx.boostNext) c.push({ t: '潜水蓄力', k: 'fx', h: '潜水蓄力', d: '下一次攻击伤害提升50%' });
   if (m.fx.prismAttacks) c.push({ t: '斑斓之姿 ' + m.fx.prismAttacks, k: 'fx', h: '斑斓之姿', d: '剩余' + m.fx.prismAttacks + '次主动攻击拆为威力减半的2次攻击，每次附加完整技能效果' });
   if (m.fx.originHits) c.push({ t: '本源之姿 ' + m.fx.originHits, k: 'fx', h: '本源之姿', d: '剩余' + m.fx.originHits + '次攻击命中后恢复1/5最大体力' });
@@ -352,6 +353,7 @@ function statSheet(m, foe) {
   if (m.tm.weak > 0) dmgOut *= 0.7;
   if (m.st['溺水'] > 0) dmgOut *= 0.3;
   if (f && ability(f) === '枯萎') dmgOut *= Math.max(0.7, 1 - 0.05 * (f.fx.fieldT || 0));
+  if (m.fx.concertoNext > 0) dmgOut *= 1 + m.fx.concertoNext;
   if (m.fx.boostNext) dmgOut *= 1.5;
   if (ab === '幻叶' && m.hp <= m.maxhp / 3) dmgIn *= 0.85;
   if (ab === '盾甲') dmgIn *= 0.9;
@@ -420,12 +422,12 @@ function bossDamage(S, evs, j, amt, o) {
   var m = act(S, j), b = m.boss;
   if (!b || o.cost || amt <= 0) return amt;
   if (b.noPercent && o.percent) { RV(m, 'noPercent'); log(S, evs, nm(m) + '免疫百分比伤害', 'fxl'); return 0; }
-  if (b.tuning && (!!o.direct === (S.turn % 2 === 1))) {
-    RV(m, 'tuning');
-    log(S, evs, nm(m) + '的「调弦」免疫了' + (o.direct ? '直接' : '间接') + '伤害', 'fxl');
+  if (b.tuning && (!!o.direct === ((S.turn % 2 === 1) !== !!b.tuningReverse))) {
+    RV(m, b.tuningMaster ? 'tuningMaster' : 'tuning');
+    log(S, evs, nm(m) + '的「' + (b.tuningMaster ? '熟手调弦' : '调弦') + '」免疫了' + (o.direct ? '直接' : '间接') + '伤害', 'fxl');
     return 0;
   }
-  if (b.chord && (o.status || o.percent)) { RV(m, 'chord'); amt *= 1 - b.chord; }
+  if (b.chord && (o.status || o.percent)) { RV(m, b.concerto ? 'concerto' : 'chord'); amt *= 1 - b.chord; }
   return amt;
 }
 function loseHp(S, evs, j, amt, why, exact, o) {
@@ -439,6 +441,7 @@ function loseHp(S, evs, j, amt, why, exact, o) {
   if (t.boss && t.boss.eSt && why && dotKind(why) !== 'fixed') { amt = Math.max(1, amt * (1 - t.boss.eSt)); RV(t, 'eSt'); }   // 无尽作战「异常抗性」
   if (!exact && t.boss && t.boss.fixRes && dotKind(why) === 'fixed') { amt = Math.max(1, amt * (1 - t.boss.fixRes)); RV(t, 'fixRes'); }   // 玫瑰星云「稀薄粒子」：异常状态的持续伤害只有两成（2026-11-01）
   if (o.direct && !o.cost && S.glenAttack) amt = glenAttackDamage(S, evs, j, amt, S.glenAttack.from);
+  if (o.direct && !o.cost && S.concertoAction && S.concertoAction.side !== j) amt *= 1 + S.concertoAction.boost;
   amt = Math.min(t.hp, Math.floor(amt)); t.hp -= amt;
   if (S.worldBoss && j === 1 && !o.cost) S.worldBoss.damage += Math.max(0, amt);
   E(S, evs, 'hit', { side: j, amount: amt, kind: dotKind(why) });
@@ -458,6 +461,7 @@ function applyDamage(S, evs, j, amount, src, o) {
     if (amount <= 0) { S.lastShown = 0; return 0; }
   }
   if (!o.indirect) amount = glenAttackDamage(S, evs, j, amount, src);
+  if (!o.indirect && !o.cost && S.concertoAction && src === S.concertoAction.side && src !== j) amount *= 1 + S.concertoAction.boost;
   if (t.tm.highland > 0 && !o.cost) amount *= .85;
   if (t.cbl) amount = amount * (1 - 0.25 * t.cbl);   // Cumberland：受到的伤害减免 25%（增幅后 37.5%）
   if (t.insFx && t.insFx.ice && src != null && src !== j && amount > 0 && RNG() < 0.2) { amount = Math.max(0, amount - 20); log(S, evs, nm(t) + '的刻印「肃穆之冰」减免了 20 点伤害', 'fxl'); }   // 2026-11-01
@@ -675,6 +679,7 @@ function calcDamage(me, foe, mv, firstMover, est) {
     case 'lateX2': if (!firstMover) mod *= 2; break;   // 回转之焰：后出手时威力翻倍
   }
   if (me.tm.jungle > 0 && foe.hp / foe.maxhp < me.hp / me.maxhp) mod *= 1.7;
+  if (est && me.fx.concertoNext > 0) mod *= 1 + me.fx.concertoNext;
   if (me.fx.boostNext) mod *= 1.5;
   if (me.fx.x2Next) mod *= 2;   // 岩洞藏匿成功后的下一次直接攻击
   if (me.enDmg) mod *= 1 + me.enDmg;   // 无尽作战（2026-11-02）：能力 / 消耗品 / 装备的增伤
@@ -738,6 +743,7 @@ function resolveTurn(S, acts) {
   S.turnActed = [false, false]; S.silenced = [false, false]; S.order = [];
   S.sides.forEach(function (sd) { sd.team.forEach(function (m) { if (m.fx) m.fx.lateNow = 0; }); });   // 歼灭速率：「这回合被抢先出手」只算当回合
   log(S, evs, '第 ' + S.turn + ' 回合', 'turn');
+  clementiTune(S, evs);
   barlowStart(S, evs);
   if (rhythmStart(S, evs)) {
     checkOver(S, evs);
@@ -768,6 +774,7 @@ function resolveTurn(S, acts) {
     S.turnActed[info[q].i] = true;
     if (S.en && info[q].i === 0) enPostMove(S, evs, info[q].mv);
     checkOver(S, evs);
+    clementiEncore(S, evs, info[q].i);
   }
   if (!S.over) endOfTurn(S, evs);
   if (!S.over && S.en) { enEndTurn(S, evs); checkOver(S, evs); }
@@ -959,11 +966,13 @@ function pvpReplace(S, picks) {
 function cantAct(S, evs, me) {
   for (var k in CANT_ACT) if (me.st[k] > 0) {
     if (me.boss && me.boss.chord && me.fx.chordAt !== S.turn) {
-      me.fx.chordAt = S.turn; RV(me, 'chord');
-      if (RNG() < 0.5) { log(S, evs, nm(me) + '的「和弦」使其恢复了本次行动', 'fxl'); return false; }
+      me.fx.chordAt = S.turn; RV(me, me.boss.concerto ? 'concerto' : 'chord');
+      if (RNG() < 0.5) { if (me.boss.concerto) concertoCharge(S, evs, me, .5); log(S, evs, nm(me) + '的「' + (me.boss.concerto ? '协奏和弦' : '和弦') + '」使其恢复了本次行动', 'fxl'); return false; }
     }
+    if (me.boss && me.boss.concerto) concertoCharge(S, evs, me, 1);
     E(S, evs, 'cant', { side: S.sides[0].team.indexOf(me) >= 0 ? 0 : 1, st: k }); log(S, evs, nm(me) + CANT_ACT[k] + '！', 'bad'); return true;
   }
+  if (me.boss && me.boss.concerto) concertoCharge(S, evs, me, 1);
   return false;
 }
 
@@ -1200,6 +1209,11 @@ function useMoveCore(S, evs, i, mv, slotIdx, extra, splitToken) {
   finally { glenAttackEnd(S, evs); if (prev) S.glenAttack = prev; else delete S.glenAttack; }
 }
 function useMove(S, evs, i, mv, slotIdx, extra) {
+  var previous = S.concertoAction; delete S.concertoAction;
+  try { return useMoveAction(S, evs, i, mv, slotIdx, extra); }
+  finally { if (previous) S.concertoAction = previous; else delete S.concertoAction; }
+}
+function useMoveAction(S, evs, i, mv, slotIdx, extra) {
   var me = act(S, i), split = !extra && me.fx.prismAttacks > 0 && liveMove(me, mv).cat !== '变化';
   if (!split) return useMoveCore(S, evs, i, mv, slotIdx, extra);
   var half = Object.assign({}, liveMove(me, mv), { prismHalf: true }), token = { armed: false };
@@ -1223,6 +1237,9 @@ function useMoveCore0(S, evs, i, mv, slotIdx, extra, splitToken) {
   var firstMover = !S.turnActed[j];
   if (foe.boss && foe.boss.odoRate && firstMover) foe.fx.lateNow = 1;   // 歼灭速率：被对方抢先出手，这回合受伤 +25%
   var mt = mvType(me, mv);
+  if (!extra && mv.cat !== '变化' && me.fx.concertoNext > 0) {
+    S.concertoAction = { side: i, boost: me.fx.concertoNext }; delete me.fx.concertoNext;
+  }
   S.curMove = i === 0 ? mv.name : null;
   E(S, evs, 'use', { side: i, move: mv.name, type: mt });
   S.hqMv = mv.name; if (!extra) hqUse(me, mv.name);
@@ -1825,6 +1842,9 @@ var BOSS_FX = [
   { k: 'noPercent', t: '免疫百分比伤害', h: '免疫百分比伤害', d: function () { return '免疫按体力比例造成的伤害；常规攻击与定值伤害仍可生效'; } },
   { k: 'tuning', t: '调弦', h: '调弦', d: function () { return '奇数回合免疫直接伤害，偶数回合只受到直接伤害'; } },
   { k: 'chord', t: '和弦', h: '和弦', d: function (m) { return '受到的异常状态伤害与百分比伤害降低' + Math.round(m.boss.chord * 100) + '%，每回合因异常状态无法行动时，有50%概率恢复本次行动'; } },
+  { k: 'tuningMaster', t: '熟手调弦', h: '熟手调弦', d: function (m) { return (m.boss.tuningReverse ? '当前：奇数回合只受到直接伤害，偶数回合免疫直接伤害' : '当前：奇数回合免疫直接伤害，偶数回合只受到直接伤害') + '；每随机4～7回合逆转一次'; } },
+  { k: 'concerto', t: '协奏和弦', h: '协奏和弦', d: function () { return '异常状态伤害与百分比伤害降低65%；每回合因异常无法行动时有50%概率恢复本次行动，成功时下一次攻击伤害提升50%，未触发恢复行动时提升100%'; } },
+  { k: 'maestro', t: '名手之道', h: '名手之道', d: function () { return '每回合有50%概率再行动一次，每回合最多追加一次，照常消耗PP并受异常状态影响'; } },
   { k: 'noStatus', t: '免疫异常', h: '免疫异常状态', d: function () { return '不会陷入任何异常状态（睡眠、麻痹、中毒、寄生等）'; } },
   { k: 'feud', t: '东北的纷争', h: '东北的纷争', d: function () { return '物攻永久提升 30%（直接算进能力值，不会被消除）'; } },
   { k: 'past', t: '东北的往事', h: '东北的往事', hide: function (m) { return !m.boss.pastKnown; }, d: function () { return '第一次被击败后会不屈复活（LV60，体力 3000），觉醒【永续的纷争】【往日重现】，并展开场地【沈阳大街】'; } },
@@ -1878,6 +1898,50 @@ var BOSS_FX = [
   { k: 'weed', t: '除草机', h: '除草机', d: function (m) { var d0 = (m.boss && m.boss.weedDmg) || 30; return '每回合结束时附带 ' + d0 + ' 点固定伤害，每回合 +2（对草系精灵伤害翻倍）' + (m.boss && m.boss.rebirthKnown ? '。「枯萎中蜕生」发动后变成「抹除装置」：伤害定格在当时数值的 1.5 倍，不再增长' : ''); } },
   { k: 'rebirth', t: '枯萎中蜕生', h: '枯萎中蜕生', hide: function (m) { return !m.boss.rebirthKnown; }, d: function () { return '体力首次低于 2500 时发动：恢复 1000 体力，并对敌方造成其最大体力 30% 的固定伤害；「腐殖质」「除草机」从此分别变成「腐殖乐园」「抹除装置」'; } }
 ];
+/* 克莱门蒂困难：两管体力；第二乐章按已记录的回合逆转调弦，支持断线重载。 */
+var CLEMENTI_SECOND = [
+  ['n', '最后一缕火星散去，克莱门蒂却没有退场。它缓缓拨动琴弦，整座饮火城随之安静下来。'],
+  ['cm', '你已听懂了第一乐章。但真正的名手，从不只循着既定的节拍。'],
+  ['cm', '接下来，就让我以这首协奏——让你见证真正的名手之道！']
+];
+function clementiPhase(S, evs) {
+  if (S.pvp || S.over || !S.sides[0].team.some(function (m) { return !m.fainted; })) return;
+  var m = act(S, 1), b = m.boss;
+  if (!b || !b.clementiHard || !b.broken || (b.bar || 0) !== 0) return;
+  E(S, evs, 'scene', { side: 1, lines: CLEMENTI_SECOND });
+  CLEMENTI_SECOND.forEach(function (l) { log(S, evs, (l[0] === 'cm' ? '克莱门蒂：' : '') + l[1], 'fxl'); });
+  b.bar = 1; b.broken = 0; m.hp = m.maxhp = b.bars[1];
+  b.tuningMaster = 1; b.concerto = 1; b.maestro = .5; b.tuningReverse = false; b.nextTune = S.turn + rint(4, 7);
+  RV(m, 'tuningMaster'); RV(m, 'concerto'); RV(m, 'maestro');
+  E(S, evs, 'heal', { side: 1, amount: m.hp });
+  log(S, evs, '第二乐章奏响！克莱门蒂换上第2管体力（' + m.hp + '），调弦与和弦升华，并领悟了名手之道', 'crit');
+}
+function clementiTune(S, evs) {
+  if (S.pvp || S.over) return;
+  var m = act(S, 1), b = m.boss;
+  if (!b || !b.tuningMaster || m.fainted || b.broken) return;
+  if (!Number.isInteger(b.nextTune)) b.nextTune = S.turn + rint(4, 7);
+  if (S.turn < b.nextTune) return;
+  b.tuningReverse = !b.tuningReverse; b.nextTune = S.turn + rint(4, 7); RV(m, 'tuningMaster');
+  E(S, evs, 'scene', { side: 1, brief: true, lines: [['cm', b.tuningReverse ? '跟上这一拍。弦律既已逆转，你又该如何应和？' : '听见了吗？弦律再度回转。名手的下一拍，从来不会等你。']] });
+  E(S, evs, 'banner', { side: 1, text: '弦律已调节', type: '火' });
+  log(S, evs, '熟手调弦逆转了伤害规则：' + (b.tuningReverse ? '奇数回合只受到直接伤害，偶数回合免疫直接伤害' : '奇数回合免疫直接伤害，偶数回合只受到直接伤害'), 'fxl');
+}
+function concertoCharge(S, evs, m, boost) {
+  RV(m, 'concerto'); m.fx.concertoNext = boost;
+  E(S, evs, 'stage', { side: S.sides[0].team.indexOf(m) >= 0 ? 0 : 1 });
+  log(S, evs, nm(m) + '的协奏和弦积蓄了力量，下一次攻击伤害提升' + Math.round(m.fx.concertoNext * 100) + '%', 'fxl');
+}
+function clementiEncore(S, evs, side) {
+  if (side !== 1 || S.pvp || S.over) return;
+  var m = act(S, 1), b = m.boss;
+  if (!b || !b.maestro || m.fainted || b.broken || act(S, 0).fainted || b.maestroAt === S.turn) return;
+  b.maestroAt = S.turn;
+  if (RNG() >= b.maestro) return;
+  RV(m, 'maestro'); log(S, evs, nm(m) + '的「名手之道」奏出追拍，再次行动！', 'fxl');
+  var action = aiChoose(S);
+  if (action.kind === 'move') { useMove(S, evs, 1, moveFor(m, action.i), action.i); checkOver(S, evs); }
+}
 /* 困难泰戈尔「东北的往事」：第一次被击败时不屈复活（只复活一次）
  * 复活：LV60、体力 3000（回满），清掉能力等级和异常状态；东北的纷争 → 永续的纷争（物攻 +60%、受伤 +20%），新增往日重现，场地变成沈阳大街（双方都不能用变化技能）
  * 复活前插一段小剧情（事件 scene，由界面播放） */
@@ -2161,6 +2225,7 @@ function endOfTurn(S, evs) {
       }
     }
   });
+  clementiPhase(S, evs);
   // BOSS 奥多亚克（困难）：歼灭形态、护阵形态每两回合主动切换一次（另一个形态还在的话）
   var osw = S.sides[1], om = act(S, 1);
   if (!S.over && om && !om.fainted && om.boss && om.boss.odoSwap && S.turn % 2 === 0) {

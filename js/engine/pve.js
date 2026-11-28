@@ -228,12 +228,13 @@ var PVE = (function () {
       d: '栖居于庞贝星饮火城的火系BOSS，以音律引动烈焰',
       lv: [
         { diff: '简单', lv: 40, hp: 1000, boss: { dr: 0.15, pp: 99 }, bgm: 'boss', open: function (a, now) { return done(a, 'flora1'); }, lockText: '开放庞贝星后开放', reward: {} },
-        { diff: '普通', lv: 65, hp: 3000, boss: { dr: 0.15, tuning: 1, chord: 0.65, pp: 99 }, bgm: 'boss2', open: function (a, now) { return bossWon(a, 'clementi', 0); }, lockText: '击败简单难度后开放', reward: { mon: { sid: 'clementi', lv: 10 }, items: { fireNote: 40 } } }
+        { diff: '普通', lv: 65, hp: 3000, boss: { dr: 0.15, tuning: 1, chord: 0.65, pp: 99 }, bgm: 'boss2', open: function (a, now) { return bossWon(a, 'clementi', 0); }, lockText: '击败简单难度后开放', reward: { mon: { sid: 'clementi', lv: 10 }, items: { fireNote: 40 } } },
+        { diff: '困难', lv: 70, hp: 3460, hpText: '两管体力：3460 / 5813', boss: { dr: 0.15, tuning: 1, chord: 0.65, clementiHard: 1, bars: [3460, 5813], pp: 99 }, bgm: 'boss3', open: function (a, now) { return bossWon(a, 'clementi', 1); }, lockText: '击败普通难度后开放', reward: { title: 'clementiSinger', exp: 50000, items: { fireNote: 80 } } }
       ] }
   };
   // 2026-10-19：每个BOSS每档难度首次击败都送马亚尔晶体，难度越高越多（简单 100 / 普通 200 / 困难 400）
-  // 2026-10-24：困难难度的BOSS都带【不朽】（之后新增的困难BOSS自动加上；困难泰戈尔保持原样）
-  Object.keys(BOSSES).forEach(function (k) { if (k === 'tiger') return; BOSSES[k].lv.forEach(function (L) { if (L.diff !== '困难') return; if (L.boss) L.boss.immortal = 1; (L.team || []).forEach(function (T) { T.boss.immortal = 1; }); }); });
+  // 困难档默认带【不朽】；泰戈尔与克莱门蒂按各自机制配置，克莱门蒂可触发控制恢复。
+  Object.keys(BOSSES).forEach(function (k) { if (k === 'tiger' || k === 'clementi') return; BOSSES[k].lv.forEach(function (L) { if (L.diff !== '困难') return; if (L.boss) L.boss.immortal = 1; (L.team || []).forEach(function (T) { T.boss.immortal = 1; }); }); });
   var BOSS_CRY = [100, 200, 400];
   Object.keys(BOSSES).forEach(function (k) { BOSSES[k].lv.forEach(function (L, i) { if (!L.reward) L.reward = {}; if (!L.reward.items) L.reward.items = {}; L.reward.items.m_mcry = BOSS_CRY[i] || BOSS_CRY[BOSS_CRY.length - 1]; }); });
   // 每周挑战：击败困难难度的泰戈尔后开放，规则和困难难度一样，每次消耗 1 枚挑战许可
@@ -251,7 +252,8 @@ var PVE = (function () {
     { boss: 'odo', d: 1, exp: 3500, item: { odoFin: 30 }, cry: [20, 40], drops: [{ items: { kbDrop: 12 } }, { items: { evAny: 1 } }, { energy: 1500 }, { exp: 1500 }] },
     { boss: 'odo', d: 2, exp: 5000, item: { odoFin: 50 }, cry: [40, 80], drops: [{ items: { kbDrop: 20 } }, { items: { evAny: 1 } }, { energy: 2000 }, { exp: 2000 }] },
     { boss: 'clementi', d: 0, exp: 2000, item: { fireNote: 15 }, cry: [10, 20], drops: [{ items: { ppAsh: 8 } }, { energy: 1000 }, { exp: 1000 }] },
-    { boss: 'clementi', d: 1, exp: 3500, item: { fireNote: 30 }, cry: [20, 40], drops: [{ items: { ppAsh: 12 } }, { items: { evAny: 1 } }, { energy: 1500 }, { exp: 1500 }] }
+    { boss: 'clementi', d: 1, exp: 3500, item: { fireNote: 30 }, cry: [20, 40], drops: [{ items: { ppAsh: 12 } }, { items: { evAny: 1 } }, { energy: 1500 }, { exp: 1500 }] },
+    { boss: 'clementi', d: 2, exp: 5000, item: { fireNote: 50 }, cry: [40, 80], drops: [{ items: { ppAsh: 20 } }, { items: { evAny: 1 } }, { energy: 2000 }, { exp: 2000 }] }
   ];
   var EWK = {
     types: [{ t: '草', item: 'floraJade' }, { t: '水', item: 'kbDrop' }, { t: '火', item: 'ppAsh' }, { t: '冰', item: 'whFrost' }, { t: '电', item: 'ltOrb' },

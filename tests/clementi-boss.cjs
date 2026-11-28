@@ -4,7 +4,7 @@ const root=path.resolve(__dirname,'..'),C=vm.createContext({console,window:{},at
 fs.readFileSync(path.join(root,'index.html'),'utf8').replace(/'(js\/(?:data|engine)\/[^']+\.js)'/g,(_,f)=>{vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),C,{filename:f});return _;});
 const copy=x=>JSON.parse(JSON.stringify(x)),mon=(S,i=1)=>C.act(S,i),boss=C.PVE.BOSSES.clementi;
 function battle(fx={tuning:1,chord:.65},turn=1){const S=C.newBattle([{id:'leaf',lv:100,moves:['慈悲气波','飞叶刀','寄生之种','混沌水域']}],[{id:'clementi',lv:65,maxhp:1000,moves:['耀目之曲','灼灼之音','眩惑之律','星火清籁'],boss:copy(fx)}]);S.turn=turn;mon(S,0).hp=mon(S,0).maxhp=1000;C.RNG=()=>.5;return S;}
-assert.equal(boss.planet,'pompeii');assert.equal(boss.region,'pp_city');assert.equal(boss.lv.length,2);
+assert.equal(boss.planet,'pompeii');assert.equal(boss.region,'pp_city');assert.equal(boss.lv.length,3);
 for(const L of boss.lv){assert(L.boss.dr>0);assert(!L.boss.immortal);assert(!L.boss.noStatus);}
 assert(!boss.lv[0].boss.tuning);assert(!boss.lv[0].boss.chord);assert.equal(boss.lv[1].boss.chord,.65);
 // Tuning: normal and fixed attack damage are direct; status/reflection/end effects are indirect.
@@ -50,4 +50,4 @@ assert(C.TX.run(A,'mitem',{u:own.u,k:'fireNote'},env).ok);assert.equal(A.items.f
 assert(C.TX.run(A,'mitem',{u:own.u,k:'fireNote'},env).ok);assert.equal(A.items.fireNote,0);A.items.fireNote=100;assert.equal(C.TX.run(A,'mitem',{u:own.u,k:'fireNote'},env).ok,false);assert.equal(A.items.fireNote,100);
 own.lv=70;assert.equal(C.GROW.capNext(own).k,'fireNote');A.items.fireNote=500;assert(C.TX.run(A,'lvcap',{u:own.u},env).ok);assert.equal(A.items.fireNote,0);assert.equal(own.lvCap,75);
 assert(fs.existsSync(path.join(root,C.SPRITES.clementi)));assert(C.SPRITES.clementi.endsWith('.png'));assert(fs.existsSync(path.join(root,'images/items/fire_note.svg')));
-console.log('PASS clementi boss: two difficulties, tuning direct/indirect phases, chord status/percentage reduction, fate/leech/hail/add-ons/costs, control recovery once per round, no immortal, unlocks/first and weekly rewards, exclusive item learning and level caps');
+console.log('PASS clementi boss: three difficulties, unchanged basic/normal tuning direct/indirect phases, chord status/percentage reduction, fate/leech/hail/add-ons/costs, control recovery once per round, no immortal, unlocks/first and weekly rewards, exclusive item learning and level caps');

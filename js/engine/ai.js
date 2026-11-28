@@ -8,7 +8,7 @@ function estAttack(me, foe, mv) {
   if (mv.cat === '变化' || effT(mvType(me, mv), typesOf(foe)) === 0) return 0;
   if (mv.custom === 'clementFinale' && !hasStatus(foe)) return 0;
   if (mv.custom === 'poisonHeart' && !(foe.st['中毒'] > 0)) return 0;
-  var highlandScale = foe.tm.highland > 0 ? .85 : 1;
+  var highlandScale = (foe.tm.highland > 0 ? .85 : 1) * (1 + (me.fx.concertoNext || 0));
   if (mv.fixedOnly) return fixedAmount(me, foe, mv, true) * highlandScale * hitChance(me, foe, mv);
   if (mv.custom === 'originBlade' && foe.stages.spe <= -6) return foe.hp + 1;
   var d = calcDamage(me, foe, mv, true, true).dmg;

@@ -1003,7 +1003,7 @@
     xmasBell: ['Vanber准备的稀有圣诞铃铛', '在Threego的苏格兰杂货铺兑换道具', '圣诞活动 · Vanber的圣诞礼物'],
     xmasCandy: ['红白相间的圣诞拐杖糖', '在Threego的苏格兰杂货铺兑换道具', '圣诞活动 · Vanber的圣诞礼物；圣诞仙境 · 讨伐鲁普雷希特骑士；格伦高地 · 高地之王试炼'],
     crossEssence: ['凝聚着海伦娜星能量的十字精粹', '每100个解锁巴洛或巴利一系的一个隐藏技能，LV75、LV80突破各需500个', '击败圣诞城堡的野生精灵，每只掉落1–6个；Threego的苏格兰杂货铺可用1个拐杖糖兑换1个'],
-    fireNote: ['凝聚烈焰的音符', '每100个让克莱一系领悟一个隐藏技能，也用于突破等级上限', '首次击败普通难度的克莱门蒂获得40个；每周挑战每次15 / 30个（简单 / 普通）'],
+    fireNote: ['凝聚烈焰的音符', '每100个让克莱一系领悟一个隐藏技能，也用于突破等级上限', '普通 / 困难难度首次击败分别获得40 / 80个；每周挑战每次15 / 30 / 50个（简单 / 普通 / 困难）'],
     odoFin: ['从深海的奥多亚克身上脱落的古老鳍甲。', '每 100 个让奥多亚克一系领悟一个隐藏技能；到 LV70 后也用它解锁 LV75（500 个）、LV80（500 个）的等级上限。', '首次击败普通难度的奥多亚克得 40 个、困难难度得 80 个；奥多亚克每周挑战每次 15 / 30 / 50 个（简单 / 普通 / 困难）。'],
     hrDisk: ['盘面上的星点会自己转动的小星盘。', '每 100 个让幽灵鱼一系（幽灵鱼、哈蒙德、哈尔达蒙）领悟一个隐藏技能。', '击败野外随机出现的幽灵鱼，每只掉落 50–70 个。'],
     deathTok: ['先驱之塔死神留下的代币。', '1 颗让帕努托尔一系领悟一个隐藏技能；在先驱之塔的代币商店兑换「帕努托尔的精元」也要 1 颗。', '击败先驱之塔第 60 层的死神「帕努托尔」获得，一个账号最多 3 颗。'],
@@ -5847,6 +5847,11 @@
     });
     var pastKnown = !!(acc.seenFx && acc.seenFx.past);
     if (L.boss && L.boss.past && pastKnown) ['eternal', 'relive', 'sy'].forEach(function (k) { var f = BOSS_FX.filter(function (x) { return x.k === k; })[0]; out.push(['复活后 · 【' + f.h + '】', f.d(fake)]); });
+    if (L.boss && L.boss.clementiHard) {
+      out.push(['双管体力', '第一管3460，第二管5813；击破第一管后进入第二乐章']);
+      if (acc.seenFx && acc.seenFx.tuningMaster) ['tuningMaster', 'concerto', 'maestro'].forEach(function (k) { var f = BOSS_FX.filter(function (x) { return x.k === k; })[0]; out.push(['第二管 · 【' + f.h + '】', f.d(fake)]); });
+      else out.push(['第二乐章', '击破第一管体力后，见证真正的名手之道']);
+    }
     return out;
   }
   function rewardText(R) {

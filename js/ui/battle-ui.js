@@ -1017,13 +1017,14 @@
           break;
         case 'hit': renderSnap(e.snap); fxHit(e); if (e.amount > 0) castFx({ a: 'hit', i: V(e.side), n: e.amount, c: !!e.crit, lb: e.kind ? (e.kind === 'fixed' ? '固伤' : e.kind) : hitLabel(e) }); if (app.S && app.S.training && e.side === 1) renderStats(); if (e.amount > 0) { restartAnim($('mon' + V(e.side)), 'hit'); if (e.kind) floatNum(V(e.side), (e.kind === 'fixed' ? '固伤' : e.kind) + '-' + e.amount, e.kind === 'fixed' ? 'fixed' : 'dot', DOT_COLOR[e.kind]); else floatNum(V(e.side), hitLabel(e) + '-' + e.amount, e.crit ? 'crit' : e.eff > 1 ? 'super' : e.eff > 0 && e.eff < 1 ? 'resist' : ''); if (!e.kind) shakeField(!e.crit); } await wait(480); break;
         case 'cant': renderSnap(e.snap); floatNum(V(e.side), e.st + '无法行动', 'cant', CANT_COLOR[e.st]); await wait(420); break;
+        case 'banner': renderSnap(e.snap); banner(e.text, e.type); castFx({ a: 'banner', i: V(e.side), m: e.text, ty: e.type }); await wait(650); break;
         case 'bossfx': renderSnap(e.snap); if (window.HSEV) window.HSEV('bossfx', { k: e.k }); await wait(120); break;   // BOSS特性第一次发动：揭晓
         case 'miss': renderSnap(e.snap); fxMiss(e); castFx({ a: 'miss', i: V(e.side) }); floatNum(V(e.side), '未命中', 'miss'); await wait(380); break;
         case 'heal': renderSnap(e.snap); fxHeal(e); castFx({ a: 'heal', i: V(e.side), n: e.amount }); restartAnim($('mon' + V(e.side)), 'heal'); floatNum(V(e.side), '+' + e.amount, 'heal'); await wait(380); break;
         case 'switch': renderSnap(e.snap); if (app.S && app.S.bgmAt && e.side === 1 && e.snap) { var swi = e.snap.sides[1].team.findIndex(function (x) { return x.active; }); if (app.S.bgmAt[swi]) bgm(app.S.bgmAt[swi]); } await wait(520); break;
         case 'throw': renderSnap(e.snap); castFx({ a: 'throw', i: 1 }); restartAnim($('mon1'), 'throw'); await wait(900); break;
         case 'faint': renderSnap(e.snap); await wait(650); break;
-        case 'scene': renderSnap(e.snap); if (e.fx && window.HSEV) window.HSEV('bossfx', { k: e.fx }); await showScene(e.lines); if (e.fx === 'past') bgm('tigerFinal'); else if (e.fx === 'rebirth') bgm('beforeEnd'); break;
+        case 'scene': renderSnap(e.snap); if (e.fx && window.HSEV) window.HSEV('bossfx', { k: e.fx }); await showScene(e.lines, e.brief); if (e.fx === 'past') bgm('tigerFinal'); else if (e.fx === 'rebirth') bgm('beforeEnd'); break;
         default: renderSnap(e.snap); await wait(60);
       }
       } catch (err) { try { console.error('[battle] 播放出错', e && e.t, err); } catch (e2) {} }
@@ -1031,8 +1032,8 @@
   }
 
   // 对战中的小剧情（比如困难泰戈尔复活时）：在战场上盖一层对话框，点一下翻到下一句（不点也会自己往下走）
-  var SCENE_WHO = { tg: { name: '泰戈尔', img: 'tagore' }, cb: { name: 'Cumber', src: 'images/characters/cumber_smile.webp' }, n: null };   // cb：第十九段决战玫瑰星云时插话
-  function showScene(lines) {
+  var SCENE_WHO = { tg: { name: '泰戈尔', img: 'tagore' }, cm: { name: '克莱门蒂', img: 'clementi' }, cb: { name: 'Cumber', src: 'images/characters/cumber_smile.webp' }, n: null };   // cb：第十九段决战玫瑰星云时插话
+  function showScene(lines, brief) {
     return new Promise(function (done) {
       var f = $('field'), box = document.createElement('div'); box.className = 'bscene'; f.appendChild(box);
       var i = 0, timer = null;
@@ -1041,7 +1042,7 @@
         if (i >= lines.length) { box.remove(); done(); return; }
         var l = lines[i++], w = SCENE_WHO[l[0]];
         box.innerHTML = (w ? '<img class="bs-img" src="' + (w.src || SPRITES[w.img]) + '" alt="">' : '') + '<div class="bs-say' + (w ? '' : ' narr') + '">' + (w ? '<b>' + w.name + '</b>' : '') + '<p>' + esc(l[1]) + '</p><small>点击继续</small></div>';
-        timer = setTimeout(next, app.fast ? 2200 : 4200);
+        timer = setTimeout(next, brief ? (app.fast ? 1500 : 2600) : (app.fast ? 2200 : 4200));
       }
       box.addEventListener('click', next);
       next();
