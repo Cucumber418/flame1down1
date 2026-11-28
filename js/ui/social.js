@@ -1375,7 +1375,11 @@
       setTimeout(function () {
         if (!st.watch) return;
         var mon = $('wt-m' + (f.i ? 1 : 0)); if (!mon) return;
-        if (f.a === 'use') { wtAnim(mon, 'lunge' + (f.i ? 1 : 0)); var b = $('wt-banner'); b.textContent = f.m || ''; b.style.color = (typeof TYPE_COLOR !== 'undefined' && TYPE_COLOR[f.ty]) || 'var(--ink)'; wtAnim(b, 'show'); }
+        if (f.a === 'use' || f.a === 'bomb') {
+          if (f.a === 'bomb') { if (window.HSFX && HSFX.bomb) HSFX.bomb(mon.parentNode, mon); }
+          else wtAnim(mon, 'lunge' + (f.i ? 1 : 0));
+          var b = $('wt-banner'); b.textContent = (f.m || '') + (f.a === 'bomb' ? '引爆' : ''); b.style.color = (typeof TYPE_COLOR !== 'undefined' && TYPE_COLOR[f.ty]) || 'var(--ink)'; wtAnim(b, 'show');
+        }
         else if (f.a === 'hit' || f.a === 'heal') {
           wtAnim(mon, f.a === 'hit' ? 'hit' : 'heal');
           var n = document.createElement('div'); n.className = 'float ' + (f.a === 'heal' ? 'heal' : f.c ? 'crit' : ''); n.textContent = f.a === 'heal' ? '+' + f.n : f.lb != null ? f.lb + '-' + f.n : '-' + f.n + (f.c ? '!' : '');

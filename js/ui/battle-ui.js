@@ -855,6 +855,30 @@
     el.style.left = x + 'px'; el.style.top = y + 'px'; for (var k in vars || {}) el.style.setProperty(k, vars[k]);
     f.appendChild(el); setTimeout(function () { el.remove(); }, ms || 700);
   }
+  // 引爆只在受击方身上播放；观战共用此特效，不让当前在场精灵代替炸弹出招。
+  function bombBurst(field, mon) {
+    if (!HSFX.on() || !field || !mon) return;
+    var f = field.getBoundingClientRect(), face = mon.querySelector('.face') || mon.querySelector('img') || mon, p = face.getBoundingClientRect();
+    if (!f.width || !f.height) return;
+    var sx = field.offsetWidth / f.width, sy = field.offsetHeight / f.height;
+    var x = (p.left + p.width / 2 - f.left) * sx - field.clientLeft, y = (p.top + p.height / 2 - f.top) * sy - field.clientTop;
+    function spawn(cls, emoji, vars, ms) {
+      if (!field.isConnected || !mon.isConnected) return;
+      var el = document.createElement('span'); el.className = 'bfx ' + cls; el.textContent = emoji; el.setAttribute('aria-hidden', 'true');
+      el.style.left = x + 'px'; el.style.top = y + 'px';
+      for (var key in vars || {}) el.style.setProperty(key, vars[key]);
+      field.appendChild(el); setTimeout(function () { el.remove(); }, ms);
+    }
+    spawn('bomb-core', '💣', null, 440);
+    setTimeout(function () {
+      var radius = Math.max(48, Math.min(110, p.width * sx * .7));
+      for (var k = 0; k < 20; k++) {
+        var angle = k * Math.PI * 2 / 10 + (k >= 10 ? .23 : 0), distance = radius * (k >= 10 ? .62 : 1);
+        spawn('bomb-flame', '🔥', { '--dx': (Math.cos(angle) * distance) + 'px', '--dy': (Math.sin(angle) * distance * .8 - 18) + 'px', '--rot': ((k % 2 ? 1 : -1) * 35) + 'deg', '--d': ((k % 3) * 25) + 'ms' }, 900);
+      }
+    }, 280);
+  }
+  HSFX.bomb = bombBurst;
   // 出招：攻击技能从自己飞向对方；变化技能里作用在对方身上的飞过去，作用在自己身上的在自己身边冒出来
   function fxUse(e) {
     if (!HSFX.on()) return; var mv = M[e.move] || {}, emo = FX_EMO[e.type || mv.type] || '✦', me = V(e.side), foe = 1 - me;
@@ -980,7 +1004,17 @@
       try {   // 2026-10-26：某个事件播放出错时跳过它继续播，免得整场对战卡住
       switch (e.t) {
         case 'text': addLog(e.text, e.cls); renderSnap(e.snap); flashAbility(e.text, flipSnap(e.snap)); await wait(e.cls === 'turn' ? 120 : 300); break;
-        case 'use': renderSnap(e.snap); var rammed = fxUse(e); castFx({ a: 'use', i: V(e.side), m: e.move, ty: e.type }); if (!rammed) restartAnim($('mon' + V(e.side)), 'lunge' + V(e.side)); banner(e.move, e.type); await wait(450); break;
+        case 'use':
+          renderSnap(e.snap);
+          if (e.bomb) {
+            var target = V(e.target === 0 || e.target === 1 ? e.target : 1 - e.side);
+            fxLastType = e.type; bombBurst($('field'), $('mon' + target));
+            castFx({ a: 'bomb', i: target, m: e.move, ty: e.type }); banner(e.move + '引爆', e.type); await wait(700);
+          } else {
+            var rammed = fxUse(e); castFx({ a: 'use', i: V(e.side), m: e.move, ty: e.type });
+            if (!rammed) restartAnim($('mon' + V(e.side)), 'lunge' + V(e.side)); banner(e.move, e.type); await wait(450);
+          }
+          break;
         case 'hit': renderSnap(e.snap); fxHit(e); if (e.amount > 0) castFx({ a: 'hit', i: V(e.side), n: e.amount, c: !!e.crit, lb: e.kind ? (e.kind === 'fixed' ? '固伤' : e.kind) : hitLabel(e) }); if (app.S && app.S.training && e.side === 1) renderStats(); if (e.amount > 0) { restartAnim($('mon' + V(e.side)), 'hit'); if (e.kind) floatNum(V(e.side), (e.kind === 'fixed' ? '固伤' : e.kind) + '-' + e.amount, e.kind === 'fixed' ? 'fixed' : 'dot', DOT_COLOR[e.kind]); else floatNum(V(e.side), hitLabel(e) + '-' + e.amount, e.crit ? 'crit' : e.eff > 1 ? 'super' : e.eff > 0 && e.eff < 1 ? 'resist' : ''); if (!e.kind) shakeField(!e.crit); } await wait(480); break;
         case 'cant': renderSnap(e.snap); floatNum(V(e.side), e.st + '无法行动', 'cant', CANT_COLOR[e.st]); await wait(420); break;
         case 'bossfx': renderSnap(e.snap); if (window.HSEV) window.HSEV('bossfx', { k: e.k }); await wait(120); break;   // BOSS特性第一次发动：揭晓

@@ -1698,7 +1698,7 @@ function bombTick(S, evs) {
     if (b.at > S.turn) { keep.push(b); return; }
     var j = 1 - b.from, t = act(S, j); if (t.fainted || S.over) return;
     log(S, evs, nm(b.mon) + '埋下的「' + b.mv.name + '」爆炸了！', 'use');
-    E(S, evs, 'use', { side: b.from, move: b.mv.name, type: b.mv.type });
+    E(S, evs, 'use', { side: b.from, move: b.mv.name, type: b.mv.type, bomb: true, target: j });
     if (hitBlocked(t, b.mv.type)) { log(S, evs, nm(t) + '毫发无伤！', 'bad'); return; }
     glenAttackStart(S, b.from, b.mv);
     var res = calcDamage(b.mon, t, b.mv, false, false);
